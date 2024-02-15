@@ -3,42 +3,50 @@ package druid
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+)
+
+const (
+	numRetries = 3
+	retryWait  = 300 * time.Millisecond
 )
 
 var _ drivers.OLAPStore = &connection{}
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -46,7 +54,7 @@ func (c *connection) Dialect() drivers.Dialect {
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: WithConnection not supported")
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
@@ -75,17 +83,24 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	var rows *sqlx.Rows
+	var err error
+
+	re := retrier.New(retrier.ExponentialBackoff(numRetries, retryWait), retryErrClassifier{})
+	err = re.RunCtx(ctx, func(ctx2 context.Context) error {
+		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
+		return err
+	})
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		rows.Close()
 		if cancelFunc != nil {
 			cancelFunc()
 		}
@@ -301,4 +316,19 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	}
 
 	return t, nil
+}
+
+// retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable
+type retryErrClassifier struct{}
+
+func (retryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
+	if strings.Contains(err.Error(), "QueryCapacityExceededException") {
+		return retrier.Retry
+	}
+
+	return retrier.Fail
 }

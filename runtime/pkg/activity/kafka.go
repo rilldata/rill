@@ -3,9 +3,13 @@ package activity
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -15,8 +19,16 @@ const (
 	lingerMs         = 200
 	compressionCodec = "lz4"
 	// Retry props
-	retryN    = 3
-	retryWait = lingerMs * time.Millisecond
+	retryN                       = 3
+	retryWait                    = lingerMs * time.Millisecond
+	metadataTimeout              = 5 * time.Second
+	deliveryFailuresReportPeriod = 5 * time.Minute
+)
+
+var (
+	meter                  = otel.Meter("github.com/rilldata/rill/runtime/pkg/activity")
+	deliverySuccessCounter = must(meter.Int64Counter("kafka_delivery_success"))
+	deliveryFailureCounter = must(meter.Int64Counter("kafka_delivery_failure"))
 )
 
 // KafkaSink sinks events to a Kafka cluster.
@@ -25,6 +37,7 @@ type KafkaSink struct {
 	topic    string
 	logger   *zap.Logger
 	logChan  chan kafka.LogEvent
+	closedCh chan struct{}
 }
 
 func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
@@ -44,12 +57,72 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 
 	go forwardKafkaLogEventToLogger(logChan, logger)
 
-	return &KafkaSink{
+	// Check connectivity and fail fast if Kafka cluster is unreachable
+	// If the topic doesn't exist, the request doesn't fail but returns no metadata
+	// The topic might be auto-created on a first message
+	_, err = producer.GetMetadata(&topic, false, int(metadataTimeout.Milliseconds()))
+	if err != nil {
+		return nil, err
+	}
+
+	sink := KafkaSink{
 		producer: producer,
 		topic:    topic,
 		logger:   logger,
 		logChan:  logChan,
-	}, nil
+		closedCh: make(chan struct{}),
+	}
+
+	go sink.processProducerEvents(producer, logger)
+
+	return &sink, nil
+}
+
+func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
+	var deliveryFailureCount int
+	var lastDeliveryError error
+
+	ticker := time.NewTicker(deliveryFailuresReportPeriod)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case e, ok := <-producer.Events():
+			if !ok {
+				return
+			}
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					deliveryFailureCounter.Add(context.Background(), 1,
+						metric.WithAttributes(attribute.String("error", ev.TopicPartition.Error.Error())))
+					deliveryFailureCount++
+					lastDeliveryError = ev.TopicPartition.Error
+				} else {
+					deliverySuccessCounter.Add(context.Background(), 1)
+				}
+			case kafka.Error:
+				// This error might be a duplicate of what is logged by forwardKafkaLogEventToLogger
+				// Use warn level to focus on non-delivered events only as broker disconnects might be false-positive
+				logger.Warn("Kafka sink: producer error", zap.String("error", ev.Error()))
+			default:
+				// Ignore any other events
+			}
+
+		case <-ticker.C:
+			if deliveryFailureCount > 0 {
+				logger.Error(
+					fmt.Sprintf("Kafka sink: delivery failures in the last observed period: %d. "+
+						"Check preceding log events to investigate the issue", deliveryFailureCount),
+					zap.Error(lastDeliveryError))
+				deliveryFailureCount = 0
+				lastDeliveryError = nil
+			}
+
+		case <-s.closedCh:
+			return
+		}
+	}
 }
 
 // Sink doesn't wait till all events are delivered to Kafka
@@ -84,6 +157,7 @@ func (s *KafkaSink) Sink(_ context.Context, events []Event) error {
 func (s *KafkaSink) Close() error {
 	s.producer.Flush(100)
 	s.producer.Close()
+	close(s.closedCh)
 	close(s.logChan)
 	return nil
 }
@@ -133,4 +207,11 @@ func retry(maxRetries int, delay time.Duration, fn func() error, retryOnErrFn fu
 		}
 	}
 	return err
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

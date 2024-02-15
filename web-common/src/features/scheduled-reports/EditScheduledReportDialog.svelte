@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditReport } from "@rilldata/web-admin/client";
-  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -43,13 +43,13 @@
     initialValues: {
       title: reportSpec.title as string,
       frequency: getFrequencyFromCronExpression(
-        reportSpec.refreshSchedule?.cron as string
+        reportSpec.refreshSchedule?.cron as string,
       ),
       dayOfWeek: getDayOfWeekFromCronExpression(
-        reportSpec.refreshSchedule?.cron as string
+        reportSpec.refreshSchedule?.cron as string,
       ),
       timeOfDay: getTimeOfDayFromCronExpression(
-        reportSpec.refreshSchedule?.cron as string
+        reportSpec.refreshSchedule?.cron as string,
       ),
       timeZone: reportSpec.refreshSchedule?.timeZone as string, // all UI-created reports have a timeZone
       exportFormat:
@@ -65,7 +65,7 @@
       recipients: yup.array().of(
         yup.object().shape({
           email: yup.string().email("Invalid email"),
-        })
+        }),
       ),
     }),
     onSubmit: async (values) => {
@@ -76,7 +76,7 @@
       const refreshCron = convertFormValuesToCronExpression(
         values.frequency,
         values.dayOfWeek,
-        values.timeOfDay
+        values.timeOfDay,
       );
 
       try {
@@ -104,10 +104,10 @@
           getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
             "name.name": reportName,
             "name.kind": ResourceKind.Report,
-          })
+          }),
         );
         queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
+          getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");
         notifications.send({

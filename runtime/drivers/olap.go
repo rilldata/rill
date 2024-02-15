@@ -103,6 +103,7 @@ const (
 	DialectUnspecified Dialect = iota
 	DialectDuckDB
 	DialectDruid
+	DialectClickHouse
 )
 
 func (d Dialect) String() string {
@@ -113,6 +114,8 @@ func (d Dialect) String() string {
 		return "duckdb"
 	case DialectDruid:
 		return "druid"
+	case DialectClickHouse:
+		return "clickhouse"
 	default:
 		panic("not implemented")
 	}

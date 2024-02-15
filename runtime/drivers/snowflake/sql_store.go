@@ -46,7 +46,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	} else if url, ok := c.config["dsn"].(string); ok && url != "" { // get from driver configs
 		dsn = url
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--env connector.snowflake.dsn=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--var connector.snowflake.dsn=...' to 'rill start'")
 	}
 
 	db, err := sql.Open("snowflake", dsn)
@@ -132,7 +132,7 @@ func (f *fileIterator) Next() ([]string, error) {
 		f.db.Close()
 	}()
 
-	f.logger.Info("downloading results in parquet file", observability.ZapCtx(f.ctx))
+	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
 	fw, err := os.CreateTemp("", "temp*.parquet")
@@ -145,7 +145,7 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	tf := time.Now()
 	defer func() {
-		f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
 	}()
 
 	firstBatch, err := f.batches[0].Fetch()
@@ -214,7 +214,7 @@ func (f *fileIterator) Next() ([]string, error) {
 		return nil, err
 	}
 	f.progress.Observe(1, drivers.ProgressUnitFile)
-	f.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
+	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }
 

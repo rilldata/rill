@@ -11,23 +11,28 @@
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetaQuery } from "../selectors";
+  import { useMetricsView } from "../selectors";
+  import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
 
   export let metricViewName;
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  const {
+    actions: {
+      contextCol: { setContextColumn },
+      setLeaderboardMeasureName,
+    },
+  } = getStateManagers();
 
-  $: measures = $metaQuery.data?.measures;
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+
+  $: measures = $metricsView.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    metricsExplorerStore.setLeaderboardMeasureName(
-      metricViewName,
-      event.detail.key
-    );
+    setLeaderboardMeasureName(event.detail.key);
   }
 
   function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
@@ -43,7 +48,7 @@
   }
 
   function formatForSelector(
-    measure: MetricsViewSpecMeasureV2
+    measure: MetricsViewSpecMeasureV2,
   ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
     if (!measure) return undefined;
     return {
@@ -63,7 +68,7 @@
   $: unformattedMeasure =
     measures?.length && metricsExplorer?.leaderboardMeasureName
       ? measures.find(
-          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName,
         )
       : undefined;
 
@@ -93,15 +98,12 @@
     metricsExplorer?.leaderboardContextColumn ===
       LeaderboardContextColumn.PERCENT
   ) {
-    metricsExplorerStore.setContextColumn(
-      metricViewName,
-      LeaderboardContextColumn.HIDDEN
-    );
+    setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
-    metaQuery
+    metricsView,
   );
 
   const toggleDimensionVisibility = (e) => {
@@ -145,7 +147,7 @@
         on:select={handleMeasureUpdate}
       />
 
-      <LeaderboardContextColumnMenu {metricViewName} {validPercentOfTotal} />
+      <LeaderboardContextColumnMenu {validPercentOfTotal} />
     </div>
   {:else}
     <div

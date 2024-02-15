@@ -1,0 +1,69 @@
+name: Web code quality checks
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/web-test.yml"
+      - "web-admin/**"
+      - "web-auth/**"
+      - "web-common/**"
+      - "web-local/**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Filter modified codepaths
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            admin:
+              - ".github/workflows/web-test.yml"
+              - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test.yml"
+              - "web-auth/**"
+            local:
+              - ".github/workflows/web-test.yml"
+              - "web-local/**"
+            common:
+              - ".github/workflows/web-test.yml"
+              - "web-common/**"
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: NPM Install
+        run: npm install
+
+      - name: lint and type checks for web common
+        if: steps.filter.outputs.common == 'true'
+        run: |-
+          npx eslint web-common --quiet
+          npx svelte-check --workspace web-common --no-tsconfig --ignore "src/features/dashboards/time-series/MetricsTimeSeriesCharts.svelte,src/features/dashboards/time-controls/(TimeRangeSelector.svelte|TimeControls.svelte),src/components/data-graphic/elements/GraphicContext.svelte"
+
+      - name: lint and type checks for web local
+        if: steps.filter.outputs.local == 'true'
+        run: |-
+          npx eslint web-local --quiet
+          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev"
+
+      - name: lint and type checks for web admin
+        if: steps.filter.outputs.admin == 'true'
+        run: |-
+          npx eslint web-admin --quiet
+          npx svelte-check --workspace web-admin --no-tsconfig
+
+      - name: lint and type checks for web auth
+        if: steps.filter.outputs.auth == 'true'
+        run: |-
+          npx eslint web-auth --quiet
+          npx svelte-check --workspace web-auth --no-tsconfig
+
+      - name: type check non-svelte files (with temporary whitelist)
+        run: |-
+          sh ./scripts/tsc-with-whitelist.sh

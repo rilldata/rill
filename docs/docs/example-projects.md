@@ -1,7 +1,7 @@
 ---
 title: Example Projects
 sidebar_label: Example Projects  
-sidebar_position: 40
+sidebar_position: 50
 ---
 
 import Tabs from '@theme/Tabs';
@@ -33,7 +33,7 @@ Current projects include:
 You can install `rill` using our installation script:
 
 ```
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 ```
 
 To run an example (in this case our Programmatic/OpenRTB dataset):

@@ -3,7 +3,7 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
   import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
@@ -42,7 +42,7 @@
 
   const ctx = getStateManagers();
   const timeControlsStore = useTimeControlStore(ctx);
-  const metaQuery = useMetaQuery(ctx);
+  const metricsView = useMetricsView(ctx);
   const {
     selectors: {
       timeRangeSelectors: { timeRangeSelectorState },
@@ -62,7 +62,7 @@
 
   function onSelectRelativeTimeRange(
     timeRange: TimeRange,
-    closeMenu: () => void
+    closeMenu: () => void,
   ) {
     closeMenu();
     dispatch("select-time-range", {
@@ -75,7 +75,7 @@
   function onSelectCustomTimeRange(
     startDate: string,
     endDate: string,
-    closeMenu: () => void
+    closeMenu: () => void,
   ) {
     setIntermediateSelection(TimeRangePreset.CUSTOM)();
     closeMenu();
@@ -89,7 +89,7 @@
   function zoomScrub(toggleFloatingElement) {
     const { start, end } = getOrderedStartEnd(
       $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedScrubRange?.end
+      $dashboardStore?.selectedScrubRange?.end,
     );
     onSelectRelativeTimeRange(
       {
@@ -97,7 +97,7 @@
         start,
         end,
       },
-      toggleFloatingElement
+      toggleFloatingElement,
     );
     dispatch("remove-scrub");
   }
@@ -177,7 +177,7 @@
             $timeControlsStore?.selectedTimeRange?.start,
             $timeControlsStore?.selectedTimeRange?.end,
             $timeControlsStore?.selectedTimeRange?.name,
-            $dashboardStore?.selectedTimezone
+            $dashboardStore?.selectedTimezone,
           )}
         </span>
       </div>
@@ -224,15 +224,15 @@
     {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(
-          $metaQuery.data?.defaultTimeRange
+          $metricsView.data?.defaultTimeRange,
         )}
         on:select={() =>
           onSelectRelativeTimeRange(
             $timeControlsStore.defaultTimeRange,
-            toggleFloatingElement
+            toggleFloatingElement,
           )}
-        selected={intermediateSelection === $metaQuery.data?.defaultTimeRange}
-        isoDuration={$metaQuery.data?.defaultTimeRange}
+        selected={intermediateSelection === $metricsView.data?.defaultTimeRange}
+        isoDuration={$metricsView.data?.defaultTimeRange}
       />
     {/if}
     {#if $timeRangeSelectorState.latestWindowTimeRanges?.length}
@@ -283,7 +283,7 @@
             onSelectCustomTimeRange(
               e.detail.startDate,
               e.detail.endDate,
-              toggleFloatingElement
+              toggleFloatingElement,
             )}
           on:close-calendar={onCalendarClose}
         />

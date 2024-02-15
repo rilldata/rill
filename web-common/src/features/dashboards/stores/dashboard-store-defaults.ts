@@ -3,7 +3,12 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  contextColWidthDefaults,
+  type MetricsExplorerEntity,
+} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
@@ -12,8 +17,8 @@ import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import { MetricsViewSpecComparisonMode } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -21,7 +26,7 @@ import { get } from "svelte/store";
 export function setDefaultTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
   if (!fullTimeRange) return;
@@ -32,14 +37,14 @@ export function setDefaultTimeRange(
     metricsView.defaultTimeRange,
     fullTimeStart,
     fullTimeEnd,
-    timeZone
+    timeZone,
   );
   const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
   metricsExplorer.selectedTimeRange = {
     ...timeRange,
     interval: timeGrain.grain,
   };
-  metricsExplorer.selectedTimezone = timeZone;
+  metricsExplorer.selectedTimezone = timeZone ?? "UTC";
   // TODO: refactor all sub methods and call setSelectedScrubRange here
   metricsExplorer.selectedScrubRange = undefined;
   metricsExplorer.lastDefinedScrubRange = undefined;
@@ -48,7 +53,7 @@ export function setDefaultTimeRange(
 function setDefaultComparison(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
@@ -57,24 +62,26 @@ function setDefaultComparison(
         metricsView.dimensions?.[0]?.name;
       break;
 
-    // if default_comparison is not specified it defaults to time comparison
-    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
         metricsView,
         metricsExplorer,
-        fullTimeRange
+        fullTimeRange,
       );
       break;
+
+    // if default_comparison is not specified it defaults to no comparison
+    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
   }
 }
 
 function setDefaultComparisonTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   if (!fullTimeRange) return;
+  metricsExplorer.showTimeComparison = true;
 
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
@@ -88,7 +95,7 @@ function setDefaultComparisonTimeRange(
     fullTimeStart,
     fullTimeEnd,
     metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end
+    metricsExplorer.selectedTimeRange.end,
   );
   if (!comparisonRange.isComparisonRangeAvailable) return;
 
@@ -97,7 +104,6 @@ function setDefaultComparisonTimeRange(
     start: comparisonRange.start,
     end: comparisonRange.end,
   };
-  metricsExplorer.showTimeComparison = true;
   metricsExplorer.leaderboardContextColumn =
     LeaderboardContextColumn.DELTA_PERCENT;
 }
@@ -105,36 +111,99 @@ function setDefaultComparisonTimeRange(
 export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
-) {
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+): MetricsExplorerEntity {
+  // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
+  // and (2) we filter out undefined values
+  const defaultMeasureNames = (metricsView?.measures
+    ?.map((measure) => measure?.name)
+    .filter((name) => name !== undefined) ?? []) as string[];
+
+  // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
+  // and (2) we filter out undefined values
+  const defaultDimNames = (metricsView?.dimensions
+    ?.map((dim) => dim.name)
+    .filter((name) => name !== undefined) ?? []) as string[];
+
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    selectedMeasureNames: metricsView.measures.map((measure) => measure.name),
-
-    visibleMeasureKeys: new Set(
-      metricsView.measures.map((measure) => measure.name)
-    ),
-    allMeasuresVisible: true,
-    visibleDimensionKeys: new Set(
-      metricsView.dimensions.map((dim) => dim.name)
-    ),
-    allDimensionsVisible: true,
-    leaderboardMeasureName: metricsView.measures[0]?.name,
-    filters: {
-      include: [],
-      exclude: [],
-    },
+    visibleMeasureKeys: metricsView.defaultMeasures?.length
+      ? new Set(metricsView.defaultMeasures)
+      : new Set(defaultMeasureNames),
+    allMeasuresVisible:
+      !metricsView.defaultMeasures?.length ||
+      metricsView.defaultMeasures?.length === defaultMeasureNames.length,
+    visibleDimensionKeys: metricsView.defaultDimensions?.length
+      ? new Set(metricsView.defaultDimensions)
+      : new Set(defaultDimNames),
+    allDimensionsVisible:
+      !metricsView.defaultDimensions?.length ||
+      metricsView.defaultDimensions?.length === defaultDimNames.length,
+    leaderboardMeasureName: defaultMeasureNames[0],
+    whereFilter: createAndExpression([]),
+    havingFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
+    selectedTimezone: "UTC",
 
     showTimeComparison: false,
     dimensionSearchText: "",
+    temporaryFilterName: null,
     pinIndex: -1,
+    pivot: {
+      active: false,
+      rows: {
+        dimension: [],
+      },
+      columns: {
+        dimension: [],
+        measure: [],
+      },
+      rowJoinType: "nest",
+      expanded: {},
+      sorting: [],
+      columnPage: 1,
+    },
+    contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
   setDefaultComparison(metricsView, metricsExplorer, fullTimeRange);
+  return metricsExplorer;
+}
+
+export function restorePersistedDashboardState(
+  metricsExplorer: MetricsExplorerEntity,
+) {
+  const persistedState = getPersistentDashboardState();
+  if (persistedState.visibleMeasures) {
+    metricsExplorer.allMeasuresVisible =
+      persistedState.visibleMeasures.length ===
+      metricsExplorer.visibleMeasureKeys.size; // TODO: check values
+    metricsExplorer.visibleMeasureKeys = new Set(
+      persistedState.visibleMeasures,
+    );
+  }
+  if (persistedState.visibleDimensions) {
+    metricsExplorer.allDimensionsVisible =
+      persistedState.visibleDimensions.length ===
+      metricsExplorer.visibleDimensionKeys.size; // TODO: check values
+    metricsExplorer.visibleDimensionKeys = new Set(
+      persistedState.visibleDimensions,
+    );
+  }
+  if (persistedState.leaderboardMeasureName) {
+    metricsExplorer.leaderboardMeasureName =
+      persistedState.leaderboardMeasureName;
+  }
+  if (persistedState.dashboardSortType) {
+    metricsExplorer.dashboardSortType = persistedState.dashboardSortType;
+  }
+  if (persistedState.sortDirection) {
+    metricsExplorer.sortDirection = persistedState.sortDirection;
+  }
   return metricsExplorer;
 }

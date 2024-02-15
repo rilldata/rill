@@ -10,6 +10,7 @@ for any of its children.
   import { getContext, hasContext, onMount } from "svelte";
   import { contexts } from "../constants";
   import {
+    ScaleType,
     cascadingContextStore,
     initializeMaxMinStores,
     initializeScale,
@@ -19,7 +20,7 @@ for any of its children.
     ExtremumResolutionStore,
     SimpleDataGraphicConfiguration,
     SimpleDataGraphicConfigurationArguments,
-  } from "../state/types";
+  } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -34,8 +35,8 @@ for any of its children.
   export let bodyBuffer: number | undefined = undefined;
   export let marginBuffer: number | undefined = undefined;
 
-  export let xType: string | undefined = undefined;
-  export let yType: string | undefined = undefined;
+  export let xType: ScaleType = ScaleType.DATE;
+  export let yType: ScaleType = ScaleType.NUMBER;
 
   export let xMin: number | undefined | Date = undefined;
   export let xMax: number | undefined | Date = undefined;
@@ -72,6 +73,7 @@ for any of its children.
         marginBuffer: 4,
         devicePixelRatio,
       };
+
   let parameters = {
     ...DEFAULTS,
     ...pruneProps({
@@ -152,7 +154,7 @@ for any of its children.
         config.top -
         config.bottom -
         2 * (config.bodyBuffer || 0),
-    }
+    },
   );
 
   $: config.reconcileProps(parameters);
@@ -200,7 +202,7 @@ for any of its children.
   const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
   const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
-  $: if (yMaxTweenProps) {
+  $: if (yMaxTweenProps && yMaxStore) {
     yMaxStore.setTweenProps(yMaxTweenProps);
   }
 

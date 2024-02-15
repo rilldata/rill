@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { VirtualItem } from "@tanstack/svelte-virtual";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
+  import type { VirtualizedTableColumns } from "../types";
   import Cell from "../core/Cell.svelte";
   import Row from "../core/Row.svelte";
 

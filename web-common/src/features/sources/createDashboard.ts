@@ -42,7 +42,7 @@ export interface CreateDashboardFromSourceRequest {
 
 export const useCreateDashboardFromSource = <
   TError = RpcStatus,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<Promise<void>>,
@@ -77,7 +77,7 @@ export const useCreateDashboardFromSource = <
         blob: `select * from ${sourceName}`,
         create: true,
         createOnly: true,
-      }
+      },
     );
 
     // second, create dashboard from model
@@ -90,28 +90,28 @@ export const useCreateDashboardFromSource = <
     const dashboardYAML = generateDashboardYAMLForModel(
       data.newModelName,
       sourceSchema.schema,
-      data.newDashboardName
+      data.newDashboardName,
     );
 
     await runtimeServicePutFile(
       data.instanceId,
       getFileAPIPathFromNameAndType(
         data.newDashboardName,
-        EntityType.MetricsDefinition
+        EntityType.MetricsDefinition,
       ),
       {
         blob: dashboardYAML,
         create: true,
         createOnly: true,
-      }
+      },
     );
     await waitForResource(
       queryClient,
       data.instanceId,
       getFilePathFromNameAndType(
         data.newDashboardName,
-        EntityType.MetricsDefinition
-      )
+        EntityType.MetricsDefinition,
+      ),
     );
   };
 
@@ -129,7 +129,7 @@ export const useCreateDashboardFromSource = <
  */
 export function useCreateDashboardFromSourceUIAction(
   instanceId: string,
-  sourceName: string
+  sourceName: string,
 ) {
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const modelNames = useModelFileNames(instanceId);
@@ -143,17 +143,24 @@ export function useCreateDashboardFromSourceUIAction(
     const newModelName = getName(`${sourceName}_model`, get(modelNames).data);
     const newDashboardName = getName(
       `${sourceName}_dashboard`,
-      get(dashboardNames).data
+      get(dashboardNames).data,
     );
 
     // Wait for source query to have data
     await waitUntil(() => !!get(sourceQuery).data);
+    const sourceResource = get(sourceQuery).data;
+    if (sourceResource === undefined) {
+      // Note: this should never happen, because we wait for the
+      // source query to have data
+      console.warn("Failed to create dashboard: Source is not ready");
+      return;
+    }
 
     try {
       await get(createDashboardFromSourceMutation).mutateAsync({
         data: {
           instanceId,
-          sourceResource: get(sourceQuery).data,
+          sourceResource,
           newModelName,
           newDashboardName,
         },
@@ -164,7 +171,7 @@ export function useCreateDashboardFromSourceUIAction(
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
         get(appScreen)?.type,
-        MetricsEventScreenName.Dashboard
+        MetricsEventScreenName.Dashboard,
       );
       overlay.set(null);
     } catch (err) {

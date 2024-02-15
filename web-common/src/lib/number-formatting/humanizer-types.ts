@@ -7,7 +7,8 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 export enum FormatPreset {
   HUMANIZE = "humanize",
   NONE = "none",
-  CURRENCY = "currency_usd",
+  CURRENCY_USD = "currency_usd",
+  CURRENCY_EUR = "currency_eur",
   PERCENTAGE = "percentage",
   INTERVAL = "interval_ms",
 }
@@ -16,6 +17,24 @@ export enum FormatPreset {
  * This enum represents the semantic kind of the number being
  * handled (which is not the same thing as how the number is
  * formatted, though it can inform formatting).
+ *
+ * NOTE: (brendan, Jan 2024)
+ * Requirements have changed since this was written,
+ * and it's due for a rethinking. Based on experience and
+ * requirements surfaced over the past year, recommended
+ * approach would be to replace NumberKind with
+ * something that makes the following concepts orthogonal
+ * - units (dollar, euro, percent, etc)
+ * - underlying conceptual number type (integer, real, 2-digit decimal).
+ *   Note that in JS, these are all _stored_ as floats, but retaining
+ *   the conceptual type is important for presentation
+ * - formatting precision -- this can vary based on context,
+ *   and could include options like
+ *     - full number (which might still involve rounding off floating
+ *       point errors for a Decimal)
+ *     - some number of significant digits with letter suffixes
+ *     - single digit time power of ten representation
+ *     - etc...
  */
 export enum NumberKind {
   /**
@@ -25,6 +44,14 @@ export enum NumberKind {
    * this units.
    */
   DOLLAR = "DOLLAR",
+
+  /**
+   * A real number with units of EUROS. Note that this
+   * does not imply any restriction on the range of the number;
+   * ANY positive or negative real number of ANY SIZE can have
+   * this units.
+   */
+  EURO = "EURO",
 
   /**
    * A real number with units of "%". Note that this
@@ -56,8 +83,11 @@ export enum NumberKind {
  */
 export const formatPresetToNumberKind = (type: FormatPreset) => {
   switch (type) {
-    case FormatPreset.CURRENCY:
+    case FormatPreset.CURRENCY_USD:
       return NumberKind.DOLLAR;
+
+    case FormatPreset.CURRENCY_EUR:
+      return NumberKind.EURO;
 
     case FormatPreset.PERCENTAGE:
       return NumberKind.PERCENT;
@@ -72,7 +102,7 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
       console.warn(
         `All FormatPreset variants must be explicity handled in formatPresetToNumberKind, got ${
           type === "" ? "empty string" : type
-        }`
+        }`,
       );
       return NumberKind.ANY;
   }
@@ -98,7 +128,7 @@ export const numberKindForMeasure = (measure: MetricsViewSpecMeasureV2) => {
 
 export type NumberParts = {
   neg?: "-";
-  dollar?: "$";
+  currencySymbol?: "$" | "€";
   int: string;
   dot: "" | ".";
   frac: string;
@@ -108,11 +138,34 @@ export type NumberParts = {
 };
 
 /**
- * This is a no-op strategy that
+ * Options common to all formatting strategies
  */
-export type FormatterOptionsNoneStrategy = {
-  strategy: "none";
+export type FormatterOptionsCommon = {
+  /**
+   * The kind of number being formatted
+   */
+
+  numberKind: NumberKind;
+
+  /**
+   * If true, pad numbers with insignificant zeros in order
+   * to have a consistent number of digits to the right of the
+   * decimal point
+   */
+  padWithInsignificantZeros?: boolean;
+
+  /**
+   * If `true`, use upper case "E" for exponential notation.
+   * If `false` or `undefined`, use lower case "e"
+   */
+  upperCaseEForExponent?: boolean;
 };
+
+/**
+ * This strategy does not apply formatting to the _number itself_,
+ * but does add units if needed.
+ */
+export type FormatterOptionsNoneStrategy = FormatterOptionsCommon;
 
 /**
  * Strategy for handling numbers that are guaranteed to be an
@@ -128,46 +181,54 @@ export type FormatterOptionsNoneStrategy = {
  * or log a warning if a of a non integer multiple of a power
  * of ten given as an input.
  */
-export type FormatterOptionsIntTimesPowerOfTenStrategy = {
-  strategy: "intTimesPowerOfTen";
-  onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
-};
+export type FormatterOptionsIntTimesPowerOfTenStrategy =
+  FormatterOptionsCommon & {
+    onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
+  };
 
 /**
- * The "default" strategy actaully delegates to a set of
- * pre-defined FormatterRangeSpecsStrategies, one for
- * each of the three NumberKinds currently supported.
- */
-export type FormatterOptionsDefaultStrategy = {
-  strategy: "default";
-};
-
-/**
- * Specifies a set of formatting options
+ * Specifies a set of formatting options for numbers within
+ * a given order of magnitude range.
  */
 export type RangeFormatSpec = {
-  // minimum order of magnitude for this range.
-  // Target number must have OoM >= minMag.
+  /**
+   * Minimum order of magnitude for this range.
+   * Target number must have OoM >= minMag.
+   */
   minMag: number;
-  // supremum number for this range.
-  // Target number must have OoM < supMag.
+
+  /**
+   * Supremum order of magnitude for this range.
+   * Target number must have OoM OoM < supMag.
+   */
   supMag: number;
 
-  // max number of digits left of decimal point
-  // if undefined, default is 3 digits
+  /**
+   *Max number of digits left of decimal point.
+   * If undefined, default is 3 digits
+   */
   maxDigitsLeft?: number;
-  // max number of digits right of decimal point
+
+  /**
+   * Max number of digits right of decimal point.
+   */
   maxDigitsRight: number;
-  // This sets the order of magnitude used to format numbers
-  // in this range. For example, if baseMagnitude=3, then we'd have:
-  // - 1,000,000 => 1,000k
-  // - 100 => .1k
-  // If this is set to 0, numbers in this range
-  // will be rendered as plain numbers (no suffix).
-  // If not set, the engineering magnitude of `min` is used by default.
+
+  /**
+   * If set, this will be used as the order of magnitude
+   * for formatting numbers in this range.
+   * For example, if baseMagnitude=3, then we'd have:
+   * - 1,000,000 => 1,000k
+   * - 100 => .1k
+   * If this is set to 0, numbers in this range
+   * will be rendered as plain numbers (no suffix).
+   * If not set, the engineering magnitude of `min` is used by default.
+   */
   baseMagnitude?: number;
 
-  // if not set, treated as true
+  /**
+   * Whether or not to pad numbers with insignificant zeros. If undefined, treated as true
+   */
   padWithInsignificantZeros?: boolean;
 
   /**
@@ -190,7 +251,7 @@ export type RangeFormatSpec = {
  *
  * `rangeSpecs` is a series of RangeFormatSpecs. Ranges may not overlap,
  * and there can be no gaps in coverage between the ranges that
- * are defined, though the it is not required the the entire
+ * are defined, though it is not required the the entire
  * number line be covered--defaults will be used outside of the
  * covered range.
  *
@@ -213,108 +274,21 @@ export type RangeFormatSpec = {
  * if more than three digits are desired left of the decimal point, an
  * explicit range must be set with maxDigitsLeft.
  */
-export type FormatterRangeSpecsStrategy = {
-  strategy: "perRange";
+export type FormatterRangeSpecsStrategy = FormatterOptionsCommon & {
   rangeSpecs: RangeFormatSpec[];
   defaultMaxDigitsRight: number;
 };
 
-// FIXME: These strategies still need production grade implementation.
-// If we decide not to implement these strategis for production,
-// this code can be removed.
-// export type FormatterOptionsLargestMag = {
-//   // options specific to the largestMagnitude strategy
-//   strategy: "largestMagnitude";
-// };
-// export type FormatterOptionsDigitBudget = {
-//   // options specific to the multipleMagnitudes strategy
-//   strategy: "digitBudget";
-//   maxDigitsLeft: number;
-//   maxDigitsRight: number;
-//   minDigitsNonzero: number;
-
-//   // Method for showing that non-integers have a fractional
-//   // part if they would otherwise be rounded such that they
-//   // have no fractional digits.
-//   // "none": don't do anything special.
-//   // Ex: 21379.23 with max 5 digits would be "21379"
-//   // "trailingDot": add a trailing decimal point if a non-integer
-//   // would be truncated to the e0 digit.
-//   // Ex: 21379.23 with max 5 digits would be "21379."
-//   // "reserveDigit": Always reserve one digit from the max digit
-//   // budget to show a digit of precision after the decimal point.
-//   // Ex: 21379.23 with max 5 digits would require an order of mag
-//   // suffix, e.g. "21.379 k"; or with max 6 digits "21379.2"
-//   nonIntHandling: "none" | "trailingDot" | "reserveDigit";
-// };
-
-export type FormatterOptionsCommon = {
-  // Options common to all strategies
-
-  // max number of digits to be shown for formatted numbers
-  // maxTotalDigits: number;
-
-  // The kind of number being formatted
-  numberKind: NumberKind;
-
-  // If true, pad numbers with insignificant zeros in order
-  // to have a consistent number of digits to the right of the
-  // decimal point
-  padWithInsignificantZeros?: boolean;
-
-  // method for formatting exact zeros
-  // "none": don't do anything special.
-  // Ex: If the general option padWithInsignificantZeros is used such
-  // that e.g. a 0 is rendered as "0.000", then if
-  // this option is "none", the trailing zeros will be retained
-  // "trailingDot": add a trailing decimal point to exact zeros "0."
-  // "zeroOnly": render exact zeros as "0"
-  // zeroHandling: "none" | "trailingDot" | "zeroOnly";
-
-  // pxWidthLookupFn?: PxWidthLookupFn;
-
-  // not actually used for formatting, but needed to calculate the
-  // px sizes of maxWidthsInSample and maxWidthsPossible
-  // alignDecimal?: boolean;
-
-  // If `true`, use upper case "E" for exponential notation;
-  // If `false` or `undefined`, use lower case
-  upperCaseEForExponent?: boolean;
-};
-
-export type FormatterFactoryOptions = (
+export type FormatterFactoryOptions =
   | FormatterOptionsNoneStrategy
-  // FIXME: These strategies still need production grade implementation.
-  // If we decide not to implement these strategis for production,
-  // this code can be removed.
-  // | FormatterOptionsDigitBudget
-  // | FormatterOptionsLargestMag
-  | FormatterOptionsIntTimesPowerOfTenStrategy
-  | FormatterRangeSpecsStrategy
-  | FormatterOptionsDefaultStrategy
-) &
-  FormatterOptionsCommon;
+  | FormatterRangeSpecsStrategy;
 
 export type NumPartPxWidthLookupFn = (str: string, isNumStr: boolean) => number;
 
-export type FormatterFactory = (
-  sample: number[],
-  options: FormatterFactoryOptions
-) => Formatter;
+export type FormatterFactory = (options: FormatterFactoryOptions) => Formatter;
 
 export interface Formatter {
   options: FormatterFactoryOptions;
-
   stringFormat(x: number): string;
-
   partsFormat(x: number): NumberParts;
-
-  // FIXME: we can add these parts of the interface back in if we want to implement
-  // alignment. If we decide that we don't want to pursue that,
-  // we can remove this commented code
-  // largestPossibleNumberStringParts: NumberParts;
-  // maxPxWidthsSampled(): FormatterWidths;
-  // maxPxWidthsPossible(): FormatterWidths;
-  // maxCharWidthsSampled(): FormatterWidths;
-  // maxCharWidthsPossible(): FormatterWidths;
 }

@@ -36,6 +36,8 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		return err
 	}
 
+	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
+
 	localPaths, err := t.from.FilePaths(ctx, srcProps)
 	if err != nil {
 		return err

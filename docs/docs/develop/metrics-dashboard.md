@@ -58,20 +58,19 @@ smallest_time_grain: ""
 timeseries: timestamp_column_name
 
 dimensions:
-  - property: model_column_1
+  - column: model_column_1
     label: Column label 1
     description: ""
   # Add more dimensions here
 
 measures:
   - label: "Count"
+    name: "count"
     expression: count(*)
     description: ""
     format_preset: "humanize"
   # Add more measures here
 ```
-
-Rill will ingest the dashboard definition next time you run `rill start`. 
 
 For details about all available properties, see the syntax [reference](../reference/project-files/dashboards).
 

@@ -1,16 +1,18 @@
 <script lang="ts">
   import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
+  import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
     useDashboard,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
   import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
@@ -18,10 +20,10 @@
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeControls from "../time-controls/TimeControls.svelte";
+  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
-  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -32,9 +34,10 @@
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
+  $: showPivot = $metricsExplorer?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
@@ -44,9 +47,11 @@
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
-  const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
-  ) as Tweened<number>;
+  const navigationVisibilityTween = getContext<Tweened<number>>(
+    "rill:app:navigation-visibility-tween",
+  );
+
+  const { readOnly } = featureFlags;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -57,20 +62,22 @@
     ? leftMargin
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 
-  $: isRillDeveloper = $featureFlags.readOnly === false;
+  $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the dashboard
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
+
+  const FILTERS_MIN_CONTAINER_HEIGHT = "34px";
 </script>
 
 <section
-  class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
   use:listenToNodeResize
 >
   <div
-    class="border-b mb-3 w-full flex flex-col"
+    class="border-b w-full flex flex-col bg-slate-50"
     id="header"
     style:padding-left={leftSide}
   >
@@ -90,11 +97,20 @@
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      <div class="-ml-3 p-1 py-2 space-y-2">
+      <div class="-ml-3 px-1 pt-2 space-y-2">
         <TimeControls {metricViewName} />
-        {#key metricViewName}
-          <Filters />
-        {/key}
+        <div class="flex justify-between">
+          {#key metricViewName}
+            <section
+              class="pl-2 grid gap-x-2 items-start"
+              style:grid-template-columns="max-content auto"
+              style:min-height={FILTERS_MIN_CONTAINER_HEIGHT}
+            >
+              <Filters />
+            </section>
+            <TabBar />
+          {/key}
+        </div>
       </div>
     {/if}
   </div>
@@ -102,38 +118,48 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div
-      class="flex gap-x-1 h-full overflow-hidden flex-{dashboardAlignment}"
-      style:padding-left={leftSide}
-    >
-      <div
-        class:fixed-metric-height={expandedMeasureName}
-        class="overflow-y-scroll pb-8 flex-none"
-      >
-        {#key metricViewName}
-          {#if hasTimeSeries}
-            <MetricsTimeSeriesCharts
-              {metricViewName}
-              workspaceWidth={exploreContainerWidth}
-            />
-          {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-          {/if}
-        {/key}
-      </div>
+    <div class="flex h-full overflow-hidden">
+      {#if showPivot}
+        <div class="overflow-y-hidden flex-1">
+          <PivotDisplay />
+        </div>
+      {:else}
+        <div
+          style:padding-left={leftSide}
+          class="flex gap-x-1 mt-3 w-full h-full overflow-hidden flex-{dashboardAlignment}"
+        >
+          <div
+            class:fixed-metric-height={expandedMeasureName}
+            class="overflow-y-scroll pb-8 flex-none"
+          >
+            {#key metricViewName}
+              {#if hasTimeSeries}
+                <MetricsTimeSeriesCharts
+                  {metricViewName}
+                  workspaceWidth={exploreContainerWidth}
+                />
+              {:else}
+                <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+              {/if}
+            {/key}
+          </div>
 
-      <div class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}">
-        {#if expandedMeasureName}
-          <TimeDimensionDisplay {metricViewName} />
-        {:else if selectedDimensionName}
-          <DimensionDisplay />
-        {:else}
-          <LeaderboardDisplay />
-        {/if}
-      </div>
+          <div
+            class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}"
+          >
+            {#if expandedMeasureName}
+              <TimeDimensionDisplay {metricViewName} />
+            {:else if selectedDimensionName}
+              <DimensionDisplay />
+            {:else}
+              <LeaderboardDisplay />
+            {/if}
+          </div>
+        </div>
+      {/if}
     </div>
 
-    {#if isRillDeveloper && !expandedMeasureName}
+    {#if isRillDeveloper && !expandedMeasureName && !showPivot}
       <RowsViewerAccordion {metricViewName} />
     {/if}
   {/if}

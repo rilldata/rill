@@ -1,16 +1,20 @@
 package local
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -29,10 +33,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
+	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"moul.io/zapfilter"
 )
 
 type LogFormat string
@@ -70,7 +74,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, environment, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -103,7 +107,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	if err == nil { // a old stage.db file exists
 		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
 		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
-		logger.Named("console").Info("Dropping old stage.db file and rebuilding project")
+		logger.Info("Dropping old stage.db file and rebuilding project")
 	}
 
 	parsedVariables, err := variable.Parse(variables)
@@ -120,6 +124,31 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		},
 	}
 
+	// Sender for sending transactional emails.
+	// We use a noop sender by default, but you can uncomment the SMTP sender to send emails from localhost for testing.
+	sender := email.NewNoopSender()
+	// Uncomment to send emails for testing:
+	// err = godotenv.Load()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to load .env file: %w", err)
+	// }
+	// smtpPort, err := strconv.Atoi(os.Getenv("RILL_RUNTIME_EMAIL_SMTP_PORT"))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get SMTP port: %w", err)
+	// }
+	// sender, err := email.NewSMTPSender(&email.SMTPOptions{
+	// 	SMTPHost:     os.Getenv("RILL_RUNTIME_EMAIL_SMTP_HOST"),
+	// 	SMTPPort:     smtpPort,
+	// 	SMTPUsername: os.Getenv("RILL_RUNTIME_EMAIL_SMTP_USERNAME"),
+	// 	SMTPPassword: os.Getenv("RILL_RUNTIME_EMAIL_SMTP_PASSWORD"),
+	// 	FromEmail:    os.Getenv("RILL_RUNTIME_EMAIL_SENDER_EMAIL"),
+	// 	FromName:     os.Getenv("RILL_RUNTIME_EMAIL_SENDER_NAME"),
+	// 	BCC:          os.Getenv("RILL_RUNTIME_EMAIL_BCC"),
+	// })
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to create email sender: %w", err)
+	// }
+
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
@@ -130,16 +159,23 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(email.NewNoopSender()))
+	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(sender))
 	if err != nil {
 		return nil, err
 	}
 
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	defaultOLAP := false
+	olapCfg := make(map[string]string)
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
+		val, err := isExternalStorageEnabled(dbDirPath, parsedVariables)
+		if err != nil {
+			return nil, err
+		}
+
+		olapCfg["external_table_storage"] = strconv.FormatBool(val)
 	}
 
 	if reset {
@@ -148,10 +184,14 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
 		}
 		_ = os.RemoveAll(dbDirPath)
+		err = os.MkdirAll(dbDirPath, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Set default DuckDB pool size to 4
-	olapCfg := map[string]string{"dsn": olapDSN}
+	olapCfg["dsn"] = olapDSN
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
 		if !defaultOLAP {
@@ -162,12 +202,13 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
 	isInit := IsProjectInit(projectPath)
 	if isInit {
-		sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
+		sugarLogger.Infof("Hydrating project '%s'", projectPath)
 	}
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:               DefaultInstanceID,
+		Environment:      environment,
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
@@ -224,14 +265,14 @@ func (a *App) Close() error {
 
 	err := a.observabilityShutdown(ctx)
 	if err != nil {
-		a.Logger.Named("console").Error("Observability shutdown failed", zap.Error(err))
+		a.Logger.Error("Observability shutdown failed", zap.Error(err))
 	}
 
 	err = a.Runtime.Close()
 	if err != nil {
-		a.Logger.Named("console").Error("Graceful shutdown failed", zap.Error(err))
+		a.Logger.Error("Graceful shutdown failed", zap.Error(err))
 	} else {
-		a.Logger.Named("console").Info("Rill shutdown gracefully")
+		a.Logger.Info("Rill shutdown gracefully")
 	}
 
 	a.loggerCleanUp()
@@ -242,7 +283,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
-		a.Logger.Named("console").Warnf("error finding install ID: %v", err)
+		a.Logger.Warnf("error finding install ID: %v", err)
 	}
 
 	// Build local info for frontend
@@ -260,13 +301,12 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		Readonly:         readonly,
 	}
 
-	// Create server logger.
+	// Create server logger
+	serverLogger := a.BaseLogger
 	// It only logs error messages when !verbose to prevent lots of req/res info messages.
-	lvl := zap.ErrorLevel
-	if a.Verbose {
-		lvl = zap.DebugLevel
+	if !a.Verbose {
+		serverLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
 	}
-	serverLogger := a.BaseLogger.WithOptions(zap.IncreaseLevel(lvl))
 
 	// Prepare errgroup and context with graceful shutdown
 	gctx := graceful.WithCancelOnTerminate(a.Context)
@@ -343,7 +383,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	}
 
 	// Health check succeeded
-	a.Logger.Named("console").Infof("Serving Rill on: %s", uri)
+	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
 		err := browser.Open(uri)
 		if err != nil {
@@ -389,7 +429,7 @@ func (a *App) versionHandler() http.Handler {
 		// Get the latest version available
 		latestVersion, err := update.LatestVersion(r.Context())
 		if err != nil {
-			a.Logger.Named("console").Warnf("error finding latest version: %v", err)
+			a.Logger.Warnf("error finding latest version: %v", err)
 		}
 
 		inf := &versionInfo{
@@ -424,8 +464,16 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 
+		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			a.BaseLogger.Info("failed to read telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		// Proxy request to rill intake
-		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
+		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", bytes.NewReader(body))
 		if err != nil {
 			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
 			w.WriteHeader(http.StatusOK)
@@ -437,14 +485,18 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			"Authorization": r.Header["Authorization"],
 		}
 
-		// Send proxied request
-		resp, err := http.DefaultClient.Do(proxyReq)
-		if err != nil {
-			a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		defer resp.Body.Close()
+		// Send event in the background to avoid blocking the frontend.
+		// NOTE: If we stay with this telemetry approach, we should refactor and use ./cli/pkg/telemetry for batching and flushing events.
+		go func() {
+			// Send proxied request
+			resp, err := http.DefaultClient.Do(proxyReq)
+			if err != nil {
+				a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			resp.Body.Close()
+		}()
 
 		// Done
 		w.WriteHeader(http.StatusOK)
@@ -513,14 +565,90 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
 	}
 
+	// if it's not verbose, skip instance_id field
+	if !isVerbose {
+		consoleEncoder = skipFieldZapEncoder{
+			Encoder: consoleEncoder,
+			fields:  []string{"instance_id"},
+		}
+	}
+
 	core := zapcore.NewTee(
 		fileCore,
-		// send all error logs and logs matching console namespace to stdout
-		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MustParseRules("error:* *:console")),
+		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
 	)
 
 	return zap.New(core, opts...), func() {
 		_ = logger.Sync()
 		luLogger.Close()
 	}
+}
+
+// skipFieldZapEncoder skips fields with the given keys. only string fields are supported.
+type skipFieldZapEncoder struct {
+	zapcore.Encoder
+	fields []string
+}
+
+func (s skipFieldZapEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+	res := make([]zapcore.Field, 0, len(fields))
+	for _, field := range fields {
+		skip := false
+		for _, skipField := range s.fields {
+			if field.Key == skipField {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			res = append(res, field)
+		}
+	}
+	return s.Encoder.EncodeEntry(entry, res)
+}
+
+func (s skipFieldZapEncoder) Clone() zapcore.Encoder {
+	return skipFieldZapEncoder{
+		Encoder: s.Encoder.Clone(),
+		fields:  s.fields,
+	}
+}
+
+func (s skipFieldZapEncoder) AddString(key, val string) {
+	skip := false
+	for _, skipField := range s.fields {
+		if key == skipField {
+			skip = true
+			break
+		}
+	}
+	if !skip {
+		s.Encoder.AddString(key, val)
+	}
+}
+
+// isExternalStorageEnabled determines if external storage can be enabled.
+// we can't always enable `external_table_storage` if the project dir already has a db file
+// it could have been created with older logic where every source was a table in the main db
+func isExternalStorageEnabled(dbPath string, variables map[string]string) (bool, error) {
+	_, err := os.Stat(filepath.Join(dbPath, DefaultOLAPDSN))
+	if err != nil {
+		// fresh project
+		// check if flag explicitly passed
+		val, ok := variables["connector.duckdb.external_table_storage"]
+		if !ok {
+			// mark enabled by default
+			return true, nil
+		}
+		return strconv.ParseBool(val)
+	}
+
+	fsRoot := os.DirFS(dbPath)
+	glob := path.Clean(path.Join("./", filepath.Join("*", "version.txt")))
+
+	matches, err := doublestar.Glob(fsRoot, glob)
+	if err != nil {
+		return false, err
+	}
+	return len(matches) > 0, nil
 }

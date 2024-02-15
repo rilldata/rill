@@ -1,31 +1,38 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
-  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
-  import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
-  import { fly } from "svelte/transition";
+  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
+  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
+  import { featureFlags } from "../../feature-flags";
+  import { PivotChipType } from "../pivot/types";
+  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
 
   export let metricViewName: string;
@@ -38,11 +45,17 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery(getStateManagers());
+  const {
+    actions: {
+      dimensionsFilter: { toggleDimensionFilterMode },
+    },
+  } = getStateManagers();
+
+  $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
-  $: allMeasures = $metaQuery?.data?.measures ?? [];
+  $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures
     ?.filter((m) => m.name !== undefined || m.label !== undefined)
@@ -52,7 +65,7 @@
       ({
         name: m.name ?? "",
         label: m.label ?? "",
-      })
+      }),
     );
 
   $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
@@ -90,12 +103,64 @@
 
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
+  }
+
+  let showReplacePivotModal = false;
+  function startPivotForTDD() {
+    const pivot = $dashboardStore?.pivot;
+
+    if (
+      pivot.rows.dimension.length ||
+      pivot.columns.measure.length ||
+      pivot.columns.dimension.length
+    ) {
+      showReplacePivotModal = true;
+    } else {
+      createPivot();
+    }
+  }
+
+  function createPivot() {
+    showReplacePivotModal = false;
+    const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
+    if (!dashboardGrain || !expandedMeasureName) return;
+
+    const timeGrain: TimeGrain = TIME_GRAIN[dashboardGrain];
+    const rowDimensions = dimensionName
+      ? [
+          {
+            id: dimensionName,
+            title: dimensionName,
+            type: PivotChipType.Dimension,
+          },
+        ]
+      : [];
+    metricsExplorerStore.createPivot(
+      metricViewName,
+      { dimension: rowDimensions },
+      {
+        dimension: [
+          {
+            id: dashboardGrain,
+            title: timeGrain.label,
+            type: PivotChipType.Time,
+          },
+        ],
+        measure: [
+          {
+            id: expandedMeasureName,
+            title: expandedMeasureName,
+            type: PivotChipType.Measure,
+          },
+        ],
+      },
+    );
   }
 </script>
 
@@ -108,7 +173,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector {metricViewName} chipStyle />
+      <ComparisonSelector chipStyle {metricViewName} />
     </div>
 
     <div class="flex items-center gap-x-2 pl-2">
@@ -123,12 +188,6 @@
         tooltipText="Choose a measure to display"
       />
     </div>
-
-    <!-- Revisit after Pivot table lands -->
-    <!-- <span> | </span>
-    <div>Time</div>
-    <span> : </span>
-    <div>{selectedMeasureLabel}</div> -->
 
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />
@@ -172,7 +231,7 @@
       {/if}
 
       <Tooltip distance={16} location="left">
-        <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <div class="ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
             Exclude
           </Switch>
@@ -189,6 +248,29 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
+
+      <TDDExportButton
+        {metricViewName}
+        includeScheduledReport={$featureFlags.adminServer}
+      />
+
+      <Button
+        compact
+        type="text"
+        on:click={() => {
+          startPivotForTDD();
+        }}
+      >
+        Start Pivot
+      </Button>
     </div>
   {/if}
 </div>
+
+<ReplacePivotDialog
+  open={showReplacePivotModal}
+  on:close={() => {
+    showReplacePivotModal = false;
+  }}
+  on:replace={() => createPivot()}
+/>

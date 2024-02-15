@@ -21,12 +21,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import {
     areaFactory,
     lineFactory,
-    pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
-  import {
-    AreaSubRangeColor,
-    MainLineSubRangeColor,
-  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+  import { LineMutedColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
@@ -36,16 +32,18 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let yAccessor: string;
 
   export let isComparingDimension = false;
-  export let area = true;
+
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
 
   export let stopOpacity = 0.3;
   // FIXME – this is a different prop than elsewhere
-  export let lineColor = MainLineSubRangeColor;
-  export let areaColor = AreaSubRangeColor;
+  export let lineColor = LineMutedColor;
+  export let areaGradientColors: [string, string] | null = null;
   export let lineClasses = "";
+
+  $: area = areaGradientColors !== null;
 
   const id = guidGenerator();
 
@@ -86,7 +84,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     }
   }
 
-  $: segments = computeSegments(data, pathIsDefined(yAccessor));
+  $: segments = computeSegments(data, yAccessor);
   /** plot these as points */
   $: singletons = segments.filter((segment) => segment.length === 1);
 
@@ -142,7 +140,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-    {#if area}
+    {#if areaGradientColors !== null}
       <WithTween
         value={areaFunction(yAccessor)(delayedFilteredData)}
         tweenProps={{
@@ -158,13 +156,23 @@ Over time, we'll make this the default Line implementation, but it's not quite t
           style="clip-path: url(#path-segments-{id})"
         />
       </WithTween>
+      <defs>
+        <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
+          <stop
+            offset="5%"
+            stop-color={areaGradientColors[0]}
+            stop-opacity={stopOpacity}
+          />
+          <stop
+            offset="95%"
+            stop-color={areaGradientColors[1]}
+            stop-opacity={stopOpacity}
+          />
+        </linearGradient>
+      </defs>
     {/if}
     <!-- clip rects for segments -->
     <defs>
-      <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="5%" stop-color={areaColor} />
-        <stop offset="95%" stop-color={areaColor} stop-opacity={stopOpacity} />
-      </linearGradient>
       <clipPath id="path-segments-{id}">
         {#each delayedSegments as segment (segment[0][xAccessor])}
           {@const x = $xScale(segment[0][xAccessor])}

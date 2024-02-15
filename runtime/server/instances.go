@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -76,6 +77,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	inst := &drivers.Instance{
 		ID:                           req.InstanceId,
+		Environment:                  req.Environment,
 		OLAPConnector:                req.OlapConnector,
 		RepoConnector:                req.RepoConnector,
 		AdminConnector:               req.AdminConnector,
@@ -142,6 +144,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 	inst := &drivers.Instance{
 		ID:                           req.InstanceId,
+		Environment:                  valOrDefault(req.Environment, oldInst.Environment),
 		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
@@ -186,6 +189,73 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 	}
 
 	return &runtimev1.DeleteInstanceResponse{}, nil
+}
+
+// GetLogs implements runtimev1.RuntimeServiceServer
+func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*runtimev1.GetLogsResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.ascending", req.Ascending),
+		attribute.Int("args.limit", int(req.Limit)),
+		attribute.String("args.level", req.Level.String()),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	lvl := req.Level
+	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+		lvl = runtimev1.LogLevel_LOG_LEVEL_INFO // backward compatibility
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &runtimev1.GetLogsResponse{Logs: logBuffer.GetLogs(req.Ascending, int(req.Limit), lvl)}, nil
+}
+
+// WatchLogs implements runtimev1.RuntimeServiceServer
+func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.RuntimeService_WatchLogsServer) error {
+	ctx := srv.Context()
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.replay", req.Replay),
+		attribute.Int("args.replay_limit", int(req.ReplayLimit)),
+		attribute.String("args.level", req.Level.String()),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return ErrForbidden
+	}
+
+	lvl := req.Level
+	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+		lvl = runtimev1.LogLevel_LOG_LEVEL_INFO // backward compatibility
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if req.Replay {
+		for _, l := range logBuffer.GetLogs(true, int(req.ReplayLimit), lvl) {
+			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
+			if err != nil {
+				return status.Error(codes.InvalidArgument, err.Error())
+			}
+		}
+	}
+
+	return logBuffer.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
+		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
+		if err != nil {
+			s.logger.Info("failed to send log event", zap.Error(err))
+		}
+	}, lvl)
 }
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {

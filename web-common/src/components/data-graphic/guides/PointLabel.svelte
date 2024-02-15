@@ -17,7 +17,7 @@
   export let showPoint = true;
   export let showReferenceLine = true;
   export let showDistanceLine = true;
-  export let yComparisonAccessor: string = undefined;
+  export let yComparisonAccessor: string | undefined = undefined;
   export let format = justEnoughPrecision;
 
   let lastAvailablePoint;
@@ -40,7 +40,7 @@
       easing = cubicOut,
       start = 0,
       opacity = 0,
-    } = {}
+    } = {},
   ) {
     const style = getComputedStyle(node);
     const target_opacity = +style.opacity;
@@ -66,14 +66,15 @@
 <WithGraphicContexts let:xScale let:yScale let:config>
   {@const isNull = point[yAccessor] == null}
   {@const comparisonIsNull =
+    yComparisonAccessor === undefined ||
     point[yComparisonAccessor] === null ||
     point[yComparisonAccessor] === undefined}
   {@const x = xScale(point[xAccessor])}
   {@const y = !isNull
     ? yScale(point[yAccessor])
     : lastAvailablePoint
-    ? yScale(lastAvailablePoint[yAccessor])
-    : (config.plotBottom - config.plotTop) / 2}
+      ? yScale(lastAvailablePoint[yAccessor])
+      : (config.plotBottom - config.plotTop) / 2}
   <!-- these elements aren't used unless we are comparing-->
   {@const comparisonY = yScale(point?.[`comparison.${yAccessor}`] || 0)}
   <WithTween
@@ -89,15 +90,16 @@
     {@const text = isNull
       ? "no data"
       : format
-      ? format(point[yAccessor])
-      : point[yAccessor]}
-    {@const comparisonText = isNull
-      ? "no data"
-      : format
-      ? format(point[yAccessor] - point[yComparisonAccessor])
-      : point[yAccessor] - point[yComparisonAccessor]}
+        ? format(point[yAccessor])
+        : point[yAccessor]}
+    {@const comparisonText =
+      isNull || yComparisonAccessor === undefined
+        ? "no data"
+        : format
+          ? format(point[yAccessor] - point[yComparisonAccessor])
+          : point[yAccessor] - point[yComparisonAccessor]}
     {@const percentageDifference =
-      isNull && comparisonIsNull
+      (isNull && comparisonIsNull) || yComparisonAccessor === undefined
         ? undefined
         : (point[yAccessor] - point[yComparisonAccessor]) /
           point[yComparisonAccessor]}
@@ -140,7 +142,7 @@
         stroke-width="4"
         class={showComparisonText && !comparisonIsPositive
           ? "stroke-red-300"
-          : "stroke-blue-300"}
+          : "stroke-primary-300"}
       />
       {#if showComparisonText}
         {@const signedDist = !comparisonIsPositive
@@ -157,7 +159,7 @@
             y2={yLoc + signedDist}
             class={showComparisonText && !comparisonIsPositive
               ? "stroke-red-300"
-              : "stroke-blue-300"}
+              : "stroke-primary-300"}
           />
           <line
             x1={output.x}
@@ -167,7 +169,7 @@
             y2={yLoc + signedDist}
             class={showComparisonText && !comparisonIsPositive
               ? "stroke-red-300"
-              : "stroke-blue-300"}
+              : "stroke-primary-300"}
           />
         {/if}
       {/if}
@@ -180,7 +182,7 @@
         r="3"
         class={showComparisonText && !comparisonIsPositive
           ? "fill-red-600"
-          : "fill-blue-500"}
+          : "fill-primary-500"}
       />
     {/if}
     {#if !isNull && showPoint && showComparisonText}
@@ -191,10 +193,10 @@
         r="3"
         class={showComparisonText && !comparisonIsPositive
           ? "fill-red-600"
-          : "fill-blue-500"}
+          : "fill-primary-500"}
       />
     {/if}
-    {#if showComparisonText}
+    {#if showComparisonText && percentageDifference}
       {@const diffParts =
         formatMeasurePercentageDifference(percentageDifference)}
       <text

@@ -1,6 +1,7 @@
 package sudo
 
 import (
+	"github.com/rilldata/rill/cli/cmd/sudo/annotations"
 	"github.com/rilldata/rill/cli/cmd/sudo/project"
 	"github.com/rilldata/rill/cli/cmd/sudo/quota"
 	"github.com/rilldata/rill/cli/cmd/sudo/superuser"
@@ -23,6 +24,7 @@ func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
 	sudoCmd.AddCommand(gitCloneCmd(ch))
 	sudoCmd.AddCommand(lookupCmd(ch))
 	sudoCmd.AddCommand(project.ProjectCmd(ch))
+	sudoCmd.AddCommand(annotations.AnnotationsCmd(ch))
 
 	return sudoCmd
 }

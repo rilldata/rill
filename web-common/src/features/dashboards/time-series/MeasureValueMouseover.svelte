@@ -2,6 +2,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
+  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
 
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -61,7 +62,7 @@
       isDiffValid
         ? `(${diffLabel})`
         : "",
-    pointColorClass: "fill-blue-700",
+    pointColorClass: "fill-primary-700",
     valueStyleClass: "font-semibold",
     valueColorClass: "fill-gray-600",
     labelColorClass:
@@ -88,8 +89,9 @@
       : undefined;
 
   /** get the final point set*/
+  let pointSet: Point[] = [];
   $: pointSet =
-    showComparison && hasValidComparisonPoint
+    showComparison && comparisonPoint
       ? [comparisonPoint, mainPoint]
       : [mainPoint];
 
@@ -125,8 +127,8 @@
           {@const yBuffer = !hasValidComparisonPoint
             ? 0
             : !comparisonIsPositive
-            ? -bufferSize
-            : bufferSize}
+              ? -bufferSize
+              : bufferSize}
 
           {@const sign = !comparisonIsPositive ? -1 : 1}
           {@const dist = 3}
@@ -210,7 +212,7 @@
           y1={yScale(0)}
           y2={output.y}
           stroke-width="4"
-          class={"stroke-blue-300"}
+          class={"stroke-primary-300"}
         />
       {/if}
     </WithTween>

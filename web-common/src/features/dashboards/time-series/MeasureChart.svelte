@@ -36,15 +36,17 @@
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
-  export let width: number = undefined;
-  export let height: number = undefined;
-  export let xMin: Date = undefined;
-  export let xMax: Date = undefined;
-  export let yMin: number = undefined;
-  export let yMax: number = undefined;
+  export let width: number | undefined = undefined;
+  export let height: number | undefined = undefined;
+  export let xMin: Date | undefined = undefined;
+  export let xMax: Date | undefined = undefined;
+  export let yMin: number | undefined = undefined;
+  export let yMax: number | undefined = undefined;
 
   export let timeGrain: V1TimeGrain;
   export let zone: string;
@@ -55,7 +57,7 @@
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
-  export let mouseoverValue;
+  export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let validPercTotal: number | null = null;
 
   // control point for scrub functionality.
@@ -72,12 +74,14 @@
   const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
-  let hovered: boolean | undefined = false;
+  let hovered: boolean = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
 
-  $: hoveredTime = mouseoverValue?.x || $tableInteractionStore.time;
+  $: hoveredTime =
+    (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
+    $tableInteractionStore.time;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
@@ -97,7 +101,7 @@
     isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
 
     isInsideScrub = Boolean(
-      mouseOverCords > min + 5 && mouseOverCords < max - 5
+      mouseOverCords > min + 5 && mouseOverCords < max - 5,
     );
   }
 
@@ -125,20 +129,20 @@
   // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum[yAccessor])
+      extent(d?.data || [], (datum) => datum[yAccessor]),
     );
 
     yExtentMin = dimExtents
       .map((e) => e[0])
       .reduce(
         (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
-        Infinity
+        Infinity,
       );
     yExtentMax = dimExtents
       .map((e) => e[1])
       .reduce(
         (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
-        -Infinity
+        -Infinity,
       );
 
     isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
@@ -149,7 +153,7 @@
       yMin !== undefined ? yMin : yExtentMin,
       yMax !== undefined ? yMax : yExtentMax,
     ],
-    6 / 5
+    6 / 5,
   );
 
   $: internalXMin = xMin || xExtentMin;
@@ -195,7 +199,13 @@
     if (!hasSubrangeSelected) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-    if (mouseoverValue?.x < start || mouseoverValue?.x > end) resetScrub();
+
+    if (
+      mouseoverValue?.x &&
+      (mouseoverValue?.x < start || mouseoverValue?.x > end)
+    ) {
+      resetScrub();
+    }
   }
 </script>
 
@@ -218,12 +228,12 @@
     {width}
     xMaxTweenProps={tweenProps}
     xMinTweenProps={tweenProps}
-    xType="date"
+    xType={ScaleType.DATE}
+    yType={ScaleType.NUMBER}
     yMax={internalYMax}
     yMaxTweenProps={tweenProps}
     yMin={internalYMin}
     yMinTweenProps={tweenProps}
-    yType="number"
   >
     <Axis {numberKind} side="right" />
     <Grid />
@@ -232,7 +242,7 @@
         {data}
         {dimensionData}
         dimensionValue={$tableInteractionStore?.dimensionValue}
-        isHovering={hoveredTime}
+        isHovering={Boolean(hoveredTime)}
         {scrubEnd}
         {scrubStart}
         {showComparison}
@@ -243,7 +253,7 @@
         {yExtentMax}
       />
       <line
-        class="stroke-blue-200"
+        class="stroke-primary-200"
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}
         y1={yScale(0)}

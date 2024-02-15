@@ -1,5 +1,6 @@
+import { NumberKind } from "../humanizer-types";
 import { PerRangeFormatter } from "./per-range";
-import { defaultDollarOptions } from "./per-range-default-options";
+import { defaultCurrencyOptions } from "./per-range-default-options";
 import { describe, it, expect } from "vitest";
 
 const defaultDollarTestCases: [number, string][] = [
@@ -89,7 +90,9 @@ const defaultDollarTestCases: [number, string][] = [
 describe("range formatter, using default options for NumberKind.DOLLAR nums, `.stringFormat()`", () => {
   defaultDollarTestCases.forEach(([input, output]) => {
     it(`returns the correct string in case: ${input}`, () => {
-      const formatter = new PerRangeFormatter([input], defaultDollarOptions);
+      const formatter = new PerRangeFormatter(
+        defaultCurrencyOptions(NumberKind.DOLLAR),
+      );
       expect(formatter.stringFormat(input)).toEqual(output);
     });
   });

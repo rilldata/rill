@@ -8,10 +8,10 @@ function testDuplicateNameChecker(
   name: string,
   modelNames: Array<string>,
   tableNames: Array<string>,
-  isDuplicate: boolean
+  isDuplicate: boolean,
 ) {
   expect(duplicateNameChecker(name, modelNames, tableNames)).toEqual(
-    isDuplicate
+    isDuplicate,
   );
 }
 
@@ -19,10 +19,10 @@ function testIncrementedNameGetter(
   name: string,
   modelNames: Array<string>,
   tableNames: Array<string>,
-  expectedName: string
+  expectedName: string,
 ) {
   expect(incrementedNameGetter(name, modelNames, tableNames)).toEqual(
-    expectedName
+    expectedName,
   );
 }
 
@@ -59,13 +59,13 @@ describe("duplicateNameUtils", () => {
         "FOO",
         ["foo", "BAR_1"],
         ["bar", "Foo_1"],
-        "FOO_2"
+        "FOO_2",
       );
       testIncrementedNameGetter(
         "BAR",
         ["foo", "BAR_1"],
         ["bar", "Foo_1"],
-        "BAR_2"
+        "BAR_2",
       );
     });
 

@@ -29,19 +29,21 @@
 </script>
 
 <div class="flex flex-col gap-y-2.5">
-  <div class="flex items-center gap-x-1">
-    <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
-    {#if hint}
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-gray-500" style="transform:translateY(-.5px)">
-          <InfoCircle size="13px" />
-        </div>
-        <TooltipContent maxWidth="400px" slot="tooltip-content">
-          {hint}
-        </TooltipContent>
-      </Tooltip>
-    {/if}
-  </div>
+  {#if label}
+    <div class="flex items-center gap-x-1">
+      <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
+      {#if hint}
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-gray-500" style="transform:translateY(-.5px)">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            {hint}
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+    </div>
+  {/if}
   <div
     class="flex flex-col gap-y-4 max-h-[200px] pl-1 pr-4 py-1 overflow-y-auto"
   >
@@ -53,7 +55,7 @@
             id="{id}.{i}.{accessorKey}"
             autocomplete="off"
             {placeholder}
-            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {errors[
+            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {errors[
               i
             ]?.accessorKey && 'border-red-500'}"
             on:keydown={handleKeyDown}
@@ -74,7 +76,7 @@
         {/if}
       </div>
     {/each}
-    <Button on:click={() => dispatch("add-item")} type="dashed">
+    <Button on:click={() => dispatch("add-item")} type="secondary" dashed>
       <div class="flex gap-x-2">
         <Add className="text-gray-700" />
         {addItemLabel}

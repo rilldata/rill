@@ -12,7 +12,7 @@ const DefaultReject = {
 export async function cliConfirmation(
   question: string,
   confirm = DefaultConfirm,
-  reject = DefaultReject
+  reject = DefaultReject,
 ): Promise<boolean> {
   const response = await getResponse(question);
   if (response.toLowerCase() in confirm) {

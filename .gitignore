@@ -21,6 +21,7 @@ tsc-tmp/
 /rill
 /cli/pkg/examples/embed/dist
 /dev-project*
+/dev-cloud-state*
 
 # data files
 *.duckdb
@@ -37,9 +38,9 @@ tsc-tmp/
 /sources
 
 # check in generated data files
-!/web-local/test/data/*.parquet
-!/web-local/test/data/*.csv
-!/web-local/test/data/*.tsv
+!/web-local/tests/data/*.parquet
+!/web-local/tests/data/*.csv
+!/web-local/tests/data/*.tsv
 !/runtime/testruntime/**/*.parquet
 !/runtime/testruntime/**/*.csv
 

@@ -1,2 +1,6 @@
 web-admin/build
 web-local/build
+**/svelte.config.js
+
+# ignored vendored files from shoelace in web-common/src/components/modal
+web-common/src/components/modal/*.js

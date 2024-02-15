@@ -49,6 +49,14 @@ var spec = drivers.Spec{
 			Description: "DuckDB SQL query.",
 			Placeholder: "select * from read_csv('data/file.csv', header=true);",
 		},
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DB",
+			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
+			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
@@ -58,18 +66,6 @@ var spec = drivers.Spec{
 }
 
 var motherduckSpec = drivers.Spec{
-	DisplayName: "MotherDuck",
-	Description: "Import data from MotherDuck.",
-	SourceProperties: []drivers.PropertySchema{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MotherDuck.",
-			Placeholder: "select * from my_db.my_table;",
-		},
-	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "token",
@@ -91,7 +87,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("opening duckdb handle", zap.String("dsn", cfg.DSN))
+	logger.Debug("opening duckdb handle", zap.String("dsn", cfg.DSN))
 
 	// We've seen the DuckDB .wal and .tmp files grow to 100s of GBs in some cases.
 	// This prevents recovery after restarts since DuckDB hangs while trying to reprocess the files.
@@ -154,7 +150,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 			return nil, err
 		}
 
-		c.logger.Named("console").Info("Resetting .db file because it was created with an older, incompatible version of Rill")
+		c.logger.Debug("Resetting .db file because it was created with an older, incompatible version of Rill")
 
 		tmpPath := cfg.DBFilePath + ".tmp"
 		_ = os.RemoveAll(tmpPath)
@@ -196,7 +192,7 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	}
 	if cfg.DBFilePath != "" {
 		err = os.Remove(cfg.DBFilePath)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 		// Hacky approach to remove the wal file
@@ -685,9 +681,9 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 			c.dbReopen = false
 			err = c.reopenDB()
 			if err == nil {
-				c.logger.Info("reopened DuckDB successfully")
+				c.logger.Debug("reopened DuckDB successfully")
 			} else {
-				c.logger.Error("reopen of DuckDB failed - the handle is now permanently locked", zap.Error(err))
+				c.logger.Debug("reopen of DuckDB failed - the handle is now permanently locked", zap.Error(err))
 			}
 			c.dbErr = err
 			c.dbCond.Broadcast()
@@ -813,7 +809,7 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Lock()
 			for connID, connTime := range c.connTimes {
 				if time.Since(connTime) > maxAcquiredConnDuration {
-					c.logger.Error("duckdb: a connection has been held for more longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
+					c.logger.Error("duckdb: a connection has been held for longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
 				}
 			}
 			c.connTimesMu.Unlock()
@@ -830,7 +826,7 @@ func (c *connection) logLimits(conn *sqlx.Conn) {
 	var threads string
 	_ = row.Scan(&threads)
 
-	c.logger.Info("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
+	c.logger.Debug("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
 }
 
 // fatalInternalError logs a critical internal error and exits the process.

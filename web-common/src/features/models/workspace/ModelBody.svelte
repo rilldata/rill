@@ -26,6 +26,9 @@
   import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+
+  const QUERY_DEBOUNCE_TIME = 400;
 
   export let modelName: string;
   export let focusEditorOnMount = false;
@@ -33,7 +36,7 @@
   const queryClient = useQueryClient();
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
-    "rill:app:query-highlight"
+    "rill:app:query-highlight",
   );
 
   $: runtimeInstanceId = $runtime.instanceId;
@@ -51,7 +54,7 @@
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
-  $: modelSql = $modelSqlQuery?.data?.blob;
+  $: modelSql = $modelSqlQuery?.data?.blob ?? "";
   $: hasModelSql = typeof modelSql === "string";
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
@@ -62,28 +65,28 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    modelPath
+    modelPath,
   );
   $: modelError = $allErrors?.[0]?.message;
 
   $: tableQuery = createQueryServiceTableRows(
     runtimeInstanceId,
-    $modelQuery.data?.model?.state?.table,
+    $modelQuery.data?.model?.state?.table ?? "",
     {
       limit,
-    }
+    },
   );
 
-  $: runtimeError = ($tableQuery.error as any)?.response.data;
+  $: runtimeError = $tableQuery.error?.response.data;
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
   const outputPosition = getContext(
-    "rill:app:output-height-tween"
+    "rill:app:output-height-tween",
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween"
+    "rill:app:output-visibility-tween",
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
@@ -94,7 +97,6 @@
         httpRequestQueue.removeByName(modelName);
         // cancel all existing analytical queries currently running.
         await queryClient.cancelQueries({
-          fetchStatus: "fetching",
           predicate: (query) => isProfilingQuery(query, modelName),
         });
       }
@@ -112,12 +114,13 @@
       console.error(err);
     }
   }
+
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 
-  let errors = [];
+  let errors: string[] = [];
   $: {
     errors = [];
     // only add error if sql is present
@@ -126,6 +129,11 @@
       if (runtimeError) errors.push(runtimeError.message);
     }
   }
+
+  const debounceUpdateModelContent = debounce(
+    updateModelContent,
+    QUERY_DEBOUNCE_TIME,
+  );
 </script>
 
 <svelte:window bind:innerHeight />
@@ -143,7 +151,7 @@
             content={modelSql}
             {selections}
             focusOnMount={focusEditorOnMount}
-            on:write={(evt) => updateModelContent(evt.detail.content)}
+            on:write={(evt) => debounceUpdateModelContent(evt.detail.content)}
           />
         {/key}
       </div>

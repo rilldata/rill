@@ -11,9 +11,10 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -90,12 +91,18 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		}
 	}
 
+	// Exit early if disabled
+	if rep.Spec.RefreshSchedule != nil && rep.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Determine whether to trigger
 	adhocTrigger := rep.Spec.Trigger
 	scheduleTrigger := rep.State.NextRunOn != nil && !rep.State.NextRunOn.AsTime().After(time.Now())
+	trigger := adhocTrigger || scheduleTrigger
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
-	if !adhocTrigger && !scheduleTrigger {
+	if !trigger {
 		err = r.updateNextRunOn(ctx, self, rep)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -148,7 +155,7 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Log it
 	if reportErr != nil {
-		r.C.Logger.Error("Report run failed", "report", self.Meta.Name, "error", reportErr.Error())
+		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()))
 	}
 
 	// Commit CurrentExecution to history
@@ -251,24 +258,24 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all emails were sent.
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
-	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
+	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t))
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", "report", self.Meta.Name.Name)
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name))
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	qry, err := buildQuery(rep, t)
+	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
 	if err != nil {
 		return false, fmt.Errorf("failed to build export request: %w", err)
 	}
@@ -310,53 +317,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
-	qry := &runtimev1.Query{}
-	switch rep.Spec.QueryName {
-	case "MetricsViewAggregation":
-		req := &runtimev1.MetricsViewAggregationRequest{}
-		qry.Query = &runtimev1.Query_MetricsViewAggregationRequest{MetricsViewAggregationRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
-		if err != nil {
-			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
-		}
-		req.TimeRange = overrideTimeRange(req.TimeRange, t)
-	case "MetricsViewToplist":
-		req := &runtimev1.MetricsViewToplistRequest{}
-		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
-		if err != nil {
-			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
-		}
-	case "MetricsViewRows":
-		req := &runtimev1.MetricsViewRowsRequest{}
-		qry.Query = &runtimev1.Query_MetricsViewRowsRequest{MetricsViewRowsRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
-		if err != nil {
-			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
-		}
-	case "MetricsViewTimeSeries":
-		req := &runtimev1.MetricsViewTimeSeriesRequest{}
-		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
-		if err != nil {
-			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
-		}
-	case "MetricsViewComparison":
-		req := &runtimev1.MetricsViewComparisonRequest{}
-		qry.Query = &runtimev1.Query_MetricsViewComparisonRequest{MetricsViewComparisonRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
-		if err != nil {
-			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
-		}
-		req.TimeRange = overrideTimeRange(req.TimeRange, t)
-	default:
-		return nil, fmt.Errorf("query %q not supported for reports", rep.Spec.QueryName)
-	}
-
-	return qry, nil
-}
-
 func formatExportFormat(f runtimev1.ExportFormat) string {
 	switch f {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
@@ -368,14 +328,4 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	default:
 		return f.String()
 	}
-}
-
-func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRange {
-	if tr == nil {
-		tr = &runtimev1.TimeRange{}
-	}
-
-	tr.End = timestamppb.New(t)
-
-	return tr
 }

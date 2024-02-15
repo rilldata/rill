@@ -11,6 +11,7 @@
    */
   import { SimpleDataGraphic } from "../../elements";
   import { Area, Line } from "../../marks";
+  import { ScaleType } from "../../state";
 
   export let data;
 
@@ -22,11 +23,11 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
   // the color of the zoom window boundaries
   export let zoomWindowBoundaryColor = "rgb(100,100,100)";
-  export let zoomWindowXMin: Date = undefined;
-  export let zoomWindowXMax: Date = undefined;
+  export let zoomWindowXMin: Date | undefined = undefined;
+  export let zoomWindowXMax: Date | undefined = undefined;
 
-  export let xAccessor: string = undefined;
-  export let yAccessor: string = undefined;
+  export let xAccessor: string | undefined = undefined;
+  export let yAccessor: string | undefined = undefined;
 
   // rowsize for table
   export let left = 0;
@@ -43,7 +44,7 @@
       start = 0,
       opacity = 0,
       scaleDown = false,
-    } = {}
+    } = {},
   ) {
     const style = getComputedStyle(node);
     const target_opacity = +style.opacity;
@@ -70,8 +71,8 @@
 
 {#if data.length}
   <SimpleDataGraphic
-    xType="date"
-    yType="number"
+    xType={ScaleType.DATE}
+    yType={ScaleType.NUMBER}
     {width}
     {height}
     yMin={0}

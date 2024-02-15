@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 set -e
 
 CDN="cdn.rilldata.com"
@@ -8,11 +8,11 @@ INSTALL_DIR="/usr/local/bin"
 initPlatform() {
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
-    if [ $OS == "darwin" ] && [ $ARCH == "arm64" ]; then
+    if [ $OS = "darwin" ] && [ $ARCH = "arm64" ]; then
         PLATFORM="darwin_arm64"
-    elif [ $OS == "darwin" ] && [ $ARCH == "x86_64" ]; then
+    elif [ $OS = "darwin" ] && [ $ARCH = "x86_64" ]; then
         PLATFORM="darwin_amd64"
-    elif [ $OS == "linux" ] && [ $ARCH == "x86_64" ]; then
+    elif [ $OS = "linux" ] && [ $ARCH = "x86_64" ]; then
         PLATFORM="linux_amd64"
     else
         printf "Platform not supported: os=$OS arch=$ARCH\n"
@@ -38,7 +38,7 @@ checkDependency() {
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
     LATEST_URL="https://${CDN}/rill/latest.txt"
-    if [ "${VERSION}" == "latest" ]; then
+    if [ "${VERSION}" = "latest" ]; then
         VERSION=$(curl --silent --show-error ${LATEST_URL})
     fi
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
@@ -61,7 +61,7 @@ downloadBinary() {
 checkConflictingInstallation() {
     if [ -x "$(command -v rill)" ]; then
         INSTALLED_RILL="$(command -v rill)"
-        if [ -x "$(command -v brew)" ] && brew list rilldata/tap/rill &>/dev/null; then
+        if [ -x "$(command -v brew)" ] && brew list rilldata/tap/rill >/dev/null 2>&1; then
             printf "There is a conflicting version of Rill installed using Brew.\n\n"
             printf "To upgrade using Brew, run 'brew upgrade rilldata/tap/rill'.\n\n"
             printf "To use this script to install Rill, run 'brew remove rilldata/tap/rill' to remove the conflicting version and try again.\n"

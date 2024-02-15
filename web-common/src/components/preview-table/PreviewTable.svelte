@@ -10,7 +10,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
     DATES,
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
+
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -18,7 +18,10 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import PinnedColumns from "../virtualized-table/sections/PinnedColumns.svelte";
   import RowHeaders from "../virtualized-table/sections/RowHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
-  import type { VirtualizedTableConfig } from "../virtualized-table/types";
+  import type {
+    VirtualizedTableColumns,
+    VirtualizedTableConfig,
+  } from "../virtualized-table/types";
   import { config as defaultConfig } from "./config";
 
   export let rows;
@@ -77,7 +80,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
           tbl[column.name] = undefined;
           return tbl;
         }),
-        { duration: 200 }
+        { duration: 200 },
       );
     }
 
@@ -171,8 +174,8 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
                     /** use effective header width, unless its a timestamp, in which case just use largest string length */
                     TIMESTAMPS.has(column.type) ? 0 : effectiveHeaderWidth,
                     /** All columns must be minColumnWidth regardless of user settings. */
-                    config.minColumnWidth
-                  )
+                    config.minColumnWidth,
+                  ),
             )
           : /** if there isn't a longet string length for some reason, let's go with a
              * default column width. We should not be in this state.

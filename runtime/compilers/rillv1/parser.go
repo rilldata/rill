@@ -35,6 +35,7 @@ type Resource struct {
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
+	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
 }
 
@@ -65,6 +66,7 @@ const (
 	ResourceKindMetricsView
 	ResourceKindMigration
 	ResourceKindReport
+	ResourceKindAlert
 	ResourceKindTheme
 )
 
@@ -84,6 +86,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindMigration, nil
 	case "report":
 		return ResourceKindReport, nil
+	case "alert":
+		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
 	default:
@@ -105,6 +109,8 @@ func (k ResourceKind) String() string {
 		return "Migration"
 	case ResourceKindReport:
 		return "Report"
+	case ResourceKindAlert:
+		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
 	default:
@@ -129,6 +135,7 @@ type Parser struct {
 	// Options
 	Repo             drivers.RepoStore
 	InstanceID       string
+	Environment      string
 	DefaultConnector string
 	DuckDBConnectors []string
 
@@ -170,10 +177,11 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 //
 // Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
 // To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
 		Repo:             repo,
 		InstanceID:       instanceID,
+		Environment:      environment,
 		DefaultConnector: defaultConnector,
 		DuckDBConnectors: duckDBConnectors,
 	}
@@ -214,6 +222,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return p.reparseExceptRillYAML(ctx, paths)
 }
 
+// IsIgnored returns true if the path will be ignored by Reparse.
+// It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
+func (p *Parser) IsIgnored(path string) bool {
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+}
+
 // reload resets the parser's state and then parses the entire project.
 func (p *Parser) reload(ctx context.Context) error {
 	// Reset state
@@ -228,7 +242,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}")
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
@@ -290,8 +304,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		seenPaths[path] = true
 
 		// Skip files that aren't SQL or YAML or .env file
-		isSQL := strings.HasSuffix(path, ".sql")
-		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+		isSQL := pathIsSQL(path)
+		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
@@ -702,6 +716,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:
 		r.ReportSpec = &runtimev1.ReportSpec{}
+	case ResourceKindAlert:
+		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
 	default:
@@ -815,6 +831,16 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 		StartLocation: loc,
 		External:      external,
 	})
+}
+
+// pathIsSQL returns true if the path is a SQL file
+func pathIsSQL(path string) bool {
+	return strings.HasSuffix(path, ".sql")
+}
+
+// pathIsYAML returns true if the path is a YAML file
+func pathIsYAML(path string) bool {
+	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
 }
 
 // pathIsRillYAML returns true if the path is rill.yaml

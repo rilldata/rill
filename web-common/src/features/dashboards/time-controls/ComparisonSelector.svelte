@@ -19,7 +19,7 @@ This component needs to do the following:
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     metricsExplorerStore,
     useDashboardStore,
@@ -38,11 +38,11 @@ This component needs to do the following:
   let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: showTimeComparison = $dashboardStore?.showTimeComparison;
   $: selectedDimension = $dashboardStore?.selectedComparisonDimension;
-  $: dimensions = $metaQuery?.data?.dimensions;
+  $: dimensions = $metricsView?.data?.dimensions;
 
   let searchText = "";
 
@@ -63,14 +63,14 @@ This component needs to do the following:
   $: label = selectedDimension
     ? getLabelForDimension(selectedDimension)
     : showTimeComparison
-    ? TIME
-    : NO_COMPARISON_LABEL;
+      ? TIME
+      : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = selectedDimension
     ? selectedDimension
     : showTimeComparison
-    ? TIME
-    : NO_COMPARISON_LABEL;
+      ? TIME
+      : NO_COMPARISON_LABEL;
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {

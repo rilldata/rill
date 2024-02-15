@@ -2,11 +2,12 @@ import {
   timeComparisonOptionsSelector,
   timeRangeSelectionsSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
-import type { DashboardDataSources } from "./types";
+import { TimeRangePreset } from "../../../../lib/time/types";
 import {
   selectedTimeRangeSelector,
   timeControlStateSelector,
 } from "../../time-controls/time-control-store";
+import type { DashboardDataSources } from "./types";
 
 export const timeControlsState = (dashData: DashboardDataSources) =>
   timeControlStateSelector([
@@ -19,7 +20,7 @@ export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
   timeControlsState(dashData).ready === true;
 
 export const isTimeComparisonActive = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): boolean => timeControlsState(dashData).showComparison === true;
 
 export const timeRangeSelectorState = (dashData: DashboardDataSources) =>
@@ -44,6 +45,9 @@ export const selectedTimeRangeState = (dashData: DashboardDataSources) =>
     dashData.timeRangeSummary,
     dashData.dashboard,
   ]);
+
+export const isCustomTimeRange = (dashData: DashboardDataSources): boolean =>
+  dashData.dashboard?.selectedTimeRange?.name === TimeRangePreset.CUSTOM;
 
 export const timeRangeSelectors = {
   /**
@@ -75,4 +79,6 @@ export const timeRangeSelectors = {
    * Full {@link DashboardTimeControls} filled in based on selected time range.
    */
   selectedTimeRangeState,
+
+  isCustomTimeRange,
 };

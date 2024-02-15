@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -12,8 +13,10 @@
 
   $: metricViewName = $page.params.name;
 
+  const { readOnly } = featureFlags;
+
   onMount(() => {
-    if ($featureFlags.readOnly) {
+    if ($readOnly) {
       throw error(404, "Page not found");
     }
   });
@@ -33,10 +36,12 @@
         // this will ensure that any changes done outside our app is pulled in.
         refetchOnWindowFocus: true,
       },
-    }
+    },
   );
 
   $: yaml = $fileQuery.data?.blob || "";
+
+  $: initLocalUserPreferenceStore(metricViewName);
 </script>
 
 <svelte:head>

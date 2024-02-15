@@ -12,11 +12,20 @@ func safeTimeStr(t *timestamppb.Timestamp) string {
 	return t.AsTime().String()
 }
 
-func filterCount(m *runtimev1.MetricsViewFilter) int {
+func filterCount(m *runtimev1.Expression) int {
 	if m == nil {
 		return 0
 	}
-	return len(m.Include) + len(m.Exclude)
+	c := 0
+	switch e := m.Expression.(type) {
+	case *runtimev1.Expression_Ident:
+		c++
+	case *runtimev1.Expression_Cond:
+		for _, expr := range e.Cond.Exprs {
+			c += filterCount(expr)
+		}
+	}
+	return c
 }
 
 func marshalInlineMeasure(ms []*runtimev1.InlineMeasure) []string {

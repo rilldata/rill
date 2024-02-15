@@ -4,7 +4,7 @@ export class Heap<Item extends { index?: number }, Key = string> {
 
   constructor(
     private readonly compareFunction: (a: Item, b: Item) => number,
-    private readonly keyGetter: (a: Item) => Key
+    private readonly keyGetter: (a: Item) => Key,
   ) {}
 
   public empty() {

@@ -1,9 +1,12 @@
 <script lang="ts">
   import {
-    AreaSubRangeColor,
-    AreaNormalColor,
-    MainLineSubRangeColor,
-    MainLineNormalColor,
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
+    MainLineColor,
+    TimeComparisonLineColor,
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { writable } from "svelte/store";
   import {
@@ -13,11 +16,11 @@
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
-  export let xMin: Date = undefined;
-  export let xMax: Date = undefined;
-  export let yExtentMax: number = undefined;
+  export let xMin: Date | undefined = undefined;
+  export let xMax: Date | undefined = undefined;
+  export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
-  export let dimensionValue: string;
+  export let dimensionValue: string | undefined;
   export let isHovering: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
@@ -28,11 +31,18 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
-  $: mainLineColor = hasSubrangeSelected
-    ? MainLineSubRangeColor
-    : MainLineNormalColor;
+  $: mainLineColor = hasSubrangeSelected ? LineMutedColor : MainLineColor;
 
-  $: areaColor = hasSubrangeSelected ? AreaSubRangeColor : AreaNormalColor;
+  const focusedAreaGradient: [string, string] = [
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
+  ];
+
+  $: areaGradientColors = (
+    hasSubrangeSelected
+      ? [AreaMutedColorGradientDark, AreaMutedColorGradientLight]
+      : focusedAreaGradient
+  ) as [string, string];
 
   $: isDimValueHiglighted =
     dimensionValue !== undefined &&
@@ -42,7 +52,7 @@
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
 
-  $: yMaxStore.set(yExtentMax);
+  $: if (typeof yExtentMax === "number") yMaxStore.set(yExtentMax);
   const timeRangeKey = writable(`${xMin}-${xMax}`);
 
   const previousTimeRangeKey = previousValueStore(timeRangeKey);
@@ -61,7 +71,9 @@
   }
 
   $: delay =
-    $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
+    $previousTimeRangeKey === $timeRangeKey &&
+    yExtentMax &&
+    $previousYMax < yExtentMax
       ? 100
       : 0;
 </script>
@@ -79,7 +91,6 @@
         class:opacity-20={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
-          area={false}
           isComparingDimension
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
@@ -101,8 +112,7 @@
         class:opacity-40={!isHovering}
       >
         <ChunkedLine
-          area={false}
-          lineColor={MainLineSubRangeColor}
+          lineColor={TimeComparisonLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -116,7 +126,7 @@
     {/if}
     <ChunkedLine
       lineColor={mainLineColor}
-      {areaColor}
+      {areaGradientColors}
       delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
       duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
         ? 0
@@ -129,8 +139,8 @@
       <ClippedChunkedLine
         start={Math.min(scrubStart, scrubEnd)}
         end={Math.max(scrubStart, scrubEnd)}
-        lineColor={MainLineNormalColor}
-        areaColor={AreaNormalColor}
+        lineColor={MainLineColor}
+        areaGradientColors={focusedAreaGradient}
         delay={0}
         duration={0}
         {data}

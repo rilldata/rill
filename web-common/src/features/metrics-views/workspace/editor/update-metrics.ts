@@ -1,6 +1,7 @@
 import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
 import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
@@ -9,7 +10,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
 export function createUpdateMetricsCallback(
-  metricsDefName: string
+  metricsDefName: string,
 ): (event: CustomEvent) => void {
   const debounce = createDebouncer();
 
@@ -19,7 +20,7 @@ export function createUpdateMetricsCallback(
     const instanceId = get(runtime).instanceId;
     const filePath = getFileAPIPathFromNameAndType(
       metricsDefName,
-      EntityType.MetricsDefinition
+      EntityType.MetricsDefinition,
     );
     await get(fileSaver).mutateAsync({
       instanceId,
@@ -31,6 +32,8 @@ export function createUpdateMetricsCallback(
     });
     // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
     metricsExplorerStore.remove(metricsDefName);
+    // Reset local persisted dashboard state for the metrics view
+    createPersistentDashboardStore(metricsDefName).reset();
   }
 
   return function updateMetrics(event) {
@@ -43,12 +46,12 @@ export function createUpdateMetricsCallback(
     // added to it.
     const debounceTransaction = viewUpdate.transactions.find(
       (transaction) =>
-        transaction.annotation(skipDebounceAnnotation) !== undefined
+        transaction.annotation(skipDebounceAnnotation) !== undefined,
     );
 
     // get the annotation.
     const debounceAnnotation = debounceTransaction?.annotation(
-      skipDebounceAnnotation
+      skipDebounceAnnotation,
     );
     // We will skip the debounce if the user deletes all the content or there is a skipDebounceAnnotation.
     // See Placeholder.svelte for usage of this annotation.

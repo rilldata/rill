@@ -30,14 +30,17 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
+	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/salesforce"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
@@ -47,14 +50,15 @@ import (
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
+	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
+	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	RedisURL                string                 `default:"" split_words:"true"`
+	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter          observability.Exporter `default:"" split_words:"true"`
+	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
-	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter          observability.Exporter `default:"" split_words:"true"`
-	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
-	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
@@ -68,7 +72,6 @@ type Config struct {
 	EmailSenderName         string                 `split_words:"true"`
 	EmailBCC                string                 `split_words:"true"`
 	DownloadRowLimit        int64                  `default:"10000" split_words:"true"`
-	SafeSourceRefresh       bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes     int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	SecurityEngineCacheSize int                    `default:"1000" split_words:"true"`
@@ -77,8 +80,6 @@ type Config struct {
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
-	// Redis server address host:port
-	RedisURL string `default:"" split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
 	// Sink period of a buffered activity client in millis
@@ -176,6 +177,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivitySinkKafkaBrokers,
 				conf.ActivitySinkKafkaTopic,
 				logger,
+				"runtime-server",
+				cliCfg.Version.String(),
 			)
 
 			// Create ctx that cancels on termination signals
@@ -190,7 +193,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
-				SafeSourceRefresh:            conf.SafeSourceRefresh,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,

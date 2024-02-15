@@ -39,6 +39,8 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		return err
 	}
 
+	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
+
 	// we first ingest data in a temporary table in the main db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
 	// whether table goes in main db or in separate table specific db
@@ -61,16 +63,18 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		if err != nil {
 			return err
 		}
-		defer res.Close()
 
-		res.Next()
 		var localDB, localSchema string
-		if err := res.Scan(&localDB, &localSchema); err != nil {
-			return err
+		for res.Next() {
+			if err := res.Scan(&localDB, &localSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
 		}
+		_ = res.Close()
 
 		// get token
-		token := config["token"]
+		token, _ := config["token"].(string)
 		if token == "" && config["allow_host_access"].(bool) {
 			token = os.Getenv("motherduck_token")
 		}

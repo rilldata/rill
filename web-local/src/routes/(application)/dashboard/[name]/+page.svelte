@@ -25,10 +25,12 @@
 
   const queryClient = useQueryClient();
 
+  const { readOnly } = featureFlags;
+
   $: metricViewName = $page.params.name;
   $: filePath = getFilePathFromNameAndType(
     metricViewName,
-    EntityType.MetricsDefinition
+    EntityType.MetricsDefinition,
   );
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
@@ -47,14 +49,14 @@
     queryClient,
     $runtime.instanceId,
     filePath,
-    (res) => !!res?.metricsView?.state?.validSpec
+    (res) => !!res?.metricsView?.state?.validSpec,
   );
   let showErrorPage = false;
   $: if (metricViewName) {
     showErrorPage = false;
     if ($resourceStatusStore.status === ResourceStatus.Errored) {
       // When the catalog entry doesn't exist, the dashboard config is invalid
-      if ($featureFlags.readOnly) {
+      if ($readOnly) {
         throw error(400, "Invalid dashboard");
       }
 
@@ -71,7 +73,7 @@
     } else if ($resourceStatusStore.status === ResourceStatus.Idle) {
       // Redirect to the `/edit` page if no measures are defined
       if (
-        !$featureFlags.readOnly &&
+        !$readOnly &&
         !$resourceStatusStore.resource?.metricsView?.state?.validSpec?.measures
           ?.length
       ) {
@@ -94,17 +96,19 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <StateManagersProvider metricsViewName={metricViewName} slot="body">
+    <svelte:fragment slot="body">
       {#key metricViewName}
-        <DashboardStateProvider {metricViewName}>
-          <DashboardURLStateProvider {metricViewName}>
-            <DashboardThemeProvider>
-              <Dashboard {metricViewName} />
-            </DashboardThemeProvider>
-          </DashboardURLStateProvider>
-        </DashboardStateProvider>
+        <StateManagersProvider metricsViewName={metricViewName}>
+          <DashboardStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
+              <DashboardThemeProvider>
+                <Dashboard {metricViewName} />
+              </DashboardThemeProvider>
+            </DashboardURLStateProvider>
+          </DashboardStateProvider>
+        </StateManagersProvider>
       {/key}
-    </StateManagersProvider>
+    </svelte:fragment>
   </WorkspaceContainer>
 {:else if $resourceStatusStore.status === ResourceStatus.Busy}
   <WorkspaceContainer

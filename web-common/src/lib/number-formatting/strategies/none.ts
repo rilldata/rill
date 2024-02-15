@@ -1,6 +1,5 @@
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 import {
-  FormatterOptionsCommon,
   NumberParts,
   Formatter,
   NumberKind,
@@ -9,15 +8,10 @@ import {
 import { numStrToParts } from "../utils/number-parts-utils";
 
 export class NonFormatter implements Formatter {
-  options: FormatterOptionsCommon & FormatterOptionsNoneStrategy;
-  initialSample: number[];
+  options: FormatterOptionsNoneStrategy;
 
-  constructor(
-    sample: number[],
-    options: FormatterOptionsCommon & FormatterOptionsNoneStrategy
-  ) {
+  constructor(options: FormatterOptionsNoneStrategy) {
     this.options = options;
-    this.initialSample = sample;
   }
 
   stringFormat(x: number): string {
@@ -25,9 +19,8 @@ export class NonFormatter implements Formatter {
   }
 
   partsFormat(x: number): NumberParts {
-    let numParts;
+    let numParts: NumberParts;
 
-    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
     const isPercent = this.options.numberKind === NumberKind.PERCENT;
 
     if (isPercent) x = 100 * x;
@@ -48,9 +41,12 @@ export class NonFormatter implements Formatter {
       numParts.suffix = numParts.suffix.replace("E", "e");
     }
 
-    if (isCurrency) {
-      numParts.dollar = "$";
+    if (this.options.numberKind === NumberKind.DOLLAR) {
+      numParts.currencySymbol = "$";
+    } else if (this.options.numberKind === NumberKind.EURO) {
+      numParts.currencySymbol = "€";
     }
+
     if (isPercent) {
       numParts.percent = "%";
     }

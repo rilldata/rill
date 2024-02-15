@@ -1,15 +1,25 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
+import {
+  type ContextColWidths,
+  contextColWidthDefaults,
+} from "../../stores/metrics-explorer-entity";
 import type { DashboardMutables } from "./types";
 
-export const setContextColumn = (
-  { dashboard }: DashboardMutables,
+export const CONTEXT_COL_MAX_WIDTH = 100;
 
-  contextColumn: LeaderboardContextColumn
+export const setContextColumn = (
+  { dashboard, persistentDashboardStore }: DashboardMutables,
+
+  contextColumn: LeaderboardContextColumn,
 ) => {
   const initialSort = sortTypeForContextColumnType(
-    dashboard.leaderboardContextColumn
+    dashboard.leaderboardContextColumn,
   );
+
+  // reset context column width to default when changing context column
+  resetAllContextColumnWidths(dashboard.contextColumnWidths);
+
   switch (contextColumn) {
     case LeaderboardContextColumn.DELTA_ABSOLUTE:
     case LeaderboardContextColumn.DELTA_PERCENT: {
@@ -30,7 +40,35 @@ export const setContextColumn = (
   // the sort type to match the new context column
   if (dashboard.dashboardSortType === initialSort) {
     dashboard.dashboardSortType = sortTypeForContextColumnType(contextColumn);
+    persistentDashboardStore.updateDashboardSortType(
+      dashboard.dashboardSortType,
+    );
   }
+};
+
+export const resetAllContextColumnWidths = (
+  contextColumnWidths: ContextColWidths,
+) => {
+  for (const contextColumn in contextColumnWidths) {
+    contextColumnWidths[contextColumn as LeaderboardContextColumn] =
+      contextColWidthDefaults[contextColumn as LeaderboardContextColumn];
+  }
+};
+
+/**
+ * Observe this width value, updating the overall width of
+ * the context column if the given width is larger than the
+ * current width.
+ */
+export const observeContextColumnWidth = (
+  { dashboard }: DashboardMutables,
+  contextColumn: LeaderboardContextColumn,
+  width: number,
+) => {
+  dashboard.contextColumnWidths[contextColumn] = Math.min(
+    Math.max(width, dashboard.contextColumnWidths[contextColumn]),
+    CONTEXT_COL_MAX_WIDTH,
+  );
 };
 
 export const contextColActions = {
@@ -39,4 +77,11 @@ export const contextColActions = {
    * as well as updating to sort by that context column.
    */
   setContextColumn,
+
+  /**
+   * Observe this width value, updating the overall width of
+   * the context column if the given width is larger than the
+   * current width.
+   */
+  observeContextColumnWidth,
 };

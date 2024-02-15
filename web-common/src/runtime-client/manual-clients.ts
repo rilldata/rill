@@ -25,7 +25,7 @@ export const runtimeServiceGetConfig =
 export const runtimeServiceFileUpload = async (
   instanceId: string,
   filePath: string,
-  formData: FormData
+  formData: FormData,
 ) => {
   return httpClient({
     url: `/v1/instances/${instanceId}/files/upload/-/${filePath}`,

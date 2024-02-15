@@ -12,7 +12,7 @@ export const visibleDimensions = ({
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
   const dimensions = metricsSpecQueryResult.data?.dimensions?.filter(
-    (d) => d.name && dashboard.visibleDimensionKeys.has(d.name)
+    (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
   );
   return dimensions === undefined ? [] : dimensions;
 };
@@ -24,7 +24,7 @@ export const dimensionTableDimName = ({
 };
 
 export const dimensionTableColumnName = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): ((name: string) => string) => {
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
@@ -33,31 +33,37 @@ export const dimensionTableColumnName = (
 };
 
 export const getDimensionByName = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
   return (name: string) => {
     return allDimensions(dashData)?.find(
-      (dimension) => dimension.name === name
+      (dimension) => dimension.name === name,
     );
   };
 };
 
 export const getDimensionDisplayName = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): ((name: string) => string) => {
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
-    return dim?.label || name;
+    return (dim?.label?.length ? dim?.label : dim?.name) ?? name;
   };
 };
 
 export const getDimensionDescription = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): ((name: string) => string) => {
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
     return dim?.description || "";
   };
+};
+
+export const comparisonDimension = (dashData: DashboardDataSources) => {
+  const dimName = dashData.dashboard.selectedComparisonDimension;
+  if (!dimName) return undefined;
+  return getDimensionByName(dashData)(dimName);
 };
 
 export const dimensionSelectors = {
@@ -86,6 +92,12 @@ export const dimensionSelectors = {
    * given its "key" name. Returns an empty string if the dimension has no description.
    */
   getDimensionDescription,
+
+  /**
+   * Gets the dimension that is currently being compared.
+   * Returns undefined otherwise.
+   */
+  comparisonDimension,
 
   /**
    * Gets the name of the dimension that is currently selected in the dimension table.

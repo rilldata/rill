@@ -333,6 +333,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Alert:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetAlert()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Alert",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Alert",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetAlert()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Alert",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *Resource_PullTrigger:
 		if v == nil {
 			err := ResourceValidationError{
@@ -2556,6 +2597,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for WatermarkExpression
+
 	for idx, item := range m.GetDimensions() {
 		_, _ = idx, item
 
@@ -3956,6 +3999,940 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ReportExecutionValidationError{}
+
+// Validate checks the field values on Alert with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Alert) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Alert with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in AlertMultiError, or nil if none found.
+func (m *Alert) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Alert) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return AlertMultiError(errors)
+	}
+
+	return nil
+}
+
+// AlertMultiError is an error wrapping multiple validation errors returned by
+// Alert.ValidateAll() if the designated constraints aren't met.
+type AlertMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AlertMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AlertMultiError) AllErrors() []error { return m }
+
+// AlertValidationError is the validation error returned by Alert.Validate if
+// the designated constraints aren't met.
+type AlertValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AlertValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AlertValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AlertValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AlertValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AlertValidationError) ErrorName() string { return "AlertValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AlertValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAlert.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AlertValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AlertValidationError{}
+
+// Validate checks the field values on AlertSpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AlertSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AlertSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AlertSpecMultiError, or nil
+// if none found.
+func (m *AlertSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AlertSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Trigger
+
+	// no validation rules for Title
+
+	if all {
+		switch v := interface{}(m.GetRefreshSchedule()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertSpecValidationError{
+					field:  "RefreshSchedule",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertSpecValidationError{
+					field:  "RefreshSchedule",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRefreshSchedule()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertSpecValidationError{
+				field:  "RefreshSchedule",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for WatermarkInherit
+
+	// no validation rules for IntervalsIsoDuration
+
+	// no validation rules for IntervalsLimit
+
+	// no validation rules for IntervalsCheckUnclosed
+
+	// no validation rules for TimeoutSeconds
+
+	// no validation rules for QueryName
+
+	// no validation rules for QueryArgsJson
+
+	// no validation rules for EmailOnRecover
+
+	// no validation rules for EmailOnFail
+
+	// no validation rules for EmailOnError
+
+	// no validation rules for EmailRenotify
+
+	// no validation rules for EmailRenotifyAfterSeconds
+
+	// no validation rules for Annotations
+
+	switch v := m.QueryFor.(type) {
+	case *AlertSpec_QueryForUserId:
+		if v == nil {
+			err := AlertSpecValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserId
+	case *AlertSpec_QueryForUserEmail:
+		if v == nil {
+			err := AlertSpecValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserEmail
+	case *AlertSpec_QueryForAttributes:
+		if v == nil {
+			err := AlertSpecValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetQueryForAttributes()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AlertSpecValidationError{
+						field:  "QueryForAttributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AlertSpecValidationError{
+						field:  "QueryForAttributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetQueryForAttributes()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AlertSpecValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return AlertSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// AlertSpecMultiError is an error wrapping multiple validation errors returned
+// by AlertSpec.ValidateAll() if the designated constraints aren't met.
+type AlertSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AlertSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AlertSpecMultiError) AllErrors() []error { return m }
+
+// AlertSpecValidationError is the validation error returned by
+// AlertSpec.Validate if the designated constraints aren't met.
+type AlertSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AlertSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AlertSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AlertSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AlertSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AlertSpecValidationError) ErrorName() string { return "AlertSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AlertSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAlertSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AlertSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AlertSpecValidationError{}
+
+// Validate checks the field values on AlertState with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AlertState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AlertState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AlertStateMultiError, or
+// nil if none found.
+func (m *AlertState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AlertState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SpecHash
+
+	// no validation rules for RefsHash
+
+	if all {
+		switch v := interface{}(m.GetNextRunOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertStateValidationError{
+					field:  "NextRunOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertStateValidationError{
+					field:  "NextRunOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetNextRunOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertStateValidationError{
+				field:  "NextRunOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetCurrentExecution()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertStateValidationError{
+					field:  "CurrentExecution",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertStateValidationError{
+					field:  "CurrentExecution",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCurrentExecution()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertStateValidationError{
+				field:  "CurrentExecution",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetExecutionHistory() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AlertStateValidationError{
+						field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AlertStateValidationError{
+						field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AlertStateValidationError{
+					field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for ExecutionCount
+
+	if len(errors) > 0 {
+		return AlertStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// AlertStateMultiError is an error wrapping multiple validation errors
+// returned by AlertState.ValidateAll() if the designated constraints aren't met.
+type AlertStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AlertStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AlertStateMultiError) AllErrors() []error { return m }
+
+// AlertStateValidationError is the validation error returned by
+// AlertState.Validate if the designated constraints aren't met.
+type AlertStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AlertStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AlertStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AlertStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AlertStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AlertStateValidationError) ErrorName() string { return "AlertStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AlertStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAlertState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AlertStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AlertStateValidationError{}
+
+// Validate checks the field values on AlertExecution with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AlertExecution) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AlertExecution with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AlertExecutionMultiError,
+// or nil if none found.
+func (m *AlertExecution) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AlertExecution) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Adhoc
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertExecutionValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for SentEmails
+
+	if all {
+		switch v := interface{}(m.GetExecutionTime()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExecutionTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertExecutionValidationError{
+				field:  "ExecutionTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetStartedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStartedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertExecutionValidationError{
+				field:  "StartedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetFinishedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertExecutionValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFinishedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertExecutionValidationError{
+				field:  "FinishedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return AlertExecutionMultiError(errors)
+	}
+
+	return nil
+}
+
+// AlertExecutionMultiError is an error wrapping multiple validation errors
+// returned by AlertExecution.ValidateAll() if the designated constraints
+// aren't met.
+type AlertExecutionMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AlertExecutionMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AlertExecutionMultiError) AllErrors() []error { return m }
+
+// AlertExecutionValidationError is the validation error returned by
+// AlertExecution.Validate if the designated constraints aren't met.
+type AlertExecutionValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AlertExecutionValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AlertExecutionValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AlertExecutionValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AlertExecutionValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AlertExecutionValidationError) ErrorName() string { return "AlertExecutionValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AlertExecutionValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAlertExecution.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AlertExecutionValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AlertExecutionValidationError{}
+
+// Validate checks the field values on AssertionResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AssertionResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AssertionResult with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AssertionResultMultiError, or nil if none found.
+func (m *AssertionResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AssertionResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Status
+
+	if all {
+		switch v := interface{}(m.GetFailRow()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AssertionResultValidationError{
+					field:  "FailRow",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AssertionResultValidationError{
+					field:  "FailRow",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFailRow()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AssertionResultValidationError{
+				field:  "FailRow",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for ErrorMessage
+
+	if len(errors) > 0 {
+		return AssertionResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// AssertionResultMultiError is an error wrapping multiple validation errors
+// returned by AssertionResult.ValidateAll() if the designated constraints
+// aren't met.
+type AssertionResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AssertionResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AssertionResultMultiError) AllErrors() []error { return m }
+
+// AssertionResultValidationError is the validation error returned by
+// AssertionResult.Validate if the designated constraints aren't met.
+type AssertionResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AssertionResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AssertionResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AssertionResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AssertionResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AssertionResultValidationError) ErrorName() string { return "AssertionResultValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AssertionResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAssertionResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AssertionResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AssertionResultValidationError{}
 
 // Validate checks the field values on PullTrigger with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -5655,6 +6632,10 @@ func (m *Schedule) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for RefUpdate
+
+	// no validation rules for Disable
+
 	// no validation rules for Cron
 
 	// no validation rules for TickerSeconds
@@ -6306,6 +7287,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Column
+
+	// no validation rules for Expression
 
 	// no validation rules for Label
 

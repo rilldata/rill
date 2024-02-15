@@ -2,9 +2,12 @@ package duckdb
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
@@ -35,6 +38,12 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	sinkCfg, err := parseSinkProperties(sinkProps)
 	if err != nil {
 		return err
+	}
+
+	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
+
+	if srcCfg.Database != "" { // query to be run against an external DB
+		return t.transferFromExternalDB(ctx, srcCfg, sinkCfg, opts)
 	}
 
 	// We can't just pass the SQL statement to DuckDB outright.
@@ -90,14 +99,64 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 
 	// If the path is a local file reference, rewrite to a safe and repo-relative path.
 	if uri.Scheme == "" && uri.Host == "" {
-		sql, err := rewriteLocalPaths(ast, opts.RepoRoot, opts.AllowHostAccess)
+		rewrittenSQL, err := rewriteLocalPaths(ast, opts.RepoRoot, opts.AllowHostAccess)
 		if err != nil {
 			return fmt.Errorf("invalid local path: %w", err)
 		}
-		srcCfg.SQL = sql
+		srcCfg.SQL = rewrittenSQL
 	}
 
 	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL)
+}
+
+func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties, opts *drivers.TransferOptions) error {
+	return t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
+		if err != nil {
+			return err
+		}
+
+		var localDB, localSchema string
+		for res.Next() {
+			if err := res.Scan(&localDB, &localSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+
+		// duckdb considers everything before first . as db name
+		// alternative solution can be to query `show databases()` before and after to identify db name
+		dbName, _, _ := strings.Cut(filepath.Base(srcProps.Database), ".")
+		if dbName == "main" {
+			return fmt.Errorf("`main` is a reserved db name")
+		}
+
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeSQLName(dbName))}); err != nil {
+			return fmt.Errorf("failed to attach db %q: %w", srcProps.Database, err)
+		}
+
+		defer func() {
+			if err = t.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s;", safeSQLName(dbName))}); err != nil {
+				t.logger.Error("failed to detach db", zap.Error(err))
+			}
+		}()
+
+		if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(dbName))}); err != nil {
+			return err
+		}
+
+		defer func() { // revert back to localdb
+			if err = t.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))}); err != nil {
+				t.logger.Error("failed to switch to local database", zap.Error(err))
+			}
+		}()
+
+		userQuery := strings.TrimSpace(srcProps.SQL)
+		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeName(sinkProps.Table), userQuery)
+		return t.to.Exec(ctx, &drivers.Statement{Query: query})
+	})
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,

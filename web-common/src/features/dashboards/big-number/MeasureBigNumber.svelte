@@ -10,7 +10,10 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import type {
+    TimeComparisonOption,
+    TimeRangePreset,
+  } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import {
@@ -24,13 +27,20 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-  export let comparisonOption: TimeComparisonOption | undefined = undefined;
+  export let comparisonOption:
+    | TimeComparisonOption
+    | TimeRangePreset
+    | undefined = undefined;
   export let comparisonValue: number | undefined = undefined;
-  export let comparisonPercChange: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+
+  $: comparisonPercChange =
+    comparisonValue && value !== undefined && value !== null
+      ? (value - comparisonValue) / comparisonValue
+      : undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -40,7 +50,7 @@
   // over the number. If not present, we'll use the string "no data"
   $: measureValueFormatterUnabridged = createMeasureValueFormatter<null>(
     measure,
-    true
+    true,
   );
 
   $: name = measure?.label || measure?.expression;
@@ -62,7 +72,7 @@
   $: isComparisonPositive = diff >= 0;
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
-    diff
+    diff,
   )}`;
 
   /** when the measure is a percentage, we don't show a percentage change. */
@@ -106,7 +116,7 @@
     >
       <h2
         style:overflow-wrap="anywhere"
-        class="line-clamp-2"
+        class="line-clamp-2 ui-copy-primary font-semibold"
         style:font-size={withTimeseries ? "" : "0.8rem"}
       >
         {name}
@@ -153,8 +163,8 @@
                     on:mouseenter={() =>
                       (hoveredValue = numberPartsToString(
                         formatMeasurePercentageDifference(
-                          comparisonPercChange ?? 0
-                        )
+                          comparisonPercChange ?? 0,
+                        ),
                       ))}
                     on:mouseleave={() =>
                       (hoveredValue =
@@ -202,7 +212,8 @@
       --gradient_white-slate50,
       linear-gradient(180deg, #fff 0%, #f8fafc 100%)
     );
-    box-shadow: 0px 4px 6px 0px rgba(15, 23, 42, 0.09),
+    box-shadow:
+      0px 4px 6px 0px rgba(15, 23, 42, 0.09),
       0px 0px 0px 1px rgba(15, 23, 42, 0.06),
       0px 1px 3px 0px rgba(15, 23, 42, 0.04),
       0px 2px 3px 0px rgba(15, 23, 42, 0.03);

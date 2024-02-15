@@ -15,6 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// maxProjectFiles is the maximum number of files that can be in a project directory.
+// It corresponds to the file watcher limit in runtime/drivers/file/repo.go.
+const maxProjectFiles = 1000
+
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olapDriver string
@@ -28,7 +32,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var logFormat string
-	var variables []string
+	var env []string
+	var vars []string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -36,6 +41,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ch.Config
+
 			var projectPath string
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -81,14 +87,34 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// Check that projectPath doesn't have an excessive number of files
+			n, err := countFilesInDirectory(projectPath)
+			if err != nil {
+				return err
+			}
+			if n > maxProjectFiles {
+				ch.Printer.PrintlnError(fmt.Sprintf("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.", maxProjectFiles, n))
+				return nil
+			}
+
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
+			// Backwards compatibility for --env (see comment on the flag definition for details)
+			environment := "dev"
+			for _, v := range env {
+				if strings.Contains(v, "=") {
+					vars = append(vars, v)
+				} else {
+					environment = v
+				}
+			}
+
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, environment, olapDriver, olapDSN, projectPath, parsedLogFormat, vars, client)
 			if err != nil {
 				return err
 			}
@@ -120,7 +146,36 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
-	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+
+	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
+	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
+	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
 
 	return startCmd
+}
+
+func countFilesInDirectory(path string) (int, error) {
+	var fileCount int
+
+	if path == "" {
+		path = "."
+	}
+
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			fileCount++
+		}
+		return nil
+	})
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	return fileCount, nil
 }

@@ -2,16 +2,63 @@ package queries_test
 
 import (
 	"context"
-	// "fmt"
+	"fmt"
+
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.RunContainer(ctx,
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Run("TestMetricsViewsTimeseries_month_grain", func(t *testing.T) { TestMetricsViewsTimeseries_month_grain(t) })
+	t.Run("TestMetricsViewsTimeseries_month_grain_IST", func(t *testing.T) { TestMetricsViewsTimeseries_month_grain_IST(t) })
+	t.Run("TestMetricsViewsTimeseries_quarter_grain_IST", func(t *testing.T) { TestMetricsViewsTimeseries_quarter_grain_IST(t) })
+	t.Run("TestMetricsViewsTimeseries_year_grain_IST", func(t *testing.T) { TestMetricsViewsTimeseries_year_grain_IST(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_having_clause", func(t *testing.T) { TestMetricsViewTimeSeries_having_clause(t) })
+}
 
 func TestMetricsViewsTimeseries_month_grain(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
@@ -300,14 +347,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_day")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_day"))},
+		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-11-03T04:00:00.000Z"),
@@ -474,14 +517,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_hour")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_hour"))},
+		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-11-05T03:00:00.000Z"),
@@ -591,14 +630,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_day")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_day"))},
+		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-03-10T05:00:00.000Z"),
@@ -673,14 +708,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_hour")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_hour"))},
+		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-03-12T04:00:00.000Z"),
@@ -709,6 +740,68 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+}
+
+func TestMetricsViewTimeSeries_having_clause(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_gaps"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"sum_imps"},
+		MetricsViewName: "timeseries_gaps",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2019-01-01T00:00:00Z"),
+		TimeEnd:         parseTime(t, "2019-01-07T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_LTE,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "sum_imps",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3),
+							},
+						},
+					},
+				},
+			},
+		},
+		Limit: 250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+	require.Len(t, rows, 6)
+	i := 0
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-03T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-04T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-05T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-06T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
 }
 
 func toStructpbValue(t *testing.T, v any) *structpb.Value {

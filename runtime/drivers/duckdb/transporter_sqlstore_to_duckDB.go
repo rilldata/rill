@@ -45,6 +45,8 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		return err
 	}
 
+	s.logger = s.logger.With(zap.String("source", sinkCfg.Table))
+
 	rowIter, err := s.from.Query(ctx, srcProps)
 	if err != nil {
 		if !errors.Is(err, drivers.ErrNotImplemented) {
@@ -65,9 +67,9 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	defer iter.Close()
 
 	start := time.Now()
-	s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", sinkCfg.Table), observability.ZapCtx(ctx))
+	s.logger.Debug("started transfer from local file to duckdb", zap.String("sink_table", sinkCfg.Table), observability.ZapCtx(ctx))
 	defer func() {
-		s.logger.Info("transfer finished",
+		s.logger.Debug("transfer finished",
 			zap.Duration("duration", time.Since(start)),
 			zap.Bool("success", transferErr == nil),
 			observability.ZapCtx(ctx))
@@ -118,7 +120,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	}
 
 	if total, ok := iter.Size(drivers.ProgressUnitRecord); ok {
-		s.logger.Info("records to be ingested", zap.Uint64("rows", total))
+		s.logger.Debug("records to be ingested", zap.Uint64("rows", total))
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
 	// we first ingest data in a temporary table in the main db
@@ -126,7 +128,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	// whether table goes in main db or in separate table specific db
 	tmpTable := fmt.Sprintf("__%s_tmp_postgres", table)
 	// generate create table query
-	qry, err := createTableQuery(schema, tmpTable)
+	qry, err := CreateTableQuery(schema, tmpTable)
 	if err != nil {
 		return err
 	}
@@ -200,7 +202,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 }
 
-func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
+func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
 	for i, s := range schema.Fields {
 		i++

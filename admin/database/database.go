@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -66,6 +65,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
+	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -187,6 +187,7 @@ type DB interface {
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -255,29 +256,19 @@ type Project struct {
 	Description          string
 	Public               bool
 	Region               string
-	GithubURL            *string   `db:"github_url"`
-	GithubInstallationID *int64    `db:"github_installation_id"`
-	Subpath              string    `db:"subpath"`
-	ProdBranch           string    `db:"prod_branch"`
-	ProdVariables        Variables `db:"prod_variables"`
-	ProdOLAPDriver       string    `db:"prod_olap_driver"`
-	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
-	ProdSlots            int       `db:"prod_slots"`
-	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
-}
-
-// Variables implements JSON SQL encoding of variables in Project.
-type Variables map[string]string
-
-func (e *Variables) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("failed type assertion to []byte")
-	}
-	return json.Unmarshal(b, &e)
+	GithubURL            *string           `db:"github_url"`
+	GithubInstallationID *int64            `db:"github_installation_id"`
+	Subpath              string            `db:"subpath"`
+	ProdBranch           string            `db:"prod_branch"`
+	ProdVariables        map[string]string `db:"prod_variables"`
+	ProdOLAPDriver       string            `db:"prod_olap_driver"`
+	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
+	ProdSlots            int               `db:"prod_slots"`
+	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID     *string           `db:"prod_deployment_id"`
+	Annotations          map[string]string `db:"annotations"`
+	CreatedOn            time.Time         `db:"created_on"`
+	UpdatedOn            time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -311,6 +302,7 @@ type UpdateProjectOptions struct {
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	Region               string
+	Annotations          map[string]string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment
@@ -564,6 +556,8 @@ type ProjectRole struct {
 	ManageProjectMembers bool `db:"manage_project_members"`
 	CreateReports        bool `db:"create_reports"`
 	ManageReports        bool `db:"manage_reports"`
+	CreateAlerts         bool `db:"create_alerts"`
+	ManageAlerts         bool `db:"manage_alerts"`
 }
 
 // Member is a convenience type used for display-friendly representation of an org or project member.

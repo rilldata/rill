@@ -92,6 +92,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Region:               proj.Region,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
+		Annotations:          proj.Annotations,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, depl)
@@ -135,6 +136,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	impactsDeployments := (requiresReset ||
 		(proj.Name != opts.Name) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
+		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
@@ -269,6 +271,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
+		Annotations:          proj.Annotations,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, newDepl)

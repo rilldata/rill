@@ -297,6 +297,8 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
@@ -1156,6 +1158,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
@@ -1712,6 +1716,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 	// no validation rules for Variables
 
 	// no validation rules for Annotations
+
+	if m.Environment != nil {
+		// no validation rules for Environment
+	}
 
 	if m.OlapConnector != nil {
 		// no validation rules for OlapConnector
@@ -4315,6 +4323,8 @@ func (m *GetLogsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Level
+
 	if len(errors) > 0 {
 		return GetLogsRequestMultiError(errors)
 	}
@@ -4563,6 +4573,8 @@ func (m *WatchLogsRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchLogsRequestMultiError(errors)
@@ -5042,6 +5054,8 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 	// no validation rules for Kind
 
 	// no validation rules for Replay
+
+	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)

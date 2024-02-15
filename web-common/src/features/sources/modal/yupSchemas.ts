@@ -13,7 +13,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
         aws_region: yup.string(),
@@ -28,7 +28,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
       });
@@ -42,18 +42,19 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
       });
-    case "motherduck":
+    case "duckdb":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
+        db: yup.string().required("db is required"),
         sourceName: yup
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
       });
@@ -65,7 +66,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
       });
@@ -76,7 +77,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
         project_id: yup.string().required("project_id is required"),
@@ -87,7 +88,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^azure:\/\//,
-            "Must be an Azure URI (e.g. azure://container/path)"
+            "Must be an Azure URI (e.g. azure://container/path)",
           )
           .required("Path is required"),
         account: yup.string(),
@@ -99,7 +100,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
         database_url: yup.string(),
@@ -111,10 +112,15 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
         dsn: yup.string(),
+      });
+    case "salesforce":
+      return yup.object().shape({
+        soql: yup.string().required("soql is required"),
+        sobject: yup.string().required("sobject is required"),
       });
     case "athena":
       return yup.object().shape({
@@ -123,11 +129,23 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .string()
           .matches(
             /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
         output_location: yup.string(),
         workgroup: yup.string(),
+      });
+    case "mysql":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+          )
+          .required("Source name is required"),
+        dsn: yup.string(),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);

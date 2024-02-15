@@ -1,6 +1,8 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
 
   export let label: string;
   export let href: string;
@@ -20,27 +22,30 @@
         : "text-gray-500 hover:text-gray-600"}>{label}</a
     >
     {#if menuOptions}
-      <WithSelectMenu
-        minWidth="0px"
-        distance={4}
-        options={menuOptions}
-        selection={{
-          key: menuKey,
-          main: label,
-        }}
-        overflowFlipY={false}
-        on:select={({ detail: { key } }) => onSelectMenuOption(key)}
-        let:toggleMenu
-      >
-        <button
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger
           class="flex flex-col justify-center items-center transition-transform hover:translate-y-[2px] {isCurrentPage
             ? 'text-gray-800'
             : 'text-gray-500'}"
-          on:click={toggleMenu}
         >
           <CaretDownIcon size="14px" />
-        </button>
-      </WithSelectMenu>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start">
+          {#each menuOptions as option}
+            <DropdownMenu.Item on:click={() => onSelectMenuOption(option.key)}>
+              {#if option.key === menuKey}
+                <!-- If currently, selected show a check mark and bold the text -->
+                <Check className="mr-2" />
+                <span class="font-bold">{option.main}</span>
+              {:else}
+                <!-- If not selected, show an invisible check mark and normal text -->
+                <Spacer className="mr-2" />
+                <span>{option.main}</span>
+              {/if}
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
     {/if}
   </div>
 </li>

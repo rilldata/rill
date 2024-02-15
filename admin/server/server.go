@@ -50,8 +50,8 @@ type Options struct {
 	GRPCPort               int
 	ExternalURL            string
 	FrontendURL            string
-	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
+	SessionKeyPairs        [][]byte
 	ServePrometheus        bool
 	AuthDomain             string
 	AuthClientID           string
@@ -264,7 +264,9 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	groupNames := make([]string, len(groups))
+
+	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
+	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
 	}
@@ -398,10 +400,10 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (u *externalURLs) reportOpen(org, project, projectSubpath string) string {
-	res := urlutil.MustJoinURL(u.frontend, org, project)
-	res += projectSubpath // Need to do an unsafe concat to provide flexibility, e.g. to avoid escaping '?'
-	return res
+func (u *externalURLs) reportOpen(org, project, report string, executionTime time.Time) string {
+	reportURL := urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "open")
+	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
+	return reportURL
 }
 
 func (u *externalURLs) reportExport(org, project, report string) string {
@@ -410,4 +412,12 @@ func (u *externalURLs) reportExport(org, project, report string) string {
 
 func (u *externalURLs) reportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
+}
+
+func (u *externalURLs) alertOpen(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) alertEdit(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
 }

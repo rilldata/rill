@@ -1,11 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import Menu from "@rilldata/web-common/components/menu-v2/Menu.svelte";
-  import MenuButton from "@rilldata/web-common/components/menu-v2/MenuButton.svelte";
-  import MenuItem from "@rilldata/web-common/components/menu-v2/MenuItem.svelte";
-  import MenuItems from "@rilldata/web-common/components/menu-v2/MenuItems.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import EditScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/EditScheduledReportDialog.svelte";
@@ -33,7 +30,7 @@
   $: reportQuery = useReport($runtime.instanceId, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(
     $runtime.instanceId,
-    report
+    report,
   );
 
   // Get dashboard
@@ -48,7 +45,7 @@
       $reportQuery.data.resource.report.spec.refreshSchedule.cron,
       {
         verbose: true,
-      }
+      },
     );
 
   // Actions
@@ -67,7 +64,7 @@
       name: $reportQuery.data.resource.meta.name.name,
     });
     queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
     );
     goto(`/${organization}/${project}/-/reports`);
   }
@@ -95,7 +92,7 @@
         <!-- Format -->
         <span>
           {exportFormatToPrettyString(
-            $reportQuery.data.resource.report.spec.exportFormat
+            $reportQuery.data.resource.report.spec.exportFormat,
           )} •
         </span>
         <!-- Limit -->
@@ -112,22 +109,21 @@
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />
         {#if !$isReportCreatedByCode.data}
-          <Menu>
-            <MenuButton>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
               <IconButton>
                 <ThreeDot size="16px" />
               </IconButton>
-            </MenuButton>
-            <MenuItems>
-              <MenuItem as="button" on:click={handleEditReport}
-                >Edit report</MenuItem
-              >
-              <!-- TODO: add an "are you sure?" confirmation dialog -->
-              <MenuItem as="button" on:click={handleDeleteReport}
-                >Delete report</MenuItem
-              >
-            </MenuItems>
-          </Menu>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start">
+              <DropdownMenu.Item on:click={handleEditReport}>
+                Edit report
+              </DropdownMenu.Item>
+              <DropdownMenu.Item on:click={handleDeleteReport}>
+                Delete report
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         {/if}
       </div>
     </div>
@@ -158,7 +154,7 @@
         <MetadataValue>
           {formatNextRunOn(
             $reportQuery.data.resource.report.state.nextRunOn,
-            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone
+            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
           )}
         </MetadataValue>
       </div>

@@ -298,6 +298,14 @@ service AdminService {
     };
   }
 
+  // SudoUpdateAnnotations endpoint for superusers to update project annotations
+  rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/projects/annotations",
+      body: "*"
+    };
+  }
+
   // ListService returns all the services per organization
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
@@ -384,7 +392,18 @@ service AdminService {
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
-    option (google.api.http) = {get: "/v1/projects/{project_id}/reports/meta"};
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/reports/meta",
+      body: "*"
+    };
+  }
+
+  // GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+  rpc GetAlertMeta(GetAlertMetaRequest) returns (GetAlertMetaResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/alerts/meta",
+      body: "*"
+    };
   }
 
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
@@ -429,6 +448,50 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/reports/-/yaml",
       body: "*"
+    };
+  }
+
+  // CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+  rpc CreateAlert(CreateAlertRequest) returns (CreateAlertResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/alerts",
+      body: "*"
+    };
+  }
+
+  // EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+  rpc EditAlert(EditAlertRequest) returns (EditAlertResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/projects/{project}/alerts/{name}",
+      body: "*"
+    };
+  }
+
+  // UnsubscribeAlert removes the calling user from a alert's recipients list
+  rpc UnsubscribeAlert(UnsubscribeAlertRequest) returns (UnsubscribeAlertResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/unsubscribe",
+      body: "*"
+    };
+  }
+
+  // DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+  rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/alerts/{name}"};
+  }
+
+  // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+  rpc GenerateAlertYAML(GenerateAlertYAMLRequest) returns (GenerateAlertYAMLResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/alerts/-/yaml",
+      body: "*"
+    };
+  }
+
+  // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+  rpc GetAlertYAML(GetAlertYAMLRequest) returns (GetAlertYAMLResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml",
     };
   }
 
@@ -516,6 +579,7 @@ message GetProjectResponse {
 
 message SearchProjectNamesRequest {
   string name_pattern = 1;
+  map<string, string> annotations = 5;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -811,6 +875,16 @@ message SudoUpdateUserQuotasResponse {
   User user = 1;
 }
 
+message SudoUpdateAnnotationsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  map<string, string> annotations = 3;
+}
+
+message SudoUpdateAnnotationsResponse {
+  Project project = 1;
+}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
@@ -1047,12 +1121,30 @@ message GetReportMetaRequest {
   string branch = 2;
   string report = 3;
   map<string, string> annotations = 4;
+  google.protobuf.Timestamp execution_time = 5;
 }
 
 message GetReportMetaResponse {
   string open_url = 1;
   string export_url = 2;
   string edit_url = 3;
+}
+
+message GetAlertMetaRequest {
+  string project_id = 1;
+  string branch = 2;
+  string alert = 3;
+  map<string, string> annotations = 4;
+  oneof query_for {
+    string query_for_user_id = 5;
+    string query_for_user_email = 6;
+  }
+}
+
+message GetAlertMetaResponse {
+  string open_url = 1;
+  string edit_url = 2;
+  google.protobuf.Struct query_for_attributes = 3;
 }
 
 message CreateReportRequest {
@@ -1107,6 +1199,63 @@ message GenerateReportYAMLRequest {
 }
 
 message GenerateReportYAMLResponse {
+  string yaml = 1;
+}
+
+message CreateAlertRequest {
+  string organization = 1;
+  string project = 2;
+  AlertOptions options = 3 [(validate.rules).message.required = true];
+}
+
+message CreateAlertResponse {
+  string name = 1;
+}
+
+message EditAlertRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+  AlertOptions options = 4 [(validate.rules).message.required = true];
+}
+
+message EditAlertResponse {
+}
+
+message UnsubscribeAlertRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message UnsubscribeAlertResponse {}
+
+message DeleteAlertRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message DeleteAlertResponse {
+}
+
+message GenerateAlertYAMLRequest {
+  string organization = 1;
+  string project = 2;
+  AlertOptions options = 3 [(validate.rules).message.required = true];
+}
+
+message GenerateAlertYAMLResponse {
+  string yaml = 1;
+}
+
+message GetAlertYAMLRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message GetAlertYAMLResponse {
   string yaml = 1;
 }
 
@@ -1178,6 +1327,7 @@ message Project {
   string prod_deployment_id = 13;
   string frontend_url = 16;
   int64 prod_ttl_seconds = 18;
+  map<string, string> annotations = 20;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }
@@ -1225,6 +1375,8 @@ message ProjectPermissions {
   bool manage_project_members = 10;
   bool create_reports = 11;
   bool manage_reports = 12;
+  bool create_alerts = 13;
+  bool manage_alerts = 14;
 }
 
 message Member {
@@ -1281,4 +1433,15 @@ message ReportOptions {
   rill.runtime.v1.ExportFormat export_format = 6;
   string open_project_subpath = 7;
   repeated string recipients = 8;
+}
+
+message AlertOptions {
+  string title = 1;
+  string interval_duration = 2;
+  string query_name = 3;
+  string query_args_json = 4;
+  string metrics_view_name = 5;
+  repeated string recipients = 6;
+  bool email_renotify = 7;
+  uint32 email_renotify_after_seconds = 8;
 }

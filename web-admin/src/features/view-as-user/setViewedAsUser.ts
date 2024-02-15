@@ -14,7 +14,7 @@ export async function setViewedAsUser(
   queryClient: QueryClient,
   organization: string,
   project: string,
-  user: V1User
+  user: V1User,
 ) {
   viewAsUserStore.set(user);
 
@@ -25,14 +25,14 @@ export async function setViewedAsUser(
         project,
         {
           userId: user.id,
-        }
+        },
       ),
       queryFn: () =>
         adminServiceGetDeploymentCredentials(organization, project, {
           userId: user.id,
         }),
     });
-  const jwt = jwtResp.jwt;
+  const jwt = jwtResp.accessToken;
 
   runtime.update((runtimeState) => {
     runtimeState.jwt = jwt;

@@ -48,7 +48,6 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
@@ -65,16 +64,12 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
-  // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
-
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
   $: editorHeight = $observedNode?.offsetHeight || 0;
 
   let latestContent = content;
-  const debounce = new Debounce();
 
   let editor: EditorView;
   let editorContainer;
@@ -97,8 +92,10 @@
   $: if ($allSourceColumns?.length) {
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
-      schema[sourceIdentifier] =
-        sourceTable.profileColumns?.map((c) => c.name) ?? [];
+      schema[sourceIdentifier] = sourceTable.profileColumns
+        ?.filter((c) => c.name !== undefined)
+        // CAST SAFETY: already filtered out undefined values
+        .map((c) => c.name as string);
     }
   }
 
@@ -107,18 +104,21 @@
   $: if ($allModelColumns?.length) {
     for (const modelTable of $allModelColumns) {
       const modelIdentifier = modelTable?.tableName;
-      schema[modelIdentifier] = modelTable.profileColumns?.map((c) => c.name);
+      schema[modelIdentifier] = modelTable.profileColumns
+        ?.filter((c) => c.name !== undefined)
+        // CAST SAFETY: already filtered out undefined values
+        ?.map((c) => c.name as string);
     }
   }
 
   function getTableNameFromFromClause(
     sql: string,
-    schema: { [table: string]: string[] }
-  ): string | null {
-    if (!sql || !schema) return null;
+    schema: { [table: string]: string[] },
+  ): string | undefined {
+    if (!sql || !schema) return undefined;
 
     const fromMatch = sql.toUpperCase().match(/\bFROM\b\s+(\w+)/);
-    const tableName = fromMatch ? fromMatch[1] : null;
+    const tableName = fromMatch ? fromMatch[1] : undefined;
 
     // Get the tableName from the schema map, so we can use the correct case
     for (const schemaTableName of Object.keys(schema)) {
@@ -127,12 +127,12 @@
       }
     }
 
-    return null;
+    return undefined;
   }
 
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    defaultTable?: string
+    defaultTable?: string,
   ) {
     return autocompletion({
       override: [
@@ -189,7 +189,7 @@
           bracketMatching(),
           closeBrackets(),
           autocompleteCompartment.of(
-            makeAutocompleteConfig(schema, defaultTable)
+            makeAutocompleteConfig(schema, defaultTable),
           ), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
@@ -209,7 +209,7 @@
                 key: "Enter",
                 run: insertNewline,
               },
-            ])
+            ]),
           ),
           Prec.highest(
             keymap.of([
@@ -217,7 +217,7 @@
                 key: "Tab",
                 run: acceptCompletion,
               },
-            ])
+            ]),
           ),
           sql({ dialect: DuckDBSQL }),
           keymap.of([indentWithTab]),
@@ -227,15 +227,10 @@
             }
             if (v.docChanged) {
               latestContent = v.state.doc.toString();
-              debounce.debounce(
-                "write",
-                () => {
-                  dispatch("write", {
-                    content: latestContent,
-                  });
-                },
-                QUERY_UPDATE_DEBOUNCE_TIMEOUT
-              );
+
+              dispatch("write", {
+                content: latestContent,
+              });
             }
           }),
         ],
@@ -265,12 +260,12 @@
 
   function updateAutocompleteSources(
     schema: { [table: string]: string[] },
-    defaultTable?: string
+    defaultTable?: string,
   ) {
     if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema, defaultTable)
+          makeAutocompleteConfig(schema, defaultTable),
         ),
       });
     }
@@ -280,7 +275,7 @@
   function underlineSelection(selections: any) {
     if (editor) {
       const effects = selections.map(({ from, to }) =>
-        addUnderline.of({ from, to })
+        addUnderline.of({ from, to }),
       );
 
       if (!editor.state.field(underlineField, false))

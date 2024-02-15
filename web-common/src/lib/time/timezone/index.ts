@@ -16,11 +16,15 @@ export function removeZoneOffset(dt: Date, iana: string) {
 }
 
 export function getLocalIANA(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const localIANA = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const zone = DateTime.local().setZone(localIANA);
+
+  if (zone.isValid) return localIANA;
+  else return getUTCIANA();
 }
 
 export function getUTCIANA(): string {
-  return "Etc/UTC";
+  return "UTC";
 }
 
 export function getTimeZoneNameFromIANA(now: Date, iana: string): string {

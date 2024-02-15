@@ -11,6 +11,7 @@ import type {
   ScaleStore,
   SimpleConfigurationStore,
 } from "./state/types";
+import { ScaleType } from "./state";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -31,16 +32,6 @@ const curves = {
   curveStep,
   curveStepExtended,
 };
-
-export function pathIsDefined(yAccessor: string) {
-  return (d) => {
-    return !(
-      d[yAccessor] === undefined ||
-      isNaN(d[yAccessor]) ||
-      d[yAccessor] === null
-    );
-  };
-}
 
 export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
@@ -88,7 +79,11 @@ interface LineGeneratorArguments {
     | ScaleTime<Date, number>
     | ((d) => number);
   curve?: string;
-  pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
+  pathDefined?: (
+    datum: object,
+    i?: number,
+    arr?: ArrayLike<unknown>,
+  ) => boolean;
 }
 
 /**
@@ -101,7 +96,7 @@ export function lineFactory(args: LineGeneratorArguments) {
     line()
       .x((d) => args.xScale(d[args.xAccessor]))
       .y((d) => args.yScale(d[yAccessor]))
-      .curve(curves[args.curve] || curveLinear)
+      .curve(args.curve ? curves[args.curve] : curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
 
@@ -116,7 +111,7 @@ export function areaFactory(args: LineGeneratorArguments) {
       .x((d) => args.xScale(d[args.xAccessor]))
       .y0(args.yScale(0))
       .y1((d) => args.yScale(d[yAccessor]))
-      .curve(curves[args.curve] || curveLinear)
+      .curve(args.curve ? curves[args.curve] : curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
 
@@ -129,8 +124,9 @@ export function getTicks(
   xOrY: string,
   scale: GraphicScale,
   axisLength: number,
-  isDate: boolean
+  scaleType: ScaleType,
 ) {
+  const isDate = scaleType === ScaleType.DATE;
   const tickCount = Math.trunc(axisLength / (xOrY === "x" ? 100 : 50));
 
   let ticks = scale.ticks(tickCount);
@@ -157,9 +153,9 @@ export function barplotPolyline(
   Y,
   separator = 1,
   closeBottom = false,
-  inflator = 1
-) {
-  if (!data?.length) return [];
+  inflator = 1,
+): string {
+  if (!data?.length) return "";
   const path = data.reduce((pointsPathString, datum, i) => {
     const low = datum[xLow];
     const high = datum[xHigh];
@@ -172,7 +168,7 @@ export function barplotPolyline(
 
     const computedHeight = Math.min(
       Y(0),
-      Y(0) * inflator - Y(count) * inflator
+      Y(0) * inflator - Y(count) * inflator,
     );
     const height = separator > 0 ? computedHeight : 0;
 
@@ -242,11 +238,11 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
           }
           const max = Math.max(
             $yScale($data[i + 1][yAccessor]),
-            $yScale($data[i][yAccessor])
+            $yScale($data[i][yAccessor]),
           );
           const min = Math.min(
             $yScale($data[i + 1][yAccessor]),
-            $yScale($data[i][yAccessor])
+            $yScale($data[i][yAccessor]),
           );
           if (isNaN(min) || isNaN(max)) return 1 / $data.length;
           return Math.abs(max - min);
@@ -285,12 +281,12 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
           // the y-ish distance travelled
           yIshDistanceTravelled,
           // the time series length / available X pixels
-          xIshDistanceTravellled
-        )
+          xIshDistanceTravellled,
+        ),
       );
 
       return value;
-    }
+    },
   );
 
   return {
@@ -308,7 +304,7 @@ export function bisectData(
   direction: "left" | "right" | "center",
   accessor: string,
   data: ArrayLike<unknown>,
-  returnPos = false
+  returnPos = false,
 ) {
   if (!data?.length) return;
   const bisect = bisector((d) => d[accessor])[direction];
@@ -320,8 +316,8 @@ export function bisectData(
 /** For a scale domain returns a formatter for axis label and super label */
 export function createTimeFormat(
   scaleDomain: [Date, Date],
-  numberOfValues: number
-): [(d: Date) => string, (d: Date) => string] {
+  numberOfValues: number,
+): [(d: Date) => string, ((d: Date) => string) | undefined] {
   const diff =
     Math.abs(scaleDomain[1]?.getTime() - scaleDomain[0]?.getTime()) / 1000;
   if (!diff) return [timeFormat("%d %b"), timeFormat("%Y")];

@@ -9,19 +9,17 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import SelectAllButton from "./SelectAllButton.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import CreateAlertButton from "../../alerts/CreateAlertButton.svelte";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
+  import SelectAllButton from "./SelectAllButton.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -44,13 +42,13 @@
         clearDimensionTableSearchString,
       },
       dimensions: { setPrimaryDimension },
+      dimensionsFilter: { toggleDimensionFilterMode },
     },
-    metricsViewName,
   } = stateManagers;
 
-  $: excludeMode = $isFilterExcludeMode(dimensionName);
+  const { adminServer, alerts } = featureFlags;
 
-  const queryClient = useQueryClient();
+  $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -86,8 +84,7 @@
     setPrimaryDimension(undefined);
   };
   function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilterMode($metricsViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 </script>
 
@@ -106,14 +103,14 @@
   </button>
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
-  <div class="flex items-center gap-x-5 cursor-pointer h-9">
+  <div class="flex items-center gap-x-1 cursor-pointer h-9">
     {#if !isRowsEmpty}
       <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div
         transition:slideRight={{ leftOffset: 8 }}
-        class="flex items-center gap-x-1"
+        class="flex items-center gap-x-2 p-1.5"
       >
         <Search
           bind:value={searchText}
@@ -126,7 +123,7 @@
       </div>
     {:else}
       <button
-        class="flex items-center gap-x-1 text-gray-700"
+        class="flex items-center gap-x-2 p-1.5 text-gray-700"
         in:fly|global={{ x: 10, duration: 300 }}
         on:click={() => (searchBarOpen = !searchBarOpen)}
       >
@@ -136,7 +133,7 @@
     {/if}
 
     <Tooltip distance={16} location="left">
-      <div class="flex items-center gap-x-1 ui-copy-icon">
+      <div class="flex items-center gap-x-1 px-1.5 ui-copy-icon">
         <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
           Exclude
         </Switch>
@@ -154,9 +151,10 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton
-      metricViewName={$metricsViewName}
-      includeScheduledReport={$featureFlags.adminServer}
-    />
+    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+
+    {#if $adminServer && $alerts}
+      <CreateAlertButton />
+    {/if}
   </div>
 </div>

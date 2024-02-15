@@ -7,6 +7,7 @@ import {
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
@@ -24,7 +25,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         query.queryKey[0] as string,
         "",
         "unknown error",
-        screenName
+        screenName,
       );
       return;
     } else {
@@ -32,14 +33,14 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         query.queryKey[0] as string,
         error.response?.status + "" ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
-        screenName
+        screenName,
       );
     }
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
       goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`
+        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
       );
       return;
     }
@@ -64,6 +65,13 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     // Special handling for some errors on the Dashboard page
     const onDashboardPage = isDashboardPage(get(page));
     if (onDashboardPage) {
+      // Let the Dashboard page handle errors for runtime queries.
+      // Individual components (e.g. a specific line chart or leaderboard) should display a localised error message.
+      // NOTE: let's start with 400 errors, but we may want to include 500-level errors too.
+      if (isRuntimeQuery(query) && error.response?.status === 400) {
+        return;
+      }
+
       // If a dashboard wasn't found, let +page.svelte handle the error.
       // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
       if (
@@ -83,12 +91,13 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     // Create a pretty message for the error page
     const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
+    // Show the error page
     errorStore.set(errorStoreState);
   };
 }
 
 function createErrorStoreStateFromAxiosError(
-  error: AxiosError
+  error: AxiosError,
 ): ErrorStoreState {
   // Handle network errors
   if (error.message === "Network Error") {
@@ -137,7 +146,7 @@ function createErrorStoreStateFromAxiosError(
 }
 
 export function createErrorPagePropsFromRoutingError(
-  statusCode: number
+  statusCode: number,
 ): ErrorStoreState {
   if (statusCode === 404) {
     return {
@@ -160,7 +169,7 @@ export function addJavascriptErrorListeners() {
     errorEvent?.fireJavascriptErrorBoundaryEvent(
       errorEvt.error?.stack ?? "",
       errorEvt.message,
-      getScreenNameFromPage(get(page))
+      getScreenNameFromPage(get(page)),
     );
   };
   const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
@@ -177,7 +186,7 @@ export function addJavascriptErrorListeners() {
     errorEvent?.fireJavascriptErrorBoundaryEvent(
       stack,
       message,
-      getScreenNameFromPage(get(page))
+      getScreenNameFromPage(get(page)),
     );
   };
 

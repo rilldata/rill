@@ -26,8 +26,16 @@ _**`available_time_zones`**_ — time zones that should be pinned to the top of 
 
 _**`default_theme`**_ — default theme to apply to the dashboard _(optional)_. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes.
 
+_**`default_comparison`**_ - defines which should be the default comparison mode. Default: none _(optional)_
+  - _**`mode`**_ - comparison mode
+    - _`none`_ - no comparison
+    - _`time`_ - time, will pick the comparison period depending on `default_time_range`
+    - _`dimension`_ - dimension comparison mode
+  - _**`dimension`**_ - for dimension mode, specify the comparison dimension by name
+
 _**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
+  - _**`expression`**_ a non-aggregate expression such as `string_split(domain, '.')`. One of `column` and `expression` is required but cannot have both at the same time _(required)_
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_
@@ -47,7 +55,8 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`format_preset`**_ — controls the formatting of this measure in the dashboard according to option specified below. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
     - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
     - _`none`_ — raw output
-    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
+    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign: `$`
+    - _`currency_eur`_ —  output rounded to 2 decimal points prepended with a euro symbol: `€`
     - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
     - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
 

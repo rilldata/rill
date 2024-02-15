@@ -56,6 +56,7 @@ measures:
 					SourceConnector: "local_file",
 					SinkConnector:   "duckdb",
 					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.SourceState{
 					Connector: "duckdb",
@@ -79,9 +80,10 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					Connector:   "duckdb",
-					Sql:         "SELECT * FROM foo",
-					Materialize: &falsy,
+					Connector:       "duckdb",
+					Sql:             "SELECT * FROM foo",
+					Materialize:     &falsy,
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{
 					Connector: "duckdb",
@@ -138,9 +140,10 @@ path
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					Connector:   "duckdb",
-					Sql:         "SELECT * FROM foo",
-					Materialize: &falsy,
+					Connector:       "duckdb",
+					Sql:             "SELECT * FROM foo",
+					Materialize:     &falsy,
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -204,6 +207,7 @@ path: data/foo.csv
 					SourceConnector: "local_file",
 					SinkConnector:   "duckdb",
 					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.SourceState{
 					Connector: "duckdb",
@@ -272,6 +276,7 @@ path: data/foo.csv
 					SourceConnector: "local_file",
 					SinkConnector:   "duckdb",
 					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.SourceState{
 					Connector: "duckdb",
@@ -1182,11 +1187,31 @@ colors:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
+func TestAlert(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `__time,country
+2024-01-01T00:00:00Z,Denmark
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"country"})
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
 func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
@@ -1195,6 +1220,7 @@ func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
 			SourceConnector: "local_file",
 			SinkConnector:   "duckdb",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": path})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 		State: &runtimev1.SourceState{
 			Connector: "duckdb",
@@ -1218,9 +1244,10 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	falsy := false
 	model := &runtimev1.ModelV2{
 		Spec: &runtimev1.ModelSpec{
-			Connector:   "duckdb",
-			Sql:         query,
-			Materialize: &falsy,
+			Connector:       "duckdb",
+			Sql:             query,
+			Materialize:     &falsy,
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 		State: &runtimev1.ModelState{
 			Connector: "duckdb",
@@ -1292,4 +1319,11 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		},
 	}
 	return metrics, metricsRes
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

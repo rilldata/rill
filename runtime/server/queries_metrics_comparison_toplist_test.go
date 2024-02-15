@@ -2,10 +2,12 @@ package server_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -81,16 +83,16 @@ func TestServer_MetricsViewComparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
@@ -137,25 +139,26 @@ func TestServer_MetricsViewComparison_inline_measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
 	require.Equal(t, 2, len(rows[0].MeasureValues))
 
 	require.Equal(t, 1.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 1.0, rows[0].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
+	// since measure_1 is not in the sort list, its derived values are not calculated
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[0].MeasureValues[0].ComparisonValue.GetNullValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[0].MeasureValues[0].DeltaAbs.GetNullValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[0].MeasureValues[0].DeltaRel.GetNullValue())
 
 	require.Equal(t, 1.0, rows[0].MeasureValues[1].BaseValue.GetNumberValue())
 	require.Equal(t, 2.0, rows[0].MeasureValues[1].ComparisonValue.GetNumberValue())
@@ -188,16 +191,16 @@ func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -255,16 +258,16 @@ func TestServer_MetricsViewComparison_sort_by_base(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -313,16 +316,16 @@ func TestServer_MetricsViewComparison_sort_by_comparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -372,16 +375,16 @@ func TestServer_MetricsViewComparison_sort_by_abs_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -430,16 +433,16 @@ func TestServer_MetricsViewComparison_sort_by_rel_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -480,9 +483,9 @@ func TestServer_MetricsViewComparison_sort_error(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
@@ -523,17 +526,17 @@ func TestServer_MetricsViewComparison_sort_by_delta_limit_1(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Limit: 1,
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -568,17 +571,17 @@ func TestServer_MetricsViewComparison_sort_by_base_limit_1(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
 			},
 		},
 		Limit: 1,
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -613,24 +616,20 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "domain",
-					In:   []*structpb.Value{structpb.NewStringValue("yahoo.com")},
-				},
-			},
-		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo.com"))},
+		),
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -685,23 +684,24 @@ func TestServer_MetricsViewComparison_2_measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
 	require.Equal(t, 200.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 100.0, rows[0].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 100.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 1.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
+	// since measure_1 is not in the sort list, its derived values are not calculated
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[0].MeasureValues[0].ComparisonValue.GetNullValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[0].MeasureValues[0].DeltaAbs.GetNullValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[0].MeasureValues[0].DeltaRel.GetNullValue())
 	require.Equal(t, 2.0, rows[0].MeasureValues[1].BaseValue.GetNumberValue())
 	require.Equal(t, 1.0, rows[0].MeasureValues[1].ComparisonValue.GetNumberValue())
 	require.Equal(t, 1.0, rows[0].MeasureValues[1].DeltaAbs.GetNumberValue())
@@ -709,13 +709,245 @@ func TestServer_MetricsViewComparison_2_measures(t *testing.T) {
 
 	require.Equal(t, "msn.com", rows[1].DimensionValue.GetStringValue())
 	require.Equal(t, 10.0, rows[1].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 1.0, rows[1].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 9.0, rows[1].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 9.0, rows[1].MeasureValues[0].DeltaRel.GetNumberValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[1].MeasureValues[0].ComparisonValue.GetNullValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[1].MeasureValues[0].DeltaAbs.GetNullValue())
+	require.Equal(t, structpb.NullValue_NULL_VALUE, rows[1].MeasureValues[0].DeltaRel.GetNullValue())
 	require.Equal(t, 1.0, rows[1].MeasureValues[1].BaseValue.GetNumberValue())
 	require.Equal(t, 2.0, rows[1].MeasureValues[1].ComparisonValue.GetNumberValue())
 	require.Equal(t, -1.0, rows[1].MeasureValues[1].DeltaAbs.GetNumberValue())
 	require.Equal(t, -0.5, rows[1].MeasureValues[1].DeltaRel.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparison_dimension_expression(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "tld",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     false,
+			},
+		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("dom"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "google.com", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "msn.com", tr.Rows[3].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_dimension_expression_in_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "tld",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     false,
+			},
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("tld"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo.com")), expressionpb.Value(structpb.NewStringValue("google.com"))},
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 3)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "msn.com", tr.Rows[2].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_dimension_expression_like_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "tld",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     false,
+			},
+		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("tld"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	for _, row := range tr.Rows {
+		fmt.Println(row.DimensionValue.GetStringValue())
+	}
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "google.com", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "msn.com", tr.Rows[3].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_unnested_dimension_expression_in_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain_parts",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     false,
+			},
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain_parts"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "msn", tr.Rows[3].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_unnested_dimension_expression_like_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain_parts",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     false,
+			},
+		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("domain_parts"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	for _, row := range tr.Rows {
+		fmt.Println(row.DimensionValue.GetStringValue())
+	}
+	require.Len(t, tr.Rows, 6)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "com", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "google", tr.Rows[3].DimensionValue.GetStringValue())
+	require.Equal(t, "news", tr.Rows[4].DimensionValue.GetStringValue())
+	require.Equal(t, "msn", tr.Rows[5].DimensionValue.GetStringValue())
 }
 
 /*
@@ -758,8 +990,9 @@ func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Desc: true,
+				Name:     "measure_2",
+				Desc:     true,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -775,6 +1008,32 @@ func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {
 
 	require.Equal(t, "yahoo.com", tr.Rows[1].DimensionValue.GetStringValue())
 	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparison_no_comparison_no_sort_type(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	_, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "measure_2",
+				Desc: true,
+			},
+		},
+		Exact: true,
+	})
+	require.NoError(t, err) // allow undefined sort type
 }
 
 func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
@@ -794,7 +1053,8 @@ func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -825,7 +1085,8 @@ func TestServer_MetricsViewComparison_no_comparison_numeric_dim(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -891,8 +1152,9 @@ func TestServer_MetricsViewComparison_no_comparison_asc(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Desc: false,
+				Name:     "measure_2",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -927,8 +1189,9 @@ func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_3",
-				Desc: false,
+				Name:     "measure_3",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -958,8 +1221,9 @@ func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_3",
-				Desc: true,
+				Name:     "measure_3",
+				Desc:     true,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -995,8 +1259,9 @@ func TestServer_MetricsViewComparison_no_comparison_asc_limit(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Desc: false,
+				Name:     "measure_2",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Limit: 1,
@@ -1031,12 +1296,14 @@ func TestServer_MetricsViewComparison_no_comparison_2measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
-				Desc: false,
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 			{
-				Name: "measure_2",
-				Desc: false,
+				Name:     "measure_2",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1071,23 +1338,92 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
-				Desc: false,
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
-					},
-				},
-			},
-		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("pub"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("Yahoo"))},
+		),
 		Exact: true,
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Rows) > 1)
 	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+}
+
+func TestServer_MetricsViewComparison_no_comparison_dimension_expression(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "tld",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+			},
+		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("dom"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook.com", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "google.com", tr.Rows[3].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_no_comparison_unnested_dimension_expression_in_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain_parts",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+			},
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain_parts"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "msn", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "com", tr.Rows[3].DimensionValue.GetStringValue())
 }

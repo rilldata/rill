@@ -12,6 +12,6 @@ export enum PERC_DIFF {
 }
 
 export const isPercDiff = (
-  token: unknown
+  token: unknown,
 ): token is PERC_DIFF[keyof PERC_DIFF] =>
   Object.values(PERC_DIFF).includes(token as PERC_DIFF);

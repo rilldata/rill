@@ -5,15 +5,12 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
@@ -30,12 +27,21 @@
       },
       comparison: { isBeingCompared },
       dimensions: { dimensionTableDimName, dimensionTableColumnName },
+      dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
         selectedDimensionValueNames,
         prepareDimTableRows,
       },
       activeMeasure: { activeMeasureName },
+      measureFilters: { getResolvedFilterForMeasureFilters },
+    },
+    actions: {
+      dimensionsFilter: {
+        toggleDimensionValueSelection,
+        selectItemsInFilter,
+        deselectItemsInFilter,
+      },
     },
     metricsViewName,
     runtime,
@@ -48,27 +54,27 @@
 
   let searchText = "";
 
-  const queryClient = useQueryClient();
-
   $: instanceId = $runtime.instanceId;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
+  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+
   $: filterSet = getDimensionFilterWithSearch(
-    $dashboardStore?.filters,
+    $dashboardStore?.whereFilter,
     searchText,
-    dimensionName
+    dimensionName,
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     $metricsViewName,
-    $dimensionTableTotalQueryBody,
+    $dimensionTableTotalQueryBody($resolvedFilter),
     {
       query: {
-        enabled: $timeControlsStore.ready,
+        enabled: $timeControlsStore.ready && $resolvedFilter.ready,
       },
-    }
+    },
   );
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
@@ -78,56 +84,56 @@
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     $metricsViewName,
-    $dimensionTableSortedQueryBody,
+    $dimensionTableSortedQueryBody($resolvedFilter),
     {
       query: {
-        enabled: $timeControlsStore.ready && !!filterSet,
+        enabled:
+          $timeControlsStore.ready && !!filterSet && $resolvedFilter.ready,
       },
-    }
+    },
   );
 
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string)
+    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionColumnName] as string;
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilter($metricsViewName, dimensionName, label);
+    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    toggleDimensionValueSelection(
+      dimensionName,
+      label,
+      false,
+      event.detail.meta,
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
       $metricsViewName,
-      isBeingCompared ? undefined : dimensionName
+      isBeingCompared ? undefined : dimensionName,
     );
   }
 
   function toggleAllSearchItems() {
     const labels = tableRows.map((row) => row[dimensionColumnName] as string);
-    cancelDashboardQueries(queryClient, $metricsViewName);
 
     if (areAllTableRowsSelected) {
-      metricsExplorerStore.deselectItemsInFilter(
-        $metricsViewName,
-        dimensionName,
-        labels
-      );
+      deselectItemsInFilter(dimensionName, labels);
 
       notifications.send({
         message: `Removed ${labels.length} items from filter`,
       });
       return;
     } else {
-      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
-        $metricsViewName,
+      const newValuesSelected = $unselectedDimensionValues(
         dimensionName,
-        labels
+        labels,
       );
+      selectItemsInFilter(dimensionName, labels);
       notifications.send({
-        message: `Added ${newValuesSelected} items to filter`,
+        message: `Added ${newValuesSelected.length} items to filter`,
       });
     }
   }

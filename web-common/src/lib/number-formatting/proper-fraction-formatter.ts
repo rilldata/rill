@@ -19,7 +19,7 @@ import { PerRangeFormatter } from "./strategies/per-range";
 export function formatProperFractionAsPercent(value: number): NumberParts {
   if (value < 0 || value > 1) {
     console.warn(
-      `formatProperFractionAsPercent received invalid input: ${value}. Value must be between 0 and 1.`
+      `formatProperFractionAsPercent received invalid input: ${value}. Value must be between 0 and 1.`,
     );
     return formatMeasurePercentageDifference(value);
   }
@@ -29,8 +29,7 @@ export function formatProperFractionAsPercent(value: number): NumberParts {
   } else if (value === 0) {
     return { percent: "%", int: "0", dot: "", frac: "", suffix: "" };
   }
-  const factory = new PerRangeFormatter([], {
-    strategy: "perRange",
+  const factory = new PerRangeFormatter({
     rangeSpecs: [
       {
         minMag: -2,

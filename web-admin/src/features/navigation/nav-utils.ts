@@ -9,15 +9,23 @@ export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
+    page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/status"
   );
 }
 export function isDashboardPage(page: Page): boolean {
-  return page.route.id === "/[organization]/[project]/[dashboard]";
+  return (
+    page.route.id === "/[organization]/[project]/[dashboard]" ||
+    page.route.id === "/-/embed"
+  );
 }
 
 export function isReportPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/reports/[report]";
+}
+
+export function isAlertPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/alerts/[alert]";
 }
 
 export function isReportExportPage(page: Page): boolean {
@@ -37,6 +45,8 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Dashboard;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
+    case isAlertPage(page):
+      return MetricsEventScreenName.Alert;
     case isReportExportPage(page):
       return MetricsEventScreenName.ReportExport;
   }

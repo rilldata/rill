@@ -10,7 +10,7 @@ describe("isoDurationToTimeRange", () => {
       "PT4H",
       "2023-10-05T12:00:00.000Z",
       "2023-10-05T09:00:00.000Z",
-      "2023-10-05T13:00:00.000Z"
+      "2023-10-05T13:00:00.000Z",
     );
   });
 
@@ -19,7 +19,7 @@ describe("isoDurationToTimeRange", () => {
       "PT4H",
       "2023-10-05T12:12:34.000Z",
       "2023-10-05T09:00:00.000Z",
-      "2023-10-05T13:00:00.000Z"
+      "2023-10-05T13:00:00.000Z",
     );
   });
 
@@ -28,7 +28,7 @@ describe("isoDurationToTimeRange", () => {
       "P14D",
       "2023-10-05T00:00:00.000Z",
       "2023-09-22T00:00:00.000Z",
-      "2023-10-06T00:00:00.000Z"
+      "2023-10-06T00:00:00.000Z",
     );
   });
 
@@ -37,7 +37,7 @@ describe("isoDurationToTimeRange", () => {
       "P14D",
       "2023-10-05T12:12:34.000Z",
       "2023-09-22T00:00:00.000Z",
-      "2023-10-06T00:00:00.000Z"
+      "2023-10-06T00:00:00.000Z",
     );
   });
 
@@ -46,7 +46,7 @@ describe("isoDurationToTimeRange", () => {
       "P4W",
       "2023-10-05T12:12:34.000Z",
       "2023-09-11T00:00:00.000Z",
-      "2023-10-09T00:00:00.000Z"
+      "2023-10-09T00:00:00.000Z",
     );
   });
 });
@@ -71,11 +71,11 @@ function assertDuration(
   isoDuration: string,
   anchorDate: string,
   expectedStart: string,
-  expectedEnd: string
+  expectedEnd: string,
 ) {
   const { startTime, endTime } = isoDurationToTimeRange(
     isoDuration,
-    new Date(anchorDate)
+    new Date(anchorDate),
   );
   expect(startTime.toISOString()).toBe(expectedStart);
   expect(endTime.toISOString()).toBe(expectedEnd);

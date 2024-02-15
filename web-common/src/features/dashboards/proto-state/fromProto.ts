@@ -1,6 +1,28 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  FromProtoOperationMap,
+  FromProtoPivotRowJoinTypeMap,
+  FromProtoTimeGrainMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
+import {
+  createAndExpression,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+import {
+  BOOLEANS,
+  INTEGERS,
+  isFloat,
+} from "@rilldata/web-common/lib/duckdb-data-types";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -9,16 +31,20 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
+import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import {
   DashboardState,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
+import type {
+  MetricsViewSpecDimensionV2,
+  StructTypeField,
+  V1Expression,
   V1MetricsView,
-  V1TimeGrain,
+  V1MetricsViewSpec,
+  V1StructType,
 } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
@@ -40,34 +66,47 @@ const LeaderboardContextColumnReverseMap: Record<
 
 export function getDashboardStateFromUrl(
   urlState: string,
-  metricsView: V1MetricsView
+  metricsView: V1MetricsView,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
     base64ToProto(decodeURIComponent(urlState)),
-    metricsView
+    metricsView,
+    schema,
   );
 }
 
 export function getDashboardStateFromProto(
   binary: Uint8Array,
-  metricsView: V1MetricsView
+  metricsView: V1MetricsViewSpec,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
-  const entity: Partial<MetricsExplorerEntity> = {
-    filters: {
-      include: [],
-      exclude: [],
-    },
-  };
+  const entity: Partial<MetricsExplorerEntity> = {};
 
   if (dashboard.filters) {
-    entity.filters ??= {};
-    entity.filters.include = fromFiltersProto(dashboard.filters.include);
-    entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
+    // backwards compatibility for our older filter format
+    entity.whereFilter = convertFilterToExpression(dashboard.filters);
+    // older values could be strings for non-string values,
+    // so we correct them using metrics view schema
+    entity.whereFilter =
+      correctFilterValues(
+        entity.whereFilter,
+        metricsView.dimensions ?? [],
+        schema,
+      ) ?? createAndExpression([]);
+  } else if (dashboard.where) {
+    entity.whereFilter = fromExpressionProto(dashboard.where);
+  }
+  if (dashboard.having) {
+    entity.dimensionThresholdFilters = dashboard.having.map((h) => ({
+      name: h.name,
+      filter: fromExpressionProto(h.filter as Expression) as V1Expression,
+    }));
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
-      dashboard.compareTimeRange
+      dashboard.compareTimeRange,
     );
     // backwards compatibility
     correctComparisonTimeRange(entity.selectedComparisonTimeRange);
@@ -78,15 +117,16 @@ export function getDashboardStateFromProto(
     ? fromTimeRangeProto(dashboard.timeRange)
     : undefined;
   if (dashboard.timeGrain && entity.selectedTimeRange) {
-    entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
+    entity.selectedTimeRange.interval =
+      FromProtoTimeGrainMap[dashboard.timeGrain];
   }
 
   if (dashboard.scrubRange) {
     entity.selectedScrubRange = fromTimeRangeProto(
-      dashboard.scrubRange
+      dashboard.scrubRange,
     ) as ScrubRange;
     entity.lastDefinedScrubRange = fromTimeRangeProto(
-      dashboard.scrubRange
+      dashboard.scrubRange,
     ) as ScrubRange;
   }
 
@@ -111,14 +151,13 @@ export function getDashboardStateFromProto(
   if (dashboard.pinIndex !== undefined) {
     entity.pinIndex = dashboard.pinIndex;
   }
-  if (dashboard.selectedTimezone) {
-    entity.selectedTimezone = dashboard.selectedTimezone;
-  }
+
+  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
-      metricsView.measures?.map((measure) => measure.name) ?? []
+      metricsView.measures?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
   } else if (dashboard.visibleMeasures) {
     entity.allMeasuresVisible = false;
@@ -128,7 +167,7 @@ export function getDashboardStateFromProto(
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
     entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions?.map((measure) => measure.name) ?? []
+      metricsView.dimensions?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
   } else if (dashboard.visibleDimensions) {
     entity.allDimensionsVisible = false;
@@ -147,6 +186,8 @@ export function getDashboardStateFromProto(
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
+  entity.pivot = fromPivotProto(dashboard, metricsView);
+
   return entity;
 }
 
@@ -154,20 +195,86 @@ export function base64ToProto(message: string) {
   return protoBase64.dec(message);
 }
 
-function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
-  return conditions.map((condition) => {
-    return {
-      name: condition.name,
-      ...(condition.like?.length ? { like: condition.like } : {}),
-      ...(condition.in?.length
-        ? {
-            in: condition.in.map((v) =>
-              v.kind.case === "nullValue" ? null : v.kind.value
-            ),
-          }
-        : {}),
-    };
+function fromExpressionProto(expression: Expression): V1Expression | undefined {
+  switch (expression.expression.case) {
+    case "ident":
+      return {
+        ident: expression.expression.value,
+      };
+
+    case "val":
+      return {
+        val:
+          expression.expression.value.kind.case === "nullValue"
+            ? null
+            : expression.expression.value.kind.value,
+      };
+
+    case "cond":
+      return {
+        cond: {
+          op: FromProtoOperationMap[expression.expression.value.op],
+          exprs: expression.expression.value.exprs
+            .map((e) => fromExpressionProto(e))
+            .filter((e): e is V1Expression => e !== undefined),
+        },
+      };
+  }
+}
+
+function correctFilterValues(
+  filter: V1Expression,
+  dimensions: MetricsViewSpecDimensionV2[],
+  schema: V1StructType,
+) {
+  return filterIdentifiers(filter, (e, ident) => {
+    const dim = dimensions?.find((d) => d.name === ident);
+    // ignore if dimension is not present anymore
+    if (!dim) return false;
+    const field = schema.fields?.find((f) => f.name === ident);
+    // ignore if field is not found
+    if (!field) return false;
+
+    if (e.cond?.exprs) {
+      e.cond.exprs =
+        e.cond.exprs.map((e, i) => {
+          if (i === 0) return e; // 1st expr is always the identifier
+          return correctFilterValue(e, field);
+        }) ?? [];
+    }
+    return true;
   });
+}
+
+function correctFilterValue(
+  valueExpr: V1Expression,
+  field: StructTypeField,
+): V1Expression {
+  if (valueExpr.val === null) {
+    return valueExpr;
+  }
+  if (typeof valueExpr.val === "string") {
+    // older filters were storing everything as strings
+    return {
+      val: correctStringFilterValue(valueExpr.val, field),
+    };
+  }
+  return valueExpr;
+}
+
+function correctStringFilterValue(val: string, field: StructTypeField) {
+  if (!field.type?.code) return val;
+
+  if (INTEGERS.has(field.type?.code)) {
+    return Number.parseInt(val);
+  } else if (isFloat(field.type?.code)) {
+    return Number.parseFloat(val);
+  } else if (BOOLEANS.has(field.type?.code)) {
+    return val === "true";
+  } else {
+    // TODO: other types
+    return val;
+  }
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
@@ -189,10 +296,62 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   return selectedTimeRange;
 }
 
+function fromPivotProto(
+  dashboard: DashboardState,
+  metricsView: V1MetricsViewSpec,
+): PivotState {
+  const dimensionsMap = getMapFromArray(
+    metricsView.dimensions ?? [],
+    (d) => d.name,
+  );
+  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: dimensionsMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Dimension,
+  });
+  const measuresMap = getMapFromArray(
+    metricsView.measures ?? [],
+    (m) => m.name,
+  );
+  const mapMeasure: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: measuresMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Measure,
+  });
+
+  return {
+    active: dashboard.pivotIsActive ?? false,
+    rows: {
+      dimension: dashboard.pivotRowDimensions.map(mapDimension),
+    },
+    columns: {
+      dimension: [
+        ...dashboard.pivotColumnTimeDimensions.map((tg) => ({
+          id: FromProtoTimeGrainMap[tg],
+          title: TIME_GRAIN[FromProtoTimeGrainMap[tg]].label,
+          type: PivotChipType.Time,
+        })),
+        ...dashboard.pivotColumnDimensions.map(mapDimension),
+      ],
+      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
+    },
+    expanded: dashboard.pivotExpanded,
+    sorting: dashboard.pivotSort ?? [],
+    columnPage: dashboard.pivotColumnPage ?? 1,
+    rowJoinType:
+      FromProtoPivotRowJoinTypeMap[
+        dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
+      ],
+  };
+}
+
 function correctComparisonTimeRange(
-  comparisonTimeRange: DashboardTimeControls
+  comparisonTimeRange: DashboardTimeControls,
 ) {
   switch (comparisonTimeRange.name as string) {
+    case "CONTIGUOUS":
+      comparisonTimeRange.name = TimeComparisonOption.CONTIGUOUS;
+      break;
     case "P1D":
       comparisonTimeRange.name = TimeComparisonOption.DAY;
       break;
@@ -213,30 +372,4 @@ function correctComparisonTimeRange(
 
 function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
-}
-
-function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
-  switch (timeGrain) {
-    case TimeGrain.UNSPECIFIED:
-    default:
-      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-    case TimeGrain.MILLISECOND:
-      return V1TimeGrain.TIME_GRAIN_MILLISECOND;
-    case TimeGrain.SECOND:
-      return V1TimeGrain.TIME_GRAIN_SECOND;
-    case TimeGrain.MINUTE:
-      return V1TimeGrain.TIME_GRAIN_MINUTE;
-    case TimeGrain.HOUR:
-      return V1TimeGrain.TIME_GRAIN_HOUR;
-    case TimeGrain.DAY:
-      return V1TimeGrain.TIME_GRAIN_DAY;
-    case TimeGrain.WEEK:
-      return V1TimeGrain.TIME_GRAIN_WEEK;
-    case TimeGrain.MONTH:
-      return V1TimeGrain.TIME_GRAIN_MONTH;
-    case TimeGrain.QUARTER:
-      return V1TimeGrain.TIME_GRAIN_QUARTER;
-    case TimeGrain.YEAR:
-      return V1TimeGrain.TIME_GRAIN_YEAR;
-  }
 }
