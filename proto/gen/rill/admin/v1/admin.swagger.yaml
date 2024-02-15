@@ -1235,6 +1235,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: accessTokenTtlSeconds
+          in: query
+          required: false
+          type: integer
+          format: int64
       tags:
         - AdminService
     delete:
