@@ -34,6 +34,8 @@ function createColumnDefinitionForDimensions(
   const dimensionNames = config.colDimensionNames;
   const timeConfig = config.time;
 
+  const filterColumns = Boolean(dimensionNames.length);
+
   const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
     createIndexMap(headers[colDimension]),
   );
@@ -55,13 +57,18 @@ function createColumnDefinitionForDimensions(
       );
 
       // Base case: return leaf columns
-      return leafData
-        .map((leaf, i) => ({
-          ...leaf,
-          // Change accessor key to match the nested column structure
-          accessorKey: accessors[i],
-        }))
-        .filter((leaf) => Object.keys(totals).includes(leaf.accessorKey));
+      const leafNodes = leafData.map((leaf, i) => ({
+        ...leaf,
+        // Change accessor key to match the nested column structure
+        accessorKey: accessors[i],
+      }));
+
+      if (!filterColumns) {
+        return leafNodes;
+      }
+      return leafNodes.filter((leaf) =>
+        Object.keys(totals).includes(leaf.accessorKey),
+      );
     }
 
     // Recursive case: create nested headers

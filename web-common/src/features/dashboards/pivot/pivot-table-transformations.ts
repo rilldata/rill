@@ -111,10 +111,12 @@ export function getTotalsRow(
   globalTotalsData: V1MetricsViewAggregationResponseDataItem[] = [],
 ) {
   const { rowDimensionNames, measureNames } = config;
-  let totalsRow: PivotDataRow = {};
-  if (rowDimensionNames.length && measureNames.length) {
-    const anchorDimensionName = rowDimensionNames[0];
+  const anchorDimensionName = rowDimensionNames[0];
 
+  console.log(columnDimensionAxes);
+
+  let totalsRow: PivotDataRow = {};
+  if (measureNames.length) {
     const totalsRowTable = reduceTableCellDataIntoRows(
       config,
       "",
@@ -125,11 +127,14 @@ export function getTotalsRow(
     );
 
     totalsRow = totalsRowTable[0] || {};
-    totalsRow[anchorDimensionName] = "Total";
 
     globalTotalsData.forEach((total) => {
       totalsRow = { ...total, ...totalsRow };
     });
+
+    if (anchorDimensionName) {
+      totalsRow[anchorDimensionName] = "Total";
+    }
   }
 
   return totalsRow;

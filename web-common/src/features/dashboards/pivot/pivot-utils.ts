@@ -18,6 +18,7 @@ import type {
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
   PivotAxesData,
+  PivotDataRow,
   PivotDataStoreConfig,
   PivotTimeConfig,
   TimeFilters,
@@ -184,15 +185,8 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
  * Returns total number of columns for the table
  * excluding row and group totals columns
  */
-export function getTotalColumnCount(
-  columnDimensionAxes: Record<string, string[]> | undefined,
-) {
-  if (!columnDimensionAxes) return 0;
-
-  return Object.values(columnDimensionAxes).reduce(
-    (acc, columnDimension) => acc * columnDimension.length,
-    1,
-  );
+export function getTotalColumnCount(totalsRow: PivotDataRow) {
+  return Object.keys(totalsRow).length;
 }
 
 /***
@@ -230,6 +224,8 @@ export function getFilterForPivotTable(
     config.pivot.columnPage,
     config.measureNames.length,
   );
+
+  // TODO: For time dimension return the time filters
 
   return createAndExpression([
     ...colFiltersForPage,
@@ -272,7 +268,7 @@ export function getAccessorForCell(
 /**
  * Extract the numbers after c and v in a accessor part string
  */
-function extractNumbers(str: string) {
+export function extractNumbers(str: string) {
   const indexOfC = str.indexOf("c");
   const indexOfV = str.indexOf("v");
 

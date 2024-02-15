@@ -1,3 +1,8 @@
+import { extractNumbers } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import type {
+  PivotDataRow,
+  PivotDataStoreConfig,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
@@ -60,33 +65,51 @@ function getColumnPage(
  * number. This is used for column definition in pivot table.
  */
 export function sliceColumnAxesDataForDef(
-  colDimensionNames: string[],
+  config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
-  colDimensionPageNumber: number,
-  numMeasures: number,
+  totalsRow: PivotDataRow,
 ) {
+  const { rowDimensionNames, colDimensionNames, measureNames } = config;
+  const colDimensionPageNumber = config.pivot.columnPage;
   if (!colDimensionNames.length) return colDimensionAxes;
 
   const totalColumnsToBeDisplayed =
-    Math.floor(NUM_COLUMNS_PER_PAGE / numMeasures) * colDimensionPageNumber;
+    NUM_COLUMNS_PER_PAGE * colDimensionPageNumber;
 
-  const colDimensionValues = colDimensionNames.map((colDimensionName) => {
-    return colDimensionAxes[colDimensionName];
+  const maxValueVisible: Record<string, number> = {};
+
+  let columnKeys = totalsRow ? Object.keys(totalsRow) : [];
+  columnKeys = columnKeys
+    .filter(
+      (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
+    )
+    .sort()
+    .slice(0, totalColumnsToBeDisplayed);
+
+  console.log("columnKeys", columnKeys);
+
+  columnKeys.forEach((accessor) => {
+    // Strip the measure string from the accessor
+    const [accessorWithoutMeasure] = accessor.split("m");
+    accessorWithoutMeasure.split("_").forEach((part) => {
+      const { c, v } = extractNumbers(part);
+      const columnDimensionName = colDimensionNames[c];
+      maxValueVisible[columnDimensionName] = Math.max(
+        maxValueVisible[columnDimensionName] || 0,
+        v + 1,
+      );
+    });
   });
-
-  const pageGroups = getColumnPage(
-    colDimensionValues,
-    1,
-    totalColumnsToBeDisplayed,
-  );
 
   const slicedAxesData: Record<string, string[]> = {};
 
-  Object.keys(pageGroups).forEach((key) => {
-    const colDimensionName = colDimensionNames[parseInt(key)];
-    slicedAxesData[colDimensionName] = Array.from(
-      pageGroups[key] as Set<string>,
-    );
+  Object.keys(maxValueVisible).forEach((dimensionName) => {
+    if (maxValueVisible[dimensionName] > 0) {
+      slicedAxesData[dimensionName] = colDimensionAxes[dimensionName].slice(
+        0,
+        maxValueVisible[dimensionName],
+      );
+    }
   });
   return slicedAxesData;
 }
