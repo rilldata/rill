@@ -68,6 +68,7 @@ export function createSubTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
   rowNestFilters: V1Expression,
   timeRange: TimeRangeString | undefined,
 ) {
@@ -89,6 +90,7 @@ export function createSubTableCellQuery(
   const filterForSubTable = getFilterForPivotTable(
     config,
     columnDimensionAxesData,
+    totalsRow,
   );
   filterForSubTable.cond?.exprs?.push(...(rowNestFilters?.cond?.exprs ?? []));
 
@@ -129,6 +131,7 @@ export function queryExpandedRowMeasureValues(
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
 ): Readable<ExpandedRowMeasureValues[] | null> {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
@@ -228,6 +231,7 @@ export function queryExpandedRowMeasureValues(
             config,
             anchorDimension,
             columnDimensionAxesData,
+            totalsRow,
             allMergedFilters,
             timeRange,
           ),

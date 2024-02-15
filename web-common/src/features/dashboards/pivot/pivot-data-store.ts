@@ -130,6 +130,7 @@ export function createTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string | undefined,
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
   rowDimensionValues: string[],
 ) {
   let allDimensions = config.colDimensionNames;
@@ -152,6 +153,7 @@ export function createTableCellQuery(
   const filterForInitialTable = getFilterForPivotTable(
     config,
     columnDimensionAxesData,
+    totalsRow,
     rowDimensionValues,
     true,
     anchorDimension,
@@ -391,6 +393,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 config,
                 rowDimensionNames[0],
                 columnDimensionAxes?.data,
+                totalsRow,
                 rowDimensionValues,
               );
             } else {
@@ -441,6 +444,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   config,
                   pivotData,
                   columnDimensionAxes?.data,
+                  totalsRow,
                 );
 
                 /**

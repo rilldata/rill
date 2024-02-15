@@ -195,6 +195,7 @@ export function getTotalColumnCount(totalsRow: PivotDataRow) {
 export function getFilterForPivotTable(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
+  totalsRow: PivotDataRow,
   rowDimensionValues: string[] = [],
   isInitialTable = false,
   anchorDimension: string | undefined = undefined,
@@ -202,7 +203,7 @@ export function getFilterForPivotTable(
 ): V1Expression {
   // TODO: handle for already existing global filters
 
-  const { colDimensionNames, rowDimensionNames, time } = config;
+  const { rowDimensionNames, time } = config;
 
   let rowFilters: V1Expression | undefined;
   if (
@@ -217,12 +218,9 @@ export function getFilterForPivotTable(
   }
 
   const colFiltersForPage = getColumnFiltersForPage(
-    colDimensionNames.filter(
-      (dimension) => !isTimeDimension(dimension, time.timeDimension),
-    ),
+    config,
     colDimensionAxes,
-    config.pivot.columnPage,
-    config.measureNames.length,
+    totalsRow,
   );
 
   // TODO: For time dimension return the time filters
