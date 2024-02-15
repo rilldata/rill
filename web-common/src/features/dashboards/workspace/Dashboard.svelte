@@ -97,20 +97,17 @@
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      <div class="-ml-3 px-1 pt-2 space-y-2">
+      <div class="-ml-3 px- pt-2 space-y-2">
         <TimeControls {metricViewName} />
-        <div class="flex justify-between">
-          {#key metricViewName}
-            <section
-              class="pl-2 grid gap-x-2 items-start"
-              style:grid-template-columns="max-content auto"
-              style:min-height={FILTERS_MIN_CONTAINER_HEIGHT}
-            >
-              <Filters />
-            </section>
-            <TabBar />
-          {/key}
-        </div>
+
+        {#key metricViewName}
+          <section class="flex justify-between gap-x-4">
+            <Filters />
+            <div class="flex flex-col justify-end">
+              <TabBar />
+            </div>
+          </section>
+        {/key}
       </div>
     {/if}
   </div>

@@ -199,6 +199,20 @@
     @apply bg-blue-700;
   }
 
+  /* TEXT STYLES */
+
+  .text {
+    @apply px-0 font-medium text-slate-600;
+  }
+
+  .text:hover {
+    @apply text-primary-700;
+  }
+
+  .text:active {
+    @apply text-primary-800;
+  }
+
   /* TWEAKS */
 
   .small {
