@@ -3,6 +3,7 @@
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
+  import { humaniseAlertRunDuration } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
     useAlertDashboardName,
@@ -15,19 +16,26 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     getRuntimeServiceListResourcesQueryKey,
+    type V1GetResourceResponse,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import {
+    type CreateQueryResult,
+    useQueryClient,
+  } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let project: string;
   export let alert: string;
 
+  let alertQuery: CreateQueryResult<V1GetResourceResponse>;
   $: alertQuery = useAlert($runtime.instanceId, alert);
   $: isAlertCreatedByCode = useIsAlertCreatedByCode($runtime.instanceId, alert);
 
@@ -40,6 +48,10 @@
   $: metricsViewAggregationRequest = JSON.parse(
     $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
+
+  $: runInterval = humaniseAlertRunDuration(
+    $alertQuery.data?.resource?.alert?.spec,
+  );
 
   // Actions
   const queryClient = useQueryClient();
@@ -124,13 +136,13 @@
       <!-- Split by time grain -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by time grain</MetadataLabel>
-        <MetadataValue>TODO</MetadataValue>
+        <MetadataValue>{runInterval}</MetadataValue>
       </div>
 
-      <!-- Schedule -->
+      <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Schedule</MetadataLabel>
-        <MetadataValue>TODO</MetadataValue>
+        <MetadataValue>Whenever your data refreshes</MetadataValue>
       </div>
 
       <!-- Snooze -->

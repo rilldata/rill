@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
@@ -39,11 +40,11 @@
 <div class="flex flex-col gap-y-3">
   <FormSection title="Alert name">
     <InputV2
-      id="name"
-      value={$form["name"]}
       error={$errors["name"]}
-      placeholder="My alert"
+      id="name"
       on:change={handleChange}
+      placeholder="My alert"
+      value={$form["name"]}
     />
   </FormSection>
   <FormSection
@@ -66,25 +67,23 @@
       bind:value={$form["measure"]}
       id="measure"
       label="Measure"
-      placeholder="Select a measure"
       options={measureOptions}
+      placeholder="Select a measure"
     />
     <Select
       bind:value={$form["splitByDimension"]}
       id="splitByDimension"
       label="Split by dimension"
-      placeholder="Select a dimension"
       options={dimensionOptions}
+      placeholder="Select a dimension"
     />
-    <!-- TODO -->
-    <!-- <Select
+    <Select
       bind:value={$form["forEvery"]}
       id="forEvery"
       label="For every"
-      options={["Interval1", "Interval2", "Interval3"].map((timeInterval) => ({
-        value: timeInterval,
-      }))}
-    /> -->
+      options={AlertIntervalOptions}
+      placeholder="Select a time grain"
+    />
   </FormSection>
   <FormSection title="Data preview">
     <DataPreview

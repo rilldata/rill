@@ -47,6 +47,7 @@
       name: "",
       measure: "",
       splitByDimension: "",
+      forEvery: "",
       criteria: [
         {
           field: "",
@@ -96,6 +97,9 @@
             ),
           ),
         ),
+        timeRange: {
+          isoDuration: values.forEvery,
+        },
       } as V1MetricsViewAggregationRequest);
       try {
         await $createAlert.mutateAsync({
@@ -104,7 +108,7 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: undefined, // TODO: this is the "for every" field I think?
+              intervalDuration: values.forEvery, // TODO: this is the "for every" field I think?
               queryName: "MetricsViewAggregation",
               queryArgsJson: queryArgsJson,
               metricsViewName: $metricsViewName,
