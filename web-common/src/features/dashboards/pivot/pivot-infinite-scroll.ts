@@ -6,7 +6,7 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { extractNumbers, isTimeDimension, sortAcessors } from "./pivot-utils";
 
-const NUM_COLUMNS_PER_PAGE = 50;
+const NUM_COLUMNS_PER_PAGE = 40;
 
 /**
  * Slice column axes data based on page

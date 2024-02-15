@@ -174,7 +174,7 @@ export function createTableCellQuery(
     mergedFilter,
     config.measureFilter,
     sortBy,
-    "10000",
+    "5000",
   );
 }
 
@@ -304,7 +304,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             config.whereFilter,
             config.measureFilter,
             [],
-            "10000", // Using 10000 for cache hit
+            "5000", // Using 5000 for cache hit
           );
         }
         if (

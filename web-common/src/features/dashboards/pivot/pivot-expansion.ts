@@ -107,7 +107,7 @@ export function createSubTableCellQuery(
     filterForSubTable,
     config.measureFilter,
     sortBy,
-    "10000",
+    "5000",
     "0",
     timeRange,
   );
