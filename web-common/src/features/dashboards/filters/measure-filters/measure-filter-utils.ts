@@ -1,3 +1,4 @@
+import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -11,6 +12,7 @@ import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import {
   createQueryServiceMetricsViewToplist,
   V1Expression,
+  type V1MetricsViewSort,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -31,19 +33,30 @@ export function prepareMeasureFilterResolutions(
   queryClient: QueryClient,
 ): Readable<ResolvedMeasureFilter> {
   return derived(
-    dashboard.dimensionThresholdFilters.map((dtf) =>
-      createQueryServiceMetricsViewToplist(
+    dashboard.dimensionThresholdFilters.map((dtf) => {
+      const measureNames = getAllIdentifiers(dtf.filter);
+      const sort: V1MetricsViewSort[] = measureNames.map((m) => ({
+        name: m,
+        ascending: false,
+      }));
+      sort.forEach((s) => {
+        if (s.name === dashboard.leaderboardMeasureName) {
+          // retain the sort order for selected measure
+          s.ascending = dashboard.sortDirection === SortDirection.ASCENDING;
+        }
+      });
+      return createQueryServiceMetricsViewToplist(
         get(runtime).instanceId,
         dashboard.name,
         {
           dimensionName: dtf.name,
-          measureNames: getAllIdentifiers(dtf.filter),
+          measureNames,
           having: dtf.filter,
           timeStart: timeControls.timeStart,
           timeEnd: timeControls.timeEnd,
           limit: "50",
           offset: "0",
-          sort: [],
+          sort,
         },
         {
           query: {
@@ -51,8 +64,8 @@ export function prepareMeasureFilterResolutions(
             queryClient,
           },
         },
-      ),
-    ),
+      );
+    }),
     (toplists) => {
       if (toplists.some((t) => t.isFetching) || toplists.some((t) => !t.data)) {
         return {

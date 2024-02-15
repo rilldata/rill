@@ -219,7 +219,7 @@ export function getDimensionValueTimeSeries(
       const end = timeStore?.adjustedEnd;
       const interval =
         timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain;
-      const zone = dashboardStore?.selectedTimezone;
+      const zone = dashboardStore.selectedTimezone;
 
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);

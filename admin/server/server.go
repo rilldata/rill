@@ -264,7 +264,9 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	groupNames := make([]string, len(groups))
+
+	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
+	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
 	}
@@ -410,4 +412,12 @@ func (u *externalURLs) reportExport(org, project, report string) string {
 
 func (u *externalURLs) reportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
+}
+
+func (u *externalURLs) alertOpen(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) alertEdit(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
 }

@@ -31,7 +31,7 @@ connectors:
   defaults:
     region: us-east-1
 
-env:
+vars:
   foo: bar
 `,
 	})
@@ -137,6 +137,7 @@ SELECT * FROM {{ ref "m2" }}
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "s3",
 				Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// source s2
@@ -146,7 +147,7 @@ SELECT * FROM {{ ref "m2" }}
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "postgres",
 				Properties:      must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
-				RefreshSchedule: &runtimev1.Schedule{Cron: "0 0 * * *"},
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			},
 		},
 		// model m1
@@ -154,7 +155,8 @@ SELECT * FROM {{ ref "m2" }}
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql: strings.TrimSpace(files["models/m1.sql"]),
+				Sql:             strings.TrimSpace(files["models/m1.sql"]),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// model m2
@@ -163,8 +165,9 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.yaml", "/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m2.sql"]),
-				Materialize: &truth,
+				Sql:             strings.TrimSpace(files["models/m2.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// dashboard d1
@@ -210,16 +213,17 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:            strings.TrimSpace(files["custom/c2.sql"]),
-				Materialize:    &truth,
-				UsesTemplating: true,
+				Sql:             strings.TrimSpace(files["custom/c2.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				UsesTemplating:  true,
 			},
 		},
 	}
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -258,7 +262,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -284,6 +288,7 @@ SELECT 1
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "s3",
 				Properties:      must(structpb.NewStruct(map[string]any{})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 	}
@@ -297,7 +302,7 @@ SELECT 1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, errors)
 }
@@ -309,7 +314,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -326,6 +331,7 @@ path: hello
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -345,7 +351,8 @@ SELECT * FROM foo
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM foo",
+			Sql:             "SELECT * FROM foo",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	diff, err = p.Reparse(ctx, m1.Paths)
@@ -451,10 +458,11 @@ SELECT 10
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 
@@ -471,6 +479,7 @@ path: hello
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -516,14 +525,16 @@ SELECT * FROM m1
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	m1Nested := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/nested/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 20",
+			Sql:             "SELECT 20",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	m2 := &Resource{
@@ -531,10 +542,11 @@ SELECT * FROM m1
 		Paths: []string{"/models/m2.sql"},
 		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM m1",
+			Sql:             "SELECT * FROM m1",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
 		{
@@ -571,17 +583,19 @@ path: hello
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	mdl := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{src}, []*runtimev1.ParseError{
 		{
@@ -621,7 +635,8 @@ func TestReparseRillYAML(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	perr := &runtimev1.ParseError{
@@ -630,7 +645,7 @@ func TestReparseRillYAML(t *testing.T) {
 	}
 
 	// Parse empty project. Expect rill.yaml error.
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	require.Nil(t, p.RillYAML)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
@@ -678,7 +693,8 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "foo"},
 		Paths: []string{"/models/foo.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM bar",
+			Sql:             "SELECT * FROM bar",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	ctx := context.Background()
@@ -688,7 +704,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -698,7 +714,8 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "bar"},
 		Paths: []string{"/models/bar.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM baz",
+			Sql:             "SELECT * FROM baz",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	putRepo(t, repo, map[string]string{
@@ -748,7 +765,8 @@ materialize: true
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql: strings.TrimSpace(files["models/m1.sql"]),
+				Sql:             strings.TrimSpace(files["models/m1.sql"]),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// m2
@@ -757,13 +775,14 @@ materialize: true
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.sql", "/models/m2.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m2.sql"]),
-				Materialize: &truth,
+				Sql:             strings.TrimSpace(files["models/m2.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -804,8 +823,9 @@ SELECT * FROM t2
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m1.sql"]),
-				Materialize: &truth,
+				Sql:             strings.TrimSpace(files["models/m1.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// m2
@@ -813,14 +833,15 @@ SELECT * FROM t2
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
 			Paths: []string{"/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m2.sql"]),
-				Materialize: &falsity,
+				Sql:             strings.TrimSpace(files["models/m2.sql"]),
+				Materialize:     &falsity,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 	}
 
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -905,9 +926,62 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestEnvironmentOverrides(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: `
+env:
+  test:
+    sources:
+      limit: 10000
+`,
+		// source s1
+		`sources/s1.yaml`: `
+connector: s3
+path: hello
+env:
+  test:
+    path: world
+    refresh:
+      cron: "0 0 * * *"
+`,
+	})
+
+	s1Base := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		},
+	}
+
+	s1Test := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+		},
+	}
+
+	// Parse without environment
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
+
+	// Parse in environment "test"
+	p, err = Parse(ctx, repo, "", "test", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }
 
 func TestReport(t *testing.T) {
@@ -947,8 +1021,9 @@ annotations:
 			ReportSpec: &runtimev1.ReportSpec{
 				Title: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					Cron:     "0 * * * *",
-					TimeZone: "America/Los_Angeles",
+					RefUpdate: true,
+					Cron:      "0 * * * *",
+					TimeZone:  "America/Los_Angeles",
 				},
 				QueryName:       "MetricsViewToplist",
 				QueryArgsJson:   `{"metrics_view":"mv1"}`,
@@ -960,7 +1035,90 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAlert(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		`alerts/a1.yaml`: `
+kind: alert
+title: My Alert
+
+refs:
+  - model/m1
+
+refresh:
+  ref_update: false
+  cron: '0 * * * *'
+
+watermark: inherit
+
+intervals:
+  duration: PT1H
+  limit: 10
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+  for:
+    user_email: benjamin@example.com
+
+email:
+  on_recover: true
+  renotify: true
+  renotify_after: 24h
+  recipients:
+    - benjamin@example.com
+
+annotations:
+  foo: bar
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql:             `SELECT 1`,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			AlertSpec: &runtimev1.AlertSpec{
+				Title: "My Alert",
+				RefreshSchedule: &runtimev1.Schedule{
+					RefUpdate:     false,
+					TickerSeconds: 86400,
+				},
+				WatermarkInherit:          true,
+				IntervalsIsoDuration:      "PT1H",
+				IntervalsLimit:            10,
+				QueryName:                 "MetricsViewToplist",
+				QueryArgsJson:             `{"metrics_view":"mv1"}`,
+				QueryFor:                  &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
+				EmailRecipients:           []string{"jane@example.com"},
+				EmailOnRecover:            true,
+				EmailOnFail:               true,
+				EmailOnError:              false,
+				EmailRenotify:             true,
+				EmailRenotifyAfterSeconds: 24 * 60 * 60,
+				Annotations:               map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -998,7 +1156,7 @@ measures:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1037,7 +1195,7 @@ colors:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }

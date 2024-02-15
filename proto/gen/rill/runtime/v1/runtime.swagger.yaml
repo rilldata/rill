@@ -448,6 +448,8 @@ paths:
           schema:
             type: object
             properties:
+              environment:
+                type: string
               olapConnector:
                 type: string
               repoConnector:
@@ -2681,6 +2683,119 @@ definitions:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
     title: Type represents a data type in a schema
+  v1Alert:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1AlertSpec'
+      state:
+        $ref: '#/definitions/v1AlertState'
+  v1AlertExecution:
+    type: object
+    properties:
+      adhoc:
+        type: boolean
+      result:
+        $ref: '#/definitions/v1AssertionResult'
+      sentEmails:
+        type: boolean
+      executionTime:
+        type: string
+        format: date-time
+      startedOn:
+        type: string
+        format: date-time
+      finishedOn:
+        type: string
+        format: date-time
+  v1AlertSpec:
+    type: object
+    properties:
+      trigger:
+        type: boolean
+      title:
+        type: string
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
+      timeoutSeconds:
+        type: integer
+        format: int64
+      queryName:
+        type: string
+      queryArgsJson:
+        type: string
+      queryForUserId:
+        type: string
+      queryForUserEmail:
+        type: string
+      queryForAttributes:
+        type: object
+      emailRecipients:
+        type: array
+        items:
+          type: string
+      emailOnRecover:
+        type: boolean
+      emailOnFail:
+        type: boolean
+      emailOnError:
+        type: boolean
+      emailRenotify:
+        type: boolean
+      emailRenotifyAfterSeconds:
+        type: integer
+        format: int64
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+  v1AlertState:
+    type: object
+    properties:
+      specHash:
+        type: string
+      refsHash:
+        type: string
+      nextRunOn:
+        type: string
+        format: date-time
+      currentExecution:
+        $ref: '#/definitions/v1AlertExecution'
+      executionHistory:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AlertExecution'
+      executionCount:
+        type: integer
+        format: int64
+  v1AssertionResult:
+    type: object
+    properties:
+      status:
+        $ref: '#/definitions/v1AssertionStatus'
+      failRow:
+        type: object
+      errorMessage:
+        type: string
+  v1AssertionStatus:
+    type: string
+    enum:
+      - ASSERTION_STATUS_UNSPECIFIED
+      - ASSERTION_STATUS_PASS
+      - ASSERTION_STATUS_FAIL
+      - ASSERTION_STATUS_ERROR
+    default: ASSERTION_STATUS_UNSPECIFIED
   v1BigQueryListDatasetsResponse:
     type: object
     properties:
@@ -3048,6 +3163,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      environment:
+        type: string
       olapConnector:
         type: string
       repoConnector:
@@ -3269,6 +3386,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      environment:
+        type: string
       olapConnector:
         type: string
       repoConnector:
@@ -3470,6 +3589,8 @@ definitions:
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
       timeZone:
+        type: string
+      alias:
         type: string
   v1MetricsViewAggregationMeasure:
     type: object
@@ -3769,18 +3890,31 @@ definitions:
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
+      watermarkExpression:
+        type: string
+        description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
       dimensions:
         type: array
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecDimensionV2'
         title: Dimensions in the metrics view
+      defaultDimensions:
+        type: array
+        items:
+          type: string
+        title: List of selected dimensions by defaults
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasureV2'
         title: Measures in the metrics view
+      defaultMeasures:
+        type: array
+        items:
+          type: string
+        title: List of selected measures by defaults
       smallestTimeGrain:
         $ref: '#/definitions/v1TimeGrain'
         title: Smallest time grain to show in the dashboard
@@ -4650,6 +4784,8 @@ definitions:
         $ref: '#/definitions/v1Migration'
       report:
         $ref: '#/definitions/v1Report'
+      alert:
+        $ref: '#/definitions/v1Alert'
       pullTrigger:
         $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
@@ -4785,6 +4921,10 @@ definitions:
   v1Schedule:
     type: object
     properties:
+      refUpdate:
+        type: boolean
+      disable:
+        type: boolean
       cron:
         type: string
       tickerSeconds:
@@ -5057,11 +5197,13 @@ definitions:
       - CODE_INT32
       - CODE_INT64
       - CODE_INT128
+      - CODE_INT256
       - CODE_UINT8
       - CODE_UINT16
       - CODE_UINT32
       - CODE_UINT64
       - CODE_UINT128
+      - CODE_UINT256
       - CODE_FLOAT32
       - CODE_FLOAT64
       - CODE_TIMESTAMP

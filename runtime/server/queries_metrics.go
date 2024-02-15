@@ -37,30 +37,6 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsView)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, dim := range req.Dimensions {
-		if dim.Name == mv.TimeDimension {
-			// checkFieldAccess doesn't currently check the time dimension
-			continue
-		}
-		if !checkFieldAccess(dim.Name, security) {
-			return nil, ErrForbidden
-		}
-	}
-
-	for _, m := range req.Measures {
-		if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
-			continue
-		}
-		if !checkFieldAccess(m.Name, security) {
-			return nil, ErrForbidden
-		}
-	}
-
 	tr := req.TimeRange
 	if req.TimeStart != nil || req.TimeEnd != nil {
 		tr = &runtimev1.TimeRange{
@@ -77,14 +53,13 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		TimeRange:          tr,
 		Where:              req.Where,
 		Having:             req.Having,
+		Filter:             req.Filter,
 		Limit:              &req.Limit,
 		Offset:             req.Offset,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
 		PivotOn:            req.PivotOn,
-		Filter:             req.Filter,
+		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -198,22 +173,6 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	if !checkFieldAccess(req.Dimension.Name, security) {
-		return nil, ErrForbidden
-	}
-
-	// validate measures access
-	for _, m := range req.Measures {
-		if !checkFieldAccess(m.Name, security) {
-			return nil, ErrForbidden
-		}
-	}
-
 	if req.Limit == 0 {
 		req.Limit = 100
 	}
@@ -230,12 +189,11 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Sort:                req.Sort,
 		Where:               req.Where,
 		Having:              req.Having,
-		MetricsView:         mv,
-		ResolvedMVSecurity:  security,
 		Exact:               req.Exact,
 		Filter:              req.Filter,
+		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}

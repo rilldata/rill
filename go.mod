@@ -10,13 +10,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.17.1
 	github.com/ForceCLI/force v1.0.5-0.20231227180521-1b251cf1a8b0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.27.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/apache/arrow/go/v14 v14.0.1
+	github.com/apache/arrow/go/v14 v14.0.2
 	github.com/apache/calcite-avatica-go/v5 v5.3.0
 	github.com/aws/aws-sdk-go v1.44.314
 	github.com/aws/aws-sdk-go-v2 v1.21.0
@@ -42,6 +43,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/uuid v1.6.0
@@ -66,11 +68,12 @@ require (
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.9.0
-	github.com/snowflakedb/gosnowflake v1.7.0
+	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
+	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.27.0
 	github.com/xuri/excelize/v2 v2.7.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1
@@ -117,7 +120,7 @@ require (
 	github.com/apache/arrow/go/v12 v12.0.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
@@ -138,6 +141,7 @@ require (
 )
 
 require (
+	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -180,6 +184,8 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
+	github.com/go-faster/city v1.0.1 // indirect
+	github.com/go-faster/errors v0.6.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -245,6 +251,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
+	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -257,6 +264,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
+	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.11 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -301,10 +309,6 @@ require (
 // details on breaking changes here : https://github.com/marcboeker/go-duckdb/pull/147#issuecomment-1895771714
 // changes done on top of v1.5.5 : https://github.com/rilldata/go-duckdb/compare/branch_v1.5.5...rilldata:go-duckdb:appender_revert
 replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb v0.0.0-20240205054225-f83b5ddead91
-
-// snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
-// revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977
-replace github.com/snowflakedb/gosnowflake v1.7.0 => github.com/esevastyanov/gosnowflake v0.0.0-20231129090721-012eca4e3448
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a

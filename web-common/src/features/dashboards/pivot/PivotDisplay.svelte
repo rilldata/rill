@@ -25,7 +25,7 @@
     <PivotToolbar isFetching={$pivotDataStore.isFetching} bind:showPanels />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty />
+        <PivotEmpty isFetching={$pivotDataStore?.isFetching} />
       {:else}
         <PivotTable {pivotDataStore} />
       {/if}

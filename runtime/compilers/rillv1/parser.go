@@ -35,6 +35,7 @@ type Resource struct {
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
+	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
 }
 
@@ -65,6 +66,7 @@ const (
 	ResourceKindMetricsView
 	ResourceKindMigration
 	ResourceKindReport
+	ResourceKindAlert
 	ResourceKindTheme
 )
 
@@ -84,6 +86,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindMigration, nil
 	case "report":
 		return ResourceKindReport, nil
+	case "alert":
+		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
 	default:
@@ -105,6 +109,8 @@ func (k ResourceKind) String() string {
 		return "Migration"
 	case ResourceKindReport:
 		return "Report"
+	case ResourceKindAlert:
+		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
 	default:
@@ -129,6 +135,7 @@ type Parser struct {
 	// Options
 	Repo             drivers.RepoStore
 	InstanceID       string
+	Environment      string
 	DefaultConnector string
 	DuckDBConnectors []string
 
@@ -170,10 +177,11 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 //
 // Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
 // To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
 		Repo:             repo,
 		InstanceID:       instanceID,
+		Environment:      environment,
 		DefaultConnector: defaultConnector,
 		DuckDBConnectors: duckDBConnectors,
 	}
@@ -708,6 +716,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:
 		r.ReportSpec = &runtimev1.ReportSpec{}
+	case ResourceKindAlert:
+		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
 	default:

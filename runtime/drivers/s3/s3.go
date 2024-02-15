@@ -94,6 +94,7 @@ type configProperties struct {
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	RetainFiles     bool   `mapstructure:"retain_files"`
 }
 
 // Open implements drivers.Driver
@@ -103,7 +104,7 @@ func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client,
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.Decode(cfgMap, cfg)
+	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -321,6 +322,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
+		RetainFiles:           c.config.RetainFiles,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -365,7 +367,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 
 func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *sourceProperties, bucket string, creds *credentials.Credentials) (*session.Session, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
-	if len(conf.S3Endpoint) > 0 {
+	if conf.S3Endpoint != "" {
 		region := conf.AWSRegion
 		if region == "" {
 			// Set the default region for bwd compatibility reasons
