@@ -808,6 +808,7 @@ export interface V1AlertOptions {
   intervalDuration?: string;
   queryName?: string;
   queryArgsJson?: string;
+  metricsViewName?: string;
   recipients?: string[];
   emailRenotify?: boolean;
   emailRenotifyAfterSeconds?: number;

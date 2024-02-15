@@ -1,5 +1,4 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -61,7 +60,6 @@ export interface PivotTimeConfig {
   timeEnd: string | undefined;
   timeZone: string;
   timeDimension: string;
-  interval: AvailableTimeGrain;
 }
 
 /**

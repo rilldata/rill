@@ -5,6 +5,11 @@ export const DEFAULT_COORDINATES: DomainCoordinates = {
   y: undefined,
 };
 
+export const DEFAULT_NUMBER_COORDINATES: DomainCoordinates<number> = {
+  x: undefined,
+  y: undefined,
+};
+
 export const contexts = {
   config: "rill:data-graphic:plot-config",
   scale(namespace: string) {

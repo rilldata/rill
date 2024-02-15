@@ -11,11 +11,11 @@
   export let dimensionData: DimensionDataItem[];
   export let dimensionValue: string | undefined;
   export let validPercTotal: number | null;
-  export let hovered: boolean | undefined;
+  export let hovered = false;
 
   $: x = point?.[xAccessor];
 
-  function truncate(str) {
+  function truncate(str: string) {
     if (!str?.length) return str;
 
     const truncateLength = 34;

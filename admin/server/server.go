@@ -277,7 +277,9 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	groupNames := make([]string, len(groups))
+
+	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
+	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
 	}

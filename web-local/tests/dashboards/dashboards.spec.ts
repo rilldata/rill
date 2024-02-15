@@ -133,12 +133,10 @@ test.describe("dashboard", () => {
 
     // Change time zone to UTC
     await page.getByLabel("Timezone selector").click();
-    await page
-      .getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
-      .click();
+    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
     // Wait for menu to close
     await expect(
-      page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" }),
+      page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }),
     ).not.toBeVisible();
 
     await interactWithComparisonMenu(page, "No comparison", (l) =>

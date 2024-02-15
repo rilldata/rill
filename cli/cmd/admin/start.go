@@ -237,6 +237,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivitySinkKafkaBrokers,
 				conf.ActivityUISinkKafkaTopic,
 				logger,
+				"admin-server",
+				cliCfg.Version.String(),
 			)
 
 			// Init and run server

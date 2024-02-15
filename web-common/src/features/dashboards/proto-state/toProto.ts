@@ -91,9 +91,9 @@ export function getProtoFromDashboardState(
   if (metrics.selectedComparisonDimension) {
     state.comparisonDimension = metrics.selectedComparisonDimension;
   }
-  if (metrics.selectedTimezone) {
-    state.selectedTimezone = metrics.selectedTimezone;
-  }
+
+  state.selectedTimezone = metrics.selectedTimezone;
+
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
