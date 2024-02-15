@@ -1,10 +1,10 @@
-import { extractNumbers } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotDataRow,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { extractNumbers, isTimeDimension, sortAcessors } from "./pivot-utils";
 
 const NUM_COLUMNS_PER_PAGE = 50;
 
@@ -77,12 +77,15 @@ export function getColumnFiltersForPage(
   const pageStartIndex = NUM_COLUMNS_PER_PAGE * (colDimensionPageNumber - 1);
 
   const allColumnKeys = totalsRow ? Object.keys(totalsRow) : [];
-  const columnKeysForPage = allColumnKeys
-    .filter(
-      (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
-    )
-    .sort()
-    .slice(pageStartIndex, pageStartIndex + NUM_COLUMNS_PER_PAGE);
+  const colHeaderKeys = allColumnKeys.filter(
+    (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
+  );
+  const sortedColumnKeys = sortAcessors(colHeaderKeys);
+
+  const columnKeysForPage = sortedColumnKeys.slice(
+    pageStartIndex,
+    pageStartIndex + NUM_COLUMNS_PER_PAGE,
+  );
 
   const minIndexVisible: Record<string, number> = {};
   const maxIndexVisible: Record<string, number> = {};
@@ -115,9 +118,11 @@ export function getColumnFiltersForPage(
     );
   });
 
-  console.log(slicedAxesData);
-
-  return Object.entries(slicedAxesData).map(([dimension, values]) =>
-    createInExpression(dimension, Array.from(values)),
-  );
+  return colDimensionNames
+    .filter(
+      (dimension) => !isTimeDimension(dimension, config.time.timeDimension),
+    )
+    .map((dimension) =>
+      createInExpression(dimension, slicedAxesData[dimension]),
+    );
 }

@@ -276,6 +276,47 @@ export function extractNumbers(str: string) {
   return { c: numberAfterC, v: numberAfterV };
 }
 
+export function sortAcessors(accessors: string[]) {
+  function parseParts(str: string): number[] {
+    // Extract all occurrences of patterns like c<num>v<num>
+    const matches = str.match(/c(\d+)v(\d+)/g);
+    if (!matches) {
+      return [];
+    }
+    // Map each found pattern to its numeric components
+    const parts: number[] = matches.flatMap((match) => {
+      const result = /c(\d+)v(\d+)/.exec(match);
+      if (!result) return [];
+      const [, cPart, vPart] = result;
+      return [parseInt(cPart, 10), parseInt(vPart, 10)]; // Convert to numbers for proper comparison
+    });
+
+    // Extract m<num> part
+    const mPartMatch = str.match(/m(\d+)$/);
+    if (mPartMatch) {
+      parts.push(parseInt(mPartMatch[1], 10)); // Add m<num> part as a number
+    }
+    return parts;
+  }
+
+  return accessors.sort((a: string, b: string): number => {
+    const partsA = parseParts(a);
+    const partsB = parseParts(b);
+
+    // Compare each part until a difference is found
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const partA = partsA[i] || 0; // Default to 0 if undefined
+      const partB = partsB[i] || 0; // Default to 0 if undefined
+      if (partA !== partB) {
+        return partA - partB;
+      }
+    }
+
+    // If all parts are equal, consider them equal
+    return 0;
+  });
+}
+
 /**
  * For a given accessor created by getAccessorForCell, get the filter
  * that can be applied to the table to get sorted data based on the
