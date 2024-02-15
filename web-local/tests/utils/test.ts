@@ -26,7 +26,7 @@ export const test = base.extend({
     // Add `rill.yaml` file to the project repo
     writeFileSync(
       `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
-      'compiler: rill-beta\ntitle: "Test Project"'
+      'compiler: rill-beta\ntitle: "Test Project"',
     );
 
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY}`;
@@ -42,7 +42,7 @@ export const test = base.extend({
     await asyncWaitUntil(async () => {
       try {
         const response = await axios.get(
-          `http://localhost:${TEST_PORT}/v1/ping`
+          `http://localhost:${TEST_PORT}/v1/ping`,
         );
         return response.status === 200;
       } catch (err) {
