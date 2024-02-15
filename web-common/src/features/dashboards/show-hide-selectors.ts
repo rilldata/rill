@@ -4,6 +4,7 @@ import {
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import type {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
@@ -29,17 +30,26 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
 function createShowHideStore<Item>(
   metricsViewName: string,
   metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
-  fieldInMeta: keyof Pick<V1MetricsView, "dimensions" | "measures">,
-  visibleFieldInStore: keyof Pick<
-    MetricsExplorerEntity,
-    "visibleMeasureKeys" | "visibleDimensionKeys"
-  >,
-  allVisibleFieldInStore: keyof Pick<
-    MetricsExplorerEntity,
-    "allMeasuresVisible" | "allDimensionsVisible"
-  >,
+  type: "dimensions" | "measures",
   labelSelector: (i: Item) => string,
 ) {
+  const typeInCaps = type.replace(/\w/, (s) => s.toUpperCase());
+  const visibleFieldInStore = `visible${typeInCaps.slice(
+    0,
+    typeInCaps.length - 1,
+  )}Keys` as keyof Pick<
+    MetricsExplorerEntity,
+    "visibleMeasureKeys" | "visibleDimensionKeys"
+  >;
+  const allVisibleFieldInStore = `all${typeInCaps}Visible` as keyof Pick<
+    MetricsExplorerEntity,
+    "allMeasuresVisible" | "allDimensionsVisible"
+  >;
+  const persistenceStoreUpdateMethod = `updateVisible${typeInCaps}` as
+    | "updateVisibleMeasures"
+    | "updateVisibleDimensions";
+  const persistentStore = getPersistentDashboardStore();
+
   const derivedStore = derived(
     [metricsView, useDashboardStore(metricsViewName)],
     ([meta, metricsExplorer]) => {
@@ -56,7 +66,7 @@ function createShowHideStore<Item>(
         };
       }
 
-      const items = meta.data[fieldInMeta];
+      const items = meta.data[type] ?? [];
       const selectableItems: Array<SearchableFilterSelectableItem> = items.map(
         (i) => ({
           name: i.name,
@@ -80,6 +90,9 @@ function createShowHideStore<Item>(
         get(derivedStore).availableKeys,
       );
       metricsExplorer[allVisibleFieldInStore] = true;
+      persistentStore[persistenceStoreUpdateMethod]([
+        ...metricsExplorer[visibleFieldInStore].keys(),
+      ]);
     });
   };
 
@@ -88,9 +101,15 @@ function createShowHideStore<Item>(
       // Remove all keys except for the first one
       const firstKey = get(derivedStore).availableKeys.slice(0, 1);
       metricsExplorer[visibleFieldInStore] = new Set(firstKey);
+      persistentStore[persistenceStoreUpdateMethod]([
+        ...metricsExplorer[visibleFieldInStore].keys(),
+      ]);
 
-      if (fieldInMeta === "measures") {
+      if (type === "measures") {
         metricsExplorer.leaderboardMeasureName = firstKey[0];
+        persistentStore.updateLeaderboardMeasureName(
+          metricsExplorer.leaderboardMeasureName,
+        );
       }
       metricsExplorer[allVisibleFieldInStore] = false;
     });
@@ -106,7 +125,7 @@ function createShowHideStore<Item>(
          * visible measure as the current leaderboard measure
          */
         if (
-          fieldInMeta === "measures" &&
+          type === "measures" &&
           metricsExplorer.leaderboardMeasureName === key
         ) {
           /*
@@ -117,7 +136,10 @@ function createShowHideStore<Item>(
             metricsExplorer[visibleFieldInStore].has(key),
           );
 
-          metricsExplorer.leaderboardMeasureName = firstVisible;
+          metricsExplorer.leaderboardMeasureName = firstVisible ?? "";
+          persistentStore.updateLeaderboardMeasureName(
+            metricsExplorer.leaderboardMeasureName,
+          );
         }
       } else {
         metricsExplorer[visibleFieldInStore].add(key);
@@ -125,6 +147,9 @@ function createShowHideStore<Item>(
       metricsExplorer[allVisibleFieldInStore] =
         metricsExplorer[visibleFieldInStore].size ===
         get(derivedStore).availableKeys.length;
+      persistentStore[persistenceStoreUpdateMethod]([
+        ...metricsExplorer[visibleFieldInStore].keys(),
+      ]);
     });
   };
 
@@ -139,8 +164,6 @@ export function createShowHideMeasuresStore(
     metricsViewName,
     metricsView,
     "measures",
-    "visibleMeasureKeys",
-    "allMeasuresVisible",
     /*
      * This selector returns the best available string for each measure,
      * using the "label" if available but falling back to the expression
@@ -158,8 +181,6 @@ export function createShowHideDimensionsStore(
     metricsViewName,
     metricsView,
     "dimensions",
-    "visibleDimensionKeys",
-    "allDimensionsVisible",
     /*
      * This selector returns the best available string for each dimension,
      * using the "label" if available but falling back to the name of

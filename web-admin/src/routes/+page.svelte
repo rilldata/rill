@@ -2,7 +2,7 @@
   import { createAdminServiceGetCurrentUser } from "../client";
   import AuthRedirect from "../features/authentication/AuthRedirect.svelte";
   import WelcomeMessage from "../features/home/WelcomeMessage.svelte";
-  import OrganizationRedirect from "../features/organizations/OrganizationRedirect.svelte";
+  import OrganizationRedirect from "../features/organizations/active-org/OrganizationRedirect.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 

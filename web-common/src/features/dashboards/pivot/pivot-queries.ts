@@ -1,4 +1,8 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import {
+  getTimeGrainFromDimension,
+  isTimeDimension,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotAxesData,
   PivotDataStoreConfig,
@@ -86,8 +90,7 @@ export function getAxisForDimensions(
   const measures = config.measureNames;
   const { time } = config;
 
-  let timeDimensionSortBy: V1MetricsViewAggregationSort[] = [];
-
+  let sortProvided = true;
   if (!sortBy.length) {
     sortBy = [
       {
@@ -95,21 +98,16 @@ export function getAxisForDimensions(
         name: measures[0] || dimensions?.[0],
       },
     ];
-
-    timeDimensionSortBy = [
-      {
-        desc: false,
-        name: time.timeDimension,
-      },
-    ];
+    sortProvided = false;
   }
 
   const dimensionBody = dimensions.map((d) => {
-    if (d === time.timeDimension) {
+    if (isTimeDimension(d, time.timeDimension)) {
       return {
-        name: d,
-        timeGrain: time.interval,
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(d),
         timeZone: time.timeZone,
+        alias: d,
       };
     } else return { name: d };
   });
@@ -117,10 +115,16 @@ export function getAxisForDimensions(
   return derived(
     dimensionBody.map((dimension) => {
       let sortByForDimension = sortBy;
-      if (dimension.name === time.timeDimension) {
-        sortByForDimension = timeDimensionSortBy.length
-          ? timeDimensionSortBy
-          : sortBy;
+      if (
+        isTimeDimension(dimension.alias, time.timeDimension) &&
+        !sortProvided
+      ) {
+        sortByForDimension = [
+          {
+            desc: false,
+            name: dimension.alias,
+          },
+        ];
       }
       return createPivotAggregationRowQuery(
         ctx,
@@ -146,6 +150,7 @@ export function getAxisForDimensions(
 
       data.forEach((d, i: number) => {
         const dimensionName = dimensions[i];
+
         axesMap[dimensionName] = (d?.data?.data || [])?.map(
           (dimValue) => dimValue[dimensionName] as string,
         );
@@ -153,7 +158,6 @@ export function getAxisForDimensions(
       });
 
       if (Object.values(axesMap).some((d) => !d)) return { isFetching: true };
-
       return {
         isFetching: false,
         data: axesMap,

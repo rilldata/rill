@@ -177,6 +177,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivitySinkKafkaBrokers,
 				conf.ActivitySinkKafkaTopic,
 				logger,
+				"runtime-server",
+				cliCfg.Version.String(),
 			)
 
 			// Create ctx that cancels on termination signals
