@@ -21,6 +21,12 @@ When developing a project locally, Rill uses the credentials configured in your 
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
 
+:::tip
+
+You can also run locally with assumed credentials such as a service account key. This is useful for when you have multiple profiles or may receive limited access to a bucket. In that case, run the following command on start - replacing path_to_json_key_file with the service account file `GOOGLE_APPLICATION_CREDENTIALS=path_to_json_key_file rill start`
+
+:::
+
 ### Configure credentials for deployments on Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to the buckets used in your project. 
