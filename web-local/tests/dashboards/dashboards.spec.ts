@@ -1,4 +1,4 @@
-import { expect, Page, test } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 import {
   TestEntityType,
   updateCodeEditor,
@@ -22,15 +22,11 @@ import {
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import { createOrReplaceSource } from "../utils/sourceHelpers";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
 import { waitForEntity } from "../utils/waitHelpers";
+import { test } from "../utils/test";
 
 test.describe("dashboard", () => {
-  startRuntimeForEachTest();
-
   test("Autogenerate dashboard from source", async ({ page }) => {
-    await page.goto("/");
-
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
     await createDashboardFromSource(page, "AdBids");
     await waitForEntity(
@@ -43,8 +39,6 @@ test.describe("dashboard", () => {
   });
 
   test("Autogenerate dashboard from model", async ({ page }) => {
-    await page.goto("/");
-
     await createAdBidsModel(page);
     await Promise.all([
       waitForEntity(
@@ -103,7 +97,7 @@ test.describe("dashboard", () => {
     // });
 
     test.setTimeout(60000);
-    await page.goto("/");
+
     // disable animations
     await page.addStyleTag({
       content: `

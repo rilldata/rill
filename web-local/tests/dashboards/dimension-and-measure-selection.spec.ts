@@ -1,9 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { test } from "../utils/test";
 
 test.describe("dimension and measure selectors", () => {
-  startRuntimeForEachTest();
   // dashboard test setup
   useDashboardFlowTestSetup();
 
