@@ -623,23 +623,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			}
 
 			measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
-			if len(sortingCriteria) > 0 {
-				jsc := make([]string, 0, len(sortingCriteria))
-				for _, v := range sortingCriteria {
-					jsc = append(jsc, fmt.Sprintf("%s.%s", safeName(mv.Table), v))
-				}
-				orderClause = "ORDER BY " + strings.Join(jsc, ", ")
-			}
 			var extraWhere string
 			var extraWhereArgs []any
 			if q.Having != nil {
-				aliases := [1]*runtimev1.MetricsViewComparisonMeasureAlias{
-					{
-						Name:  fmt.Sprintf("%s.%s", selfJoinTableAlias, q.Measures[0].Name),
-						Alias: q.Measures[0].Name,
-					},
-				}
-				extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, aliases[:], dialect)
+				extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, nil, dialect)
 				if err != nil {
 					return "", nil, err
 				}
@@ -651,13 +638,15 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			}
 
 			sql = fmt.Sprintf(`
-					SELECT %[1]s FROM (
-						SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
-					) %[2]s 
-					LEFT JOIN (
-						SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
-					) %[7]s 
-					ON (%[8]s)
+					SELECT * FROM (
+						SELECT %[1]s FROM (
+							SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
+						) %[2]s 
+						LEFT JOIN (
+							SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
+						) %[7]s 
+						ON (%[8]s)
+					)
 					%[14]s
 					%[15]s
 					%[13]s 
