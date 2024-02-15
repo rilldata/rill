@@ -645,6 +645,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				}
 				extraWhere = "WHERE " + extraWhere
 			}
+			druidGroupBy := ""
+			if dialect == drivers.DialectDruid {
+				druidGroupBy = groupClause
+			}
 
 			sql = fmt.Sprintf(`
 					SELECT %[1]s FROM (
@@ -655,7 +659,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 					) %[7]s 
 					ON (%[8]s)
 					%[14]s
-					%[5]s
+					%[15]s
 					%[13]s 
 					%[11]s  
 					OFFSET %[12]d
@@ -674,6 +678,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				q.Offset,                              // 12
 				orderClause,                           // 13
 				extraWhere,                            // 14
+				druidGroupBy,                          // 15
 			)
 
 			args = args[:0]
