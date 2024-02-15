@@ -715,6 +715,8 @@ paths:
                 type: string
               path:
                 type: string
+              useAi:
+                type: boolean
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -3372,6 +3374,9 @@ definitions:
         type: boolean
   v1GenerateMetricsViewFileResponse:
     type: object
+    properties:
+      aiSucceeded:
+        type: boolean
     title: Response message for RuntimeService.GenerateMetricsViewFile
   v1GetCatalogEntryResponse:
     type: object

@@ -4200,6 +4200,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for Path
 
+	// no validation rules for UseAi
+
 	if len(errors) > 0 {
 		return GenerateMetricsViewFileRequestMultiError(errors)
 	}
@@ -4304,6 +4306,8 @@ func (m *GenerateMetricsViewFileResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for AiSucceeded
 
 	if len(errors) > 0 {
 		return GenerateMetricsViewFileResponseMultiError(errors)

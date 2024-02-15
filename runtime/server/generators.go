@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -56,23 +57,29 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		return nil, status.Error(codes.InvalidArgument, "table not found")
 	}
 
-	// Connect to the AI service configured for the instance
-	ai, release, err := s.runtime.AI(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
+	// Generate the YAML
+	var yaml string
+	if req.UseAi {
+		// Connect to the AI service configured for the instance
+		ai, release, err := s.runtime.AI(ctx, req.InstanceId)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
 
-	// Call AI service to infer a metrics view YAML
-	yaml, err := ai.GenerateMetricsViewYAML(ctx, tbl.Name, olap.Dialect().String(), tbl.Schema)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate metrics view YAML: %v", err)
+		// Call AI service to infer a metrics view YAML
+		yaml, err = ai.GenerateMetricsViewYAML(ctx, tbl.Name, olap.Dialect().String(), tbl.Schema)
+		if err != nil {
+			s.logger.Error("failed to generate metrics view YAML using AI", zap.Error(err))
+		}
+
+		// TODO: Validate the YAML using the parser
+		// TODO: Remove invalid dimensions and measures (use validation logic from the reconciler)
+		// TODO: Fallback to current metrics view generator if something fails OR after a timeout
+		// TODO: Add a comment in the output for whether it was generated with AI or static analysis
 	}
 
-	// TODO: Validate the YAML using the parser
-	// TODO: Remove invalid dimensions and measures (use validation logic from the reconciler)
-	// TODO: Fallback to current metrics view generator if something fails OR after a timeout
-	// TODO: Add a comment in the output for whether it was generated with AI or static analysis
+	// TODO: If yaml == nil, fall back to the basic generator
 
 	// Write the file to the repo
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)

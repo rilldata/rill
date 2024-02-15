@@ -1801,6 +1801,11 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
    */
   path = "";
 
+  /**
+   * @generated from field: bool use_ai = 5;
+   */
+  useAi = false;
+
   constructor(data?: PartialMessage<GenerateMetricsViewFileRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1813,6 +1818,7 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileRequest {
@@ -1838,6 +1844,11 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
  * @generated from message rill.runtime.v1.GenerateMetricsViewFileResponse
  */
 export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsViewFileResponse> {
+  /**
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
   constructor(data?: PartialMessage<GenerateMetricsViewFileResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1846,6 +1857,7 @@ export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsView
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GenerateMetricsViewFileResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileResponse {

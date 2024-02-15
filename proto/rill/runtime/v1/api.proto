@@ -489,10 +489,13 @@ message GenerateMetricsViewFileRequest {
   string connector = 2;
   string table = 3;
   string path = 4;
+  bool use_ai = 5;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
-message GenerateMetricsViewFileResponse {}
+message GenerateMetricsViewFileResponse {
+  bool ai_succeeded = 1;
+}
 
 // **********
 // Controller
