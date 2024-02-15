@@ -16,9 +16,7 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     getRuntimeServiceListResourcesQueryKey,
     type V1GetResourceResponse,
