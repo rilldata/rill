@@ -92,7 +92,7 @@
             createBinaryExpression(
               c.field,
               c.operation as V1Operation,
-              c.value,
+              Number(c.value),
             ),
           ),
         ),

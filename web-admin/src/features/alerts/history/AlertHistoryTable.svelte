@@ -1,8 +1,8 @@
 <script lang="ts">
   import AlertHistoryTableCompositeCell from "@rilldata/web-admin/features/alerts/history/AlertHistoryTableCompositeCell.svelte";
+  import AlertHistoryTableHeader from "@rilldata/web-admin/features/alerts/history/AlertHistoryTableHeader.svelte";
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
-  import ReportHistoryTableHeader from "@rilldata/web-admin/features/scheduled-reports/history/ReportHistoryTableHeader.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
@@ -48,10 +48,7 @@
       data={$alertQuery.data?.resource.alert.state.executionHistory}
       maxWidthOverride="max-w-[960px]"
     >
-      <ReportHistoryTableHeader
-        slot="header"
-        maxWidthOverride="max-w-[960px]"
-      />
+      <AlertHistoryTableHeader slot="header" maxWidthOverride="max-w-[960px]" />
     </Table>
   {/if}
 </div>

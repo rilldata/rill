@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
+  import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
   import {
     useAlert,
     useAlertDashboardName,
@@ -11,7 +12,6 @@
   import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
-  import ReportOwnerBlock from "@rilldata/web-admin/features/scheduled-reports/metadata/ReportOwnerBlock.svelte";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -29,10 +29,7 @@
   export let alert: string;
 
   $: alertQuery = useAlert($runtime.instanceId, alert);
-  $: isReportCreatedByCode = useIsAlertCreatedByCode(
-    $runtime.instanceId,
-    alert,
-  );
+  $: isAlertCreatedByCode = useIsAlertCreatedByCode($runtime.instanceId, alert);
 
   // Get dashboard
   $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
@@ -48,18 +45,16 @@
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();
 
-  // TODO: edit
-  function handleEditReport() {}
-
-  async function handleDeleteReport() {
+  async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
       organization,
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });
-    queryClient.invalidateQueries(
+    await queryClient.invalidateQueries(
       getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
     );
+    // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);
   }
 </script>
@@ -73,7 +68,7 @@
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
             {#if $alertQuery.data}
-              <ReportOwnerBlock
+              <AlertOwnerBlock
                 {organization}
                 {project}
                 ownerId={$alertQuery.data.resource.alert.spec.annotations[
@@ -89,7 +84,7 @@
           {$alertQuery.data.resource.alert.spec.title}
         </h1>
         <div class="grow" />
-        {#if !$isReportCreatedByCode.data}
+        {#if !$isAlertCreatedByCode.data}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton>
@@ -97,11 +92,8 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item on:click={handleEditReport}>
-                Edit report
-              </DropdownMenu.Item>
-              <DropdownMenu.Item on:click={handleDeleteReport}>
-                Delete report
+              <DropdownMenu.Item on:click={handleDeleteAlert}>
+                Delete Alert
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
