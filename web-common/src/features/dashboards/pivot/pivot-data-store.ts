@@ -284,7 +284,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         let sortFilteredMeasureBody = measureBody;
         if (sortPivotBy.length && measureWhere) {
           const accessor = sortPivotBy[0]?.name;
-          console.log("accessor", accessor, measureWhere);
           sortFilteredMeasureBody = measureBody.map((m) => {
             if (m.name === accessor) return { ...m, filter: measureWhere };
             return m;
