@@ -1,75 +1,53 @@
 package ai
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/url"
+	"errors"
+
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/sashabaranov/go-openai"
 )
 
-const openAIURL = "https://api.openai.com"
-
 type openAI struct {
+	client *openai.Client
 	apiKey string
 }
 
 var _ Client = (*openAI)(nil)
 
 func NewOpenAI(apiKey string) (Client, error) {
+	c := openai.NewClient(apiKey)
+
 	return &openAI{
+		client: c,
 		apiKey: apiKey,
 	}, nil
 }
 
-func (c *openAI) Complete(ctx context.Context, prompt string) (string, error) {
-	res, err := c.request(ctx, "/v1/completions", map[string]any{
-		"model":       "text-davinci-003",
-		"prompt":      prompt,
-		"temperature": 0.7,
-		"max_tokens":  100,
+func (c *openAI) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage) (*adminv1.CompletionMessage, error) {
+	reqMsgs := make([]openai.ChatCompletionMessage, len(msgs))
+	for i, msg := range msgs {
+		reqMsgs[i] = openai.ChatCompletionMessage{
+			Role:    msg.Role,
+			Content: msg.Data,
+		}
+	}
+
+	res, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model:       openai.GPT3Dot5Turbo,
+		Messages:    reqMsgs,
+		Temperature: 0.2,
 	})
 	if err != nil {
-		return "", err
-	}
-
-	jsonData, err := json.Marshal(res)
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonData), nil
-}
-
-func (c *openAI) request(ctx context.Context, path string, payload map[string]any) (map[string]any, error) {
-	uri, err := url.JoinPath(openAIURL, path)
-	if err != nil {
 		return nil, err
 	}
 
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
+	if len(res.Choices) == 0 {
+		return nil, errors.New("no choices returned")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var response map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return &adminv1.CompletionMessage{
+		Role: openai.ChatMessageRoleAssistant,
+		Data: res.Choices[0].Message.Content,
+	}, nil
 }

@@ -12,7 +12,7 @@ produces:
 paths:
   /v1/ai/complete:
     post:
-      summary: Complete sends a prompt to the AI to complete.
+      summary: Complete sends the messages of a chat to the AI and asks it to generate a new message.
       operationId: AIService_Complete
       responses:
         "200":
@@ -2202,11 +2202,21 @@ definitions:
   v1CompleteRequest:
     type: object
     properties:
-      prompt:
-        type: string
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CompletionMessage'
   v1CompleteResponse:
     type: object
     properties:
+      message:
+        $ref: '#/definitions/v1CompletionMessage'
+  v1CompletionMessage:
+    type: object
+    properties:
+      role:
+        type: string
       data:
         type: string
   v1CreateAlertResponse:

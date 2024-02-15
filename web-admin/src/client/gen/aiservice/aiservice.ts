@@ -21,7 +21,7 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 /**
- * @summary Complete sends a prompt to the AI to complete.
+ * @summary Complete sends the messages of a chat to the AI and asks it to generate a new message.
  */
 export const aIServiceComplete = (v1CompleteRequest: V1CompleteRequest) => {
   return httpClient<V1CompleteResponse>({

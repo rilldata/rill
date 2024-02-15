@@ -11,9 +11,9 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  */
 export class CompleteRequest extends Message<CompleteRequest> {
   /**
-   * @generated from field: string prompt = 1;
+   * @generated from field: repeated rill.admin.v1.CompletionMessage messages = 1;
    */
-  prompt = "";
+  messages: CompletionMessage[] = [];
 
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
@@ -23,7 +23,7 @@ export class CompleteRequest extends Message<CompleteRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CompleteRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "messages", kind: "message", T: CompletionMessage, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -48,9 +48,9 @@ export class CompleteRequest extends Message<CompleteRequest> {
  */
 export class CompleteResponse extends Message<CompleteResponse> {
   /**
-   * @generated from field: string data = 1;
+   * @generated from field: rill.admin.v1.CompletionMessage message = 1;
    */
-  data = "";
+  message?: CompletionMessage;
 
   constructor(data?: PartialMessage<CompleteResponse>) {
     super();
@@ -60,7 +60,7 @@ export class CompleteResponse extends Message<CompleteResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CompleteResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "message", kind: "message", T: CompletionMessage },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteResponse {
@@ -77,6 +77,49 @@ export class CompleteResponse extends Message<CompleteResponse> {
 
   static equals(a: CompleteResponse | PlainMessage<CompleteResponse> | undefined, b: CompleteResponse | PlainMessage<CompleteResponse> | undefined): boolean {
     return proto3.util.equals(CompleteResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CompletionMessage
+ */
+export class CompletionMessage extends Message<CompletionMessage> {
+  /**
+   * @generated from field: string role = 1;
+   */
+  role = "";
+
+  /**
+   * @generated from field: string data = 2;
+   */
+  data = "";
+
+  constructor(data?: PartialMessage<CompletionMessage>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CompletionMessage";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompletionMessage {
+    return new CompletionMessage().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompletionMessage {
+    return new CompletionMessage().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompletionMessage {
+    return new CompletionMessage().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompletionMessage | PlainMessage<CompletionMessage> | undefined, b: CompletionMessage | PlainMessage<CompletionMessage> | undefined): boolean {
+    return proto3.util.equals(CompletionMessage, a, b);
   }
 }
 

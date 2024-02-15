@@ -784,12 +784,17 @@ export interface V1CreateAlertResponse {
   name?: string;
 }
 
-export interface V1CompleteResponse {
+export interface V1CompletionMessage {
+  role?: string;
   data?: string;
 }
 
+export interface V1CompleteResponse {
+  message?: V1CompletionMessage;
+}
+
 export interface V1CompleteRequest {
-  prompt?: string;
+  messages?: V1CompletionMessage[];
 }
 
 export interface V1Bookmark {

@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AIServiceClient interface {
-	// Complete sends a prompt to the AI to complete.
+	// Complete sends the messages of a chat to the AI and asks it to generate a new message.
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
 }
 
@@ -51,7 +51,7 @@ func (c *aIServiceClient) Complete(ctx context.Context, in *CompleteRequest, opt
 // All implementations must embed UnimplementedAIServiceServer
 // for forward compatibility
 type AIServiceServer interface {
-	// Complete sends a prompt to the AI to complete.
+	// Complete sends the messages of a chat to the AI and asks it to generate a new message.
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
 	mustEmbedUnimplementedAIServiceServer()
 }

@@ -10,15 +10,13 @@ import (
 
 func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*adminv1.CompleteResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.Int("args.prompt_len", len(req.Prompt)),
+		attribute.Int("args.messages_len", len(req.Messages)),
 	)
 
-	data, err := s.admin.AI.Complete(ctx, req.Prompt)
+	msg, err := s.admin.AI.Complete(ctx, req.Messages)
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.CompleteResponse{
-		Data: data,
-	}, nil
+	return &adminv1.CompleteResponse{Message: msg}, nil
 }

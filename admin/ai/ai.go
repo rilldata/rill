@@ -1,7 +1,11 @@
 package ai
 
-import "context"
+import (
+	"context"
+
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+)
 
 type Client interface {
-	Complete(ctx context.Context, prompt string) (string, error)
+	Complete(ctx context.Context, msgs []*adminv1.CompletionMessage) (*adminv1.CompletionMessage, error)
 }
