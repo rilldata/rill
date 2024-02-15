@@ -4,6 +4,7 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
@@ -31,6 +32,7 @@ import {
   getFilterForPivotTable,
   getPivotConfigKey,
   getSortForAccessor,
+  getTimeForQuery,
   getTimeGrainFromDimension,
   getTotalColumnCount,
   isTimeDimension,
@@ -150,14 +152,17 @@ export function createTableCellQuery(
     } else return { name: dimension };
   });
 
-  const filterForInitialTable = getFilterForPivotTable(
-    config,
-    columnDimensionAxesData,
-    totalsRow,
-    rowDimensionValues,
-    true,
-    anchorDimension,
-  );
+  const { filters: filterForInitialTable, timeFilters } =
+    getFilterForPivotTable(
+      config,
+      columnDimensionAxesData,
+      totalsRow,
+      rowDimensionValues,
+      true,
+      anchorDimension,
+    );
+
+  const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
   const mergedFilter = mergeFilters(filterForInitialTable, config.whereFilter);
 
@@ -175,6 +180,8 @@ export function createTableCellQuery(
     config.measureFilter,
     sortBy,
     "5000",
+    "0",
+    timeRange,
   );
 }
 

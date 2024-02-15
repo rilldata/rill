@@ -70,7 +70,7 @@ export function createSubTableCellQuery(
   columnDimensionAxesData: Record<string, string[]> | undefined,
   totalsRow: PivotDataRow,
   rowNestFilters: V1Expression,
-  timeRange: TimeRangeString | undefined,
+  timeFilters: TimeFilters[],
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
@@ -87,11 +87,14 @@ export function createSubTableCellQuery(
     } else return { name: dimension };
   });
 
-  const filterForSubTable = getFilterForPivotTable(
-    config,
-    columnDimensionAxesData,
-    totalsRow,
+  const { filters: filterForSubTable, timeFilters: colTimeFilters } =
+    getFilterForPivotTable(config, columnDimensionAxesData, totalsRow);
+
+  const timeRange: TimeRangeString = getTimeForQuery(
+    time,
+    timeFilters.concat(colTimeFilters),
   );
+
   filterForSubTable.cond?.exprs?.push(...(rowNestFilters?.cond?.exprs ?? []));
 
   const sortBy = [
@@ -233,7 +236,7 @@ export function queryExpandedRowMeasureValues(
             columnDimensionAxesData,
             totalsRow,
             allMergedFilters,
-            timeRange,
+            timeFilters,
           ),
         ],
         ([expandIndex, subRowDimensions, subTableData]) => {

@@ -113,8 +113,6 @@ export function getTotalsRow(
   const { rowDimensionNames, measureNames } = config;
   const anchorDimensionName = rowDimensionNames[0];
 
-  console.log(columnDimensionAxes);
-
   let totalsRow: PivotDataRow = {};
   if (measureNames.length) {
     const totalsRowTable = reduceTableCellDataIntoRows(

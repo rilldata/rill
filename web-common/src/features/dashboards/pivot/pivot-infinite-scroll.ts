@@ -1,12 +1,30 @@
 import type {
   PivotDataRow,
   PivotDataStoreConfig,
+  TimeFilters,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
-import { extractNumbers, isTimeDimension, sortAcessors } from "./pivot-utils";
+import {
+  extractNumbers,
+  getTimeGrainFromDimension,
+  isTimeDimension,
+  sortAcessors,
+} from "./pivot-utils";
 
 const NUM_COLUMNS_PER_PAGE = 40;
+
+function getSortedColumnKeys(
+  config: PivotDataStoreConfig,
+  totalsRow: PivotDataRow,
+) {
+  const { measureNames, rowDimensionNames } = config;
+
+  const allColumnKeys = totalsRow ? Object.keys(totalsRow) : [];
+  const colHeaderKeys = allColumnKeys.filter(
+    (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
+  );
+  return sortAcessors(colHeaderKeys);
+}
 
 /**
  * Slice column axes data based on page
@@ -17,7 +35,7 @@ export function sliceColumnAxesDataForDef(
   colDimensionAxes: Record<string, string[]> = {},
   totalsRow: PivotDataRow,
 ) {
-  const { rowDimensionNames, colDimensionNames, measureNames } = config;
+  const { colDimensionNames } = config;
   const colDimensionPageNumber = config.pivot.columnPage;
   if (!colDimensionNames.length) return colDimensionAxes;
 
@@ -26,15 +44,14 @@ export function sliceColumnAxesDataForDef(
 
   const maxIndexVisible: Record<string, number> = {};
 
-  let columnKeys = totalsRow ? Object.keys(totalsRow) : [];
-  columnKeys = columnKeys
-    .filter(
-      (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
-    )
-    .sort()
-    .slice(0, totalColumnsToBeDisplayed);
+  const sortedColumnKeys = getSortedColumnKeys(config, totalsRow);
 
-  columnKeys.forEach((accessor) => {
+  const columnKeysForPage = sortedColumnKeys.slice(
+    0,
+    totalColumnsToBeDisplayed,
+  );
+
+  columnKeysForPage.forEach((accessor) => {
     // Strip the measure string from the accessor
     const [accessorWithoutMeasure] = accessor.split("m");
     accessorWithoutMeasure.split("_").forEach((part) => {
@@ -57,6 +74,7 @@ export function sliceColumnAxesDataForDef(
       );
     }
   });
+
   return slicedAxesData;
 }
 
@@ -68,19 +86,16 @@ export function getColumnFiltersForPage(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
   totalsRow: PivotDataRow,
-): V1Expression[] {
-  const { measureNames, colDimensionNames, rowDimensionNames } = config;
+) {
+  const { measureNames, colDimensionNames } = config;
   const colDimensionPageNumber = config.pivot.columnPage;
 
-  if (!colDimensionNames.length || measureNames.length == 0) return [];
+  if (!colDimensionNames.length || measureNames.length == 0)
+    return { filters: [], timeFilters: [] };
 
   const pageStartIndex = NUM_COLUMNS_PER_PAGE * (colDimensionPageNumber - 1);
 
-  const allColumnKeys = totalsRow ? Object.keys(totalsRow) : [];
-  const colHeaderKeys = allColumnKeys.filter(
-    (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
-  );
-  const sortedColumnKeys = sortAcessors(colHeaderKeys);
+  const sortedColumnKeys = getSortedColumnKeys(config, totalsRow);
 
   const columnKeysForPage = sortedColumnKeys.slice(
     pageStartIndex,
@@ -89,8 +104,6 @@ export function getColumnFiltersForPage(
 
   const minIndexVisible: Record<string, number> = {};
   const maxIndexVisible: Record<string, number> = {};
-
-  console.log(columnKeysForPage);
 
   columnKeysForPage.forEach((accessor) => {
     // Strip the measure string from the accessor
@@ -118,11 +131,24 @@ export function getColumnFiltersForPage(
     );
   });
 
-  return colDimensionNames
-    .filter(
-      (dimension) => !isTimeDimension(dimension, config.time.timeDimension),
-    )
+  const timeFilters: TimeFilters[] = [];
+  const filters = colDimensionNames
+    .filter((dimension) => {
+      if (isTimeDimension(dimension, config.time.timeDimension)) {
+        const dates = slicedAxesData[dimension].map((d) =>
+          new Date(d).getTime(),
+        );
+        const timeStart = new Date(Math.min(...dates)).toISOString();
+        const timeEnd = new Date(Math.max(...dates)).toISOString();
+        const interval = getTimeGrainFromDimension(dimension);
+        timeFilters.push({ timeStart, timeEnd, interval });
+        return false;
+      }
+      return true;
+    })
     .map((dimension) =>
       createInExpression(dimension, slicedAxesData[dimension]),
     );
+
+  return { filters, timeFilters };
 }

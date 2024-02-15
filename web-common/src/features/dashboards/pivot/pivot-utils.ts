@@ -124,17 +124,23 @@ export function getTimeForQuery(
   }
 
   timeFilters.forEach((filter) => {
-    // FIXME: Fix type warnings. Are these false positives?
-    // Using `as` to avoid type warnings
-    const duration: Period = TIME_GRAIN[filter.interval]?.duration as Period;
-
     const startTimeDt = new Date(filter.timeStart);
+    let startTimeOfLastInterval: Date | undefined = undefined;
+
+    if (filter.timeEnd) {
+      startTimeOfLastInterval = new Date(filter.timeEnd);
+    } else {
+      startTimeOfLastInterval = startTimeDt;
+    }
+
+    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
     const endTimeDt = getOffset(
-      startTimeDt,
+      startTimeOfLastInterval,
       duration,
       TimeOffsetType.ADD,
       timeZone,
     ) as Date;
+
     if (startTimeDt > new Date(timeStart as string)) {
       timeStart = filter.timeStart;
     }
@@ -200,7 +206,7 @@ export function getFilterForPivotTable(
   isInitialTable = false,
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
-): V1Expression {
+) {
   // TODO: handle for already existing global filters
 
   const { rowDimensionNames, time } = config;
@@ -217,18 +223,18 @@ export function getFilterForPivotTable(
     );
   }
 
-  const colFiltersForPage = getColumnFiltersForPage(
+  const { filters: colFiltersForPage, timeFilters } = getColumnFiltersForPage(
     config,
     colDimensionAxes,
     totalsRow,
   );
 
-  // TODO: For time dimension return the time filters
-
-  return createAndExpression([
+  const filters = createAndExpression([
     ...colFiltersForPage,
     ...(rowFilters ? [rowFilters] : []),
   ]);
+
+  return { filters, timeFilters };
 }
 
 /**
