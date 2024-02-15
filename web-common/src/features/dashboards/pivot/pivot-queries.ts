@@ -8,7 +8,11 @@ import type {
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  createInExpression,
+  sanitiseExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
@@ -21,6 +25,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable } from "svelte/store";
+import { mergeFilters } from "./pivot-merge-filters";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -164,5 +169,52 @@ export function getAxisForDimensions(
         totals: totalsMap,
       };
     },
+  );
+}
+
+export function getTotalsRowQuery(
+  ctx: StateManagers,
+  config: PivotDataStoreConfig,
+  colDimensionAxes: Record<string, string[]> = {},
+) {
+  const { colDimensionNames } = config;
+
+  const { time } = config;
+  const dimensionBody = colDimensionNames.map((dimension) => {
+    if (isTimeDimension(dimension, time.timeDimension)) {
+      return {
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(dimension),
+        timeZone: time.timeZone,
+        alias: dimension,
+      };
+    } else return { name: dimension };
+  });
+
+  const colFilters = colDimensionNames
+    .filter((d) => !isTimeDimension(d, time.timeDimension))
+    .map((dimension) =>
+      createInExpression(dimension, colDimensionAxes[dimension]),
+    );
+
+  const mergedFilter = mergeFilters(
+    createAndExpression(colFilters),
+    config.whereFilter,
+  );
+
+  const sortBy = [
+    {
+      desc: true,
+      name: config.measureNames[0],
+    },
+  ];
+  return createPivotAggregationRowQuery(
+    ctx,
+    config.measureNames,
+    dimensionBody,
+    mergedFilter,
+    config.measureFilter,
+    sortBy,
+    "1000",
   );
 }

@@ -68,8 +68,9 @@ export function createSubTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
   rowNestFilters: V1Expression,
-  timeRange: TimeRangeString | undefined,
+  timeFilters: TimeFilters[],
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
@@ -86,10 +87,14 @@ export function createSubTableCellQuery(
     } else return { name: dimension };
   });
 
-  const filterForSubTable = getFilterForPivotTable(
-    config,
-    columnDimensionAxesData,
+  const { filters: filterForSubTable, timeFilters: colTimeFilters } =
+    getFilterForPivotTable(config, columnDimensionAxesData, totalsRow);
+
+  const timeRange: TimeRangeString = getTimeForQuery(
+    time,
+    timeFilters.concat(colTimeFilters),
   );
+
   filterForSubTable.cond?.exprs?.push(...(rowNestFilters?.cond?.exprs ?? []));
 
   const sortBy = [
@@ -105,7 +110,7 @@ export function createSubTableCellQuery(
     filterForSubTable,
     config.measureFilter,
     sortBy,
-    "10000",
+    "5000",
     "0",
     timeRange,
   );
@@ -129,6 +134,7 @@ export function queryExpandedRowMeasureValues(
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
 ): Readable<ExpandedRowMeasureValues[] | null> {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
@@ -228,8 +234,9 @@ export function queryExpandedRowMeasureValues(
             config,
             anchorDimension,
             columnDimensionAxesData,
+            totalsRow,
             allMergedFilters,
-            timeRange,
+            timeFilters,
           ),
         ],
         ([expandIndex, subRowDimensions, subTableData]) => {
