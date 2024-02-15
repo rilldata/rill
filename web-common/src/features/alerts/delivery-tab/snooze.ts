@@ -1,23 +1,29 @@
-// TODO: replace value with the enum from backend
+const SEC = 1;
+const MIN = 60 * SEC;
+const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
+const MONTH = 30 * DAY;
+
 export const SnoozeOptions = [
   {
-    value: "OFF",
+    value: "0",
     label: "Off",
   },
   {
-    value: "REST_OF_HOUR",
+    value: HOUR + "",
     label: "Rest of the hour",
   },
   {
-    value: "REST_OF_DAY",
+    value: DAY + "",
     label: "Rest of the day",
   },
   {
-    value: "REST_OF_WEEK",
+    value: WEEK + "",
     label: "Rest of the week",
   },
   {
-    value: "REST_OF_MONTH",
+    value: MONTH + "",
     label: "Rest of the month",
   },
 ];
