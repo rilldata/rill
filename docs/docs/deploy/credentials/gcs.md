@@ -23,7 +23,9 @@ You have now configured Google Cloud access from your local environment. Rill wi
 
 :::tip
 
-You can also run locally with assumed credentials such as a service account key. This is useful for when you have multiple profiles or may receive limited access to a bucket. In that case, run the following command on start - replacing path_to_json_key_file with the service account file `GOOGLE_APPLICATION_CREDENTIALS=path_to_json_key_file rill start`
+You can also run locally with assumed credentials such as a service account key. This is useful for when you have multiple profiles or may receive limited access to a bucket. 
+
+In that case, run the following command on start - replacing path_to_json_key_file with the service account file `GOOGLE_APPLICATION_CREDENTIALS=path_to_json_key_file rill start`
 
 :::
 
