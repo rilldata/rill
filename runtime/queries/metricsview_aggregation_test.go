@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -632,6 +633,108 @@ func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
 	require.Equal(t, "", fieldsToString(rows[i], "publisher"))
 }
 
+func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+				Filter: &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_EQ,
+							Exprs: []*runtimev1.Expression{
+								{
+									Expression: &runtimev1.Expression_Ident{
+										Ident: "domain",
+									},
+								},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewStringValue("instagram.com"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+			{
+				Name: "__time",
+			},
+		},
+	}
+
+	resp, err := client.MetricsViewAggregation(context.Background(), req)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	rows := resp.Data
+
+	for _, s := range resp.Schema.Fields {
+		fmt.Printf("%v ", s.Name)
+	}
+	fmt.Println()
+	for i, row := range resp.Data {
+		for _, s := range resp.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[s.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	i := 0
+	require.Equal(t, ",2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, ",2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, ",2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Facebook,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Facebook,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Google,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Google,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Google,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Microsoft,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Microsoft,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Microsoft,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+}
+
 func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
@@ -907,6 +1010,385 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
 	i++
 	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_having_gt(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(19000),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+	i := 0
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_having(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_EQ,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(10406),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	require.Equal(t, 1, len(rows))
+	i := 0
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_where(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		Where: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_LIKE,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "pub",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewStringValue("%c%"),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	i := 0
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+				Filter: &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_EQ,
+							Exprs: []*runtimev1.Expression{
+								{
+									Expression: &runtimev1.Expression_Ident{
+										Ident: "dom",
+									},
+								},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewStringValue("instagram.com"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	i := 0
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Yahoo,null", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "null,4296", fieldsToString(rows[i], "pub", "measure_1"))
+
+	// ================= check m1 > 5000
+
+	q.Having = &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_GT,
+				Exprs: []*runtimev1.Expression{
+					{
+						Expression: &runtimev1.Expression_Ident{
+							Ident: "measure_1",
+						},
+					},
+					{
+						Expression: &runtimev1.Expression_Val{
+							Val: structpb.NewNumberValue(5000),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	require.Equal(t, 1, len(rows))
+	i = 0
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+
+	// ================= check m1 < 5000
+
+	q.Having = &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_LT,
+				Exprs: []*runtimev1.Expression{
+					{
+						Expression: &runtimev1.Expression_Ident{
+							Ident: "measure_1",
+						},
+					},
+					{
+						Expression: &runtimev1.Expression_Val{
+							Val: structpb.NewNumberValue(5000),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	require.Equal(t, 0, len(rows))
+}
+
+func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Where: expressionpb.In(expressionpb.Identifier("dom"), []*runtimev1.Expression{
+			expressionpb.Value(structpb.NewStringValue("news.google.com")),
+			expressionpb.Value(structpb.NewStringValue("msn.com")),
+		}),
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	i := 0
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "null,9359", fieldsToString(rows[i], "pub", "measure_1"))
+
+	// ================= check measure filter
+
+	q.Measures[0].Filter = &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_EQ,
+				Exprs: []*runtimev1.Expression{
+					{
+						Expression: &runtimev1.Expression_Ident{
+							Ident: "dom",
+						},
+					},
+					{
+						Expression: &runtimev1.Expression_Val{
+							Val: structpb.NewStringValue("news.google.com"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	require.Equal(t, 3, len(rows))
+	i = 0
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "null,4239", fieldsToString(rows[i], "pub", "measure_1"))
+
+	// ================= check having m1 > 5000
+
+	q.Having = &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_GT,
+				Exprs: []*runtimev1.Expression{
+					{
+						Expression: &runtimev1.Expression_Ident{
+							Ident: "measure_1",
+						},
+					},
+					{
+						Expression: &runtimev1.Expression_Val{
+							Val: structpb.NewNumberValue(5000),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	require.Equal(t, 1, len(rows))
+	i = 0
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_1"))
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {

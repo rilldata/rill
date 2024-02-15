@@ -586,9 +586,13 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	} else {
 		/*
 			Example:
-			SELECT t.d1, t.d2, t.d3, t2.m1 (SELECT d1, d2, d3, m1 FROM t WHERE ...  GROUP BY d1, d2, d3 HAVING ... ) t LEFT JOIN (
-				SELECT d1, d2, d3, m1 FROM t WHERE ... AND (d4 = 'Safari') GROUP BY d1, d2, d3 HAVING ...
-			)  t2 ON (COALESCE(t.d1, 'val') = COALESCE(t2.d1, 'val') and COALESCE(t.d2, 'val') = COALESCE(t2.d2, 'val') and ...) ORDER BY ...
+			SELECT t.d1, t.d2, t.d3, t2.m1 (SELECT d1, d2, d3, m1 FROM t WHERE ...  GROUP BY d1, d2, d3 HAVING m1 > 10 ) t LEFT JOIN (
+				SELECT d1, d2, d3, m1 FROM t WHERE ... AND (d4 = 'Safari') GROUP BY d1, d2, d3 HAVING m1 > 10
+			)  t2 ON (COALESCE(t.d1, 'val') = COALESCE(t2.d1, 'val') and COALESCE(t.d2, 'val') = COALESCE(t2.d2, 'val') and ...)
+			WHERE t2.m1 > 10
+			ORDER BY ...
+			LIMIT 100
+			OFFSET 0
 
 			This JOIN mirrors functionality of SELECT d1, d2, d3, m1 FILTER (WHERE d4 = 'Safari') FROM t WHERE... GROUP BY d1, d2, d3
 			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
@@ -604,7 +608,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
 			}
 			selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
-			measureExpression, filterArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+			measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
 			if err != nil {
 				return "", nil, err
 			}
@@ -621,6 +625,23 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				}
 				orderClause = "ORDER BY " + strings.Join(jsc, ", ")
 			}
+			var extraWhere string
+			var extraWhereArgs []any
+			if q.Having != nil {
+				aliases := [1]*runtimev1.MetricsViewComparisonMeasureAlias{
+					{
+						Name: fmt.Sprintf("%s.%s", selfJoinTableAlias, q.Measures[0].Name),
+						// Name: fmt.Sprintf("%s", q.Measures[0].Name),
+						Alias: q.Measures[0].Name,
+					},
+				}
+				extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, aliases[:], dialect)
+				if err != nil {
+					return "", nil, err
+				}
+				extraWhere = "WHERE " + extraWhere
+			}
+
 			sql = fmt.Sprintf(`
 					SELECT %[1]s FROM (
 						SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
@@ -628,7 +649,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 					LEFT JOIN (
 						SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
 					) %[7]s 
-					ON (%[8]s) %[13]s %[11]s  OFFSET %[12]d
+					ON (%[8]s)
+					%[14]s
+					%[13]s 
+					%[11]s  
+					OFFSET %[12]d
 				`,
 				strings.Join(selfJoinCols, ", "),      // 1
 				safeName(mv.Table),                    // 2
@@ -643,13 +668,17 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				limitClause,                           // 11
 				q.Offset,                              // 12
 				orderClause,                           // 13
+				extraWhere,                            // 14
 			)
 
 			args = args[:0]
 			args = append(args, selectArgs...)
 			args = append(args, whereArgs...)
-			args = append(args, filterArgs...)
 			args = append(args, havingClauseArgs...)
+			args = append(args, whereArgs...)
+			args = append(args, measureWhereArgs...)
+			args = append(args, havingClauseArgs...)
+			args = append(args, extraWhereArgs...)
 		} else {
 			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 				strings.Join(selectCols, ", "),

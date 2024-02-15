@@ -242,6 +242,10 @@ func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtim
 			switch alias.Type {
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
+				splits := strings.Split(alias.Name, ".")
+				if len(splits) > 1 {
+					return safeName(splits[0]) + "." + safeName(splits[1]), true
+				}
 				return safeName(alias.Name), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
 				return safeName(alias.Name + "__previous"), true
