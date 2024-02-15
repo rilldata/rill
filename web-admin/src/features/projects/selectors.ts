@@ -4,7 +4,7 @@ import {
 } from "@rilldata/web-admin/client";
 
 export function getProjectPermissions(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+  return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       select: (data) => data?.projectPermissions,
     },
@@ -12,7 +12,7 @@ export function getProjectPermissions(orgName: string, projName: string) {
 }
 
 export function useProjectRuntime(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+  return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       // Proactively refetch the JWT because it's only valid for 1 hour
       refetchInterval: 1000 * 60 * 30, // 30 minutes

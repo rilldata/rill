@@ -8,7 +8,7 @@ export const PollTimeWhenProjectDeploymentError = 5000;
 export const PollTimeWhenProjectDeployed = 60 * 1000;
 
 export function useProjectDeploymentStatus(orgName: string, projName: string) {
-  return createAdminServiceGetProject<V1DeploymentStatus>(orgName, projName, {
+  return createAdminServiceGetProject<V1DeploymentStatus>(orgName, projName, undefined, {
     query: {
       select: (data) => {
         // There may not be a prodDeployment if the project is hibernating

@@ -9,7 +9,7 @@
   export let project: string;
 
   let projectPermissions: CreateQueryResult<V1ProjectPermissions>;
-  $: projectPermissions = createAdminServiceGetProject(organization, project, {
+  $: projectPermissions = createAdminServiceGetProject(organization, project, undefined, {
     query: {
       select: (data) => data.projectPermissions,
     },

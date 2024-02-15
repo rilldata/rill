@@ -14,7 +14,7 @@
   const { alerts } = featureFlags;
 
   // Get the list of tabs to display, depending on the user's permissions
-  $: tabsQuery = createAdminServiceGetProject(organization, project, {
+  $: tabsQuery = createAdminServiceGetProject(organization, project, undefined, {
     query: {
       select: (data) => {
         let commonTabs = [
