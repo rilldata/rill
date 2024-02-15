@@ -8,6 +8,7 @@ import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
@@ -171,5 +172,38 @@ export function getDefaultMetricsExplorerEntity(
   // set time range related stuff
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
   setDefaultComparison(metricsView, metricsExplorer, fullTimeRange);
+  return metricsExplorer;
+}
+
+export function restorePersistedDashboardState(
+  metricsExplorer: MetricsExplorerEntity,
+) {
+  const persistedState = getPersistentDashboardState();
+  if (persistedState.visibleMeasures) {
+    metricsExplorer.allMeasuresVisible =
+      persistedState.visibleMeasures.length ===
+      metricsExplorer.visibleMeasureKeys.size; // TODO: check values
+    metricsExplorer.visibleMeasureKeys = new Set(
+      persistedState.visibleMeasures,
+    );
+  }
+  if (persistedState.visibleDimensions) {
+    metricsExplorer.allDimensionsVisible =
+      persistedState.visibleDimensions.length ===
+      metricsExplorer.visibleDimensionKeys.size; // TODO: check values
+    metricsExplorer.visibleDimensionKeys = new Set(
+      persistedState.visibleDimensions,
+    );
+  }
+  if (persistedState.leaderboardMeasureName) {
+    metricsExplorer.leaderboardMeasureName =
+      persistedState.leaderboardMeasureName;
+  }
+  if (persistedState.dashboardSortType) {
+    metricsExplorer.dashboardSortType = persistedState.dashboardSortType;
+  }
+  if (persistedState.sortDirection) {
+    metricsExplorer.sortDirection = persistedState.sortDirection;
+  }
   return metricsExplorer;
 }
