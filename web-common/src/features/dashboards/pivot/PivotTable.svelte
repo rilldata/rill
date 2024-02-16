@@ -78,6 +78,8 @@
   $: virtualRows = $virtualizer.getVirtualItems();
   $: totalRowSize = $virtualizer.getTotalSize();
 
+  // In this virtualization model, we create buffer rows before and after our real data
+  // This maintains the "correct" scroll position when the user scrolls
   $: [before, after] = virtualRows.length
     ? [
         (virtualRows[1]?.start ?? virtualRows[0].start) - ROW_HEIGHT,
