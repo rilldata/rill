@@ -62,15 +62,14 @@ export function useCreateDashboardFromTableUIAction(
         EntityType.MetricsDefinition,
       );
 
-      // UNCOMMENT WHEN READY FOR PRODUCTION
-      // void get(generateMetricsViewFileMutation).mutateAsync({
-      //   instanceId,
-      //   data: {
-      //     table: tableName,
-      //     path: newFilePath,
-      //     useAi: true,
-      //   },
-      // });
+      void get(generateMetricsViewFileMutation).mutateAsync({
+        instanceId,
+        data: {
+          table: tableName,
+          path: newFilePath,
+          useAi: true,
+        },
+      });
 
       console.log("Waiting for AI...");
       // Poll until the AI generation is complete or canceled
