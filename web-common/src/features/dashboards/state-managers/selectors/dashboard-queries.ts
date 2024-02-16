@@ -43,7 +43,7 @@ export function dimensionTableSortedQueryBody(
 
     return prepareSortedQueryBody(
       dimensionName,
-      selectedMeasureNames(dashData),
+      measuresForDimensionTable(dashData),
       timeControlsState(dashData),
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
@@ -52,6 +52,14 @@ export function dimensionTableSortedQueryBody(
       resolvedMeasureFilter.filter,
     );
   };
+}
+
+function measuresForDimensionTable(dashData: DashboardDataSources) {
+  const allMeasures = new Set([
+    ...selectedMeasureNames(dashData),
+    ...additionalMeasures(dashData),
+  ]);
+  return [...allMeasures];
 }
 
 export function dimensionTableTotalQueryBody(
