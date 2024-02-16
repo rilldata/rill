@@ -10,14 +10,31 @@ import {
   type MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
-  createRuntimeServiceGenerateMetricsViewFile,
+  RuntimeServiceGenerateMetricsViewFileBody,
+  V1GenerateMetricsViewFileResponse,
+  runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
+import httpClient from "../../../runtime-client/http-client";
 import { useDashboardFileNames } from "../../dashboards/selectors";
 import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
 import { EntityType } from "../../entity-management/types";
 import CancelGeneration from "./CancelGeneration.svelte";
+
+const runtimeServiceGenerateMetricsViewFileWithSignal = (
+  instanceId: string,
+  runtimeServiceGenerateMetricsViewFileBody: RuntimeServiceGenerateMetricsViewFileBody,
+  signal: AbortSignal,
+) => {
+  return httpClient<V1GenerateMetricsViewFileResponse>({
+    url: `/v1/instances/${instanceId}/files/generate-metrics-view`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateMetricsViewFileBody,
+    signal,
+  });
+};
 
 /**
  * Wrapper function that takes care of UI side effects on top of creating a dashboard from a table.
@@ -31,9 +48,8 @@ export function useCreateDashboardFromTableUIAction(
 ) {
   const dashboardNames = useDashboardFileNames(instanceId);
 
-  const generateMetricsViewFileMutation =
-    createRuntimeServiceGenerateMetricsViewFile();
-
+  // abort signal for AI generation
+  const abortController = new AbortController();
   let isAICancelled = false;
 
   // Return a function that can be called to create a dashboard from a table
@@ -43,6 +59,7 @@ export function useCreateDashboardFromTableUIAction(
       component: CancelGeneration,
       componentProps: {
         onCancel: () => {
+          abortController.abort();
           isAICancelled = true;
         },
       },
@@ -62,14 +79,15 @@ export function useCreateDashboardFromTableUIAction(
         EntityType.MetricsDefinition,
       );
 
-      void get(generateMetricsViewFileMutation).mutateAsync({
+      void runtimeServiceGenerateMetricsViewFileWithSignal(
         instanceId,
-        data: {
+        {
           table: tableName,
           path: newFilePath,
           useAi: true,
         },
-      });
+        abortController.signal,
+      );
 
       console.log("Waiting for AI...");
       // Poll until the AI generation is complete or canceled
@@ -89,16 +107,10 @@ export function useCreateDashboardFromTableUIAction(
       // If canceled, then submit another with AI=false
       if (isAICancelled) {
         console.log("AI was canceled");
-        await get(generateMetricsViewFileMutation).mutateAsync({
-          instanceId,
-          data: {
-            table: tableName,
-            path: getFilePathFromNameAndType(
-              newDashboardName,
-              EntityType.MetricsDefinition,
-            ),
-            useAi: false,
-          },
+        await runtimeServiceGenerateMetricsViewFile(instanceId, {
+          table: tableName,
+          path: newFilePath,
+          useAi: false,
         });
       }
 
