@@ -9,22 +9,12 @@
   export let items: PivotChipData[];
   export let collapsed = false;
 
-  let showMore = false;
-
-  $: visible = showMore ? items.length : 3;
-
-  $: visibleItems = items.slice(0, visible);
-
   function toggleCollapse() {
     collapsed = !collapsed;
   }
-
-  function toggleShowMore() {
-    showMore = !showMore;
-  }
 </script>
 
-<div class="flex flex-col gap-1 items-start">
+<div class="container">
   <button class="flex gap-1" on:click={toggleCollapse}>
     <span class="header">{title}</span>
     <div class="transition-transform" class:-rotate-180={!collapsed}>
@@ -32,28 +22,29 @@
     </div>
   </button>
 
-  {#if !collapsed}
-    {#if visibleItems.length}
-      <DragList items={visibleItems} />
-    {:else}
-      <p class="text-gray-500 my-1">No available fields</p>
+  <div class="w-full h-fit max-h-full overflow-y-scroll px-[2px] pb-2">
+    {#if !collapsed}
+      {#if items.length}
+        <DragList {items} />
+      {:else}
+        <p class="text-gray-500 my-1">No available fields</p>
+      {/if}
     {/if}
-
-    {#if !collapsed && items.length > 3}
-      <button class="see-more" on:click={toggleShowMore}>
-        {showMore ? "Show less" : "Show more"}
-      </button>
-    {/if}
-  {/if}
+  </div>
 </div>
 
 <style lang="postcss">
-  button {
-    @apply flex items-center justify-center;
+  .container {
+    @apply pt-3 px-4;
+    @apply flex flex-col gap-1 items-start;
+    @apply h-fit max-h-fit min-h-8;
+    @apply w-full min-w-60;
+    @apply overflow-hidden;
+    @apply flex-1;
   }
 
-  .see-more {
-    @apply ml-2;
+  button {
+    @apply flex items-center justify-center;
   }
 
   .header {
