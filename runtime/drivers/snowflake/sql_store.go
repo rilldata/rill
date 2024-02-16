@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/apache/arrow/go/v14/arrow"
@@ -20,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	sf "github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
@@ -47,6 +50,20 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		dsn = url
 	} else {
 		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--var connector.snowflake.dsn=...' to 'rill start'")
+	}
+
+	// Parse dsn and extract parallelFetchLimit
+	parallelFetchLimit := 10
+	dsnConfig, err := sf.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+	fetchLimitPtr, exists := dsnConfig.Params["parallelFetchLimit"]
+	if exists && fetchLimitPtr != nil {
+		v, err := strconv.Atoi(*fetchLimitPtr)
+		if err == nil {
+			parallelFetchLimit = v
+		}
 	}
 
 	db, err := sql.Open("snowflake", dsn)
@@ -87,14 +104,15 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	p.Target(1, drivers.ProgressUnitFile)
 
 	return &fileIterator{
-		ctx:          ctx,
-		db:           db,
-		conn:         conn,
-		rows:         rows,
-		batches:      batches,
-		progress:     p,
-		limitInBytes: opt.TotalLimitInBytes,
-		logger:       c.logger,
+		ctx:                ctx,
+		db:                 db,
+		conn:               conn,
+		rows:               rows,
+		batches:            batches,
+		progress:           p,
+		limitInBytes:       opt.TotalLimitInBytes,
+		parallelFetchLimit: parallelFetchLimit,
+		logger:             c.logger,
 	}, nil
 }
 
@@ -111,6 +129,8 @@ type fileIterator struct {
 	totalRecords int64
 	tempFilePath string
 	downloaded   bool
+	// Max number of batches to fetch in parallel
+	parallelFetchLimit int
 }
 
 // Close implements drivers.FileIterator.
@@ -184,13 +204,47 @@ func (f *fileIterator) Next() ([]string, error) {
 	// write arrow records to parquet file
 	// the following iteration might be memory intensive
 	// since batches are organized as a slice and every batch caches its content
+	batchesLeft := len(f.batches)
+	f.logger.Debug("starting to fetch and process arrow batches",
+		zap.Int("batches", batchesLeft), zap.Int("parallel_fetch_limit", f.parallelFetchLimit))
+
+	// Fetch batches async as it takes most of the time
+	var wg sync.WaitGroup
+	fetchResultChan := make(chan fetchResult, len(f.batches))
+	sem := semaphore.NewWeighted(int64(f.parallelFetchLimit))
 	for _, batch := range f.batches {
-		records, err := batch.Fetch()
-		if err != nil {
-			return nil, err
+		wg.Add(1)
+		go func(b *sf.ArrowBatch) {
+			defer wg.Done()
+			defer sem.Release(1)
+			err := sem.Acquire(f.ctx, 1)
+			if err != nil {
+				fetchResultChan <- fetchResult{Records: nil, Batch: nil, Err: err}
+				return
+			}
+			fetchStart := time.Now()
+			records, err := b.Fetch()
+			fetchResultChan <- fetchResult{Records: records, Batch: b, Err: err}
+			f.logger.Debug(
+				"fetched an arrow batch",
+				zap.Duration("duration", time.Since(fetchStart)),
+				zap.Int("row_count", b.GetRowCount()),
+			)
+		}(batch)
+	}
+
+	go func() {
+		wg.Wait()
+		close(fetchResultChan)
+	}()
+
+	for result := range fetchResultChan {
+		if result.Err != nil {
+			return nil, result.Err
 		}
-		f.totalRecords += int64(batch.GetRowCount())
-		for _, rec := range *records {
+		batch := result.Batch
+		writeStart := time.Now()
+		for _, rec := range *result.Records {
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 				writer.NewBufferedRowGroup()
 			}
@@ -204,6 +258,14 @@ func (f *fileIterator) Next() ([]string, error) {
 				}
 			}
 		}
+		batchesLeft--
+		f.logger.Debug(
+			"wrote an arrow batch to a parquet file",
+			zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
+			zap.Int("row_count", batch.GetRowCount()),
+			zap.Duration("write_duration", time.Since(writeStart)),
+		)
+		f.totalRecords += int64(result.Batch.GetRowCount())
 	}
 
 	writer.Close()
@@ -236,6 +298,12 @@ func (f *fileIterator) Format() string {
 }
 
 var _ drivers.FileIterator = &fileIterator{}
+
+type fetchResult struct {
+	Records *[]arrow.Record
+	Batch   *sf.ArrowBatch
+	Err     error
+}
 
 type sourceProperties struct {
 	SQL string `mapstructure:"sql"`
