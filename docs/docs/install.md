@@ -49,8 +49,6 @@ With `unzip` installed, you're ready to install Rill. Just run:
 curl https://rill.sh | sh
 ```
 
-## Alternative Install Options
-
 ## Manual Install
 
 You can download platform-specific binaries from our [releases page on Github](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
