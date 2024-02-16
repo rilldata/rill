@@ -55,17 +55,14 @@
     <BlockingOverlayContainer
       bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
     >
-      <div slot="title">
-        <span class="font-bold">{$overlay?.title}</span>
-        {#if $overlay?.message}
-          <div>{$overlay.message}</div>
-        {/if}
+      <div slot="title" class="font-bold">
+        {$overlay?.title}
       </div>
       <svelte:fragment slot="detail">
-        {#if $overlay?.component}
+        {#if $overlay?.detail}
           <svelte:component
-            this={$overlay?.component}
-            onCancel={$overlay?.componentProps?.onCancel}
+            this={$overlay.detail.component}
+            {...$overlay.detail.props}
           />
         {/if}
       </svelte:fragment>

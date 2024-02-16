@@ -57,11 +57,13 @@ export function useCreateDashboardFromTableUIAction(
   return async () => {
     overlay.set({
       title: "Hang tight! AI is personalizing your dashboard",
-      component: CancelGeneration,
-      componentProps: {
-        onCancel: () => {
-          abortController.abort();
-          isAICancelled = true;
+      detail: {
+        component: CancelGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort();
+            isAICancelled = true;
+          },
         },
       },
     });
