@@ -89,7 +89,7 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.splitByTimeGrain, // TODO: this is the "for every" field I think?
+              intervalDuration: values.splitByTimeGrain,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgs($metricsViewName, values, $dashboardStore),
