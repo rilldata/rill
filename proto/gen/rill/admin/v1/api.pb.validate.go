@@ -21733,6 +21733,8 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
+	// no validation rules for MetricsViewName
+
 	// no validation rules for EmailRenotify
 
 	// no validation rules for EmailRenotifyAfterSeconds

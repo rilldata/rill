@@ -2143,6 +2143,8 @@ definitions:
         type: string
       queryArgsJson:
         type: string
+      metricsViewName:
+        type: string
       recipients:
         type: array
         items:

@@ -10,6 +10,13 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
+  import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
+  import {
+    type AlertFormValue,
+    checkIsTabValid,
+    getAlertQueryArgs,
+  } from "@rilldata/web-common/features/alerts/form-utils";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     V1Operation,
     getRuntimeServiceListResourcesQueryKey,
@@ -34,25 +41,28 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
+  const { metricsViewName, dashboardStore } = getStateManagers();
+
   const formState = createForm({
     initialValues: {
       name: "",
       measure: "",
       splitByDimension: "",
+      splitByTimeGrain: "",
       criteria: [
         {
           field: "",
           operation: "",
-          value: 0,
+          value: "0",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
-      snooze: "OFF", // TODO: use enum from backend
+      snooze: SnoozeOptions[0].value, // Defaults to `Off`
       recipients: [
         { email: $user.data?.user?.email ? $user.data.user.email : "" },
         { email: "" },
       ],
-    },
+    } as AlertFormValue,
     validationSchema: yup.object({
       name: yup.string().required("Required"),
       measure: yup.string().required("Required"),
@@ -72,17 +82,6 @@
       ),
     }),
     onSubmit: async (values) => {
-      const queryArgsJson = JSON.stringify({
-        measures: [{ name: values.measure }],
-        dimensions: values.splitByDimension
-          ? [{ name: values.splitByDimension }]
-          : [],
-        where: values.criteria.map((c) => ({
-          field: c.field,
-          operation: c.operation,
-          value: c.value,
-        })),
-      });
       try {
         await $createAlert.mutateAsync({
           organization,
@@ -90,12 +89,17 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: undefined, // TODO: this is the "for every" field I think?
+              intervalDuration: values.splitByTimeGrain,
               queryName: "MetricsViewAggregation",
-              queryArgsJson: queryArgsJson,
+              queryArgsJson: JSON.stringify(
+                getAlertQueryArgs($metricsViewName, values, $dashboardStore),
+              ),
+              metricsViewName: $metricsViewName,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
-              emailRenotify: false, // TODO: get from snooze
-              emailRenotifyAfterSeconds: 0, // TODO: get from snooze
+              emailRenotify: !!values.snooze,
+              emailRenotifyAfterSeconds: values.snooze
+                ? Number(values.snooze)
+                : 0,
             },
           },
         });
@@ -131,56 +135,6 @@
    */
   $: isTabValid = checkIsTabValid(currentTabIndex, $form, $errors);
 
-  function checkIsTabValid(
-    tabIndex: number,
-    form: Record<string, any>,
-    errors: Record<string, string>,
-  ): boolean {
-    let hasRequiredFields: boolean;
-    let hasErrors: boolean;
-
-    if (tabIndex === 0) {
-      hasRequiredFields = form.name !== "" && form.measure !== "";
-      hasErrors = !!errors.name && !!errors.measure;
-    } else if (tabIndex === 1) {
-      hasRequiredFields = true;
-      form.criteria.forEach((criteria) => {
-        if (
-          criteria.field === "" ||
-          criteria.operation === "" ||
-          criteria.value === ""
-        ) {
-          hasRequiredFields = false;
-        }
-      });
-      hasErrors = false;
-      (errors.criteria as unknown as any[]).forEach((criteriaError) => {
-        if (
-          criteriaError.field ||
-          criteriaError.operation ||
-          criteriaError.value
-        ) {
-          hasErrors = true;
-        }
-      });
-    } else if (tabIndex === 2) {
-      // TODO: do better for >1 recipients
-      hasRequiredFields = form.snooze !== "" && form.recipients[0].email !== "";
-
-      // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
-      // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
-      const receipientErrors = errors.recipients as unknown as {
-        email: string;
-      }[];
-
-      hasErrors = !!errors.snooze || !!receipientErrors[0].email;
-    } else {
-      throw new Error(`Unexpected tabIndex: ${tabIndex}`);
-    }
-
-    return hasRequiredFields && !hasErrors;
-  }
-
   let currentTabIndex = 0;
 
   function handleCancel() {
@@ -196,7 +150,7 @@
   }
 </script>
 
-<Dialog {open} class="fixed inset-0 flex items-center justify-center z-50">
+<Dialog class="fixed inset-0 flex items-center justify-center z-50" {open}>
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
@@ -220,13 +174,13 @@
         {/each}
       </DialogTabs.List>
       <div class="p-3 bg-slate-100">
-        <DialogTabs.Content value={tabs[0]} tabIndex={0} {currentTabIndex}>
+        <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
           <AlertDialogDataTab {formState} />
         </DialogTabs.Content>
-        <DialogTabs.Content value={tabs[1]} tabIndex={1} {currentTabIndex}>
+        <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
           <AlertDialogCriteriaTab {formState} />
         </DialogTabs.Content>
-        <DialogTabs.Content value={tabs[2]} tabIndex={2} {currentTabIndex}>
+        <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
           <AlertDialogDeliveryTab {formState} />
         </DialogTabs.Content>
       </div>

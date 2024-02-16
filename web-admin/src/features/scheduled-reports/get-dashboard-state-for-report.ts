@@ -235,7 +235,7 @@ function getDashboardFromComparisonRequest({
   }
 
   if (req.timeRange?.timeZone) {
-    dashboard.selectedTimezone = req.timeRange?.timeZone;
+    dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
   }
 
   if (req.comparisonTimeRange) {

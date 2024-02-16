@@ -66,6 +66,7 @@ export function reduceTableCellDataIntoRows(
   cellData?.forEach((cell) => {
     const accessors = getAccessorForCell(
       colDimensionNames,
+      config.time.timeDimension,
       colValuesIndexMaps,
       config.measureNames.length,
       cell,
@@ -101,4 +102,38 @@ export function reduceTableCellDataIntoRows(
   });
 
   return tableData;
+}
+
+export function getTotalsRow(
+  config: PivotDataStoreConfig,
+  columnDimensionAxes: Record<string, string[]> = {},
+  totalsRowData: V1MetricsViewAggregationResponseDataItem[] = [],
+  globalTotalsData: V1MetricsViewAggregationResponseDataItem[] = [],
+) {
+  const { rowDimensionNames, measureNames } = config;
+  const anchorDimensionName = rowDimensionNames[0];
+
+  let totalsRow: PivotDataRow = {};
+  if (measureNames.length) {
+    const totalsRowTable = reduceTableCellDataIntoRows(
+      config,
+      "",
+      [],
+      columnDimensionAxes || {},
+      [],
+      totalsRowData || [],
+    );
+
+    totalsRow = totalsRowTable[0] || {};
+
+    globalTotalsData.forEach((total) => {
+      totalsRow = { ...total, ...totalsRow };
+    });
+
+    if (anchorDimensionName) {
+      totalsRow[anchorDimensionName] = "Total";
+    }
+  }
+
+  return totalsRow;
 }

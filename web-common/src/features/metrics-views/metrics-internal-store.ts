@@ -57,7 +57,7 @@ dimensions:
     column: dimension1
     description: ""
 available_time_zones:
-  - "Etc/UTC"
+  - "UTC"
   - "America/Los_Angeles"
   - "America/New_York"
 `;

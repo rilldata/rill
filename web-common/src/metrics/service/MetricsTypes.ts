@@ -41,6 +41,7 @@ export enum MetricsEventScreenName {
   Project = "project",
   Report = "report",
   ReportExport = "report-export",
+  Alert = "alert",
   Unknown = "unknown",
 }
 

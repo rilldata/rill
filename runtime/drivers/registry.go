@@ -21,6 +21,8 @@ type RegistryStore interface {
 type Instance struct {
 	// Identifier
 	ID string
+	// Environment is the environment that the instance represents
+	Environment string
 	// Driver name to connect to for OLAP
 	OLAPConnector string
 	// Driver name for reading/editing code artifacts

@@ -379,6 +379,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 // getAttributesFor returns a map of attributes for a given user and project.
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
+// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
 func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, error) {
 	if userID == "" && userEmail == "" {
 		return nil, errors.New("must provide either userID or userEmail")

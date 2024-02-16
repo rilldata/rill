@@ -19,6 +19,8 @@ import {
   getFilterForPivotTable,
   getSortForAccessor,
   getTimeForQuery,
+  getTimeGrainFromDimension,
+  isTimeDimension,
 } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
 
@@ -66,27 +68,33 @@ export function createSubTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
   rowNestFilters: V1Expression,
-  timeRange: TimeRangeString | undefined,
+  timeFilters: TimeFilters[],
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
   const { time } = config;
 
   const dimensionBody = allDimensions.map((dimension) => {
-    if (dimension === time.timeDimension) {
+    if (isTimeDimension(dimension, time.timeDimension)) {
       return {
-        name: dimension,
-        timeGrain: time.interval,
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(dimension),
         timeZone: time.timeZone,
+        alias: dimension,
       };
     } else return { name: dimension };
   });
 
-  const filterForSubTable = getFilterForPivotTable(
-    config,
-    columnDimensionAxesData,
+  const { filters: filterForSubTable, timeFilters: colTimeFilters } =
+    getFilterForPivotTable(config, columnDimensionAxesData, totalsRow);
+
+  const timeRange: TimeRangeString = getTimeForQuery(
+    time,
+    timeFilters.concat(colTimeFilters),
   );
+
   filterForSubTable.cond?.exprs?.push(...(rowNestFilters?.cond?.exprs ?? []));
 
   const sortBy = [
@@ -102,7 +110,7 @@ export function createSubTableCellQuery(
     filterForSubTable,
     config.measureFilter,
     sortBy,
-    "10000",
+    "5000",
     "0",
     timeRange,
   );
@@ -126,6 +134,7 @@ export function queryExpandedRowMeasureValues(
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
 ): Readable<ExpandedRowMeasureValues[] | null> {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
@@ -171,10 +180,14 @@ export function queryExpandedRowMeasureValues(
         )
         .filter((f) => {
           // We map first and filter later to ensure that dimensions are in order
-          if (f.cond?.exprs?.[0].ident === config.time.timeDimension) {
+          if (
+            isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
+          ) {
             timeFilters.push({
               timeStart: f.cond?.exprs?.[1].val as string,
-              interval: config.time.interval,
+              interval: getTimeGrainFromDimension(
+                f.cond?.exprs?.[0].ident as string,
+              ),
             });
             return false;
           } else return true;
@@ -221,8 +234,9 @@ export function queryExpandedRowMeasureValues(
             config,
             anchorDimension,
             columnDimensionAxesData,
+            totalsRow,
             allMergedFilters,
-            timeRange,
+            timeFilters,
           ),
         ],
         ([expandIndex, subRowDimensions, subTableData]) => {
