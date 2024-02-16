@@ -29,7 +29,7 @@
 </script>
 
 <div
-  class="flex flex-col gap-y-2 py-2 rounded-sm text-gray-500 w-full"
+  class="flex flex-col gap-y-2 py-2 rounded-sm text-gray-500 w-full max-w-full"
   class:horizontal
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
@@ -61,7 +61,7 @@
   }
 
   .horizontal {
-    @apply flex flex-row bg-slate-50 w-full p-2 gap-x-2 h-10;
+    @apply flex flex-row flex-wrap bg-slate-50 w-full p-2 gap-x-2 h-fit;
     @apply items-center;
   }
 

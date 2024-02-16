@@ -13,6 +13,8 @@
 
   $: visible = showMore ? items.length : 3;
 
+  $: visibleItems = items.slice(0, visible);
+
   function toggleCollapse() {
     collapsed = !collapsed;
   }
@@ -31,7 +33,11 @@
   </button>
 
   {#if !collapsed}
-    <DragList items={items.slice(0, visible)} />
+    {#if visibleItems.length}
+      <DragList items={visibleItems} />
+    {:else}
+      <p class="text-gray-500 my-1">No available fields</p>
+    {/if}
 
     {#if !collapsed && items.length > 3}
       <button class="see-more" on:click={toggleShowMore}>
