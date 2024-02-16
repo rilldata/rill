@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -11,7 +12,6 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -73,32 +73,32 @@
   // Called when the user scrolls and possibly on mount to fetch more data as the user scrolls
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
-      // const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
-      // const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
-      // const leftEndDistance = scrollLeft;
-      // // Distance threshold (in pixels) for triggering data fetch
-      // const threshold = 500;
-      // // Fetch more data when scrolling near the right end
-      // if (
-      //   rightEndDistance < threshold &&
-      //   !$pivotDataStore.isFetching &&
-      //   30 * columnPage < totalColumns
-      // ) {
-      //   metricsExplorerStore.setPivotColumnPage(
-      //     $metricsViewName,
-      //     columnPage + 1,
-      //   );
-      // }
-      // // Decrease page number when scrolling near the left end
-      // else if (
-      //   leftEndDistance < threshold &&
-      //   columnPage > 1 // Ensure we don't go below the first page
-      // ) {
-      //   metricsExplorerStore.setPivotColumnPage(
-      //     $metricsViewName,
-      //     columnPage - 1,
-      //   );
-      // }
+      //   const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
+      //   const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
+      //   const leftEndDistance = scrollLeft;
+      //   // Distance threshold (in pixels) for triggering data fetch
+      //   const threshold = 500;
+      //   // Fetch more data when scrolling near the right end
+      //   if (
+      //     rightEndDistance < threshold &&
+      //     !$pivotDataStore.isFetching &&
+      //     30 * columnPage < totalColumns
+      //   ) {
+      //     metricsExplorerStore.setPivotColumnPage(
+      //       $metricsViewName,
+      //       columnPage + 1,
+      //     );
+      //   }
+      //   // Decrease page number when scrolling near the left end
+      //   // else if (
+      //   //   leftEndDistance < threshold &&
+      //   //   columnPage > 1 // Ensure we don't go below the first page
+      //   // ) {
+      //   //   metricsExplorerStore.setPivotColumnPage(
+      //   //     $metricsViewName,
+      //   //     columnPage - 1,
+      //   //   );
+      //   // }
     }
   };
 </script>
@@ -255,5 +255,10 @@
   td:last-of-type,
   th:last-of-type > .header-cell {
     @apply border-r-0;
+  }
+
+  tr:hover,
+  tr:hover .cell {
+    @apply bg-slate-100;
   }
 </style>
