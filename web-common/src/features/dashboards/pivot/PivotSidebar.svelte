@@ -4,7 +4,6 @@
   import PivotDrag from "./PivotDrag.svelte";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import { PivotChipType } from "./types";
-  import { use } from "chai";
 
   const stateManagers = getStateManagers();
   const {
@@ -30,7 +29,6 @@
     .filter((m) => m.type === PivotChipType.Time)
     .concat($rows.dimension.filter((d) => d.type === PivotChipType.Time));
 
-  $: console.log(usedTimeGrains);
   $: timeGrainOptions = allTimeGrains.filter(
     (tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id),
   );
