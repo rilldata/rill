@@ -1,41 +1,29 @@
-import { goto } from "$app/navigation";
-import { notifications } from "@rilldata/web-common/components/notifications";
-import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
 import {
   getFileAPIPathFromNameAndType,
   getFilePathFromNameAndType,
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
-  createSchemaForTable,
   ResourceKind,
+  createSchemaForTable,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { generateDashboardYAMLForModel } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
-import { appScreen } from "@rilldata/web-common/layout/app-store";
-import { overlay } from "@rilldata/web-common/layout/overlay-store";
-import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-import type { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import {
-  MetricsEventScreenName,
-  MetricsEventSpace,
-} from "@rilldata/web-common/metrics/service/MetricsTypes";
 import {
   RpcStatus,
-  runtimeServicePutFile,
   V1ReconcileStatus,
   V1StructType,
+  runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
-  createMutation,
   CreateMutationOptions,
   MutationFunction,
   QueryClient,
+  createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
-import { derived, get } from "svelte/store";
+import { derived } from "svelte/store";
 
 export interface CreateDashboardFromModelRequest {
   instanceId: string;
@@ -133,59 +121,4 @@ export function useModelSchemaIsReady(
       );
     },
   );
-}
-
-/**
- * Wrapper function that takes care of UI side effects on top of creating a dashboard from model.
- */
-export function useCreateDashboardFromModelUIAction(
-  instanceId: string,
-  modelName: string,
-  queryClient: QueryClient,
-  behaviourEventMedium: BehaviourEventMedium,
-  metricsEventSpace: MetricsEventSpace,
-) {
-  const createDashboardFromModelMutation = useCreateDashboardFromModel();
-  const dashboardNames = useDashboardFileNames(instanceId);
-  const schemaForModel = createSchemaForTable(
-    instanceId,
-    modelName,
-    ResourceKind.Model,
-    queryClient,
-  );
-
-  return async () => {
-    overlay.set({
-      title: "Creating a dashboard for " + modelName,
-    });
-    const newDashboardName = getName(
-      `${modelName}_dashboard`,
-      get(dashboardNames).data,
-    );
-
-    try {
-      await get(createDashboardFromModelMutation).mutateAsync({
-        data: {
-          instanceId,
-          modelName,
-          schema: get(schemaForModel).data?.schema,
-          newDashboardName,
-        },
-      });
-      goto(`/dashboard/${newDashboardName}`);
-      behaviourEvent.fireNavigationEvent(
-        newDashboardName,
-        behaviourEventMedium,
-        metricsEventSpace,
-        get(appScreen)?.type,
-        MetricsEventScreenName.Dashboard,
-      );
-    } catch (err) {
-      notifications.send({
-        message: "Failed to create a dashboard for " + modelName,
-        detail: err.response?.data?.message ?? err.message,
-      });
-    }
-    overlay.set(null);
-  };
 }
