@@ -97,7 +97,7 @@ function createColumnDefinitionForDimensions(
         });
 
         if (displayValue === "") {
-          displayValue = "<empty string>";
+          displayValue = "\u00A0";
         }
 
         return {

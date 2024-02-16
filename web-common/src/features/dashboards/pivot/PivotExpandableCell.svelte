@@ -26,7 +26,7 @@
   {#if value === "LOADING_CELL"}
     {""}
   {:else if value === ""}
-    {"<empty string>"}
+    {"\u00A0"}
   {:else}
     {value}
   {/if}
