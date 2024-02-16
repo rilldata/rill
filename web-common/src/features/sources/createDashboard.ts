@@ -19,19 +19,19 @@ import {
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import {
-  connectorServiceOLAPGetTable,
   RpcStatus,
-  runtimeServicePutFile,
   V1Resource,
+  connectorServiceOLAPGetTable,
+  runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
-  createMutation,
   CreateMutationOptions,
   MutationFunction,
+  createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import { generateDashboardYAMLForModel } from "../metrics-views/metrics-internal-store";
+import { generateDashboardYAMLForTable } from "../metrics-views/metrics-internal-store";
 
 export interface CreateDashboardFromSourceRequest {
   instanceId: string;
@@ -87,8 +87,10 @@ export const useCreateDashboardFromSource = <
       table: data.sourceResource.source.state.table,
     });
 
-    const dashboardYAML = generateDashboardYAMLForModel(
+    const isModel = true;
+    const dashboardYAML = generateDashboardYAMLForTable(
       data.newModelName,
+      isModel,
       sourceSchema.schema,
       data.newDashboardName,
     );

@@ -44,7 +44,7 @@ export function initBlankDashboardYAML(dashboardTitle: string) {
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 title: ""
-model: ""
+table: ""
 default_time_range: ""
 smallest_time_grain: ""
 timeseries: ""
@@ -66,10 +66,12 @@ available_time_zones:
   return template.toString();
 }
 
-export function generateDashboardYAMLForModel(
-  modelName: string,
+export function generateDashboardYAMLForTable(
+  tableName: string,
+  isModel: boolean,
   schema: V1StructType,
   dashboardTitle = "",
+  defaultTimeRange = "",
 ) {
   const doc = new Document();
 
@@ -78,13 +80,22 @@ export function generateDashboardYAMLForModel(
   if (dashboardTitle) {
     doc.set("title", dashboardTitle);
   }
-  doc.set("model", modelName);
+
+  if (isModel) {
+    doc.set("model", tableName);
+  } else {
+    doc.set("table", tableName);
+  }
 
   const timestampColumns = selectTimestampColumnFromSchema(schema);
   if (timestampColumns?.length) {
     doc.set("timeseries", timestampColumns[0]);
   } else {
     doc.set("timeseries", "");
+  }
+
+  if (defaultTimeRange) {
+    doc.set("default_time_range", defaultTimeRange);
   }
 
   const fields = schema.fields;

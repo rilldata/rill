@@ -11,7 +11,7 @@
   import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
-    generateDashboardYAMLForModel,
+    generateDashboardYAMLForTable,
     initBlankDashboardYAML,
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -25,10 +25,13 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../../../tables/selectors";
 
   export let metricsName: string;
   export let view: EditorView | undefined = undefined;
 
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
   $: models = useModelFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
@@ -64,8 +67,9 @@
         }),
     });
 
+    const isModel = true;
     const dashboardYAML = schemaResp?.schema
-      ? generateDashboardYAMLForModel(modelName, schemaResp?.schema)
+      ? generateDashboardYAMLForTable(modelName, isModel, schemaResp?.schema)
       : "";
 
     await runtimeServicePutFile(
@@ -128,40 +132,44 @@
 </script>
 
 <div class="whitespace-normal">
-  Auto-generate a <WithTogglableFloatingElement
-    distance={8}
-    inline
-    let:toggleFloatingElement
-  >
-    <button
-      class={buttonClasses}
-      disabled={!$models?.data?.length}
-      on:click={toggleFloatingElement}
-      >metrics configuration from an existing model</button
-    >,
-    <Menu
-      dark
-      on:click-outside={toggleFloatingElement}
-      on:escape={toggleFloatingElement}
-      slot="floating-element"
+  {#if $isModelingSupportedForCurrentOlapDriver.data}
+    Auto-generate a <WithTogglableFloatingElement
+      distance={8}
+      inline
       let:toggleFloatingElement
     >
-      {#each $models?.data ?? [] as model}
-        <MenuItem
-          on:select={() => {
-            onAutogenerateConfigFromModel(model);
-            toggleFloatingElement();
-          }}
-        >
-          {model}
-        </MenuItem>
-      {/each}
-    </Menu>
-  </WithTogglableFloatingElement>
+      <button
+        class={buttonClasses}
+        disabled={!$models?.data?.length}
+        on:click={toggleFloatingElement}
+        >metrics configuration from an existing model</button
+      >,
+      <Menu
+        dark
+        on:click-outside={toggleFloatingElement}
+        on:escape={toggleFloatingElement}
+        slot="floating-element"
+        let:toggleFloatingElement
+      >
+        {#each $models?.data ?? [] as model}
+          <MenuItem
+            on:select={() => {
+              onAutogenerateConfigFromModel(model);
+              toggleFloatingElement();
+            }}
+          >
+            {model}
+          </MenuItem>
+        {/each}
+      </Menu>
+    </WithTogglableFloatingElement>
+  {/if}
   <button
     class={buttonClasses}
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
-    }}>start with a skeleton</button
+    }}
+    >{#if $isModelingSupportedForCurrentOlapDriver.data}s{:else}S{/if}tart with
+    a skeleton</button
   >, or just start typing.
 </div>
