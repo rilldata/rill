@@ -328,6 +328,7 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
   table?: string;
   path?: string;
+  useAi?: boolean;
 };
 
 export type RuntimeServicePutFileBody = {
@@ -1566,7 +1567,7 @@ export interface V1GetCatalogEntryResponse {
 }
 
 export interface V1GenerateMetricsViewFileResponse {
-  [key: string]: any;
+  aiSucceeded?: boolean;
 }
 
 export interface V1GCSObject {

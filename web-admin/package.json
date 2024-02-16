@@ -24,7 +24,7 @@
     "autoprefixer": "^10.4.13",
     "axios": "^0.27.2",
     "cronstrue": "^2.41.0",
-    "orval": "6.23.0",
+    "orval": "6.12.0",
     "postcss": "^8.4.21",
     "svelte": "^4.0.0",
     "svelte-check": "^3.4.3",
