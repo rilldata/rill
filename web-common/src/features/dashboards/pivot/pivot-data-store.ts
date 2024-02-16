@@ -240,8 +240,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)
     ) {
+      const isFetching =
+        config.pivot.columns.measure.length > 0 ||
+        config.pivot.rows.dimension.length > 0;
       return configSet({
-        isFetching: false,
+        isFetching: isFetching,
         data: [],
         columnDef: [],
         assembled: false,
