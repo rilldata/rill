@@ -3,7 +3,10 @@
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
-  import { humaniseAlertSnoozeOption } from "@rilldata/web-admin/features/alerts/metadata/utils";
+  import {
+    humaniseAlertRunDuration,
+    humaniseAlertSnoozeOption,
+  } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
     useAlertDashboardName,
@@ -42,6 +45,9 @@
     $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
 
+  $: runInterval = humaniseAlertRunDuration(
+    $alertQuery.data?.resource?.alert?.spec,
+  );
   $: snoozeLabel = humaniseAlertSnoozeOption(
     $alertQuery.data?.resource?.alert?.spec,
   );
@@ -129,13 +135,13 @@
       <!-- Split by time grain -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by time grain</MetadataLabel>
-        <MetadataValue>TODO</MetadataValue>
+        <MetadataValue>{runInterval}</MetadataValue>
       </div>
 
-      <!-- Schedule -->
+      <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Schedule</MetadataLabel>
-        <MetadataValue>TODO</MetadataValue>
+        <MetadataValue>Whenever your data refreshes</MetadataValue>
       </div>
 
       <!-- Snooze -->

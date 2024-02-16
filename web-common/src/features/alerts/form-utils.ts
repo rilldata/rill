@@ -12,6 +12,7 @@ export type AlertFormValue = {
   name: string;
   measure: string;
   splitByDimension: string;
+  splitByTimeGrain: string;
   criteria: {
     field: string;
     operation: string;
