@@ -4,10 +4,10 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Tab from "./Tab.svelte";
-  import { featureFlags } from "../../feature-flags";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  // import { featureFlags } from "../../feature-flags";
 
-  const { pivot: pivotAllowed } = featureFlags;
+  // const { pivot: pivotAllowed } = featureFlags;
 
   const StateManagers = getStateManagers();
 
@@ -35,8 +35,6 @@
   function handleTabChange(index: number) {
     const selectedTab = tabs[index];
 
-    if (selectedTab.label === "Pivot" && !$pivotAllowed) return;
-
     metricsExplorerStore.setPivotMode(
       $metricsViewName,
       selectedTab.label === "Pivot",
@@ -48,8 +46,7 @@
   <div class="flex gap-x-2">
     {#each tabs as { label, Icon, beta }, i (label)}
       {@const selected = currentTabIndex === i}
-      {@const disabled = beta && !$pivotAllowed}
-      <Tab {disabled} {selected} on:click={() => handleTabChange(i)}>
+      <Tab {selected} on:click={() => handleTabChange(i)}>
         <Icon />
         <div class="flex gap-x-1 items-center group">
           {label}
