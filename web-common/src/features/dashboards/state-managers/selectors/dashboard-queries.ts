@@ -1,6 +1,7 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { additionalMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   QueryServiceMetricsViewComparisonBody,
   QueryServiceMetricsViewTotalsBody,
@@ -43,7 +44,7 @@ export function dimensionTableSortedQueryBody(
 
     return prepareSortedQueryBody(
       dimensionName,
-      selectedMeasureNames(dashData),
+      measuresForDimensionTable(dashData),
       timeControlsState(dashData),
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
@@ -52,6 +53,14 @@ export function dimensionTableSortedQueryBody(
       resolvedMeasureFilter.filter,
     );
   };
+}
+
+function measuresForDimensionTable(dashData: DashboardDataSources) {
+  const allMeasures = new Set([
+    ...selectedMeasureNames(dashData),
+    ...additionalMeasures(dashData),
+  ]);
+  return [...allMeasures];
 }
 
 export function dimensionTableTotalQueryBody(
