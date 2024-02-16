@@ -3,6 +3,7 @@
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
+  import { humaniseAlertSnoozeOption } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
     useAlertDashboardName,
@@ -40,6 +41,10 @@
   $: metricsViewAggregationRequest = JSON.parse(
     $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
+
+  $: snoozeLabel = humaniseAlertSnoozeOption(
+    $alertQuery.data?.resource?.alert?.spec,
+  );
 
   // Actions
   const queryClient = useQueryClient();
@@ -136,7 +141,7 @@
       <!-- Snooze -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Snooze</MetadataLabel>
-        <MetadataValue>TODO</MetadataValue>
+        <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
     </div>
 
