@@ -5,7 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -20,6 +22,10 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 )
+
+// aiGenerateTimeout is the maximum time to wait for the AI to generate a file.
+// If the AI takes longer than this, we should use fallback logic.
+const aiGenerateTimeout = 1 * time.Minute
 
 // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.GenerateMetricsViewFileRequest) (*runtimev1.GenerateMetricsViewFileResponse, error) {
@@ -132,6 +138,10 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 	defer release()
 
+	// Apply timeout
+	ctx, cancel := context.WithTimeout(ctx, aiGenerateTimeout)
+	defer cancel()
+
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
@@ -144,8 +154,6 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return "", fmt.Errorf("invalid metrics view YAML: %w", err)
 	}
 
-	// TODO: Remove invalid measures (use validation logic from the reconciler)
-
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(schema)
@@ -156,6 +164,34 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			doc.Connector = connector
 		}
 		doc.Table = tblName
+	}
+
+	// Validate the generated measures (not validating other parts since those are not AI-generated)
+	spec := &runtimev1.MetricsViewSpec{
+		Connector: connector,
+		Table:     tblName,
+	}
+	for _, measure := range doc.Measures {
+		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:         measure.Name,
+			Label:        measure.Label,
+			Expression:   measure.Expression,
+			FormatPreset: measure.FormatPreset,
+		})
+	}
+	validateResult, err := s.runtime.ValidateMetricsView(ctx, instanceID, spec)
+	if err != nil {
+		return "", err
+	}
+
+	// Remove all invalid measures
+	for _, ie := range validateResult.MeasureErrs {
+		doc.Measures = slices.Delete(doc.Measures, ie.Idx, ie.Idx+1)
+	}
+
+	// If there are no valid measures left, bail
+	if len(doc.Measures) == 0 {
+		return "", errors.New("no valid measures were generated")
 	}
 
 	// Render the updated YAML
