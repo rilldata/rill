@@ -1,4 +1,4 @@
-import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1ExportFormat,
@@ -24,7 +24,7 @@ export default async function exportTDD({
   const selectedTimeRange = get(
     ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
   );
-  const measureFilters = await getMeasureFilters(ctx);
+  const measureFilters = await getResolvedMeasureFilters(ctx);
 
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
