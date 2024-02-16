@@ -8,14 +8,14 @@ INSTALL_DIR="/usr/local/bin"
 initPlatform() {
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
-    if [ $OS = "darwin" ] && [ $ARCH = "arm64" ]; then
+    if [ "$OS" = "darwin" ] && [ "$ARCH" = "arm64" ]; then
         PLATFORM="darwin_arm64"
-    elif [ $OS = "darwin" ] && [ $ARCH = "x86_64" ]; then
+    elif [ "$OS" = "darwin" ] && [ "$ARCH" = "x86_64" ]; then
         PLATFORM="darwin_amd64"
-    elif [ $OS = "linux" ] && [ $ARCH = "x86_64" ]; then
+    elif [ "$OS" = "linux" ] && [ "$ARCH" = "x86_64" ]; then
         PLATFORM="linux_amd64"
     else
-        printf "Platform not supported: os=$OS arch=$ARCH\n"
+        printf "Platform not supported: os=%s arch=%s\n" "$OS" "$ARCH"
         exit 1
     fi
 }
@@ -24,13 +24,13 @@ initPlatform() {
 initTmpDir() {
     TMP_DIR=$(mktemp -d)
     trap 'rm -rf -- "${TMP_DIR}"' EXIT
-    cd $TMP_DIR
+    cd "$TMP_DIR"
 }
 
 # Ensure that dependency is installed and executable, exit and print help message if not
 checkDependency() {
-    if ! [ -x "$(command -v $1)" ]; then
-        printf "'$1' could not be found, this script depends on it, please install and try again.\n"
+    if ! [ -x "$(command -v "$1")" ]; then
+        printf "'%s' could not be found, this script depends on it, please install and try again.\n" "$1"
         exit 1
     fi
 }
@@ -44,16 +44,16 @@ downloadBinary() {
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
-    printf "Downloading binary: ${BINARY_URL}\n"
+    printf "Downloading binary: %s\n" "$BINARY_URL"
     curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.zip
 
-    printf "\nDownloading checksum: ${CHECKSUM_URL}\n"
+    printf "\nDownloading checksum: %s\n" "$CHECKSUM_URL"
     curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
 
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
     shasum --algorithm 256 --ignore-missing --check checksums.txt
 
-    printf "\nUnpacking rill_${PLATFORM}.zip\n"
+    printf "\nUnpacking rill_%s.zip\n" "$PLATFORM"
     unzip -q rill_${PLATFORM}.zip
 }
 
@@ -66,8 +66,8 @@ checkConflictingInstallation() {
             printf "To upgrade using Brew, run 'brew upgrade rilldata/tap/rill'.\n\n"
             printf "To use this script to install Rill, run 'brew remove rilldata/tap/rill' to remove the conflicting version and try again.\n"
             exit 1
-        elif [ $INSTALLED_RILL != "${INSTALL_DIR}/rill" ]; then
-            printf "There is a conflicting version of Rill installed at '${INSTALLED_RILL}'\n\n"
+        elif [ "$INSTALLED_RILL" != "${INSTALL_DIR}/rill" ]; then
+            printf "There is a conflicting version of Rill installed at '%s'\n\n" "$INSTALLED_RILL"
             printf "To use this script to install Rill, remove the conflicting version and try again.\n"
             exit 1
         fi
@@ -76,7 +76,7 @@ checkConflictingInstallation() {
 
 # Ask for elevated permissions to install the binary
 installBinary() {
-    printf "\nElevated permissions required to install the Rill binary to: ${INSTALL_DIR}/rill\n"
+    printf "\nElevated permissions required to install the Rill binary to: %s/rill\n" "$INSTALL_DIR"
     sudo install -d ${INSTALL_DIR}
     sudo install rill "${INSTALL_DIR}/"
 }
@@ -85,10 +85,10 @@ installBinary() {
 testInstalledBinary() {
     RILL_VERSION=$(rill version)
     rill verify-install 1>/dev/null || true
-    boldon=`tput smso`
-    boldoff=`tput rmso`
-    printf "\nInstallation of ${RILL_VERSION} completed!\n"
-    printf "\nTo start a new project in Rill, execute the command:\n\n ${boldon}rill start my-rill-project${boldoff}\n\n"
+    boldon=$(tput smso)
+    boldoff=$(tput rmso)
+    printf "\nInstallation of %s completed!\n" "$RILL_VERSION"
+    printf "\nTo start a new project in Rill, execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff"
 }
 
 # Parse input flag
