@@ -6,16 +6,14 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useCreateDashboardFromModelUIAction,
-    useModelSchemaIsReady,
-  } from "@rilldata/web-common/features/models/createDashboardFromModel";
+  import { useModelSchemaIsReady } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModelFileNames } from "../selectors";
 
   export let modelName: string;
@@ -39,18 +37,13 @@
   );
   $: disableCreateDashboard = $modelHasError || !$modelSchemaIsReady;
 
-  $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
+  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     modelName,
-    queryClient,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
+    toggleMenu,
   );
-
-  async function createDashboardFromModelHandler() {
-    await createDashboardFromModel();
-    toggleMenu();
-  }
 
   const handleDeleteModel = async (modelName: string) => {
     if ($modelNames.data) {
@@ -68,11 +61,11 @@
 <MenuItem
   disabled={disableCreateDashboard}
   icon
-  on:select={() => createDashboardFromModelHandler()}
+  on:select={createDashboardFromTable}
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  Autogenerate dashboard
+  Autogenerate dashboard (with AI)
   <svelte:fragment slot="description">
     {#if $modelHasError}
       Model has errors

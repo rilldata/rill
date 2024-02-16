@@ -5,14 +5,12 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    useCreateDashboardFromModelUIAction,
-    useModelSchemaIsReady,
-  } from "@rilldata/web-common/features/models/createDashboardFromModel";
+  import { useModelSchemaIsReady } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   export let modelName: string;
   export let hasError = false;
@@ -26,10 +24,9 @@
     modelName,
   );
 
-  $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
+  $: createDashboardFromModel = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     modelName,
-    queryClient,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
