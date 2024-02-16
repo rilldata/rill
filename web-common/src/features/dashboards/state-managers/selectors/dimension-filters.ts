@@ -99,14 +99,11 @@ export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
   return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
-    return getDimensionFilterItemsForFilter(
-      dimensionIdMap,
-      dashData.dashboard.whereFilter,
-    );
+    return getDimensionFilters(dimensionIdMap, dashData.dashboard.whereFilter);
   };
 }
 
-export function getDimensionFilterItemsForFilter(
+export function getDimensionFilters(
   dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
   filter: V1Expression | undefined,
 ) {

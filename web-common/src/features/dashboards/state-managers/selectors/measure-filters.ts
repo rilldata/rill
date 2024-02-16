@@ -86,12 +86,7 @@ export const getMeasureFilterItems = (
 
     for (const dtf of dashData.dashboard.dimensionThresholdFilters) {
       filteredMeasures.push(
-        ...getMeasureFilterItemsForFilter(
-          measureIdMap,
-          dtf.filter,
-          dtf.name,
-          addedMeasure,
-        ),
+        ...getMeasureFilters(measureIdMap, dtf.filter, dtf.name, addedMeasure),
       );
     }
 
@@ -99,7 +94,7 @@ export const getMeasureFilterItems = (
   };
 };
 
-export function getMeasureFilterItemsForFilter(
+export function getMeasureFilters(
   measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
   filter: V1Expression | undefined,
   name = "",
