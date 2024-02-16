@@ -38,7 +38,7 @@
     @apply pt-3 px-4;
     @apply flex flex-col gap-1 items-start;
     @apply h-fit max-h-fit min-h-8;
-    @apply w-full min-w-60;
+    @apply w-full;
     @apply overflow-hidden;
     @apply flex-1;
   }

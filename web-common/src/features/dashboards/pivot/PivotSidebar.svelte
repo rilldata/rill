@@ -35,24 +35,24 @@
 </script>
 
 <div class="sidebar">
-  <div class="flex flex-col h-full max-w-80 w-fit items-start overflow-hidden">
-    <PivotDrag title="Time" items={timeGrainOptions} />
+  <PivotDrag title="Time" items={timeGrainOptions} />
 
-    <span class="splitter"></span>
+  <span class="splitter" />
 
-    <PivotDrag title="Measures" items={$measures} />
+  <PivotDrag title="Measures" items={$measures} />
 
-    <span class="splitter"></span>
+  <span class="splitter" />
 
-    <PivotDrag title="Dimensions" items={$dimensions} />
-  </div>
+  <PivotDrag title="Dimensions" items={$dimensions} />
 </div>
 
 <style lang="postcss">
   .sidebar {
-    @apply h-full min-w-fit;
+    @apply flex flex-col items-start;
+    @apply h-full min-w-60 w-fit;
     @apply overflow-y-auto;
     @apply bg-white border-r border-slate-200;
+    @apply overflow-hidden;
   }
 
   .splitter {
