@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -16,6 +17,10 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 	msg, err := s.admin.AI.Complete(ctx, req.Messages)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(msg.Data) == 0 {
+		return nil, errors.New("the AI responded with an empty message")
 	}
 
 	return &adminv1.CompleteResponse{Message: msg}, nil
