@@ -42,14 +42,14 @@
       <Add />
     </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>
-      Autogenerate Dashboard
+      Generate dashboard with AI
     </ResponsiveButtonText>
   </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
     {:else}
-      Autogenerate a dashboard from this model
+      Generate a dashboard from this model
     {/if}
   </TooltipContent>
 </Tooltip>

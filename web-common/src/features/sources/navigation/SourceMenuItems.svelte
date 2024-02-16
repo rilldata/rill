@@ -26,6 +26,7 @@
   import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
@@ -148,7 +149,10 @@
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  Autogenerate dashboard (with AI)
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard with AI
+    <WandIcon class="w-3 h-3" />
+  </div>
   <svelte:fragment slot="description">
     {#if $sourceHasError}
       Source has errors
