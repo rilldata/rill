@@ -6,10 +6,7 @@ export const pivotSelectors = {
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
   columns: ({ dashboard }: DashboardDataSources) => dashboard.pivot.columns,
   measures: ({ metricsSpecQueryResult, dashboard }: DashboardDataSources) => {
-    const measures =
-      metricsSpecQueryResult.data?.measures?.filter(
-        (d) => d.name && dashboard.visibleMeasureKeys.has(d.name),
-      ) ?? [];
+    const measures = metricsSpecQueryResult.data?.measures ?? [];
     const columns = dashboard.pivot.columns;
 
     return measures
@@ -22,10 +19,8 @@ export const pivotSelectors = {
   },
   dimensions: ({ metricsSpecQueryResult, dashboard }: DashboardDataSources) => {
     {
-      const dimensions =
-        metricsSpecQueryResult.data?.dimensions?.filter(
-          (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
-        ) ?? [];
+      const dimensions = metricsSpecQueryResult.data?.dimensions ?? [];
+
       const columns = dashboard.pivot.columns;
       const rows = dashboard.pivot.rows;
 
