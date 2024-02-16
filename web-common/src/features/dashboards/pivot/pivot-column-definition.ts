@@ -96,6 +96,10 @@ function createColumnDefinitionForDimensions(
           [dimensionNames[level]]: value,
         });
 
+        if (displayValue === "") {
+          displayValue = "\u00A0";
+        }
+
         return {
           header: displayValue,
           columns: nestedColumns,
