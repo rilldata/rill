@@ -56,7 +56,7 @@
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
-      snooze: SnoozeOptions[0].value,
+      snooze: SnoozeOptions[0].value, // Defaults to `Off`
       recipients: [
         { email: $user.data?.user?.email ? $user.data.user.email : "" },
         { email: "" },

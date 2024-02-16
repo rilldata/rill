@@ -11,19 +11,19 @@ export const SnoozeOptions = [
     label: "Off",
   },
   {
-    value: HOUR + "",
+    value: HOUR.toString(),
     label: "Rest of the hour",
   },
   {
-    value: DAY + "",
+    value: DAY.toString(),
     label: "Rest of the day",
   },
   {
-    value: WEEK + "",
+    value: WEEK.toString(),
     label: "Rest of the week",
   },
   {
-    value: MONTH + "",
+    value: MONTH.toString(),
     label: "Rest of the month",
   },
 ];
