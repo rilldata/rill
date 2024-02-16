@@ -6,7 +6,7 @@ export const importOverlayVisible = writable(false);
 interface Overlay {
   title: string;
   detail?: {
-    component: typeof SvelteComponent;
+    component: typeof SvelteComponent<any>;
     props: Record<string, unknown>;
   };
 }

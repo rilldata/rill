@@ -20,8 +20,13 @@ import { useDashboardFileNames } from "../../dashboards/selectors";
 import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
 import { EntityType } from "../../entity-management/types";
-import CancelGeneration from "./CancelGeneration.svelte";
+import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
+/**
+ * TanStack Query does not support mutation cancellation (at least as of v4).
+ * Here, we create our own version of `runtimeServiceGenerateMetricsViewFile` that accepts an
+ * AbortSignal, which we can use to cancel the request.
+ */
 const runtimeServiceGenerateMetricsViewFileWithSignal = (
   instanceId: string,
   runtimeServiceGenerateMetricsViewFileBody: RuntimeServiceGenerateMetricsViewFileBody,
@@ -37,7 +42,7 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
 };
 
 /**
- * Wrapper function that takes care of UI side effects on top of creating a dashboard from a table.
+ * Wrapper function that takes care of common UI side effects on top of creating a dashboard from a table.
  */
 export function useCreateDashboardFromTableUIAction(
   instanceId: string,
@@ -46,18 +51,15 @@ export function useCreateDashboardFromTableUIAction(
   metricsEventSpace: MetricsEventSpace,
   goToEditor = false,
 ) {
-  const dashboardNames = useDashboardFileNames(instanceId);
-
-  // abort signal for AI generation
-  const abortController = new AbortController();
-  let isAICancelled = false;
-
   // Return a function that can be called to create a dashboard from a table
   return async () => {
+    let isAICancelled = false;
+    const abortController = new AbortController();
+
     overlay.set({
       title: "Hang tight! AI is personalizing your dashboard",
       detail: {
-        component: CancelGeneration,
+        component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
             abortController.abort();
@@ -67,18 +69,19 @@ export function useCreateDashboardFromTableUIAction(
       },
     });
 
+    // Get the list of existing dashboards to generate a unique name
+    const dashboardNames = useDashboardFileNames(instanceId);
     const newDashboardName = getName(
       `${tableName}_dashboard`,
       get(dashboardNames).data ?? [],
     );
+    const newFilePath = getFilePathFromNameAndType(
+      newDashboardName,
+      EntityType.MetricsDefinition,
+    );
 
     try {
-      console.log("Using AI to generate dashboard for " + tableName);
-      const newFilePath = getFilePathFromNameAndType(
-        newDashboardName,
-        EntityType.MetricsDefinition,
-      );
-
+      // First, request an AI-generated dashboard
       void runtimeServiceGenerateMetricsViewFileWithSignal(
         instanceId,
         {
@@ -89,24 +92,21 @@ export function useCreateDashboardFromTableUIAction(
         abortController.signal,
       );
 
-      console.log("Waiting for AI...");
-      // Poll until the AI generation is complete or canceled
+      // Poll every second until the AI generation is complete or canceled
       while (!isAICancelled) {
-        // Wait 1 second
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         try {
           await runtimeServiceGetFile(instanceId, newFilePath);
-          // AI is done
+          // success, AI is done
           break;
         } catch (err) {
-          // AI is not done
+          // 404 error, AI is not done
         }
       }
 
-      // If canceled, then submit another with AI=false
+      // If the user canceled the AI request, submit another request with `useAi=false`
       if (isAICancelled) {
-        console.log("AI was canceled");
         await runtimeServiceGenerateMetricsViewFile(instanceId, {
           table: tableName,
           path: newFilePath,
@@ -114,6 +114,7 @@ export function useCreateDashboardFromTableUIAction(
         });
       }
 
+      // Either go to the editor or the dashboard
       if (goToEditor) {
         await goto(`/dashboard/${newDashboardName}/edit`);
         void behaviourEvent.fireNavigationEvent(
@@ -139,6 +140,8 @@ export function useCreateDashboardFromTableUIAction(
         detail: err.response?.data?.message ?? err.message,
       });
     }
+
+    // Done, remove the overlay
     overlay.set(null);
   };
 }
