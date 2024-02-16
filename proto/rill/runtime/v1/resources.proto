@@ -171,6 +171,7 @@ message MetricsViewSpec {
   }
   message AvailableTimeRange {
     string range = 1;
+    string offset = 3;
     // Available comparison offsets for this time range.
     repeated AvailableComparisonOffset comparison_offsets = 2;
   }

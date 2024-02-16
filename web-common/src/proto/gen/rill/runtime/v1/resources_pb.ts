@@ -1424,6 +1424,11 @@ export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_
   range = "";
 
   /**
+   * @generated from field: string offset = 3;
+   */
+  offset = "";
+
+  /**
    * Available comparison offsets for this time range.
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset comparison_offsets = 2;
@@ -1439,6 +1444,7 @@ export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.AvailableTimeRange";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "comparison_offsets", kind: "message", T: MetricsViewSpec_AvailableComparisonOffset, repeated: true },
   ]);
 

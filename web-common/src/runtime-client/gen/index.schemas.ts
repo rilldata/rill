@@ -2111,6 +2111,7 @@ export interface MetricsViewSpecAvailableComparisonOffset {
 export interface MetricsViewSpecAvailableTimeRange {
   /** Available comparison offsets for this time range. */
   comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
+  offset?: string;
   range?: string;
 }
 

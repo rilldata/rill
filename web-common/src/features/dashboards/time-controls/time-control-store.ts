@@ -101,6 +101,7 @@ export const timeControlStateSelector = ([
   const minTimeGrain =
     (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  // TODO: update default time range to be offset
   const defaultTimeRange = isoDurationToFullTimeRange(
     metricsView.data.defaultTimeRange,
     allTimeRange.start,
@@ -294,13 +295,23 @@ function getTimeRange(
         allTimeRange.end,
         metricsExplorer.selectedTimezone,
       );
-    } else {
+    } else if (
+      !metricsExplorer.selectedTimeRange?.start ||
+      !metricsExplorer.selectedTimeRange?.end
+    ) {
       timeRange = isoDurationToFullTimeRange(
         metricsExplorer.selectedTimeRange?.name,
         allTimeRange.start,
         allTimeRange.end,
         metricsExplorer.selectedTimezone,
       );
+    } else {
+      timeRange = {
+        name: metricsExplorer.selectedTimeRange?.name,
+        offset: metricsExplorer.selectedTimeRange?.offset,
+        start: metricsExplorer.selectedTimeRange?.start,
+        end: metricsExplorer.selectedTimeRange?.end,
+      };
     }
   } else {
     /** set the time range to the fixed custom time range */

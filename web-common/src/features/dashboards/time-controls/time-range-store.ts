@@ -73,16 +73,23 @@ export function timeRangeSelectionsSelector([
       if (metricsView.data.defaultTimeRange === availableTimeRange.range) {
         hasDefaultInRanges = true;
       }
-      if (availableTimeRange.range in LATEST_WINDOW_TIME_RANGES) {
+      if (
+        !availableTimeRange.offset &&
+        availableTimeRange.range in LATEST_WINDOW_TIME_RANGES
+      ) {
         latestWindowTimeRanges[availableTimeRange.range] =
           LATEST_WINDOW_TIME_RANGES[availableTimeRange.range];
-      } else if (availableTimeRange.range in PERIOD_TO_DATE_RANGES) {
+      } else if (
+        !availableTimeRange.offset &&
+        availableTimeRange.range in PERIOD_TO_DATE_RANGES
+      ) {
         periodToDateRanges[availableTimeRange.range] =
           PERIOD_TO_DATE_RANGES[availableTimeRange.range];
       } else {
         latestWindowTimeRanges[availableTimeRange.range] =
           isoDurationToTimeRangeMeta(
             availableTimeRange.range,
+            availableTimeRange.offset,
             availableTimeRange.comparisonOffsets?.[0]
               ?.offset as TimeComparisonOption,
           );

@@ -90,9 +90,15 @@
     new Date($timeControlsStore.timeEnd),
   );
 
-  function onSelectTimeRange(name: TimeRangePreset, start: Date, end: Date) {
+  function onSelectTimeRange(
+    name: TimeRangePreset,
+    offset: string | undefined,
+    start: Date,
+    end: Date,
+  ) {
     baseTimeRange = {
       name,
+      offset,
       start: new Date(start),
       end: new Date(end),
     };
@@ -177,7 +183,12 @@
       boundaryEnd={allTimeRange.end}
       selectedRange={$timeControlsStore?.selectedTimeRange}
       on:select-time-range={(e) =>
-        onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+        onSelectTimeRange(
+          e.detail.name,
+          e.detail.offset,
+          e.detail.start,
+          e.detail.end,
+        )}
       on:remove-scrub={() => {
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }}

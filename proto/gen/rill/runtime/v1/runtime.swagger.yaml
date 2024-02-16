@@ -2470,6 +2470,8 @@ definitions:
     properties:
       range:
         type: string
+      offset:
+        type: string
       comparisonOffsets:
         type: array
         items:

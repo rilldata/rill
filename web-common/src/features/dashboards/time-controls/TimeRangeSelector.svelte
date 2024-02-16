@@ -54,9 +54,10 @@
 
   $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
 
-  function setIntermediateSelection(timeRangeName: string) {
+  function setIntermediateSelection(timeRange: TimeRange) {
     return () => {
-      intermediateSelection = timeRangeName;
+      intermediateSelection =
+        timeRange.name + (timeRange.offset ? "_" + timeRange.offset : "");
     };
   }
 
@@ -68,6 +69,7 @@
     dispatch("select-time-range", {
       name: timeRange.name,
       start: timeRange.start,
+      offset: timeRange.offset,
       end: timeRange.end,
     });
   }
@@ -77,7 +79,7 @@
     endDate: string,
     closeMenu: () => void,
   ) {
-    setIntermediateSelection(TimeRangePreset.CUSTOM)();
+    setIntermediateSelection({ name: TimeRangePreset.CUSTOM })();
     closeMenu();
     dispatch("select-time-range", {
       name: TimeRangePreset.CUSTOM,
@@ -119,14 +121,24 @@
     }, 300);
   }
 
-  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
-  $: intermediateSelection = currentSelection;
+  $: currentSelectedRange = $dashboardStore?.selectedTimeRange?.name;
+  $: currentSelectedOffset = $dashboardStore?.selectedTimeRange?.offset;
+  $: intermediateSelection =
+    currentSelectedRange +
+    (currentSelectedOffset ? "_" + currentSelectedOffset : "");
 
   const handleMenuOpen = () => {
     if (intermediateSelection !== TimeRangePreset.CUSTOM) {
       isCustomRangeOpen = false;
     }
   };
+
+  function timeRangeEquals(timeRange: TimeRange) {
+    return (
+      intermediateSelection ===
+      timeRange.name + (timeRange.offset ? "_" + timeRange.offset : "")
+    );
+  }
 </script>
 
 <WithTogglableFloatingElement
@@ -161,11 +173,15 @@
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
-            {:else if currentSelection}
-              {#if currentSelection in DEFAULT_TIME_RANGES}
-                {DEFAULT_TIME_RANGES[currentSelection].label}
+            {:else if currentSelectedRange}
+              {#if currentSelectedRange in DEFAULT_TIME_RANGES}
+                {DEFAULT_TIME_RANGES[currentSelectedRange].label}
+              {:else if currentSelectedOffset}
+                {humaniseISODuration(currentSelectedRange)}, {humaniseISODuration(
+                  currentSelectedOffset,
+                )} ago
               {:else}
-                Last {humaniseISODuration(currentSelection)}
+                Last {humaniseISODuration(currentSelectedRange)}
               {/if}
             {:else}
               Select a time range
@@ -190,11 +206,11 @@
   {/if}
   <Menu
     label="Time range selector"
+    let:toggleFloatingElement
     maxWidth="300px"
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    let:toggleFloatingElement
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
@@ -204,7 +220,9 @@
     }}
     {#if hasSubRangeSelected}
       <MenuItem
-        on:before-select={setIntermediateSelection(TimeRangePreset.CUSTOM)}
+        on:before-select={setIntermediateSelection({
+          name: TimeRangePreset.CUSTOM,
+        })}
         on:select={() => zoomScrub(toggleFloatingElement)}
       >
         <span> Zoom to subrange </span>
@@ -213,19 +231,19 @@
       <Divider />
     {/if}
     <MenuItem
-      on:before-select={setIntermediateSelection(allTime.name)}
+      on:before-select={setIntermediateSelection(allTime)}
       on:select={() =>
         onSelectRelativeTimeRange(allTime, toggleFloatingElement)}
     >
-      <span class:font-bold={intermediateSelection === allTime.name}>
+      <span class:font-bold={timeRangeEquals(allTime)}>
         {allTime.label}
       </span>
     </MenuItem>
     {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
-        on:before-select={setIntermediateSelection(
-          $metricsView.data?.defaultTimeRange,
-        )}
+        on:before-select={setIntermediateSelection({
+          name: $metricsView.data?.defaultTimeRange,
+        })}
         on:select={() =>
           onSelectRelativeTimeRange(
             $timeControlsStore.defaultTimeRange,
@@ -239,11 +257,11 @@
       <Divider />
       {#each $timeRangeSelectorState.latestWindowTimeRanges as timeRange}
         <MenuItem
-          on:before-select={setIntermediateSelection(timeRange.name)}
+          on:before-select={setIntermediateSelection(timeRange)}
           on:select={() =>
             onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
         >
-          <span class:font-bold={intermediateSelection === timeRange.name}>
+          <span class:font-bold={timeRangeEquals(timeRange)}>
             {timeRange.label}
           </span>
         </MenuItem>
@@ -253,11 +271,11 @@
       <Divider />
       {#each $timeRangeSelectorState.periodToDateRanges as timeRange}
         <MenuItem
-          on:before-select={setIntermediateSelection(timeRange.name)}
+          on:before-select={setIntermediateSelection(timeRange)}
           on:select={() =>
             onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
         >
-          <span class:font-bold={intermediateSelection === timeRange.name}>
+          <span class:font-bold={timeRangeEquals(timeRange)}>
             {timeRange.label}
           </span>
         </MenuItem>

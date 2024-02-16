@@ -90,6 +90,7 @@ export function getChildTimeRanges(
         timeRanges.push({
           name: timePreset as TimeRangePreset,
           label: timeRange.label,
+          offset: timeRange.offset,
           start: timeRangeDates.startDate,
           end: timeRangeDates.endDate,
         });

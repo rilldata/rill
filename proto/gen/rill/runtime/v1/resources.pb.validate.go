@@ -7802,6 +7802,8 @@ func (m *MetricsViewSpec_AvailableTimeRange) validate(all bool) error {
 
 	// no validation rules for Range
 
+	// no validation rules for Offset
+
 	for idx, item := range m.GetComparisonOffsets() {
 		_, _ = idx, item
 

@@ -5,6 +5,7 @@ import {
   transformDate,
 } from "@rilldata/web-common/lib/time/transforms";
 import {
+  Period,
   RangePresetType,
   ReferencePoint,
   RelativeTimeTransformation,
@@ -29,12 +30,12 @@ export function isoDurationToTimeRange(
 ) {
   const startTime = transformDate(
     anchor,
-    getStartTimeTransformations(isoDuration),
+    getStartTimeTransformations(isoDuration, undefined),
     zone,
   );
   const endTime = transformDate(
     anchor,
-    getEndTimeTransformations(isoDuration),
+    getEndTimeTransformations(isoDuration, undefined),
     zone,
   );
   return {
@@ -103,25 +104,28 @@ export function getSmallestTimeGrain(isoDuration: string) {
 
 export function isoDurationToTimeRangeMeta(
   isoDuration: string,
+  offsetDuration: string | undefined,
   defaultComparison: TimeComparisonOption,
 ): TimeRangeMeta {
   return {
     label: `Last ${humaniseISODuration(isoDuration)}`,
     defaultComparison,
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    offset: offsetDuration,
     start: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: getStartTimeTransformations(isoDuration),
+      transformation: getStartTimeTransformations(isoDuration, offsetDuration),
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: getEndTimeTransformations(isoDuration),
+      transformation: getEndTimeTransformations(isoDuration, offsetDuration),
     },
   };
 }
 
 function getStartTimeTransformations(
   isoDuration: string,
+  offset: string | undefined,
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
@@ -132,6 +136,14 @@ function getStartTimeTransformations(
       period, // this is the offset alias for the given time range alias
       truncationType: TimeTruncationType.START_OF_PERIOD,
     }, // truncation
+    ...(offset
+      ? [
+          {
+            duration: offset,
+            operationType: TimeOffsetType.SUBTRACT,
+          },
+        ]
+      : []),
     // then offset that by -1 of smallest period
     {
       duration: subtractFromPeriod(duration, period).toISO() as string,
@@ -142,6 +154,7 @@ function getStartTimeTransformations(
 
 function getEndTimeTransformations(
   isoDuration: string,
+  offset: string | undefined,
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
@@ -152,6 +165,14 @@ function getEndTimeTransformations(
       duration: period,
       operationType: TimeOffsetType.ADD,
     },
+    ...(offset
+      ? [
+          {
+            duration: offset,
+            operationType: TimeOffsetType.SUBTRACT,
+          },
+        ]
+      : []),
     {
       period,
       truncationType: TimeTruncationType.START_OF_PERIOD,
