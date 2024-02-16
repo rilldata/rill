@@ -186,6 +186,58 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
       ],
     },
   },
+
+  // TODO: put these in separate category?
+  [TimeRangePreset.YESTERDAY]: {
+    label: "Yesterday",
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        { duration: "P2D", operationType: TimeOffsetType.SUBTRACT },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        { duration: "P1D", operationType: TimeOffsetType.SUBTRACT },
+      ],
+    },
+  },
+
+  [TimeRangePreset.PREVIOUS_WEEK]: {
+    label: "Previous Week",
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.WEEK,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        { duration: "P1W", operationType: TimeOffsetType.SUBTRACT },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.WEEK,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
 };
 
 /**
