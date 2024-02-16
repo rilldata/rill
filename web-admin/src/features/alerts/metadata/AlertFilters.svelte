@@ -2,7 +2,7 @@
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import DimensionFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getDimensionFilterItemsForFilter } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { getDimensionFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -22,10 +22,7 @@
     (dimension) => dimension.name as string,
   );
 
-  $: currentDimensionFilters = getDimensionFilterItemsForFilter(
-    dimensionIdMap,
-    filters,
-  );
+  $: currentDimensionFilters = getDimensionFilters(dimensionIdMap, filters);
 </script>
 
 <div class="flex flex-col gap-y-3">

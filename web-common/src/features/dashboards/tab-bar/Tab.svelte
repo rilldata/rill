@@ -1,17 +1,30 @@
 <script lang="ts">
-  import { Tab } from "@rgossiaux/svelte-headlessui";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
-  const baseClasses = "font-semibold py-2 px-1 items-center";
   export let disabled = false;
+  export let selected = false;
 </script>
 
-<Tab
-  {disabled}
-  class={({ selected }) => {
-    return `${baseClasses} ${
-      selected ? "text-blue-600 border-b-2 border-blue-500" : "text-gray-500"
-    }`;
-  }}
->
+<button class="relative group" class:selected {disabled} on:click>
   <slot />
-</Tab>
+  {#if disabled}
+    <div
+      class="absolute top-full translate-y-2 z-10 w-fit -translate-x-1/2 left-1/2 group-hover:block hidden"
+    >
+      <TooltipContent>Coming Soon</TooltipContent>
+    </div>
+  {/if}
+</button>
+
+<style lang="postcss">
+  button {
+    @apply border-b-2 border-transparent;
+    @apply flex items-center relative;
+    @apply p-1 gap-x-2;
+    @apply font-medium text-xs text-gray-500;
+  }
+
+  .selected {
+    @apply border-b-2 border-primary-600 text-primary-600;
+  }
+</style>

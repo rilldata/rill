@@ -29,14 +29,14 @@
 </script>
 
 <div
-  class="container"
+  class="flex flex-col gap-y-2 py-2 rounded-sm text-gray-500 w-full"
   class:horizontal
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
   {#if !items.length && placeholder}
-    <p class="text-gray-500">{placeholder}</p>
+    {placeholder}
   {/if}
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
@@ -58,10 +58,6 @@
 <style type="postcss">
   .item {
     @apply text-center h-6;
-  }
-
-  .container {
-    @apply flex flex-col gap-y-2 py-2 rounded-sm;
   }
 
   .horizontal {

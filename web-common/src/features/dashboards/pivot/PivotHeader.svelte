@@ -29,21 +29,21 @@
 
 <div class="header">
   <div class="header-row">
+    <span class="row-label"> <Row size="16px" />Rows</span>
+    <DragList
+      type="rows"
+      placeholder="Drag dimensions here"
+      on:update={updateRows}
+      items={$rows.dimension}
+    />
+  </div>
+  <div class="header-row">
     <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
       type="columns"
       items={$columns.dimension.concat($columns.measure)}
-      placeholder="Drag dimensions here"
-      on:update={updateColumn}
-    />
-  </div>
-  <div class="header-row">
-    <span class="row-label"> <Row size="16px" /> Rows</span>
-    <DragList
-      type="rows"
       placeholder="Drag dimensions or measures here"
-      on:update={updateRows}
-      items={$rows.dimension}
+      on:update={updateColumn}
     />
   </div>
 </div>
@@ -58,6 +58,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 w-20;
+    @apply flex items-center gap-x-1 w-20 flex-shrink-0;
   }
 </style>
