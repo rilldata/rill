@@ -74,7 +74,6 @@
     sourceName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
-    toggleMenu,
   );
 
   const handleDeleteSource = async (tableName: string) => {
@@ -145,7 +144,10 @@
 <MenuItem
   disabled={disableCreateDashboard}
   icon
-  on:select={createDashboardFromTable}
+  on:select={() => {
+    void createDashboardFromTable();
+    toggleMenu();
+  }}
   propogateSelect={false}
 >
   <Explore slot="icon" />

@@ -44,7 +44,6 @@ export function useCreateDashboardFromTableUIAction(
   tableName: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
-  toggleContextMenu: () => void = () => {},
   goToEditor = false,
 ) {
   const dashboardNames = useDashboardFileNames(instanceId);
@@ -67,8 +66,6 @@ export function useCreateDashboardFromTableUIAction(
         },
       },
     });
-
-    toggleContextMenu(); // TODO: see if we can bring this out of this function
 
     const newDashboardName = getName(
       `${tableName}_dashboard`,

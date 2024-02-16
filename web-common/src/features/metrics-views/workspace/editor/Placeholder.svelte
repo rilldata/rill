@@ -28,7 +28,6 @@
       modelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.Workspace,
-      undefined,
       goToEditor,
     );
 
@@ -86,7 +85,7 @@
       {#each $models?.data ?? [] as model}
         <MenuItem
           on:select={() => {
-            onAutogenerateConfigFromModel(model);
+            void onAutogenerateConfigFromModel(model);
             toggleFloatingElement();
           }}
         >
