@@ -11,15 +11,19 @@ for any of its children.
   import { contexts } from "../constants";
   import {
     ScaleType,
-    cascadingContextStore,
     initializeMaxMinStores,
     initializeScale,
-    pruneProps,
+    // pruneProps,
   } from "../state";
   import type {
     ExtremumResolutionStore,
     SimpleDataGraphicConfiguration,
   } from "@rilldata/web-common/components/data-graphic/state/types";
+  import {
+    SIMPLE_DATA_GRAPHIC_DEFAULTS,
+    cascadingContextStore,
+    makeContextStoreProps,
+  } from "../state/cascading-context-store";
 
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -57,47 +61,71 @@ for any of its children.
     devicePixelRatio = window.devicePixelRatio;
   });
 
-  const props = {
-    width,
-    height,
-    top,
-    bottom,
-    left,
-    right,
-    fontSize,
-    textGap,
-    devicePixelRatio,
-    xType,
-    yType,
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-    bodyBuffer,
-    marginBuffer,
-    id,
-  };
+  // const DEFAULTS = hasContext(contexts.config)
+  //   ? {}
+  //   : {
+  //       width: 300,
+  //       height: 200,
+  //       top: 24,
+  //       bottom: 24,
+  //       left: 24,
+  //       right: 24,
+  //       fontSize: 12,
+  //       textGap: 4,
+  //       bodyBuffer: 4,
+  //       marginBuffer: 4,
+  //     };
 
-  const DEFAULTS = hasContext(contexts.config)
-    ? {}
-    : {
-        width: 300,
-        height: 200,
-        top: 24,
-        bottom: 24,
-        left: 24,
-        right: 24,
-        fontSize: 12,
-        textGap: 4,
-        bodyBuffer: 4,
-        marginBuffer: 4,
-        devicePixelRatio,
-      };
+  // let parameters = {
+  //   ...DEFAULTS,
+  //   ...pruneProps({
+  //     width,
+  //     height,
+  //     top,
+  //     bottom,
+  //     left,
+  //     right,
+  //     fontSize,
+  //     textGap,
+  //     devicePixelRatio,
+  //     xType,
+  //     yType,
+  //     xMin,
+  //     xMax,
+  //     yMin,
+  //     yMax,
+  //     bodyBuffer,
+  //     marginBuffer,
+  //     id,
+  //   }),
+  // };
 
-  $: parameters = {
-    ...DEFAULTS,
-    ...pruneProps(props),
-  };
+  // $: prunedProps = pruneProps(parameters);
+  let parameters = SIMPLE_DATA_GRAPHIC_DEFAULTS;
+
+  $: parameters = makeContextStoreProps(
+    {
+      width,
+      height,
+      top,
+      bottom,
+      left,
+      right,
+      fontSize,
+      textGap,
+      devicePixelRatio,
+      xType,
+      yType,
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+      bodyBuffer,
+      marginBuffer,
+      id,
+    },
+    hasContext(contexts.config),
+  );
 
   const config = cascadingContextStore(contexts.config, parameters);
 
