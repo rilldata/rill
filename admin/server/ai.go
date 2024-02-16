@@ -19,7 +19,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		return nil, err
 	}
 
-	if len(msg.Data) == 0 {
+	if msg.Data == "" {
 		return nil, errors.New("the AI responded with an empty message")
 	}
 
