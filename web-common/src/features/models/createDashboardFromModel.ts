@@ -7,13 +7,13 @@ import {
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
-  createSchemaForTable,
   ResourceKind,
+  createSchemaForTable,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-import { generateDashboardYAMLForModel } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
+import { generateDashboardYAMLForTable } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
 import { appScreen } from "@rilldata/web-common/layout/app-store";
 import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -24,15 +24,15 @@ import {
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import {
   RpcStatus,
-  runtimeServicePutFile,
   V1ReconcileStatus,
   V1StructType,
+  runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
-  createMutation,
   CreateMutationOptions,
   MutationFunction,
   QueryClient,
+  createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { derived, get } from "svelte/store";
@@ -65,8 +65,10 @@ export const useCreateDashboardFromModel = <
     const { data } = props ?? {};
 
     // create dashboard from model
-    const dashboardYAML = generateDashboardYAMLForModel(
+    const isModel = true;
+    const dashboardYAML = generateDashboardYAMLForTable(
       data.modelName,
+      isModel,
       data.schema,
       data.newDashboardName,
     );
