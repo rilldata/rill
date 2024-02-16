@@ -45,6 +45,7 @@ export function useCreateDashboardFromTableUIAction(
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
   toggleContextMenu: () => void = () => {},
+  goToEditor = false,
 ) {
   const dashboardNames = useDashboardFileNames(instanceId);
 
@@ -114,14 +115,25 @@ export function useCreateDashboardFromTableUIAction(
         });
       }
 
-      await goto(`/dashboard/${newDashboardName}`);
-      void behaviourEvent.fireNavigationEvent(
-        newDashboardName,
-        behaviourEventMedium,
-        metricsEventSpace,
-        get(appScreen)?.type,
-        MetricsEventScreenName.Dashboard,
-      );
+      if (goToEditor) {
+        await goto(`/dashboard/${newDashboardName}/edit`);
+        void behaviourEvent.fireNavigationEvent(
+          newDashboardName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          get(appScreen)?.type,
+          MetricsEventScreenName.MetricsDefinition,
+        );
+      } else {
+        await goto(`/dashboard/${newDashboardName}`);
+        void behaviourEvent.fireNavigationEvent(
+          newDashboardName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          get(appScreen)?.type,
+          MetricsEventScreenName.Dashboard,
+        );
+      }
     } catch (err) {
       notifications.send({
         message: "Failed to create a dashboard for " + tableName,
