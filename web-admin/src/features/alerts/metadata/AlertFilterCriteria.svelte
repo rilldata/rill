@@ -2,7 +2,7 @@
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getMeasureFilterItemsForFilter } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+  import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -21,7 +21,7 @@
     (measure) => measure.name as string,
   );
 
-  $: measureFilters = getMeasureFilterItemsForFilter(measureIdMap, filters);
+  $: measureFilters = getMeasureFilters(measureIdMap, filters);
 </script>
 
 <div class="flex flex-col gap-y-3">
