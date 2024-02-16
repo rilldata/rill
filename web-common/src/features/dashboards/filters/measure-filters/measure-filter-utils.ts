@@ -132,7 +132,7 @@ export function measureFilterResolutionsStore(
   );
 }
 
-export async function getMeasureFilters(ctx: StateManagers) {
+export async function getResolvedMeasureFilters(ctx: StateManagers) {
   const measureFiltersStore = measureFilterResolutionsStore(ctx);
   await waitUntil(() => get(measureFiltersStore).ready);
   return get(measureFiltersStore).filter;
