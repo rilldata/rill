@@ -53,6 +53,8 @@ export interface PivotDataRow {
 export interface TimeFilters {
   timeStart: string;
   interval: V1TimeGrain;
+  // Time end represents the start time of the last interval for a range
+  timeEnd?: string;
 }
 
 export interface PivotTimeConfig {

@@ -3,7 +3,10 @@
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
-  import { humaniseAlertRunDuration } from "@rilldata/web-admin/features/alerts/metadata/utils";
+  import {
+    humaniseAlertRunDuration,
+    humaniseAlertSnoozeOption,
+  } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
     useAlertDashboardName,
@@ -19,21 +22,16 @@
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
-    type V1GetResourceResponse,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
-  import {
-    type CreateQueryResult,
-    useQueryClient,
-  } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let project: string;
   export let alert: string;
 
-  let alertQuery: CreateQueryResult<V1GetResourceResponse>;
   $: alertQuery = useAlert($runtime.instanceId, alert);
   $: isAlertCreatedByCode = useIsAlertCreatedByCode($runtime.instanceId, alert);
 
@@ -48,6 +46,9 @@
   ) as V1MetricsViewAggregationRequest;
 
   $: runInterval = humaniseAlertRunDuration(
+    $alertQuery.data?.resource?.alert?.spec,
+  );
+  $: snoozeLabel = humaniseAlertSnoozeOption(
     $alertQuery.data?.resource?.alert?.spec,
   );
 
@@ -146,7 +147,7 @@
       <!-- Snooze -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Snooze</MetadataLabel>
-        <MetadataValue>TODO</MetadataValue>
+        <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
     </div>
 

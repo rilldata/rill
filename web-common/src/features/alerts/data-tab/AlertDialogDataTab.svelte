@@ -78,9 +78,9 @@
       placeholder="Select a dimension"
     />
     <Select
-      bind:value={$form["forEvery"]}
-      id="forEvery"
-      label="For every"
+      bind:value={$form["splitByTimeGrain"]}
+      id="splitByTimeGrain"
+      label="Split By Time Grain"
       options={AlertIntervalOptions}
       placeholder="Select a time grain"
     />
