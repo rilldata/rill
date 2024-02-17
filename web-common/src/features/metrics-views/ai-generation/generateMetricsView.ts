@@ -43,13 +43,14 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
 
 /**
  * Wrapper function that takes care of common UI side effects on top of creating a dashboard from a table.
+ *
+ * This function is to be called from all `Generate dashboard with AI` CTAs *outside* of the Metrics Editor.
  */
 export function useCreateDashboardFromTableUIAction(
   instanceId: string,
   tableName: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
-  goToEditor = false,
 ) {
   // Get the list of existing dashboards to generate a unique name
   // We call here to avoid: `Error: Function called outside component initialization`
@@ -117,26 +118,15 @@ export function useCreateDashboardFromTableUIAction(
         });
       }
 
-      // Either go to the editor or the dashboard
-      if (goToEditor) {
-        await goto(`/dashboard/${newDashboardName}/edit`);
-        void behaviourEvent.fireNavigationEvent(
-          newDashboardName,
-          behaviourEventMedium,
-          metricsEventSpace,
-          get(appScreen)?.type,
-          MetricsEventScreenName.MetricsDefinition,
-        );
-      } else {
-        await goto(`/dashboard/${newDashboardName}`);
-        void behaviourEvent.fireNavigationEvent(
-          newDashboardName,
-          behaviourEventMedium,
-          metricsEventSpace,
-          get(appScreen)?.type,
-          MetricsEventScreenName.Dashboard,
-        );
-      }
+      // Go to dashboard
+      await goto(`/dashboard/${newDashboardName}`);
+      void behaviourEvent.fireNavigationEvent(
+        newDashboardName,
+        behaviourEventMedium,
+        metricsEventSpace,
+        get(appScreen)?.type,
+        MetricsEventScreenName.Dashboard,
+      );
     } catch (err) {
       notifications.send({
         message: "Failed to create a dashboard for " + tableName,
@@ -147,4 +137,81 @@ export function useCreateDashboardFromTableUIAction(
     // Done, remove the overlay
     overlay.set(null);
   };
+}
+
+/**
+ * Wrapper function that takes care of UI side effects on top of creating a dashboard from a model.
+ *
+ * This function is to be called from the `Generate dashboard with AI` CTA *inside* of the Metrics Editor.
+ */
+export async function createDashboardFromTableInMetricsEditor(
+  instanceId: string,
+  modelName: string,
+  metricsViewName: string,
+) {
+  const tableName = modelName;
+  let isAICancelled = false;
+  const abortController = new AbortController();
+
+  overlay.set({
+    title: "Hang tight! AI is personalizing your dashboard",
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort();
+          isAICancelled = true;
+        },
+      },
+    },
+  });
+
+  const filePath = getFilePathFromNameAndType(
+    metricsViewName,
+    EntityType.MetricsDefinition,
+  );
+  try {
+    // First, request an AI-generated dashboard
+    void runtimeServiceGenerateMetricsViewFileWithSignal(
+      instanceId,
+      {
+        table: tableName,
+        path: filePath,
+        useAi: true,
+      },
+      abortController.signal,
+    );
+
+    // Poll every second until the AI generation is complete or canceled
+    while (!isAICancelled) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      try {
+        const file = await runtimeServiceGetFile(instanceId, filePath);
+        if (file.blob !== "") {
+          // success, AI is done
+          break;
+        }
+      } catch (err) {
+        // 404 error, AI is not done
+      }
+    }
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (isAICancelled) {
+      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+        table: tableName,
+        path: filePath,
+        useAi: false,
+      });
+    }
+  } catch (err) {
+    notifications.send({
+      message: "Failed to create a dashboard for " + tableName,
+      detail: err.response?.data?.message ?? err.message,
+    });
+  }
+
+  // Done, remove the overlay
+  overlay.set(null);
 }

@@ -4,14 +4,12 @@
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { BehaviourEventMedium } from "../../../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../../../metrics/service/MetricsTypes";
-  import { useCreateDashboardFromTableUIAction } from "../../ai-generation/generateMetricsView";
+  import { EntityType } from "../../../entity-management/types";
+  import { createDashboardFromTableInMetricsEditor } from "../../ai-generation/generateMetricsView";
 
   export let metricsName: string;
   export let view: EditorView | undefined = undefined;
@@ -22,16 +20,11 @@
     "inline hover:font-semibold underline underline-offset-2";
 
   async function onAutogenerateConfigFromModel(modelName: string) {
-    const goToEditor = true;
-    const createDashboardFromTable = useCreateDashboardFromTableUIAction(
+    await createDashboardFromTableInMetricsEditor(
       $runtime.instanceId,
       modelName,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.Workspace,
-      goToEditor,
+      metricsName,
     );
-
-    await createDashboardFromTable();
   }
 
   // FIXME: shouldn't these be generalized and used everywhere?
