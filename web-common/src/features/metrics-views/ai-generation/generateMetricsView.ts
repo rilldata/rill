@@ -51,6 +51,10 @@ export function useCreateDashboardFromTableUIAction(
   metricsEventSpace: MetricsEventSpace,
   goToEditor = false,
 ) {
+  // Get the list of existing dashboards to generate a unique name
+  // We call here to avoid: `Error: Function called outside component initialization`
+  const dashboardNames = useDashboardFileNames(instanceId);
+
   // Return a function that can be called to create a dashboard from a table
   return async () => {
     let isAICancelled = false;
@@ -69,8 +73,7 @@ export function useCreateDashboardFromTableUIAction(
       },
     });
 
-    // Get the list of existing dashboards to generate a unique name
-    const dashboardNames = useDashboardFileNames(instanceId);
+    // Get a unique name
     const newDashboardName = getName(
       `${tableName}_dashboard`,
       get(dashboardNames).data ?? [],
