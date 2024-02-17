@@ -50,7 +50,6 @@
   .sidebar {
     @apply flex flex-col items-start;
     @apply h-full min-w-60 w-fit;
-    @apply overflow-y-auto;
     @apply bg-white border-r border-slate-200;
     @apply overflow-hidden;
   }
