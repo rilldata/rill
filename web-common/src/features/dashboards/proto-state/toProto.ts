@@ -269,7 +269,6 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
     pivotExpanded: pivotState.expanded, // TODO
     pivotSort: pivotState.sorting,
-    pivotColumnPage: pivotState.columnPage,
     pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
   };
 }

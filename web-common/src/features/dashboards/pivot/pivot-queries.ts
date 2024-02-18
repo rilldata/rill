@@ -138,7 +138,7 @@ export function getAxisForDimensions(
         whereFilter,
         config.measureFilter,
         sortByForDimension,
-        "100",
+        "250",
         "0",
         timeRange,
       );

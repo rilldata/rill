@@ -192,6 +192,7 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
  * excluding row and group totals columns
  */
 export function getTotalColumnCount(totalsRow: PivotDataRow) {
+  console.log("totalsRow", totalsRow);
   return Object.keys(totalsRow).length;
 }
 
@@ -252,18 +253,32 @@ export function getAccessorForCell(
   numMeasures: number,
   cell: { [key: string]: string | number },
 ) {
+  let hasUndefinedIndex = false;
   const nestedColumnValueAccessor = colDimensionNames
     .map((colName, i) => {
       let accessor = `c${i}`;
 
       const colValue = cell[colName] as string;
       const colValueIndex = colValuesIndexMaps[i].get(colValue);
-      accessor += `v${colValueIndex}`;
 
+      /**
+       * For the totals row case, we might have column values which might
+       * not be present in the column dimension axes due to a limit of 250.
+       * In such cases, we should not consider the column for rendering.
+       */
+      if (colValueIndex === undefined) {
+        hasUndefinedIndex = true;
+        return;
+      }
+
+      accessor += `v${colValueIndex}`;
       return accessor;
     })
     .join("_");
 
+  if (hasUndefinedIndex) {
+    return [];
+  }
   return Array(numMeasures)
     .fill(null)
     .map((_, i) => `${nestedColumnValueAccessor}m${i}`);

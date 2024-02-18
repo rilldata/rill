@@ -1,5 +1,6 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { NUM_COLUMNS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -48,8 +49,8 @@
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
-  // $: columnPage = $dashboardStore.pivot.columnPage;
-  // $: totalColumns = $pivotDataStore.totalColumns;
+  $: columnPage = $dashboardStore.pivot.columnPage;
+  $: totalColumns = $pivotDataStore.totalColumns;
 
   $: headerGroups = $table.getHeaderGroups();
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
@@ -73,32 +74,21 @@
   // Called when the user scrolls and possibly on mount to fetch more data as the user scrolls
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
-      //   const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
-      //   const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
-      //   const leftEndDistance = scrollLeft;
-      //   // Distance threshold (in pixels) for triggering data fetch
-      //   const threshold = 500;
-      //   // Fetch more data when scrolling near the right end
-      //   if (
-      //     rightEndDistance < threshold &&
-      //     !$pivotDataStore.isFetching &&
-      //     30 * columnPage < totalColumns
-      //   ) {
-      //     metricsExplorerStore.setPivotColumnPage(
-      //       $metricsViewName,
-      //       columnPage + 1,
-      //     );
-      //   }
-      //   // Decrease page number when scrolling near the left end
-      //   // else if (
-      //   //   leftEndDistance < threshold &&
-      //   //   columnPage > 1 // Ensure we don't go below the first page
-      //   // ) {
-      //   //   metricsExplorerStore.setPivotColumnPage(
-      //   //     $metricsViewName,
-      //   //     columnPage - 1,
-      //   //   );
-      //   // }
+      const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
+      // Distance threshold (in pixels) for triggering data fetch
+      const threshold = 500;
+      // Fetch more data when scrolling near the right end
+      if (
+        rightEndDistance < threshold &&
+        !$pivotDataStore.isFetching &&
+        NUM_COLUMNS_PER_PAGE * columnPage < totalColumns
+      ) {
+        metricsExplorerStore.setPivotColumnPage(
+          $metricsViewName,
+          columnPage + 1,
+        );
+      }
     }
   };
 </script>
