@@ -2,6 +2,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragList from "./DragList.svelte";
   import type { PivotSidebarSection, PivotChipData } from "./types";
+  import { beforeUpdate } from "svelte";
 </script>
 
 <script lang="ts">
@@ -9,22 +10,40 @@
   export let items: PivotChipData[];
   export let collapsed = false;
 
-  let showMore = false;
+  let container: HTMLDivElement;
 
-  $: visible = showMore ? items.length : 3;
-
-  $: visibleItems = items.slice(0, visible);
+  beforeUpdate(() => {
+    if (!container) return;
+    calculateSize(container);
+  });
 
   function toggleCollapse() {
     collapsed = !collapsed;
   }
 
-  function toggleShowMore() {
-    showMore = !showMore;
+  // Only Safari seems to support flex-basis in conjunction with max-height: fit-content
+  // So, this is a workaround to achieve the same thing in JS
+  function calculateSize(element: HTMLDivElement) {
+    element.style.height = "fit-content";
+    element.style.flexShrink = "0";
+
+    const fitContentHeight = container.offsetHeight;
+
+    element.style.height = "100%";
+    element.style.flexShrink = "1";
+
+    const evenSplitHeight = container.offsetHeight;
+
+    if (fitContentHeight < evenSplitHeight) {
+      element.style.height = "fit-content";
+      element.style.flexShrink = "0";
+    }
   }
 </script>
 
-<div class="flex flex-col gap-1 items-start">
+<svelte:window on:resize={() => calculateSize(container)} />
+
+<div class="container" bind:this={container}>
   <button class="flex gap-1" on:click={toggleCollapse}>
     <span class="header">{title}</span>
     <div class="transition-transform" class:-rotate-180={!collapsed}>
@@ -32,28 +51,26 @@
     </div>
   </button>
 
-  {#if !collapsed}
-    {#if visibleItems.length}
-      <DragList items={visibleItems} />
-    {:else}
-      <p class="text-gray-500 my-1">No available fields</p>
+  <div class="w-full h-fit overflow-scroll px-[2px] pb-2">
+    {#if !collapsed}
+      {#if items.length}
+        <DragList {items} />
+      {:else}
+        <p class="text-gray-500 my-1">No available fields</p>
+      {/if}
     {/if}
-
-    {#if !collapsed && items.length > 3}
-      <button class="see-more" on:click={toggleShowMore}>
-        {showMore ? "Show less" : "Show more"}
-      </button>
-    {/if}
-  {/if}
+  </div>
 </div>
 
 <style lang="postcss">
-  button {
-    @apply flex items-center justify-center;
+  .container {
+    @apply pt-3 px-4;
+    @apply flex flex-col gap-1 items-start;
+    @apply w-full overflow-hidden flex-grow-0;
   }
 
-  .see-more {
-    @apply ml-2;
+  button {
+    @apply flex items-center justify-center;
   }
 
   .header {
