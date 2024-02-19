@@ -259,7 +259,14 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     };
   return {
     pivotIsActive: true,
-    pivotRowDimensions: pivotState.rows.dimension.map((d) => d.id),
+
+    pivotRowTimeDimensions: pivotState.rows.dimension
+      .filter((d) => d.type === PivotChipType.Time)
+      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
+    pivotRowDimensions: pivotState.rows.dimension
+      .filter((d) => d.type === PivotChipType.Dimension)
+      .map((d) => d.id),
+
     pivotColumnTimeDimensions: pivotState.columns.dimension
       .filter((d) => d.type === PivotChipType.Time)
       .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
@@ -267,6 +274,7 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
       .filter((d) => d.type === PivotChipType.Dimension)
       .map((d) => d.id),
     pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
+
     pivotExpanded: pivotState.expanded, // TODO
     pivotSort: pivotState.sorting,
     pivotColumnPage: pivotState.columnPage,

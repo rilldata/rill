@@ -107,21 +107,23 @@ message DashboardState {
    * Pivot related fields
    */
   optional bool pivot_is_active = 22;
+  // List of time dimensions selected for rows
+  repeated rill.runtime.v1.TimeGrain pivot_row_time_dimensions = 23;
   // List of dimensions selected for rows
-  repeated string pivot_row_dimensions = 23;
+  repeated string pivot_row_dimensions = 24;
   // List of time dimensions selected for columns
-  repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 24;
+  repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 25;
   // List of time dimensions selected for columns
-  repeated string pivot_column_dimensions = 25;
+  repeated string pivot_column_dimensions = 26;
   // List of time measures selected for columns
-  repeated string pivot_column_measures = 26;
+  repeated string pivot_column_measures = 27;
   // Map of dimensions that are expanded
-  map<string, bool> pivot_expanded = 27;
+  map<string, bool> pivot_expanded = 28;
   // Sort settings
-  repeated PivotColumnSort pivot_sort = 28;
+  repeated PivotColumnSort pivot_sort = 29;
   // Pagination data
-  optional int32 pivot_column_page = 29;
-  optional PivotRowJoinType pivot_row_join_type = 30;
+  optional int32 pivot_column_page = 30;
+  optional PivotRowJoinType pivot_row_join_type = 31;
 }
 
 message DashboardTimeRange {

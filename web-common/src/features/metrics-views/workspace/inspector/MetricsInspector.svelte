@@ -16,7 +16,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
-  import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
+  import {
+    getModelOutOfPossiblyMalformedYAML,
+    getTableOutOfPossiblyMalformedYAML,
+  } from "../../utils";
 
   export let metricsDefName: string;
 
@@ -31,9 +34,10 @@
 
   // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
+  $: tableName = getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
 
   // check to see if this model name exists.
-  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: modelQuery = useModel($runtime.instanceId, modelName ?? "");
 
   $: allModels = useModels($runtime.instanceId);
 
@@ -111,6 +115,14 @@
           <p>
             Set a model with <code>model: MODEL_NAME</code> to connect your metrics
             to a model.
+          </p>
+        </div>
+      {:else if tableName !== undefined}
+        <div>
+          <p>Table not defined.</p>
+          <p>
+            Set a table with <code>table: TABLE_NAME</code> to connect your metrics
+            to a table.
           </p>
         </div>
       {/if}
