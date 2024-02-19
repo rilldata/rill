@@ -153,8 +153,12 @@
       $metricsView?.data?.defaultTimeRange,
     );
 
-    startValue = adjustedChartValue?.start;
-    endValue = adjustedChartValue?.end;
+    if (adjustedChartValue?.start) {
+      startValue = adjustedChartValue?.start;
+    }
+    if (adjustedChartValue?.end) {
+      endValue = adjustedChartValue?.end;
+    }
   }
 
   $: if (
@@ -242,9 +246,10 @@
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       <!-- for bigNum, catch nulls and convert to undefined.  -->
-
-      {@const bigNum = totals?.[measure.name] ?? undefined}
-      {@const comparisonValue = totalsComparisons?.[measure.name]}
+      {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
+      {@const comparisonValue = measure.name
+        ? totalsComparisons?.[measure.name]
+        : undefined}
       {@const isValidPercTotal = measure.name
         ? $isMeasureValidPercentOfTotal(measure.name)
         : false}
@@ -293,10 +298,13 @@
               : null}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
-              return new Date(value).toLocaleDateString(
-                undefined,
-                TIME_GRAIN[interval].formatDate,
-              );
+
+              return interval
+                ? new Date(value).toLocaleDateString(
+                    undefined,
+                    TIME_GRAIN[interval].formatDate,
+                  )
+                : "";
             }}
           />
         {:else}
