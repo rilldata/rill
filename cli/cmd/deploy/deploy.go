@@ -58,14 +58,22 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Region, "region", "", "Deployment region")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&opts.DBDriver, "prod-db-driver", "duckdb", "Database driver")
-	deployCmd.Flags().StringVar(&opts.DBDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", 2, "Slots to allocate for production deployments")
-
 	if !ch.Config.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
 		}
+	}
+
+	// 2024-02-19: We have deprecated configuration of the OLAP DB using flags in favor of using rill.yaml.
+	// When the migration is complete, we can remove the flags as well as the admin-server support for them.
+	deployCmd.Flags().StringVar(&opts.DBDriver, "prod-db-driver", "duckdb", "Database driver")
+	deployCmd.Flags().StringVar(&opts.DBDSN, "prod-db-dsn", "", "Database driver configuration")
+	if err := deployCmd.Flags().MarkHidden("prod-db-driver"); err != nil {
+		panic(err)
+	}
+	if err := deployCmd.Flags().MarkHidden("prod-db-dsn"); err != nil {
+		panic(err)
 	}
 
 	return deployCmd
@@ -532,7 +540,7 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 	if err != nil {
 		return
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb", []string{"duckdb"})
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
 	if err != nil {
 		return
 	}
