@@ -20,7 +20,6 @@ for any of its children.
     SimpleDataGraphicConfiguration,
   } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
-    SIMPLE_DATA_GRAPHIC_DEFAULTS,
     cascadingContextStore,
     makeContextStoreProps,
   } from "../state/cascading-context-store";

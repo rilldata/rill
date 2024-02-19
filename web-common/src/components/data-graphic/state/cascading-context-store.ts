@@ -53,10 +53,10 @@ export function pruneProps<T extends object>(props: T): T {
   // so it may be that more careful initialization is required,
   // or that SimpleDataGraphicConfigurationArguments should be
   // amended to allow these to be null.
-  xMin: 0,
-  xMax: 1,
-  yMin: 0,
-  yMax: 1,
+  xMin: undefined,
+  xMax: undefined,
+  yMin: undefined,
+  yMax: undefined,
 }
 
 
@@ -94,7 +94,9 @@ export function makeContextStoreProps(props:Partial<SimpleDataGraphicConfigurati
     } else if (!useDefault) {
       // if the there is no input prop for this key, 
       // but we are not supposed to be using defaults,
-      // log a warning
+      // log a warning, set back to undefined, but log a warning
+      finalProps[key] = undefined;
+
       console.warn(`makeContextStoreProps: no input prop for key ${key} and useDefault is false`)
     } else{
       // if we _are_ using defaults, and there is no input prop
