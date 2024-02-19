@@ -9,12 +9,7 @@ for any of its children.
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { getContext, hasContext, onMount } from "svelte";
   import { contexts } from "../constants";
-  import {
-    ScaleType,
-    initializeMaxMinStores,
-    initializeScale,
-    // pruneProps,
-  } from "../state";
+  import { ScaleType, initializeMaxMinStores, initializeScale } from "../state";
   import type {
     ExtremumResolutionStore,
     SimpleDataGraphicConfiguration,
@@ -60,46 +55,6 @@ for any of its children.
     devicePixelRatio = window.devicePixelRatio;
   });
 
-  // const DEFAULTS = hasContext(contexts.config)
-  //   ? {}
-  //   : {
-  //       width: 300,
-  //       height: 200,
-  //       top: 24,
-  //       bottom: 24,
-  //       left: 24,
-  //       right: 24,
-  //       fontSize: 12,
-  //       textGap: 4,
-  //       bodyBuffer: 4,
-  //       marginBuffer: 4,
-  //     };
-
-  // let parameters = {
-  //   ...DEFAULTS,
-  //   ...pruneProps({
-  //     width,
-  //     height,
-  //     top,
-  //     bottom,
-  //     left,
-  //     right,
-  //     fontSize,
-  //     textGap,
-  //     devicePixelRatio,
-  //     xType,
-  //     yType,
-  //     xMin,
-  //     xMax,
-  //     yMin,
-  //     yMax,
-  //     bodyBuffer,
-  //     marginBuffer,
-  //     id,
-  //   }),
-  // };
-
-  // $: prunedProps = pruneProps(parameters);
   let parameters = makeContextStoreProps(
     {
       width,
