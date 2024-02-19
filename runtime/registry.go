@@ -84,7 +84,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 	// For idempotency, it's ok for some steps to fail
 
 	// Get OLAP info for dropOLAP
-	olapDriver, olapCfg, err := r.connectorConfig(ctx, instanceID, inst.OLAPConnector)
+	olapDriver, olapCfg, err := r.connectorConfig(ctx, instanceID, inst.ResolveOLAPConnector())
 	if err != nil {
 		r.logger.Error("delete instance: error getting config", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}

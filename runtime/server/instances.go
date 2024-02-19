@@ -151,6 +151,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ID:                           req.InstanceId,
 		Environment:                  valOrDefault(req.Environment, oldInst.Environment),
 		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
+		ProjectOLAPConnector:         oldInst.ProjectOLAPConnector,
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
 		AIConnector:                  valOrDefault(req.AiConnector, oldInst.AIConnector),
@@ -265,9 +266,14 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 }
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
+	olapConnector := inst.OLAPConnector
+	if inst.ProjectOLAPConnector != "" {
+		olapConnector = inst.ProjectOLAPConnector
+	}
+
 	return &runtimev1.Instance{
 		InstanceId:                   inst.ID,
-		OlapConnector:                inst.OLAPConnector,
+		OlapConnector:                olapConnector,
 		RepoConnector:                inst.RepoConnector,
 		AdminConnector:               inst.AdminConnector,
 		AiConnector:                  inst.AIConnector,
