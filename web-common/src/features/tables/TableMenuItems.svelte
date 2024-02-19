@@ -1,36 +1,30 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { WandIcon } from "lucide-svelte";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useDashboardNames } from "../dashboards/selectors";
+  import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../sources/createModel";
-  import { createDashboardFromTable } from "./createDashboardFromTable";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   export let fullyQualifiedTableName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
-  const queryClient = useQueryClient();
-
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
   $: tableName = fullyQualifiedTableName.split(".")[1];
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelNames = useModelFileNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const handleCreateModel = async () => {
     try {
@@ -54,27 +48,12 @@
     }
   };
 
-  async function handleCreateDashboardFromTable(tableName: string) {
-    overlay.set({
-      title: "Creating a dashboard for " + tableName,
-    });
-    const newDashboardName = await createDashboardFromTable(
-      queryClient,
-      tableName,
-      $dashboardNames.data ?? [],
-    );
-    goto(`/dashboard/${newDashboardName}`);
-    const previousActiveEntity = $appScreen?.type;
-    behaviourEvent.fireNavigationEvent(
-      newDashboardName,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
-      MetricsEventScreenName.Dashboard,
-    );
-    overlay.set(null);
-    toggleMenu(); // unmount component
-  }
+  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+    $runtime.instanceId,
+    tableName,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
 </script>
 
 {#if $isModelingSupportedForCurrentOlapDriver.data}
@@ -86,9 +65,15 @@
 
 <MenuItem
   icon
-  on:select={() => handleCreateDashboardFromTable(tableName)}
+  on:select={() => {
+    void createDashboardFromTable();
+    toggleMenu();
+  }}
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  Autogenerate dashboard
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard with AI
+    <WandIcon class="w-3 h-3" />
+  </div>
 </MenuItem>
