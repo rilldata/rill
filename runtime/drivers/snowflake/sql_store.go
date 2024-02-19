@@ -54,7 +54,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, err
 	}
 
-	ctx = sf.WithOriginalTimestamp(sf.WithArrowAllocator(sf.WithArrowBatches(ctx), memory.DefaultAllocator))
+	ctx = sf.WithArrowAllocator(sf.WithArrowBatches(ctx), memory.DefaultAllocator)
 
 	conn, err := db.Conn(ctx)
 	if err != nil {

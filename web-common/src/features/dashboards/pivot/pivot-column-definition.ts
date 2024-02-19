@@ -37,7 +37,6 @@ function createColumnDefinitionForDimensions(
   const filterColumns = Boolean(dimensionNames.length);
 
   const colValuesIndexMaps = dimensionNames?.map((colDimension) => {
-    console.log(colDimension, headers[colDimension], headers);
     return createIndexMap(headers[colDimension]);
   });
 
