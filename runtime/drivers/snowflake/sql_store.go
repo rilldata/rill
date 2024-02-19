@@ -240,9 +240,7 @@ func (f *fileIterator) Next() ([]string, error) {
 				)
 				f.totalRecords += int64(result.batch.GetRowCount())
 			case <-ctx.Done():
-				if ctx.Err() != nil {
-					return nil
-				}
+				return ctx.Err()
 			}
 		}
 	})
@@ -266,7 +264,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 
 	err = fetchGrp.Wait()
-	ctx.Done()
 	close(fetchResultChan)
 
 	if err != nil {
