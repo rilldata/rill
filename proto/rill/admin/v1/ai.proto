@@ -1,0 +1,27 @@
+syntax = "proto3";
+package rill.admin.v1;
+
+import "google/api/annotations.proto";
+
+service AIService {
+  // Complete sends the messages of a chat to the AI and asks it to generate a new message.
+  rpc Complete(CompleteRequest) returns (CompleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/complete",
+      body: "*"
+    };
+  }
+}
+
+message CompleteRequest {
+  repeated CompletionMessage messages = 1;
+}
+
+message CompleteResponse {
+  CompletionMessage message = 1;
+}
+
+message CompletionMessage {
+  string role = 1;
+  string data = 2;
+}

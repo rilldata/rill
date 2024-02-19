@@ -114,7 +114,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, environment, olapDriver, olapDSN, projectPath, parsedLogFormat, vars, client)
+			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
+				Version:     cfg.Version,
+				Verbose:     verbose,
+				Debug:       debug,
+				Reset:       reset,
+				Environment: environment,
+				OlapDriver:  olapDriver,
+				OlapDSN:     olapDSN,
+				ProjectPath: projectPath,
+				LogFormat:   parsedLogFormat,
+				Variables:   vars,
+				Activity:    client,
+				AdminURL:    cfg.AdminURL,
+				AdminToken:  cfg.AdminToken(),
+			})
 			if err != nil {
 				return err
 			}
