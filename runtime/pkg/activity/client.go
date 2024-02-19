@@ -72,6 +72,7 @@ func NewClientFromConf(
 	sinkPeriodMs, maxBufferSize int,
 	sinkKafkaBrokers, sinkKafkaTopic string,
 	logger *zap.Logger,
+	serviceName, serviceVersion string,
 ) Client {
 	var err error
 	var sink Sink
@@ -92,7 +93,7 @@ func NewClientFromConf(
 		SinkPeriod: time.Duration(sinkPeriodMs) * time.Millisecond,
 		BufferSize: maxBufferSize,
 		Logger:     logger,
-	})
+	}).With(attribute.String("service_name", serviceName), attribute.String("service_version", serviceVersion))
 }
 
 func NewBufferedClient(opts BufferedClientOptions) Client {

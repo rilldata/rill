@@ -22,7 +22,14 @@
       </div>
     </button>
   {/if}
-  {value === "LOADING_CELL" ? "" : value}
+
+  {#if value === "LOADING_CELL"}
+    {""}
+  {:else if value === ""}
+    {"\u00A0"}
+  {:else}
+    {value}
+  {/if}
 </div>
 
 <style lang="postcss">

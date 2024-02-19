@@ -4,6 +4,10 @@ import {
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
+  getPersistentDashboardStore,
+  initPersistentDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import {
   V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
@@ -68,9 +72,11 @@ export function getStateManagers(): StateManagers {
 export function createStateManagers({
   queryClient,
   metricsViewName,
+  extraKeyPrefix,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
+  extraKeyPrefix?: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
@@ -124,6 +130,10 @@ export function createStateManagers({
     contextColWidthDefaults,
   );
 
+  // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
+  initPersistentDashboardStore((extraKeyPrefix || "") + metricsViewName);
+  const persistentDashboardStore = getPersistentDashboardStore();
+
   return {
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
@@ -152,6 +162,7 @@ export function createStateManagers({
       cancelQueries: () => {
         queryClient.cancelQueries();
       },
+      persistentDashboardStore,
     }),
     contextColumnWidths,
   };

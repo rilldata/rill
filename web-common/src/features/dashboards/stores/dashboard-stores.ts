@@ -2,7 +2,10 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import {
+  getDefaultMetricsExplorerEntity,
+  restorePersistedDashboardState,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
@@ -28,12 +31,9 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
-import {
-  SortDirection,
-  SortType,
-} from "web-common/src/features/dashboards/proto-state/derived-types";
+import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import type { PivotColumns, PivotRows } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
-import type { PivotRows, PivotColumns } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -182,8 +182,12 @@ const metricViewReducers = {
         metricsView,
         fullTimeRange,
       );
+      state.entities[name] = restorePersistedDashboardState(
+        state.entities[name],
+      );
 
       updateMetricsExplorerProto(state.entities[name]);
+
       return state;
     });
   },
@@ -241,6 +245,14 @@ const metricViewReducers = {
         }
       });
 
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = dimensions?.[0]?.id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
+
       metricsExplorer.pivot.rows = {
         dimension: dimensions,
       };
@@ -260,6 +272,14 @@ const metricViewReducers = {
         }
       });
 
+      // Reset sorting if the sorting field is not in the pivot columns
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
       metricsExplorer.pivot.columns = {
         dimension: dimensions,
         measure: measures,
@@ -316,23 +336,6 @@ const metricViewReducers = {
     });
   },
 
-  /**
-   * DEPRECATED!!!
-   * use setLeaderboardMeasureName via:
-   * getStateManagers().actions.setLeaderboardMeasureName
-   *
-   * Still used in tests, so we can't remove it yet, but don't use
-   * it in production code.
-   */
-  setLeaderboardMeasureName(name: string, measureName: string) {
-    console.warn(
-      "setLeaderboardMeasureName is deprecated. Use setLeaderboardMeasureName via `getStateManagers().actions.setLeaderboardMeasureName`. Still used in tests, so we can't remove it yet, but don't use it in production code.",
-    );
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureName = measureName;
-    });
-  },
-
   setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
@@ -351,47 +354,6 @@ const metricViewReducers = {
   setPinIndex(name: string, index: number) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pinIndex = index;
-    });
-  },
-
-  setSortDescending(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.DESCENDING;
-    });
-  },
-
-  setSortAscending(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.ASCENDING;
-    });
-  },
-
-  toggleSort(name: string, sortType?: SortType) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // if sortType is not provided,  or if it is provided
-      // and is the same as the current sort type,
-      // then just toggle the current sort direction
-      if (
-        sortType === undefined ||
-        metricsExplorer.dashboardSortType === sortType
-      ) {
-        metricsExplorer.sortDirection =
-          metricsExplorer.sortDirection === SortDirection.ASCENDING
-            ? SortDirection.DESCENDING
-            : SortDirection.ASCENDING;
-      } else {
-        // if the sortType is different from the current sort type,
-        //  then update the sort type and set the sort direction
-        // to descending
-        metricsExplorer.dashboardSortType = sortType;
-        metricsExplorer.sortDirection = SortDirection.DESCENDING;
-      }
-    });
-  },
-
-  setSortDirection(name: string, direction: SortDirection) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = direction;
     });
   },
 
@@ -491,36 +453,6 @@ const metricViewReducers = {
         metricsExplorer.selectedComparisonTimeRange !== undefined &&
           metricsExplorer.selectedComparisonDimension === undefined,
       );
-    });
-  },
-
-  setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const initialSort = sortTypeForContextColumnType(
-        metricsExplorer.leaderboardContextColumn,
-      );
-      switch (contextColumn) {
-        case LeaderboardContextColumn.DELTA_ABSOLUTE:
-        case LeaderboardContextColumn.DELTA_PERCENT: {
-          // if there is no time comparison, then we can't show
-          // these context columns, so return with no change
-          if (metricsExplorer.showTimeComparison === false) return;
-
-          metricsExplorer.leaderboardContextColumn = contextColumn;
-          break;
-        }
-        default:
-          metricsExplorer.leaderboardContextColumn = contextColumn;
-      }
-
-      // if we have changed the context column, and the leaderboard is
-      // sorted by the context column from before we made the change,
-      // then we also need to change
-      // the sort type to match the new context column
-      if (metricsExplorer.dashboardSortType === initialSort) {
-        metricsExplorer.dashboardSortType =
-          sortTypeForContextColumnType(contextColumn);
-      }
     });
   },
 

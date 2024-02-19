@@ -18,6 +18,7 @@ import type {
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
   PivotAxesData,
+  PivotDataRow,
   PivotDataStoreConfig,
   PivotTimeConfig,
   TimeFilters,
@@ -123,17 +124,23 @@ export function getTimeForQuery(
   }
 
   timeFilters.forEach((filter) => {
-    // FIXME: Fix type warnings. Are these false positives?
-    // Using `as` to avoid type warnings
-    const duration: Period = TIME_GRAIN[filter.interval]?.duration as Period;
-
     const startTimeDt = new Date(filter.timeStart);
+    let startTimeOfLastInterval: Date | undefined = undefined;
+
+    if (filter.timeEnd) {
+      startTimeOfLastInterval = new Date(filter.timeEnd);
+    } else {
+      startTimeOfLastInterval = startTimeDt;
+    }
+
+    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
     const endTimeDt = getOffset(
-      startTimeDt,
+      startTimeOfLastInterval,
       duration,
       TimeOffsetType.ADD,
       timeZone,
     ) as Date;
+
     if (startTimeDt > new Date(timeStart as string)) {
       timeStart = filter.timeStart;
     }
@@ -184,15 +191,8 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
  * Returns total number of columns for the table
  * excluding row and group totals columns
  */
-export function getTotalColumnCount(
-  columnDimensionAxes: Record<string, string[]> | undefined,
-) {
-  if (!columnDimensionAxes) return 0;
-
-  return Object.values(columnDimensionAxes).reduce(
-    (acc, columnDimension) => acc * columnDimension.length,
-    1,
-  );
+export function getTotalColumnCount(totalsRow: PivotDataRow) {
+  return Object.keys(totalsRow).length;
 }
 
 /***
@@ -201,14 +201,15 @@ export function getTotalColumnCount(
 export function getFilterForPivotTable(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
+  totalsRow: PivotDataRow,
   rowDimensionValues: string[] = [],
   isInitialTable = false,
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
-): V1Expression {
+) {
   // TODO: handle for already existing global filters
 
-  const { colDimensionNames, rowDimensionNames, time } = config;
+  const { rowDimensionNames, time } = config;
 
   let rowFilters: V1Expression | undefined;
   if (
@@ -222,19 +223,18 @@ export function getFilterForPivotTable(
     );
   }
 
-  const colFiltersForPage = getColumnFiltersForPage(
-    colDimensionNames.filter(
-      (dimension) => !isTimeDimension(dimension, time.timeDimension),
-    ),
+  const { filters: colFiltersForPage, timeFilters } = getColumnFiltersForPage(
+    config,
     colDimensionAxes,
-    config.pivot.columnPage,
-    config.measureNames.length,
+    totalsRow,
   );
 
-  return createAndExpression([
+  const filters = createAndExpression([
     ...colFiltersForPage,
     ...(rowFilters ? [rowFilters] : []),
   ]);
+
+  return { filters, timeFilters };
 }
 
 /**
@@ -272,7 +272,7 @@ export function getAccessorForCell(
 /**
  * Extract the numbers after c and v in a accessor part string
  */
-function extractNumbers(str: string) {
+export function extractNumbers(str: string) {
   const indexOfC = str.indexOf("c");
   const indexOfV = str.indexOf("v");
 
@@ -280,6 +280,47 @@ function extractNumbers(str: string) {
   const numberAfterV = parseInt(str.substring(indexOfV + 1));
 
   return { c: numberAfterC, v: numberAfterV };
+}
+
+export function sortAcessors(accessors: string[]) {
+  function parseParts(str: string): number[] {
+    // Extract all occurrences of patterns like c<num>v<num>
+    const matches = str.match(/c(\d+)v(\d+)/g);
+    if (!matches) {
+      return [];
+    }
+    // Map each found pattern to its numeric components
+    const parts: number[] = matches.flatMap((match) => {
+      const result = /c(\d+)v(\d+)/.exec(match);
+      if (!result) return [];
+      const [, cPart, vPart] = result;
+      return [parseInt(cPart, 10), parseInt(vPart, 10)]; // Convert to numbers for proper comparison
+    });
+
+    // Extract m<num> part
+    const mPartMatch = str.match(/m(\d+)$/);
+    if (mPartMatch) {
+      parts.push(parseInt(mPartMatch[1], 10)); // Add m<num> part as a number
+    }
+    return parts;
+  }
+
+  return accessors.sort((a: string, b: string): number => {
+    const partsA = parseParts(a);
+    const partsB = parseParts(b);
+
+    // Compare each part until a difference is found
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const partA = partsA[i] || 0; // Default to 0 if undefined
+      const partB = partsB[i] || 0; // Default to 0 if undefined
+      if (partA !== partB) {
+        return partA - partB;
+      }
+    }
+
+    // If all parts are equal, consider them equal
+    return 0;
+  });
 }
 
 /**

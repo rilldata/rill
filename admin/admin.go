@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 
+	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -21,14 +22,15 @@ type Service struct {
 	DB          database.DB
 	Provisioner *provisioner.StaticProvisioner
 	Email       *email.Client
-	Used        *usedFlusher
 	Github      Github
+	AI          ai.Client
+	Used        *usedFlusher
 	Logger      *zap.Logger
 	opts        *Options
 	issuer      *auth.Issuer
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -65,9 +67,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Provisioner: prov,
 		Email:       emailClient,
 		Github:      github,
+		AI:          aiClient,
 		Used:        newUsedFlusher(logger, db),
-		opts:        opts,
 		Logger:      logger,
+		opts:        opts,
 		issuer:      issuer,
 	}, nil
 }

@@ -1,14 +1,21 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { adminServiceListOrganizations } from "@rilldata/web-admin/client";
+  import {
+    adminServiceGetCurrentUser,
+    adminServiceListOrganizations,
+  } from "@rilldata/web-admin/client";
   import { onMount } from "svelte";
-  import { LOCAL_STORAGE_ACTIVE_ORG_KEY } from "./activeOrg";
+  import { getActiveOrgLocalStorageKey } from "./local-storage";
 
   let showWelcomeMessage = false;
 
   onMount(async () => {
+    // Get the activeOrg local storage key for the current user
+    const userId = (await adminServiceGetCurrentUser())?.user?.id;
+    const activeOrgLocalStorageKey = getActiveOrgLocalStorageKey(userId);
+
     // Scenario 1: User has an activeOrg in localStorage
-    const activeOrg = localStorage.getItem(LOCAL_STORAGE_ACTIVE_ORG_KEY);
+    const activeOrg = localStorage.getItem(activeOrgLocalStorageKey);
     if (activeOrg) {
       await goto(`/${activeOrg}`);
       return;
@@ -18,7 +25,7 @@
 
     // Scenario 2: User has no activeOrg in localStorage, but does belong to an org
     if (orgs.length > 0) {
-      localStorage.setItem(LOCAL_STORAGE_ACTIVE_ORG_KEY, orgs[0].name);
+      localStorage.setItem(activeOrgLocalStorageKey, orgs[0].name);
       await goto(`/${orgs[0].name}`);
       return;
     }

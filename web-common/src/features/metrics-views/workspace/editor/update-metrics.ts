@@ -1,6 +1,7 @@
 import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
 import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
@@ -31,6 +32,8 @@ export function createUpdateMetricsCallback(
     });
     // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
     metricsExplorerStore.remove(metricsDefName);
+    // Reset local persisted dashboard state for the metrics view
+    createPersistentDashboardStore(metricsDefName).reset();
   }
 
   return function updateMetrics(event) {

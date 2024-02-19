@@ -5,8 +5,6 @@
   import { flip } from "svelte/animate";
   import { createEventDispatcher } from "svelte";
   import type { PivotChipData } from "./types";
-  import { PivotChipType } from "./types";
-  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
 </script>
 
 <script lang="ts">
@@ -28,31 +26,17 @@
     items = e.detail.items;
     dispatch("update", items);
   }
-
-  function onSelectTimeGrain(item: PivotChipData, timeGrain: TimeGrain) {
-    items = items.map((i) => {
-      if (i.id !== item.id) return i;
-
-      return {
-        id: timeGrain.grain,
-        title: timeGrain.label,
-        type: PivotChipType.Time,
-      };
-    });
-
-    dispatch("update", items);
-  }
 </script>
 
 <div
-  class="container"
+  class="flex flex-col gap-y-2 py-2 rounded-sm text-gray-500 w-full max-w-full"
   class:horizontal
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
   {#if !items.length && placeholder}
-    <p class="text-gray-500">{placeholder}</p>
+    {placeholder}
   {/if}
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
@@ -62,9 +46,6 @@
         on:remove={() => {
           items = items.filter((i) => i.id !== item.id);
           dispatch("update", items);
-        }}
-        on:select-time-grain={(e) => {
-          onSelectTimeGrain(item, e.detail.timeGrain);
         }}
       />
     </div>
@@ -79,12 +60,8 @@
     @apply text-center h-6;
   }
 
-  .container {
-    @apply flex flex-col gap-y-2 py-2 rounded-sm;
-  }
-
   .horizontal {
-    @apply flex flex-row bg-slate-50 w-full p-2 gap-x-2 h-10;
+    @apply flex flex-row flex-wrap bg-slate-50 w-full p-2 gap-x-2 h-fit;
     @apply items-center;
   }
 
