@@ -2,7 +2,6 @@ package rillv1
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -50,6 +49,13 @@ type connectorAnalyzer struct {
 
 // analyze is the entrypoint for connector analysis. After running it, you can access the result.
 func (a *connectorAnalyzer) analyze(ctx context.Context) error {
+	if a.parser.RillYAML.OLAPConnector != "" {
+		err := a.trackConnector(a.parser.RillYAML.OLAPConnector, nil, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, r := range a.parser.Resources {
 		err := a.analyzeResource(ctx, r)
 		if err != nil {
@@ -85,7 +91,7 @@ func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) erro
 	// Prep for analyzing SourceConnector
 	spec := r.SourceSpec
 	srcProps := spec.Properties.AsMap()
-	_, sourceConnector, err := a.connectorForName(spec.SourceConnector)
+	_, sourceConnector, err := a.parser.driverForConnector(spec.SourceConnector)
 	if err != nil {
 		return err
 	}
@@ -118,13 +124,9 @@ func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) erro
 
 // trackConnector tracks a connector and an associated resource in the analyzer's result map
 func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAccess bool) error {
-	if connector == a.parser.DefaultConnector {
-		return nil
-	}
-
 	res, ok := a.result[connector]
 	if !ok {
-		driver, driverConnector, err := a.connectorForName(connector)
+		driver, driverConnector, err := a.parser.driverForConnector(connector)
 		if err != nil {
 			return err
 		}
@@ -139,15 +141,17 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 		a.result[connector] = res
 	}
 
-	found := false
-	for _, existing := range res.Resources {
-		if r.Name.Normalized() == existing.Name.Normalized() {
-			found = true
-			break
+	if r != nil {
+		found := false
+		for _, existing := range res.Resources {
+			if r.Name.Normalized() == existing.Name.Normalized() {
+				found = true
+				break
+			}
 		}
-	}
-	if !found {
-		res.Resources = append(res.Resources, r)
+		if !found {
+			res.Resources = append(res.Resources, r)
+		}
 	}
 
 	if !anonAccess {
@@ -155,22 +159,4 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 	}
 
 	return nil
-}
-
-// connectorForName resolves a connector name to a connector driver
-func (a *connectorAnalyzer) connectorForName(name string) (string, drivers.Driver, error) {
-	// Unless overridden in rill.yaml, the connector name is the driver name
-	driver := name
-	for _, c := range a.parser.RillYAML.Connectors {
-		if c.Name == name {
-			driver = c.Type
-			break
-		}
-	}
-
-	connector, ok := drivers.Connectors[driver]
-	if !ok {
-		return "", nil, fmt.Errorf("unknown connector type %q", driver)
-	}
-	return driver, connector, nil
 }

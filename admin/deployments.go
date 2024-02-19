@@ -306,10 +306,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	}
 
 	// Delete the instance
-	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     strings.Contains(proj.ProdOLAPDriver, "duckdb"), // Only drop DB if it's DuckDB
-	})
+	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{InstanceId: depl.RuntimeInstanceID})
 	if err != nil {
 		return err
 	}

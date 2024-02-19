@@ -72,7 +72,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance, rest
 }
 
 // DeleteInstance deletes an instance and stops its controller.
-func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB bool) error {
+func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLAP *bool) error {
 	inst, err := r.registryCache.get(instanceID)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
@@ -83,7 +83,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// For idempotency, it's ok for some steps to fail
 
-	// Get OLAP info for dropDB
+	// Get OLAP info for dropOLAP
 	olapDriver, olapCfg, err := r.connectorConfig(ctx, instanceID, inst.OLAPConnector)
 	if err != nil {
 		r.logger.Error("delete instance: error getting config", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
@@ -98,8 +98,14 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
+	// If dropOLAP isn't set, let it default to true for DuckDB
+	if dropOLAP == nil && olapDriver == "duckdb" {
+		d := true
+		dropOLAP = &d
+	}
+
 	// Can now drop the OLAP
-	if dropDB {
+	if dropOLAP != nil && *dropOLAP {
 		err = drivers.Drop(olapDriver, olapCfg, r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))

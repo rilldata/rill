@@ -376,7 +376,7 @@ export type RuntimeServiceEditInstanceBody = {
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
-  dropDb?: boolean;
+  dropOlap?: boolean;
 };
 
 export type RuntimeServiceListInstancesParams = {

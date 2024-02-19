@@ -68,7 +68,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.olap_connector", req.OlapConnector),
 		attribute.String("args.repo_connector", req.RepoConnector),
 		attribute.String("args.admin_connector", req.AdminConnector),
-		attribute.StringSlice("args.connectors", toString(req.Connectors)),
+		attribute.StringSlice("args.connectors", connectorsStr(req.Connectors)),
 	)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
@@ -115,7 +115,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.admin_connector", *req.AdminConnector))
 	}
 	if len(req.Connectors) > 0 {
-		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", toString(req.Connectors)))
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", connectorsStr(req.Connectors)))
 	}
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
@@ -174,7 +174,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.drop_db", req.DropDb),
+		attribute.String("args.drop_olap", boolPtrStr(req.DropOlap)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -183,7 +183,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropDb)
+	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropOlap)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -286,10 +286,17 @@ func valOrDefault[T any](ptr *T, def T) T {
 	return def
 }
 
-func toString(connectors []*runtimev1.Connector) []string {
+func connectorsStr(connectors []*runtimev1.Connector) []string {
 	res := make([]string, len(connectors))
 	for i, c := range connectors {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
+}
+
+func boolPtrStr(b *bool) string {
+	if b == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%v", *b)
 }
