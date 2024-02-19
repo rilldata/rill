@@ -148,6 +148,11 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return "", err
 	}
 
+	// The AI may produce Markdown output. Remove the code tags around the YAML.
+	res.Data = strings.TrimPrefix(res.Data, "```yaml")
+	res.Data = strings.TrimPrefix(res.Data, "```")
+	res.Data = strings.TrimSuffix(res.Data, "```")
+
 	// Parse the YAML structure
 	var doc metricsViewYAML
 	if err := yaml.Unmarshal([]byte(res.Data), &doc); err != nil {
@@ -185,8 +190,15 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// Remove all invalid measures
-	for _, ie := range validateResult.MeasureErrs {
-		doc.Measures = slices.Delete(doc.Measures, ie.Idx, ie.Idx+1)
+	for _, ie := range validateResult.MeasureErrs { // First nil them (to preserve correct indexes)
+		doc.Measures[ie.Idx] = nil
+	}
+	for idx := 0; idx < len(doc.Measures); { // Then remove nil entries
+		if doc.Measures[idx] == nil {
+			doc.Measures = slices.Delete(doc.Measures, idx, idx+1)
+		} else {
+			idx++
+		}
 	}
 
 	// If there are no valid measures left, bail
@@ -208,15 +220,15 @@ func metricsViewYAMLSystemPrompt(isModel bool) string {
 	// We use the metricsViewYAML to generate a template of the YAML to guide the AI
 	// NOTE: The YAML fields have omitempty, so the AI will only know about (and populate) the fields below. We will populate the rest manually after inference.
 	template := metricsViewYAML{
-		Title: "<human-friendly title for the metrics set>",
-		Measures: []metricsViewMeasureYAML{
+		Title: "<human-friendly title based on the table name and column names>",
+		Measures: []*metricsViewMeasureYAML{
 			{
-				Name:                "<unique name for the metric, such as average_sales>",
+				Name:                "<unique name for the metric in snake case, such as average_sales>",
 				Label:               "<short descriptive label for the metric>",
 				Expression:          "<SQL expression to calculate the KPI in the requested SQL dialect>",
 				Description:         "<short description of the metric>",
 				FormatPreset:        "<should always be 'humanize'>",
-				ValidPercentOfTotal: "<true if the metrics is summable otherwise false>",
+				ValidPercentOfTotal: "<true if the metric is summable otherwise false>",
 			},
 		},
 	}
@@ -229,7 +241,7 @@ func metricsViewYAMLSystemPrompt(isModel bool) string {
 You are an agent whose only task is to suggest relevant business metrics (KPIs) based on a table schema.
 The metrics should be valid SQL aggregation expressions that use only the COUNT, SUM, MIN, MAX, and AVG functions.
 Do not use any complex aggregations and do not use WHERE or FILTER in the metrics expressions.
-Your output should be a valid YAML file in the format below:
+Your output should only consist of valid YAML in the format below:
 
 %s
 `, string(out))
@@ -279,12 +291,12 @@ func generateMetricsViewYAMLSimpleTimeDimension(schema *runtimev1.StructType) st
 	return ""
 }
 
-func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []metricsViewDimensionYAML {
-	var dims []metricsViewDimensionYAML
+func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*metricsViewDimensionYAML {
+	var dims []*metricsViewDimensionYAML
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
-			dims = append(dims, metricsViewDimensionYAML{
+			dims = append(dims, &metricsViewDimensionYAML{
 				Label:       identifierToTitle(f.Name),
 				Column:      f.Name,
 				Description: "",
@@ -294,9 +306,9 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []met
 	return dims
 }
 
-func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []metricsViewMeasureYAML {
-	var measures []metricsViewMeasureYAML
-	measures = append(measures, metricsViewMeasureYAML{
+func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metricsViewMeasureYAML {
+	var measures []*metricsViewMeasureYAML
+	measures = append(measures, &metricsViewMeasureYAML{
 		Name:                "total_records",
 		Label:               "Total records",
 		Expression:          "COUNT(*)",
@@ -307,7 +319,7 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []metri
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
-			measures = append(measures, metricsViewMeasureYAML{
+			measures = append(measures, &metricsViewMeasureYAML{
 				Name:                f.Name,
 				Label:               fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
 				Expression:          fmt.Sprintf("SUM(%s)", f.Name),
@@ -323,14 +335,14 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []metri
 // metricsViewYAML is a struct for generating a metrics view YAML file.
 // We do not use the parser's structs since they are not suitable for generating pretty output YAML.
 type metricsViewYAML struct {
-	Title              string                     `yaml:"title,omitempty"`
-	Connector          string                     `yaml:"connector,omitempty"`
-	Table              string                     `yaml:"table,omitempty"`
-	Model              string                     `yaml:"model,omitempty"`
-	TimeDimension      string                     `yaml:"timeseries,omitempty"`
-	Dimensions         []metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
-	Measures           []metricsViewMeasureYAML   `yaml:"measures,omitempty"`
-	AvailableTimeZones []string                   `yaml:"available_time_zones,omitempty"`
+	Title              string                      `yaml:"title,omitempty"`
+	Connector          string                      `yaml:"connector,omitempty"`
+	Table              string                      `yaml:"table,omitempty"`
+	Model              string                      `yaml:"model,omitempty"`
+	TimeDimension      string                      `yaml:"timeseries,omitempty"`
+	Dimensions         []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
+	Measures           []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
+	AvailableTimeZones []string                    `yaml:"available_time_zones,omitempty"`
 }
 
 type metricsViewDimensionYAML struct {
