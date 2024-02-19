@@ -32,6 +32,7 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
   DashboardState_LeaderboardContextColumn,
@@ -309,6 +310,13 @@ function fromPivotProto(
     title: dimensionsMap.get(name)?.label || "Unknown",
     type: PivotChipType.Dimension,
   });
+  const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
+    grain: TimeGrain,
+  ) => ({
+    id: FromProtoTimeGrainMap[grain],
+    title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+    type: PivotChipType.Time,
+  });
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -322,15 +330,14 @@ function fromPivotProto(
   return {
     active: dashboard.pivotIsActive ?? false,
     rows: {
-      dimension: dashboard.pivotRowDimensions.map(mapDimension),
+      dimension: [
+        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+        ...dashboard.pivotRowDimensions.map(mapDimension),
+      ],
     },
     columns: {
       dimension: [
-        ...dashboard.pivotColumnTimeDimensions.map((tg) => ({
-          id: FromProtoTimeGrainMap[tg],
-          title: TIME_GRAIN[FromProtoTimeGrainMap[tg]].label,
-          type: PivotChipType.Time,
-        })),
+        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
         ...dashboard.pivotColumnDimensions.map(mapDimension),
       ],
       measure: dashboard.pivotColumnMeasures.map(mapMeasure),
