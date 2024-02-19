@@ -101,7 +101,29 @@ for any of its children.
   // };
 
   // $: prunedProps = pruneProps(parameters);
-  let parameters = SIMPLE_DATA_GRAPHIC_DEFAULTS;
+  let parameters = makeContextStoreProps(
+    {
+      width,
+      height,
+      top,
+      bottom,
+      left,
+      right,
+      fontSize,
+      textGap,
+      devicePixelRatio,
+      xType,
+      yType,
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+      bodyBuffer,
+      marginBuffer,
+      id,
+    },
+    hasContext(contexts.config),
+  );
 
   $: parameters = makeContextStoreProps(
     {

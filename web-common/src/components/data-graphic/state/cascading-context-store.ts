@@ -77,7 +77,12 @@ export function pruneProps<T extends object>(props: T): T {
  * recalls that happening in some cases
  * 
  */
-export function makeContextStoreProps(props:Partial<SimpleDataGraphicConfigurationArguments>,useDefault:boolean):SimpleDataGraphicConfigurationArguments {
+export function makeContextStoreProps(props:Partial<SimpleDataGraphicConfigurationArguments>,hasContext:boolean):SimpleDataGraphicConfigurationArguments {
+
+  // if there is no context, we should use defaults,
+  // but if there is a context, we should not use defaults
+  const useDefault = !hasContext;
+
   // init with defaults
   const finalProps = {...SIMPLE_DATA_GRAPHIC_DEFAULTS};
 
