@@ -26,6 +26,8 @@ func (r *ValidateMetricsViewResult) IsZero() bool {
 	return r.TimeDimensionErr == nil && len(r.DimensionErrs) == 0 && len(r.MeasureErrs) == 0 && len(r.OtherErrs) == 0
 }
 
+// Error returns a single error containing all validation errors.
+// If there are no errors, it returns nil.
 func (r *ValidateMetricsViewResult) Error() error {
 	var errs []error
 	errs = append(errs, r.TimeDimensionErr)
@@ -36,6 +38,8 @@ func (r *ValidateMetricsViewResult) Error() error {
 		errs = append(errs, e.Err)
 	}
 	errs = append(errs, r.OtherErrs...)
+
+	// NOTE: errors.Join returns nil if all input errs are nil.
 	return errors.Join(errs...)
 }
 

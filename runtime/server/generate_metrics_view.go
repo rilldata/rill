@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ import (
 
 // aiGenerateTimeout is the maximum time to wait for the AI to generate a file.
 // If the AI takes longer than this, we should use fallback logic.
-const aiGenerateTimeout = 1 * time.Minute
+const aiGenerateTimeout = 30 * time.Second
 
 // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.GenerateMetricsViewFileRequest) (*runtimev1.GenerateMetricsViewFileResponse, error) {
@@ -34,6 +35,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.Table),
 		attribute.String("args.path", req.Path),
+		attribute.Bool("args.use_ai", req.UseAi),
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
@@ -127,7 +129,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: metricsViewYAMLSystemPrompt(isModel)},
+		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
 		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tblName, schema)},
 	}
 
@@ -189,11 +191,12 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return "", err
 	}
 
-	// Remove all invalid measures
-	for _, ie := range validateResult.MeasureErrs { // First nil them (to preserve correct indexes)
+	// Remove all invalid measures. We do this in two steps to preserve the indexes returned in MeasureErrs:
+	// First, we set the invalid measures to nil. Second, we remove the nil entries.
+	for _, ie := range validateResult.MeasureErrs {
 		doc.Measures[ie.Idx] = nil
 	}
-	for idx := 0; idx < len(doc.Measures); { // Then remove nil entries
+	for idx := 0; idx < len(doc.Measures); {
 		if doc.Measures[idx] == nil {
 			doc.Measures = slices.Delete(doc.Measures, idx, idx+1)
 		} else {
@@ -216,7 +219,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 }
 
 // metricsViewYAMLSystemPrompt returns the static system prompt for the metrics view generation AI.
-func metricsViewYAMLSystemPrompt(isModel bool) string {
+func metricsViewYAMLSystemPrompt() string {
 	// We use the metricsViewYAML to generate a template of the YAML to guide the AI
 	// NOTE: The YAML fields have omitempty, so the AI will only know about (and populate) the fields below. We will populate the rest manually after inference.
 	template := metricsViewYAML{
@@ -322,7 +325,7 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metr
 			measures = append(measures, &metricsViewMeasureYAML{
 				Name:                f.Name,
 				Label:               fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
-				Expression:          fmt.Sprintf("SUM(%s)", f.Name),
+				Expression:          fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
 				Description:         "",
 				FormatPreset:        "humanize",
 				ValidPercentOfTotal: true,
@@ -397,4 +400,19 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 
 func identifierToTitle(s string) string {
 	return cases.Title(language.English).String(strings.ReplaceAll(s, "_", " "))
+}
+
+var alphanumericUnderscoreRegexp = regexp.MustCompile("^[_a-zA-Z0-9]+$")
+
+// safeSQLName escapes a SQL column identifier.
+// If the name is simple (only contains alphanumeric characters and underscores), it does not escape the string.
+// This is because the output is user-facing, so we want to return as simple names as possible.
+func safeSQLName(name string) string {
+	if name == "" {
+		return name
+	}
+	if alphanumericUnderscoreRegexp.MatchString(name) {
+		return name
+	}
+	return name
 }

@@ -135,73 +135,36 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 	rootCmd.PersistentFlags().Var(printer.NewFormatValue(printer.Human, &format), "format", `Output format (options: "human", "json", "csv")`)
-	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
-
-	// Create sub-commands
-	startCmd := start.StartCmd(ch)
-	deployCmd := deploy.DeployCmd(ch)
-	envCmd := env.EnvCmd(ch)
-	userCmd := user.UserCmd(ch)
-	orgCmd := org.OrgCmd(ch)
-	projectCmd := project.ProjectCmd(ch)
-	serviceCmd := service.ServiceCmd(ch)
-	loginCmd := auth.LoginCmd(ch)
-	logoutCmd := auth.LogoutCmd(ch)
-	whoamiCmd := whoami.WhoamiCmd(ch)
-	docsCmd := docs.DocsCmd(ch, rootCmd)
-	versionCmd := versioncmd.VersionCmd()
-	upgradeCmd := upgrade.UpgradeCmd(ch)
-	sudoCmd := sudo.SudoCmd(ch)
-	devtoolCmd := devtool.DevtoolCmd(ch)
-	adminCmd := admin.AdminCmd(ch)
-	runtimeCmd := runtime.RuntimeCmd(ch)
-	verifyCmd := verifyInstallCmd(ch)
-
-	// Add persistent flags that apply only to admin-related commands
-	adminCmds := []*cobra.Command{
-		startCmd,
-		deployCmd,
-		envCmd,
-		userCmd,
-		orgCmd,
-		projectCmd,
-		serviceCmd,
-		loginCmd,
-		logoutCmd,
-		whoamiCmd,
-		sudoCmd,
-	}
-	for _, cmd := range adminCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
-		if !cfg.IsDev() {
-			if err := cmd.PersistentFlags().MarkHidden("api-url"); err != nil {
-				panic(err)
-			}
+	rootCmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the cloud API")
+	if !cfg.IsDev() {
+		if err := rootCmd.PersistentFlags().MarkHidden("api-url"); err != nil {
+			panic(err)
 		}
-		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
 	}
+	rootCmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the cloud API")
+	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
 	// Add sub-commands
 	rootCmd.AddCommand(
-		startCmd,
-		deployCmd,
-		envCmd,
-		userCmd,
-		orgCmd,
-		projectCmd,
-		serviceCmd,
-		loginCmd,
-		logoutCmd,
-		whoamiCmd,
-		docsCmd,
+		start.StartCmd(ch),
+		deploy.DeployCmd(ch),
+		env.EnvCmd(ch),
+		user.UserCmd(ch),
+		org.OrgCmd(ch),
+		project.ProjectCmd(ch),
+		service.ServiceCmd(ch),
+		auth.LoginCmd(ch),
+		auth.LogoutCmd(ch),
+		whoami.WhoamiCmd(ch),
+		docs.DocsCmd(ch, rootCmd),
 		completionCmd,
-		versionCmd,
-		upgradeCmd,
-		sudoCmd,
-		devtoolCmd,
-		adminCmd,
-		runtimeCmd,
-		verifyCmd,
+		versioncmd.VersionCmd(),
+		upgrade.UpgradeCmd(ch),
+		sudo.SudoCmd(ch),
+		devtool.DevtoolCmd(ch),
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
+		verifyInstallCmd(ch),
 	)
 
 	return rootCmd.ExecuteContext(ctx)
