@@ -127,6 +127,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		OlapConnector:  olapDriver,
 		RepoConnector:  "admin",
 		AdminConnector: "admin",
+		AiConnector:    "admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   olapDriver,

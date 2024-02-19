@@ -324,6 +324,13 @@ export type RuntimeServiceRenameFileBody = {
   toPath?: string;
 };
 
+export type RuntimeServiceGenerateMetricsViewFileBody = {
+  connector?: string;
+  table?: string;
+  path?: string;
+  useAi?: boolean;
+};
+
 export type RuntimeServicePutFileBody = {
   blob?: string;
   create?: boolean;
@@ -365,6 +372,7 @@ export type RuntimeServiceEditInstanceBody = {
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
+  aiConnector?: string;
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
@@ -509,12 +517,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -542,6 +544,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -628,23 +636,12 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export type V1SourceSpecProperties = { [key: string]: any };
-
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
-}
-
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
+
+export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -662,6 +659,17 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
+}
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
 }
 
 export interface V1ScannedConnector {
@@ -749,13 +757,6 @@ export interface V1Resource {
   theme?: V1Theme;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -777,6 +778,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1155,18 +1163,6 @@ export interface V1MetricsViewTotalsResponse {
   data?: V1MetricsViewTotalsResponseData;
 }
 
-export interface V1MetricsViewTotalsRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  where?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewToplistResponse {
@@ -1268,6 +1264,18 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
+export interface V1MetricsViewTotalsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  where?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1308,32 +1316,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonRow {
-  dimensionValue?: unknown;
-  measureValues?: V1MetricsViewComparisonValue[];
-}
-
-export interface V1MetricsViewComparisonResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
-export type V1MetricsViewComparisonMeasureType =
-  (typeof V1MetricsViewComparisonMeasureType)[keyof typeof V1MetricsViewComparisonMeasureType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1MetricsViewComparisonMeasureType = {
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
-} as const;
-
 export interface V1MetricsViewComparisonSort {
   name?: string;
   desc?: boolean;
@@ -1341,10 +1323,13 @@ export interface V1MetricsViewComparisonSort {
   sortType?: V1MetricsViewComparisonMeasureType;
 }
 
-export interface V1MetricsViewComparisonMeasureAlias {
-  name?: string;
-  type?: V1MetricsViewComparisonMeasureType;
-  alias?: string;
+export interface V1MetricsViewComparisonRow {
+  dimensionValue?: unknown;
+  measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewComparisonRequest {
@@ -1364,6 +1349,29 @@ export interface V1MetricsViewComparisonRequest {
   priority?: number;
   exact?: boolean;
   filter?: V1MetricsViewFilter;
+}
+
+export type V1MetricsViewComparisonMeasureType =
+  (typeof V1MetricsViewComparisonMeasureType)[keyof typeof V1MetricsViewComparisonMeasureType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1MetricsViewComparisonMeasureType = {
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
+    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED",
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
+    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE",
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE",
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
+    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA",
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
+} as const;
+
+export interface V1MetricsViewComparisonMeasureAlias {
+  name?: string;
+  type?: V1MetricsViewComparisonMeasureType;
+  alias?: string;
 }
 
 export interface V1MetricsViewColumn {
@@ -1507,6 +1515,7 @@ export interface V1Instance {
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
+  aiConnector?: string;
   createdOn?: string;
   updatedOn?: string;
   connectors?: V1Connector[];
@@ -1555,6 +1564,10 @@ export interface V1GetFileResponse {
 
 export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
+}
+
+export interface V1GenerateMetricsViewFileResponse {
+  aiSucceeded?: boolean;
 }
 
 export interface V1GCSObject {
@@ -1693,6 +1706,7 @@ export interface V1CreateInstanceRequest {
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
+  aiConnector?: string;
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
@@ -1877,6 +1891,13 @@ export interface V1BucketPlannerSpec {
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
+}
+
+export interface V1BucketExtractPolicy {
+  rowsStrategy?: BucketExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: BucketExtractPolicyStrategy;
+  filesLimit?: string;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2164,10 +2185,3 @@ export const BucketExtractPolicyStrategy = {
   STRATEGY_HEAD: "STRATEGY_HEAD",
   STRATEGY_TAIL: "STRATEGY_TAIL",
 } as const;
-
-export interface V1BucketExtractPolicy {
-  rowsStrategy?: BucketExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  filesStrategy?: BucketExtractPolicyStrategy;
-  filesLimit?: string;
-}
