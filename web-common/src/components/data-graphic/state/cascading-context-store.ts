@@ -90,7 +90,7 @@ export function makeContextStoreProps(props:Partial<SimpleDataGraphicConfigurati
       // if the there is no input prop for this key, 
       // but we are not supposed to be using defaults,
       // log a warning
-      console.log(`makeContextStoreProps: no input prop for key ${key} and useDefault is false`)
+      console.warn(`makeContextStoreProps: no input prop for key ${key} and useDefault is false`)
     } else{
       // if we _are_ using defaults, and there is no input prop
       // for this key but this is one of the keys that should
