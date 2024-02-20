@@ -190,11 +190,11 @@
   {/if}
   <Menu
     label="Time range selector"
+    let:toggleFloatingElement
     maxWidth="300px"
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    let:toggleFloatingElement
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
@@ -252,6 +252,20 @@
     {#if $timeRangeSelectorState.periodToDateRanges?.length}
       <Divider />
       {#each $timeRangeSelectorState.periodToDateRanges as timeRange}
+        <MenuItem
+          on:before-select={setIntermediateSelection(timeRange.name)}
+          on:select={() =>
+            onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
+        >
+          <span class:font-bold={intermediateSelection === timeRange.name}>
+            {timeRange.label}
+          </span>
+        </MenuItem>
+      {/each}
+    {/if}
+    {#if $timeRangeSelectorState.previousCompleteDateRanges?.length}
+      <Divider />
+      {#each $timeRangeSelectorState.previousCompleteDateRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>

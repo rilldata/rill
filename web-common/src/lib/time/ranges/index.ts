@@ -82,11 +82,22 @@ export function getChildTimeRanges(
         );
       });
 
+      console.log(
+        timeRange.label,
+        timeRangeDates.startDate,
+        timeRangeDates.endDate,
+      );
+
       const isGrainPossible = !isGrainBigger(
         minTimeGrain,
         allowedMaxGrain.grain,
       );
-      if (isGrainPossible && hasSomeGrainMatches) {
+
+      const isRangeValid =
+        isWithinRange(timeRangeDates.startDate, start, end) ||
+        isWithinRange(timeRangeDates.endDate, start, end);
+
+      if (isRangeValid && isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
           name: timePreset as TimeRangePreset,
           label: timeRange.label,
@@ -421,4 +432,8 @@ export function getAdjustedChartTime(
     start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
     end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
   };
+}
+
+function isWithinRange(time: Date, start: Date, end: Date) {
+  return time.getTime() >= start.getTime() && time.getTime() <= end.getTime();
 }
