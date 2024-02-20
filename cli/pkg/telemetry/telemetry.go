@@ -70,11 +70,12 @@ func (t *Telemetry) WithUserID(userID string) {
 }
 
 func (t *Telemetry) Emit(action Action) {
-	t.emitBehaviourEvent(string(action), "cli", "terminal", "terminal", nil, "")
+	t.emitBehaviourEvent(string(action), "cli", "terminal", "terminal", nil)
 }
 
 func (t *Telemetry) EmitStartEvent(sourceDrivers []string, olapDriver string) {
-	t.emitBehaviourEvent(string(ActionAppStart), "cli", "terminal", "terminal", sourceDrivers, olapDriver)
+	payload := map[string]any{"source_driver": sourceDrivers, "olap_driver": olapDriver}
+	t.emitBehaviourEvent(string(ActionAppStart), "cli", "terminal", "terminal", payload)
 }
 
 func (t *Telemetry) Flush(ctx context.Context) error {
@@ -93,24 +94,23 @@ func (t *Telemetry) Flush(ctx context.Context) error {
 }
 
 type behaviourEventFields struct {
-	AppName       string   `json:"app_name"`
-	InstallID     string   `json:"install_id"`
-	BuildID       string   `json:"build_id"`
-	Version       string   `json:"version"`
-	UserID        string   `json:"user_id"`
-	IsDev         bool     `json:"is_dev"`
-	Mode          string   `json:"mode"`
-	Action        string   `json:"action"`
-	Medium        string   `json:"medium"`
-	Space         string   `json:"space"`
-	ScreenName    string   `json:"screen_name"`
-	EventDatetime int64    `json:"event_datetime"`
-	EventType     string   `json:"event_type"`
-	SourceDriver  []string `json:"source_driver"`
-	OLAPDriver    string   `json:"olap_driver"`
+	AppName       string         `json:"app_name"`
+	InstallID     string         `json:"install_id"`
+	BuildID       string         `json:"build_id"`
+	Version       string         `json:"version"`
+	UserID        string         `json:"user_id"`
+	IsDev         bool           `json:"is_dev"`
+	Mode          string         `json:"mode"`
+	Action        string         `json:"action"`
+	Medium        string         `json:"medium"`
+	Space         string         `json:"space"`
+	ScreenName    string         `json:"screen_name"`
+	EventDatetime int64          `json:"event_datetime"`
+	EventType     string         `json:"event_type"`
+	Payload       map[string]any `json:"payload"`
 }
 
-func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string, sourceDrivers []string, olapDriver string) {
+func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string, payload map[string]any) {
 	if t == nil || !t.Enabled {
 		return
 	}
@@ -129,8 +129,7 @@ func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string,
 		ScreenName:    screenName,
 		EventDatetime: time.Now().Unix() * 1000,
 		EventType:     "behavioral",
-		SourceDriver:  sourceDrivers,
-		OLAPDriver:    olapDriver,
+		Payload:       payload,
 	}
 	event, err := json.Marshal(&fields)
 	if err != nil {
