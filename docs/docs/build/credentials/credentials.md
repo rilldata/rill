@@ -1,7 +1,7 @@
 ---
 title: Configure connector credentials
 sidebar_label: Configure credentials
-sidebar_position: 10
+sidebar_position: 00
 ---
 
 Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure) or other DuckDB sources (MotherDuck).
