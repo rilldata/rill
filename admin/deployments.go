@@ -46,49 +46,45 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, err
 	}
 
-	// Build instance config
+	// Prepare instance config
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	olapDriver := opts.ProdOLAPDriver
-	olapConfig := map[string]string{}
-	var embedCatalog bool
-	switch olapDriver {
-	case "duckdb-int-storage": // duckdb driver that disables storing table as view
-		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-int-storage'")
-		}
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-int-storage'")
-		}
-
-		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
-		olapConfig["cpu"] = strconv.Itoa(alloc.CPU)
-		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
-		embedCatalog = false
-	case "duckdb", "duckdb-ext-storage": // duckdb-ext-storage is for bwd compatibility
-		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
-		}
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
-		}
-
-		olapDriver = "duckdb"
-		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main"))
-		olapConfig["cpu"] = strconv.Itoa(alloc.CPU)
-		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
-		olapConfig["external_table_storage"] = strconv.FormatBool(true)
-		embedCatalog = false
-	default:
-		olapConfig["dsn"] = opts.ProdOLAPDSN
-		embedCatalog = false
-		olapConfig["storage_limit_bytes"] = "0"
-	}
-
+	var connectors []*runtimev1.Connector
 	modelDefaultMaterialize, err := defaultModelMaterialize(opts.ProdVariables)
 	if err != nil {
 		return nil, err
+	}
+
+	// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
+	connectors = append(connectors, &runtimev1.Connector{
+		Name: "duckdb",
+		Type: "duckdb",
+		Config: map[string]string{
+			"dsn":                    fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main")),
+			"cpu":                    strconv.Itoa(alloc.CPU),
+			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
+			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
+			"external_table_storage": strconv.FormatBool(true),
+		},
+	})
+
+	// Determine the default OLAP connector
+	var olapConnector string
+	switch opts.ProdOLAPDriver {
+	case "duckdb", "duckdb-ext-storage":
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for OLAP driver 'duckdb'")
+		}
+		olapConnector = "duckdb"
+		// Already configured DuckDB above
+	default:
+		olapConnector = opts.ProdOLAPDriver
+		connectors = append(connectors, &runtimev1.Connector{
+			Name: opts.ProdOLAPDriver,
+			Type: opts.ProdOLAPDriver,
+			Config: map[string]string{
+				"dsn": opts.ProdOLAPDSN,
+			},
+		})
 	}
 
 	// Open a runtime client
@@ -120,35 +116,31 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 	adminAuthToken := dat.Token().String()
 
+	// Add the admin connector
+	connectors = append(connectors, &runtimev1.Connector{
+		Name: "admin",
+		Type: "admin",
+		Config: map[string]string{
+			"admin_url":    s.opts.ExternalURL,
+			"access_token": adminAuthToken,
+			"project_id":   opts.ProjectID,
+			"branch":       opts.ProdBranch,
+			"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
+		},
+	})
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:     instanceID,
-		Environment:    "prod",
-		OlapConnector:  olapDriver,
-		RepoConnector:  "admin",
-		AdminConnector: "admin",
-		AiConnector:    "admin",
-		Connectors: []*runtimev1.Connector{
-			{
-				Name:   olapDriver,
-				Type:   olapDriver,
-				Config: olapConfig,
-			},
-			{
-				Name: "admin",
-				Type: "admin",
-				Config: map[string]string{
-					"admin_url":    s.opts.ExternalURL,
-					"access_token": adminAuthToken,
-					"project_id":   opts.ProjectID,
-					"branch":       opts.ProdBranch,
-					"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
-				},
-			},
-		},
+		InstanceId:              instanceID,
+		Environment:             "prod",
+		OlapConnector:           olapConnector,
+		RepoConnector:           "admin",
+		AdminConnector:          "admin",
+		AiConnector:             "admin",
+		Connectors:              connectors,
 		Variables:               opts.ProdVariables,
 		Annotations:             opts.Annotations.toMap(),
-		EmbedCatalog:            embedCatalog,
+		EmbedCatalog:            false,
 		StageChanges:            true,
 		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
