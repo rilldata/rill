@@ -72,6 +72,8 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 		return a.analyzeSource(ctx, r)
 	} else if r.ModelSpec != nil {
 		return a.trackConnector(r.ModelSpec.Connector, r, false)
+	} else if r.MetricsViewSpec != nil {
+		return a.trackConnector(r.MetricsViewSpec.Connector, r, false)
 	} else if r.MigrationSpec != nil {
 		return a.trackConnector(r.MigrationSpec.Connector, r, false)
 	}

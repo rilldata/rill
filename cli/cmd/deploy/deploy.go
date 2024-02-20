@@ -574,6 +574,10 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		if c.AnonymousAccess {
 			continue
 		}
+		if len(c.Resources) == 0 {
+			fmt.Printf(" - %s\n", c.Name)
+			continue
+		}
 		for _, r := range c.Resources {
 			fmt.Printf(" - %s", r.Name.Name)
 			if len(r.Paths) > 0 {
