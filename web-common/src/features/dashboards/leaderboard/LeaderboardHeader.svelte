@@ -20,7 +20,7 @@
   const {
     selectors: {
       contextColumn: {
-        widthPx,
+        contextColumn,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
@@ -34,7 +34,13 @@
       sorting: { toggleSort, toggleSortByActiveContextColumn },
       dimensions: { setPrimaryDimension },
     },
+    contextColumnWidths,
   } = getStateManagers();
+
+  let widthPx = "0px";
+  $: widthPx = $contextColumn
+    ? $contextColumnWidths[$contextColumn] + "px"
+    : "0px";
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);
   $: displayName = $getDimensionDisplayName(dimensionName);
@@ -78,7 +84,7 @@
       <Tooltip distance={16} location="top">
         <button
           on:click={() => setPrimaryDimension(dimensionName)}
-          class="pl-2 truncate flex justify-start"
+          class="ui-copy-primary pl-2 truncate flex justify-start"
           style="max-width: calc(315px - 60px);"
           style:width="100%"
           aria-label="Open dimension details"
@@ -124,7 +130,7 @@
           on:click={toggleSortByActiveContextColumn}
           class="shrink flex flex-row items-center justify-end"
           aria-label="Toggle sort leaderboards by context column"
-          style:width={$widthPx}
+          style:width={widthPx}
         >
           {#if $isDeltaPercent}
             <Delta /> %

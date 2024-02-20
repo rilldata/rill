@@ -40,7 +40,7 @@ to the props.
   });
 
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
-  export let hovered: boolean | undefined = undefined;
+  export let hovered: boolean = false;
   export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
@@ -53,6 +53,7 @@ to the props.
   role="button"
   tabindex="0"
   style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
+  style:outline="none"
   use:scrub
   on:scrub-start
   on:scrub-end

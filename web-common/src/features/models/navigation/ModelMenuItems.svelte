@@ -6,17 +6,16 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useCreateDashboardFromModelUIAction,
-    useModelSchemaIsReady,
-  } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { useModelFileNames } from "../selectors";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useModel, useModelFileNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -32,25 +31,18 @@
     $runtime.instanceId,
     modelPath,
   );
-  $: modelSchemaIsReady = useModelSchemaIsReady(
-    queryClient,
-    $runtime.instanceId,
-    modelName,
-  );
-  $: disableCreateDashboard = $modelHasError || !$modelSchemaIsReady;
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: modelIsIdle =
+    $modelQuery.data?.meta?.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: disableCreateDashboard = $modelHasError || !modelIsIdle;
 
-  $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
+  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     modelName,
-    queryClient,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
-
-  async function createDashboardFromModelHandler() {
-    await createDashboardFromModel();
-    toggleMenu();
-  }
 
   const handleDeleteModel = async (modelName: string) => {
     if ($modelNames.data) {
@@ -68,15 +60,21 @@
 <MenuItem
   disabled={disableCreateDashboard}
   icon
-  on:select={() => createDashboardFromModelHandler()}
+  on:select={() => {
+    void createDashboardFromTable();
+    toggleMenu();
+  }}
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  Autogenerate dashboard
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard with AI
+    <WandIcon class="w-3 h-3" />
+  </div>
   <svelte:fragment slot="description">
     {#if $modelHasError}
       Model has errors
-    {:else if !$modelSchemaIsReady}
+    {:else if !modelIsIdle}
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>

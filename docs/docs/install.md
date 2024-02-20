@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 You can install `rill` using our installation script:
 
 ```bash
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 ```
 
 Verify that the installation succeeded:
@@ -24,10 +24,27 @@ rill --help
 
 On both macOS and Linux, you can install the latest nightly build using the installation script:
 ```bash
-curl -s https://cdn.rilldata.com/install.sh | bash -s -- --nightly
+curl https://rill.sh | sh -s -- --nightly
 ```
 
-Note for macOS users: If you previously installed Rill using `brew`, the brew-managed binary will take precedent. You can remove it by running `brew uninstall rill`.
+:::warning MacOS users
+
+If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
+
+:::
+
+## Installing a specific version of Rill
+
+Rather than installing the latest version of Rill automatically, you can also install a specific version through the installation script by using the following command (e.g. `v0.40.1`):
+```bash
+curl https://rill.sh | sh -s -- --version <insert_version_number>
+```
+
+:::info Checking the Rill version
+
+To check the precise version of available releases, you can navigate to the [**Releases**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the install script, you will get prompted with an error to specify a correct version.
+
+:::
 
 ## Rill on Windows using WSL
 
@@ -46,7 +63,7 @@ sudo apt-get install unzip
 
 With `unzip` installed, you're ready to install Rill. Just run:
 ```bash
-curl -s <https://cdn.rilldata.com/install.sh> | bash
+curl https://rill.sh | sh
 ```
 
 ## Alternative Install Options

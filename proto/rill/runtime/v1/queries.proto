@@ -95,6 +95,11 @@ service QueryService {
     };
   }
 
+  // MetricsViewSchema Get the data types of measures and dimensions
+  rpc MetricsViewSchema(MetricsViewSchemaRequest) returns (MetricsViewSchemaResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema"};
+  }
+
   // Profiling APIs
 
   // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -298,12 +303,14 @@ message MetricsViewAggregationDimension {
   string name = 1;
   TimeGrain time_grain = 2;
   string time_zone = 3;
+  string alias = 4;
 }
 
 message MetricsViewAggregationMeasure {
   string name = 1;
   BuiltinMeasure builtin_measure = 2;
   repeated google.protobuf.Value builtin_measure_args = 3;
+  Expression filter = 4;
 }
 
 message MetricsViewAggregationSort {
@@ -509,6 +516,16 @@ message MetricsViewTimeRangeRequest {
 
 message MetricsViewTimeRangeResponse {
   TimeRangeSummary time_range_summary = 1;
+}
+
+message MetricsViewSchemaRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  int32 priority = 3;
+}
+
+message MetricsViewSchemaResponse {
+  StructType schema = 1;
 }
 
 // **********

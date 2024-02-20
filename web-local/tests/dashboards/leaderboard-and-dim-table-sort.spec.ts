@@ -1,6 +1,6 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { test, expect, Locator } from "@playwright/test";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { expect, Locator } from "@playwright/test";
+import { test } from "../utils/test";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
@@ -14,7 +14,6 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  startRuntimeForEachTest();
   useDashboardFlowTestSetup();
 
   test("leaderboard and dimension table sorting", async ({ page }) => {

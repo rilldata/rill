@@ -2,7 +2,7 @@
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
   import CliCommandDisplay from "../../../components/commands/CLICommandDisplay.svelte";
-  import Dialog from "../../../components/dialog-v2/Dialog.svelte";
+  import Dialog from "../../../components/dialog/Dialog.svelte";
 
   export let open: boolean;
 

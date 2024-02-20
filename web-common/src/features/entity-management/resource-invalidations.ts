@@ -5,10 +5,11 @@ import {
 } from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
-  getRuntimeServiceGetResourceQueryKey,
-  getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
   V1Resource,
+  getConnectorServiceOLAPListTablesQueryKey,
+  getRuntimeServiceGetResourceQueryKey,
+  getRuntimeServiceListResourcesQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateMetricsViewData,
@@ -149,16 +150,18 @@ async function invalidateRemovedResource(
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
-      // queryClient.cancelQueries({
-      //   predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
-      // });
+      void queryClient.cancelQueries({
+        predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
+      });
+      void queryClient.invalidateQueries(
+        getConnectorServiceOLAPListTablesQueryKey(),
+      );
       break;
-
     case ResourceKind.MetricsView:
-      // queryClient.cancelQueries({
-      //   predicate: (query) =>
-      //     invalidationForMetricsViewData(query, resource.meta.name.name),
-      // });
+      void queryClient.cancelQueries({
+        predicate: (query) =>
+          invalidationForMetricsViewData(query, resource.meta.name.name),
+      });
       break;
   }
 }

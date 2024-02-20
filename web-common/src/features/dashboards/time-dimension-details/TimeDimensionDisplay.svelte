@@ -38,6 +38,7 @@
         selectItemsInFilter,
         deselectItemsInFilter,
       },
+      sorting: { toggleSort },
     },
   } = getStateManagers();
 
@@ -196,9 +197,7 @@
     on:toggle-pin={togglePin}
     on:toggle-filter={toggleFilter}
     on:toggle-sort={(e) => {
-      // cancelDashboardQueries(queryClient, metricViewName);
-      metricsExplorerStore.toggleSort(
-        metricViewName,
+      toggleSort(
         e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
       );
     }}

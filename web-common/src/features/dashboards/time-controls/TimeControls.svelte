@@ -71,10 +71,10 @@
      */
     if (
       !availableTimeZones?.length &&
-      $dashboardStore?.selectedTimezone !== "Etc/UTC"
+      $dashboardStore?.selectedTimezone !== "UTC"
     ) {
-      metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
-      localUserPreferences.set({ timeZone: "Etc/UTC" });
+      metricsExplorerStore.setTimeZone(metricViewName, "UTC");
+      localUserPreferences.set({ timeZone: "UTC" });
     }
 
     baseTimeRange ??= {
@@ -203,7 +203,7 @@
         boundaryEnd={allTimeRange.end}
         showComparison={$timeControlsStore?.showComparison}
         selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
-        zone={$dashboardStore?.selectedTimezone}
+        zone={$dashboardStore.selectedTimezone}
       />
     {/if}
     <TimeGrainSelector

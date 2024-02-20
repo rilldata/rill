@@ -31,7 +31,7 @@
   let justCreatedScrub = false;
   let moveStartDelta = 0;
   let moveEndDelta = 0;
-  let isResizing: "start" | "end" = undefined;
+  let isResizing: "start" | "end" | undefined = undefined;
   let isMovingScrub = false;
 
   const dispatch = createEventDispatcher();

@@ -49,12 +49,16 @@
       // update this to set the active animation in the tooltip text
     }}
   >
-    <div>
-      {datePortion(valueWithoutOffset)}
-    </div>
-    <div>
-      {timePortion(valueWithoutOffset)}
-    </div>
+    {#if valueWithoutOffset}
+      <div>
+        {datePortion(valueWithoutOffset)}
+      </div>
+      <div>
+        {timePortion(valueWithoutOffset)}
+      </div>
+    {:else}
+      loading...
+    {/if}
   </button>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>

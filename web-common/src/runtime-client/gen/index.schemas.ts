@@ -192,6 +192,8 @@ export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewSchemaParams = { priority?: number };
+
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
@@ -322,6 +324,13 @@ export type RuntimeServiceRenameFileBody = {
   toPath?: string;
 };
 
+export type RuntimeServiceGenerateMetricsViewFileBody = {
+  connector?: string;
+  table?: string;
+  path?: string;
+  useAi?: boolean;
+};
+
 export type RuntimeServicePutFileBody = {
   blob?: string;
   create?: boolean;
@@ -359,9 +368,11 @@ export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
+  environment?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
+  aiConnector?: string;
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
@@ -468,11 +479,13 @@ export const V1TypeCode = {
   CODE_INT32: "CODE_INT32",
   CODE_INT64: "CODE_INT64",
   CODE_INT128: "CODE_INT128",
+  CODE_INT256: "CODE_INT256",
   CODE_UINT8: "CODE_UINT8",
   CODE_UINT16: "CODE_UINT16",
   CODE_UINT32: "CODE_UINT32",
   CODE_UINT64: "CODE_UINT64",
   CODE_UINT128: "CODE_UINT128",
+  CODE_UINT256: "CODE_UINT256",
   CODE_FLOAT32: "CODE_FLOAT32",
   CODE_FLOAT64: "CODE_FLOAT64",
   CODE_TIMESTAMP: "CODE_TIMESTAMP",
@@ -641,6 +654,8 @@ export interface V1Source {
 }
 
 export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
@@ -727,6 +742,21 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -760,20 +790,6 @@ export interface V1ReportState {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
 }
 
 export interface V1RenameFileResponse {
@@ -841,6 +857,16 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -883,16 +909,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -1147,18 +1163,6 @@ export interface V1MetricsViewTotalsResponse {
   data?: V1MetricsViewTotalsResponseData;
 }
 
-export interface V1MetricsViewTotalsRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  where?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewToplistResponse {
@@ -1196,8 +1200,12 @@ export interface V1MetricsViewSpec {
   title?: string;
   description?: string;
   timeDimension?: string;
+  /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
+  watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimensionV2[];
+  defaultDimensions?: string[];
   measures?: MetricsViewSpecMeasureV2[];
+  defaultMeasures?: string[];
   smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
@@ -1223,18 +1231,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
-}
-
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1248,6 +1244,34 @@ export interface V1MetricsViewToplistRequest {
   sort?: V1MetricsViewSort[];
   where?: V1Expression;
   having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
+export interface V1MetricsViewSchemaResponse {
+  schema?: V1StructType;
+}
+
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewTotalsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  where?: V1Expression;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
@@ -1308,6 +1332,25 @@ export interface V1MetricsViewComparisonResponse {
   rows?: V1MetricsViewComparisonRow[];
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export type V1MetricsViewComparisonMeasureType =
   (typeof V1MetricsViewComparisonMeasureType)[keyof typeof V1MetricsViewComparisonMeasureType];
 
@@ -1353,12 +1396,14 @@ export interface V1MetricsViewAggregationMeasure {
   name?: string;
   builtinMeasure?: V1BuiltinMeasure;
   builtinMeasureArgs?: unknown[];
+  filter?: V1Expression;
 }
 
 export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
   timeZone?: string;
+  alias?: string;
 }
 
 export interface V1MetricsViewAggregationRequest {
@@ -1466,9 +1511,11 @@ just a single instance.
  */
 export interface V1Instance {
   instanceId?: string;
+  environment?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
+  aiConnector?: string;
   createdOn?: string;
   updatedOn?: string;
   connectors?: V1Connector[];
@@ -1519,6 +1566,10 @@ export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
 }
 
+export interface V1GenerateMetricsViewFileResponse {
+  aiSucceeded?: boolean;
+}
+
 export interface V1GCSObject {
   name?: string;
   modifiedOn?: string;
@@ -1557,25 +1608,6 @@ export interface V1Expression {
   ident?: string;
   val?: unknown;
   cond?: V1Condition;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1ExportResponse {
@@ -1645,25 +1677,6 @@ export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
- * Request message for RuntimeService.CreateInstance.
-See message Instance for field descriptions.
- */
-export interface V1CreateInstanceRequest {
-  instanceId?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  connectors?: V1Connector[];
-  variables?: V1CreateInstanceRequestVariables;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  embedCatalog?: boolean;
-  watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
-}
-
-/**
  * ConnectorSpec represents a connector available in the runtime.
 It should not be confused with a source.
  */
@@ -1681,6 +1694,27 @@ export interface V1Connector {
   type?: string;
   name?: string;
   config?: V1ConnectorConfig;
+}
+
+/**
+ * Request message for RuntimeService.CreateInstance.
+See message Instance for field descriptions.
+ */
+export interface V1CreateInstanceRequest {
+  instanceId?: string;
+  environment?: string;
+  olapConnector?: string;
+  repoConnector?: string;
+  adminConnector?: string;
+  aiConnector?: string;
+  connectors?: V1Connector[];
+  variables?: V1CreateInstanceRequestVariables;
+  annotations?: V1CreateInstanceRequestAnnotations;
+  embedCatalog?: boolean;
+  watchRepo?: boolean;
+  stageChanges?: boolean;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
 }
 
 export interface V1Condition {
@@ -1850,6 +1884,10 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1862,10 +1900,6 @@ export interface V1BucketExtractPolicy {
   filesLimit?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BigQueryListTablesResponse {
   nextPageToken?: string;
   names?: string[];
@@ -1874,6 +1908,76 @@ export interface V1BigQueryListTablesResponse {
 export interface V1BigQueryListDatasetsResponse {
   nextPageToken?: string;
   names?: string[];
+}
+
+export type V1AssertionStatus =
+  (typeof V1AssertionStatus)[keyof typeof V1AssertionStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1AssertionStatus = {
+  ASSERTION_STATUS_UNSPECIFIED: "ASSERTION_STATUS_UNSPECIFIED",
+  ASSERTION_STATUS_PASS: "ASSERTION_STATUS_PASS",
+  ASSERTION_STATUS_FAIL: "ASSERTION_STATUS_FAIL",
+  ASSERTION_STATUS_ERROR: "ASSERTION_STATUS_ERROR",
+} as const;
+
+export type V1AssertionResultFailRow = { [key: string]: any };
+
+export interface V1AssertionResult {
+  status?: V1AssertionStatus;
+  failRow?: V1AssertionResultFailRow;
+  errorMessage?: string;
+}
+
+export interface V1AlertState {
+  specHash?: string;
+  refsHash?: string;
+  nextRunOn?: string;
+  currentExecution?: V1AlertExecution;
+  executionHistory?: V1AlertExecution[];
+  executionCount?: number;
+}
+
+export type V1AlertSpecAnnotations = { [key: string]: string };
+
+export type V1AlertSpecQueryForAttributes = { [key: string]: any };
+
+export interface V1AlertSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  /** If true, will use the lowest watermark of its refs instead of the trigger time. */
+  watermarkInherit?: boolean;
+  intervalsIsoDuration?: string;
+  intervalsLimit?: number;
+  intervalsCheckUnclosed?: boolean;
+  timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
+  queryForUserId?: string;
+  queryForUserEmail?: string;
+  queryForAttributes?: V1AlertSpecQueryForAttributes;
+  emailRecipients?: string[];
+  emailOnRecover?: boolean;
+  emailOnFail?: boolean;
+  emailOnError?: boolean;
+  emailRenotify?: boolean;
+  emailRenotifyAfterSeconds?: number;
+  annotations?: V1AlertSpecAnnotations;
+}
+
+export interface V1AlertExecution {
+  adhoc?: boolean;
+  result?: V1AssertionResult;
+  sentEmails?: boolean;
+  executionTime?: string;
+  startedOn?: string;
+  finishedOn?: string;
+}
+
+export interface V1Alert {
+  spec?: V1AlertSpec;
+  state?: V1AlertState;
 }
 
 export interface Runtimev1Type {

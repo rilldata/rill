@@ -17,7 +17,7 @@
  */
 
 import { get, writable } from "svelte/store";
-import { DEFAULT_COORDINATES } from "../constants";
+import { DEFAULT_NUMBER_COORDINATES } from "../constants";
 
 /** converts an event to a simplified object
  * with only the needed properties
@@ -111,8 +111,8 @@ export function createScrubAction({
   moveEventName = undefined,
 }: ScrubActionFactoryArguments) {
   const coordinates = writable({
-    start: DEFAULT_COORDINATES,
-    stop: DEFAULT_COORDINATES,
+    start: DEFAULT_NUMBER_COORDINATES,
+    stop: DEFAULT_NUMBER_COORDINATES,
   });
 
   /** local plot bound state */
@@ -148,22 +148,22 @@ export function createScrubAction({
     scrubAction(node: Node): ScrubAction {
       function reset() {
         coordinates.set({
-          start: DEFAULT_COORDINATES,
-          stop: DEFAULT_COORDINATES,
+          start: DEFAULT_NUMBER_COORDINATES,
+          stop: DEFAULT_NUMBER_COORDINATES,
         });
         isScrubbing.set(false);
       }
 
       function onScrubStart(event: MouseEvent) {
-        event.preventDefault();
         // Check for the main button press
         if (event.button !== 0) return;
         if (!(startPredicate === undefined || startPredicate(event))) {
           return;
         }
+        node.addEventListener(moveEvent, onScrub);
         coordinates.set({
           start: setCoordinateBounds(event),
-          stop: DEFAULT_COORDINATES,
+          stop: DEFAULT_NUMBER_COORDINATES,
         });
         isScrubbing.set(true);
         if (startEventName) {
@@ -180,8 +180,7 @@ export function createScrubAction({
 
       function onScrub(event: MouseEvent) {
         event.preventDefault();
-        const isCurrentlyScrubbing = get(isScrubbing);
-        if (!isCurrentlyScrubbing) return;
+
         if (!(movePredicate === undefined || movePredicate(event))) {
           reset();
           return;
@@ -208,6 +207,7 @@ export function createScrubAction({
 
       function onScrubEnd(event: MouseEvent) {
         event.preventDefault();
+        node.removeEventListener(moveEvent, onScrub);
         if (!(endPredicate === undefined || endPredicate(event))) {
           reset();
           return;
@@ -227,7 +227,6 @@ export function createScrubAction({
       }
 
       node.addEventListener(startEvent, onScrubStart);
-      node.addEventListener(moveEvent, onScrub);
       window.addEventListener(endEvent, onScrubEnd);
       window.addEventListener(endEvent, reset);
       return {

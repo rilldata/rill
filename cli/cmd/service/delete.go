@@ -25,7 +25,6 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name:             args[0],
 				OrganizationName: cfg.Org,
 			})
-
 			if err != nil {
 				return err
 			}

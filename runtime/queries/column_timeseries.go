@@ -90,7 +90,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -104,27 +104,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return nil
 	}
 
-	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
-		filter := ""
-		var args []any
+	timezone := "UTC"
+	if q.TimeZone != "" {
+		timezone = q.TimeZone
+	}
 
-		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
-		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
-
-		timezone := "UTC"
-		if q.TimeZone != "" {
-			timezone = q.TimeZone
-		}
-
-		_, err = time.LoadLocation(timezone)
-		if err != nil {
-			return err
-		}
-
-		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
-		args = append(args, timezone)
 
 		if q.FirstDayOfWeek > 7 || q.FirstDayOfWeek <= 0 {
 			q.FirstDayOfWeek = 1
@@ -134,48 +121,16 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			q.FirstMonthOfYear = 1
 		}
 
-		timeOffsetClause1 := ""
-		timeOffsetClause2 := ""
-		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
-			dayOffset := 8 - q.FirstDayOfWeek
-			timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d DAY'", dayOffset)
-			timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d DAY'", dayOffset)
-		} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
-			monthOffset := 13 - q.FirstMonthOfYear
-			timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d MONTH'", monthOffset)
-			timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d MONTH'", monthOffset)
+		var querySQL string
+		var args []any
+		switch olap.Dialect() {
+		case drivers.DialectDuckDB:
+			querySQL, args = timeSeriesDuckDBSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
+		case drivers.DialectClickHouse:
+			querySQL, args = timeSeriesClickHouseSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
+		default:
+			return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 		}
-
-		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
-			-- generate a time series column that has the intended range
-			WITH template as (
-				SELECT
-					range as ` + tsAlias + `
-				FROM
-					range(
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
-					INTERVAL '1 ` + dateTruncSpecifier + `')
-			),
-			-- transform the original data, and optionally sample it.
-			series AS (
-			SELECT
-				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-			FROM ` + safeName(q.TableName) + ` ` + filter + `
-			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
-			)
-			-- an additional grouping is required for time zone DST (see unit tests for examples)
-			SELECT ` + tsAlias + `,` + getCoalesceStatementsMeasuresLast(measures) + ` FROM (
-				-- join the transformed data with the generated time series column,
-				-- coalescing the first value to get the 0-default when the rolled up data
-				-- does not have that value.
-				SELECT
-				` + getCoalesceStatementsMeasures(measures) + `,
-				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
-				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
-				ORDER BY template.` + tsAlias + `
-			) GROUP BY 1 ORDER BY 1
-		)`
 
 		err = olap.Exec(ctx, &drivers.Statement{
 			Query:            querySQL,
@@ -269,6 +224,128 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 		return nil
 	})
+}
+
+func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
+	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
+	filter := ""
+
+	var args []any
+	var timeSQL, colSQL, unit string
+	var offset uint32
+	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
+		offset = 8 - q.FirstDayOfWeek
+		unit = "DAY"
+	} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
+		offset = 13 - q.FirstMonthOfYear
+		unit = "MONTH"
+	} else {
+		unit = "DAY" // never mind since offset is zero
+	}
+	timeSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(?::DATETIME64, ?))))`
+	// start and end are not null else we would have an empty time range but column can still have null values
+	colSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(` + safeName(q.TimestampColumnName) + `::Nullable(DATETIME64), ?))))`
+	// nolint
+	args = append(args, offset, dateTruncSpecifier, offset, timeRange.Start.AsTime(), timezone) // compute start
+	args = append(args, offset, dateTruncSpecifier, offset, timeRange.End.AsTime(), timezone)   // compute end
+	args = append(args, offset, dateTruncSpecifier, offset, timeRange.Start.AsTime(), timezone) // compute start again to generate series
+	args = append(args, offset, dateTruncSpecifier, offset, timezone)                           // convert column
+	args = append(args, timezone)
+
+	return `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
+			WITH time_range AS
+			(
+				SELECT ` + timeSQL + ` AS start, 
+					` + timeSQL + ` AS end,
+					date_diff(` + dateTruncSpecifier + `, start, end) AS interval 
+			),
+			number_range AS (
+				SELECT 
+					arrayJoin(range(interval)) AS number 
+				FROM time_range
+			),
+			-- generate a time series column that has the intended range
+			template AS (
+				SELECT ` + timeSQL + ` AS start, 
+					 date_add(` + dateTruncSpecifier + `, number, start) AS ` + tsAlias + ` 
+				FROM number_range
+			),
+			-- transform the original data, and optionally sample it.
+			series AS (
+				SELECT
+					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				FROM ` + safeName(q.TableName) + ` ` + filter + `
+				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
+			)
+			-- an additional grouping is required for time zone DST (see unit tests for examples)
+			SELECT ` + tsAlias + `,` + getCoalesceStatementsMeasuresLast(dialect, measures) + ` FROM (
+				-- join the transformed data with the generated time series column,
+				-- coalescing the first value to get the 0-default when the rolled up data
+				-- does not have that value.
+				SELECT
+				` + getCoalesceStatementsMeasures(measures) + `,
+				toTimeZone(template.` + tsAlias + `::DATETIME64, ?) AS ` + tsAlias + ` FROM template
+				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
+				ORDER BY template.` + tsAlias + `
+			) GROUP BY 1 ORDER BY 1
+		)`, args
+}
+
+func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
+	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
+	filter := ""
+
+	timeOffsetClause1 := ""
+	timeOffsetClause2 := ""
+	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
+		dayOffset := 8 - q.FirstDayOfWeek
+		timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d DAY'", dayOffset)
+		timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d DAY'", dayOffset)
+	} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
+		monthOffset := 13 - q.FirstMonthOfYear
+		timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d MONTH'", monthOffset)
+		timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d MONTH'", monthOffset)
+	}
+
+	return `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
+			-- generate a time series column that has the intended range
+			WITH template as (
+				SELECT
+					range as ` + tsAlias + `
+				FROM
+					range(
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+					INTERVAL '1 ` + dateTruncSpecifier + `')
+			),
+			-- transform the original data, and optionally sample it.
+			series AS (
+			SELECT
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+			FROM ` + safeName(q.TableName) + ` ` + filter + `
+			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
+			)
+			-- an additional grouping is required for time zone DST (see unit tests for examples)
+			SELECT ` + tsAlias + `,` + getCoalesceStatementsMeasuresLast(dialect, measures) + ` FROM (
+				-- join the transformed data with the generated time series column,
+				-- coalescing the first value to get the 0-default when the rolled up data
+				-- does not have that value.
+				SELECT
+				` + getCoalesceStatementsMeasures(measures) + `,
+				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
+				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
+				ORDER BY template.` + tsAlias + `
+			) GROUP BY 1 ORDER BY 1
+		)`, []any{
+			timezone,
+			timeRange.Start.AsTime(),
+			timezone,
+			timeRange.End.AsTime(),
+			timezone,
+			timezone,
+		}
 }
 
 func (q *ColumnTimeseries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -382,7 +459,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 		results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
 		for rows.Next() {
 			var ts time.Time
-			var count sql.NullFloat64
+			var count *float64
 			err = rows.Scan(&ts, &count)
 			if err != nil {
 				return nil, err
@@ -395,8 +472,8 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 				},
 			}
 
-			if count.Valid {
-				tsv.Records.Fields["count"] = structpb.NewNumberValue(count.Float64)
+			if count != nil {
+				tsv.Records.Fields["count"] = structpb.NewNumberValue(*count)
 			} else {
 				tsv.Records.Fields["count"] = structpb.NewNullValue()
 			}
@@ -409,7 +486,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `)::BIGINT as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
+		SELECT ` + epochFromTimestamp(safeTimestampColumnName, olap.Dialect()) + `::BIGINT as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
@@ -419,21 +496,21 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
       SELECT 
         -- left boundary point
         min(t) * 1000  as min_t, 
-        arg_min(v, t) as argmin_tv, 
+        ` + argMin(olap.Dialect()) + `(v, t) as argmin_tv, 
 
         -- right boundary point
         max(t) * 1000 as max_t, 
-        arg_max(v, t) as argmax_tv,
+        ` + argMax(olap.Dialect()) + `(v, t) as argmax_tv,
 
         -- smallest point within boundary
         min(v) as min_v, 
-        arg_min(t, v) * 1000  as argmin_vt,
+        ` + argMin(olap.Dialect()) + `(t, v) * 1000  as argmin_vt,
 
         -- largest point within boundary
         max(v) as max_v, 
-        arg_max(t, v) * 1000  as argmax_vt,
+        ` + argMax(olap.Dialect()) + `(t, v) * 1000  as argmax_vt,
 
-        round(` + strconv.FormatInt(int64(q.Pixels), 10) + ` * (t - (SELECT t1 FROM M)) / (SELECT diff FROM M)) AS bin
+        round(` + strconv.FormatInt(int64(q.Pixels), 10) + ` * (t - (SELECT t1 FROM M)) / (SELECT diff FROM M)::Decimal(18,3)) AS bin
   
       FROM Q GROUP BY bin
       ORDER BY bin
@@ -450,7 +527,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 	defer rows.Close()
 
-	toTSV := func(ts int64, value sql.NullFloat64, bin float64) *runtimev1.TimeSeriesValue {
+	toTSV := func(ts int64, value *float64, bin float64) *runtimev1.TimeSeriesValue {
 		tsv := &runtimev1.TimeSeriesValue{
 			Records: &structpb.Struct{
 				Fields: make(map[string]*structpb.Value),
@@ -458,8 +535,8 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 		}
 		tsv.Ts = timestamppb.New(time.UnixMilli(ts))
 		tsv.Bin = bin
-		if value.Valid {
-			tsv.Records.Fields["count"] = structpb.NewNumberValue(value.Float64)
+		if value != nil {
+			tsv.Records.Fields["count"] = structpb.NewNumberValue(*value)
 		} else {
 			tsv.Records.Fields["count"] = structpb.NewNullValue()
 		}
@@ -469,25 +546,25 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
 	for rows.Next() {
 		var minT, maxT int64
-		var argminVT, argmaxVT sql.NullInt64
-		var argminTV, argmaxTV, minV, maxV sql.NullFloat64
-		var bin float64
+		var argminVT, argmaxVT *int64
+		var argminTV, argmaxTV, minV, maxV *float64
+		var bin *float64
 		err = rows.Scan(&minT, &argminTV, &maxT, &argmaxTV, &minV, &argminVT, &maxV, &argmaxVT, &bin)
 		if err != nil {
 			return nil, err
 		}
 
 		argminVTSafe := minT
-		if argminVT.Valid {
-			argminVTSafe = argminVT.Int64
+		if argminVT != nil {
+			argminVTSafe = *argminVT
 		}
 		argmaxVTSafe := maxT
-		if argmaxVT.Valid {
-			argmaxVTSafe = argmaxVT.Int64
+		if argmaxVT != nil {
+			argmaxVTSafe = *argmaxVT
 		}
-		results = append(results, toTSV(minT, argminTV, bin), toTSV(argminVTSafe, minV, bin), toTSV(argmaxVTSafe, maxV, bin), toTSV(maxT, argmaxTV, bin))
+		results = append(results, toTSV(minT, argminTV, *bin), toTSV(argminVTSafe, minV, *bin), toTSV(argmaxVTSafe, maxV, *bin), toTSV(maxT, argmaxTV, *bin))
 
-		if argminVT.Int64 > argmaxVT.Int64 {
+		if argminVT != nil && argmaxVT != nil && *argminVT > *argmaxVT {
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
@@ -546,10 +623,10 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest
 	return result
 }
 
-func getCoalesceStatementsMeasuresLast(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`last(%[1]s) as %[1]s`, safeName(measure.SqlName))
+		result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -604,4 +681,40 @@ func approxSize(c *ColumnTimeseriesResult) int64 {
 	size += sizeProtoMessage(c.TimeRange)
 	size += int64(reflect.TypeOf(c.SampleSize).Size())
 	return size
+}
+
+func lastValue(dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectClickHouse:
+		return "last_value"
+	default:
+		return "last"
+	}
+}
+
+func argMin(dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectClickHouse:
+		return "argMin"
+	default:
+		return "arg_min"
+	}
+}
+
+func argMax(dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectClickHouse:
+		return "argMax"
+	default:
+		return "arg_max"
+	}
+}
+
+func epochFromTimestamp(safeColName string, dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectClickHouse:
+		return `toUnixTimestamp(` + safeColName + `)`
+	default:
+		return `extract('epoch' from ` + safeColName + `)`
+	}
 }

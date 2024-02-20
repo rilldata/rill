@@ -19,37 +19,38 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RuntimeService_Ping_FullMethodName                   = "/rill.runtime.v1.RuntimeService/Ping"
-	RuntimeService_ListInstances_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListInstances"
-	RuntimeService_GetInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetInstance"
-	RuntimeService_CreateInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateInstance"
-	RuntimeService_EditInstance_FullMethodName           = "/rill.runtime.v1.RuntimeService/EditInstance"
-	RuntimeService_DeleteInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/DeleteInstance"
-	RuntimeService_ListFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/ListFiles"
-	RuntimeService_WatchFiles_FullMethodName             = "/rill.runtime.v1.RuntimeService/WatchFiles"
-	RuntimeService_GetFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetFile"
-	RuntimeService_PutFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/PutFile"
-	RuntimeService_DeleteFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/DeleteFile"
-	RuntimeService_RenameFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/RenameFile"
-	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
-	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
-	RuntimeService_UnpackEmpty_FullMethodName            = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
-	RuntimeService_GetLogs_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetLogs"
-	RuntimeService_WatchLogs_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchLogs"
-	RuntimeService_ListResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListResources"
-	RuntimeService_WatchResources_FullMethodName         = "/rill.runtime.v1.RuntimeService/WatchResources"
-	RuntimeService_GetResource_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetResource"
-	RuntimeService_CreateTrigger_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateTrigger"
-	RuntimeService_ListCatalogEntries_FullMethodName     = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
-	RuntimeService_GetCatalogEntry_FullMethodName        = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
-	RuntimeService_TriggerRefresh_FullMethodName         = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
-	RuntimeService_Reconcile_FullMethodName              = "/rill.runtime.v1.RuntimeService/Reconcile"
-	RuntimeService_PutFileAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/PutFileAndReconcile"
-	RuntimeService_DeleteFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
-	RuntimeService_RenameFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
-	RuntimeService_RefreshAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
-	RuntimeService_ListConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConnectors"
-	RuntimeService_IssueDevJWT_FullMethodName            = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
+	RuntimeService_Ping_FullMethodName                    = "/rill.runtime.v1.RuntimeService/Ping"
+	RuntimeService_ListInstances_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListInstances"
+	RuntimeService_GetInstance_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetInstance"
+	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
+	RuntimeService_EditInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/EditInstance"
+	RuntimeService_DeleteInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteInstance"
+	RuntimeService_ListFiles_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListFiles"
+	RuntimeService_WatchFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchFiles"
+	RuntimeService_GetFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetFile"
+	RuntimeService_PutFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PutFile"
+	RuntimeService_DeleteFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/DeleteFile"
+	RuntimeService_RenameFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_ListExamples_FullMethodName            = "/rill.runtime.v1.RuntimeService/ListExamples"
+	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
+	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
+	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
+	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
+	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
+	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
+	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
+	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
+	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
+	RuntimeService_ListCatalogEntries_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
+	RuntimeService_GetCatalogEntry_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
+	RuntimeService_TriggerRefresh_FullMethodName          = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
+	RuntimeService_Reconcile_FullMethodName               = "/rill.runtime.v1.RuntimeService/Reconcile"
+	RuntimeService_PutFileAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/PutFileAndReconcile"
+	RuntimeService_DeleteFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
+	RuntimeService_RenameFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
+	RuntimeService_RefreshAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
+	RuntimeService_ListConnectors_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListConnectors"
+	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -87,6 +88,8 @@ type RuntimeServiceClient interface {
 	UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error)
 	// UnpackEmpty unpacks an empty project
 	UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error)
+	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
 	// WatchLogs streams new logs emitted from a controller
@@ -287,6 +290,15 @@ func (c *runtimeServiceClient) UnpackExample(ctx context.Context, in *UnpackExam
 func (c *runtimeServiceClient) UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error) {
 	out := new(UnpackEmptyResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_UnpackEmpty_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error) {
+	out := new(GenerateMetricsViewFileResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateMetricsViewFile_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -518,6 +530,8 @@ type RuntimeServiceServer interface {
 	UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error)
 	// UnpackEmpty unpacks an empty project
 	UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error)
+	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)
 	// WatchLogs streams new logs emitted from a controller
@@ -607,6 +621,9 @@ func (UnimplementedRuntimeServiceServer) UnpackExample(context.Context, *UnpackE
 }
 func (UnimplementedRuntimeServiceServer) UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnpackEmpty not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateMetricsViewFile not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
@@ -938,6 +955,24 @@ func _RuntimeService_UnpackEmpty_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).UnpackEmpty(ctx, req.(*UnpackEmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GenerateMetricsViewFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateMetricsViewFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateMetricsViewFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GenerateMetricsViewFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateMetricsViewFile(ctx, req.(*GenerateMetricsViewFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1298,6 +1333,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnpackEmpty",
 			Handler:    _RuntimeService_UnpackEmpty_Handler,
+		},
+		{
+			MethodName: "GenerateMetricsViewFile",
+			Handler:    _RuntimeService_GenerateMetricsViewFile_Handler,
 		},
 		{
 			MethodName: "GetLogs",

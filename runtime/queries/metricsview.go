@@ -3,11 +3,13 @@ package queries
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/apache/arrow/go/v14/arrow"
 	"github.com/apache/arrow/go/v14/arrow/array"
@@ -25,6 +27,93 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+var ErrForbidden = errors.New("action not allowed")
+
+// resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(attrs, instanceID, mv, lastUpdatedOn)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if resolvedSecurity != nil && !resolvedSecurity.Access {
+		return nil, nil, ErrForbidden
+	}
+
+	for _, dim := range dims {
+		if dim.Name == mv.TimeDimension {
+			// checkFieldAccess doesn't currently check the time dimension
+			continue
+		}
+		if !checkFieldAccess(dim.Name, resolvedSecurity) {
+			return nil, nil, ErrForbidden
+		}
+	}
+
+	for _, m := range measures {
+		if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
+			continue
+		}
+		if !checkFieldAccess(m.Name, resolvedSecurity) {
+			return nil, nil, ErrForbidden
+		}
+	}
+
+	return mv, resolvedSecurity, nil
+}
+
+// returns the metrics view and the time the catalog was last updated
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
+	ctrl, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+	if err != nil {
+		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	mv := res.GetMetricsView()
+	spec := mv.State.ValidSpec
+	if spec == nil {
+		return nil, time.Time{}, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+	}
+
+	return spec, res.Meta.StateUpdatedOn.AsTime(), nil
+}
+
+func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
+	if policy != nil {
+		if !policy.Access {
+			return false
+		}
+
+		if len(policy.Include) > 0 {
+			for _, include := range policy.Include {
+				if include == field {
+					return true
+				}
+			}
+		} else if len(policy.Exclude) > 0 {
+			for _, exclude := range policy.Exclude {
+				if exclude == field {
+					return false
+				}
+			}
+		} else {
+			// if no include/exclude is specified, then all fields are allowed
+			return true
+		}
+	}
+	return true
+}
 
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsViewSpec_MeasureV2, error) {
@@ -153,6 +242,10 @@ func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtim
 			switch alias.Type {
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
+				splits := strings.Split(alias.Name, ".")
+				if len(splits) > 1 {
+					return safeName(splits[0]) + "." + safeName(splits[1]), true
+				}
 				return safeName(alias.Name), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
 				return safeName(alias.Name + "__previous"), true
@@ -186,7 +279,7 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 	return false
 }
 
-func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
+func dimensionSelect(table string, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
 	colName := safeName(dim.Name)
 	if !dim.Unnest || dialect == drivers.DialectDruid {
 		return fmt.Sprintf(`(%s) as %s`, metricsViewDimensionExpression(dim), colName), ""
@@ -196,7 +289,7 @@ func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSp
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(table), colName, unnestColName)
 	}
 
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) tbl(%s)`, dim.Expression, unnestColName)

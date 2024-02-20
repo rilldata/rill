@@ -19,7 +19,7 @@ If you're looking for a place to get started, check out one of our [example proj
 Install `rill` on Mac or Linux ([WSL](https://learn.microsoft.com/en-us/windows/wsl/install) for Windows users) using the installation script:
 
 ```
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 ```
 
 ## Create your project

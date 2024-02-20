@@ -52,12 +52,12 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	olapConfig := map[string]string{}
 	var embedCatalog bool
 	switch olapDriver {
-	case "duckdb":
+	case "duckdb-int-storage": // duckdb driver that disables storing table as view
 		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-int-storage'")
 		}
 		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-int-storage'")
 		}
 
 		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
@@ -65,12 +65,12 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
 		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		embedCatalog = false
-	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
+	case "duckdb", "duckdb-ext-storage": // duckdb-ext-storage is for bwd compatibility
 		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-ext-storage'")
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
 		}
 		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-ext-storage'")
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
 		}
 
 		olapDriver = "duckdb"
@@ -123,9 +123,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
+		Environment:    "prod",
 		OlapConnector:  olapDriver,
 		RepoConnector:  "admin",
 		AdminConnector: "admin",
+		AiConnector:    "admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   olapDriver,
@@ -368,17 +370,19 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 	return res
 }
 
+// defaultModelMaterialize determines whether to materialize models by default for deployed projects.
+// It defaults to true, but can be overridden with the __materialize_default variable.
 func defaultModelMaterialize(vars map[string]string) (bool, error) {
 	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
 	// Remove when we have a way to conditionally configure it using code files.
 
 	if vars == nil {
-		return false, nil
+		return true, nil
 	}
 
 	s, ok := vars["__materialize_default"]
 	if !ok {
-		return false, nil
+		return true, nil
 	}
 
 	val, err := strconv.ParseBool(s)

@@ -28,15 +28,12 @@ type MetricsViewAggregation struct {
 	TimeRange          *runtimev1.TimeRange                         `json:"time_range,omitempty"`
 	Where              *runtimev1.Expression                        `json:"where,omitempty"`
 	Having             *runtimev1.Expression                        `json:"having,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"` // Backwards compatibility
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
 	Offset             int64                                        `json:"offset,omitempty"`
-	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
-	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 	PivotOn            []string                                     `json:"pivot_on,omitempty"`
-
-	// backwards compatibility
-	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
+	SecurityAttributes map[string]any                               `json:"security_attributes,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -82,12 +79,18 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	if mv.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", mv)
 	}
 
 	// backwards compatibility
@@ -99,7 +102,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Build query
-	sqlString, args, err := q.buildMetricsAggregationSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -372,7 +375,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	filename := strings.ReplaceAll(q.MetricsView.Table, `"`, `_`)
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
@@ -408,13 +411,25 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
+	filterCount := 0
+	for _, f := range q.Measures {
+		if f.Filter != nil {
+			filterCount++
+		}
+	}
+	if filterCount != 0 && len(q.Measures) > 1 {
+		return "", nil, errors.New("multiple measures with filter")
+	}
+	if filterCount == 1 && len(q.PivotOn) > 0 {
+		return "", nil, errors.New("measure filter for pivot-on")
+	}
 
 	cols := q.cols()
 	selectCols := make([]string, 0, cols)
 
 	groupCols := make([]string, 0, len(q.Dimensions))
 	unnestClauses := make([]string, 0)
-	var args []any
+	var selectArgs []any
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -422,7 +437,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+			dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
@@ -432,17 +447,21 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 
 		// Handle time dimension
-		expr, exprArgs, err := q.buildTimestampExpr(d, dialect)
+		expr, exprArgs, err := q.buildTimestampExpr(mv, d, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
+		alias := safeName(d.Name)
+		if d.Alias != "" {
+			alias = safeName(d.Alias)
+		}
+		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, alias))
 		// Using expr was causing issues with query arg expansion in duckdb.
 		// Using column name is not possible either since it will take the original column name instead of the aliased column name
 		// But using numbered group we can exactly target the correct selected column.
 		// Note that the non-timestamp columns also use the numbered group-by for constancy.
 		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
-		args = append(args, exprArgs...)
+		selectArgs = append(selectArgs, exprArgs...)
 	}
 
 	for _, m := range q.Measures {
@@ -453,9 +472,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
+
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
-			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", sn))
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", "COUNT(*)", sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
 			if len(m.BuiltinMeasureArgs) != 1 {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
@@ -464,7 +484,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if arg == "" {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
-			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), sn))
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", fmt.Sprintf("COUNT(DISTINCT %s)", safeName(arg)), sn))
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
@@ -476,9 +496,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 
 	whereClause := ""
+	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
-		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &args)
+		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
 		}
@@ -492,27 +513,29 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		if strings.TrimSpace(clause) != "" {
 			whereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
-		args = append(args, clauseArgs...)
+		whereArgs = append(whereArgs, clauseArgs...)
 	}
+
 	if policy != nil && policy.RowFilter != "" {
 		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
-	if len(whereClause) > 0 {
+
+	if whereClause != "" {
 		whereClause = "WHERE 1=1" + whereClause
 	}
 
 	havingClause := ""
+	var havingClauseArgs []any
 	if q.Having != nil {
-		var havingClauseArgs []any
 		var err error
 		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
+
 		if strings.TrimSpace(havingClause) != "" {
 			havingClause = "HAVING " + havingClause
 		}
-		args = append(args, havingClauseArgs...)
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
@@ -539,6 +562,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
+	var args []any
+	args = append(args, selectArgs...)
+	args = append(args, whereArgs...)
+	args = append(args, havingClauseArgs...)
+
 	var sql string
 	if len(q.PivotOn) > 0 {
 		l := maxPivotCells / q.cols()
@@ -548,7 +576,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			return "", nil, fmt.Errorf("offset not supported for pivot queries")
 		}
 
-		// select m1, m2, d1, d2 from t, lateral unnest(t.d1) tbl(unnested_d1_) where d1 = 'a' group by d1, d2
+		// SELECT m1, m2, d1, d2 FROM t, LATERAL UNNEST(t.d1) tbl(unnested_d1_) WHERE d1 = 'a' GROUP BY d1, d2
 		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
 			strings.Join(selectCols, ", "),  // 1
 			safeName(mv.Table),              // 2
@@ -560,6 +588,22 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			limitClause,                     // 8
 		)
 	} else {
+		/*
+			Example:
+			SELECT t.d1, t.d2, t.d3, t2.m1 (SELECT d1, d2, d3, m1 FROM t WHERE ...  GROUP BY d1, d2, d3 HAVING m1 > 10 ) t LEFT JOIN (
+				SELECT d1, d2, d3, m1 FROM t WHERE ... AND (d4 = 'Safari') GROUP BY d1, d2, d3 HAVING m1 > 10
+			)  t2 ON (COALESCE(t.d1, 'val') = COALESCE(t2.d1, 'val') and COALESCE(t.d2, 'val') = COALESCE(t2.d2, 'val') and ...)
+			WHERE t2.m1 > 10
+			ORDER BY ...
+			LIMIT 100
+			OFFSET 0
+
+			This JOIN mirrors functionality of SELECT d1, d2, d3, m1 FILTER (WHERE d4 = 'Safari') FROM t WHERE... GROUP BY d1, d2, d3
+			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
+		*/
+		if filterCount == 1 {
+			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, dialect)
+		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
 			safeName(mv.Table),
@@ -576,12 +620,97 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	return sql, args, nil
 }
 
-func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
+	joinConditions := make([]string, 0, len(q.Dimensions))
+	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
+
+	selfJoinTableAlias := tempName("self_join")
+	nonNullValue := tempName("non_null")
+	for _, d := range q.Dimensions {
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+	}
+	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("ANY_VALUE(%[1]s.%[2]s) as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+	} else {
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+	}
+
+	measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if whereClause == "" {
+		whereClause = "WHERE 1=1"
+	}
+
+	measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
+	var extraWhere string
+	var extraWhereArgs []any
+	if q.Having != nil {
+		extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		extraWhere = "WHERE " + extraWhere
+	}
+	druidGroupBy := ""
+	if dialect == drivers.DialectDruid {
+		druidGroupBy = groupClause
+	}
+
+	sql := fmt.Sprintf(`
+					SELECT * FROM (
+						SELECT %[1]s FROM (
+							SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
+						) %[2]s 
+						LEFT JOIN (
+							SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
+						) %[7]s 
+						ON (%[8]s)
+					)
+					%[14]s
+					%[15]s
+					%[13]s 
+					%[11]s  
+					OFFSET %[12]d
+				`,
+		strings.Join(selfJoinCols, ", "),      // 1
+		safeName(mv.Table),                    // 2
+		strings.Join(unnestClauses, ""),       // 3
+		whereClause,                           // 4
+		groupClause,                           // 5
+		havingClause,                          // 6
+		selfJoinTableAlias,                    // 7
+		strings.Join(joinConditions, " AND "), // 8
+		measureWhereClause,                    // 9
+		strings.Join(selectCols, ", "),        // 10
+		limitClause,                           // 11
+		q.Offset,                              // 12
+		orderClause,                           // 13
+		extraWhere,                            // 14
+		druidGroupBy,                          // 15
+	)
+
+	args = args[:0]
+	args = append(args, selectArgs...)
+	args = append(args, whereArgs...)
+	args = append(args, havingClauseArgs...)
+	args = append(args, whereArgs...)
+	args = append(args, measureWhereArgs...)
+	args = append(args, havingClauseArgs...)
+	args = append(args, extraWhereArgs...)
+
+	return sql, args, nil
+}
+
+func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
 	var col string
-	if dim.Name == q.MetricsView.TimeDimension {
+	if dim.Name == mv.TimeDimension {
 		col = safeName(dim.Name)
 	} else {
-		d, err := metricsViewDimension(q.MetricsView, dim.Name)
+		d, err := metricsViewDimension(mv, dim.Name)
 		if err != nil {
 			return "", nil, err
 		}
@@ -594,15 +723,20 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 
 	switch dialect {
 	case drivers.DialectDuckDB:
-		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
 			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
 		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectDruid:
-		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
 			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", col, convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
+		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", col, convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
+	case drivers.DialectClickHouse:
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
+		}
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}

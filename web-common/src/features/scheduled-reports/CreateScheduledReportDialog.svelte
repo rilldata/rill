@@ -4,7 +4,7 @@
     createAdminServiceCreateReport,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
-  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -33,7 +33,6 @@
   const createReport = createAdminServiceCreateReport();
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-  const dashState = new URLSearchParams(window.location.search).get("state");
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
@@ -78,7 +77,6 @@
               queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
             },
           },

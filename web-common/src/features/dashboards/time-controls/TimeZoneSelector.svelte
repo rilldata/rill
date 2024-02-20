@@ -27,7 +27,7 @@
 
   const dispatch = createEventDispatcher();
   const userLocalIANA = getLocalIANA();
-  const UTCIana = "Etc/UTC";
+  const UTCIana = "UTC";
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
