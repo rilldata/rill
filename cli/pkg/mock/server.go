@@ -33,13 +33,13 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		return nil, err
 	}
 
-	provisionerSet := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
+	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
 
 	// Init admin service
 	admOpts := &admin.Options{
 		DatabaseDriver:     "postgres",
 		DatabaseDSN:        databaseURL,
-		ProvisionerSet:     provisionerSet,
+		ProvisionerSetJSON: provisionerSetJSON,
 		DefaultProvisioner: "static",
 		ExternalURL:        "http://localhost:9090",
 		VersionNumber:      "",

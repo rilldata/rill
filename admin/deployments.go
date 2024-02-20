@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
-	"github.com/rilldata/rill/cli/pkg/update"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -24,7 +23,7 @@ import (
 type createDeploymentOptions struct {
 	ProjectID      string
 	Provisioner    string
-	Annotations    deploymentAnnotations
+	Annotations    DeploymentAnnotations
 	VersionNumber  string
 	ProdBranch     string
 	ProdVariables  map[string]string
@@ -40,7 +39,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, fmt.Errorf("cannot create project without a branch")
 	}
 
-	// Get default if no provisioner is specified
+	// Use default if no provisioner is specified
 	if opts.Provisioner == "" {
 		opts.Provisioner = s.opts.DefaultProvisioner
 	}
@@ -48,40 +47,32 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Get provisioner from the set
 	p, ok := s.ProvisionerSet[opts.Provisioner]
 	if !ok {
-		return nil, fmt.Errorf("provisioner '%s' is not in the provisioner set", opts.Provisioner)
+		return nil, fmt.Errorf("provisioner: %q is not in the provisioner set", opts.Provisioner)
 	}
 
 	// Resolve runtime version
-	var runtimeVersion string
-	if opts.ProdVersion == "latest" {
+	runtimeVersion := opts.ProdVersion
+	if runtimeVersion == "latest" && opts.VersionNumber != "" {
 		// Resolve latest version from config
-		if opts.VersionNumber != "" {
-			runtimeVersion = opts.VersionNumber
-		} else {
-			// Fallback to fetching it from Github (this will usually only happen during development)
-			latestVersion, err := update.LatestVersion(ctx)
-			if err != nil {
-				return nil, err
-			}
-			runtimeVersion = latestVersion
-		}
-	} else {
-		// Verify provided semVer is valid
-		_, err := version.NewVersion(opts.ProdVersion)
+		runtimeVersion = opts.VersionNumber
+	}
+
+	// Verify version is a valid SemVer or 'latest'
+	if runtimeVersion != "latest" {
+		_, err := version.NewVersion(runtimeVersion)
 		if err != nil {
 			return nil, err
 		}
-		runtimeVersion = opts.ProdVersion
 	}
 
-	// Create provision ID
-	provisionID := strings.ReplaceAll(uuid.New().String(), "-", "")
+	// Create instance ID and use the same ID for the provision ID
+	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
+	provisionID := instanceID
 
 	// Get a runtime with capacity for the deployment
 	alloc, err := p.Provision(ctx, &provisioner.ProvisionOptions{
 		ProvisionID:    provisionID,
 		RuntimeVersion: runtimeVersion,
-		OLAPDriver:     opts.ProdOLAPDriver,
 		Slots:          opts.ProdSlots,
 		Annotations:    opts.Annotations.toMap(),
 	})
@@ -91,7 +82,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 
 	// Build instance config
-	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	olapDriver := opts.ProdOLAPDriver
 	olapConfig := map[string]string{}
 	var embedCatalog bool
@@ -157,8 +147,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if err != nil {
 		s.Logger.Error("provisioner: failed awaiting runtime to be ready", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
 		// Mark deployment error
-		_, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-		return nil, err
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return nil, multierr.Combine(err, err2)
 	}
 
 	// Open a runtime client
@@ -225,14 +215,15 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	return depl, nil
 }
 
-type updateDeploymentOptions struct {
+type UpdateDeploymentOptions struct {
+	Version         string
 	Branch          string
 	Variables       map[string]string
-	Annotations     deploymentAnnotations
+	Annotations     DeploymentAnnotations
 	EvictCachedRepo bool // Set to true if config returned by GetRepoMeta has changed such that the runtime should do a fresh clone instead of a pull.
 }
 
-func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
+func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
 	if opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without specifying a valid branch")
 	}
@@ -244,6 +235,41 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 			return err
 		}
 		modelDefaultMaterialize = &val
+	}
+
+	// Update the provisioned runtime if the version has changed
+	if opts.Version != depl.RuntimeVersion {
+		// Get provisioner from the set
+		p, ok := s.ProvisionerSet[depl.Provisioner]
+		if !ok {
+			return fmt.Errorf("provisioner: %q is not in the provisioner set", depl.Provisioner)
+		}
+
+		// Update the runtime
+		err := p.Update(ctx, depl.ProvisionID, opts.Version)
+		if err != nil {
+			s.Logger.Error("provisioner: failed to update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+			return err
+		}
+
+		// Wait for the runtime to be ready after update
+		err = p.AwaitReady(ctx, depl.ProvisionID)
+		if err != nil {
+			s.Logger.Error("provisioner: failed awaiting runtime to be ready after update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+			// Mark deployment error
+			_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+			return multierr.Combine(err, err2)
+		}
+
+		// Update the deployment runtime version
+		_, err = s.DB.UpdateDeploymentRuntimeVersion(ctx, depl.ID, opts.Version)
+		if err != nil {
+			// NOTE: If the update was triggered by a scheduled job like 'upgrade_latest_version_projects',
+			// then this error will cause the update to be retried on the next job invocation and it should eventually become consistent.
+
+			// TODO: Handle inconsistent state when a manually triggered update failed, where we can't rely on job retries.
+			return err
+		}
 	}
 
 	rt, err := s.openRuntimeClientForDeployment(depl)
@@ -410,7 +436,7 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-type deploymentAnnotations struct {
+type DeploymentAnnotations struct {
 	orgID           string
 	orgName         string
 	projID          string
@@ -418,8 +444,8 @@ type deploymentAnnotations struct {
 	projAnnotations map[string]string
 }
 
-func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
-	return deploymentAnnotations{
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+	return DeploymentAnnotations{
 		orgID:           org.ID,
 		orgName:         org.Name,
 		projID:          proj.ID,
@@ -428,7 +454,7 @@ func newDeploymentAnnotations(org *database.Organization, proj *database.Project
 	}
 }
 
-func (da *deploymentAnnotations) toMap() map[string]string {
+func (da *DeploymentAnnotations) toMap() map[string]string {
 	res := make(map[string]string, len(da.projAnnotations)+4)
 	for k, v := range da.projAnnotations {
 		res[k] = v

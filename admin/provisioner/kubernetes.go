@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"go.uber.org/multierr"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -107,7 +108,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 	names := p.getResourceNames(opts.ProvisionID)
 
 	// Create unique host
-	host := strings.ReplaceAll(p.Spec.Host, "*", opts.ProvisionID)
+	host := p.getHost(opts.ProvisionID)
 
 	// Define template data
 	data := &TemplateData{
@@ -250,8 +251,18 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 		return sts.Status.AvailableReplicas > 0 && sts.Status.AvailableReplicas == sts.Status.Replicas, nil
 	})
 	if err != nil {
-		err2 := p.Deprovision(ctx, provisionID)
-		return multierr.Combine(err, err2)
+		return err
+	}
+
+	// As a final step we make sure the runtime can be reached, we retry on failure, to account for potential small delays in network config propagation
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 3
+	retryClient.RetryWaitMin = 1 * time.Second
+	retryClient.RetryWaitMax = 3 * time.Second
+	retryClient.Logger = nil // Disable inbuilt logger
+	_, err = retryClient.Get(p.getHost(provisionID) + "/v1/ping")
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -295,6 +306,10 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 		HTTPIngress: fmt.Sprintf("http-runtime-%s", provisionID),
 		GRPCIngress: fmt.Sprintf("grpc-runtime-%s", provisionID),
 	}
+}
+
+func (p *KubernetesProvisioner) getHost(provisionID string) string {
+	return strings.ReplaceAll(p.Spec.Host, "*", provisionID)
 }
 
 func (p *KubernetesProvisioner) addCommonLabels(provisionID string, resourceLabels map[string]string) {

@@ -64,6 +64,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
@@ -87,6 +88,7 @@ type DB interface {
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
+	UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)

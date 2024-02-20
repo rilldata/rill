@@ -67,8 +67,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
 		ProjectID:      proj.ID,
 		Provisioner:    proj.Provisioner,
-		Annotations:    newDeploymentAnnotations(org, proj),
-		VersionNumber:  s.opts.VersionNumber,
+		Annotations:    s.NewDeploymentAnnotations(org, proj),
+		VersionNumber:  s.VersionNumber,
 		ProdBranch:     proj.ProdBranch,
 		ProdVariables:  proj.ProdVariables,
 		ProdOLAPDriver: proj.ProdOLAPDriver,
@@ -173,7 +173,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	if err != nil {
 		return nil, err
 	}
-	annotations := newDeploymentAnnotations(org, proj)
+	annotations := s.NewDeploymentAnnotations(org, proj)
 
 	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
@@ -183,7 +183,8 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
-		err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
+		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
+			Version:         opts.ProdVersion,
 			Branch:          opts.ProdBranch,
 			Variables:       opts.ProdVariables,
 			Annotations:     annotations,
@@ -217,10 +218,10 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 			}
 
 			for _, d := range ds {
-				err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
+				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
 					Branch:          proj.ProdBranch,
 					Variables:       proj.ProdVariables,
-					Annotations:     newDeploymentAnnotations(org, proj),
+					Annotations:     s.NewDeploymentAnnotations(org, proj),
 					EvictCachedRepo: false,
 				})
 				if err != nil {
@@ -250,7 +251,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
 		ProjectID:      proj.ID,
 		Provisioner:    proj.Provisioner,
-		Annotations:    newDeploymentAnnotations(org, proj),
+		Annotations:    s.NewDeploymentAnnotations(org, proj),
 		ProdVersion:    proj.ProdVersion,
 		ProdBranch:     proj.ProdBranch,
 		ProdVariables:  proj.ProdVariables,

@@ -14,7 +14,7 @@ import (
 type Options struct {
 	DatabaseDriver     string
 	DatabaseDSN        string
-	ProvisionerSet     string
+	ProvisionerSetJSON string
 	DefaultProvisioner string
 	ExternalURL        string
 	VersionNumber      string
@@ -29,6 +29,7 @@ type Service struct {
 	Logger         *zap.Logger
 	opts           *Options
 	issuer         *auth.Issuer
+	VersionNumber  string
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
@@ -58,7 +59,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	}
 
 	// Create provisioner set
-	provSet, err := provisioner.NewSet(opts.ProvisionerSet, db, logger)
+	provSet, err := provisioner.NewSet(opts.ProvisionerSetJSON, db, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	// Verify that the specified default provisioner is in the provisioner set
 	_, ok := provSet[opts.DefaultProvisioner]
 	if !ok {
-		return nil, fmt.Errorf("default provisioner '%s' is not in the provisioner set", opts.DefaultProvisioner)
+		return nil, fmt.Errorf("default provisioner %q is not in the provisioner set", opts.DefaultProvisioner)
 	}
 
 	return &Service{
@@ -78,6 +79,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		opts:           opts,
 		Logger:         logger,
 		issuer:         issuer,
+		VersionNumber:  opts.VersionNumber,
 	}, nil
 }
 

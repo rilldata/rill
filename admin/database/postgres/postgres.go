@@ -211,6 +211,15 @@ func (c *connection) FindProjects(ctx context.Context, afterName string, limit i
 	return projectsFromDTOs(res)
 }
 
+func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*database.Project, error) {
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.prod_version = $1 AND lower(name) > lower($2) ORDER BY lower(p.name) LIMIT $3", version, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return projectsFromDTOs(res)
+}
+
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
 	var res []string
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id
@@ -453,6 +462,15 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET runtime_version=$1, updated_on=now() WHERE id=$2 RETURNING *", version, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}

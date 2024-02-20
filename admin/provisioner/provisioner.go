@@ -20,7 +20,6 @@ type Provisioner interface {
 type ProvisionOptions struct {
 	ProvisionID    string
 	RuntimeVersion string
-	OLAPDriver     string
 	Slots          int
 	Annotations    map[string]string
 }
@@ -66,7 +65,7 @@ func NewSet(set string, db database.DB, logger *zap.Logger) (map[string]Provisio
 			ps[k] = p
 			continue
 		default:
-			return nil, fmt.Errorf("invalid provisioner type '%s'", v.Type)
+			return nil, fmt.Errorf("invalid provisioner type %q", v.Type)
 		}
 	}
 
