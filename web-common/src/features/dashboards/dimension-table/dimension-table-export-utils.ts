@@ -73,7 +73,7 @@ export function getDimensionTableExportArgs(
   );
 }
 
-// Temporary fix to split previous complete ranges to it working on backend
+// Temporary fix to split previous complete ranges to duration, offset and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
 export const PreviousCompleteRangeMap: Partial<
   Record<TimeRangePreset, V1TimeRange>

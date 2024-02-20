@@ -24,7 +24,6 @@ import {
   type V1MetricsViewToplistRequest,
   type V1Resource,
   type V1TimeRangeSummary,
-  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable } from "svelte/store";
@@ -285,6 +284,8 @@ function getDashboardFromComparisonRequest({
   return dashboard;
 }
 
+// We are manually sending in duration, offset and round to grain for previous complete ranges.
+// This is to map back that split
 const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
 for (const preset in PreviousCompleteRangeMap) {
   const range: V1TimeRange = PreviousCompleteRangeMap[preset];
