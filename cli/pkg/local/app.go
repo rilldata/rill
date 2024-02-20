@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
@@ -276,6 +278,12 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect and emit information about registered source types
+	err = emitSourceTelemetry(ctx, opts, rt, inst)
 	if err != nil {
 		return nil, err
 	}
@@ -622,6 +630,49 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		_ = logger.Sync()
 		luLogger.Close()
 	}
+}
+
+func emitSourceTelemetry(ctx context.Context, opts *AppOptions, rt *runtime.Runtime, inst *drivers.Instance) error {
+	controller, err := rt.Controller(ctx, inst.ID)
+	if err != nil {
+		return err
+	}
+	catalog, _, err := rt.Catalog(ctx, inst.ID)
+	if err != nil {
+		return err
+	}
+	resources, err := catalog.FindResources(ctx)
+	if err != nil {
+		return err
+	}
+	var sourceDrivers []string
+	var olapDrivers []string
+	for _, res := range resources {
+		if res.Kind == "rill.runtime.v1.Source" {
+			source, err := controller.Get(ctx, &runtimev1.ResourceName{Kind: res.Kind, Name: res.Name}, false)
+			if err != nil {
+				return err
+			}
+			spec := source.GetSource().Spec
+			sourceDrivers = append(sourceDrivers, spec.SourceConnector)
+			olapDrivers = append(olapDrivers, spec.SinkConnector)
+		}
+	}
+
+	// Keep only distinct values
+	slices.Sort(sourceDrivers)
+	sourceDrivers = slices.Compact[[]string, string](sourceDrivers)
+	slices.Sort(olapDrivers)
+	olapDrivers = slices.Compact[[]string, string](olapDrivers)
+
+	tel := telemetry.New(opts.Version)
+	tel.EmitSourceInfo(sourceDrivers, olapDrivers)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = tel.Flush(ctx) // Ignore error and start the app
+
+	return nil
 }
 
 // skipFieldZapEncoder skips fields with the given keys. only string fields are supported.
