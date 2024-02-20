@@ -10,10 +10,11 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type {
-  V1MetricsViewComparisonRequest,
-  V1MetricsViewSpec,
-  V1TimeRange,
+import {
+  type V1MetricsViewComparisonRequest,
+  type V1MetricsViewSpec,
+  V1TimeGrain,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { Readable, derived, get } from "svelte/store";
@@ -72,6 +73,38 @@ export function getDimensionTableExportArgs(
   );
 }
 
+// Temporary fix to split previous complete ranges to it working on backend
+// TODO: Eventually we should support this in the backend.
+export const PreviousCompleteRangeMap: Partial<
+  Record<TimeRangePreset, V1TimeRange>
+> = {
+  [TimeRangePreset.YESTERDAY_COMPLETE]: {
+    isoDuration: "P1D",
+    isoOffset: "P1D",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  [TimeRangePreset.PREVIOUS_WEEK_COMPLETE]: {
+    isoDuration: "P1W",
+    isoOffset: "P1W",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+  },
+  [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
+    isoDuration: "P1M",
+    isoOffset: "P1M",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_MONTH,
+  },
+  [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
+    isoDuration: "P3M",
+    isoOffset: "P3M",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_QUARTER,
+  },
+  [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
+    isoDuration: "P1Y",
+    isoOffset: "P1Y",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_YEAR,
+  },
+};
+
 /**
  * Fills in isoDuration based on selection.
  * This is used by scheduled report by using report run time as end time.
@@ -94,7 +127,24 @@ function getTimeRange(
       break;
 
     default:
-      timeRange.isoDuration = timeControlState.selectedTimeRange.name;
+      if (timeControlState.selectedTimeRange.name in PreviousCompleteRangeMap) {
+        // Backend doesn't support previous complete ranges since it has offset built in.
+        // We add the offset manually as a workaround for now
+        timeRange.isoDuration =
+          PreviousCompleteRangeMap[
+            timeControlState.selectedTimeRange.name
+          ]?.isoDuration;
+        timeRange.isoOffset =
+          PreviousCompleteRangeMap[
+            timeControlState.selectedTimeRange.name
+          ]?.isoOffset;
+        timeRange.roundToGrain =
+          PreviousCompleteRangeMap[
+            timeControlState.selectedTimeRange.name
+          ]?.roundToGrain;
+      } else {
+        timeRange.isoDuration = timeControlState.selectedTimeRange.name;
+      }
       break;
   }
 

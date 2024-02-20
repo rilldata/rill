@@ -1,4 +1,5 @@
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
@@ -23,6 +24,7 @@ import {
   type V1MetricsViewToplistRequest,
   type V1Resource,
   type V1TimeRangeSummary,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable } from "svelte/store";
@@ -283,6 +285,14 @@ function getDashboardFromComparisonRequest({
   return dashboard;
 }
 
+const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
+for (const preset in PreviousCompleteRangeMap) {
+  const range: V1TimeRange = PreviousCompleteRangeMap[preset];
+  PreviousCompleteRangeReverseMap[
+    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+  ] = preset as TimeRangePreset;
+}
+
 function getSelectedTimeRange(
   timeRange: V1TimeRange,
   timeRangeSummary: V1TimeRangeSummary,
@@ -290,6 +300,11 @@ function getSelectedTimeRange(
   executionTime: string,
 ): DashboardTimeControls | undefined {
   let selectedTimeRange: DashboardTimeControls;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
 
   if (timeRange.start && timeRange.end) {
     selectedTimeRange = {
