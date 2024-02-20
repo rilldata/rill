@@ -301,7 +301,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.YESTERDAY_COMPLETE]: {
     label: "Yesterday",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
-    defaultComparison: TimeComparisonOption.DAY,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -329,7 +329,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.PREVIOUS_WEEK_COMPLETE]: {
     label: "Previous week complete",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
-    defaultComparison: TimeComparisonOption.WEEK,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -357,7 +357,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
     label: "Previous month complete",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
-    defaultComparison: TimeComparisonOption.MONTH,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -385,7 +385,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
     label: "Previous quarter complete",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
-    defaultComparison: TimeComparisonOption.QUARTER,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -413,7 +413,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
     label: "Previous year complete",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
-    defaultComparison: TimeComparisonOption.YEAR,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [

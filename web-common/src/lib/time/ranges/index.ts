@@ -82,12 +82,6 @@ export function getChildTimeRanges(
         );
       });
 
-      console.log(
-        timeRange.label,
-        timeRangeDates.startDate,
-        timeRangeDates.endDate,
-      );
-
       const isGrainPossible = !isGrainBigger(
         minTimeGrain,
         allowedMaxGrain.grain,

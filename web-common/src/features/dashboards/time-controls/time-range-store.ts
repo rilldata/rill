@@ -171,6 +171,12 @@ export function timeComparisonOptionsSelector([
         ) ?? [];
       allOptions.push(TimeComparisonOption.CUSTOM);
     }
+  } else if (
+    explorer.selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
+  ) {
+    // Previous complete ranges should only have previous period.
+    // Other options dont make sense with our current wording of the comparison ranges.
+    allOptions = [TimeComparisonOption.CONTIGUOUS, TimeComparisonOption.CUSTOM];
   }
 
   const timeComparisonOptions = getAvailableComparisonsForTimeRange(
