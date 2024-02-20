@@ -111,9 +111,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			q.Result = pcs[0:i]
 			return nil
 		})
-	case drivers.DialectDruid:
-		fallthrough
-	case drivers.DialectClickHouse:
+	case drivers.DialectClickHouse, drivers.DialectDruid:
 		tbl, err := olap.InformationSchema().Lookup(ctx, q.TableName)
 		if err != nil {
 			return err
