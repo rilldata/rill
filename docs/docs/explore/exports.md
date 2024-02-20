@@ -1,8 +1,8 @@
 ---
-title: Scheduled Reports
-description: Learn more about scheduled reports within Rill cloud.
-sidebar_label: Scheduled Reports
-sidebar_position: 40
+title: "Exports & Scheduled Reports"
+description: Downloading and exporting data from Rill
+sidebar_label: "Exports & Scheduled Reports"
+sidebar_position: 35
 ---
 
 Welcome to the Scheduled Reports feature in Rill Cloud! This powerful tool allows you to effortlessly generate and manage email reports for any exportable content within your Rill cloud dashboard.

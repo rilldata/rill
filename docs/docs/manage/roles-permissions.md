@@ -7,8 +7,6 @@ sidebar_position: 30
 
 Access permissions in Rill Cloud are organized into roles at the organization and project level. It is usually sufficient to grant access at the organization-level because those permissions are inherited for projects by default. 
 
-For information about granting, revoking and changing roles, see [Share with others](./user-management.md).
-
 ## Role inheritance
 
 Some project-level roles can be inherited from the organization-level:
@@ -50,3 +48,4 @@ There are two roles available at the project-level: **Viewer** and **Admin**.
 | `read_dev_status`        | View logs for non-production deployments                   |        |     ✔ |
 | `manage_dev`             | Trigger actions on non-production deployments              |        |     ✔ |
  -->
+

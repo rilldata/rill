@@ -1,7 +1,7 @@
 ---
-title: Deploy Projects
-sidebar_label: Deploy Projects
-sidebar_position: 10
+title: Overview
+sidebar_label: Overview
+sidebar_position: 00
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

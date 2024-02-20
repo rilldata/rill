@@ -10,12 +10,5 @@ When running Rill locally, Rill attempts to find existing credentials configured
 
 For instructions on how to create a service account and set credentials in Rill Cloud, see our reference docs for:
 
-- [Amazon S3](./s3.md)
-- [Google Cloud Storage (GCS)](./gcs.md)
-- [Azure Blob Storage (Azure)](./azure.md)
-- [Postgres](./postgres.md)
-- [MotherDuck](./motherduck.md)
-- [Amazon Athena](./athena.md)
-- [BigQuery](./bigquery.md)
-- [Snowflake](./snowflake.md)
-- [Salesforce](./salesforce.md)
+
+

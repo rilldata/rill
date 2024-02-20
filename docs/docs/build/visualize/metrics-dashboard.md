@@ -1,12 +1,12 @@
 ---
-title: "Analyze: Build Dashboards"
+title: "Build Dashboards"
 description: Define your time dimension, measures and dimensions to create a dashboard
-sidebar_label: "Analyze: Build Dashboards"
-sidebar_position: 30
+sidebar_label: "Build Dashboards"
+sidebar_position: 10
 ---
 
 In Rill, your dashboards are defined by _metric definitions_. Metric definitions are composed of:
-* _**A model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
+* _**A model**_ - A data model creating a One Big Table that will power the dashboard.
 * _**A timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
 * _**Measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
 * _**Dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
@@ -23,7 +23,7 @@ Your timeseries must be a column from your data model of [type](https://duckdb.o
 
 ### Measures
 
-Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and functions are allowed in measure expressions:
+Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](https://duckdb.org/docs/sql/introduction.html) aggregation functions and expressions on columns from your data model. The following operators and functions are allowed in measure expressions:
 
 * Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
 * This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.

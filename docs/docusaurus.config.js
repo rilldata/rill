@@ -112,7 +112,7 @@ const config = {
         items: [
           {
             type: "doc",
-            docId: "home",
+            docId: "home/home",
             position: "left",
             label: "Docs",
           },
@@ -187,11 +187,11 @@ const config = {
       {
         redirects: [
           {
-            to: '/deploy/credentials/s3',
+            to: '/build/credentials/s3',
             from: '/reference/connectors/s3',
           },
           {
-            to: '/deploy/credentials/gcs',
+            to: '/build/credentials/gcs',
             from: '/reference/connectors/gcs',
           },
         ],

@@ -1,13 +1,13 @@
 ---
 title: How to install Rill
 sidebar_label: Install  
-sidebar_position: 10
+sidebar_position: 01
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## Releases
+## Install
 
 You can install `rill` using our installation script:
 
