@@ -30,6 +30,7 @@ export interface PivotState {
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
+  rowPage: number;
   rowJoinType: PivotRowJoinType;
 }
 

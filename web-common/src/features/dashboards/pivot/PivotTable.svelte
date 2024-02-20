@@ -1,5 +1,6 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -9,20 +10,23 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "@tanstack/svelte-table";
-  import type { Readable } from "svelte/motion";
-  import { derived } from "svelte/store";
-  import type { PivotDataRow, PivotDataStore } from "./types";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
+  import type { Readable } from "svelte/motion";
+  import { derived } from "svelte/store";
+  import type { PivotDataRow, PivotDataStore } from "./types";
 
   export let pivotDataStore: PivotDataStore;
 
   const OVERSCAN = 80;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
+  // Distance threshold (in pixels) for triggering data fetch
+  const ROW_THRESHOLD = 200;
 
+  const totalRowCount = 500;
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
 
@@ -58,11 +62,13 @@
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
+  $: rowPage = $dashboardStore?.pivot?.rowPage;
   $: headerGroups = $table.getHeaderGroups();
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
   $: rows = $table.getRowModel().rows;
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 
+  $: console.log(rowPage);
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
@@ -100,6 +106,30 @@
     }
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
+
+  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+    if (containerRefElement) {
+      const {
+        scrollHeight,
+        scrollTop,
+        scrollWidth,
+        scrollLeft,
+        clientHeight,
+        clientWidth,
+      } = containerRefElement;
+      const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
+
+      // Fetch more data when scrolling near the bottom end
+      if (
+        bottomEndDistance < ROW_THRESHOLD &&
+        !$pivotDataStore.isFetching &&
+        rowPage * NUM_ROWS_PER_PAGE < totalRowCount
+      ) {
+        metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
+      }
+    }
+  };
 </script>
 
 <div
@@ -107,6 +137,7 @@
   style:--header-length="{totalHeaderHeight}px"
   class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
+  on:scroll={() => handleScroll(containerRefElement)}
 >
   <div style:height="{totalRowSize + totalHeaderHeight}px">
     <table>

@@ -32,8 +32,8 @@ import {
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import type { PivotColumns, PivotRows } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
-import type { PivotRows, PivotColumns } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -306,6 +306,15 @@ const metricViewReducers = {
     });
   },
 
+  setPivotRowPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        rowPage: pageNumber,
+      };
+    });
+  },
+
   createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
@@ -316,6 +325,7 @@ const metricViewReducers = {
         expanded: {},
         sorting: [],
         columnPage: 1,
+        rowPage: 1,
       };
     });
   },

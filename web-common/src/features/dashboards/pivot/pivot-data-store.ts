@@ -17,7 +17,10 @@ import {
   addExpandedDataToPivot,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
-import { sliceColumnAxesDataForDef } from "./pivot-infinite-scroll";
+import {
+  NUM_ROWS_PER_PAGE,
+  sliceColumnAxesDataForDef,
+} from "./pivot-infinite-scroll";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
@@ -293,6 +296,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           });
         }
 
+        const rowOffset = (config.pivot.rowPage - 1) * NUM_ROWS_PER_PAGE;
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
@@ -301,6 +305,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           config.whereFilter,
           sortPivotBy,
           timeRange,
+          NUM_ROWS_PER_PAGE.toString(),
+          rowOffset.toString(),
         );
 
         let globalTotalsQuery:
@@ -413,6 +419,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
                 if (getPivotConfigKey(config) in expandedTableMap) {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
+                  console.log("pivotData", pivotData);
                 } else {
                   if (initialTableCellData === null) {
                     cellData = rowTotals;
