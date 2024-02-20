@@ -20,7 +20,7 @@ func TestParseISO8601(t *testing.T) {
 		{from: "inf", expected: InfDuration{}},
 		{from: "Inf", expected: InfDuration{}},
 		{from: "infinity", err: true},
-		{from: "rill-TD", expected: TruncToDateDuration{timeutil.TimeGrainDay, StandardDuration{}}},
+		{from: "rill-TD", expected: TruncToDateDuration{timeutil.TimeGrainDay}},
 		{from: "TD", err: true},
 		{from: "rill-PM", expected: StandardDuration{Month: 1}},
 		{from: "PM", err: true},

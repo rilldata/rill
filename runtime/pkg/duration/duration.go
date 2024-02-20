@@ -39,11 +39,12 @@ var (
 		"PY": {Year: 1},
 	}
 	daxOffsetRangeNotations = map[string]TruncToDateDuration{
-		"PDC": {timeutil.TimeGrainDay, StandardDuration{Day: 1}},
-		"PWC": {timeutil.TimeGrainWeek, StandardDuration{Week: 1}},
-		"PMC": {timeutil.TimeGrainMonth, StandardDuration{Month: 1}},
-		"PQC": {timeutil.TimeGrainQuarter, StandardDuration{Month: 3}},
-		"PYC": {timeutil.TimeGrainYear, StandardDuration{Year: 1}},
+		// TODO: add mapping with offset to support these in places where only backend is involved like reports/alerts
+		"PDC": {timeutil.TimeGrainDay},
+		"PWC": {timeutil.TimeGrainWeek},
+		"PMC": {timeutil.TimeGrainMonth},
+		"PQC": {timeutil.TimeGrainQuarter},
+		"PYC": {timeutil.TimeGrainYear},
 	}
 )
 
@@ -235,7 +236,6 @@ func (d InfDuration) EstimateNative() (time.Duration, bool) {
 
 type TruncToDateDuration struct {
 	anchor timeutil.TimeGrain
-	offset StandardDuration
 }
 
 func (d TruncToDateDuration) Add(t time.Time) time.Time {
@@ -243,7 +243,7 @@ func (d TruncToDateDuration) Add(t time.Time) time.Time {
 }
 
 func (d TruncToDateDuration) Sub(t time.Time) time.Time {
-	return d.offset.Sub(timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1)) // TODO: get first day and month
+	return timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
 }
 
 func (d TruncToDateDuration) EstimateNative() (time.Duration, bool) {
