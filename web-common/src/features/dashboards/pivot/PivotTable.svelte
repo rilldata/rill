@@ -9,13 +9,13 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "@tanstack/svelte-table";
-  import type { Readable } from "svelte/motion";
-  import { derived } from "svelte/store";
-  import type { PivotDataRow, PivotDataStore } from "./types";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
+  import type { Readable } from "svelte/motion";
+  import { derived } from "svelte/store";
+  import type { PivotDataRow, PivotDataStore } from "./types";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -68,6 +68,7 @@
     getScrollElement: () => containerRefElement,
     estimateSize: () => ROW_HEIGHT,
     overscan: OVERSCAN,
+    initialOffset: rowScrollOffset,
     rangeExtractor: (range) => {
       const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
 
@@ -77,6 +78,9 @@
 
   $: virtualRows = $virtualizer.getVirtualItems();
   $: totalRowSize = $virtualizer.getTotalSize();
+
+  let rowScrollOffset = 0;
+  $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
 
   // In this virtualization model, we create buffer rows before and after our real data
   // This maintains the "correct" scroll position when the user scrolls
