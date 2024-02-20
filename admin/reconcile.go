@@ -13,7 +13,7 @@ import (
 
 // TriggerReconcileAndAwaitResource triggers a reconcile and polls the runtime until the given resource's spec version has been updated (or ctx is canceled).
 func (s *Service) TriggerReconcileAndAwaitResource(ctx context.Context, depl *database.Deployment, name, kind string) error {
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}

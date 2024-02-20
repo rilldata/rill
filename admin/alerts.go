@@ -10,7 +10,7 @@ import (
 
 // LookupAlert fetches a alert's spec from a runtime deployment.
 func (s *Service) LookupAlert(ctx context.Context, depl *database.Deployment, alertName string) (*runtimev1.AlertSpec, error) {
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return nil, err
 	}

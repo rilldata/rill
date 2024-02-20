@@ -12,6 +12,8 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -296,6 +298,35 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
+	if req.Kind == "" {
+		req.Kind = runtime.ResourceKindMetricsView
+	}
+
+	// validate that the resource exists
+	rt, err := s.admin.OpenRuntimeClientForDeployment(prodDepl)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer rt.Close()
+
+	resourceReq := &runtimev1.GetResourceRequest{
+		InstanceId: prodDepl.RuntimeInstanceID,
+		Name: &runtimev1.ResourceName{
+			Kind: req.Kind,
+			Name: req.Resource,
+		},
+	}
+
+	_, err = rt.GetResource(ctx, resourceReq)
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return nil, status.Error(codes.NotFound, err.Error())
+			}
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	var attr map[string]any
 	if req.For != nil {
 		switch forVal := req.For.(type) {
@@ -350,10 +381,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	s.admin.Used.Deployment(prodDepl.ID)
-
-	if req.Kind == "" {
-		req.Kind = "MetricsView"
-	}
 
 	iFrameURL, err := urlutil.WithQuery(urlutil.MustJoinURL(s.opts.FrontendURL, "/-/embed"), map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,

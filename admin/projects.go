@@ -300,7 +300,7 @@ func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deploymen
 		}
 	}()
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -332,7 +332,7 @@ func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Depl
 		names = append(names, &runtimev1.ResourceName{Name: source})
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}

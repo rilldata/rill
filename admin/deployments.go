@@ -188,7 +188,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		modelDefaultMaterialize = &val
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
 	// Connect to the deployment's runtime
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -318,7 +318,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	return nil
 }
 
-func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
+func (s *Service) OpenRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
 	return s.openRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 }
 

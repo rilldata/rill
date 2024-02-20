@@ -17,7 +17,7 @@ func (s *Service) TriggerReport(ctx context.Context, depl *database.Deployment, 
 		},
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (s *Service) TriggerReport(ctx context.Context, depl *database.Deployment, 
 
 // LookupReport fetches a report's spec from a runtime deployment.
 func (s *Service) LookupReport(ctx context.Context, depl *database.Deployment, reportName string) (*runtimev1.ReportSpec, error) {
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return nil, err
 	}
