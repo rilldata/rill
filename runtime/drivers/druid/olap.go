@@ -1,13 +1,17 @@
 package druid
 
 import (
+	// "bytes"
 	"context"
+	// "encoding/json"
 	"fmt"
+	// "net/http"
 	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -68,7 +72,137 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
+// "query": "select * from test_data limit 2",
+// "header": true,
+// "typesHeader": true,
+// "resultFormat": "array"
+// type DruidRequest struct {
+// 	Query          string `json:"query"`
+// 	Header         bool   `json:"header"`
+// 	SQLTypesHeader bool   `json:"sqlTypesHeader"`
+// 	ResultFormat   string `json:"resultFormat"`
+// }
+
+// func druidRequest(query string) *DruidRequest {
+// 	return &DruidRequest{
+// 		Query:          query,
+// 		Header:         true,
+// 		SQLTypesHeader: true,
+// 		ResultFormat:   "array",
+// 	}
+// }
+
+func extractSchema(names []any, types []any) (*runtimev1.StructType, error) {
+	fields := make([]*runtimev1.StructType_Field, len(types))
+	for i, ct := range types {
+		t, err := databaseTypeToPB(ct.(string), true)
+		if err != nil {
+			return nil, err
+		}
+
+		fields[i] = &runtimev1.StructType_Field{
+			Name: names[i].(string),
+			Type: t,
+		}
+	}
+
+	return &runtimev1.StructType{Fields: fields}, nil
+}
+
+type DruidRows struct {
+	Mapper *reflectx.Mapper
+}
+
+func (d *DruidRows) Next() bool {
+	return true
+}
+
+func (d *DruidRows) Close() error {
+	return nil
+}
+
+func (d *DruidRows) Err() error {
+	return nil
+}
+
+func (d *DruidRows) Scan(dest ...interface{}) error {
+	return nil
+}
+
+func (d *DruidRows) Columns() ([]string, error) {
+	return nil, nil
+}
+
+// func (d *DruidRows) ColumnTypes() ([]*sqlx.ColumnType, error) {
+// 	return nil, nil
+// }
+
+func (d *DruidRows) NextResultSet() bool {
+	return false
+}
+
+func (d *DruidRows) HasNextResultSet() bool {
+	return false
+}
+
+func (d *DruidRows) NextRowset() error {
+	return nil
+}
+
+type A struct {
+	a int
+}
+
+type B struct {
+	b int
+}
+
+// var _ *A = &B{}
+
+// var _ *sqlx.Rows = &DruidRows{}
+
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	// uri := "http://localhost:8888/druid/v2/sql"
+
+	// b, err := json.Marshal(druidRequest(stmt.Query))
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// bodyReader := bytes.NewReader(b)
+	// client := http.Client{Timeout: time.Second}
+	// req, err := http.NewRequest(
+	// 	"POST", uri, bodyReader,
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// req.Header.Add("Content-Type", "application/json")
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// var data []byte
+	// _, err = resp.Body.Read(data)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// var v [][]any
+	// err = json.Unmarshal(data, &v)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// schema, err := extractSchema(v[0], v[1])
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// rows := &sqlx.Rows{}
+
+	// r := &drivers.Result{Rows: rows, Schema: schema}
+
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
 		prepared, err := c.db.PrepareContext(ctx, stmt.Query)

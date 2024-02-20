@@ -14,14 +14,14 @@ import (
 )
 
 func init() {
-	drivers.Register("druid", driver{})
+	drivers.Register("druid", drive{})
 }
 
-type driver struct{}
+type drive struct{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d drive) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
@@ -50,19 +50,19 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 	return conn, nil
 }
 
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
+func (d drive) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
-func (d driver) Spec() drivers.Spec {
+func (d drive) Spec() drivers.Spec {
 	return drivers.Spec{}
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+func (d drive) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+func (d drive) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
