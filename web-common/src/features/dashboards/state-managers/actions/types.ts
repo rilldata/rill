@@ -39,7 +39,6 @@ export type DashboardCallbackExecutor = (
  */
 export type DashboardMutables = {
   dashboard: MetricsExplorerEntity;
-  cancelQueries: () => void;
   persistentDashboardStore: PersistentDashboardStore;
 };
 
