@@ -14,14 +14,16 @@ import (
 )
 
 func init() {
-	drivers.Register("druid", drive{})
+	drivers.Register("druid", &driversDriver{})
 }
 
-type drive struct{}
+type driversDriver struct{}
+
+var _ drivers.Driver = &driversDriver{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d drive) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d *driversDriver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
@@ -30,7 +32,7 @@ func (d drive) Open(config map[string]any, shared bool, client activity.Client, 
 		return nil, fmt.Errorf("require dsn to open druid connection")
 	}
 
-	db, err := sqlx.Open("avatica", dsn)
+	db, err := sqlx.Open("druid", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -50,19 +52,19 @@ func (d drive) Open(config map[string]any, shared bool, client activity.Client, 
 	return conn, nil
 }
 
-func (d drive) Drop(config map[string]any, logger *zap.Logger) error {
+func (d *driversDriver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
-func (d drive) Spec() drivers.Spec {
+func (d *driversDriver) Spec() drivers.Spec {
 	return drivers.Spec{}
 }
 
-func (d drive) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+func (d *driversDriver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (d drive) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+func (d *driversDriver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

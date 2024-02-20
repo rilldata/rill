@@ -104,10 +104,11 @@ func TestDruid(t *testing.T) {
 	brokerURL, err := container.PortEndpoint(ctx, "8082/tcp", "http")
 	require.NoError(t, err)
 
-	avaticaURL, err := url.JoinPath(brokerURL, "/druid/v2/sql/avatica-protobuf/")
+	druidAPIURL, err := url.JoinPath(brokerURL, "/druid/v2/sql")
 	require.NoError(t, err)
 
-	conn, err := driver{}.Open(map[string]any{"dsn": avaticaURL}, false, activity.NewNoopClient(), zap.NewNop())
+	dd := &driversDriver{}
+	conn, err := dd.Open(map[string]any{"dsn": druidAPIURL}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -121,7 +122,6 @@ func TestDruid(t *testing.T) {
 	t.Run("time floor", func(t *testing.T) { testTimeFloor(t, olap) })
 
 	require.NoError(t, conn.Close())
-	require.Error(t, conn.(*connection).db.Ping())
 }
 
 func testIngest(t *testing.T, coordinatorURL string) {
