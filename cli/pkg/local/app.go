@@ -11,13 +11,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
@@ -26,6 +26,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
@@ -282,12 +283,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		return nil, err
 	}
 
-	// Collect and emit information about registered source types
-	err = emitSourceTelemetry(ctx, opts, rt, inst)
-	if err != nil {
-		return nil, err
-	}
-
 	// Create app
 	app := &App{
 		Context:               ctx,
@@ -303,6 +298,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		loggerCleanUp:         cleanupFn,
 		activity:              opts.Activity,
 	}
+
+	// Collect and emit information about registered source types
+	go func() {
+		err := app.emitStartEvent(ctx)
+		if err != nil {
+			logger.Debug("failed to emit start event", zap.Error(err))
+		}
+	}()
 
 	return app, nil
 }
@@ -551,6 +554,37 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 	})
 }
 
+func (a *App) emitStartEvent(ctx context.Context) error {
+	repo, instanceID, err := cmdutil.RepoForProjectPath(a.ProjectPath)
+	if err != nil {
+		return err
+	}
+
+	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector, []string{"duckdb"})
+	if err != nil {
+		return err
+	}
+
+	connectors, err := parser.AnalyzeConnectors(ctx)
+	if err != nil {
+		return err
+	}
+
+	var sourceDrivers []string
+	for _, connector := range connectors {
+		sourceDrivers = append(sourceDrivers, connector.Name)
+	}
+
+	tel := telemetry.New(a.Version)
+	tel.EmitStartEvent(sourceDrivers, a.Instance.OLAPConnector)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = tel.Flush(ctx)
+	return err
+}
+
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.
 // It doesn't use any runtime functions since we need the ability to check this before creating the instance.
 func IsProjectInit(projectPath string) bool {
@@ -630,49 +664,6 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		_ = logger.Sync()
 		luLogger.Close()
 	}
-}
-
-func emitSourceTelemetry(ctx context.Context, opts *AppOptions, rt *runtime.Runtime, inst *drivers.Instance) error {
-	controller, err := rt.Controller(ctx, inst.ID)
-	if err != nil {
-		return err
-	}
-	catalog, _, err := rt.Catalog(ctx, inst.ID)
-	if err != nil {
-		return err
-	}
-	resources, err := catalog.FindResources(ctx)
-	if err != nil {
-		return err
-	}
-	var sourceDrivers []string
-	var olapDrivers []string
-	for _, res := range resources {
-		if res.Kind == "rill.runtime.v1.Source" {
-			source, err := controller.Get(ctx, &runtimev1.ResourceName{Kind: res.Kind, Name: res.Name}, false)
-			if err != nil {
-				return err
-			}
-			spec := source.GetSource().Spec
-			sourceDrivers = append(sourceDrivers, spec.SourceConnector)
-			olapDrivers = append(olapDrivers, spec.SinkConnector)
-		}
-	}
-
-	// Keep only distinct values
-	slices.Sort(sourceDrivers)
-	sourceDrivers = slices.Compact[[]string, string](sourceDrivers)
-	slices.Sort(olapDrivers)
-	olapDrivers = slices.Compact[[]string, string](olapDrivers)
-
-	tel := telemetry.New(opts.Version)
-	tel.EmitSourceInfo(sourceDrivers, olapDrivers)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_ = tel.Flush(ctx) // Ignore error and start the app
-
-	return nil
 }
 
 // skipFieldZapEncoder skips fields with the given keys. only string fields are supported.

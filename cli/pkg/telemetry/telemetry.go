@@ -70,11 +70,11 @@ func (t *Telemetry) WithUserID(userID string) {
 }
 
 func (t *Telemetry) Emit(action Action) {
-	t.emitBehaviourEvent(string(action), "cli", "terminal", "terminal", nil, nil)
+	t.emitBehaviourEvent(string(action), "cli", "terminal", "terminal", nil, "")
 }
 
-func (t *Telemetry) EmitSourceInfo(sourceDrivers, olapDrivers []string) {
-	t.emitBehaviourEvent(string(ActionAppStart), "cli", "terminal", "terminal", sourceDrivers, olapDrivers)
+func (t *Telemetry) EmitStartEvent(sourceDrivers []string, olapDriver string) {
+	t.emitBehaviourEvent(string(ActionAppStart), "cli", "terminal", "terminal", sourceDrivers, olapDriver)
 }
 
 func (t *Telemetry) Flush(ctx context.Context) error {
@@ -107,10 +107,10 @@ type behaviourEventFields struct {
 	EventDatetime int64    `json:"event_datetime"`
 	EventType     string   `json:"event_type"`
 	SourceDriver  []string `json:"source_driver"`
-	OLAPDriver    []string `json:"olap_driver"`
+	OLAPDriver    string   `json:"olap_driver"`
 }
 
-func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string, sourceDrivers, olapDrivers []string) {
+func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string, sourceDrivers []string, olapDriver string) {
 	if t == nil || !t.Enabled {
 		return
 	}
@@ -130,7 +130,7 @@ func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string,
 		EventDatetime: time.Now().Unix() * 1000,
 		EventType:     "behavioral",
 		SourceDriver:  sourceDrivers,
-		OLAPDriver:    olapDrivers,
+		OLAPDriver:    olapDriver,
 	}
 	event, err := json.Marshal(&fields)
 	if err != nil {
