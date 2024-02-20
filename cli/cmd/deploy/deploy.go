@@ -569,22 +569,18 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		return
 	}
 
-	ch.Printer.PrintlnWarn("\nCould not ingest all sources. Rill requires credentials for the following sources:\n")
+	ch.Printer.PrintlnWarn("\nCould not access all connectors. Rill requires credentials for the following connectors:\n")
 	for _, c := range connectors {
 		if c.AnonymousAccess {
 			continue
 		}
-		if len(c.Resources) == 0 {
-			fmt.Printf(" - %s\n", c.Name)
-			continue
+		fmt.Printf(" - %s", c.Name)
+		if len(c.Resources) == 1 {
+			fmt.Printf(" (used by %s)", c.Resources[0].Name.Name)
+		} else if len(c.Resources) > 1 {
+			fmt.Printf(" (used by %s and others)", c.Resources[0].Name.Name)
 		}
-		for _, r := range c.Resources {
-			fmt.Printf(" - %s", r.Name.Name)
-			if len(r.Paths) > 0 {
-				fmt.Printf(" (%s)", r.Paths[0])
-			}
-			fmt.Print("\n")
-		}
+		fmt.Print("\n")
 	}
 	ch.Printer.PrintlnWarn(fmt.Sprintf("\nRun `rill env configure --project %s` to provide credentials.\n", projectName))
 	time.Sleep(2 * time.Second)

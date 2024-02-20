@@ -174,22 +174,18 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 
 	// Start the flow
 	tel.Emit(telemetry.ActionDataAccessStart)
-	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill does not have access to the following data sources:\n\n")
+	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill requires credentials for the following connectors:\n\n")
 	for _, c := range connectors {
 		if c.AnonymousAccess {
 			continue
 		}
-		if len(c.Resources) == 0 {
-			fmt.Printf(" - %s\n", c.Name)
-			continue
+		fmt.Printf(" - %s", c.Name)
+		if len(c.Resources) == 1 {
+			fmt.Printf(" (used by %s)", c.Resources[0].Name.Name)
+		} else if len(c.Resources) > 1 {
+			fmt.Printf(" (used by %s and others)", c.Resources[0].Name.Name)
 		}
-		for _, r := range c.Resources {
-			fmt.Printf(" - %s", r.Name.Name)
-			if len(r.Paths) > 0 {
-				fmt.Printf(" (%s)", r.Paths[0])
-			}
-			fmt.Print("\n")
-		}
+		fmt.Print("\n")
 	}
 
 	// Prompt for credentials
