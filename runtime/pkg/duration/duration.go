@@ -38,6 +38,13 @@ var (
 		"PQ": {Month: 3},
 		"PY": {Year: 1},
 	}
+	daxOffsetRangeNotations = map[string]TruncToDateDuration{
+		"PDC": {timeutil.TimeGrainDay, StandardDuration{Day: 1}},
+		"PWC": {timeutil.TimeGrainWeek, StandardDuration{Week: 1}},
+		"PMC": {timeutil.TimeGrainMonth, StandardDuration{Month: 1}},
+		"PQC": {timeutil.TimeGrainQuarter, StandardDuration{Month: 3}},
+		"PYC": {timeutil.TimeGrainYear, StandardDuration{Year: 1}},
+	}
 )
 
 // ParseISO8601 parses an ISO8601 duration as well as some Rill-specific extensions.
@@ -59,6 +66,9 @@ func ParseISO8601(from string) (Duration, error) {
 			return TruncToDateDuration{anchor: a}, nil
 		}
 		if o, ok := daxOffsetNotations[rillDur]; ok {
+			return o, nil
+		}
+		if o, ok := daxOffsetRangeNotations[rillDur]; ok {
 			return o, nil
 		}
 	}
@@ -225,6 +235,7 @@ func (d InfDuration) EstimateNative() (time.Duration, bool) {
 
 type TruncToDateDuration struct {
 	anchor timeutil.TimeGrain
+	offset StandardDuration
 }
 
 func (d TruncToDateDuration) Add(t time.Time) time.Time {
@@ -232,7 +243,7 @@ func (d TruncToDateDuration) Add(t time.Time) time.Time {
 }
 
 func (d TruncToDateDuration) Sub(t time.Time) time.Time {
-	return timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
+	return d.offset.Sub(timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1)) // TODO: get first day and month
 }
 
 func (d TruncToDateDuration) EstimateNative() (time.Duration, bool) {
