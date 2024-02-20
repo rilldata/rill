@@ -12,10 +12,16 @@
 
   let container: HTMLDivElement;
 
-  beforeUpdate(() => {
-    if (!container) return;
+  // beforeUpdate(() => {
+  //   if (!container) return;
+  //   calculateSize(container);
+  // });
+
+  $: if (container && items) {
+    items;
+
     calculateSize(container);
-  });
+  }
 
   function toggleCollapse() {
     collapsed = !collapsed;
@@ -67,6 +73,11 @@
     @apply pt-3 px-4;
     @apply flex flex-col gap-1 items-start;
     @apply w-full overflow-hidden flex-grow-0;
+    @apply border-b border-slate-200;
+  }
+
+  .container:last-child {
+    @apply border-b-0;
   }
 
   button {

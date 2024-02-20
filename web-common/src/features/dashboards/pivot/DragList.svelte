@@ -19,6 +19,7 @@
   const flipDurationMs = 200;
 
   function handleConsider(e: CustomEvent<{ items: PivotChipData[] }>) {
+    console.log("CONSIDERING", type);
     items = e.detail.items;
   }
 
