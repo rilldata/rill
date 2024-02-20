@@ -22,6 +22,7 @@ func TestValidateMetricsView(t *testing.T) {
 		Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 			{Name: "records", Expression: "count(*)"},
 			{Name: "invalid_nested_aggregation", Expression: "MAX(COUNT(DISTINCT publisher))"},
+			{Name: "invalid_partition", Expression: "AVG(bid_price) OVER (PARTITION BY publisher)"},
 		},
 	})
 	require.NoError(t, err)
@@ -29,6 +30,7 @@ func TestValidateMetricsView(t *testing.T) {
 	require.Empty(t, res.DimensionErrs)
 	require.Empty(t, res.OtherErrs)
 
-	require.Len(t, res.MeasureErrs, 1)
+	require.Len(t, res.MeasureErrs, 2)
 	require.Equal(t, 1, res.MeasureErrs[0].Idx)
+	require.Equal(t, 2, res.MeasureErrs[1].Idx)
 }
