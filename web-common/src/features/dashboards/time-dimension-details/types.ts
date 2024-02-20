@@ -14,9 +14,9 @@ export interface HighlightedCell {
 }
 
 export interface ChartInteractionColumns {
-  hover: number;
-  scrubStart: number;
-  scrubEnd: number;
+  hover: number | undefined;
+  scrubStart: number | undefined;
+  scrubEnd: number | undefined;
 }
 
 export type TDDComparison = "time" | "none" | "dimension";

@@ -12,6 +12,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -70,6 +71,7 @@ type Config struct {
 	EmailSenderEmail         string                 `split_words:"true"`
 	EmailSenderName          string                 `split_words:"true"`
 	EmailBCC                 string                 `split_words:"true"`
+	OpenAIAPIKey             string                 `envconfig:"openai_api_key"`
 	ActivitySinkType         string                 `default:"" split_words:"true"`
 	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
 	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
@@ -185,6 +187,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating github client", zap.Error(err))
 			}
 
+			// Init AI client
+			var aiClient ai.Client
+			if conf.OpenAIAPIKey != "" {
+				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey)
+				if err != nil {
+					logger.Fatal("error creating OpenAI client", zap.Error(err))
+				}
+			} else {
+				aiClient = ai.NewNoop()
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:     conf.DatabaseDriver,
@@ -194,7 +207,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
 				VersionNumber:      cliCfg.Version.Number,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -227,6 +240,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivitySinkKafkaBrokers,
 				conf.ActivityUISinkKafkaTopic,
 				logger,
+				"admin-server",
+				cliCfg.Version.String(),
 			)
 
 			// Init and run server

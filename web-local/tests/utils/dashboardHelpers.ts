@@ -6,12 +6,12 @@ import { clickMenuButton, openEntityMenu } from "./commonHelpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
-  await clickMenuButton(page, "Autogenerate Dashboard");
+  await clickMenuButton(page, "Generate dashboard");
 }
 
 export async function createDashboardFromModel(page: Page, model: string) {
   await openEntityMenu(page, model);
-  await clickMenuButton(page, "Autogenerate Dashboard");
+  await clickMenuButton(page, "Generate dashboard");
 }
 
 export async function assertLeaderboards(

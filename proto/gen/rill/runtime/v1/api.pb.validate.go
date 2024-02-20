@@ -297,11 +297,15 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
 
 	// no validation rules for AdminConnector
+
+	// no validation rules for AiConnector
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
@@ -1156,11 +1160,15 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
 
 	// no validation rules for AdminConnector
+
+	// no validation rules for AiConnector
 
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
@@ -1713,6 +1721,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
+	if m.Environment != nil {
+		// no validation rules for Environment
+	}
+
 	if m.OlapConnector != nil {
 		// no validation rules for OlapConnector
 	}
@@ -1723,6 +1735,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.AdminConnector != nil {
 		// no validation rules for AdminConnector
+	}
+
+	if m.AiConnector != nil {
+		// no validation rules for AiConnector
 	}
 
 	if m.EmbedCatalog != nil {
@@ -4144,6 +4160,235 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UnpackEmptyResponseValidationError{}
+
+// Validate checks the field values on GenerateMetricsViewFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateMetricsViewFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateMetricsViewFileRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GenerateMetricsViewFileRequestMultiError, or nil if none found.
+func (m *GenerateMetricsViewFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateMetricsViewFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateMetricsViewFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Connector
+
+	// no validation rules for Table
+
+	// no validation rules for Path
+
+	// no validation rules for UseAi
+
+	if len(errors) > 0 {
+		return GenerateMetricsViewFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateMetricsViewFileRequestMultiError is an error wrapping multiple
+// validation errors returned by GenerateMetricsViewFileRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GenerateMetricsViewFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateMetricsViewFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateMetricsViewFileRequestMultiError) AllErrors() []error { return m }
+
+// GenerateMetricsViewFileRequestValidationError is the validation error
+// returned by GenerateMetricsViewFileRequest.Validate if the designated
+// constraints aren't met.
+type GenerateMetricsViewFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateMetricsViewFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateMetricsViewFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateMetricsViewFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateMetricsViewFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateMetricsViewFileRequestValidationError) ErrorName() string {
+	return "GenerateMetricsViewFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateMetricsViewFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateMetricsViewFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateMetricsViewFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateMetricsViewFileRequestValidationError{}
+
+var _GenerateMetricsViewFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateMetricsViewFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateMetricsViewFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateMetricsViewFileResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GenerateMetricsViewFileResponseMultiError, or nil if none found.
+func (m *GenerateMetricsViewFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateMetricsViewFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AiSucceeded
+
+	if len(errors) > 0 {
+		return GenerateMetricsViewFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateMetricsViewFileResponseMultiError is an error wrapping multiple
+// validation errors returned by GenerateMetricsViewFileResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GenerateMetricsViewFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateMetricsViewFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateMetricsViewFileResponseMultiError) AllErrors() []error { return m }
+
+// GenerateMetricsViewFileResponseValidationError is the validation error
+// returned by GenerateMetricsViewFileResponse.Validate if the designated
+// constraints aren't met.
+type GenerateMetricsViewFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateMetricsViewFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateMetricsViewFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateMetricsViewFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateMetricsViewFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateMetricsViewFileResponseValidationError) ErrorName() string {
+	return "GenerateMetricsViewFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateMetricsViewFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateMetricsViewFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateMetricsViewFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateMetricsViewFileResponseValidationError{}
 
 // Validate checks the field values on Log with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error

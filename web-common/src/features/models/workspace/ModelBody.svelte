@@ -97,7 +97,6 @@
         httpRequestQueue.removeByName(modelName);
         // cancel all existing analytical queries currently running.
         await queryClient.cancelQueries({
-          fetchStatus: "fetching",
           predicate: (query) => isProfilingQuery(query, modelName),
         });
       }

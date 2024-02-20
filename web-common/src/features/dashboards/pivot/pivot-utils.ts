@@ -1,4 +1,3 @@
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -6,217 +5,22 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
+  AvailableTimeGrain,
   Period,
   TimeOffsetType,
   TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
   V1Expression,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
-  PivotAxesData,
-  PivotChipData,
+  PivotDataRow,
   PivotDataStoreConfig,
-  PivotState,
   PivotTimeConfig,
   TimeFilters,
 } from "./types";
-import { PivotChipType } from "./types";
-
-export function getMeasuresInPivotColumns(
-  pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[],
-): string[] {
-  const { columns } = pivot;
-
-  return columns.filter(
-    (rowName) => measures.findIndex((m) => m?.name === rowName) > -1,
-  );
-}
-
-export function getDimensionsInPivotRow(
-  pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[],
-): string[] {
-  const { rows } = pivot;
-  return rows.filter(
-    (rowName) => measures.findIndex((m) => m?.name === rowName) === -1,
-  );
-}
-
-export function getDimensionsInPivotColumns(
-  pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[],
-): string[] {
-  const { columns } = pivot;
-  return columns.filter(
-    (colName) => measures.findIndex((m) => m?.name === colName) === -1,
-  );
-}
-
-export function getFormattedColumn(
-  pivot: PivotState,
-  allMeasures: MetricsViewSpecMeasureV2[],
-  alldimensions: MetricsViewSpecDimensionV2[],
-) {
-  const measures: PivotChipData[] = [];
-  const timeAndDimensions: PivotChipData[] = [];
-
-  const { columns } = pivot;
-
-  columns.forEach((colName) => {
-    let label = "";
-    let id = "";
-    let chipType = PivotChipType.Measure;
-
-    const measure = allMeasures.find((m) => m?.name === colName);
-
-    if (measure && measure.label && measure.name) {
-      chipType = PivotChipType.Measure;
-      label = measure.label;
-      id = measure.name;
-
-      measures.push({ id, title: label, type: chipType });
-
-      return;
-    }
-
-    const dimension = alldimensions.find((d) => d?.name === colName);
-
-    if (dimension && dimension.label && dimension.name) {
-      chipType = PivotChipType.Dimension;
-      label = dimension.label;
-      id = dimension.name;
-    } else {
-      chipType = PivotChipType.Time;
-      label = colName;
-      id = colName;
-    }
-
-    timeAndDimensions.push({ id, title: label, type: chipType });
-  });
-
-  return timeAndDimensions.concat(measures);
-}
-
-export function getFormattedRow(
-  pivot: PivotState,
-  allDimensions: MetricsViewSpecDimensionV2[],
-) {
-  const data: PivotChipData[] = [];
-
-  const { rows } = pivot;
-
-  rows.forEach((rowName) => {
-    let label = "";
-    let id = "";
-    let chipType = PivotChipType.Dimension;
-
-    const dimension = allDimensions.find((m) => m?.name === rowName);
-
-    if (dimension && dimension.label && dimension.name) {
-      chipType = PivotChipType.Dimension;
-      label = dimension.label;
-      id = dimension.name;
-    } else {
-      chipType = PivotChipType.Time;
-      label = rowName;
-      id = rowName;
-    }
-
-    data.push({ id, title: label, type: chipType });
-  });
-
-  return data;
-}
-
-export function getFormattedHeaderValues(
-  pivot: PivotState,
-  allMeasures: MetricsViewSpecMeasureV2[],
-  alldimensions: MetricsViewSpecDimensionV2[],
-) {
-  const rows = getFormattedRow(pivot, alldimensions);
-  const columns = getFormattedColumn(pivot, allMeasures, alldimensions);
-
-  return {
-    rows,
-    columns,
-  };
-}
-
-export function getMeasureCountInColumn(
-  pivot: PivotState,
-  allMeasures: MetricsViewSpecMeasureV2[],
-) {
-  const { columns } = pivot;
-
-  return columns.filter(
-    (rowName) => allMeasures.findIndex((m) => m?.name === rowName) > -1,
-  ).length;
-}
-
-/**
- * Returns a sorted data array by appending the missing values in
- * sorted row axes data
- */
-export function reconcileMissingDimensionValues(
-  anchorDimension: string,
-  sortedRowAxes: PivotAxesData | null,
-  unsortedRowAxes: PivotAxesData | null,
-) {
-  // Return empty data if either sortedRowAxes or unsortedRowAxes is null
-  if (!sortedRowAxes || !unsortedRowAxes) {
-    return { rows: [], totals: [] };
-  }
-
-  // Extract data and totals from sortedRowAxes
-  const sortedRowAxisValues = sortedRowAxes.data?.[anchorDimension] || [];
-  const sortedTotals = sortedRowAxes.totals?.[anchorDimension] || [];
-
-  // Return early if there are too many values
-  if (sortedRowAxisValues.length >= 100) {
-    return {
-      rows: sortedRowAxisValues.slice(0, 100),
-      totals: sortedTotals.slice(0, 100),
-    };
-  }
-
-  // Extract data and totals from unsortedRowAxes
-  const unsortedRowAxisValues = unsortedRowAxes.data?.[anchorDimension] || [];
-  const unsortedTotals = unsortedRowAxes.totals?.[anchorDimension] || [];
-
-  // Find missing values that are in unsortedRowAxes but not in sortedRowAxes
-  const missingValues = unsortedRowAxisValues.filter(
-    (value) => !sortedRowAxisValues.includes(value),
-  );
-
-  // Combine and limit the rows to 100
-  const combinedRows = [...sortedRowAxisValues, ...missingValues].slice(0, 100);
-
-  // Reorder the totals to match the order of combinedRows
-  const reorderedTotals = combinedRows.map((rowValue) => {
-    const sortedTotal = sortedTotals.find(
-      (total) => total[anchorDimension] === rowValue,
-    );
-    if (sortedTotal) {
-      return sortedTotal;
-    }
-    // Use the total from unsortedRowAxes if not found in sortedTotals
-    const unsortedTotal = unsortedTotals.find(
-      (total) => total[anchorDimension] === rowValue,
-    );
-    return unsortedTotal || { [anchorDimension]: rowValue };
-  });
-
-  return {
-    rows: combinedRows,
-    totals: reorderedTotals,
-  };
-}
 
 /**
  * Construct a key for a pivot config to store expanded table data
@@ -228,17 +32,19 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowDimensionNames,
     measureNames,
     whereFilter,
+    measureFilter,
     pivot,
   } = config;
 
   const { sorting } = pivot;
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
+  const measureFilterKey = JSON.stringify(measureFilter);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${sortingKey}_${filterKey}`;
+  return `${dimsAndMeasures}_${sortingKey}_${filterKey}_${measureFilterKey}`;
 }
 
 /**
@@ -257,17 +63,23 @@ export function getTimeForQuery(
   }
 
   timeFilters.forEach((filter) => {
-    // FIXME: Fix type warnings. Are these false positives?
-    // Using `as` to avoid type warnings
-    const duration: Period = TIME_GRAIN[filter.interval]?.duration as Period;
-
     const startTimeDt = new Date(filter.timeStart);
+    let startTimeOfLastInterval: Date | undefined = undefined;
+
+    if (filter.timeEnd) {
+      startTimeOfLastInterval = new Date(filter.timeEnd);
+    } else {
+      startTimeOfLastInterval = startTimeDt;
+    }
+
+    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
     const endTimeDt = getOffset(
-      startTimeDt,
+      startTimeOfLastInterval,
       duration,
       TimeOffsetType.ADD,
       timeZone,
     ) as Date;
+
     if (startTimeDt > new Date(timeStart as string)) {
       timeStart = filter.timeStart;
     }
@@ -277,6 +89,19 @@ export function getTimeForQuery(
   });
 
   return { start: timeStart, end: timeEnd };
+}
+
+export function isTimeDimension(
+  dimension: string | undefined,
+  timeDimension: string,
+) {
+  if (!dimension) return false;
+  return dimension.startsWith(`${timeDimension}_rill_`);
+}
+
+export function getTimeGrainFromDimension(dimension: string) {
+  const grainLabel = dimension.split("_rill_")[1];
+  return grainLabel as AvailableTimeGrain;
 }
 
 /**
@@ -305,15 +130,8 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
  * Returns total number of columns for the table
  * excluding row and group totals columns
  */
-export function getTotalColumnCount(
-  columnDimensionAxes: Record<string, string[]> | undefined,
-) {
-  if (!columnDimensionAxes) return 0;
-
-  return Object.values(columnDimensionAxes).reduce(
-    (acc, columnDimension) => acc * columnDimension.length,
-    1,
-  );
+export function getTotalColumnCount(totalsRow: PivotDataRow) {
+  return Object.keys(totalsRow).length;
 }
 
 /***
@@ -322,20 +140,21 @@ export function getTotalColumnCount(
 export function getFilterForPivotTable(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
+  totalsRow: PivotDataRow,
   rowDimensionValues: string[] = [],
   isInitialTable = false,
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
-): V1Expression {
+) {
   // TODO: handle for already existing global filters
 
-  const { colDimensionNames, rowDimensionNames, time } = config;
+  const { rowDimensionNames, time } = config;
 
   let rowFilters: V1Expression | undefined;
   if (
     isInitialTable &&
     anchorDimension &&
-    anchorDimension !== time.timeDimension
+    !isTimeDimension(anchorDimension, time.timeDimension)
   ) {
     rowFilters = createInExpression(
       rowDimensionNames[0],
@@ -343,19 +162,18 @@ export function getFilterForPivotTable(
     );
   }
 
-  const colFiltersForPage = getColumnFiltersForPage(
-    colDimensionNames.filter(
-      (dimension) => dimension !== config.time.timeDimension,
-    ),
+  const { filters: colFiltersForPage, timeFilters } = getColumnFiltersForPage(
+    config,
     colDimensionAxes,
-    config.pivot.columnPage,
-    config.measureNames.length,
+    totalsRow,
   );
 
-  return createAndExpression([
+  const filters = createAndExpression([
     ...colFiltersForPage,
     ...(rowFilters ? [rowFilters] : []),
   ]);
+
+  return { filters, timeFilters };
 }
 
 /**
@@ -368,6 +186,7 @@ export function getFilterForPivotTable(
  */
 export function getAccessorForCell(
   colDimensionNames: string[],
+  timeDimension: string,
   colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
   cell: { [key: string]: string | number },
@@ -392,7 +211,7 @@ export function getAccessorForCell(
 /**
  * Extract the numbers after c and v in a accessor part string
  */
-function extractNumbers(str: string) {
+export function extractNumbers(str: string) {
   const indexOfC = str.indexOf("c");
   const indexOfV = str.indexOf("v");
 
@@ -400,6 +219,47 @@ function extractNumbers(str: string) {
   const numberAfterV = parseInt(str.substring(indexOfV + 1));
 
   return { c: numberAfterC, v: numberAfterV };
+}
+
+export function sortAcessors(accessors: string[]) {
+  function parseParts(str: string): number[] {
+    // Extract all occurrences of patterns like c<num>v<num>
+    const matches = str.match(/c(\d+)v(\d+)/g);
+    if (!matches) {
+      return [];
+    }
+    // Map each found pattern to its numeric components
+    const parts: number[] = matches.flatMap((match) => {
+      const result = /c(\d+)v(\d+)/.exec(match);
+      if (!result) return [];
+      const [, cPart, vPart] = result;
+      return [parseInt(cPart, 10), parseInt(vPart, 10)]; // Convert to numbers for proper comparison
+    });
+
+    // Extract m<num> part
+    const mPartMatch = str.match(/m(\d+)$/);
+    if (mPartMatch) {
+      parts.push(parseInt(mPartMatch[1], 10)); // Add m<num> part as a number
+    }
+    return parts;
+  }
+
+  return accessors.sort((a: string, b: string): number => {
+    const partsA = parseParts(a);
+    const partsB = parseParts(b);
+
+    // Compare each part until a difference is found
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const partA = partsA[i] || 0; // Default to 0 if undefined
+      const partB = partsB[i] || 0; // Default to 0 if undefined
+      if (partA !== partB) {
+        return partA - partB;
+      }
+    }
+
+    // If all parts are equal, consider them equal
+    return 0;
+  });
 }
 
 /**
@@ -412,7 +272,7 @@ export function getSortForAccessor(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
 ): {
-  where: V1Expression;
+  where?: V1Expression;
   sortPivotBy: V1MetricsViewAggregationSort[];
   timeRange: TimeRangeString;
 } {
@@ -426,7 +286,6 @@ export function getSortForAccessor(
   // Return un-changed filter if no sorting is applied
   if (config.pivot?.sorting?.length === 0) {
     return {
-      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -445,7 +304,6 @@ export function getSortForAccessor(
       },
     ];
     return {
-      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -460,7 +318,6 @@ export function getSortForAccessor(
       },
     ];
     return {
-      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -485,19 +342,27 @@ export function getSortForAccessor(
         return createInExpression(columnDimensionName, [value]);
       })
       .filter((colFilter) => {
-        if (colFilter.cond?.exprs?.[0].ident === config.time.timeDimension) {
+        if (
+          isTimeDimension(
+            colFilter.cond?.exprs?.[0].ident,
+            config.time.timeDimension,
+          )
+        ) {
           timeFilters.push({
             timeStart: colFilter.cond?.exprs?.[1].val as string,
-            interval: config.time.interval,
+            interval: getTimeGrainFromDimension(
+              colFilter.cond?.exprs?.[0].ident as string,
+            ),
           });
           return false;
         } else return true;
       });
   }
 
-  const filterForSort: V1Expression = createAndExpression(colDimensionFilters);
-  const mergedFilter = mergeFilters(config.whereFilter, filterForSort);
-
+  let filterForSort: V1Expression | undefined;
+  if (colDimensionFilters.length) {
+    filterForSort = createAndExpression(colDimensionFilters);
+  }
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
   sortPivotBy = [
@@ -508,7 +373,7 @@ export function getSortForAccessor(
   ];
 
   return {
-    where: mergedFilter,
+    where: filterForSort,
     sortPivotBy,
     timeRange,
   };

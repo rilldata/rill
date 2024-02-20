@@ -37,7 +37,7 @@ sql: SELECT * FROM read_csv('s3://bucket/path.csv')
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", "duckdb", nil)
+	p, err := Parse(ctx, repo, "", "", "duckdb", nil)
 	require.NoError(t, err)
 
 	cs, err := p.AnalyzeConnectors(ctx)

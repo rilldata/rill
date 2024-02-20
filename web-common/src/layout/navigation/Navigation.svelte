@@ -5,12 +5,16 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
-  import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
+  import SourceAssets from "@rilldata/web-common/features/sources/navigation/SourceAssets.svelte";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
+  import TableAssets from "../../features/tables/TableAssets.svelte";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../../features/tables/selectors";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
@@ -18,17 +22,20 @@
 
   /** FIXME: come up with strong defaults here when needed */
   const navigationLayout =
-    (getContext("rill:app:navigation-layout") as Writable<{
-      value: number;
-      visible: boolean;
-    }>) || writable({ value: DEFAULT_NAV_WIDTH, visible: true });
+    getContext<
+      Writable<{
+        value: number;
+        visible: boolean;
+      }>
+    >("rill:app:navigation-layout") ||
+    writable({ value: DEFAULT_NAV_WIDTH, visible: true });
 
   const navigationWidth =
-    (getContext("rill:app:navigation-width-tween") as Readable<number>) ||
+    getContext<Readable<number>>("rill:app:navigation-width-tween") ||
     writable(DEFAULT_NAV_WIDTH);
 
   const navVisibilityTween =
-    (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
+    getContext<Readable<number>>("rill:app:navigation-visibility-tween") ||
     tweened(0, { duration: 50 });
 
   const { readOnly } = featureFlags;
@@ -36,6 +43,11 @@
   let previousWidth: number;
 
   $: isModelerEnabled = $readOnly === false;
+
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
 
   function handleResize(
     e: UIEvent & {
@@ -101,7 +113,12 @@
         <ProjectTitle />
         {#if isModelerEnabled}
           <TableAssets />
-          <ModelAssets />
+          {#if olapConnector === "duckdb"}
+            <SourceAssets />
+          {/if}
+          {#if $isModelingSupportedForCurrentOlapDriver.data}
+            <ModelAssets />
+          {/if}
         {/if}
         <DashboardAssets />
         {#if isModelerEnabled}

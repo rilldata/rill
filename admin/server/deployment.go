@@ -196,25 +196,12 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	if req.For != nil {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
-			attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
-			user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
-			// if email is not found in the database, we assume it is a non-admin user
-			if errors.Is(err, database.ErrNotFound) {
-				attr = map[string]any{
-					"email":  forVal.UserEmail,
-					"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
-					"admin":  false,
-				}
-				break
-			}
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -313,25 +300,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	if req.For != nil {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
-			attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		case *adminv1.GetIFrameRequest_UserEmail:
-			user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
-			// if email is not found in the database, we assume it is a non-admin user
-			if errors.Is(err, database.ErrNotFound) {
-				attr = map[string]any{
-					"email":  forVal.UserEmail,
-					"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
-					"admin":  false,
-				}
-				break
-			}
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -403,7 +377,37 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}, nil
 }
 
-func (s *Server) getAttributesFor(ctx context.Context, userID, orgID, projID string) (map[string]any, error) {
+// getAttributesFor returns a map of attributes for a given user and project.
+// The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
+// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
+func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, error) {
+	if userID == "" && userEmail == "" {
+		return nil, errors.New("must provide either userID or userEmail")
+	}
+
+	if userEmail != "" {
+		if userID != "" {
+			return nil, errors.New("must provide either userID or userEmail, not both")
+		}
+
+		user, err := s.admin.DB.FindUserByEmail(ctx, userEmail)
+		if err != nil {
+			// For user attributes, we do not require the email to exist as a Rill user.
+			// For example, the attributes may be used for a dashboard embedded as an iframe on a third-party website.
+			// For these cases, we return attributes that present the email as a non-admin user.
+			if errors.Is(err, database.ErrNotFound) {
+				return map[string]any{
+					"email":  userEmail,
+					"domain": userEmail[strings.LastIndex(userEmail, "@")+1:],
+					"admin":  false,
+				}, nil
+			}
+			return nil, err
+		}
+
+		userID = user.ID
+	}
+
 	forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, userID)
 	if err != nil {
 		return nil, err
@@ -418,5 +422,6 @@ func (s *Server) getAttributesFor(ctx context.Context, userID, orgID, projID str
 	if err != nil {
 		return nil, err
 	}
+
 	return attr, nil
 }

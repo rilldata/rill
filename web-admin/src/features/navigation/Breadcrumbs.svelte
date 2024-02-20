@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
   import type {
     V1MetricsViewSpec,
     V1Resource,
@@ -14,11 +15,12 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import { useDashboards } from "../dashboards/listing/selectors";
-  import { LOCAL_STORAGE_ACTIVE_ORG_KEY } from "../organizations/activeOrg";
+  import { getActiveOrgLocalStorageKey } from "../organizations/active-org/local-storage";
   import { useReports } from "../scheduled-reports/selectors";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
   import {
+    isAlertPage,
     isDashboardPage,
     isOrganizationPage,
     isProjectPage,
@@ -39,7 +41,10 @@
   });
   $: onOrganizationPage = isOrganizationPage($page);
   async function onOrgChange(org: string) {
-    localStorage.setItem(LOCAL_STORAGE_ACTIVE_ORG_KEY, org);
+    const activeOrgLocalStorageKey = getActiveOrgLocalStorageKey(
+      $user.data?.user?.id,
+    );
+    localStorage.setItem(activeOrgLocalStorageKey, org);
     await goto(`/${org}`);
   }
 
@@ -72,6 +77,11 @@
   $: reportName = $page.params.report;
   $: reports = useReports(instanceId);
   $: onReportPage = isReportPage($page);
+
+  // Alert breadcrumb
+  $: alertName = $page.params.alert;
+  $: alerts = useAlerts(instanceId);
+  $: onAlertPage = isAlertPage($page);
 </script>
 
 <nav>
@@ -142,6 +152,21 @@
         onSelectMenuOption={(report) =>
           goto(`/${orgName}/${projectName}/-/reports/${report}`)}
         isCurrentPage={onReportPage}
+      />
+    {/if}
+    {#if alertName}
+      <span class="text-gray-600">/</span>
+      <BreadcrumbItem
+        label={alertName}
+        href={`/${orgName}/${projectName}/-/alerts/${alertName}`}
+        menuOptions={$alerts.data?.resources.map((resource) => ({
+          key: resource.meta.name.name,
+          main: resource.alert.spec.title || resource.meta.name.name,
+        }))}
+        menuKey={alertName}
+        onSelectMenuOption={(alert) =>
+          goto(`/${orgName}/${projectName}/-/alerts/${alert}`)}
+        isCurrentPage={onAlertPage}
       />
     {/if}
   </ol>

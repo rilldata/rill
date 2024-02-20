@@ -967,6 +967,11 @@ export class MetricsViewAggregationDimension extends Message<MetricsViewAggregat
    */
   timeZone = "";
 
+  /**
+   * @generated from field: string alias = 4;
+   */
+  alias = "";
+
   constructor(data?: PartialMessage<MetricsViewAggregationDimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -978,6 +983,7 @@ export class MetricsViewAggregationDimension extends Message<MetricsViewAggregat
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "alias", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationDimension {

@@ -134,42 +134,38 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().Var(printer.NewFormatValue(printer.Human, &format), "format", `Output format (options: "human", "json", "csv")`)
+	rootCmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the cloud API")
+	if !cfg.IsDev() {
+		if err := rootCmd.PersistentFlags().MarkHidden("api-url"); err != nil {
+			panic(err)
+		}
+	}
+	rootCmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the cloud API")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
 	// Add sub-commands
-	rootCmd.AddCommand(start.StartCmd(ch))
-	rootCmd.AddCommand(admin.AdminCmd(ch))
-	rootCmd.AddCommand(runtime.RuntimeCmd(ch))
-	rootCmd.AddCommand(docs.DocsCmd(ch, rootCmd))
-	rootCmd.AddCommand(completionCmd)
-	rootCmd.AddCommand(verifyInstallCmd(ch))
-	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(upgrade.UpgradeCmd(ch))
-	rootCmd.AddCommand(whoami.WhoamiCmd(ch))
-	rootCmd.AddCommand(devtool.DevtoolCmd(ch))
-
-	// Add sub-commands for admin
-	// (This allows us to add persistent flags that apply only to the admin-related commands.)
-	adminCmds := []*cobra.Command{
+	rootCmd.AddCommand(
+		start.StartCmd(ch),
+		deploy.DeployCmd(ch),
+		env.EnvCmd(ch),
+		user.UserCmd(ch),
 		org.OrgCmd(ch),
 		project.ProjectCmd(ch),
-		deploy.DeployCmd(ch),
-		user.UserCmd(ch),
-		env.EnvCmd(ch),
+		service.ServiceCmd(ch),
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),
+		whoami.WhoamiCmd(ch),
+		docs.DocsCmd(ch, rootCmd),
+		completionCmd,
+		versioncmd.VersionCmd(),
+		upgrade.UpgradeCmd(ch),
 		sudo.SudoCmd(ch),
-		service.ServiceCmd(ch),
-	}
-	for _, cmd := range adminCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
-		if !cfg.IsDev() {
-			if err := cmd.PersistentFlags().MarkHidden("api-url"); err != nil {
-				panic(err)
-			}
-		}
-		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
-		rootCmd.AddCommand(cmd)
-	}
+		devtool.DevtoolCmd(ch),
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
+		verifyInstallCmd(ch),
+	)
+
 	return rootCmd.ExecuteContext(ctx)
 }

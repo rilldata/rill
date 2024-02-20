@@ -8,7 +8,8 @@
     | "highlighted"
     | "text"
     | "link"
-    | "brand";
+    | "brand"
+    | "add";
 
   export let type: ButtonType = "primary";
   export let status: "info" | "error" = "info";
@@ -24,6 +25,7 @@
   export let small = false;
   export let noStroke = false;
   export let dashed = false;
+  export let rounded = false;
   export let builders: Builder[] = [];
 
   const dispatch = createEventDispatcher();
@@ -45,6 +47,7 @@
   class:small
   class:dashed
   class:compact
+  class:rounded
   class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
@@ -63,11 +66,7 @@
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
-    @apply px-3 h-7 min-h-[28px];
-  }
-
-  button:focus {
-    @apply outline-none ring-2 ring-slate-800;
+    @apply px-3 h-7 min-h-[28px] cursor-pointer;
   }
 
   button:disabled {
@@ -98,11 +97,15 @@
 
   .secondary:hover,
   .secondary:disabled,
-  .secondary.selected {
+  .secondary.selected,
+  .add:hover,
+  .add:disabled,
+  .add.selected {
     @apply bg-slate-100;
   }
 
-  .secondary:active {
+  .secondary:active,
+  .add:active {
     @apply bg-slate-200;
   }
 
@@ -150,6 +153,7 @@
     @apply text-ellipsis overflow-hidden whitespace-nowrap flex-grow-0 flex-shrink-0;
   }
 
+  .rounded,
   .circle {
     @apply rounded-full;
   }
@@ -195,6 +199,20 @@
     @apply bg-blue-700;
   }
 
+  /* TEXT STYLES */
+
+  .text {
+    @apply px-0 font-medium text-slate-600;
+  }
+
+  .text:hover {
+    @apply text-primary-700;
+  }
+
+  .text:active {
+    @apply text-primary-800;
+  }
+
   /* TWEAKS */
 
   .small {
@@ -220,5 +238,14 @@
 
   .dashed {
     @apply border border-dashed;
+  }
+
+  /* ADD BUTTON STYLES */
+
+  .add {
+    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply flex items-center justify-center;
+    @apply border border-dashed border-slate-300;
+    @apply bg-white px-0;
   }
 </style>

@@ -3,7 +3,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
-  import { LOCAL_STORAGE_ACTIVE_ORG_KEY } from "../organizations/activeOrg";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
 
@@ -21,9 +20,6 @@
   }
 
   function handleLogOut() {
-    // Clear user-specific items from localStorage
-    localStorage.removeItem(LOCAL_STORAGE_ACTIVE_ORG_KEY);
-
     // Create a login URL that redirects back to the current page
     const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
 

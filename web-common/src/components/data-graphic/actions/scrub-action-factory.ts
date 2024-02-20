@@ -17,7 +17,7 @@
  */
 
 import { get, writable } from "svelte/store";
-import { DEFAULT_COORDINATES } from "../constants";
+import { DEFAULT_NUMBER_COORDINATES } from "../constants";
 
 /** converts an event to a simplified object
  * with only the needed properties
@@ -111,8 +111,8 @@ export function createScrubAction({
   moveEventName = undefined,
 }: ScrubActionFactoryArguments) {
   const coordinates = writable({
-    start: DEFAULT_COORDINATES,
-    stop: DEFAULT_COORDINATES,
+    start: DEFAULT_NUMBER_COORDINATES,
+    stop: DEFAULT_NUMBER_COORDINATES,
   });
 
   /** local plot bound state */
@@ -148,8 +148,8 @@ export function createScrubAction({
     scrubAction(node: Node): ScrubAction {
       function reset() {
         coordinates.set({
-          start: DEFAULT_COORDINATES,
-          stop: DEFAULT_COORDINATES,
+          start: DEFAULT_NUMBER_COORDINATES,
+          stop: DEFAULT_NUMBER_COORDINATES,
         });
         isScrubbing.set(false);
       }
@@ -163,7 +163,7 @@ export function createScrubAction({
         node.addEventListener(moveEvent, onScrub);
         coordinates.set({
           start: setCoordinateBounds(event),
-          stop: DEFAULT_COORDINATES,
+          stop: DEFAULT_NUMBER_COORDINATES,
         });
         isScrubbing.set(true);
         if (startEventName) {

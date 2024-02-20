@@ -20,7 +20,7 @@
   export let xMax: Date | undefined = undefined;
   export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
-  export let dimensionValue: string;
+  export let dimensionValue: string | undefined;
   export let isHovering: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
@@ -52,7 +52,7 @@
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
 
-  $: yMaxStore.set(yExtentMax);
+  $: if (typeof yExtentMax === "number") yMaxStore.set(yExtentMax);
   const timeRangeKey = writable(`${xMin}-${xMax}`);
 
   const previousTimeRangeKey = previousValueStore(timeRangeKey);
@@ -71,7 +71,9 @@
   }
 
   $: delay =
-    $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
+    $previousTimeRangeKey === $timeRangeKey &&
+    yExtentMax &&
+    $previousYMax < yExtentMax
       ? 100
       : 0;
 </script>

@@ -9,7 +9,7 @@ import type { DashboardMutables } from "./types";
 export const CONTEXT_COL_MAX_WIDTH = 100;
 
 export const setContextColumn = (
-  { dashboard }: DashboardMutables,
+  { dashboard, persistentDashboardStore }: DashboardMutables,
 
   contextColumn: LeaderboardContextColumn,
 ) => {
@@ -40,6 +40,9 @@ export const setContextColumn = (
   // the sort type to match the new context column
   if (dashboard.dashboardSortType === initialSort) {
     dashboard.dashboardSortType = sortTypeForContextColumnType(contextColumn);
+    persistentDashboardStore.updateDashboardSortType(
+      dashboard.dashboardSortType,
+    );
   }
 };
 

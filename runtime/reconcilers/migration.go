@@ -109,8 +109,9 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 	state := self.Resource.(*runtimev1.Resource_Migration).Migration.State
 
 	sql, err := compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-		User:      map[string]interface{}{},
-		Variables: inst.ResolveVariables(),
+		Environment: inst.Environment,
+		User:        map[string]interface{}{},
+		Variables:   inst.ResolveVariables(),
 		ExtraProps: map[string]interface{}{
 			"version": version,
 		},

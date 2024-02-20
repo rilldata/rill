@@ -1,86 +1,60 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { createQueryServiceMetricsViewRows } from "@rilldata/web-common/runtime-client";
   import PivotDrag from "./PivotDrag.svelte";
+  import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import { PivotChipType } from "./types";
 
   const stateManagers = getStateManagers();
   const {
-    dashboardStore,
     selectors: {
-      measures: { visibleMeasures },
-      dimensions: { visibleDimensions },
+      pivot: { measures, dimensions, columns, rows },
     },
-    metricsViewName,
-    runtime,
   } = stateManagers;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  $: tableQuery = createQueryServiceMetricsViewRows(
-    $runtime?.instanceId,
-    $metricsViewName,
-    {
-      limit: 1,
-      where: sanitiseExpression($dashboardStore.whereFilter, undefined),
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-    },
-    {
-      query: {
-        enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
-      },
-    },
+  $: allTimeGrains = getAllowedTimeGrains(
+    new Date($timeControlsStore.timeStart!),
+    new Date($timeControlsStore.timeEnd!),
+  ).map((tgo) => {
+    return {
+      id: tgo.grain,
+      title: tgo.label,
+      type: PivotChipType.Time,
+    };
+  });
+
+  $: usedTimeGrains = $columns.dimension
+    .filter((m) => m.type === PivotChipType.Time)
+    .concat($rows.dimension.filter((d) => d.type === PivotChipType.Time));
+
+  $: timeGrainOptions = allTimeGrains.filter(
+    (tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id),
   );
-
-  $: columnsInTable = $dashboardStore?.pivot?.columns;
-  $: rowsInTable = $dashboardStore?.pivot?.columns;
-
-  // Todo: Move to external selectors
-  $: measures = $visibleMeasures
-    .filter((m) => !columnsInTable.includes(m.name as string))
-    .map((measure) => ({
-      id: measure.name || "Unknown",
-      title: measure.label || measure.name || "Unknown",
-      type: PivotChipType.Measure,
-    }));
-
-  $: dimensions = $visibleDimensions
-    .filter((d) => !rowsInTable.includes((d.name ?? d.column) as string))
-    .map((dimension) => ({
-      id: dimension.name || dimension.column || "Unknown",
-      title: dimension.label || dimension.name || dimension.column || "Unknown",
-      type: PivotChipType.Dimension,
-    }));
-
-  $: timeDimesions = (
-    $tableQuery?.data?.meta?.filter((d) => d.type === "CODE_TIMESTAMP") ?? []
-  ).map((t) => ({
-    id: t.name ?? "Unknown",
-    title: t.name ?? "Unknown",
-    type: PivotChipType.Time,
-  }));
 </script>
 
 <div class="sidebar">
-  <div class="container">
-    <PivotDrag title="Time" items={timeDimesions} />
-    <PivotDrag title="Measures" items={measures} />
-    <PivotDrag title="Dimensions" items={dimensions} />
-  </div>
+  <PivotDrag title="Time" items={timeGrainOptions} />
+
+  <span class="splitter" />
+
+  <PivotDrag title="Measures" items={$measures} />
+
+  <span class="splitter" />
+
+  <PivotDrag title="Dimensions" items={$dimensions} />
 </div>
 
 <style lang="postcss">
   .sidebar {
-    @apply h-full min-w-fit py-2 p-4;
-    @apply overflow-y-auto;
+    @apply flex flex-col items-start;
+    @apply h-full min-w-60 w-fit;
     @apply bg-white border-r border-slate-200;
+    @apply overflow-hidden;
   }
 
-  .container {
-    @apply flex flex-col gap-y-4;
-    @apply min-w-[120px];
+  .splitter {
+    @apply w-full h-[1.5px] bg-gray-200;
   }
 </style>

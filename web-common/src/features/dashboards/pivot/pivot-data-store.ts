@@ -1,13 +1,13 @@
+import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
-import {
-  V1TimeGrain,
-  type V1MetricsViewAggregationResponse,
-  type V1MetricsViewAggregationResponseDataItem,
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import type {
+  V1MetricsViewAggregationResponse,
+  V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query/build/lib/types";
 import type { ColumnDef } from "@tanstack/svelte-table";
@@ -21,26 +21,28 @@ import { sliceColumnAxesDataForDef } from "./pivot-infinite-scroll";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
+  getTotalsRowQuery,
 } from "./pivot-queries";
 import {
+  getTotalsRow,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
-  getDimensionsInPivotColumns,
-  getDimensionsInPivotRow,
   getFilterForPivotTable,
-  getMeasuresInPivotColumns,
   getPivotConfigKey,
   getSortForAccessor,
+  getTimeForQuery,
+  getTimeGrainFromDimension,
   getTotalColumnCount,
-  reconcileMissingDimensionValues,
+  isTimeDimension,
 } from "./pivot-utils";
-import type {
-  PivotDataRow,
-  PivotDataStore,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
+import {
+  PivotChipType,
+  type PivotDataRow,
+  type PivotDataStore,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
 } from "./types";
 
 /**
@@ -48,35 +50,25 @@ import type {
  */
 function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetricsView(ctx), ctx.dashboardStore, useTimeControlStore(ctx)],
-    ([metricsView, dashboardStore, timeControls]) => {
-      const { rows, columns } = dashboardStore.pivot;
-
-      let interval: AvailableTimeGrain = "TIME_GRAIN_HOUR";
-      const existingTimeGrain = timeControls?.selectedTimeRange?.interval;
-
-      if (existingTimeGrain) {
-        if (
-          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
-          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_MILLISECOND &&
-          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_SECOND
-        )
-          interval = existingTimeGrain;
-      }
-
+    [
+      useMetricsView(ctx),
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      measureFilterResolutionsStore(ctx),
+    ],
+    ([metricsView, dashboardStore, timeControls, measureFilterResolution]) => {
       const time: PivotTimeConfig = {
         timeStart: timeControls.timeStart,
         timeEnd: timeControls.timeEnd,
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
-        interval,
       };
 
       if (
-        (rows.length == 0 && columns.length == 0) ||
         !metricsView.data?.measures ||
         !metricsView.data?.dimensions ||
-        !timeControls.ready
+        !timeControls.ready ||
+        !measureFilterResolution.ready
       ) {
         return {
           measureNames: [],
@@ -85,22 +77,31 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           allMeasures: [],
           allDimensions: [],
           whereFilter: dashboardStore.whereFilter,
+          measureFilter: measureFilterResolution,
           pivot: dashboardStore.pivot,
           time,
         };
       }
-      const measureNames = getMeasuresInPivotColumns(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
-      );
-      const rowDimensionNames = getDimensionsInPivotRow(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+
+      const measureNames = dashboardStore.pivot.columns.measure.map(
+        (m) => m.id,
       );
 
-      const colDimensionNames = getDimensionsInPivotColumns(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+      // This is temporary until we have a better way to handle time grains
+      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+        if (d.type === PivotChipType.Time) {
+          return `${time.timeDimension}_rill_${d.id}`;
+        }
+        return d.id;
+      });
+
+      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
+        (d) => {
+          if (d.type === PivotChipType.Time) {
+            return `${time.timeDimension}_rill_${d.id}`;
+          }
+          return d.id;
+        },
       );
 
       return {
@@ -110,6 +111,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
         allMeasures: metricsView.data?.measures,
         allDimensions: metricsView.data?.dimensions,
         whereFilter: dashboardStore.whereFilter,
+        measureFilter: measureFilterResolution,
         pivot: dashboardStore.pivot,
         time,
       };
@@ -129,6 +131,7 @@ export function createTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string | undefined,
   columnDimensionAxesData: Record<string, string[]> | undefined,
+  totalsRow: PivotDataRow,
   rowDimensionValues: string[],
 ) {
   let allDimensions = config.colDimensionNames;
@@ -138,22 +141,28 @@ export function createTableCellQuery(
 
   const { time } = config;
   const dimensionBody = allDimensions.map((dimension) => {
-    if (dimension === time.timeDimension) {
+    if (isTimeDimension(dimension, time.timeDimension)) {
       return {
-        name: dimension,
-        timeGrain: time.interval,
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(dimension),
         timeZone: time.timeZone,
+        alias: dimension,
       };
     } else return { name: dimension };
   });
+  const measureBody = config.measureNames.map((m) => ({ name: m }));
 
-  const filterForInitialTable = getFilterForPivotTable(
-    config,
-    columnDimensionAxesData,
-    rowDimensionValues,
-    true,
-    anchorDimension,
-  );
+  const { filters: filterForInitialTable, timeFilters } =
+    getFilterForPivotTable(
+      config,
+      columnDimensionAxesData,
+      totalsRow,
+      rowDimensionValues,
+      true,
+      anchorDimension,
+    );
+
+  const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
   const mergedFilter = mergeFilters(filterForInitialTable, config.whereFilter);
 
@@ -165,11 +174,14 @@ export function createTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    config.measureNames,
+    measureBody,
     dimensionBody,
     mergedFilter,
+    config.measureFilter,
     sortBy,
-    "10000",
+    "5000",
+    "0",
+    timeRange,
   );
 }
 
@@ -180,6 +192,7 @@ export function createTableCellQuery(
  */
 let lastPivotData: PivotDataRow[] = [];
 let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
+let lastTotalColumns: number = 0;
 
 /**
  * The expanded table has to iterate over itself to find nested dimension values
@@ -222,23 +235,29 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
    */
   return derived(getPivotConfig(ctx), (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
-
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)
     ) {
+      const isFetching =
+        config.pivot.columns.measure.length > 0 ||
+        (config.pivot.rows.dimension.length > 0 &&
+          !config.pivot.columns.dimension.length);
       return configSet({
-        isFetching: false,
+        isFetching: isFetching,
         data: [],
         columnDef: [],
         assembled: false,
         totalColumns: 0,
       });
     }
+    const measureBody = measureNames.map((m) => ({ name: m }));
+
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       config,
       colDimensionNames,
+      measureBody,
       config.whereFilter,
     );
 
@@ -256,89 +275,135 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         }
         const anchorDimension = rowDimensionNames[0];
 
-        const { where, sortPivotBy, timeRange } = getSortForAccessor(
+        const {
+          where: measureWhere,
+          sortPivotBy,
+          timeRange,
+        } = getSortForAccessor(
           anchorDimension,
           config,
           columnDimensionAxes?.data,
         );
 
-        const totalColumns = getTotalColumnCount(columnDimensionAxes?.data);
+        let sortFilteredMeasureBody = measureBody;
+        if (sortPivotBy.length && measureWhere) {
+          const accessor = sortPivotBy[0]?.name;
+          sortFilteredMeasureBody = measureBody.map((m) => {
+            if (m.name === accessor) return { ...m, filter: measureWhere };
+            return m;
+          });
+        }
 
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
-          where,
+          sortFilteredMeasureBody,
+          config.whereFilter,
           sortPivotBy,
           timeRange,
         );
 
-        /**
-         * We need to query the unsorted row dimension values because the sorted
-         * row dimension values may not have all the dimensions values
-         */
-        const rowDimensionUnsortedAxisQuery = getAxisForDimensions(
-          ctx,
-          config,
-          rowDimensionNames.slice(0, 1),
-          config.whereFilter,
-        );
+        let globalTotalsQuery:
+          | Readable<null>
+          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          readable(null);
+        let totalsRowQuery:
+          | Readable<null>
+          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          readable(null);
+        if (rowDimensionNames.length && measureNames.length) {
+          globalTotalsQuery = createPivotAggregationRowQuery(
+            ctx,
+            config.measureNames.map((m) => ({ name: m })),
+            [],
+            config.whereFilter,
+            config.measureFilter,
+            [],
+            "5000", // Using 5000 for cache hit
+          );
+        }
+        if (
+          (rowDimensionNames.length || colDimensionNames.length) &&
+          measureNames.length
+        ) {
+          totalsRowQuery = getTotalsRowQuery(
+            ctx,
+            config,
+            columnDimensionAxes?.data,
+          );
+        }
 
         /**
          * Derive a store from axes queries
          */
         return derived(
-          [rowDimensionAxisQuery, rowDimensionUnsortedAxisQuery],
-          ([rowDimensionAxes, rowDimensionUnsortedAxis], axesSet) => {
+          [rowDimensionAxisQuery, globalTotalsQuery, totalsRowQuery],
+          (
+            [rowDimensionAxes, globalTotalsResponse, totalsRowResponse],
+            axesSet,
+          ) => {
             if (
-              rowDimensionAxes?.isFetching ||
-              rowDimensionUnsortedAxis?.isFetching
+              (globalTotalsResponse !== null &&
+                globalTotalsResponse?.isFetching) ||
+              (totalsRowResponse !== null && totalsRowResponse?.isFetching) ||
+              rowDimensionAxes?.isFetching
             ) {
               return axesSet({
                 isFetching: true,
                 data: lastPivotData,
                 columnDef: lastPivotColumnDef,
                 assembled: false,
-                totalColumns,
+                totalColumns: lastTotalColumns,
               });
             }
 
-            const { rows: rowDimensionValues, totals: rowTotals } =
-              reconcileMissingDimensionValues(
-                anchorDimension,
-                rowDimensionAxes,
-                rowDimensionUnsortedAxis,
-              );
-
-            let columnDef = getColumnDefForPivot(
+            const rowDimensionValues =
+              rowDimensionAxes?.data?.[anchorDimension] || [];
+            const rowTotals = rowDimensionAxes?.totals?.[anchorDimension] || [];
+            const totalsRow = getTotalsRow(
               config,
               columnDimensionAxes?.data,
+              totalsRowResponse?.data?.data,
+              globalTotalsResponse?.data?.data,
             );
+
+            const totalColumns = getTotalColumnCount(totalsRow);
 
             let initialTableCellQuery:
               | Readable<null>
               | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
               readable(null);
 
+            let columnDef: ColumnDef<PivotDataRow>[] = [];
             if (colDimensionNames.length || !rowDimensionNames.length) {
-              const slicedAxesDataForPage = sliceColumnAxesDataForDef(
-                colDimensionNames,
+              const slicedAxesDataForDef = sliceColumnAxesDataForDef(
+                config,
                 columnDimensionAxes?.data,
-                config.pivot.columnPage,
-                measureNames.length,
+                totalsRow,
               );
 
-              columnDef = getColumnDefForPivot(config, slicedAxesDataForPage);
+              columnDef = getColumnDefForPivot(
+                config,
+                slicedAxesDataForDef,
+                totalsRow,
+              );
 
               initialTableCellQuery = createTableCellQuery(
                 ctx,
                 config,
                 rowDimensionNames[0],
                 columnDimensionAxes?.data,
+                totalsRow,
                 rowDimensionValues,
               );
+            } else {
+              columnDef = getColumnDefForPivot(
+                config,
+                columnDimensionAxes?.data,
+                totalsRow,
+              );
             }
-
             /**
              * Derive a store from initial table cell data query
              */
@@ -372,8 +437,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     rowTotals,
                     cellData,
                   );
-
-                  pivotData = tableDataWithCells;
+                  pivotData = structuredClone(tableDataWithCells);
                 }
 
                 const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
@@ -381,55 +445,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   config,
                   pivotData,
                   columnDimensionAxes?.data,
+                  totalsRow,
                 );
-                let globalTotalsQuery:
-                  | Readable<null>
-                  | CreateQueryResult<
-                      V1MetricsViewAggregationResponse,
-                      unknown
-                    > = readable(null);
-                let totalsRowQuery:
-                  | Readable<null>
-                  | CreateQueryResult<
-                      V1MetricsViewAggregationResponse,
-                      unknown
-                    > = readable(null);
-                if (rowDimensionNames.length && measureNames.length) {
-                  /** In some cases the totals query would be the same query as that
-                   * for the initial table cell data. With svelte query cache we would not hit the
-                   * API twice
-                   */
-                  globalTotalsQuery = createPivotAggregationRowQuery(
-                    ctx,
-                    config.measureNames,
-                    [],
-                    config.whereFilter,
-                    [],
-                    "10000", // Using 10000 for cache hit
-                  );
-                  totalsRowQuery = createTableCellQuery(
-                    ctx,
-                    config,
-                    undefined,
-                    columnDimensionAxes?.data,
-                    [],
-                  );
-                }
 
                 /**
                  * Derive a store based on expanded rows and totals
                  */
                 return derived(
-                  [
-                    globalTotalsQuery,
-                    totalsRowQuery,
-                    expandedSubTableCellQuery,
-                  ],
-                  ([
-                    globalTotalsResponse,
-                    totalsRowResponse,
-                    expandedRowMeasureValues,
-                  ]) => {
+                  [expandedSubTableCellQuery],
+                  ([expandedRowMeasureValues]) => {
                     prepareNestedPivotData(pivotData, rowDimensionNames);
                     let tableDataExpanded: PivotDataRow[] = pivotData;
                     if (expandedRowMeasureValues?.length) {
@@ -447,29 +471,10 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     }
                     lastPivotData = tableDataExpanded;
                     lastPivotColumnDef = columnDef;
+                    lastTotalColumns = totalColumns;
 
                     let assembledTableData = tableDataExpanded;
                     if (rowDimensionNames.length && measureNames.length) {
-                      const totalsRowData = totalsRowResponse?.data?.data;
-
-                      const globalTotalsData =
-                        globalTotalsResponse?.data?.data || [];
-                      const totalsRowTable = reduceTableCellDataIntoRows(
-                        config,
-                        "",
-                        [],
-                        columnDimensionAxes?.data || {},
-                        [],
-                        totalsRowData || [],
-                      );
-
-                      let totalsRow = totalsRowTable[0] || {};
-                      totalsRow[anchorDimension] = "Total";
-
-                      globalTotalsData.forEach((total) => {
-                        totalsRow = { ...total, ...totalsRow };
-                      });
-
                       assembledTableData = [totalsRow, ...tableDataExpanded];
                     }
 

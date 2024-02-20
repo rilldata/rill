@@ -1,9 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { test } from "../utils/test";
 
 test.describe("dimension and measure selectors", () => {
-  startRuntimeForEachTest();
   // dashboard test setup
   useDashboardFlowTestSetup();
 
@@ -12,15 +11,15 @@ test.describe("dimension and measure selectors", () => {
     await page.getByRole("menuitem", { name: "Total records" }).click();
     await page.getByRole("button", { name: "1 of 2 Measures" }).click();
 
-    await expect(page.getByText("Sum(bid_price) 300.6k")).toBeVisible();
+    await expect(page.getByText("Sum of Bid Price 300.6k")).toBeVisible();
     await expect(page.getByText("Total records 100.0k")).not.toBeVisible();
 
     await page.getByRole("button", { name: "1 of 2 Measures" }).click();
     await page.getByRole("menuitem", { name: "Total records" }).click();
-    await page.getByRole("menuitem", { name: "Sum(bid_price)" }).click();
+    await page.getByRole("menuitem", { name: "Sum of Bid Price" }).click();
     await page.getByRole("button", { name: "1 of 2 Measures" }).click();
 
-    await expect(page.getByText("Sum(bid_price) 300.6k")).not.toBeVisible();
+    await expect(page.getByText("Sum of Bid Price 300.6k")).not.toBeVisible();
     await expect(page.getByText("Total records 100.0k")).toBeVisible();
 
     await page.getByRole("button", { name: "All Dimensions" }).click();

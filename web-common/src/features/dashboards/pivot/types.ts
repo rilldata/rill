@@ -1,4 +1,4 @@
-import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
+import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -25,22 +25,36 @@ export type PivotDataStore = Readable<PivotDataState>;
 
 export interface PivotState {
   active: boolean;
-  rows: string[];
-  columns: string[];
+  columns: PivotColumns;
+  rows: PivotRows;
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
-  rowJoinType: "flat" | "nest";
+  rowJoinType: PivotRowJoinType;
 }
 
+export type PivotRowJoinType = "flat" | "nest";
+
+export type PivotColumns = {
+  measure: PivotChipData[];
+  dimension: PivotChipData[];
+};
+
+export type PivotRows = {
+  dimension: PivotChipData[];
+};
+
 export interface PivotDataRow {
-  [key: string]: string | number | PivotDataRow[] | undefined;
   subRows?: PivotDataRow[];
+
+  [key: string]: string | number | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {
   timeStart: string;
   interval: V1TimeGrain;
+  // Time end represents the start time of the last interval for a range
+  timeEnd?: string;
 }
 
 export interface PivotTimeConfig {
@@ -48,7 +62,6 @@ export interface PivotTimeConfig {
   timeEnd: string | undefined;
   timeZone: string;
   timeDimension: string;
-  interval: AvailableTimeGrain;
 }
 
 /**
@@ -61,6 +74,7 @@ export interface PivotDataStoreConfig {
   allMeasures: MetricsViewSpecMeasureV2[];
   allDimensions: MetricsViewSpecDimensionV2[];
   whereFilter: V1Expression;
+  measureFilter: ResolvedMeasureFilter;
   pivot: PivotState;
   time: PivotTimeConfig;
 }
@@ -122,7 +136,7 @@ export type PivotChipData = {
 };
 
 export enum PivotChipType {
-  Time = "Time",
-  Measure = "Measure",
-  Dimension = "Dimension",
+  Time = "time",
+  Measure = "measure",
+  Dimension = "dimension",
 }

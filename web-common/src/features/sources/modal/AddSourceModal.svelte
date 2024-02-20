@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
@@ -8,12 +8,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
   import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
-  import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
   import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
   import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";

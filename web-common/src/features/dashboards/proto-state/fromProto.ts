@@ -1,17 +1,28 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  FromProtoOperationMap,
+  FromProtoPivotRowJoinTypeMap,
+  FromProtoTimeGrainMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
   BOOLEANS,
   INTEGERS,
   isFloat,
 } from "@rilldata/web-common/lib/duckdb-data-types";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -21,20 +32,20 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
+import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
-  type MetricsViewSpecDimensionV2,
-  type StructTypeField,
+import type {
+  MetricsViewSpecDimensionV2,
+  StructTypeField,
   V1Expression,
   V1MetricsView,
-  type V1MetricsViewSpec,
-  type V1StructType,
-  V1TimeGrain,
+  V1MetricsViewSpec,
+  V1StructType,
 } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
@@ -107,7 +118,8 @@ export function getDashboardStateFromProto(
     ? fromTimeRangeProto(dashboard.timeRange)
     : undefined;
   if (dashboard.timeGrain && entity.selectedTimeRange) {
-    entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
+    entity.selectedTimeRange.interval =
+      FromProtoTimeGrainMap[dashboard.timeGrain];
   }
 
   if (dashboard.scrubRange) {
@@ -140,9 +152,8 @@ export function getDashboardStateFromProto(
   if (dashboard.pinIndex !== undefined) {
     entity.pinIndex = dashboard.pinIndex;
   }
-  if (dashboard.selectedTimezone) {
-    entity.selectedTimezone = dashboard.selectedTimezone;
-  }
+
+  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
@@ -175,6 +186,8 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
+
+  entity.pivot = fromPivotProto(dashboard, metricsView);
 
   return entity;
 }
@@ -284,6 +297,61 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   return selectedTimeRange;
 }
 
+function fromPivotProto(
+  dashboard: DashboardState,
+  metricsView: V1MetricsViewSpec,
+): PivotState {
+  const dimensionsMap = getMapFromArray(
+    metricsView.dimensions ?? [],
+    (d) => d.name,
+  );
+  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: dimensionsMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Dimension,
+  });
+  const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
+    grain: TimeGrain,
+  ) => ({
+    id: FromProtoTimeGrainMap[grain],
+    title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+    type: PivotChipType.Time,
+  });
+  const measuresMap = getMapFromArray(
+    metricsView.measures ?? [],
+    (m) => m.name,
+  );
+  const mapMeasure: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: measuresMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Measure,
+  });
+
+  return {
+    active: dashboard.pivotIsActive ?? false,
+    rows: {
+      dimension: [
+        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+        ...dashboard.pivotRowDimensions.map(mapDimension),
+      ],
+    },
+    columns: {
+      dimension: [
+        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
+        ...dashboard.pivotColumnDimensions.map(mapDimension),
+      ],
+      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
+    },
+    expanded: dashboard.pivotExpanded,
+    sorting: dashboard.pivotSort ?? [],
+    columnPage: dashboard.pivotColumnPage ?? 1,
+    rowJoinType:
+      FromProtoPivotRowJoinTypeMap[
+        dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
+      ],
+  };
+}
+
 function correctComparisonTimeRange(
   comparisonTimeRange: DashboardTimeControls,
 ) {
@@ -311,30 +379,4 @@ function correctComparisonTimeRange(
 
 function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
-}
-
-function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
-  switch (timeGrain) {
-    case TimeGrain.UNSPECIFIED:
-    default:
-      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-    case TimeGrain.MILLISECOND:
-      return V1TimeGrain.TIME_GRAIN_MILLISECOND;
-    case TimeGrain.SECOND:
-      return V1TimeGrain.TIME_GRAIN_SECOND;
-    case TimeGrain.MINUTE:
-      return V1TimeGrain.TIME_GRAIN_MINUTE;
-    case TimeGrain.HOUR:
-      return V1TimeGrain.TIME_GRAIN_HOUR;
-    case TimeGrain.DAY:
-      return V1TimeGrain.TIME_GRAIN_DAY;
-    case TimeGrain.WEEK:
-      return V1TimeGrain.TIME_GRAIN_WEEK;
-    case TimeGrain.MONTH:
-      return V1TimeGrain.TIME_GRAIN_MONTH;
-    case TimeGrain.QUARTER:
-      return V1TimeGrain.TIME_GRAIN_QUARTER;
-    case TimeGrain.YEAR:
-      return V1TimeGrain.TIME_GRAIN_YEAR;
-  }
 }
