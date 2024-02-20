@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -547,6 +548,14 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 	connectors, err := parser.AnalyzeConnectors(ctx)
 	if err != nil {
 		return
+	}
+
+	// Remove the default DuckDB connector we always add
+	for i, c := range connectors {
+		if c.Name == "duckdb" {
+			connectors = slices.Delete(connectors, i, i+1)
+			break
+		}
 	}
 
 	// Exit early if all connectors can be used anonymously

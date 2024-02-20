@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -150,6 +151,14 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	connectors, err := parser.AnalyzeConnectors(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors: %w", err)
+	}
+
+	// Remove the default DuckDB connector we always add
+	for i, c := range connectors {
+		if c.Name == "duckdb" {
+			connectors = slices.Delete(connectors, i, i+1)
+			break
+		}
 	}
 
 	// Exit early if all connectors can be used anonymously
