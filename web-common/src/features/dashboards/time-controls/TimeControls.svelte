@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetricsView,
     useModelHasTimeSeries,
@@ -19,7 +18,6 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     metricsExplorerStore,
     useDashboardStore,
@@ -37,7 +35,6 @@
 
   const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
-  const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange | undefined;
@@ -155,8 +152,6 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    // cancelDashboardQueries(queryClient, metricViewName);
-
     metricsExplorerStore.selectTimeRange(
       metricViewName,
       timeRange,

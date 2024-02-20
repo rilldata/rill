@@ -1,7 +1,7 @@
 <script lang="ts">
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+
   import {
     SortDirection,
     SortType,
@@ -136,8 +136,6 @@
   }
 
   function togglePin() {
-    // cancelDashboardQueries(queryClient, metricViewName);
-
     const pinIndex = $dashboardStore?.pinIndex;
     let newPinIndex = -1;
 
@@ -172,7 +170,6 @@
   isRowsEmpty={!rowHeaderLabels.length}
   {metricViewName}
   on:search={(e) => {
-    // cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
   }}
   on:toggle-all-search-items={() => toggleAllSearchItems()}

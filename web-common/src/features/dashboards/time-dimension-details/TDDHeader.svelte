@@ -12,7 +12,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
@@ -27,7 +26,6 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
@@ -42,7 +40,6 @@
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
 
-  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const {
@@ -102,12 +99,10 @@
   }
 
   function toggleFilterMode() {
-    // cancelDashboardQueries(queryClient, metricViewName);
     toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
-    // cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
   }
 
