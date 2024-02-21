@@ -2,7 +2,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragList from "./DragList.svelte";
   import type { PivotSidebarSection, PivotChipData } from "./types";
-  import { beforeUpdate } from "svelte";
+  import { afterUpdate } from "svelte";
 </script>
 
 <script lang="ts">
@@ -12,16 +12,11 @@
 
   let container: HTMLDivElement;
 
-  // beforeUpdate(() => {
-  //   if (!container) return;
-  //   calculateSize(container);
-  // });
-
-  $: if (container && items) {
-    items;
-
+  afterUpdate(() => {
+    if (!container) return;
+    console.log("bottom");
     calculateSize(container);
-  }
+  });
 
   function toggleCollapse() {
     collapsed = !collapsed;
