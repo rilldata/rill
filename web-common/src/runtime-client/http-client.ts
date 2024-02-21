@@ -52,8 +52,8 @@ async function maybeWaitForFreshJWT(jwt: JWT): Promise<JWT> {
   let jwtExpiresAt = jwt.receivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;
 
   while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > jwtExpiresAt) {
-    // Note: Rather than waiting, it could be even better to immediately fetch a new token here. However, in
-    // practice, the request for new token is already in flight. So to keep the code simpler, we just wait.
+    // Note: Rather than waiting, it could be even better to immediately fetch a new token here. Anyways, in
+    // practice, a request for new token is already in flight. So to start simpler, we just wait.
     await new Promise((resolve) =>
       setTimeout(resolve, CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL),
     );
