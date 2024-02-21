@@ -2,22 +2,23 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let index: number;
 
-  const {
-    selectors: {
-      measures: { allMeasures },
-    },
-  } = getStateManagers();
+  const metricsView = useMetricsView(getStateManagers());
 
-  $: measureOptions =
-    $allMeasures?.map((m) => ({
-      value: m.name as string,
-      label: m.label?.length ? m.label : m.expression,
-    })) ?? [];
+  $: measure = $metricsView.data?.measures?.find(
+    (m) => m.name === $form["measure"],
+  );
+  $: measureOptions = [
+    {
+      value: $form["measure"],
+      label: measure?.label?.length ? measure.label : measure?.expression,
+    },
+  ];
 
   const { form, errors } = formState;
 </script>
@@ -45,9 +46,9 @@
     value={"value"}
   />
   <InputV2
-    id="value"
     bind:value={$form["criteria"][index]["value"]}
     error={$errors["criteria"][index]["value"]}
+    id="value"
     placeholder={"0"}
   />
 </div>
