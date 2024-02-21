@@ -39,10 +39,7 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    const bisected = bisectData(x, "center", xAccessor, dimension?.data);
-    if (bisected === undefined)
-      return { y: null, fillClass: undefined, name: "" };
-    const y = bisected[yAccessor];
+    const y = bisectData(x, "center", xAccessor, dimension?.data)[yAccessor];
     return {
       y,
       fillClass: dimension?.fillClass,
