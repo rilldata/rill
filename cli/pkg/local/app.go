@@ -491,7 +491,7 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			// Send proxied request
 			resp, err := http.DefaultClient.Do(proxyReq)
 			if err != nil {
-				a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+				a.BaseLogger.Debug("failed to send telemetry", zap.Error(err))
 				w.WriteHeader(http.StatusOK)
 				return
 			}
