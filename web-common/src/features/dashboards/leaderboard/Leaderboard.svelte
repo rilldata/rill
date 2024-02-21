@@ -102,7 +102,16 @@
       {dimensionName}
       {hovered}
     />
-    {#if aboveTheFold || selectedBelowTheFold}
+    {#if $sortedQuery?.isError}
+      <div class="ml-[22px] flex p-2 gap-x-1 items-center">
+        <div class="text-gray-500">Unable to load leaderboard.</div>
+        <button
+          class="text-primary-500 hover:text-primary-600 font-medium"
+          disabled={$sortedQuery.isLoading}
+          on:click={() => $sortedQuery.refetch()}>Try again</button
+        >
+      </div>
+    {:else if aboveTheFold || selectedBelowTheFold}
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
@@ -119,16 +128,11 @@
               on:keydown
             />
           {/each}
-
           <hr />
         {/if}
-        {#if $sortedQuery?.isError}
-          <div class="text-red-500">
-            {JSON.stringify($sortedQuery?.error)}
-          </div>
-        {:else if noAvailableValues}
+        {#if noAvailableValues}
           <div style:padding-left="30px" class="p-1 ui-copy-disabled">
-            no available values
+            No available values
           </div>
         {/if}
         {#if showExpandTable}

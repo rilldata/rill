@@ -417,8 +417,8 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			filterCount++
 		}
 	}
-	if filterCount > 1 {
-		return "", nil, errors.New("multiple measure filters")
+	if filterCount != 0 && len(q.Measures) > 1 {
+		return "", nil, errors.New("multiple measures with filter")
 	}
 	if filterCount == 1 && len(q.PivotOn) > 0 {
 		return "", nil, errors.New("measure filter for pivot-on")
