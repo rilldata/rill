@@ -18,7 +18,6 @@ import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   V1Expression,
   V1MetricsViewAggregationDimension,
-  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
   createQueryServiceMetricsViewAggregation,
@@ -33,7 +32,7 @@ import { mergeFilters } from "./pivot-merge-filters";
  */
 export function createPivotAggregationRowQuery(
   ctx: StateManagers,
-  measures: V1MetricsViewAggregationMeasure[],
+  measures: string[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
   measureFilter: ResolvedMeasureFilter | undefined,
@@ -46,7 +45,7 @@ export function createPivotAggregationRowQuery(
     sort = [
       {
         desc: false,
-        name: measures[0]?.name || dimensions?.[0]?.name,
+        name: measures[0] || dimensions?.[0]?.name,
       },
     ];
   }
@@ -58,7 +57,7 @@ export function createPivotAggregationRowQuery(
         runtime.instanceId,
         metricViewName,
         {
-          measures,
+          measures: measures.map((measure) => ({ name: measure })),
           dimensions,
           where: sanitiseExpression(whereFilter, measureFilter?.filter),
           timeRange: {
@@ -87,13 +86,13 @@ export function getAxisForDimensions(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   dimensions: string[],
-  measures: V1MetricsViewAggregationMeasure[],
   whereFilter: V1Expression,
   sortBy: V1MetricsViewAggregationSort[] = [],
   timeRange: TimeRangeString | undefined = undefined,
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
+  const measures = config.measureNames;
   const { time } = config;
 
   let sortProvided = true;
@@ -101,7 +100,7 @@ export function getAxisForDimensions(
     sortBy = [
       {
         desc: true,
-        name: measures[0]?.name || dimensions?.[0],
+        name: measures[0] || dimensions?.[0],
       },
     ];
     sortProvided = false;
@@ -181,7 +180,6 @@ export function getTotalsRowQuery(
   const { colDimensionNames } = config;
 
   const { time } = config;
-  const measureBody = config.measureNames.map((m) => ({ name: m }));
   const dimensionBody = colDimensionNames.map((dimension) => {
     if (isTimeDimension(dimension, time.timeDimension)) {
       return {
@@ -212,7 +210,7 @@ export function getTotalsRowQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    measureBody,
+    config.measureNames,
     dimensionBody,
     mergedFilter,
     config.measureFilter,
