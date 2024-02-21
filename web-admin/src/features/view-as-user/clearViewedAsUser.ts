@@ -52,7 +52,10 @@ export async function clearViewedAsUserWithinProject(
   const jwt = projResp.jwt;
 
   runtime.update((runtimeState) => {
-    runtimeState.jwt = jwt;
+    runtimeState.jwt = {
+      token: jwt,
+      receivedAt: Date.now(),
+    };
     return runtimeState;
   });
 
