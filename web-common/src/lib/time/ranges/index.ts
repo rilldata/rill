@@ -164,22 +164,18 @@ export function convertTimeRangePreset(
  * colocate the code w/ the component.
  */
 export const prettyFormatTimeRange = (
-  start: Date,
-  end: Date,
-  timePreset: TimeRangePreset,
+  start: Date | undefined,
+  end: Date | undefined,
+  timePreset: TimeRangePreset | TimeComparisonOption | undefined,
   timeZone: string,
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
-  if (!start && end) {
-    return `- ${end}`;
-  }
 
-  if (start && !end) {
+  if (!start) {
+    return end ? `- ${end}` : "";
+  }
+  if (!end) {
     return `${start} -`;
-  }
-
-  if (!start && !end) {
-    return "";
   }
 
   const {

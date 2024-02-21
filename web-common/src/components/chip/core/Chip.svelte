@@ -28,6 +28,7 @@
   export let outlineActiveClass = defaultChipColors.outlineActiveClass;
 
   /** if removable is true, these props control the tooltip positioning */
+  export let supressTooltip = false;
   export let removeButtonTooltipLocation = "bottom";
   export let removeButtonTooltipAlignment = "start";
   export let removeButtonTooltipDistance = 12;
@@ -92,6 +93,7 @@
           tooltipLocation={removeButtonTooltipLocation}
           tooltipAlignment={removeButtonTooltipAlignment}
           tooltipDistance={removeButtonTooltipDistance}
+          {supressTooltip}
           on:remove
         >
           <svelte:fragment slot="remove-tooltip">
