@@ -45,14 +45,19 @@
           !!sourceNames &&
           !!modelNames,
         select: (data) => {
-          // filter out managed tables (sources and models)
+          // If sourceNames or modelNames are not available, return an empty array
+          if (!sourceNames || !modelNames) {
+            return [];
+          }
+
+          // Filter out managed tables (sources and models)
           const filteredTables = data?.tables?.filter(
             (table) =>
               !(sourceNames as string[]).includes(table.name as string) &&
               !(modelNames as string[]).includes(table.name as string),
           );
 
-          // return the fully qualified table names
+          // Return the fully qualified table names
           return (
             filteredTables?.map((table) => table.database + "." + table.name) ||
             []

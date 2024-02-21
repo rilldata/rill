@@ -41,7 +41,7 @@ BasicLayout is the backbone of the Rill application.
   setContext("rill:app:navigation-width-tween", navigationWidth);
   setContext("rill:app:navigation-visibility-tween", navVisibilityTween);
 
-  $: showNavigation = $page.url.pathname !== "/welcome";
+  $: showNavigation = $page.route.id !== "/(application)/welcome";
 </script>
 
 <main>

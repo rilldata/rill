@@ -141,7 +141,7 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", m.Expression, safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", m.Expression, safeSQLName(t.Name)),
 		DryRun: true,
 	})
 	return err
