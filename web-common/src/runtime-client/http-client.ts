@@ -1,9 +1,9 @@
-import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-admin/features/projects/selectors";
 import type {
   FetchWrapperOptions,
   HTTPError,
 } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { get } from "svelte/store";
+import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "./constants";
 import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
 import { JWT, runtime } from "./runtime-store";
 
