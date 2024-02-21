@@ -2,7 +2,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragList from "./DragList.svelte";
   import type { PivotSidebarSection, PivotChipData } from "./types";
-  import { beforeUpdate } from "svelte";
+  import { afterUpdate } from "svelte";
 </script>
 
 <script lang="ts">
@@ -12,8 +12,9 @@
 
   let container: HTMLDivElement;
 
-  beforeUpdate(() => {
+  afterUpdate(() => {
     if (!container) return;
+    console.log("bottom");
     calculateSize(container);
   });
 
@@ -67,6 +68,11 @@
     @apply pt-3 px-4;
     @apply flex flex-col gap-1 items-start;
     @apply w-full overflow-hidden flex-grow-0;
+    @apply border-b border-slate-200;
+  }
+
+  .container:last-child {
+    @apply border-b-0;
   }
 
   button {
