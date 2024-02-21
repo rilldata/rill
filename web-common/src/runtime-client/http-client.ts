@@ -60,7 +60,7 @@ async function maybeWaitForFreshJWT(jwt: JWT): Promise<JWT> {
 
   // If the JWT has expired, or is close to expiring, wait for a fresh one.
   // Note: It could be even better to immediately fetch a new token here. However, in practice, the request
-  // for new token is already in flight (see comment for `maybeWaitForFreshJWT`). So, to keep the code simpler, we just wait.
+  // for new token is already in flight. So, to keep the code simpler, we just wait.
   while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > jwtExpiresAt) {
     await new Promise((resolve) =>
       setTimeout(resolve, CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL),
