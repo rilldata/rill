@@ -29,23 +29,6 @@ const config = {
     locales: ["en"],
   },
 
-  headTags: [
-    {
-      tagName: 'link',
-      attributes: {
-        rel: 'preconnect',
-        href: 'https://rsms.me/',
-      },
-    },
-    {
-      tagName: 'link',
-      attributes: {
-        rel: 'stylesheet',
-        href: 'https://rsms.me/inter/inter.css',
-      },
-    },
-  ],
-
   presets: [
     [
       "classic",
@@ -54,6 +37,7 @@ const config = {
         docs: {
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
+          sidebarCollapsed: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
@@ -72,7 +56,7 @@ const config = {
           },
         },
         theme: {
-          customCss: require.resolve("./src/css/custom.css"),
+          customCss: require.resolve("./src/css/custom.scss"),
         },
       }),
     ],
@@ -176,6 +160,7 @@ const config = {
     }),
 
   plugins: [
+    'docusaurus-plugin-sass',
     [
       require.resolve('docusaurus-gtm-plugin'),
       {
@@ -187,11 +172,11 @@ const config = {
       {
         redirects: [
           {
-            to: '/build/credentials/s3',
+            to: '/deploy/credentials/s3',
             from: '/reference/connectors/s3',
           },
           {
-            to: '/build/credentials/gcs',
+            to: '/deploy/credentials/gcs',
             from: '/reference/connectors/gcs',
           },
         ],

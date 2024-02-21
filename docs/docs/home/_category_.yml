@@ -1,4 +1,4 @@
 position: 01
 label: Welcome to Rill
-collapsible: true
-collapsed: true
+collapsible: false
+collapsed: false
