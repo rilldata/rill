@@ -46,7 +46,6 @@ describe("dashboard-stores", () => {
     initPersistentDashboardStore(AD_BIDS_NAME);
     runtime.set({
       instanceId: "",
-      jwt: "",
       host: "",
     });
   });
