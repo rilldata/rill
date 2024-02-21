@@ -3,6 +3,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let index: number;
@@ -20,6 +21,12 @@
     })) ?? [];
 
   const { form, errors } = formState;
+
+  // Debounce the update of value. This avoid constant refetches
+  let value: string = $form["criteria"][index]["value"];
+  const valueUpdater = debounce(() => {
+    $form["criteria"][index]["value"] = value;
+  }, 500);
 </script>
 
 <div class="grid grid-cols-2 flex-wrap gap-2">
@@ -40,14 +47,15 @@
   <Select
     id="compareWith"
     label=""
-    options={[{ value: "value" }, { value: "measure" }]}
+    options={[{ value: "value" }]}
     placeholder="compare with"
     value={"value"}
   />
   <InputV2
-    id="value"
-    bind:value={$form["criteria"][index]["value"]}
+    bind:value
     error={$errors["criteria"][index]["value"]}
+    id="value"
+    on:input={valueUpdater}
     placeholder={"0"}
   />
 </div>

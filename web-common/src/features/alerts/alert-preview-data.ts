@@ -56,7 +56,7 @@ export function getAlertPreviewData(
       ],
       set,
     ) => {
-      createQueryServiceMetricsViewAggregation(
+      return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         getAlertPreviewQueryRequest(
@@ -118,10 +118,7 @@ function getAlertPreviewQueryOptions(
 > {
   return {
     enabled:
-      !!params.measure &&
-      !!params.criteria?.cond?.exprs?.length &&
-      timeControls.ready &&
-      resolvedMeasureFilters.ready,
+      !!params.measure && timeControls.ready && resolvedMeasureFilters.ready,
     select: (data) => {
       const rows = data.data as V1MetricsViewAggregationResponseDataItem[];
       const schema = data.schema?.fields?.map((field) => {
@@ -133,5 +130,6 @@ function getAlertPreviewQueryOptions(
       }) as VirtualizedTableColumns[];
       return { rows, schema };
     },
+    queryClient: ctx.queryClient,
   };
 }
