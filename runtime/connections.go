@@ -9,7 +9,9 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var ErrAdminNotConfigured = fmt.Errorf("an admin store is not configured for this instance")
+var ErrAdminNotConfigured = fmt.Errorf("an admin service is not configured for this instance")
+
+var ErrAINotConfigured = fmt.Errorf("an AI service is not configured for this instance")
 
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
@@ -78,10 +80,35 @@ func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminSe
 	admin, ok := conn.AsAdmin(instanceID)
 	if !ok {
 		release()
-		return nil, nil, fmt.Errorf("connector %q is not a valid admin store", inst.AdminConnector)
+		return nil, nil, fmt.Errorf("connector %q is not a valid admin service", inst.AdminConnector)
 	}
 
 	return admin, release, nil
+}
+
+func (r *Runtime) AI(ctx context.Context, instanceID string) (drivers.AIService, func(), error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The AI connector is optional
+	if inst.AIConnector == "" {
+		return nil, nil, ErrAINotConfigured
+	}
+
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.AIConnector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ai, ok := conn.AsAI(instanceID)
+	if !ok {
+		release()
+		return nil, nil, fmt.Errorf("connector %q is not a valid AI service", inst.AIConnector)
+	}
+
+	return ai, release, nil
 }
 
 func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, func(), error) {

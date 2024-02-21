@@ -28,7 +28,7 @@
       title: "OpenRTB Programmatic Ads",
       description: "Real-time Bidding (RTB) advertising",
       image: "bg-[url('$img/welcome-bg-openrtb.png')] bg-no-repeat bg-cover",
-      firstPage: "dashboard/auction",
+      firstPage: "/dashboard/auction",
     },
     {
       name: "rill-github-analytics",
@@ -36,7 +36,7 @@
       description: "A Git project's commit activity",
       image:
         "bg-[url('$img/welcome-bg-github-analytics.png')] bg-no-repeat bg-cover",
-      firstPage: "dashboard/duckdb_commits",
+      firstPage: "/dashboard/duckdb_commits",
     },
   ];
 

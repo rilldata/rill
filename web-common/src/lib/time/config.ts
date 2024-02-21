@@ -511,7 +511,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
-    d3format: "%b %d",
+    d3format: "Week %W",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -522,7 +522,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
-    d3format: "%b '%y",
+    d3format: "%b %Y",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -532,7 +532,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_QUARTER,
     label: "quarter",
     duration: Period.QUARTER,
-    d3format: "%b '%y",
+    d3format: "Q%q %Y",
     formatDate: {
       year: "numeric",
       month: "short",

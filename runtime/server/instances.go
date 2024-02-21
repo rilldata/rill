@@ -68,6 +68,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.olap_connector", req.OlapConnector),
 		attribute.String("args.repo_connector", req.RepoConnector),
 		attribute.String("args.admin_connector", req.AdminConnector),
+		attribute.String("args.ai_connector", req.AiConnector),
 		attribute.StringSlice("args.connectors", toString(req.Connectors)),
 	)
 
@@ -81,6 +82,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		OLAPConnector:                req.OlapConnector,
 		RepoConnector:                req.RepoConnector,
 		AdminConnector:               req.AdminConnector,
+		AIConnector:                  req.AiConnector,
 		Connectors:                   req.Connectors,
 		Variables:                    req.Variables,
 		Annotations:                  req.Annotations,
@@ -113,6 +115,9 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 	if req.AdminConnector != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.admin_connector", *req.AdminConnector))
+	}
+	if req.AiConnector != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.ai_connector", *req.AiConnector))
 	}
 	if len(req.Connectors) > 0 {
 		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", toString(req.Connectors)))
@@ -148,6 +153,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
+		AIConnector:                  valOrDefault(req.AiConnector, oldInst.AIConnector),
 		Connectors:                   connectors,
 		ProjectConnectors:            oldInst.ProjectConnectors,
 		Variables:                    variables,
@@ -264,6 +270,7 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		OlapConnector:                inst.OLAPConnector,
 		RepoConnector:                inst.RepoConnector,
 		AdminConnector:               inst.AdminConnector,
+		AiConnector:                  inst.AIConnector,
 		CreatedOn:                    timestamppb.New(inst.CreatedOn),
 		UpdatedOn:                    timestamppb.New(inst.UpdatedOn),
 		Connectors:                   inst.Connectors,

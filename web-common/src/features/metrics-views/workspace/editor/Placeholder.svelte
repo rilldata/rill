@@ -3,29 +3,14 @@
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    generateDashboardYAMLForTable,
-    initBlankDashboardYAML,
-  } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
+  import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import {
-    V1GetResourceResponse,
-    connectorServiceOLAPGetTable,
-    getConnectorServiceOLAPGetTableQueryKey,
-    getRuntimeServiceGetResourceQueryKey,
-    runtimeServiceGetResource,
-    runtimeServicePutFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { useIsModelingSupportedForCurrentOlapDriver } from "../../../tables/selectors";
+  import { createDashboardFromTableInMetricsEditor } from "../../ai-generation/generateMetricsView";
 
   export let metricsName: string;
   export let view: EditorView | undefined = undefined;
@@ -34,72 +19,15 @@
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
   $: models = useModelFileNames($runtime.instanceId);
 
-  const queryClient = useQueryClient();
-
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
 
-  // FIXME: shouldn't these be generalized and used everywhere?
   async function onAutogenerateConfigFromModel(modelName: string) {
-    const instanceId = $runtime?.instanceId;
-    const model = await queryClient.fetchQuery<V1GetResourceResponse>({
-      queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-        "name.name": modelName,
-        "name.kind": ResourceKind.Model,
-      }),
-      queryFn: () =>
-        runtimeServiceGetResource(instanceId, {
-          "name.name": modelName,
-          "name.kind": ResourceKind.Model,
-        }),
-    });
-    const schemaResp = await queryClient.fetchQuery({
-      queryKey: getConnectorServiceOLAPGetTableQueryKey({
-        instanceId,
-        table: model?.resource?.model?.state?.table,
-        connector: model?.resource?.model?.state?.connector,
-      }),
-      queryFn: () =>
-        connectorServiceOLAPGetTable({
-          instanceId,
-          table: model?.resource?.model?.state?.table,
-          connector: model?.resource?.model?.state?.connector,
-        }),
-    });
-
-    const isModel = true;
-    const dashboardYAML = schemaResp?.schema
-      ? generateDashboardYAMLForTable(modelName, isModel, schemaResp?.schema)
-      : "";
-
-    await runtimeServicePutFile(
+    await createDashboardFromTableInMetricsEditor(
       $runtime.instanceId,
-      getFileAPIPathFromNameAndType(metricsName, EntityType.MetricsDefinition),
-      {
-        blob: dashboardYAML,
-        create: true,
-        createOnly: true,
-      },
+      modelName,
+      metricsName,
     );
-    await waitForResource(
-      queryClient,
-      $runtime.instanceId,
-      getFilePathFromNameAndType(metricsName, EntityType.MetricsDefinition),
-    );
-    /**
-     * go ahead and optimistically update the editor view.
-     */
-    view?.dispatch({
-      changes: {
-        from: 0,
-        to: view.state.doc.length,
-        insert: dashboardYAML,
-      },
-      // tell the editor that this is a transaction that should _not_ be
-      // debounced. This tells the binder to delay dispatching out of the editor component
-      // any reconciliation update.
-      annotations: skipDebounceAnnotation.of(true),
-    });
   }
 
   // FIXME: shouldn't these be generalized and used everywhere?
@@ -154,7 +82,7 @@
         {#each $models?.data ?? [] as model}
           <MenuItem
             on:select={() => {
-              onAutogenerateConfigFromModel(model);
+              void onAutogenerateConfigFromModel(model);
               toggleFloatingElement();
             }}
           >

@@ -5,31 +5,25 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    useCreateDashboardFromModelUIAction,
-    useModelSchemaIsReady,
-  } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useModel } from "../selectors";
 
   export let modelName: string;
   export let hasError = false;
   export let collapse = false;
 
-  const queryClient = useQueryClient();
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: modelIsIdle =
+    $modelQuery.data?.meta?.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: modelSchemaIsReady = useModelSchemaIsReady(
-    queryClient,
+  $: createDashboardFromModel = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     modelName,
-  );
-
-  $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
-    $runtime.instanceId,
-    modelName,
-    queryClient,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
@@ -37,7 +31,7 @@
 
 <Tooltip alignment="right" distance={8} location="bottom">
   <Button
-    disabled={!$modelSchemaIsReady}
+    disabled={!modelIsIdle || hasError}
     on:click={createDashboardFromModel}
     type="primary"
   >
@@ -45,14 +39,16 @@
       <Add />
     </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>
-      Autogenerate Dashboard
+      Generate dashboard with AI
     </ResponsiveButtonText>
   </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
+    {:else if !modelIsIdle}
+      Model is not ready to generate a dashboard
     {:else}
-      Autogenerate a dashboard from this model
+      Generate a dashboard from this model
     {/if}
   </TooltipContent>
 </Tooltip>

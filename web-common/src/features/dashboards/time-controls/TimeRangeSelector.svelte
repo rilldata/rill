@@ -17,6 +17,7 @@
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     DashboardTimeControls,
+    TimeComparisonOption,
     TimeRange,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
@@ -54,17 +55,24 @@
 
   $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
 
-  function setIntermediateSelection(timeRangeName: string) {
+  function setIntermediateSelection(
+    timeRangeName: TimeRangePreset | TimeComparisonOption | undefined,
+  ) {
     return () => {
-      intermediateSelection = timeRangeName;
+      if (timeRangeName) {
+        intermediateSelection = timeRangeName;
+      }
     };
   }
 
   function onSelectRelativeTimeRange(
-    timeRange: TimeRange,
+    timeRange: TimeRange | undefined,
     closeMenu: () => void,
   ) {
     closeMenu();
+    if (!timeRange) {
+      return;
+    }
     dispatch("select-time-range", {
       name: timeRange.name,
       start: timeRange.start,
@@ -87,6 +95,12 @@
   }
 
   function zoomScrub(toggleFloatingElement) {
+    if (
+      !$dashboardStore?.selectedScrubRange?.start ||
+      !$dashboardStore?.selectedScrubRange?.end
+    ) {
+      return;
+    }
     const { start, end } = getOrderedStartEnd(
       $dashboardStore?.selectedScrubRange?.start,
       $dashboardStore?.selectedScrubRange?.end,
@@ -127,6 +141,10 @@
       isCustomRangeOpen = false;
     }
   };
+
+  $: defaultTimeRange = $metricsView.data?.defaultTimeRange
+    ? ($metricsView.data?.defaultTimeRange as TimeRangePreset)
+    : undefined;
 </script>
 
 <WithTogglableFloatingElement
@@ -138,14 +156,16 @@
 >
   {#if hasSubRangeSelected}
     <div class="flex">
-      <TimeRangeScrubChip
-        on:click={toggleFloatingElement}
-        on:remove={() => dispatch("remove-scrub")}
-        {active}
-        start={$dashboardStore?.selectedScrubRange?.start}
-        end={$dashboardStore?.selectedScrubRange?.end}
-        zone={$dashboardStore?.selectedTimezone}
-      />
+      {#if $dashboardStore?.selectedScrubRange?.start && $dashboardStore?.selectedScrubRange?.end}
+        <TimeRangeScrubChip
+          on:click={toggleFloatingElement}
+          on:remove={() => dispatch("remove-scrub")}
+          {active}
+          start={$dashboardStore?.selectedScrubRange?.start}
+          end={$dashboardStore?.selectedScrubRange?.end}
+          zone={$dashboardStore?.selectedTimezone}
+        />
+      {/if}
     </div>
   {:else}
     <button
@@ -221,18 +241,16 @@
         {allTime.label}
       </span>
     </MenuItem>
-    {#if $timeRangeSelectorState.showDefaultItem}
+    {#if $timeRangeSelectorState.showDefaultItem && defaultTimeRange}
       <DefaultTimeRangeMenuItem
-        on:before-select={setIntermediateSelection(
-          $metricsView.data?.defaultTimeRange,
-        )}
+        on:before-select={setIntermediateSelection(defaultTimeRange)}
         on:select={() =>
           onSelectRelativeTimeRange(
             $timeControlsStore.defaultTimeRange,
             toggleFloatingElement,
           )}
-        selected={intermediateSelection === $metricsView.data?.defaultTimeRange}
-        isoDuration={$metricsView.data?.defaultTimeRange}
+        selected={intermediateSelection === defaultTimeRange}
+        isoDuration={defaultTimeRange}
       />
     {/if}
     {#if $timeRangeSelectorState.latestWindowTimeRanges?.length}

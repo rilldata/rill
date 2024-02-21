@@ -29,6 +29,8 @@ type Instance struct {
 	RepoConnector string
 	// Driver name for the admin service managing the deployment (optional)
 	AdminConnector string
+	// Driver name for the AI service (optional)
+	AIConnector string
 	// Driver name for catalog
 	CatalogConnector string
 	// CreatedOn is when the instance was created

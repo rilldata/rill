@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func init() {
@@ -70,7 +68,10 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs here since refs may still be valid even if they have errors (in case of staged changes).
 	// Instead, we just validate against the table name.
 
-	validateErr := r.validate(ctx, mv.Spec)
+	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
+	if validateErr == nil {
+		validateErr = validateResult.Error()
+	}
 
 	if ctx.Err() != nil {
 		return runtime.ReconcileResult{Err: errors.Join(validateErr, ctx.Err())}
@@ -88,93 +89,4 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 
 	return runtime.ReconcileResult{Err: validateErr}
-}
-
-func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.MetricsViewSpec) error {
-	olap, release, err := r.C.AcquireOLAP(ctx, mv.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
-
-	// Check underlying table exists
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
-	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return fmt.Errorf("table %q does not exist", mv.Table)
-		}
-		return fmt.Errorf("could not find table %q: %w", mv.Table, err)
-	}
-
-	fields := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
-	for _, f := range t.Schema.Fields {
-		fields[strings.ToLower(f.Name)] = f
-	}
-
-	// Check time dimension exists
-	if mv.TimeDimension != "" {
-		f, ok := fields[strings.ToLower(mv.TimeDimension)]
-		if !ok {
-			return fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)
-		}
-		if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE {
-			return fmt.Errorf("timeseries %q is not a TIMESTAMP column", mv.TimeDimension)
-		}
-	}
-
-	var errs []error
-
-	// Check dimension columns exist
-	for _, d := range mv.Dimensions {
-		err = validateDimension(ctx, olap, t, d, fields)
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	// Check measure expressions are valid
-	for _, d := range mv.Measures {
-		err := validateMeasure(ctx, olap, t, d)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("invalid expression for measure %q: %w", d.Name, err))
-		}
-	}
-
-	if mv.DefaultTheme != "" {
-		_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: mv.DefaultTheme}, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrNotFound) {
-				return fmt.Errorf("theme %q does not exist", mv.DefaultTheme)
-			}
-			return fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
-	if d.Column != "" {
-		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
-			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
-		}
-		return nil
-	}
-
-	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
-		DryRun: true,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to validate expression for dimension %q: %w", d.Name, err)
-	}
-	return nil
-}
-
-func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
-	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", m.Expression, safeSQLName(t.Name)),
-		DryRun: true,
-	})
-	return err
 }
