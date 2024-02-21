@@ -119,7 +119,10 @@
           <tr>
             {#each headerGroup.headers as header}
               {@const sortDirection = header.column.getIsSorted()}
-              <th colSpan={header.colSpan}>
+              <th
+                colSpan={header.colSpan}
+                class:with-row-dimension={rows.length > 1}
+              >
                 <div class="header-cell" style:height="{HEADER_HEIGHT}px">
                   {#if !header.isPlaceholder}
                     <button
@@ -160,6 +163,7 @@
                   ? cell.column.columnDef.cell(cell.getContext())
                   : cell.column.columnDef.cell}
               <td
+                class:with-row-dimension={rows.length > 1}
                 class="ui-copy-number"
                 class:border-right={i % measureCount === 0 && i}
               >
@@ -219,7 +223,10 @@
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
-  thead > tr:not(:last-of-type) > th:first-of-type > .header-cell {
+  thead
+    > tr:not(:last-of-type)
+    > .with-row-dimension:first-of-type
+    > .header-cell {
     @apply border-b-0;
   }
 
@@ -237,8 +244,8 @@
     @apply p-0 m-0;
   }
 
-  tr > th:first-of-type,
-  tr > td:first-of-type {
+  tr > .with-row-dimension:first-of-type,
+  tr > .with-row-dimension:first-of-type {
     @apply sticky left-0 z-0;
     @apply bg-white;
   }
