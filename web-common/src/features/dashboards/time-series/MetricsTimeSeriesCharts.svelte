@@ -304,7 +304,7 @@
                     undefined,
                     TIME_GRAIN[interval].formatDate,
                   )
-                : "";
+                : value.toString();
             }}
           />
         {:else}
