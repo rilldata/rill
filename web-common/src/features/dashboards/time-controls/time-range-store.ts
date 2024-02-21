@@ -101,6 +101,11 @@ export function timeRangeSelectionsSelector([
     latestWindowTimeRanges = LATEST_WINDOW_TIME_RANGES;
     periodToDateRanges = PERIOD_TO_DATE_RANGES;
     previousCompleteDateRanges = PREVIOUS_COMPLETE_DATE_RANGES;
+    hasDefaultInRanges =
+      !!metricsView.data.defaultTimeRange &&
+      (metricsView.data.defaultTimeRange in LATEST_WINDOW_TIME_RANGES ||
+        metricsView.data.defaultTimeRange in PERIOD_TO_DATE_RANGES ||
+        metricsView.data.defaultTimeRange in PREVIOUS_COMPLETE_DATE_RANGES);
   }
 
   return {

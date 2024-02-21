@@ -310,7 +310,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
         {
-          duration: "P2D",
+          duration: "P1D",
           operationType: TimeOffsetType.SUBTRACT,
         },
       ],
@@ -318,7 +318,6 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1D", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.DAY,
           truncationType: TimeTruncationType.START_OF_PERIOD,
@@ -338,7 +337,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
         {
-          duration: "P2W",
+          duration: "P1W",
           operationType: TimeOffsetType.SUBTRACT,
         },
       ],
@@ -346,7 +345,6 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1W", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.WEEK,
           truncationType: TimeTruncationType.START_OF_PERIOD,
@@ -366,7 +364,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
         {
-          duration: "P2M",
+          duration: "P1M",
           operationType: TimeOffsetType.SUBTRACT,
         },
       ],
@@ -374,7 +372,6 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1M", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.MONTH,
           truncationType: TimeTruncationType.START_OF_PERIOD,
@@ -390,11 +387,11 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
-          period: Period.MONTH,
+          period: Period.QUARTER,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
         {
-          duration: "P6M",
+          duration: "P3M",
           operationType: TimeOffsetType.SUBTRACT,
         },
       ],
@@ -402,9 +399,8 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     end: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
-        { duration: "P3M", operationType: TimeOffsetType.SUBTRACT },
         {
-          period: Period.MONTH,
+          period: Period.QUARTER,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -422,7 +418,7 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
         {
-          duration: "P2Y",
+          duration: "P1Y",
           operationType: TimeOffsetType.SUBTRACT,
         },
       ],
@@ -430,7 +426,6 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     end: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
-        { duration: "P1Y", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.YEAR,
           truncationType: TimeTruncationType.START_OF_PERIOD,

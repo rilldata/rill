@@ -72,9 +72,9 @@ func TestResolveTimeRange(t *testing.T) {
 		{
 			// Simulates UI filling in duration, offset and round to grain instead of sending rill-PMC (previous month complete)
 			"previous complete month",
-			&runtimev1.TimeRange{End: timeToPB("2023-01-10T00:00:00Z"), IsoDuration: "P1M", IsoOffset: "P1M", RoundToGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH},
-			"2022-11-01T00:00:00Z",
+			&runtimev1.TimeRange{End: timeToPB("2023-01-10T00:00:00Z"), IsoDuration: "P1M", RoundToGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH},
 			"2022-12-01T00:00:00Z",
+			"2023-01-01T00:00:00Z",
 		},
 	}
 
