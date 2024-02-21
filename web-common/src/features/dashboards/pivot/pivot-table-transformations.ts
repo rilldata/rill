@@ -137,3 +137,29 @@ export function getTotalsRow(
 
   return totalsRow;
 }
+
+export function mergeRowTotals(
+  rowValues: string[],
+  sortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
+  unsortedRowValues: string[],
+  unsortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
+) {
+  if (unsortedRowValues.length === 0) {
+    return sortedRowTotals;
+  }
+  const unsortedRowValuesMap = createIndexMap(unsortedRowValues);
+
+  const mergedRowTotals = sortedRowTotals.map((sortedRowTotal, i) => {
+    const unsortedRowIndex = unsortedRowValuesMap.get(rowValues[i]);
+    if (unsortedRowIndex === undefined) {
+      return sortedRowTotal;
+    }
+    const unsortedRowTotal = unsortedRowTotals[i];
+    return {
+      ...unsortedRowTotal,
+      ...sortedRowTotal,
+    };
+  });
+
+  return mergedRowTotals;
+}
