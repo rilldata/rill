@@ -43,6 +43,8 @@
           $metricsView.data,
           $metricsViewSchema.data.schema,
         );
+        // Call sync to make sure changes in dashboard are honoured
+        metricsExplorerStore.sync(metricViewName, $metricsView.data);
       }
     }
   }

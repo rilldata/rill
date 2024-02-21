@@ -109,4 +109,16 @@ describe("toProto/fromProto", () => {
       ]),
     );
   });
+
+  it("test", () => {
+    console.log(
+      getDashboardStateFromUrl(
+        decodeURIComponent(
+          "CgUKA1A0VxgGKhBhdmdfcmVmcmVzaF9yYXRlOABIAVgBYARqB0V0Yy9VVEN4AoABAZgB%252F%252F%252F%252F%252F%252F%252F%252F%252F%252F%252F%252FAaIBOBo2CAgSGBoWCAkSDAoKaXNfc3VjY2VzcxIEEgIgARIYGhYICRIJCgdjb250ZXh0EgcSBRoDU1NM",
+        ),
+        AD_BIDS_WITH_BOOL_DIMENSION,
+        AD_BIDS_SCHEMA,
+      ),
+    );
+  });
 });
