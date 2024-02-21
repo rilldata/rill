@@ -17,13 +17,16 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
@@ -296,6 +299,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		activity:              opts.Activity,
 	}
 
+	// Collect and emit information about registered source types
+	go func() {
+		err := app.emitStartEvent(ctx)
+		if err != nil {
+			logger.Debug("failed to emit start event", zap.Error(err))
+		}
+	}()
+
 	return app, nil
 }
 
@@ -541,6 +552,34 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Done
 		w.WriteHeader(http.StatusOK)
 	})
+}
+
+func (a *App) emitStartEvent(ctx context.Context) error {
+	repo, instanceID, err := cmdutil.RepoForProjectPath(a.ProjectPath)
+	if err != nil {
+		return err
+	}
+
+	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector, []string{"duckdb"})
+	if err != nil {
+		return err
+	}
+
+	connectors, err := parser.AnalyzeConnectors(ctx)
+	if err != nil {
+		return err
+	}
+
+	var sourceDrivers []string
+	for _, connector := range connectors {
+		sourceDrivers = append(sourceDrivers, connector.Name)
+	}
+
+	tel := telemetry.New(a.Version)
+	tel.EmitStartEvent(sourceDrivers, a.Instance.OLAPConnector)
+
+	err = tel.Flush(ctx)
+	return err
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.
