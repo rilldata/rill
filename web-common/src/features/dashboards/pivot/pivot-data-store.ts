@@ -36,6 +36,7 @@ import {
   getTimeGrainFromDimension,
   getTotalColumnCount,
   isTimeDimension,
+  reconcileMissingDimensionValues,
 } from "./pivot-utils";
 import {
   PivotChipType,
@@ -150,7 +151,6 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
-  const measureBody = config.measureNames.map((m) => ({ name: m }));
 
   const { filters: filterForInitialTable, timeFilters } =
     getFilterForPivotTable(
@@ -174,7 +174,7 @@ export function createTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    measureBody,
+    config.measureNames,
     dimensionBody,
     mergedFilter,
     config.measureFilter,
@@ -235,6 +235,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
    */
   return derived(getPivotConfig(ctx), (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
+
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)
@@ -251,13 +252,10 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         totalColumns: 0,
       });
     }
-    const measureBody = measureNames.map((m) => ({ name: m }));
-
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       config,
       colDimensionNames,
-      measureBody,
       config.whereFilter,
     );
 
@@ -275,33 +273,30 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         }
         const anchorDimension = rowDimensionNames[0];
 
-        const {
-          where: measureWhere,
-          sortPivotBy,
-          timeRange,
-        } = getSortForAccessor(
+        const { where, sortPivotBy, timeRange } = getSortForAccessor(
           anchorDimension,
           config,
           columnDimensionAxes?.data,
         );
 
-        let sortFilteredMeasureBody = measureBody;
-        if (sortPivotBy.length && measureWhere) {
-          const accessor = sortPivotBy[0]?.name;
-          sortFilteredMeasureBody = measureBody.map((m) => {
-            if (m.name === accessor) return { ...m, filter: measureWhere };
-            return m;
-          });
-        }
-
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
-          sortFilteredMeasureBody,
-          config.whereFilter,
+          where,
           sortPivotBy,
           timeRange,
+        );
+
+        /**
+         * We need to query the unsorted row dimension values because the sorted
+         * row dimension values may not have all the dimensions values
+         */
+        const rowDimensionUnsortedAxisQuery = getAxisForDimensions(
+          ctx,
+          config,
+          rowDimensionNames.slice(0, 1),
+          config.whereFilter,
         );
 
         let globalTotalsQuery:
@@ -315,7 +310,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         if (rowDimensionNames.length && measureNames.length) {
           globalTotalsQuery = createPivotAggregationRowQuery(
             ctx,
-            config.measureNames.map((m) => ({ name: m })),
+            config.measureNames,
             [],
             config.whereFilter,
             config.measureFilter,
@@ -338,16 +333,27 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
          * Derive a store from axes queries
          */
         return derived(
-          [rowDimensionAxisQuery, globalTotalsQuery, totalsRowQuery],
+          [
+            rowDimensionAxisQuery,
+            rowDimensionUnsortedAxisQuery,
+            globalTotalsQuery,
+            totalsRowQuery,
+          ],
           (
-            [rowDimensionAxes, globalTotalsResponse, totalsRowResponse],
+            [
+              rowDimensionAxes,
+              rowDimensionUnsortedAxis,
+              globalTotalsResponse,
+              totalsRowResponse,
+            ],
             axesSet,
           ) => {
             if (
               (globalTotalsResponse !== null &&
                 globalTotalsResponse?.isFetching) ||
               (totalsRowResponse !== null && totalsRowResponse?.isFetching) ||
-              rowDimensionAxes?.isFetching
+              rowDimensionAxes?.isFetching ||
+              rowDimensionUnsortedAxis?.isFetching
             ) {
               return axesSet({
                 isFetching: true,
@@ -358,9 +364,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               });
             }
 
-            const rowDimensionValues =
-              rowDimensionAxes?.data?.[anchorDimension] || [];
-            const rowTotals = rowDimensionAxes?.totals?.[anchorDimension] || [];
             const totalsRow = getTotalsRow(
               config,
               columnDimensionAxes?.data,
@@ -369,6 +372,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             );
 
             const totalColumns = getTotalColumnCount(totalsRow);
+
+            const { rows: rowDimensionValues, totals: rowTotals } =
+              reconcileMissingDimensionValues(
+                anchorDimension,
+                rowDimensionAxes,
+                rowDimensionUnsortedAxis,
+              );
 
             let initialTableCellQuery:
               | Readable<null>
