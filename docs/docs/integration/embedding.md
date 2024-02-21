@@ -49,7 +49,7 @@ The service account provides admin-level access to your organization and should 
 See the reference docs for more details on managing [service account and token](../reference/cli/service).
 
 ### Backend: Build an iframe URL
-You should implement an API on your backend that uses the service token to request an iframe URL from Rill's API at `admin.rilldata.com`. The API should return the iframe URL.
+You should implement an API on your backend that uses the service token to retrieve and return an iframe URL from Rill's API (which is hosted on `admin.rilldata.com`).
 
 There are multiple reasons why the iframe URL must be constructed on your backend:
 - To avoid leaking your master Rill service token in the browser
@@ -271,7 +271,7 @@ The API accepts the following parameters:
 | attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy | No (either this or `user_email`) |
 | ttl_seconds | The time to live for the iframe URL                                                                                                                                                            | No (Default: 86400)              |
 
-The response will contain an `iframeSrc` that can be used to embed the dashboard in your application. It will also contain a `ttlSeconds`, which indicates how long the iframe URL will be valid for. After the TTL has elapsed, the iframe URL needs be refreshed. Here's an example response:
+The response will contain an `iframeSrc` value that can be used to embed the dashboard in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. After the TTL has elapsed, the iframe URL needs be refreshed. Here's an example response:
 
 ```json
 {
@@ -284,20 +284,20 @@ The response will contain an `iframeSrc` that can be used to embed the dashboard
 ```
 
 ### Frontend: Embed the dashboard
-Your frontend should request an iframe URL from your backend API and use the `iframeSrc` property of the response to render an HTML `<iframe>` element:
+Your frontend should request an iframe URL from your backend API (which you set up in the previous step) and use the `iframeSrc` value of the response to render an HTML `<iframe>` element:
 ```html
 <iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
 
 ### Example
-Here's an example of how to fetch and render a dashboard iframe component in React:
+Here's an example of how to fetch and render a dashboard in React:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
 
 export default function RillDashboard() {
   const [isLoading, setLoading] = useState(true);
-  const [iframeURL, setIframeURL] = useState('');
+  const [iframeSrc, setIframeSrc] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -312,7 +312,7 @@ export default function RillDashboard() {
       if (error !== undefined) {
         setError(error);
       } else {
-        setIframeURL(iframeSrc);
+        setIframeSrc(iframeSrc);
       }
       setLoading(false);
     })
@@ -327,7 +327,7 @@ export default function RillDashboard() {
 
   return (
     <iframe title="rill-dashboard"
-      src={iframeURL}
+      src={iframeSrc}
       width="100%"
       height="1000"
     />
