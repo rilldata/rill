@@ -204,7 +204,7 @@
       />
     {/if}
     <ComparisonSelector {metricViewName} />
-    {#if $dashboardStore?.showTimeComparison && $timeControlsStore?.selectedComparisonTimeRange}
+    {#if $dashboardStore?.showTimeComparison}
       <TimeComparisonSelector
         on:select-comparison={(e) => {
           onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
