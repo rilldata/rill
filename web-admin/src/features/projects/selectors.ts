@@ -11,11 +11,14 @@ export function getProjectPermissions(orgName: string, projName: string) {
   });
 }
 
+// The TTL is actually set in the Admin server – we just use the value for some frontend logic
+export const RUNTIME_ACCESS_TOKEN_DEFAULT_TTL = 30 * 60 * 1000; // 30 minutes
+
 export function useProjectRuntime(orgName: string, projName: string) {
   return createAdminServiceGetProject(orgName, projName, {
     query: {
-      // Proactively refetch the JWT because it's only valid for 1 hour
-      refetchInterval: 1000 * 60 * 30, // 30 minutes
+      // Proactively refetch the JWT before it expires
+      refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2,
       select: (data) => {
         // There may not be a prodDeployment if the project was hibernated
         if (!data.prodDeployment) {
