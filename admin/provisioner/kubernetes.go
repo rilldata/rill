@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -260,7 +261,11 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	retryClient.RetryWaitMin = 1 * time.Second
 	retryClient.RetryWaitMax = 3 * time.Second
 	retryClient.Logger = nil // Disable inbuilt logger
-	_, err = retryClient.Get(p.getHost(provisionID) + "/v1/ping")
+	pingURL, err := url.JoinPath(p.getHost(provisionID), "/v1/ping")
+	if err != nil {
+		return err
+	}
+	_, err = retryClient.Get(pingURL)
 	if err != nil {
 		return err
 	}

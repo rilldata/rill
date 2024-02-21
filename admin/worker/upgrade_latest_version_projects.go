@@ -47,7 +47,7 @@ func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
 			err := w.upgradeAllDeploymentsForProject(ctx, proj, latestVersion)
 			if err != nil {
 				// We log the error, but continues to the next deployment
-				w.logger.Error("upgrade latest version projects: failed to upgrade project deployments", zap.String("project", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+				w.logger.Error("upgrade latest version projects: failed to upgrade project deployments", zap.String("project_id", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
 			}
 		}
 	}
@@ -70,7 +70,7 @@ func (w *Worker) upgradeAllDeploymentsForProject(ctx context.Context, proj *data
 
 	for _, depl := range depls {
 		if depl.RuntimeVersion != latestVersion {
-			w.logger.Info("upgrade latest version projects: upgrading deployment", zap.String("deployment", depl.ID), zap.String("provision", depl.ProvisionID), zap.String("instance", depl.RuntimeInstanceID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+			w.logger.Info("upgrade latest version projects: upgrading deployment", zap.String("deployment_id", depl.ID), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
 
 			// Update deployment to latest version
 			err = w.admin.UpdateDeployment(ctx, depl, &admin.UpdateDeploymentOptions{
@@ -81,11 +81,11 @@ func (w *Worker) upgradeAllDeploymentsForProject(ctx context.Context, proj *data
 				EvictCachedRepo: false,
 			})
 			if err != nil {
-				w.logger.Error("upgrade latest version projects: failed to upgrade deployment", zap.String("deployment", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+				w.logger.Error("upgrade latest version projects: failed to upgrade deployment", zap.String("deployment_id", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
 				return err
 			}
 
-			w.logger.Info("upgrade latest version projects: upgraded deployment", zap.String("deployment", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+			w.logger.Info("upgrade latest version projects: upgraded deployment", zap.String("deployment_id", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
 		}
 	}
 
