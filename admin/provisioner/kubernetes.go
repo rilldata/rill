@@ -265,10 +265,11 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	if err != nil {
 		return err
 	}
-	_, err = retryClient.Get(pingURL)
+	resp, err := retryClient.Get(pingURL)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	return nil
 }
