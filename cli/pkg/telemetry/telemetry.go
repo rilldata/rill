@@ -74,7 +74,7 @@ func (t *Telemetry) Emit(action Action) {
 }
 
 func (t *Telemetry) EmitStartEvent(sourceDrivers []string, olapDriver string) {
-	payload := map[string]any{"source_driver": sourceDrivers, "olap_driver": olapDriver}
+	payload := map[string]any{"connectors": sourceDrivers, "olap_connector": olapDriver}
 	t.emitBehaviourEvent(string(ActionAppStart), "cli", "terminal", "terminal", payload)
 }
 

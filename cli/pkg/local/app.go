@@ -578,9 +578,6 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 	tel := telemetry.New(a.Version)
 	tel.EmitStartEvent(sourceDrivers, a.Instance.OLAPConnector)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	err = tel.Flush(ctx)
 	return err
 }
