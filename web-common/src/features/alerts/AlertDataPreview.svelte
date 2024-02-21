@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import TableIcon from "../../components/icons/TableIcon.svelte";
   import PreviewTable from "../../components/preview-table/PreviewTable.svelte";
   import type { V1Expression } from "../../runtime-client";
@@ -12,17 +14,21 @@
 
   const ctx = getStateManagers();
 
-  $: aggregation = getAlertPreviewData(ctx, {
+  $: alertPreviewQuery = getAlertPreviewData(ctx, {
     measure,
     dimension,
     criteria,
     splitByTimeGrain,
   });
 
-  // TODO: throttle fetches
+  $: console.log($alertPreviewQuery.isFetching);
 </script>
 
-{#if !$aggregation.data}
+{#if $alertPreviewQuery.isFetching}
+  <div class="p-2 flex flex-col justify-center">
+    <Spinner status={EntityStatus.Running} />
+  </div>
+{:else if !$alertPreviewQuery.data}
   <div class="pt-5 pb-10 flex flex-col justify-center items-center gap-1">
     <TableIcon size="32px" className="text-slate-300" />
     <div class="flex flex-col justify-center items-center text-sm">
@@ -35,8 +41,8 @@
 {:else}
   <div class="max-h-64 overflow-auto">
     <PreviewTable
-      rows={$aggregation.data.rows}
-      columnNames={$aggregation.data.schema}
+      rows={$alertPreviewQuery.data.rows}
+      columnNames={$alertPreviewQuery.data.schema}
     />
   </div>
 {/if}
