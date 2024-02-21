@@ -187,7 +187,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 						return err
 					}
 
-					if err := a.AppendRowArray(row); err != nil {
+					if err := a.AppendRow(row); err != nil {
 						return err
 					}
 				}

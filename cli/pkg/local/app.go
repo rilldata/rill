@@ -51,7 +51,7 @@ const (
 const (
 	DefaultInstanceID   = "default"
 	DefaultOLAPDriver   = "duckdb"
-	DefaultOLAPDSN      = "main.db"
+	DefaultOLAPDSN      = "primary.db"
 	DefaultCatalogStore = "meta.db"
 	DefaultDBDir        = "tmp"
 )

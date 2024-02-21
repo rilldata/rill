@@ -74,7 +74,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		}
 
 		olapDriver = "duckdb"
-		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main"))
+		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "primary"))
 		olapConfig["cpu"] = strconv.Itoa(alloc.CPU)
 		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
 		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)

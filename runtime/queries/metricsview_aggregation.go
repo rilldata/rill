@@ -251,7 +251,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				for i := range columns {
 					appendValues[i] = driver.Value(*(scanValues[i].(*interface{})))
 				}
-				err = appender.AppendRowArray(appendValues)
+				err = appender.AppendRow(appendValues)
 				if err != nil {
 					return err
 				}
