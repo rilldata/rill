@@ -4,7 +4,9 @@
   import PivotDrag from "./PivotDrag.svelte";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import { PivotChipType } from "./types";
-
+  // import { SearchIcon } from "lucide-svelte";
+  import type { PivotChipData } from "./types";
+  import Search from "@rilldata/web-common/components/icons/Search.svelte";
   const stateManagers = getStateManagers();
   const {
     selectors: {
@@ -13,6 +15,9 @@
   } = stateManagers;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
+
+  let inputEl: HTMLInputElement;
+  let searchText = "";
 
   $: allTimeGrains = getAllowedTimeGrains(
     new Date($timeControlsStore.timeStart!),
@@ -32,18 +37,40 @@
   $: timeGrainOptions = allTimeGrains.filter(
     (tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id),
   );
+
+  $: filteredMeasures = filterBasedOnSearch($measures, searchText);
+
+  $: filteredDimensions = filterBasedOnSearch($dimensions, searchText);
+
+  function filterBasedOnSearch(fullList: PivotChipData[], search: string) {
+    return fullList.filter((d) =>
+      d.title.toLowerCase().includes(search.toLowerCase()),
+    );
+  }
 </script>
 
 <div class="sidebar">
+  <div
+    class="flex w-full items-center p-2 h-[34px] gap-x-2 border-b border-slate-200"
+  >
+    <button on:click={() => inputEl.focus()}>
+      <Search size="16px" />
+    </button>
+
+    <input
+      bind:value={searchText}
+      bind:this={inputEl}
+      type="text"
+      placeholder="Search"
+      class="w-full h-full"
+    />
+  </div>
+
   <PivotDrag title="Time" items={timeGrainOptions} />
 
-  <span class="splitter" />
+  <PivotDrag title="Measures" items={filteredMeasures} />
 
-  <PivotDrag title="Measures" items={$measures} />
-
-  <span class="splitter" />
-
-  <PivotDrag title="Dimensions" items={$dimensions} />
+  <PivotDrag title="Dimensions" items={filteredDimensions} />
 </div>
 
 <style lang="postcss">
