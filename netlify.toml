@@ -3,6 +3,10 @@
   package = "@netlify/plugin-csp-nonce"
   [plugins.inputs]
     reportOnly = true
+    path = "/*"
+    excludedPath = [
+      "**/*.js"
+    ]
 [[headers]]
   for = "/*"
   [headers.values]
