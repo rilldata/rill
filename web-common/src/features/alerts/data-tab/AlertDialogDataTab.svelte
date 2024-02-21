@@ -5,7 +5,7 @@
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import FilterChips from "../../dashboards/filters/FilterChips.svelte";
-  import DataPreview from "./../DataPreview.svelte";
+  import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
   import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
@@ -13,7 +13,6 @@
   const { form, errors, handleChange } = formState;
 
   const {
-    dashboardStore,
     selectors: {
       measures: { allMeasures },
       dimensions: { allDimensions },
@@ -86,11 +85,9 @@
     />
   </FormSection>
   <FormSection title="Data preview">
-    <DataPreview
+    <AlertDataPreview
       dimension={$form["splitByDimension"]}
-      filter={$dashboardStore.whereFilter}
       measure={$form["measure"]}
-      metricsView={$dashboardStore.name}
     />
   </FormSection>
 </div>
