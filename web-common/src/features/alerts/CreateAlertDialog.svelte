@@ -10,6 +10,7 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
+  import CancelCreateAlertDialog from "@rilldata/web-common/features/alerts/CancelCreateAlertDialog.svelte";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
     type AlertFormValue,
@@ -136,9 +137,19 @@
   $: isTabValid = checkIsTabValid(currentTabIndex, $form, $errors);
 
   let currentTabIndex = 0;
+  let cancelling = false;
 
-  function handleCancel() {
+  function handleCancelAttempt() {
+    cancelling = true;
+  }
+
+  function handleClose() {
     dispatch("close");
+    open = false;
+  }
+
+  function handleContinue() {
+    cancelling = false;
   }
 
   function handleBack() {
@@ -150,62 +161,78 @@
   }
 </script>
 
-<Dialog class="fixed inset-0 flex items-center justify-center z-50" {open}>
-  <DialogOverlay
-    class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
-  />
-  <!-- 602px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
-  <form
-    class="transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
-    id="create-alert-form"
-    on:submit|preventDefault={handleSubmit}
+{#if !cancelling}
+  <Dialog
+    class="fixed inset-0 flex items-center justify-center z-40"
+    on:close={handleCancelAttempt}
+    {open}
   >
-    <DialogTitle
-      class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7"
+    <DialogOverlay
+      class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
+    />
+    <!-- 602px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
+    <form
+      class="transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
+      id="create-alert-form"
+      on:submit|preventDefault={handleSubmit}
     >
-      Create alert
-    </DialogTitle>
-    <DialogTabs.Root value={tabs[currentTabIndex]}>
-      <DialogTabs.List class="border-t border-gray-200">
-        {#each tabs as tab, i}
-          <DialogTabs.Trigger value={tab} tabIndex={i}>
-            {tab}
-          </DialogTabs.Trigger>
-        {/each}
-      </DialogTabs.List>
-      <div class="p-3 bg-slate-100">
-        <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-          <AlertDialogDataTab {formState} />
-        </DialogTabs.Content>
-        <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-          <AlertDialogCriteriaTab {formState} />
-        </DialogTabs.Content>
-        <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-          <AlertDialogDeliveryTab {formState} />
-        </DialogTabs.Content>
+      <DialogTitle
+        class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7"
+      >
+        Create alert
+      </DialogTitle>
+      <DialogTabs.Root value={tabs[currentTabIndex]}>
+        <DialogTabs.List class="border-t border-gray-200">
+          {#each tabs as tab, i}
+            <DialogTabs.Trigger value={tab} tabIndex={i}>
+              {tab}
+            </DialogTabs.Trigger>
+          {/each}
+        </DialogTabs.List>
+        <div class="p-3 bg-slate-100">
+          <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
+            <AlertDialogDataTab {formState} />
+          </DialogTabs.Content>
+          <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
+            <AlertDialogCriteriaTab {formState} />
+          </DialogTabs.Content>
+          <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
+            <AlertDialogDeliveryTab {formState} />
+          </DialogTabs.Content>
+        </div>
+      </DialogTabs.Root>
+      <div class="px-6 py-3 flex items-center gap-x-2">
+        <div class="grow" />
+        {#if currentTabIndex === 0}
+          <Button on:click={handleCancelAttempt} type="secondary">Cancel</Button
+          >
+        {:else}
+          <Button on:click={handleBack} type="secondary">Back</Button>
+        {/if}
+        {#if currentTabIndex !== 2}
+          <Button
+            type="primary"
+            disabled={!isTabValid}
+            on:click={handleNextTab}
+          >
+            Next
+          </Button>
+        {:else}
+          <Button
+            type="primary"
+            disabled={!isTabValid || $isSubmitting}
+            form="create-alert-form"
+            submitForm
+          >
+            Create
+          </Button>
+        {/if}
       </div>
-    </DialogTabs.Root>
-    <div class="px-6 py-3 flex items-center gap-x-2">
-      <div class="grow" />
-      {#if currentTabIndex === 0}
-        <Button on:click={handleCancel} type="secondary">Cancel</Button>
-      {:else}
-        <Button on:click={handleBack} type="secondary">Back</Button>
-      {/if}
-      {#if currentTabIndex !== 2}
-        <Button type="primary" disabled={!isTabValid} on:click={handleNextTab}>
-          Next
-        </Button>
-      {:else}
-        <Button
-          type="primary"
-          disabled={!isTabValid || $isSubmitting}
-          form="create-alert-form"
-          submitForm
-        >
-          Create
-        </Button>
-      {/if}
-    </div>
-  </form>
-</Dialog>
+    </form>
+  </Dialog>
+{:else}
+  <CancelCreateAlertDialog
+    on:close={handleClose}
+    on:continue={handleContinue}
+  />
+{/if}
