@@ -168,3 +168,20 @@ You have now configured Azure access from your local environment. Rill will dete
 ### Configure credentials for MotherDuck service
 
 When developing a project locally, you need to set `motherduck_token` in your enviornment variables. Refer to motherduck [docs](https://motherduck.com/docs/authenticating-to-motherduck#saving-the-service-token-as-an-environment-variable) for more infromation on authenticating with token.
+
+## Live connections 
+A live connection enables users to discover existing tables and perform OLAP queries directly on the engine without transfering data to another OLAP engine.
+OLAP driver can be configured by passing additional `--db-driver` config in `rill start` CLI command. 
+The default OLAP engine is DuckDB. 
+
+### Clickhouse 
+Steps for configuring a Rill and Clickhouse connection - 
+```bash
+# Connecting to clickhouse local
+rill start --db-driver clickhouse --db "clickhouse://localhost:9000"
+
+# Connecting to clickhouse cluster 
+rill start --db-driver clickhouse --db "<clickhouse://<host>:<port>?username=<username>&password=<pass>>"
+```
+This would open up browser and shows all the existing clickhouse tables in Rill. Dashboards can be then created on top of existing source.
+Note: Data modeling is not supported for clickhouse driver at the moment.
