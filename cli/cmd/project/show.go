@@ -40,7 +40,9 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			return ch.Printer.PrintResource(toRow(proj.Project))
+			ch.Printer.PrintProjects([]*adminv1.Project{proj.Project})
+
+			return nil
 		},
 	}
 

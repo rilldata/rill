@@ -109,10 +109,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("\nResources\n")
-			err = ch.Printer.PrintResource(table)
-			if err != nil {
-				return err
-			}
+			ch.Printer.PrintData(table)
 
 			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
@@ -121,10 +118,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				ch.Printer.PrintlnSuccess("\nParse errors\n")
-				err = ch.Printer.PrintResource(table)
-				if err != nil {
-					return err
-				}
+				ch.Printer.PrintData(table)
 			}
 
 			return nil

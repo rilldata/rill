@@ -64,7 +64,7 @@ func TestServiceWorkflow(t *testing.T) {
 
 	var buf bytes.Buffer
 	p := printer.NewPrinter(printer.FormatHuman)
-	p.SetResourceOutput(&buf)
+	p.OverrideDataOutput(&buf)
 
 	helper := &cmdutil.Helper{
 		AdminURL:          "http://localhost:9090",
@@ -85,7 +85,7 @@ func TestServiceWorkflow(t *testing.T) {
 	// Create service
 	serviceName := "myservice"
 	buf.Reset()
-	p.SetHumanOutput(&buf)
+	p.OverrideHumanOutput(&buf)
 	cmd = CreateCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
@@ -110,7 +110,7 @@ func TestServiceWorkflow(t *testing.T) {
 	// List service in org
 	buf.Reset()
 	p = printer.NewPrinter(printer.FormatJSON)
-	p.SetResourceOutput(&buf)
+	p.OverrideDataOutput(&buf)
 
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
@@ -129,7 +129,7 @@ func TestServiceWorkflow(t *testing.T) {
 
 	// Delete service
 	buf.Reset()
-	p.SetHumanOutput(&buf)
+	p.OverrideHumanOutput(&buf)
 	cmd = DeleteCmd(helper)
 	cmd.UsageString()
 	cmd.SetOut(&buf)
@@ -143,7 +143,7 @@ func TestServiceWorkflow(t *testing.T) {
 	// List service in org after delete
 	buf.Reset()
 	p = printer.NewPrinter(printer.FormatJSON)
-	p.SetResourceOutput(&buf)
+	p.OverrideDataOutput(&buf)
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
@@ -161,8 +161,8 @@ func TestServiceWorkflow(t *testing.T) {
 
 	// Rename service
 	buf.Reset()
-	helper.Printer.SetHumanOutput(nil)
-	helper.Printer.SetResourceOutput(&buf)
+	helper.Printer.OverrideHumanOutput(nil)
+	helper.Printer.OverrideDataOutput(&buf)
 	cmd = RenameCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)

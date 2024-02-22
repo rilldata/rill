@@ -12,13 +12,13 @@ import (
 )
 
 type Helper struct {
+	*printer.Printer
 	Version            Version
 	AdminURL           string
 	AdminTokenOverride string
 	AdminTokenDefault  string
 	Org                string
 	Interactive        bool
-	Printer            *printer.Printer
 	admin              *client.Client
 }
 

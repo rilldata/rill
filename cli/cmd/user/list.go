@@ -4,9 +4,7 @@ import (
 	"context"
 	"strings"
 
-	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -20,29 +18,24 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
-
 			if projectName != "" {
 				if strings.HasPrefix(pageToken, "usr") {
-					err = listProjectMembers(cmd, ch.Printer, client, ch.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else if strings.HasPrefix(pageToken, "inv") {
-					err = listProjectInvites(cmd, ch.Printer, client, ch.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					err := listProjectInvites(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else {
-					err = listProjectMembers(cmd, ch.Printer, client, ch.Org, projectName, pageToken, pageSize)
+					err := listProjectMembers(cmd, ch, ch.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
 
-					err = listProjectInvites(cmd, ch.Printer, client, ch.Org, projectName, pageToken, pageSize)
+					err = listProjectInvites(cmd, ch, ch.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
@@ -51,22 +44,22 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				// TODO: user groups
 			} else {
 				if strings.HasPrefix(pageToken, "usr") {
-					err = listOrgMembers(cmd, ch.Printer, client, ch.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else if strings.HasPrefix(pageToken, "inv") {
-					err = listOrgInvites(cmd, ch.Printer, client, ch.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					err := listOrgInvites(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else {
-					err = listOrgMembers(cmd, ch.Printer, client, ch.Org, pageToken, pageSize)
+					err := listOrgMembers(cmd, ch, ch.Org, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
 
-					err = listOrgInvites(cmd, ch.Printer, client, ch.Org, pageToken, pageSize)
+					err = listOrgInvites(cmd, ch, ch.Org, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
@@ -87,7 +80,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	return listCmd
 }
 
-func listProjectMembers(cmd *cobra.Command, p *printer.Printer, client *adminclient.Client, org, project, pageToken string, pageSize uint32) error {
+func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pageToken string, pageSize uint32) error {
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
 	members, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
 		Organization: org,
 		Project:      project,
@@ -98,10 +96,7 @@ func listProjectMembers(cmd *cobra.Command, p *printer.Printer, client *admincli
 		return err
 	}
 
-	err = cmdutil.PrintMembers(p, members.Members)
-	if err != nil {
-		return err
-	}
+	ch.PrintMembers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()
@@ -111,7 +106,12 @@ func listProjectMembers(cmd *cobra.Command, p *printer.Printer, client *admincli
 	return nil
 }
 
-func listProjectInvites(cmd *cobra.Command, p *printer.Printer, client *adminclient.Client, org, project, pageToken string, pageSize uint32) error {
+func listProjectInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pageToken string, pageSize uint32) error {
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
 	invites, err := client.ListProjectInvites(context.Background(), &adminv1.ListProjectInvitesRequest{
 		Organization: org,
 		Project:      project,
@@ -125,10 +125,8 @@ func listProjectInvites(cmd *cobra.Command, p *printer.Printer, client *admincli
 	if len(invites.Invites) > 0 && pageToken == "" {
 		cmd.Println()
 	}
-	err = cmdutil.PrintInvites(p, invites.Invites)
-	if err != nil {
-		return err
-	}
+	ch.PrintlnSuccess("Pending user invites")
+	ch.PrintInvites(invites.Invites)
 
 	if invites.NextPageToken != "" {
 		cmd.Println()
@@ -138,7 +136,12 @@ func listProjectInvites(cmd *cobra.Command, p *printer.Printer, client *admincli
 	return nil
 }
 
-func listOrgMembers(cmd *cobra.Command, p *printer.Printer, client *adminclient.Client, org, pageToken string, pageSize uint32) error {
+func listOrgMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken string, pageSize uint32) error {
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
 	members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
 		Organization: org,
 		PageSize:     pageSize,
@@ -148,10 +151,7 @@ func listOrgMembers(cmd *cobra.Command, p *printer.Printer, client *adminclient.
 		return err
 	}
 
-	err = cmdutil.PrintMembers(p, members.Members)
-	if err != nil {
-		return err
-	}
+	ch.PrintMembers(members.Members)
 
 	if members.NextPageToken != "" {
 		cmd.Println()
@@ -160,7 +160,12 @@ func listOrgMembers(cmd *cobra.Command, p *printer.Printer, client *adminclient.
 	return nil
 }
 
-func listOrgInvites(cmd *cobra.Command, p *printer.Printer, client *adminclient.Client, org, pageToken string, pageSize uint32) error {
+func listOrgInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken string, pageSize uint32) error {
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
 	invites, err := client.ListOrganizationInvites(context.Background(), &adminv1.ListOrganizationInvitesRequest{
 		Organization: org,
 		PageSize:     pageSize,
@@ -173,10 +178,8 @@ func listOrgInvites(cmd *cobra.Command, p *printer.Printer, client *adminclient.
 	if len(invites.Invites) > 0 && pageToken == "" {
 		cmd.Println()
 	}
-	err = cmdutil.PrintInvites(p, invites.Invites)
-	if err != nil {
-		return err
-	}
+	ch.PrintlnSuccess("Pending user invites")
+	ch.PrintInvites(invites.Invites)
 
 	if invites.NextPageToken != "" {
 		cmd.Println()

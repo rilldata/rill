@@ -31,10 +31,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			err = cmdutil.PrintUsers(ch.Printer, res.Users)
-			if err != nil {
-				return err
-			}
+			ch.PrintUsers(res.Users)
 
 			if res.NextPageToken != "" {
 				cmd.Println()

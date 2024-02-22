@@ -3,8 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -49,29 +47,4 @@ func orgNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 	}
 
 	return orgNames, nil
-}
-
-func toTable(organizations []*adminv1.Organization, defaultOrg string) []*organization {
-	orgs := make([]*organization, 0, len(organizations))
-
-	for _, org := range organizations {
-		if strings.EqualFold(org.Name, defaultOrg) {
-			org.Name += " (default)"
-		}
-		orgs = append(orgs, toRow(org))
-	}
-
-	return orgs
-}
-
-func toRow(o *adminv1.Organization) *organization {
-	return &organization{
-		Name:      o.Name,
-		CreatedAt: o.CreatedOn.AsTime().Format(time.DateTime),
-	}
-}
-
-type organization struct {
-	Name      string `header:"name" json:"name"`
-	CreatedAt string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }

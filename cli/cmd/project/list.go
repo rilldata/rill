@@ -36,10 +36,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("Projects list")
-			err = ch.Printer.PrintResource(toTable(res.Projects))
-			if err != nil {
-				return err
-			}
+			ch.Printer.PrintProjects(res.Projects)
+
 			if res.NextPageToken != "" {
 				cmd.Println()
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)

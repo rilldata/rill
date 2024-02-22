@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -65,7 +64,7 @@ func TestOrganizationWorkflow(t *testing.T) {
 
 	var buf bytes.Buffer
 	p := printer.NewPrinter(printer.FormatJSON)
-	p.SetResourceOutput(&buf)
+	p.OverrideDataOutput(&buf)
 
 	helper := &cmdutil.Helper{
 		AdminURL:          "http://localhost:9090",
@@ -165,7 +164,7 @@ func TestOrganizationWorkflow(t *testing.T) {
 
 	// Switch organization
 	buf.Reset()
-	helper.Printer.SetHumanOutput(&buf)
+	helper.Printer.OverrideHumanOutput(&buf)
 	cmd = SwitchCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)

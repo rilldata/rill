@@ -74,7 +74,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("Updated organization")
-			return ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
+			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
+
+			return nil
 		},
 	}
 	editCmd.Flags().SortFlags = false

@@ -56,10 +56,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !statusFlag {
-				err = ch.Printer.PrintResource(res.Names)
-				if err != nil {
-					return err
-				}
+				ch.Printer.PrintData(res.Names)
 			} else {
 				// We need to fetch the status of each project by connecting to their individual runtime instances.
 				// Using an errgroup to parallelize the requests.
@@ -86,10 +83,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				err = ch.Printer.PrintResource(table)
-				if err != nil {
-					return err
-				}
+				ch.Printer.PrintData(table)
 			}
 
 			if res.NextPageToken != "" {

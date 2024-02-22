@@ -38,10 +38,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				err = cmdutil.PrintMembers(ch.Printer, members.Members)
-				if err != nil {
-					return err
-				}
+				ch.PrintMembers(members.Members)
 
 				if members.NextPageToken != "" {
 					cmd.Println()
@@ -57,10 +54,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				err = cmdutil.PrintMembers(ch.Printer, members.Members)
-				if err != nil {
-					return err
-				}
+				ch.PrintMembers(members.Members)
 
 				if members.NextPageToken != "" {
 					cmd.Println()

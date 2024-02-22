@@ -54,8 +54,10 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Created organization")
-			return ch.Printer.PrintResource([]*organization{toRow(res.Organization)})
+			ch.PrintlnSuccess("Created organization")
+			ch.PrintOrgs([]*adminv1.Organization{res.Organization}, "")
+
+			return nil
 		},
 	}
 	createCmd.Flags().SortFlags = false

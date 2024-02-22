@@ -179,7 +179,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 				fmt.Println()
 			}
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-				ch.Printer.PrintlnInfo(githubSetupMsg)
+				ch.Printer.PrintBold(githubSetupMsg)
 				return nil
 			}
 			return err
@@ -187,7 +187,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 		// Error if the repository is not in sync with the remote
 		if !repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name) {
-			ch.Printer.PrintlnInfo("You can run `rill deploy` again when you have pushed your local changes to the remote.")
+			ch.Printer.PrintBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
 	}
@@ -274,7 +274,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		}
 		ch.Printer.PrintlnSuccess(fmt.Sprintf("Created org %q. Run `rill org edit` to change name if required.\n", ch.Org))
 	} else {
-		ch.Printer.PrintlnInfo(fmt.Sprintf("Using org %q.", ch.Org))
+		ch.Printer.PrintBold(fmt.Sprintf("Using org %q.\n", ch.Org))
 	}
 
 	// Check if a project matching githubURL already exists in this org
@@ -289,9 +289,9 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		}
 
 		ch.Printer.PrintlnWarn(fmt.Sprintf("Another project %q already deploys from %q.", projects[0], githubURL))
-		ch.Printer.PrintlnInfo("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`")
-		ch.Printer.PrintlnInfo("- To delete the existing project, press 'n' and run `rill project delete`")
-		ch.Printer.PrintlnInfo("- To deploy the repository as a new project under another name, press 'y' or enter")
+		ch.Printer.PrintBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
+		ch.Printer.PrintBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
+		ch.Printer.PrintBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
 		if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
 			ch.Printer.PrintlnWarn("Aborted")
 			return nil
@@ -350,7 +350,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 }
 
 func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string, tel *telemetry.Telemetry) error {
-	ch.Printer.PrintlnInfo("Please log in or sign up for Rill. Opening browser...")
+	ch.Printer.PrintBold("Please log in or sign up for Rill. Opening browser...\n")
 	time.Sleep(2 * time.Second)
 
 	tel.Emit(telemetry.ActionLoginStart)

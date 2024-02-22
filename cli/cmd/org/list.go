@@ -34,10 +34,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("Organizations list")
-			err = ch.Printer.PrintResource(toTable(res.Organizations, ch.Org))
-			if err != nil {
-				return err
-			}
+			ch.PrintOrgs(res.Organizations, ch.Org)
 
 			if res.NextPageToken != "" {
 				cmd.Println()

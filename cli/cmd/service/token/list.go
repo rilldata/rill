@@ -35,7 +35,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			return ch.Printer.PrintResource(toTable(res.Tokens))
+			ch.Printer.PrintServiceTokens(res.Tokens)
+
+			return nil
 		},
 	}
 
