@@ -4,7 +4,7 @@
   import Button, {
     ButtonShape,
     ButtonSize,
-    ButtonType,
+    ButtonKind,
   } from "@rilldata/web-common/components/button/Button.svelte";
 
   // export const meta = {
@@ -49,8 +49,8 @@
   };
 
   const shapes: ButtonShape[] = ["normal", "square", "circle"];
-  const sizes: ButtonSize[] = ["large", "medium", "small"];
-  const states = ["normal", "hovered/pressed", "disabled"];
+  const sizes: ButtonSize[] = ["xl", "large", "medium", "small"];
+  const states = ["normal", "hovered/pressed", "active", "status", "disabled"];
 
   const figmaRows: FigmaRow[] = [];
 
@@ -71,11 +71,11 @@
   }
 
   // used as columns
-  const buttonTypes: ButtonType[] = [
-    "brand",
+  const buttonTypes: ButtonKind[] = [
     "primary",
     "secondary",
-    "noStroke",
+    "subtle",
+    "ghost",
     "dashed",
     "link",
     "text",
@@ -135,7 +135,7 @@
     {#each figmaRows as row}
       <tr>
         <td>
-          {#if row.size === "large" && row.state === "normal"}
+          {#if row.size === "xl" && row.state === "normal"}
             <h1>{row.danger ? "dangerous" : row.shape}</h1>
             <!-- {:else} -->
           {/if}
@@ -153,7 +153,10 @@
               size={row.size}
               status={row.danger ? "error" : "info"}
               type={buttonType}
+              selected={row.state === "hovered/pressed"}
+              active={row.state === "active"}
               disabled={row.state === "disabled"}
+              loading={row.state === "status"}
               >{row.shape === "normal" ? "Button Title" : "A"}</Button
             ></td
           >

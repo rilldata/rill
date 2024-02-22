@@ -49,8 +49,6 @@
         <CriteriaForm {formState} {index} />
       </div>
     {/each}
-    <Button dashed type="secondary" on:click={handleAddCriteria}
-      >+ Add Criteria</Button
-    >
+    <Button type="dashed" on:click={handleAddCriteria}>+ Add Criteria</Button>
   </div>
 {/if}
