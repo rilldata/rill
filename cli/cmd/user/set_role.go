@@ -36,7 +36,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, ch.Org, projectName))
+				ch.PrintfSuccess("Updated role of user %q to %q in the project \"%s/%s\"\n", email, role, ch.Org, projectName)
 			} else {
 				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
 					Organization: ch.Org,
@@ -46,7 +46,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, ch.Org))
+				ch.PrintfSuccess("Updated role of user %q to %q in the organization %q\n", email, role, ch.Org)
 			}
 
 			return nil

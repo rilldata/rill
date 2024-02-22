@@ -1,8 +1,6 @@
 package user
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -34,7 +32,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, ch.Org, projectName))
+				ch.PrintfSuccess("Removed user %q from project \"%s/%s\"\n", email, ch.Org, projectName)
 			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
 					Organization:     ch.Org,
@@ -44,7 +42,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from organization %q", email, ch.Org))
+				ch.PrintfSuccess("Removed user %q from organization %q\n", email, ch.Org)
 			}
 
 			return nil

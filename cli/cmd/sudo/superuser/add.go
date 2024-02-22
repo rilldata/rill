@@ -1,8 +1,6 @@
 package superuser
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -29,7 +27,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Granted superuser to %q", args[0]))
+			ch.PrintfSuccess("Granted superuser to %q\n", args[0])
 
 			return nil
 		},

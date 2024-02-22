@@ -22,7 +22,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(annotations) == 0 {
-				ch.Printer.PrintlnWarn("Setting an empty annotation list will remove all annotations from the project")
+				ch.PrintfWarn("Setting an empty annotation list will remove all annotations from the project.\n")
 				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", false) {
 					return nil
 				}

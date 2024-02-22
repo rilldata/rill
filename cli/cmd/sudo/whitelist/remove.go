@@ -1,8 +1,6 @@
 package whitelist
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -32,7 +30,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed whitelist for org %q and domain %q", org, domain))
+			ch.PrintfSuccess("Removed whitelist for org %q and domain %q\n", org, domain)
 
 			return nil
 		},

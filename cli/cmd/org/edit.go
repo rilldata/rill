@@ -73,7 +73,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Updated organization")
+			ch.PrintfSuccess("Updated organization\n")
 			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
 
 			return nil

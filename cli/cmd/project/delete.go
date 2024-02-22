@@ -39,7 +39,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !force {
-				ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Deleting the project %q will remove all metadata associated with the project", name))
+				ch.PrintfWarn("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				project, err := cmdutil.InputPrompt(msg, "")
@@ -60,7 +60,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
+			ch.PrintfSuccess("Deleted project: %v\n", name)
 			return nil
 		},
 	}

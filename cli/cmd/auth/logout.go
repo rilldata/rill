@@ -19,7 +19,7 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			token := ch.AdminToken()
 			if token == "" {
-				ch.Printer.PrintlnWarn("You are already logged out.")
+				ch.PrintfWarn("You are already logged out.\n")
 				return nil
 			}
 
@@ -28,7 +28,7 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Successfully logged out.")
+			ch.PrintfSuccess("Successfully logged out.\n")
 			return nil
 		},
 	}
@@ -43,7 +43,7 @@ func Logout(ctx context.Context, ch *cmdutil.Helper) error {
 
 	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 	if err != nil {
-		ch.Printer.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
+		ch.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
 	}
 
 	err = dotrill.SetAccessToken("")

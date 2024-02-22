@@ -54,7 +54,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintlnSuccess("Created organization")
+			ch.PrintfSuccess("Created organization\n")
 			ch.PrintOrgs([]*adminv1.Organization{res.Organization}, "")
 
 			return nil

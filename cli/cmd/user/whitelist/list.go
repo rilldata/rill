@@ -1,8 +1,6 @@
 package whitelist
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -26,12 +24,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(whitelistedDomains.Domains) > 0 {
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Whitelisted email domains for %q:", ch.Org))
+				ch.PrintfSuccess("Whitelisted email domains for %q:\n", ch.Org)
 				for _, d := range whitelistedDomains.Domains {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("%q (%q)", d.Domain, d.Role))
+					ch.PrintfSuccess("%q (%q)\n", d.Domain, d.Role)
 				}
 			} else {
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("No whitelisted email domains for %q", ch.Org))
+				ch.PrintfSuccess("No whitelisted email domains for %q\n", ch.Org)
 			}
 			return nil
 		},

@@ -88,7 +88,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted organization: %v", name))
+			ch.PrintfSuccess("Deleted organization: %v\n", name)
 			return nil
 		},
 	}

@@ -1,8 +1,6 @@
 package superuser
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -29,7 +27,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed superuser from %q", args[0]))
+			ch.PrintfSuccess("Removed superuser from %q\n", args[0])
 
 			return nil
 		},

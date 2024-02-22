@@ -24,7 +24,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println("Warn: Renaming an project would invalidate dashboard URLs")
+			ch.PrintfWarn("Warn: Renaming a project will invalidate dashboard URLs\n")
 
 			if !cmd.Flags().Changed("project") && ch.Interactive {
 				projectNames, err := projectNames(ctx, ch)
@@ -56,9 +56,9 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Renamed project")
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl))
-			ch.Printer.PrintProjects([]*adminv1.Project{updatedProj.Project})
+			ch.PrintfSuccess("Renamed project\n")
+			ch.PrintfSuccess("New web url is: %s\n", updatedProj.Project.FrontendUrl)
+			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
 
 			return nil
 		},

@@ -1,8 +1,6 @@
 package whitelist
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -25,9 +23,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			domain := args[1]
 			role := args[2]
 
-			ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s", domain, org, role))
+			ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s\n", domain, org, role)
 			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
-				ch.Printer.PrintlnWarn("Aborted")
+				ch.PrintfWarn("Aborted\n")
 				return nil
 			}
 
@@ -40,7 +38,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Success")
+			ch.PrintfSuccess("Success\n")
 
 			return nil
 		},

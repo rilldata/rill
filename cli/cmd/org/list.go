@@ -29,11 +29,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Organizations) == 0 {
-				ch.Printer.PrintlnWarn("No orgs found")
+				ch.PrintfWarn("No orgs found\n")
 				return nil
 			}
 
-			ch.Printer.PrintlnSuccess("Organizations list")
+			ch.PrintfSuccess("Organizations list\n")
 			ch.PrintOrgs(res.Organizations, ch.Org)
 
 			if res.NextPageToken != "" {

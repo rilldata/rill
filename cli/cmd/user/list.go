@@ -125,7 +125,7 @@ func listProjectInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 	if len(invites.Invites) > 0 && pageToken == "" {
 		cmd.Println()
 	}
-	ch.PrintlnSuccess("Pending user invites")
+	ch.PrintfSuccess("Pending user invites\n")
 	ch.PrintInvites(invites.Invites)
 
 	if invites.NextPageToken != "" {
@@ -178,7 +178,7 @@ func listOrgInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 	if len(invites.Invites) > 0 && pageToken == "" {
 		cmd.Println()
 	}
-	ch.PrintlnSuccess("Pending user invites")
+	ch.PrintfSuccess("Pending user invites\n")
 	ch.PrintInvites(invites.Invites)
 
 	if invites.NextPageToken != "" {

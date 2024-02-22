@@ -107,7 +107,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Check version
 	err = update.CheckVersion(ctx, ver.Number)
 	if err != nil {
-		ch.Printer.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
+		ch.PrintfWarn("Warning: version check failed: %v\n", err)
 	}
 
 	// Print warning if currently acting as an assumed user
@@ -116,7 +116,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		fmt.Printf("could not parse representing user email\n")
 	}
 	if representingUser != "" {
-		ch.Printer.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
+		ch.PrintfWarn("Warning: Running action as %q\n", representingUser)
 	}
 
 	// Cobra config

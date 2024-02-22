@@ -51,12 +51,12 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Names) == 0 {
-				ch.Printer.PrintlnWarn("No projects found")
+				ch.PrintfWarn("No projects found\n")
 				return nil
 			}
 
 			if !statusFlag {
-				ch.Printer.PrintData(res.Names)
+				ch.PrintData(res.Names)
 			} else {
 				// We need to fetch the status of each project by connecting to their individual runtime instances.
 				// Using an errgroup to parallelize the requests.
@@ -83,7 +83,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.Printer.PrintData(table)
+				ch.PrintData(table)
 			}
 
 			if res.NextPageToken != "" {

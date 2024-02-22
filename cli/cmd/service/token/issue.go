@@ -1,8 +1,6 @@
 package token
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -32,7 +30,7 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Issued token: %v", res.Token))
+			ch.PrintfSuccess("Issued token: %v\n", res.Token)
 
 			return nil
 		},

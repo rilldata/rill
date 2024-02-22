@@ -105,8 +105,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Updated project")
-			ch.Printer.PrintProjects([]*adminv1.Project{updatedProj.Project})
+			ch.PrintfSuccess("Updated project\n")
+			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
 
 			return nil
 		},

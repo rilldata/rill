@@ -31,11 +31,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Tokens) == 0 {
-				ch.Printer.PrintlnWarn("No tokens found")
+				ch.PrintfWarn("No tokens found\n")
 				return nil
 			}
 
-			ch.Printer.PrintServiceTokens(res.Tokens)
+			ch.PrintServiceTokens(res.Tokens)
 
 			return nil
 		},

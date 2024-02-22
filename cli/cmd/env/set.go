@@ -47,7 +47,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Updated project variables")
+			ch.PrintfSuccess("Updated project variables\n")
 			return nil
 		},
 	}

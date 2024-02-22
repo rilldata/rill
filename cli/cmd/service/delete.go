@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -27,7 +25,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted service: %q", args[0]))
+			ch.PrintfSuccess("Deleted service: %q\n", args[0])
 
 			return nil
 		},

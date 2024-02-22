@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -67,10 +66,10 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 		return err
 	}
 
-	ch.Printer.PrintBold("\nConfirmation Code: ")
-	ch.Printer.PrintlnSuccess(deviceVerification.UserCode)
+	ch.PrintfBold("\nConfirmation Code: ")
+	ch.PrintfSuccess(deviceVerification.UserCode + "\n")
 
-	ch.Printer.PrintBold(fmt.Sprintf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL))
+	ch.PrintfBold("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
 
 	_ = browser.Open(deviceVerification.VerificationCompleteURL)
 
@@ -85,7 +84,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	}
 	// set the default token to the one we just got
 	ch.AdminTokenDefault = res1.AccessToken
-	ch.Printer.PrintBold("Successfully logged in. Welcome to Rill!\n")
+	ch.PrintfBold("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }
 
@@ -102,7 +101,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 
 	if len(res.Organizations) == 0 {
 		if interactive {
-			ch.Printer.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+			ch.PrintfWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.\n")
 		}
 		return nil
 	}
@@ -124,7 +123,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 	ch.Org = defaultOrg
 
 	if interactive {
-		ch.Printer.Print(fmt.Sprintf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg))
+		ch.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
 	}
 	return nil
 }

@@ -50,7 +50,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				orgQuotas := res.Organization.Quotas
-				ch.Printer.PrintlnSuccess("Updated organizations quota")
+				ch.PrintfSuccess("Updated organizations quota\n")
 				fmt.Printf("Organization Name: %s\n", org)
 				fmt.Printf("Projects: %d\n", orgQuotas.Projects)
 				fmt.Printf("Deployments: %d\n", orgQuotas.Deployments)
@@ -72,7 +72,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				userQuotas := res.User.Quotas
-				ch.Printer.PrintlnSuccess("Updated user's quota")
+				ch.PrintfSuccess("Updated user's quota\n")
 				fmt.Printf("User: %s\n", email)
 				fmt.Printf("Single user orgs: %d\n", userQuotas.SingleuserOrgs)
 			} else {

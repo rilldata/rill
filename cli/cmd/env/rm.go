@@ -43,7 +43,7 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Updated project")
+			ch.PrintfSuccess("Updated project\n")
 			return nil
 		},
 	}

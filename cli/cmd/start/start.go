@@ -80,7 +80,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
 				confirm := cmdutil.ConfirmPrompt(msg, "", defval)
 				if !confirm {
-					ch.Printer.PrintlnWarn("Aborted")
+					ch.PrintfWarn("Aborted\n")
 					return nil
 				}
 			}
@@ -91,7 +91,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if n > maxProjectFiles {
-				ch.Printer.PrintlnError(fmt.Sprintf("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.", maxProjectFiles, n))
+				ch.PrintfError("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.\n", maxProjectFiles, n)
 				return nil
 			}
 

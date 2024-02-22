@@ -29,7 +29,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Project.Annotations) == 0 {
-				ch.Printer.PrintlnWarn("No annotations found")
+				ch.PrintfWarn("No annotations found\n")
 				return nil
 			}
 

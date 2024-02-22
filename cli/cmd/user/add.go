@@ -38,9 +38,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if res.PendingSignup {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join project \"%s/%s\" as %q", email, ch.Org, projectName, role))
+					ch.PrintfSuccess("Invitation sent to %q to join project \"%s/%s\" as %q\n", email, ch.Org, projectName, role)
 				} else {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the project \"%s/%s\" as %q", email, ch.Org, projectName, role))
+					ch.PrintfSuccess("User %q added to the project \"%s/%s\" as %q\n", email, ch.Org, projectName, role)
 				}
 			} else {
 				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
@@ -53,9 +53,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if res.PendingSignup {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", email, ch.Org, role))
+					ch.PrintfSuccess("Invitation sent to %q to join organization %q as %q\n", email, ch.Org, role)
 				} else {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the organization %q as %q", email, ch.Org, role))
+					ch.PrintfSuccess("User %q added to the organization %q as %q\n", email, ch.Org, role)
 				}
 			}
 

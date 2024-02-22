@@ -33,8 +33,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Printf("Created service %q in org %q.\n", res1.Service.Name, res1.Service.OrgName)
-			ch.Printer.Printf("Access token: %s\n", res2.Token)
+			ch.Printf("Created service %q in org %q.\n", res1.Service.Name, res1.Service.OrgName)
+			ch.Printf("Access token: %s\n", res2.Token)
 
 			return nil
 		},

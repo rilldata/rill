@@ -31,12 +31,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Projects) == 0 {
-				ch.Printer.PrintlnWarn("No projects found")
+				ch.PrintfWarn("No projects found\n")
 				return nil
 			}
 
-			ch.Printer.PrintlnSuccess("Projects list")
-			ch.Printer.PrintProjects(res.Projects)
+			ch.PrintfSuccess("Projects list\n")
+			ch.PrintProjects(res.Projects)
 
 			if res.NextPageToken != "" {
 				cmd.Println()

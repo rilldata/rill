@@ -155,14 +155,14 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			if !ch.IsAuthenticated() {
 				err := loginWithTelemetry(ctx, ch, "", tel)
 				if err != nil {
-					ch.Printer.PrintlnWarn(fmt.Sprintf("Login failed with error: %s", err.Error()))
+					ch.PrintfWarn("Login failed with error: %s\n", err.Error())
 				}
 				fmt.Println()
 			}
 
-			ch.Printer.PrintlnWarn(fmt.Sprintf("Directory %q doesn't contain a valid Rill project.", localProjectPath))
-			ch.Printer.PrintlnWarn("Run `rill deploy` from a Rill project directory or use `--path` to pass a project path.")
-			ch.Printer.PrintlnWarn("Run `rill start` to initialize a new Rill project.")
+			ch.PrintfWarn("Directory %q doesn't contain a valid Rill project.\n", localProjectPath)
+			ch.PrintfWarn("Run `rill deploy` from a Rill project directory or use `--path` to pass a project path.\n")
+			ch.PrintfWarn("Run `rill start` to initialize a new Rill project.\n")
 			return nil
 		}
 
@@ -174,12 +174,12 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			if !ch.IsAuthenticated() {
 				err := loginWithTelemetry(ctx, ch, "", tel)
 				if err != nil {
-					ch.Printer.PrintlnWarn(fmt.Sprintf("Login failed with error: %s", err.Error()))
+					ch.PrintfWarn("Login failed with error: %s\n", err.Error())
 				}
 				fmt.Println()
 			}
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-				ch.Printer.PrintBold(githubSetupMsg)
+				ch.PrintfBold(githubSetupMsg)
 				return nil
 			}
 			return err
@@ -187,7 +187,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 		// Error if the repository is not in sync with the remote
 		if !repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name) {
-			ch.Printer.PrintBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
+			ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
 	}
@@ -197,7 +197,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// Extract Github account and repo name from the githubURL
 	ghAccount, ghRepo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
-		ch.Printer.PrintlnError(fmt.Sprintf("Invalid Github URL %q\n", githubURL))
+		ch.PrintfError("Invalid Github URL %q\n", githubURL)
 		return nil
 	}
 
@@ -272,9 +272,9 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
-		ch.Printer.PrintlnSuccess(fmt.Sprintf("Created org %q. Run `rill org edit` to change name if required.\n", ch.Org))
+		ch.PrintfSuccess("Created org %q. Run `rill org edit` to change name if required.\n", ch.Org)
 	} else {
-		ch.Printer.PrintBold(fmt.Sprintf("Using org %q.\n", ch.Org))
+		ch.PrintfBold("Using org %q.\n", ch.Org)
 	}
 
 	// Check if a project matching githubURL already exists in this org
@@ -288,12 +288,12 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			}
 		}
 
-		ch.Printer.PrintlnWarn(fmt.Sprintf("Another project %q already deploys from %q.", projects[0], githubURL))
-		ch.Printer.PrintBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
-		ch.Printer.PrintBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
-		ch.Printer.PrintBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
+		ch.PrintfWarn(fmt.Sprintf("Another project %q already deploys from %q.\n", projects[0], githubURL))
+		ch.PrintfBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
+		ch.PrintfBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
+		ch.PrintfBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
 		if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
-			ch.Printer.PrintlnWarn("Aborted")
+			ch.PrintfWarn("Aborted\n")
 			return nil
 		}
 	}
@@ -322,15 +322,15 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
-			ch.Printer.PrintlnError(fmt.Sprintf("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org))
+			ch.PrintfError("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
 	}
 
 	// Success!
-	ch.Printer.PrintlnSuccess(fmt.Sprintf("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name))
-	ch.Printer.PrintlnSuccess("Rill projects deploy continuously when you push changes to Github.")
+	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
+	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
 	// If the Git path is local, we can parse the project and check if credentials are available for the connectors used by the project.
 	if isLocalGitPath {
@@ -339,8 +339,8 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 	// Open browser
 	if res.Project.FrontendUrl != "" {
-		ch.Printer.PrintlnSuccess(fmt.Sprintf("Your project can be accessed at: %s", res.Project.FrontendUrl))
-		ch.Printer.PrintlnSuccess("Opening project in browser...")
+		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
+		ch.PrintfSuccess("Opening project in browser...\n")
 		time.Sleep(3 * time.Second)
 		_ = browser.Open(res.Project.FrontendUrl)
 	}
@@ -350,17 +350,17 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 }
 
 func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string, tel *telemetry.Telemetry) error {
-	ch.Printer.PrintBold("Please log in or sign up for Rill. Opening browser...\n")
+	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
 	time.Sleep(2 * time.Second)
 
 	tel.Emit(telemetry.ActionLoginStart)
 	if err := auth.Login(ctx, ch, redirectURL); err != nil {
 		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
-			ch.Printer.PrintlnWarn("Rill login has timed out as the code was not confirmed in the browser.")
-			ch.Printer.PrintlnWarn("Run `rill deploy` again.")
+			ch.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
+			ch.PrintfWarn("Run `rill deploy` again.\n")
 			return nil
 		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
-			ch.Printer.PrintlnError("Login failed: Confirmation code rejected")
+			ch.PrintfError("Login failed: Confirmation code rejected\n")
 			return nil
 		}
 		return fmt.Errorf("login failed: %w", err)
@@ -395,17 +395,17 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 
 		// Print instructions to grant access
 		if !silent {
-			ch.Printer.Print("Rill projects deploy continuously when you push changes to Github.\n")
-			ch.Printer.Print("You need to grant Rill read only access to your repository on Github.\n\n")
+			ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
+			ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
 			time.Sleep(3 * time.Second)
-			ch.Printer.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
-			ch.Printer.Print("\t" + res.GrantAccessUrl + "\n\n")
+			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
+			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
 			// Open browser if possible
 			_ = browser.Open(res.GrantAccessUrl)
 		} else {
-			ch.Printer.Printf("Polling for Github access for: %q\n", githubURL)
-			ch.Printer.Printf("If the browser did not redirect, visit this URL to grant access: %q\n\n", res.GrantAccessUrl)
+			ch.Printf("Polling for Github access for: %q\n", githubURL)
+			ch.Printf("If the browser did not redirect, visit this URL to grant access: %q\n\n", res.GrantAccessUrl)
 		}
 
 		// Poll for permission granted
@@ -431,7 +431,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 				// Success
 				tel.Emit(telemetry.ActionGithubConnectedSuccess)
 				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("You have connected to the %q project in Github.", ghRepo))
+				ch.PrintfSuccess("You have connected to the %q project in Github.\n", ghRepo)
 				return pollRes, nil
 			}
 
@@ -456,9 +456,9 @@ func createOrgFlow(ctx context.Context, ch *cmdutil.Helper, defaultName string) 
 			return err
 		}
 
-		ch.Printer.PrintlnWarn("Rill organizations are derived from the owner of your Github repository.")
-		ch.Printer.PrintlnWarn(fmt.Sprintf("The %q organization associated with your Github repository already exists.", defaultName))
-		ch.Printer.PrintlnWarn("Contact your Rill admin to be added to your org or create a new organization below.")
+		ch.PrintfWarn("Rill organizations are derived from the owner of your Github repository.\n")
+		ch.PrintfWarn("The %q organization associated with your Github repository already exists.\n", defaultName)
+		ch.PrintfWarn("Contact your Rill admin to be added to your org or create a new organization below.\n")
 
 		name, err := orgNamePrompt(ctx, ch)
 		if err != nil {
@@ -551,8 +551,8 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 			return nil, err
 		}
 
-		ch.Printer.PrintlnWarn("Rill project names are derived from your Github repository name.")
-		ch.Printer.PrintlnWarn(fmt.Sprintf("The %q project already exists under org %q. Please enter a different name.\n", req.Name, req.OrganizationName))
+		ch.PrintfWarn("Rill project names are derived from your Github repository name.\n")
+		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Name, req.OrganizationName)
 
 		// project name already exists, prompt for project name and create project with new name again
 		name, err := projectNamePrompt(ctx, ch, req.OrganizationName)
@@ -600,7 +600,7 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		return
 	}
 
-	ch.Printer.PrintlnWarn("\nCould not access all connectors. Rill requires credentials for the following connectors:\n")
+	ch.PrintfWarn("\nCould not access all connectors. Rill requires credentials for the following connectors:\n\n")
 	for _, c := range connectors {
 		if c.AnonymousAccess {
 			continue
@@ -613,7 +613,7 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		}
 		fmt.Print("\n")
 	}
-	ch.Printer.PrintlnWarn(fmt.Sprintf("\nRun `rill env configure --project %s` to provide credentials.\n", projectName))
+	ch.PrintfWarn("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
 	time.Sleep(2 * time.Second)
 }
 
@@ -630,9 +630,9 @@ func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) bool
 	case gitutil.SyncStatusSynced:
 		return true
 	case gitutil.SyncStatusModified:
-		ch.Printer.PrintlnWarn("Some files have been locally modified. These changes will not be present in the deployed project.")
+		ch.PrintfWarn("Some files have been locally modified. These changes will not be present in the deployed project.\n")
 	case gitutil.SyncStatusAhead:
-		ch.Printer.PrintlnWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.")
+		ch.PrintfWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.\n")
 	}
 
 	return cmdutil.ConfirmPrompt("Do you want to continue", "", true)

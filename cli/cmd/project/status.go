@@ -46,7 +46,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 1. Print project info
-			ch.Printer.PrintlnSuccess("Project info\n")
+			ch.PrintfSuccess("Project info\n\n")
 			fmt.Printf("  Name: %s\n", proj.Project.Name)
 			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
 			fmt.Printf("  Public: %v\n", proj.Project.Public)
@@ -60,7 +60,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			ch.Printer.PrintlnSuccess("\nDeployment info\n")
+			ch.PrintfSuccess("\nDeployment info\n\n")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
@@ -108,8 +108,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			ch.Printer.PrintlnSuccess("\nResources\n")
-			ch.Printer.PrintData(table)
+			ch.PrintfSuccess("\nResources\n\n")
+			ch.PrintData(table)
 
 			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
@@ -117,8 +117,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					table = append(table, newParseErrorTableRow(e))
 				}
 
-				ch.Printer.PrintlnSuccess("\nParse errors\n")
-				ch.Printer.PrintData(table)
+				ch.PrintfSuccess("\nParse errors\n\n")
+				ch.PrintData(table)
 			}
 
 			return nil

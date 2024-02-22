@@ -54,7 +54,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				ch.Printer.PrintlnWarn(fmt.Sprintf("Deployment status not OK: %s", depl.Status.String()))
+				ch.PrintfWarn("Deployment status not OK: %s\n", depl.Status.String())
 				return nil
 			}
 

@@ -48,7 +48,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			ch.Org = defaultOrg
 
-			ch.Printer.Printf("Set default organization to %q.\n", defaultOrg)
+			ch.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

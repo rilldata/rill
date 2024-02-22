@@ -10,7 +10,7 @@ import (
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
 	if len(orgs) == 0 {
-		p.PrintlnWarn("No organizations found")
+		p.PrintfWarn("No organizations found\n")
 		return
 	}
 
@@ -44,7 +44,7 @@ type organization struct {
 
 func (p *Printer) PrintProjects(projs []*adminv1.Project) {
 	if len(projs) == 0 {
-		p.PrintlnWarn("No projects found")
+		p.PrintfWarn("No projects found\n")
 		return
 	}
 
@@ -84,7 +84,7 @@ type project struct {
 
 func (p *Printer) PrintUsers(users []*adminv1.User) {
 	if len(users) == 0 {
-		p.PrintlnWarn("No users found")
+		p.PrintfWarn("No users found\n")
 		return
 	}
 
@@ -115,7 +115,7 @@ type user struct {
 
 func (p *Printer) PrintMembers(members []*adminv1.Member) {
 	if len(members) == 0 {
-		p.PrintlnWarn("No members found")
+		p.PrintfWarn("No members found\n")
 		return
 	}
 

@@ -40,7 +40,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintProjects([]*adminv1.Project{proj.Project})
+			ch.PrintProjects([]*adminv1.Project{proj.Project})
 
 			return nil
 		},

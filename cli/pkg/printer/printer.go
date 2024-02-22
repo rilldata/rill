@@ -112,20 +112,20 @@ func (p *Printer) Printf(format string, i ...interface{}) {
 	fmt.Fprintf(p.humanOut(), format, i...)
 }
 
-func (p *Printer) PrintBold(str string) {
-	p.Print(ColorBold.Sprint(str))
+func (p *Printer) PrintfBold(str string, i ...interface{}) {
+	p.Print(ColorBold.Sprintf(str, i...))
 }
 
-func (p *Printer) PrintlnSuccess(str string) {
-	p.Println(ColorGreenBold.Sprint(str))
+func (p *Printer) PrintfSuccess(str string, i ...interface{}) {
+	p.Println(ColorGreenBold.Sprintf(str, i...))
 }
 
-func (p *Printer) PrintlnWarn(str string) {
-	p.Println(ColorYellowBold.Sprint(str))
+func (p *Printer) PrintfWarn(str string, i ...interface{}) {
+	p.Println(ColorYellowBold.Sprintf(str, i...))
 }
 
-func (p *Printer) PrintlnError(str string) {
-	p.Println(ColorRedBold.Sprint(str))
+func (p *Printer) PrintfError(str string, i ...interface{}) {
+	p.Println(ColorRedBold.Sprintf(str, i...))
 }
 
 func (p *Printer) OverrideHumanOutput(out io.Writer) {
