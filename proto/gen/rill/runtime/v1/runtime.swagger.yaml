@@ -3770,12 +3770,9 @@ definitions:
         title: Optional
       timeZone:
         type: string
-<<<<<<< HEAD
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
-=======
       alias:
         type: string
->>>>>>> origin/main
   v1MetricsViewAggregationMeasure:
     type: object
     properties:
