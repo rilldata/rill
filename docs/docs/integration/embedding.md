@@ -11,10 +11,10 @@ import TabItem from '@theme/TabItem';
 ## Embedding dashboards
 
 ### Introduction
-You can embed Rill dashboards in your own applications using iframe. This allows you to use Rill dashboards as a component.
+You can embed Rill dashboards as components in your own application using iframes.
 
-To embed a dashboard, the customer's backend needs to use a Rill service token to request an authenticated iframe URL from `admin.rilldata.com`. 
-The iframe URL is then used to embed the dashboard in the customer's application. Here is a diagram of the flow:
+To embed a dashboard, use a Rill service token on your backend to request an authenticated iframe URL from the Rill API.
+Then pass the iframe URL to your frontend for rendering. Here is a diagram of the flow:
 
 ```mermaid
 sequenceDiagram
@@ -37,23 +37,25 @@ sequenceDiagram
 ```
 
 ### Create a service token
-Use rill cli to create a service token for your organization. You can create a new service account along with token for your organization using the following command:
-
+Use the Rill CLI to create a service token for your current organization using the following command:
 ```bash
-
-rill service create <service_name> [--org "My Organization"]
+rill service create <service_name>
 ```
 
 :::caution
-
-The service account provides admin-level access to the org and should be handled confidentially and NOT integrated in a frontend / other user-facing code.
-
+The service account provides admin-level access to your organization and should be handled confidentially and NOT integrated in a frontend or other user-facing code.
 :::
 
 See the reference docs for more details on managing [service account and token](../reference/cli/service).
 
 ### Backend: Build an iframe URL
-The backend needs to use the service token to request an iframe URL from `admin.rilldata.com`. The iframe URL is then used to embed the dashboard in the customer's application.
+You should implement an API on your backend that uses the service token to retrieve and return an iframe URL from Rill's API (which is hosted on `admin.rilldata.com`).
+
+There are multiple reasons why the iframe URL must be constructed on your backend:
+- To avoid leaking your master Rill service token in the browser
+- To allow you to use your own authentication and authorization logic to restrict access to the dashboard
+- To optionally allow you to use your backend's context about the authenticated user to include user attributes in the iframe URL for enforcement of row-level security policies
+
 Here are examples of how to get an iframe URL using different languages:
 
 <Tabs>
@@ -75,33 +77,42 @@ curl -X POST --location 'https://admin.rilldata.com/v1/organizations/<org-name>/
 ```js
 const express = require('express');
 const fetch = require('node-fetch');
+
+const rillServiceToken = "<YOUR RILL SERVICE TOKEN>";
+const rillOrg = "<YOUR RILL ORG NAME>";
+const rillProject = "<YOUR RILL PROJECT NAME>";
+
 const app = express();
 app.use(express.json());
-
 app.post('/api/rill/iframe', async (req, res) => {
-    const dashboardName = req.body.resource;
-    try {
-        const response = await fetch('https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer <rill-svc-token>`,
-            },
-            body: JSON.stringify({
-                resource: dashboardName,
-                user_email: '<user-email>',
-            }),
-        });
-        const data = await response.json();
-        res.json({ iframeResp: data.resp.body });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  const dashboardName = req.body.resource;
+  try {
+    const response = await fetch(`https://admin.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${rillServiceToken}`,
+      },
+      body: JSON.stringify({
+        resource: dashboardName,
+        // Optionally include the current user's email address for row-level security enforcement:
+        // user_email: '<CURRENT USER'S EMAIL ADDRES>',
+      }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      res.json(data);
+    } else {
+      throw new Error(data.message);
     }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 ```
 
@@ -132,7 +143,7 @@ def get_rill_iframe():
         )
         response.raise_for_status()
         data = response.json()
-        return jsonify(iframeResp=data['resp']['body'])
+        return jsonify(data)
     except requests.RequestException as e:
         return jsonify(error=str(e)), 500
 
@@ -183,12 +194,19 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var respBody map[string]map[string]map[string]string
-	json.Unmarshal(body, &respBody)
-	iFrameResp := respBody["resp"]["body"]
-
+	var respBody map[string]any
+	err = json.Unmarshal(body, &respBody)
+  if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+  
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(iFrameResp)
+	err = json.NewEncoder(w).Encode(respBody)
+  if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
@@ -253,7 +271,7 @@ The API accepts the following parameters:
 | attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy | No (either this or `user_email`) |
 | ttl_seconds | The time to live for the iframe URL                                                                                                                                                            | No (Default: 86400)              |
 
-The response will contain an `iframeSrc` that can be used to embed the dashboard in the customer's application along with `ttlSeconds` for which the iframe url will be valid after which it needs to be fetched again. Here's an example response:
+The response will contain an `iframeSrc` value that can be used to embed the dashboard in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. After the TTL has elapsed, the iframe URL needs be refreshed. Here's an example response:
 
 ```json
 {
@@ -266,55 +284,57 @@ The response will contain an `iframeSrc` that can be used to embed the dashboard
 ```
 
 ### Frontend: Embed the dashboard
-The frontend just need to use the iframeSrc to embed the dashboard in the customer's application. Here's an example of how to embed the dashboard using iframe:
-
+Your frontend should request an iframe URL from your backend API (which you set up in the previous step) and use the `iframeSrc` value of the response to render an HTML `<iframe>` element:
 ```html
-<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="1000" style="border:0;" />
+<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
 
 ### Example
-Here's an example of how to create a dashboard component in a React application, this component will fetch the iframe URL from the backend and embed the dashboard in the frontend:
+Here's an example of how to fetch and render a dashboard in React:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
 
-const RillDashboard = () => {
-  const [iframeUrl, setIframeUrl] = useState('');
+export default function RillDashboard() {
+  const [isLoading, setLoading] = useState(true);
+  const [iframeSrc, setIframeSrc] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-      const getIframeUrl = async () => {
-          try {
-              // call the backend to get the iframe URL, see the "Backend: Build an iframe URL" section for details and examples
-              const response = await fetch(`/api/rill/iframe`, {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                      resource: dashboardName,
-                  }),
-              });
-              if (!response.ok) {
-                  throw new Error('Network response was not ok');
-              }
-              const { iframeSrc } = await response.json().iframeSrc;
-              setIframeUrl(iframeSrc);
-          } catch (err) {
-              console.error(err);
-          }
-      };
-    getIframeUrl();
+    fetch(`<YOUR BACKEND HOST>/api/rill/iframe`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    .then((response) => response.json())
+    .then(({ iframeSrc, error }) => {
+      if (error !== undefined) {
+        setError(error);
+      } else {
+        setIframeSrc(iframeSrc);
+      }
+      setLoading(false);
+    })
+    .catch((err) => {
+      setError(err.message);
+      setLoading(false);
+    });
   }, []);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Failed with error: {error}</p>;
 
   return (
     <iframe title="rill-dashboard"
-      src={iframeUrl}
+      src={iframeSrc}
       width="100%"
-      height="1000" 
-      style="border:0;"
+      height="1000"
     />
   );
 };
-
-export default Dashboard;
 ```
+
+## End-to-end example for Next.js
+
+You can find an end-to-end example of embedding a Rill dashboard in a Next.js project on [github.com/rilldata/rill-embedding-example](https://github.com/rilldata/rill-embedding-example).

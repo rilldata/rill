@@ -1,12 +1,12 @@
 <script context="module" lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
+  import type { ChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import {
+    defaultChipColors,
     measureChipColors,
     timeChipColors,
-    defaultChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
   import { createEventDispatcher } from "svelte";
-  import type { ChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
 
@@ -26,6 +26,7 @@
 
 <Chip
   outline
+  supressTooltip
   {removable}
   {...colors[item.type]}
   extraPadding={false}
