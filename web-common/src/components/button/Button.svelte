@@ -138,7 +138,7 @@
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
-    @apply px-3 h-7 min-h-[28px] cursor-pointer;
+    @apply cursor-pointer;
   }
 
   button:disabled {
@@ -399,8 +399,12 @@
   /* TWEAKS */
 
   .small {
-    @apply h-6 text-[11px];
+    @apply h-6 text-[11px] min-h-[24px];
     @apply px-2;
+  }
+
+  .medium {
+    @apply px-3 h-7 min-h-[28px];
   }
 
   .large {
