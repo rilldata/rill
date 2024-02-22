@@ -24,9 +24,9 @@
   const { form, errors } = formState;
 
   // Debounce the update of value. This avoid constant refetches
-  let value: string = $form["criteria"][index]["value"];
+  let value: string = $form["criteria"][index].value;
   const valueUpdater = debounce(() => {
-    $form["criteria"][index]["value"] = value;
+    $form["criteria"][index].value = value;
   }, 500);
 </script>
 
@@ -54,7 +54,7 @@
   />
   <InputV2
     bind:value
-    error={$errors["criteria"][index]["value"]}
+    error={$errors["criteria"][index]?.value}
     id="value"
     on:input={valueUpdater}
     placeholder={"0"}

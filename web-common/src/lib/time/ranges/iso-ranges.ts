@@ -15,7 +15,7 @@ import {
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
-import { Duration } from "luxon";
+import { DateTime, Duration } from "luxon";
 
 /**
  * Converts an ISO duration to a time range.
@@ -122,6 +122,21 @@ export function isoDurationToTimeRangeMeta(
       transformation: getEndTimeTransformations(isoDuration),
     },
   };
+}
+
+export function scaleISODuration(
+  isoDuration: string,
+  scale: number,
+  ref: Date,
+): Date {
+  let duration = Duration.fromISO(isoDuration);
+  for (const { unit } of PeriodAndUnits) {
+    if (duration[unit]) {
+      duration = duration.set({ [unit]: (duration[unit] as number) * scale });
+    }
+  }
+  duration.shiftToAll();
+  return DateTime.fromJSDate(ref).minus(duration).toJSDate();
 }
 
 function getStartTimeTransformations(

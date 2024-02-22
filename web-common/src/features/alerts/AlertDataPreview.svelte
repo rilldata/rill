@@ -20,8 +20,6 @@
     criteria,
     splitByTimeGrain,
   });
-
-  $: console.log($alertPreviewQuery.isFetching);
 </script>
 
 {#if $alertPreviewQuery.isFetching}

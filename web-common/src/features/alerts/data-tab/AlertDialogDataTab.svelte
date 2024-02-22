@@ -88,6 +88,7 @@
     <AlertDataPreview
       dimension={$form["splitByDimension"]}
       measure={$form["measure"]}
+      splitByTimeGrain={$form["splitByTimeGrain"]}
     />
   </FormSection>
 </div>
