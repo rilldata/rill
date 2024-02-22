@@ -420,7 +420,7 @@ paths:
           schema:
             type: object
             properties:
-              dropDb:
+              dropOlap:
                 type: boolean
             title: Request message for RuntimeService.DeleteInstance
       tags:

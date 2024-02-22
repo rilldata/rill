@@ -726,9 +726,9 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: bool drop_db = 2;
+   * @generated from field: optional bool drop_olap = 2;
    */
-  dropDb = false;
+  dropOlap?: boolean;
 
   constructor(data?: PartialMessage<DeleteInstanceRequest>) {
     super();
@@ -739,7 +739,7 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.DeleteInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "drop_db", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "drop_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteInstanceRequest {
