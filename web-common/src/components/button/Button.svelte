@@ -28,6 +28,7 @@
   export let shape: ButtonShape = "normal";
   export let selected = false;
   export let size: ButtonSize = "medium";
+  export let rounded = false;
   export let builders: Builder[] = [];
 
   $: circle = shape === "circle";
@@ -66,6 +67,7 @@
   class:small
   class:dashed
   class:compact
+  class:rounded
   class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
