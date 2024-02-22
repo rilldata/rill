@@ -1,14 +1,8 @@
 # This should be used for docs also
-[[plugins]]
-  package = "@netlify/plugin-csp-nonce"
-  [plugins.inputs]
-    reportOnly = true
-    path = "/*"
-
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src https:; img-src https: data: blob:; frame-ancestors *; object-src 'none'; connect-src https:; require-trusted-types-for 'script'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data: blob:; frame-ancestors *; object-src 'none'; connect-src https:; require-trusted-types-for 'script'"
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
