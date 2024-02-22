@@ -98,7 +98,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
 		Run: func(cmd *cobra.Command, args []string) {
-			cliCfg := ch.Config
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -155,7 +154,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "runtime-server",
-				ServiceVersion:  cliCfg.Version.String(),
+				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
 				logger.Fatal("error starting telemetry", zap.Error(err))
@@ -178,7 +177,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivitySinkKafkaTopic,
 				logger,
 				"runtime-server",
-				cliCfg.Version.String(),
+				ch.Version.String(),
 			)
 
 			// Create ctx that cancels on termination signals

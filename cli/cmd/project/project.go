@@ -2,24 +2,22 @@ package project
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
 	projectCmd := &cobra.Command{
 		Use:               "project",
 		Short:             "Manage projects",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
-	projectCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
+	projectCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	projectCmd.AddCommand(ShowCmd(ch))
 	projectCmd.AddCommand(StatusCmd(ch))
 	projectCmd.AddCommand(DescribeCmd(ch))
@@ -34,6 +32,31 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(LogsCmd(ch))
 
 	return projectCmd
+}
+
+func projectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
+	c, err := ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	org := ch.Org
+
+	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: org})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Projects) == 0 {
+		return nil, fmt.Errorf("no projects found for org %q", org)
+	}
+
+	var projNames []string
+	for _, proj := range resp.Projects {
+		projNames = append(projNames, proj.Name)
+	}
+
+	return projNames, nil
 }
 
 func toTable(projects []*adminv1.Project) []*project {
@@ -58,26 +81,6 @@ func toRow(o *adminv1.Project) *project {
 		GithubURL:    githubURL,
 		Organization: o.OrgName,
 	}
-}
-
-func inferProjectName(ctx context.Context, adminClient *client.Client, org, path string) (string, error) {
-	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "")
-	if err != nil {
-		return "", err
-	}
-
-	// fetch project names for github url
-	names, err := cmdutil.ProjectNamesByGithubURL(ctx, adminClient, org, githubURL)
-	if err != nil {
-		return "", err
-	}
-
-	if len(names) == 1 {
-		return names[0], nil
-	}
-	// prompt for name from user
-	return cmdutil.SelectPrompt("Select project", names, ""), nil
 }
 
 type project struct {

@@ -13,7 +13,6 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
 	var role string
-	cfg := ch.Config
 
 	setRoleCmd := &cobra.Command{
 		Use:   "set-role",
@@ -22,15 +21,14 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 			cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
 			cmdutil.StringPromptIfEmpty(&email, "Enter email")
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if projectName != "" {
 				_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
 					Role:         role,
@@ -38,24 +36,24 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, ch.Org, projectName))
 			} else {
 				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Email:        email,
 					Role:         role,
 				})
 				if err != nil {
 					return err
 				}
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, ch.Org))
 			}
 
 			return nil
 		},
 	}
 
-	setRoleCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
+	setRoleCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	setRoleCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user [%v]", strings.Join(userRoles, ", ")))

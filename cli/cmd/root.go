@@ -23,7 +23,6 @@ import (
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -47,7 +46,7 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, ver config.Version) {
+func Execute(ctx context.Context, ver cmdutil.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
 		errMsg := err.Error()
@@ -72,25 +71,43 @@ func Execute(ctx context.Context, ver config.Version) {
 	}
 }
 
-func runCmd(ctx context.Context, ver config.Version) error {
-	// Build CLI config
-	cfg := &config.Config{
-		Version: ver,
+func runCmd(ctx context.Context, ver cmdutil.Version) error {
+	// Load admin token from .rill (may later be overridden by flag --api-token)
+	adminTokenDefault, err := dotrill.GetAccessToken()
+	if err != nil {
+		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
 	}
 
-	format := printer.Human
-	p := printer.NewPrinter(&format)
+	// Load admin URL from .rill (override with --api-url)
+	adminURL, err := dotrill.GetDefaultAdminURL()
+	if err != nil {
+		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
+	}
+	if adminURL == "" {
+		adminURL = defaultAdminURL
+	}
+
+	// Load default org from .rill
+	defaultOrg, err := dotrill.GetDefaultOrg()
+	if err != nil {
+		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+	}
 
 	// Create cmdutil Helper
 	ch := &cmdutil.Helper{
-		Config:  cfg,
-		Printer: p,
+		Version:           ver,
+		AdminURL:          adminURL,
+		AdminTokenDefault: adminTokenDefault,
+		Org:               defaultOrg,
+		Interactive:       true,
+		Printer:           printer.NewPrinter(printer.FormatHuman),
 	}
+	defer ch.Close()
 
 	// Check version
-	err := update.CheckVersion(ctx, cfg.Version.Number)
+	err = update.CheckVersion(ctx, ver.Number)
 	if err != nil {
-		p.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
+		ch.Printer.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
 	}
 
 	// Print warning if currently acting as an assumed user
@@ -99,32 +116,8 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		fmt.Printf("could not parse representing user email\n")
 	}
 	if representingUser != "" {
-		p.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
+		ch.Printer.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
 	}
-
-	// Load admin token from .rill (may later be overridden by flag --api-token)
-	token, err := dotrill.GetAccessToken()
-	if err != nil {
-		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
-	}
-	cfg.AdminTokenDefault = token
-
-	// Load default org from .rill
-	defaultOrg, err := dotrill.GetDefaultOrg()
-	if err != nil {
-		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
-	}
-	cfg.Org = defaultOrg
-
-	// Load admin URL from .rill (override with --api-url)
-	url, err := dotrill.GetDefaultAdminURL()
-	if err != nil {
-		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
-	}
-	if url == "" {
-		url = defaultAdminURL
-	}
-	cfg.AdminURL = url
 
 	// Cobra config
 	rootCmd.Version = ver.String()
@@ -133,15 +126,15 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	// we want to override some error messages
 	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
-	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
-	rootCmd.PersistentFlags().Var(printer.NewFormatValue(printer.Human, &format), "format", `Output format (options: "human", "json", "csv")`)
-	rootCmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the cloud API")
-	if !cfg.IsDev() {
+	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().Var(&ch.Printer.Format, "format", `Output format (options: "human", "json", "csv")`)
+	rootCmd.PersistentFlags().StringVar(&ch.AdminURL, "api-url", ch.AdminURL, "Base URL for the cloud API")
+	if !ch.IsDev() {
 		if err := rootCmd.PersistentFlags().MarkHidden("api-url"); err != nil {
 			panic(err)
 		}
 	}
-	rootCmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the cloud API")
+	rootCmd.PersistentFlags().StringVar(&ch.AdminTokenOverride, "api-token", "", "Token for authenticating with the cloud API")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
 	// Add sub-commands

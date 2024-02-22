@@ -40,8 +40,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-
 			var projectPath string
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -54,7 +52,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					projectPath = repoName
 				}
 			} else if !rillv1beta.HasRillProject("") {
-				if !cfg.Interactive {
+				if !ch.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
 
@@ -115,7 +113,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			client := activity.NewNoopClient()
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
-				Version:     cfg.Version,
+				Version:     ch.Version,
 				Verbose:     verbose,
 				Debug:       debug,
 				Reset:       reset,
@@ -126,8 +124,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				LogFormat:   parsedLogFormat,
 				Variables:   vars,
 				Activity:    client,
-				AdminURL:    cfg.AdminURL,
-				AdminToken:  cfg.AdminToken(),
+				AdminURL:    ch.AdminURL,
+				AdminToken:  ch.AdminToken(),
 			})
 			if err != nil {
 				return err
@@ -135,8 +133,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer app.Close()
 
 			userID := ""
-			if cfg.IsAuthenticated() {
-				userID, _ = cmdutil.FetchUserID(context.Background(), cfg)
+			if ch.IsAuthenticated() {
+				user, err := ch.CurrentUser(context.Background())
+				if err == nil {
+					userID = user.Id
+				}
 			}
 
 			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID)

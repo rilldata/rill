@@ -12,23 +12,21 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Create service",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res1, err := client.CreateService(cmd.Context(), &adminv1.CreateServiceRequest{
 				Name:             args[0],
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
 			res2, err := client.IssueServiceAuthToken(cmd.Context(), &adminv1.IssueServiceAuthTokenRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				ServiceName:      res1.Service.Name,
 			})
 			if err != nil {

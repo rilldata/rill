@@ -12,7 +12,6 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -64,17 +63,16 @@ func TestServiceWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	format := printer.Human
-	p := printer.NewPrinter(&format)
+	p := printer.NewPrinter(printer.FormatHuman)
 	p.SetResourceOutput(&buf)
+
 	helper := &cmdutil.Helper{
-		Config: &config.Config{
-			AdminURL:          "http://localhost:9090",
-			AdminTokenDefault: adminAuthToken.Token().String(),
-			Org:               "myorg",
-		},
-		Printer: p,
+		AdminURL:          "http://localhost:9090",
+		AdminTokenDefault: adminAuthToken.Token().String(),
+		Org:               "myorg",
+		Printer:           p,
 	}
+	defer helper.Close()
 
 	// Create Organization
 	cmd := org.CreateCmd(helper)
@@ -111,8 +109,7 @@ func TestServiceWorkflow(t *testing.T) {
 
 	// List service in org
 	buf.Reset()
-	format = printer.JSON
-	p = printer.NewPrinter(&format)
+	p = printer.NewPrinter(printer.FormatJSON)
 	p.SetResourceOutput(&buf)
 
 	cmd = ListCmd(helper)
@@ -145,8 +142,7 @@ func TestServiceWorkflow(t *testing.T) {
 
 	// List service in org after delete
 	buf.Reset()
-	format = printer.JSON
-	p = printer.NewPrinter(&format)
+	p = printer.NewPrinter(printer.FormatJSON)
 	p.SetResourceOutput(&buf)
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)

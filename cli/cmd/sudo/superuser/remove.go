@@ -15,13 +15,11 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Remove a superuser",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			_, err = client.SetSuperuser(ctx, &adminv1.SetSuperuserRequest{
 				Email:     args[0],

@@ -25,7 +25,6 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "configure",
 		Short: "Configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
 			if projectPath != "" {
 				var err error
 				projectPath, err = fileutil.ExpandHome(projectPath)
@@ -52,11 +51,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ctx := cmd.Context()
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if projectName == "" {
 				// no project name provided infer name from githubURL
@@ -67,7 +65,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// fetch project names for github url
-				names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, cfg.Org, githubURL)
+				names, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -87,7 +85,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// get existing variables
 			varResp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 			})
 			if err != nil {
@@ -104,7 +102,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 				Variables:        varResp.Variables,
 			})
@@ -118,7 +116,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if redeploy {
-				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: projectName})
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: ch.Org, Project: projectName})
 				if err != nil {
 					ch.Printer.PrintlnWarn("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
 					return err
@@ -198,11 +196,10 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 			continue
 		}
 
-		fmt.Printf("\nConnector %q requires credentials.\n", c.Name)
+		fmt.Printf("\nConfiguring connector %q:\n", c.Name)
 		if c.Spec.ServiceAccountDocs != "" {
 			fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
 		}
-		fmt.Printf("\n")
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
 		}

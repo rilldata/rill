@@ -85,7 +85,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Start admin service",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			cliCfg := ch.Config
 			printer := ch.Printer
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
@@ -139,7 +138,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "admin-server",
-				ServiceVersion:  cliCfg.Version.String(),
+				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
 				logger.Fatal("error starting telemetry", zap.Error(err))
@@ -238,7 +237,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivityUISinkKafkaTopic,
 				logger,
 				"admin-server",
-				cliCfg.Version.String(),
+				ch.Version.String(),
 			)
 
 			// Init and run server

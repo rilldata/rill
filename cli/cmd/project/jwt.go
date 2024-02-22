@@ -10,27 +10,25 @@ import (
 
 func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name string
-	cfg := ch.Config
 
 	jwtCmd := &cobra.Command{
 		Use:    "jwt [<project-name>]",
 		Args:   cobra.MaximumNArgs(1),
 		Short:  "Generate the token for connecting directly to the deployment",
-		Hidden: !cfg.IsDev(),
+		Hidden: !ch.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				names, err := projectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
@@ -40,7 +38,7 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {

@@ -13,7 +13,6 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
 	var role string
-	cfg := ch.Config
 
 	addCmd := &cobra.Command{
 		Use:   "add",
@@ -22,15 +21,14 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
 			cmdutil.StringPromptIfEmpty(&email, "Enter email")
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if projectName != "" {
 				res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
 					Role:         role,
@@ -40,13 +38,13 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if res.PendingSignup {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join project \"%s/%s\" as %q", email, cfg.Org, projectName, role))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join project \"%s/%s\" as %q", email, ch.Org, projectName, role))
 				} else {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the project \"%s/%s\" as %q", email, cfg.Org, projectName, role))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the project \"%s/%s\" as %q", email, ch.Org, projectName, role))
 				}
 			} else {
 				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Email:        email,
 					Role:         role,
 				})
@@ -55,9 +53,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if res.PendingSignup {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", email, cfg.Org, role))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", email, ch.Org, role))
 				} else {
-					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the organization %q as %q", email, cfg.Org, role))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the organization %q as %q", email, ch.Org, role))
 				}
 			}
 
@@ -65,7 +63,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	addCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
+	addCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	addCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user [%v]", strings.Join(userRoles, ", ")))

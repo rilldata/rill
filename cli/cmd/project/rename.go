@@ -18,18 +18,16 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Rename project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			ch.Printer.Println("Warn: Renaming an project would invalidate dashboard URLs")
 
-			if !cmd.Flags().Changed("project") && cfg.Interactive {
-				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
+			if !cmd.Flags().Changed("project") && ch.Interactive {
+				projectNames, err := projectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
@@ -37,7 +35,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
 			}
 
-			if cfg.Interactive {
+			if ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
@@ -50,7 +48,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             name,
 				NewName:          &newName,
 			})

@@ -12,7 +12,6 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName, description string
-	cfg := ch.Config
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -21,22 +20,21 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				orgName = args[0]
 			}
-			if !cmd.Flags().Changed("org") && len(args) == 0 && cfg.Interactive {
-				orgNames, err := cmdutil.OrgNames(ctx, client)
+			if !cmd.Flags().Changed("org") && len(args) == 0 && ch.Interactive {
+				orgNames, err := orgNames(ctx, ch)
 				if err != nil {
 					return err
 				}
 
-				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, cfg.Org)
+				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
 			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
@@ -56,7 +54,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
-			promptFlagValues := cfg.Interactive
+			promptFlagValues := ch.Interactive
 			if cmd.Flags().Changed("description") {
 				promptFlagValues = false
 				req.Description = &description
@@ -80,7 +78,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization name")
+	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return editCmd

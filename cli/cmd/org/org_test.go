@@ -11,7 +11,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -64,16 +64,15 @@ func TestOrganizationWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	format := printer.JSON
-	p := printer.NewPrinter(&format)
+	p := printer.NewPrinter(printer.FormatJSON)
 	p.SetResourceOutput(&buf)
+
 	helper := &cmdutil.Helper{
-		Config: &config.Config{
-			AdminURL:          "http://localhost:9090",
-			AdminTokenDefault: adminAuthToken.Token().String(),
-		},
-		Printer: p,
+		AdminURL:          "http://localhost:9090",
+		AdminTokenDefault: adminAuthToken.Token().String(),
+		Printer:           p,
 	}
+	defer helper.Close()
 
 	// Create organization with name
 	cmd := CreateCmd(helper)

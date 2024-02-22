@@ -11,30 +11,28 @@ import (
 func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var force bool
-	cfg := ch.Config
 
 	resetCmd := &cobra.Command{
 		Use:               "reset [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
 		Short:             "Re-deploy project",
 		Long:              "Create a new deployment for the project (and tear down the current one)",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				project = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				var err error
-				project, err = inferProjectName(ctx, client, cfg.Org, path)
+				project, err = ch.InferProjectName(ctx, ch.Org, path)
 				if err != nil {
 					return err
 				}
@@ -47,7 +45,7 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: project})
+			_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: ch.Org, Project: project})
 			if err != nil {
 				return err
 			}

@@ -15,36 +15,34 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var pageSize uint32
 	var pageToken string
-	cfg := ch.Config
 
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if projectName != "" {
 				if strings.HasPrefix(pageToken, "usr") {
-					err = listProjectMembers(cmd, ch.Printer, client, cfg.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					err = listProjectMembers(cmd, ch.Printer, client, ch.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else if strings.HasPrefix(pageToken, "inv") {
-					err = listProjectInvites(cmd, ch.Printer, client, cfg.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					err = listProjectInvites(cmd, ch.Printer, client, ch.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else {
-					err = listProjectMembers(cmd, ch.Printer, client, cfg.Org, projectName, pageToken, pageSize)
+					err = listProjectMembers(cmd, ch.Printer, client, ch.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
 
-					err = listProjectInvites(cmd, ch.Printer, client, cfg.Org, projectName, pageToken, pageSize)
+					err = listProjectInvites(cmd, ch.Printer, client, ch.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
@@ -53,22 +51,22 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				// TODO: user groups
 			} else {
 				if strings.HasPrefix(pageToken, "usr") {
-					err = listOrgMembers(cmd, ch.Printer, client, cfg.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					err = listOrgMembers(cmd, ch.Printer, client, ch.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else if strings.HasPrefix(pageToken, "inv") {
-					err = listOrgInvites(cmd, ch.Printer, client, cfg.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					err = listOrgInvites(cmd, ch.Printer, client, ch.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
 					if err != nil {
 						return err
 					}
 				} else {
-					err = listOrgMembers(cmd, ch.Printer, client, cfg.Org, pageToken, pageSize)
+					err = listOrgMembers(cmd, ch.Printer, client, ch.Org, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
 
-					err = listOrgInvites(cmd, ch.Printer, client, cfg.Org, pageToken, pageSize)
+					err = listOrgInvites(cmd, ch.Printer, client, ch.Org, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
@@ -81,7 +79,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
+	listCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")

@@ -9,7 +9,7 @@ import (
 func RuntimeCmd(ch *cmdutil.Helper) *cobra.Command {
 	runtimeCmd := &cobra.Command{
 		Use:    "runtime",
-		Hidden: !ch.Config.IsDev(),
+		Hidden: !ch.IsDev(),
 		Short:  "Manage stand-alone runtimes",
 	}
 	runtimeCmd.AddCommand(StartCmd(ch))

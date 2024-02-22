@@ -14,16 +14,14 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Delete service",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			_, err = client.DeleteService(cmd.Context(), &adminv1.DeleteServiceRequest{
 				Name:             args[0],
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 			})
 			if err != nil {
 				return err

@@ -14,16 +14,14 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Rename service",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			req := &adminv1.UpdateServiceRequest{
 				Name:             args[0],
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 			}
 
 			if newName != "" {

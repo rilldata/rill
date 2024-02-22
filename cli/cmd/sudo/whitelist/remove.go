@@ -15,13 +15,11 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Remove whitelist for an org and domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			org := args[0]
 			domain := args[1]

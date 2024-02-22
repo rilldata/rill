@@ -1,6 +1,8 @@
 package token
 
 import (
+	"time"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -10,7 +12,7 @@ func TokenCmd(ch *cmdutil.Helper) *cobra.Command {
 	tokenCmd := &cobra.Command{
 		Use:               "token",
 		Short:             "Manage service tokens",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch.Config), cmdutil.CheckOrganization(ch.Config)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
 	tokenCmd.AddCommand(ListCmd(ch))
@@ -18,19 +20,6 @@ func TokenCmd(ch *cmdutil.Helper) *cobra.Command {
 	tokenCmd.AddCommand(RevokeCmd(ch))
 
 	return tokenCmd
-}
-
-func toRow(s *adminv1.ServiceToken) *token {
-	var expiresOn string
-	if !s.ExpiresOn.AsTime().IsZero() {
-		expiresOn = s.ExpiresOn.AsTime().Format(cmdutil.TSFormatLayout)
-	}
-
-	return &token{
-		ID:        s.Id,
-		CreatedOn: s.CreatedOn.AsTime().Format(cmdutil.TSFormatLayout),
-		ExpiresOn: expiresOn,
-	}
 }
 
 func toTable(tkns []*adminv1.ServiceToken) []*token {
@@ -41,6 +30,19 @@ func toTable(tkns []*adminv1.ServiceToken) []*token {
 	}
 
 	return tokens
+}
+
+func toRow(s *adminv1.ServiceToken) *token {
+	var expiresOn string
+	if !s.ExpiresOn.AsTime().IsZero() {
+		expiresOn = s.ExpiresOn.AsTime().Format(time.DateTime)
+	}
+
+	return &token{
+		ID:        s.Id,
+		CreatedOn: s.CreatedOn.AsTime().Format(time.DateTime),
+		ExpiresOn: expiresOn,
+	}
 }
 
 type token struct {

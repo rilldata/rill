@@ -15,13 +15,11 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Set annotations for a project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(annotations) == 0 {
 				ch.Printer.PrintlnWarn("Setting an empty annotation list will remove all annotations from the project")

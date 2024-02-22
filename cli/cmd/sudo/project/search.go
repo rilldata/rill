@@ -28,13 +28,11 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Search projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			pattern := "%"
 			// If args is not empty, use the first element as the pattern

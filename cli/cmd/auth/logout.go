@@ -15,10 +15,9 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "logout",
 		Short: "Logout of the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
 			ctx := cmd.Context()
 
-			token := cfg.AdminToken()
+			token := ch.AdminToken()
 			if token == "" {
 				ch.Printer.PrintlnWarn("You are already logged out.")
 				return nil
@@ -37,12 +36,10 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func Logout(ctx context.Context, ch *cmdutil.Helper) error {
-	cfg := ch.Config
-	client, err := cmdutil.Client(cfg)
+	client, err := ch.Client()
 	if err != nil {
 		return err
 	}
-	defer client.Close()
 
 	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 	if err != nil {
@@ -72,7 +69,7 @@ func Logout(ctx context.Context, ch *cmdutil.Helper) error {
 		return err
 	}
 
-	cfg.AdminTokenDefault = ""
+	ch.AdminTokenDefault = ""
 
 	return nil
 }

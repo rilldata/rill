@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/rilldata/rill/cli/cmd/service/token"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -8,14 +10,14 @@ import (
 )
 
 func ServiceCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
 	serviceCmd := &cobra.Command{
 		Use:               "service",
 		Short:             "Manage service accounts",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
-	serviceCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
+	serviceCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
+
 	serviceCmd.AddCommand(ListCmd(ch))
 	serviceCmd.AddCommand(CreateCmd(ch))
 	serviceCmd.AddCommand(RenameCmd(ch))
@@ -23,14 +25,6 @@ func ServiceCmd(ch *cmdutil.Helper) *cobra.Command {
 	serviceCmd.AddCommand(token.TokenCmd(ch))
 
 	return serviceCmd
-}
-
-func toRow(s *adminv1.Service) *service {
-	return &service{
-		Name:      s.Name,
-		OrgName:   s.OrgName,
-		CreatedAt: s.CreatedOn.AsTime().Format(cmdutil.TSFormatLayout),
-	}
 }
 
 func toTable(sv []*adminv1.Service) []*service {
@@ -41,6 +35,14 @@ func toTable(sv []*adminv1.Service) []*service {
 	}
 
 	return services
+}
+
+func toRow(s *adminv1.Service) *service {
+	return &service{
+		Name:      s.Name,
+		OrgName:   s.OrgName,
+		CreatedAt: s.CreatedOn.AsTime().Format(time.DateTime),
+	}
 }
 
 type service struct {

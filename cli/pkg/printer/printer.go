@@ -13,50 +13,40 @@ import (
 	"github.com/lensesio/tableprinter"
 )
 
-type Printer struct {
-	humanOut    io.Writer
-	resourceOut io.Writer
-	format      *Format
-}
-
 type Format int
 
 const (
-	Human Format = iota
-	JSON
-	CSV
+	FormatUnspecified Format = iota
+	FormatHuman
+	FormatJSON
+	FormatCSV
 )
 
-func NewFormatValue(val Format, p *Format) *Format {
-	*p = val
-	return p
+func (f Format) String() string {
+	switch f {
+	case FormatHuman:
+		return "human"
+	case FormatJSON:
+		return "json"
+	case FormatCSV:
+		return "csv"
+	}
+	return "unknown format"
 }
 
 func (f *Format) Type() string {
 	return "string"
 }
 
-func (f *Format) String() string {
-	switch *f {
-	case Human:
-		return "human"
-	case JSON:
-		return "json"
-	case CSV:
-		return "csv"
-	}
-	return "unknown format"
-}
-
 func (f *Format) Set(s string) error {
 	var v Format
 	switch s {
 	case "human":
-		v = Human
+		v = FormatHuman
 	case "json":
-		v = JSON
+		v = FormatJSON
 	case "csv":
-		v = CSV
+		v = FormatCSV
 	default:
 		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v", s, []string{"human", "json", "csv"})
 	}
@@ -64,14 +54,17 @@ func (f *Format) Set(s string) error {
 	return nil
 }
 
-func NewPrinter(format *Format) *Printer {
-	return &Printer{
-		format: format,
-	}
+type Printer struct {
+	Format      Format
+	humanOut    io.Writer
+	resourceOut io.Writer
 }
 
-// Format returns the format that was set for this printer
-func (p *Printer) Format() Format { return *p.format }
+func NewPrinter(format Format) *Printer {
+	return &Printer{
+		Format: format,
+	}
+}
 
 // SetHumanOutput sets the output for human readable messages.
 func (p *Printer) SetHumanOutput(out io.Writer) {
@@ -84,7 +77,7 @@ func (p *Printer) SetResourceOutput(out io.Writer) {
 }
 
 func (p *Printer) PrintResource(v interface{}) error {
-	if p.format == nil {
+	if p.Format == FormatUnspecified {
 		return errors.New("printer.Format is not set")
 	}
 
@@ -93,18 +86,18 @@ func (p *Printer) PrintResource(v interface{}) error {
 		out = p.resourceOut
 	}
 
-	switch *p.format {
-	case Human:
+	switch p.Format {
+	case FormatHuman:
 		var b strings.Builder
 		tableprinter.Print(&b, v)
 		fmt.Fprint(out, b.String())
 		return nil
-	case JSON:
+	case FormatJSON:
 		return p.PrintJSON(v)
-	case CSV:
+	case FormatCSV:
 		return p.PrintCSV(v)
 	}
-	return fmt.Errorf("unknown printer.Format: %T", *p.format)
+	return fmt.Errorf("unknown printer.Format: %T", p.Format)
 }
 
 func (p *Printer) PrintCSV(v interface{}) error {
@@ -199,7 +192,7 @@ func (p *Printer) out() io.Writer {
 		return p.humanOut
 	}
 
-	if *p.format == Human {
+	if p.Format == FormatHuman {
 		return color.Output
 	}
 

@@ -15,15 +15,13 @@ func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "ping",
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
 			// Must set here to avoid flag parser overriding it globally
-			cfg.AdminURL = adminURL
+			ch.AdminURL = adminURL
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			pong, err := client.Ping(context.Background(), &adminv1.PingRequest{})
 			if err != nil {
