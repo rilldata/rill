@@ -934,14 +934,14 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
  */
 export class MetricsViewAggregationResponse extends Message<MetricsViewAggregationResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: rill.runtime.v1.StructType schema = 1;
    */
   schema?: StructType;
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated google.protobuf.Struct data = 2;
    */
@@ -1269,14 +1269,14 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
  */
 export class MetricsViewToplistResponse extends Message<MetricsViewToplistResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated google.protobuf.Struct data = 2;
    */
@@ -1478,7 +1478,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
  */
 export class MetricsViewComparisonResponse extends Message<MetricsViewComparisonResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonRow rows = 1;
    */
@@ -1657,14 +1657,14 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
  */
 export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Value dimension_value = 1;
    */
   dimensionValue?: Value;
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonValue measure_values = 2;
    */
@@ -1704,7 +1704,7 @@ export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> 
  */
 export class MetricsViewComparisonValue extends Message<MetricsViewComparisonValue> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: string measure_name = 1;
    */
@@ -1943,14 +1943,14 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
  */
 export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeriesResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.TimeSeriesValue data = 2;
    */
@@ -2085,14 +2085,14 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
  */
 export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Struct data = 2;
    */
@@ -2253,14 +2253,14 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
  */
 export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated google.protobuf.Struct data = 2;
    */
@@ -2439,21 +2439,21 @@ export class MetricsViewFilter_Cond extends Message<MetricsViewFilter_Cond> {
  */
 export class MetricsViewColumn extends Message<MetricsViewColumn> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: string type = 2;
    */
   type = "";
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: bool nullable = 3;
    */
@@ -2590,7 +2590,7 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
  */
 export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: rill.runtime.v1.TimeRangeSummary time_range_summary = 1;
    */
@@ -2991,7 +2991,7 @@ export class CategoricalSummary extends Message<CategoricalSummary> {
  */
 export class TopK extends Message<TopK> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.TopK.Entry entries = 1;
    */
@@ -3030,14 +3030,14 @@ export class TopK extends Message<TopK> {
  */
 export class TopK_Entry extends Message<TopK_Entry> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Value value = 1;
    */
   value?: Value;
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: double count = 2;
    */
@@ -3136,7 +3136,7 @@ export class ColumnNullCountRequest extends Message<ColumnNullCountRequest> {
  */
 export class ColumnNullCountResponse extends Message<ColumnNullCountResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: double count = 1;
    */
@@ -3981,21 +3981,21 @@ export class ColumnTimeRangeResponse extends Message<ColumnTimeRangeResponse> {
  */
 export class TimeRangeSummary extends Message<TimeRangeSummary> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Timestamp min = 1;
    */
   min?: Timestamp;
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Timestamp max = 2;
    */
   max?: Timestamp;
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: rill.runtime.v1.TimeRangeSummary.Interval interval = 3;
    */
@@ -4146,7 +4146,7 @@ export class ColumnCardinalityRequest extends Message<ColumnCardinalityRequest> 
  */
 export class ColumnCardinalityResponse extends Message<ColumnCardinalityResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: rill.runtime.v1.CategoricalSummary categorical_summary = 1;
    */
@@ -4433,21 +4433,21 @@ export class TimeSeriesTimeRange extends Message<TimeSeriesTimeRange> {
  */
 export class TimeSeriesResponse extends Message<TimeSeriesResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: repeated rill.runtime.v1.TimeSeriesValue results = 1;
    */
   results: TimeSeriesValue[] = [];
 
   /**
-   * Not null, empty if 'pixels' is not specified
+   * Not optional, not null, empty if 'pixels' is not specified
    *
    * @generated from field: repeated rill.runtime.v1.TimeSeriesValue spark = 2;
    */
   spark: TimeSeriesValue[] = [];
 
   /**
-   * Not null, unused
+   * Not optional, not null, unused
    *
    * @generated from field: int32 sample_size = 4;
    */
@@ -4488,7 +4488,7 @@ export class TimeSeriesResponse extends Message<TimeSeriesResponse> {
  */
 export class TimeSeriesValue extends Message<TimeSeriesValue> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Timestamp ts = 1;
    */
@@ -4502,7 +4502,7 @@ export class TimeSeriesValue extends Message<TimeSeriesValue> {
   bin = 0;
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: google.protobuf.Struct records = 3;
    */
@@ -4594,7 +4594,7 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
  */
 export class TableCardinalityResponse extends Message<TableCardinalityResponse> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: int64 cardinality = 1;
    */
@@ -4719,14 +4719,14 @@ export class TableColumnsResponse extends Message<TableColumnsResponse> {
  */
 export class ProfileColumn extends Message<ProfileColumn> {
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * Not null
+   * Not optional, not null
    *
    * @generated from field: string type = 2;
    */

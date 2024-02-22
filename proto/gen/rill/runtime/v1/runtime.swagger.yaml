@@ -2763,11 +2763,11 @@ definitions:
     type: object
     properties:
       value:
-        title: Not null
+        title: Not optional, not null
       count:
         type: number
         format: double
-        title: Not null
+        title: Not optional, not null
   protobufAny:
     type: object
     properties:
@@ -3073,7 +3073,7 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
-        title: Not null
+        title: Not optional, not null
   v1ColumnDescriptiveStatisticsRequest:
     type: object
     properties:
@@ -3113,7 +3113,7 @@ definitions:
       count:
         type: number
         format: double
-        title: Not null
+        title: Not optional, not null
   v1ColumnNumericHistogramRequest:
     type: object
     properties:
@@ -3857,12 +3857,12 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
-        title: Not null
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewAggregationSort:
     type: object
     properties:
@@ -3877,13 +3877,13 @@ definitions:
     properties:
       name:
         type: string
-        title: Not null
+        title: Not optional, not null
       type:
         type: string
-        title: Not null
+        title: Not optional, not null
       nullable:
         type: boolean
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewComparisonMeasureAlias:
     type: object
     properties:
@@ -3977,19 +3977,19 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonRow'
-        title: Not null
+        title: Not optional, not null
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
     properties:
       dimensionValue:
-        title: Not null
+        title: Not optional, not null
       measureValues:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonValue'
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewComparisonSort:
     type: object
     properties:
@@ -4019,7 +4019,7 @@ definitions:
     properties:
       measureName:
         type: string
-        title: Not null
+        title: Not optional, not null
       baseValue:
         title: Can be null
       comparisonValue:
@@ -4093,12 +4093,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
-        title: Not null
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewSchemaResponse:
     type: object
     properties:
@@ -4203,7 +4203,7 @@ definitions:
     properties:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -4255,13 +4255,13 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
-        title: Not null
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewToplistRequest:
     type: object
     properties:
@@ -4316,12 +4316,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
-        title: Not null
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewTotalsRequest:
     type: object
     properties:
@@ -4364,10 +4364,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
-        title: Not null
+        title: Not optional, not null
       data:
         type: object
-        title: Not null
+        title: Not optional, not null
   v1MetricsViewV2:
     type: object
     properties:
@@ -4581,10 +4581,10 @@ definitions:
     properties:
       name:
         type: string
-        title: Not null
+        title: Not optional, not null
       type:
         type: string
-        title: Not null
+        title: Not optional, not null
       largestStringLength:
         type: integer
         format: int32
@@ -5302,7 +5302,7 @@ definitions:
       cardinality:
         type: string
         format: int64
-        title: Not null
+        title: Not optional, not null
   v1TableColumnsRequest:
     type: object
     properties:
@@ -5407,14 +5407,14 @@ definitions:
       min:
         type: string
         format: date-time
-        title: Not null
+        title: Not optional, not null
       max:
         type: string
         format: date-time
-        title: Not null
+        title: Not optional, not null
       interval:
         $ref: '#/definitions/TimeRangeSummaryInterval'
-        title: Not null
+        title: Not optional, not null
   v1TimeSeriesResponse:
     type: object
     properties:
@@ -5423,17 +5423,17 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
-        title: Not null
+        title: Not optional, not null
       spark:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
-        title: Not null, empty if 'pixels' is not specified
+        title: Not optional, not null, empty if 'pixels' is not specified
       sampleSize:
         type: integer
         format: int32
-        title: Not null, unused
+        title: Not optional, not null, unused
   v1TimeSeriesTimeRange:
     type: object
     properties:
@@ -5455,14 +5455,14 @@ definitions:
       ts:
         type: string
         format: date-time
-        title: Not null
+        title: Not optional, not null
       bin:
         type: number
         format: double
         title: 0-based. Can be NaN if timestamps are the same. (Used for spark data only.)
       records:
         type: object
-        title: Not null
+        title: Not optional, not null
   v1TopK:
     type: object
     properties:
@@ -5471,7 +5471,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/TopKEntry'
-        title: Not null
+        title: Not optional, not null
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh

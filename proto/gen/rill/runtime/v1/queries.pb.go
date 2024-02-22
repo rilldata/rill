@@ -1433,9 +1433,9 @@ type MetricsViewAggregationResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Schema *StructType `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
-	// Not null
+	// Not optional, not null
 	Data []*structpb.Struct `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
 }
 
@@ -1847,9 +1847,9 @@ type MetricsViewToplistResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Meta []*MetricsViewColumn `protobuf:"bytes,1,rep,name=meta,proto3" json:"meta,omitempty"`
-	// Not null
+	// Not optional, not null
 	Data []*structpb.Struct `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
 }
 
@@ -2088,7 +2088,7 @@ type MetricsViewComparisonResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Rows []*MetricsViewComparisonRow `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
 }
 
@@ -2302,9 +2302,9 @@ type MetricsViewComparisonRow struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	DimensionValue *structpb.Value `protobuf:"bytes,1,opt,name=dimension_value,json=dimensionValue,proto3" json:"dimension_value,omitempty"`
-	// Not null
+	// Not optional, not null
 	MeasureValues []*MetricsViewComparisonValue `protobuf:"bytes,2,rep,name=measure_values,json=measureValues,proto3" json:"measure_values,omitempty"`
 }
 
@@ -2359,7 +2359,7 @@ type MetricsViewComparisonValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	MeasureName string `protobuf:"bytes,1,opt,name=measure_name,json=measureName,proto3" json:"measure_name,omitempty"`
 	// Can be null
 	BaseValue *structpb.Value `protobuf:"bytes,2,opt,name=base_value,json=baseValue,proto3" json:"base_value,omitempty"`
@@ -2648,9 +2648,9 @@ type MetricsViewTimeSeriesResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Meta []*MetricsViewColumn `protobuf:"bytes,1,rep,name=meta,proto3" json:"meta,omitempty"`
-	// Not null
+	// Not optional, not null
 	Data []*TimeSeriesValue `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
 }
 
@@ -2820,9 +2820,9 @@ type MetricsViewTotalsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Meta []*MetricsViewColumn `protobuf:"bytes,1,rep,name=meta,proto3" json:"meta,omitempty"`
-	// Not null
+	// Not optional, not null
 	Data *structpb.Struct `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 }
 
@@ -3020,9 +3020,9 @@ type MetricsViewRowsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Meta []*MetricsViewColumn `protobuf:"bytes,1,rep,name=meta,proto3" json:"meta,omitempty"`
-	// Not null
+	// Not optional, not null
 	Data []*structpb.Struct `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
 }
 
@@ -3189,11 +3189,11 @@ type MetricsViewColumn struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Not null
+	// Not optional, not null
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	// Not null
+	// Not optional, not null
 	Nullable bool `protobuf:"varint,3,opt,name=nullable,proto3" json:"nullable,omitempty"`
 }
 
@@ -3375,7 +3375,7 @@ type MetricsViewTimeRangeResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	TimeRangeSummary *TimeRangeSummary `protobuf:"bytes,1,opt,name=time_range_summary,json=timeRangeSummary,proto3" json:"time_range_summary,omitempty"`
 }
 
@@ -3889,7 +3889,7 @@ type TopK struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Entries []*TopK_Entry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
 }
 
@@ -4010,7 +4010,7 @@ type ColumnNullCountResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Count float64 `protobuf:"fixed64,1,opt,name=count,proto3" json:"count,omitempty"`
 }
 
@@ -4947,11 +4947,11 @@ type TimeRangeSummary struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Min *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=min,proto3" json:"min,omitempty"`
-	// Not null
+	// Not optional, not null
 	Max *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=max,proto3" json:"max,omitempty"`
-	// Not null
+	// Not optional, not null
 	Interval *TimeRangeSummary_Interval `protobuf:"bytes,3,opt,name=interval,proto3" json:"interval,omitempty"`
 }
 
@@ -5087,7 +5087,7 @@ type ColumnCardinalityResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	CategoricalSummary *CategoricalSummary `protobuf:"bytes,1,opt,name=categorical_summary,json=categoricalSummary,proto3" json:"categorical_summary,omitempty"`
 }
 
@@ -5367,11 +5367,11 @@ type TimeSeriesResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Results []*TimeSeriesValue `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
-	// Not null, empty if 'pixels' is not specified
+	// Not optional, not null, empty if 'pixels' is not specified
 	Spark []*TimeSeriesValue `protobuf:"bytes,2,rep,name=spark,proto3" json:"spark,omitempty"`
-	// Not null, unused
+	// Not optional, not null, unused
 	SampleSize int32 `protobuf:"varint,4,opt,name=sample_size,json=sampleSize,proto3" json:"sample_size,omitempty"`
 }
 
@@ -5433,11 +5433,11 @@ type TimeSeriesValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Ts *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=ts,proto3" json:"ts,omitempty"`
 	// 0-based. Can be NaN if timestamps are the same. (Used for spark data only.)
 	Bin float64 `protobuf:"fixed64,2,opt,name=bin,proto3" json:"bin,omitempty"`
-	// Not null
+	// Not optional, not null
 	Records *structpb.Struct `protobuf:"bytes,3,opt,name=records,proto3" json:"records,omitempty"`
 }
 
@@ -5563,7 +5563,7 @@ type TableCardinalityResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Cardinality int64 `protobuf:"varint,1,opt,name=cardinality,proto3" json:"cardinality,omitempty"`
 }
 
@@ -5721,9 +5721,9 @@ type ProfileColumn struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Not null
+	// Not optional, not null
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	// Unused
 	LargestStringLength int32 `protobuf:"varint,3,opt,name=largest_string_length,json=largestStringLength,proto3" json:"largest_string_length,omitempty"`
@@ -5968,9 +5968,9 @@ type TopK_Entry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not null
+	// Not optional, not null
 	Value *structpb.Value `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	// Not null
+	// Not optional, not null
 	Count float64 `protobuf:"fixed64,2,opt,name=count,proto3" json:"count,omitempty"`
 }
 

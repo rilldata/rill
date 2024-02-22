@@ -344,9 +344,9 @@ message MetricsViewAggregationRequest {
 }
 
 message MetricsViewAggregationResponse {
-  // Not null
+  // Not optional, not null
   StructType schema = 1;
-  // Not null
+  // Not optional, not null
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -402,9 +402,9 @@ message MetricsViewToplistRequest {
 }
 
 message MetricsViewToplistResponse {
-  // Not null
+  // Not optional, not null
   repeated MetricsViewColumn meta = 1;
-  // Not null
+  // Not optional, not null
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -445,7 +445,7 @@ message MetricsViewComparisonRequest {
 
 // Response message for QueryService.MetricsViewComparison
 message MetricsViewComparisonResponse {
-  // Not null
+  // Not optional, not null
   repeated MetricsViewComparisonRow rows = 1;
 }
 
@@ -491,14 +491,14 @@ message MetricsViewComparisonSort {
 }
 
 message MetricsViewComparisonRow {
-  // Not null
+  // Not optional, not null
   google.protobuf.Value dimension_value = 1;
-  // Not null
+  // Not optional, not null
   repeated MetricsViewComparisonValue measure_values = 2;
 }
 
 message MetricsViewComparisonValue {
-  // Not null
+  // Not optional, not null
   string measure_name = 1;
   // Can be null
   google.protobuf.Value base_value = 2;
@@ -541,9 +541,9 @@ message MetricsViewTimeSeriesRequest {
 }
 
 message MetricsViewTimeSeriesResponse {
-  // Not null
+  // Not optional, not null
   repeated MetricsViewColumn meta = 1;
-  // Not null
+  // Not optional, not null
   repeated TimeSeriesValue data = 2;
 }
 
@@ -564,9 +564,9 @@ message MetricsViewTotalsRequest {
 }
 
 message MetricsViewTotalsResponse {
-  // Not null
+  // Not optional, not null
   repeated MetricsViewColumn meta = 1;
-  // Not null
+  // Not optional, not null
   google.protobuf.Struct data = 2;
 }
 
@@ -594,9 +594,9 @@ message MetricsViewRowsRequest {
 }
 
 message MetricsViewRowsResponse {
-  // Not null
+  // Not optional, not null
   repeated MetricsViewColumn meta = 1;
-  // Not null
+  // Not optional, not null
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -618,11 +618,11 @@ message MetricsViewFilter {
 }
 
 message MetricsViewColumn {
-  // Not null
+  // Not optional, not null
   string name = 1;
-  // Not null
+  // Not optional, not null
   string type = 2;
-  // Not null
+  // Not optional, not null
   bool nullable = 3;
 }
 
@@ -640,7 +640,7 @@ message MetricsViewTimeRangeRequest {
 }
 
 message MetricsViewTimeRangeResponse {
-  // Not null
+  // Not optional, not null
   TimeRangeSummary time_range_summary = 1;
 }
 
@@ -699,12 +699,12 @@ message CategoricalSummary {
 }
 
 message TopK {
-  // Not null
+  // Not optional, not null
   repeated Entry entries = 1;
   message Entry {
-    // Not null
+    // Not optional, not null
     google.protobuf.Value value = 1;
-    // Not null
+    // Not optional, not null
     double count = 2;
   }
 }
@@ -719,7 +719,7 @@ message ColumnNullCountRequest {
 }
 
 message ColumnNullCountResponse {
-  // Not null
+  // Not optional, not null
   double count = 1;
 }
 
@@ -833,16 +833,16 @@ message ColumnTimeRangeResponse {
 }
 
 message TimeRangeSummary {
-  // Not null
+  // Not optional, not null
   google.protobuf.Timestamp min = 1;
-  // Not null
+  // Not optional, not null
   google.protobuf.Timestamp max = 2;
   message Interval {
     int32 months = 1;
     int32 days = 2;
     int64 micros = 3;
   }
-  // Not null
+  // Not optional, not null
   Interval interval = 3;
 }
 
@@ -857,7 +857,7 @@ message ColumnCardinalityRequest {
 }
 
 message ColumnCardinalityResponse {
-  // Not null
+  // Not optional, not null
   CategoricalSummary categorical_summary = 1;
 }
 
@@ -903,20 +903,20 @@ message TimeSeriesTimeRange {
 }
 
 message TimeSeriesResponse {
-  // Not null
+  // Not optional, not null
   repeated TimeSeriesValue results = 1;
-  // Not null, empty if 'pixels' is not specified
+  // Not optional, not null, empty if 'pixels' is not specified
   repeated TimeSeriesValue spark = 2;
-  // Not null, unused
+  // Not optional, not null, unused
   int32 sample_size = 4;
 }
 
 message TimeSeriesValue {
-  // Not null
+  // Not optional, not null
   google.protobuf.Timestamp ts = 1;
   // 0-based. Can be NaN if timestamps are the same. (Used for spark data only.)
   double bin = 2;
-  // Not null
+  // Not optional, not null
   google.protobuf.Struct records = 3;
 }
 
@@ -932,7 +932,7 @@ message TableCardinalityRequest {
 }
 
 message TableCardinalityResponse {
-  // Not null
+  // Not optional, not null
   int64 cardinality = 1;
 }
 
@@ -947,9 +947,9 @@ message TableColumnsResponse {
 }
 
 message ProfileColumn {
-  // Not null
+  // Not optional, not null
   string name = 1;
-  // Not null
+  // Not optional, not null
   string type = 2;
   // Unused
   int32 largest_string_length = 3;
