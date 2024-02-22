@@ -2,13 +2,17 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragList from "./DragList.svelte";
   import type { PivotSidebarSection, PivotChipData } from "./types";
+<<<<<<< Updated upstream
   import { beforeUpdate } from "svelte";
+=======
+>>>>>>> Stashed changes
 </script>
 
 <script lang="ts">
   export let title: PivotSidebarSection;
   export let items: PivotChipData[];
   export let collapsed = false;
+<<<<<<< Updated upstream
 
   let container: HTMLDivElement;
 
@@ -16,42 +20,30 @@
     if (!container) return;
     calculateSize(container);
   });
+=======
+  export let chipsPerSection = 0;
+  export let extraSpace = false;
+>>>>>>> Stashed changes
 
   function toggleCollapse() {
     collapsed = !collapsed;
   }
 
-  // Only Safari seems to support flex-basis in conjunction with max-height: fit-content
-  // So, this is a workaround to achieve the same thing in JS
-  function calculateSize(element: HTMLDivElement) {
-    element.style.height = "fit-content";
-    element.style.flexShrink = "0";
-
-    const fitContentHeight = container.offsetHeight;
-
-    element.style.height = "100%";
-    element.style.flexShrink = "1";
-
-    const evenSplitHeight = container.offsetHeight;
-
-    if (fitContentHeight < evenSplitHeight) {
-      element.style.height = "fit-content";
-      element.style.flexShrink = "0";
-    }
-  }
+  $: fit = extraSpace || items.length <= chipsPerSection;
 </script>
 
-<svelte:window on:resize={() => calculateSize(container)} />
-
-<div class="container" bind:this={container}>
+<div class="container" class:fit class:full={!fit}>
   <button class="flex gap-1" on:click={toggleCollapse}>
     <span class="header">{title}</span>
+    {chipsPerSection}
+    {extraSpace}
+    "FIT" {fit}
     <div class="transition-transform" class:-rotate-180={!collapsed}>
       <CaretDownIcon size="12px" />
     </div>
   </button>
 
-  <div class="w-full h-fit overflow-scroll px-[2px] pb-2">
+  <div class="w-full h-fit overflow-y-scroll overflow-x-hidden px-[2px] pb-2">
     {#if !collapsed}
       {#if items.length}
         <DragList {items} />
@@ -63,10 +55,32 @@
 </div>
 
 <style lang="postcss">
+  .full {
+    height: 100% !important;
+    flex-shrink: 1 !important;
+    flex-grow: 1 !important;
+    flex-basis: 33% !important;
+    max-height: fit-content !important;
+  }
+
+  .fit {
+    height: fit-content !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+  }
+
   .container {
     @apply pt-3 px-4;
     @apply flex flex-col gap-1 items-start;
     @apply w-full overflow-hidden flex-grow-0;
+<<<<<<< Updated upstream
+=======
+    @apply border-b border-slate-200;
+  }
+
+  .container:last-of-type {
+    @apply border-b-0;
+>>>>>>> Stashed changes
   }
 
   button {
