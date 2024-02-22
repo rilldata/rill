@@ -111,6 +111,14 @@ service RuntimeService {
     };
   }
 
+  // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+  rpc GenerateMetricsViewFile(GenerateMetricsViewFileRequest) returns (GenerateMetricsViewFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/generate-metrics-view",
+      body: "*"
+    };
+  }
+
   // Controller
   
   // GetLogs returns recent logs from a controller
@@ -248,9 +256,11 @@ message PingResponse {
 // just a single instance.
 message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string environment = 20;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 19;
+  string ai_connector = 21;
   google.protobuf.Timestamp created_on = 11;
   google.protobuf.Timestamp updated_on = 12;
   repeated Connector connectors = 10;
@@ -303,9 +313,11 @@ message CreateInstanceRequest {
     ignore_empty: true,
     pattern: "^[_\\-a-zA-Z0-9]+$"
   }];
+  string environment = 16;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 15;
+  string ai_connector = 17;
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
@@ -324,7 +336,7 @@ message CreateInstanceResponse {
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  bool drop_db = 2;
+  optional bool drop_olap = 2;
 }
 
 // Response message for RuntimeService.DeleteInstance
@@ -334,9 +346,11 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  optional string environment = 17;
   optional string olap_connector = 2;
   optional string repo_connector = 4;
   optional string admin_connector = 16;
+  optional string ai_connector = 18;
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
@@ -468,6 +482,20 @@ message UnpackEmptyRequest {
 
 // Response message for RuntimeService.UnpackEmpty
 message UnpackEmptyResponse {}
+
+// Request message for RuntimeService.GenerateMetricsViewFile
+message GenerateMetricsViewFileRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string connector = 2;
+  string table = 3;
+  string path = 4;
+  bool use_ai = 5;
+}
+
+// Response message for RuntimeService.GenerateMetricsViewFile
+message GenerateMetricsViewFileResponse {
+  bool ai_succeeded = 1;
+}
 
 // **********
 // Controller

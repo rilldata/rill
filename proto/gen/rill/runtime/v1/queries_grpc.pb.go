@@ -29,6 +29,7 @@ const (
 	QueryService_MetricsViewTotals_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewTotals"
 	QueryService_MetricsViewRows_FullMethodName             = "/rill.runtime.v1.QueryService/MetricsViewRows"
 	QueryService_MetricsViewTimeRange_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewTimeRange"
+	QueryService_MetricsViewSchema_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSchema"
 	QueryService_ColumnRollupInterval_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
 	QueryService_ColumnTopK_FullMethodName                  = "/rill.runtime.v1.QueryService/ColumnTopK"
 	QueryService_ColumnNullCount_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnNullCount"
@@ -54,11 +55,28 @@ type QueryServiceClient interface {
 	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error)
+	// Deprecated - use MetricsViewComparison instead.
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
+	// MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+	// Returns a toplist without comparison data if comparison time range is omitted.
+	//
+	// ie. comparsion toplist:
+	// | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+	// |---------------|---------------------|---------------------|--------------------|-----------|
+	// | 2             | 2                   | 0                   | 0                  | Safari    |
+	// | 1             | 0                   | 1                   | N/A                | Chrome    |
+	// | 0             | 4                   | -4                  | -1.0               | Firefox   |
+	//
+	// ie. toplist:
+	// | measure1 | measure2 | dimension |
+	// |----------|----------|-----------|
+	// | 2        | 45       | Safari    |
+	// | 1        | 350      | Chrome    |
+	// | 0        | 25       | Firefox   |
 	MetricsViewComparison(ctx context.Context, in *MetricsViewComparisonRequest, opts ...grpc.CallOption) (*MetricsViewComparisonResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
@@ -67,9 +85,25 @@ type QueryServiceClient interface {
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
 	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+	//
+	// ie. without granularity
+	// | column1 | column2 | dimension |
+	// |---------|---------|-----------|
+	// | 2       | 2       | Safari    |
+	// | 1       | 0       | Chrome    |
+	// | 0       | 4       | Firefox   |
+	//
+	// ie. with granularity
+	// | timestamp__day0      | column1 | column2 | dimension |
+	// |----------------------|---------|---------|-----------|
+	// | 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(ctx context.Context, in *MetricsViewRowsRequest, opts ...grpc.CallOption) (*MetricsViewRowsResponse, error)
 	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
 	MetricsViewTimeRange(ctx context.Context, in *MetricsViewTimeRangeRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangeResponse, error)
+	// MetricsViewSchema Get the data types of measures and dimensions
+	MetricsViewSchema(ctx context.Context, in *MetricsViewSchemaRequest, opts ...grpc.CallOption) (*MetricsViewSchemaResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -220,6 +254,15 @@ func (c *queryServiceClient) MetricsViewTimeRange(ctx context.Context, in *Metri
 	return out, nil
 }
 
+func (c *queryServiceClient) MetricsViewSchema(ctx context.Context, in *MetricsViewSchemaRequest, opts ...grpc.CallOption) (*MetricsViewSchemaResponse, error) {
+	out := new(MetricsViewSchemaResponse)
+	err := c.cc.Invoke(ctx, QueryService_MetricsViewSchema_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryServiceClient) ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error) {
 	out := new(ColumnRollupIntervalResponse)
 	err := c.cc.Invoke(ctx, QueryService_ColumnRollupInterval_FullMethodName, in, out, opts...)
@@ -347,11 +390,28 @@ type QueryServiceServer interface {
 	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	// Export builds a URL to download the results of a query as a file.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error)
+	// Deprecated - use MetricsViewComparison instead.
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
+	// MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+	// Returns a toplist without comparison data if comparison time range is omitted.
+	//
+	// ie. comparsion toplist:
+	// | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+	// |---------------|---------------------|---------------------|--------------------|-----------|
+	// | 2             | 2                   | 0                   | 0                  | Safari    |
+	// | 1             | 0                   | 1                   | N/A                | Chrome    |
+	// | 0             | 4                   | -4                  | -1.0               | Firefox   |
+	//
+	// ie. toplist:
+	// | measure1 | measure2 | dimension |
+	// |----------|----------|-----------|
+	// | 2        | 45       | Safari    |
+	// | 1        | 350      | Chrome    |
+	// | 0        | 25       | Firefox   |
 	MetricsViewComparison(context.Context, *MetricsViewComparisonRequest) (*MetricsViewComparisonResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
@@ -360,9 +420,25 @@ type QueryServiceServer interface {
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
 	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+	//
+	// ie. without granularity
+	// | column1 | column2 | dimension |
+	// |---------|---------|-----------|
+	// | 2       | 2       | Safari    |
+	// | 1       | 0       | Chrome    |
+	// | 0       | 4       | Firefox   |
+	//
+	// ie. with granularity
+	// | timestamp__day0      | column1 | column2 | dimension |
+	// |----------------------|---------|---------|-----------|
+	// | 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(context.Context, *MetricsViewRowsRequest) (*MetricsViewRowsResponse, error)
 	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
 	MetricsViewTimeRange(context.Context, *MetricsViewTimeRangeRequest) (*MetricsViewTimeRangeResponse, error)
+	// MetricsViewSchema Get the data types of measures and dimensions
+	MetricsViewSchema(context.Context, *MetricsViewSchemaRequest) (*MetricsViewSchemaResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -426,6 +502,9 @@ func (UnimplementedQueryServiceServer) MetricsViewRows(context.Context, *Metrics
 }
 func (UnimplementedQueryServiceServer) MetricsViewTimeRange(context.Context, *MetricsViewTimeRangeRequest) (*MetricsViewTimeRangeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTimeRange not implemented")
+}
+func (UnimplementedQueryServiceServer) MetricsViewSchema(context.Context, *MetricsViewSchemaRequest) (*MetricsViewSchemaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewSchema not implemented")
 }
 func (UnimplementedQueryServiceServer) ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ColumnRollupInterval not implemented")
@@ -658,6 +737,24 @@ func _QueryService_MetricsViewTimeRange_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).MetricsViewTimeRange(ctx, req.(*MetricsViewTimeRangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_MetricsViewSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewSchemaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).MetricsViewSchema(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_MetricsViewSchema_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).MetricsViewSchema(ctx, req.(*MetricsViewSchemaRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -938,6 +1035,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTimeRange",
 			Handler:    _QueryService_MetricsViewTimeRange_Handler,
+		},
+		{
+			MethodName: "MetricsViewSchema",
+			Handler:    _QueryService_MetricsViewSchema_Handler,
 		},
 		{
 			MethodName: "ColumnRollupInterval",

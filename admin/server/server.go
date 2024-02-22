@@ -64,6 +64,7 @@ type Options struct {
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
+	adminv1.UnsafeAIServiceServer
 	logger        *zap.Logger
 	admin         *admin.Service
 	opts          *Options
@@ -78,6 +79,8 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
+var _ adminv1.AIServiceServer = (*Server)(nil)
+
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
@@ -89,9 +92,28 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}
 
 	cookieStore := cookies.New(logger, opts.SessionKeyPairs...)
+
+	// Auth tokens are validated against the DB on each request, so we can set a long MaxAge.
 	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
+
+	// Set Secure if the admin service is served over HTTPS (will resolve to true in production and false in local dev environments).
 	cookieStore.Options.Secure = externalURL.Scheme == "https"
+
+	// Only the admin server reads its cookies, so we can set HttpOnly (i.e. UI should not access cookie contents).
 	cookieStore.Options.HttpOnly = true
+
+	// Only the admin server reads its cookies, so we can set Domain to be the admin server's sub-domain (e.g. admin.rilldata.com).
+	// That is automatically accomplished when Domain is not set.
+	cookieStore.Options.Domain = ""
+
+	// We need to protect against CSRF and clickjacking attacks, but still support requests from the UI to the admin service.
+	// This is accomplished by setting SameSite=Strict (note that "site" just means the same root domain, not sub-domain).
+	// For example, cookies will be passed on requests from ui.rilldata.com to admin.rilldata.com (or localhost:3000 to localhost:8080),
+	// but not for requests from a different site AND NOT from an iframe of ui.rilldata.com on a different site.
+	//
+	// Note on embedding: When embedding our UI, requests are only made to the runtime using the ephemeral JWT generated for the iframe. So we do not need cookies to be passed.
+	// In the future, if iframes need to communicate with the admin service, we should introduce a scheme involving ephemeral tokens and not rely on cookies.
+	cookieStore.Options.SameSite = http.SameSiteStrictMode
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
 		AuthDomain:       opts.AuthDomain,
@@ -142,6 +164,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
+	adminv1.RegisterAIServiceServer(server, s)
 	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -168,6 +191,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+	err = adminv1.RegisterAIServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -233,18 +260,24 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
-	var limitKey string
 	method, ok := grpc.Method(ctx)
 	if !ok {
 		return ctx, fmt.Errorf("server context does not have a method")
 	}
+
+	var limitKey string
 	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
 		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
 	} else {
 		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
 	}
 
-	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
+	limit := ratelimit.Default
+	if strings.HasPrefix(method, "/rill.admin.v1.AIService") {
+		limit = ratelimit.Sensitive
+	}
+
+	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
 			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
 		}
@@ -264,7 +297,9 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	groupNames := make([]string, len(groups))
+
+	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
+	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
 	}
@@ -300,6 +335,9 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {
+	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
+		return time.Minute * 2
+	}
 	return time.Minute
 }
 
@@ -410,4 +448,12 @@ func (u *externalURLs) reportExport(org, project, report string) string {
 
 func (u *externalURLs) reportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
+}
+
+func (u *externalURLs) alertOpen(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) alertEdit(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
 }

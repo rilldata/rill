@@ -77,29 +77,30 @@ export type LeaderboardItemData = {
   selectedIndex: number;
 };
 
+const finiteOrNull = (v: unknown): number | null =>
+  Number.isFinite(v) ? (v as number) : null;
+
 function cleanUpComparisonValue(
   v: ComparisonValueWithLabel,
   total: number | null,
   selectedIndex: number,
 ): LeaderboardItemData {
   if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
-    throw new Error(
+    console.warn(
       `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
         v,
       )}`,
     );
   }
-  const value = v.baseValue === null ? null : (v.baseValue as number);
+  const value = finiteOrNull(v.baseValue);
 
   return {
     dimensionValue: v.dimensionValue,
     value,
     pctOfTotal: total !== null && value !== null ? value / total : null,
-    prevValue: Number.isFinite(v.comparisonValue)
-      ? (v.comparisonValue as number)
-      : null,
-    deltaRel: Number.isFinite(v.deltaRel) ? (v.deltaRel as number) : null,
-    deltaAbs: Number.isFinite(v.deltaAbs) ? (v.deltaAbs as number) : null,
+    prevValue: finiteOrNull(v.comparisonValue),
+    deltaRel: finiteOrNull(v.deltaRel),
+    deltaAbs: finiteOrNull(v.deltaAbs),
     selectedIndex,
   };
 }

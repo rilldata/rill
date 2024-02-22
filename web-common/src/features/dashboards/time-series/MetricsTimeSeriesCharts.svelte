@@ -19,9 +19,9 @@
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -29,6 +29,7 @@
   import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -70,18 +71,11 @@
   );
 
   // List of measures which will be shown on the dashboard
-  let renderedMeasures = [];
-  $: {
-    if (expandedMeasureName) {
-      renderedMeasures = $metricsView.data?.measures.filter(
-        (measure) => measure.name === expandedMeasureName,
-      );
-    } else {
-      renderedMeasures = $metricsView.data?.measures.filter(
-        (_, i) => $showHideMeasures.selectedItems[i],
-      );
-    }
-  }
+  $: renderedMeasures = $metricsView.data?.measures?.filter(
+    expandedMeasureName
+      ? (measure) => measure.name === expandedMeasureName
+      : (_, i) => $showHideMeasures.selectedItems[i],
+  );
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
@@ -89,7 +83,7 @@
   let scrubStart;
   let scrubEnd;
 
-  let mouseoverValue = undefined;
+  let mouseoverValue: DomainCoordinates | undefined = undefined;
   let startValue: Date;
   let endValue: Date;
 
@@ -120,11 +114,11 @@
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedTimezone,
+      $dashboardStore.selectedTimezone,
     );
     scrubEnd = adjustOffsetForZone(
       $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore?.selectedTimezone,
+      $dashboardStore.selectedTimezone,
     );
 
     const slicedData =
@@ -156,11 +150,15 @@
       $dashboardStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
-      $metricsView.data.defaultTimeRange,
+      $metricsView?.data?.defaultTimeRange,
     );
 
-    startValue = adjustedChartValue?.start;
-    endValue = adjustedChartValue?.end;
+    if (adjustedChartValue?.start) {
+      startValue = adjustedChartValue?.start;
+    }
+    if (adjustedChartValue?.end) {
+      endValue = adjustedChartValue?.end;
+    }
   }
 
   $: if (
@@ -169,7 +167,7 @@
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
   ) {
-    if (!mouseoverValue?.x) {
+    if (!mouseoverValue?.x || !(mouseoverValue.x instanceof Date)) {
       chartInteractionColumn.update((state) => ({
         ...state,
         hover: undefined,
@@ -243,18 +241,19 @@
     {/if}
   </div>
   <!-- bignumbers and line charts -->
-  {#if renderedMeasures.length}
+  {#if renderedMeasures}
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       <!-- for bigNum, catch nulls and convert to undefined.  -->
-      {@const bigNum = totals?.[measure.name] ?? undefined}
-      {@const comparisonValue = totalsComparisons?.[measure.name]}
-      {@const isValidPercTotal = $isMeasureValidPercentOfTotal(measure.name)}
-      {@const comparisonPercChange =
-        comparisonValue && bigNum !== undefined && bigNum !== null
-          ? (bigNum - comparisonValue) / comparisonValue
-          : undefined}
+      {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
+      {@const comparisonValue = measure.name
+        ? totalsComparisons?.[measure.name]
+        : undefined}
+      {@const isValidPercTotal = measure.name
+        ? $isMeasureValidPercentOfTotal(measure.name)
+        : false}
+
       <MeasureBigNumber
         {measure}
         value={bigNum}
@@ -262,7 +261,6 @@
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
-        {comparisonPercChange}
         status={$timeSeriesDataStore?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
@@ -277,7 +275,7 @@
       <div style:height="125px">
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
-        {:else if formattedData}
+        {:else if formattedData && interval}
           <MeasureChart
             bind:mouseoverValue
             {measure}
@@ -287,7 +285,7 @@
             {metricViewName}
             data={formattedData}
             {dimensionData}
-            zone={$dashboardStore?.selectedTimezone}
+            zone={$dashboardStore.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"
             timeGrain={interval}
@@ -300,10 +298,13 @@
               : null}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
-              return new Date(value).toLocaleDateString(
-                undefined,
-                TIME_GRAIN[interval].formatDate,
-              );
+
+              return interval
+                ? new Date(value).toLocaleDateString(
+                    undefined,
+                    TIME_GRAIN[interval].formatDate,
+                  )
+                : value.toString();
             }}
           />
         {:else}

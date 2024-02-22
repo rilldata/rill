@@ -91,7 +91,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
 		return err
 	})
-
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
@@ -119,10 +118,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	})
 
 	return r, nil
-}
-
-func (c *connection) DropDB() error {
-	return fmt.Errorf("dropping database not supported")
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

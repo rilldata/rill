@@ -1,5 +1,4 @@
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { DateTimeUnit } from "luxon";
 
 // Used for luxon's time units
 export enum TimeUnit {
@@ -126,6 +125,11 @@ export enum TimeRangePreset {
   MONTH_TO_DATE = "rill-MTD",
   QUARTER_TO_DATE = "rill-QTD",
   YEAR_TO_DATE = "rill-YTD",
+  YESTERDAY_COMPLETE = "rill-PDC",
+  PREVIOUS_WEEK_COMPLETE = "rill-PWC",
+  PREVIOUS_MONTH_COMPLETE = "rill-PMC",
+  PREVIOUS_QUARTER_COMPLETE = "rill-PQC",
+  PREVIOUS_YEAR_COMPLETE = "rill-PYC",
   CUSTOM = "CUSTOM",
   DEFAULT = "DEFAULT",
 }
@@ -134,6 +138,11 @@ export interface TimeRange {
   name?: TimeRangePreset | TimeComparisonOption;
   start: Date;
   end: Date;
+}
+
+export interface TimeRangeString {
+  start: string | undefined;
+  end: string | undefined;
 }
 
 export interface TimeRangeOption extends TimeRange {
@@ -154,7 +163,7 @@ export interface TimeGrain {
   /** the grain defined by the runtime */
   grain: V1TimeGrain;
   /** a human-readable name, e.g. minute, second, etc. */
-  label: DateTimeUnit | string;
+  label: string;
   /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
   /** the d3 time format string that outputs a human-readable

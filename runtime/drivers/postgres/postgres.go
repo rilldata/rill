@@ -32,7 +32,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Href:        "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Either set this or pass --env connector.postgres.database_url=... to rill start",
+			Hint:        "Either set this or pass --var connector.postgres.database_url=... to rill start",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
@@ -114,6 +114,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

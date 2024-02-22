@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import { onMount, onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
-  export let value;
+  export let value: number;
   export let duration = 300;
   export let isDimension = false;
 

@@ -1,3 +1,4 @@
+import type { Value } from "@bufbuild/protobuf/dist/cjs/google/protobuf/struct_pb";
 import {
   createAndExpression,
   createInExpression,
@@ -10,21 +11,20 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 
+/**
+ * Converts older {@link V1MetricsViewFilter} filter format to the newer {@link V1Expression}
+ */
 export function convertFilterToExpression(
   filter: V1MetricsViewFilter,
 ): V1Expression {
   const exprs = new Array<V1Expression>();
 
   if (filter.include?.length) {
-    const includeExprs = new Array<V1Expression>();
     for (const includeFilter of filter.include) {
       const expr = convertConditionToExpression(includeFilter, false);
       if (expr) {
-        includeExprs.push(expr);
+        exprs.push(expr);
       }
-    }
-    if (includeExprs.length) {
-      exprs.push(createOrExpression(includeExprs));
     }
   }
 
@@ -46,7 +46,11 @@ function convertConditionToExpression(
 ) {
   let inExpr: V1Expression | undefined;
   if (cond.in?.length) {
-    inExpr = createInExpression(cond.name as string, cond.in, exclude);
+    inExpr = createInExpression(
+      cond.name as string,
+      cond.in.map((v: Value) => v.kind.value),
+      exclude,
+    );
   }
 
   const likeExpr = convertLikeToExpression(cond, exclude);

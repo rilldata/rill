@@ -11,6 +11,7 @@
   export let tooltipAlignment = "start";
   export let tooltipDistance = 12;
   export let textClass = defaultChipColors.textClass;
+  export let supressTooltip = false;
 
   const tooltipSuppression = getContext(
     "rill:app:childRequestedTooltipSuppression",
@@ -29,6 +30,7 @@
   location={tooltipLocation}
   alignment={tooltipAlignment}
   distance={tooltipDistance}
+  suppress={supressTooltip}
 >
   <button
     class={textClass}

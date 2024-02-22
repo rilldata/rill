@@ -29,18 +29,15 @@ type MetricsViewComparison struct {
 	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
 	Where               *runtimev1.Expression                          `json:"where,omitempty"`
 	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	Filter              *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	MetricsView         *runtimev1.MetricsViewSpec                     `json:"-"`
-	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity           `json:"security"`
 	Exact               bool                                           `json:"exact"`
-
-	// backwards compatibility
-	Filter *runtimev1.MetricsViewFilter `json:"filter"`
-
-	// internal use
-	measuresMeta map[string]metricsViewMeasureMeta `json:"-"` // ignore this field when marshaling
+	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
+
+	// Internal
+	measuresMeta map[string]metricsViewMeasureMeta `json:"-"`
 }
 
 type metricsViewMeasureMeta struct {
@@ -88,11 +85,17 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && (!isTimeRangeNil(q.TimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	if mv.TimeDimension == "" && (!isTimeRangeNil(q.TimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -110,10 +113,10 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
-		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
+		return q.executeComparisonToplist(ctx, olap, mv, priority, security)
 	}
 
-	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
+	return q.executeToplist(ctx, olap, mv, priority, security)
 }
 
 func (q *MetricsViewComparison) calculateMeasuresMeta() error {
@@ -337,7 +340,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -492,7 +495,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	var selectCols []string
 	var comparisonSelectCols []string
-	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 	comparisonSelectCols = append(comparisonSelectCols, dimSel)
 
@@ -765,6 +768,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	var sql string
 	if dialect != drivers.DialectDruid {
+		var joinOnClause string
+		if dialect == drivers.DialectClickHouse {
+			joinOnClause = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", colName)
+		} else {
+			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
+		}
 		if havingClause != "" {
 			// measure filter could include the base measure name.
 			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
@@ -780,7 +789,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+				%[17]s
 		%[6]s
 		%[7]s
 		OFFSET
@@ -803,6 +812,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				unnestClause,              // 14
 				havingClause,              // 15
 				subComparisonSelectClause, // 16
+				joinOnClause,              // 17
 			)
 		} else {
 			sql = fmt.Sprintf(`
@@ -815,7 +825,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				SELECT %[15]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+				%[16]s)
 		%[6]s
 		%[7]s
 		OFFSET
@@ -836,6 +846,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				comparisonLimitClause,     // 13
 				unnestClause,              // 14
 				subComparisonSelectClause, // 15
+				joinOnClause,              // 16
 			)
 		}
 	} else {
@@ -923,6 +934,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 }
 
 func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	if err != nil {
+		return err
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
@@ -947,12 +964,12 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
-				sql, args, err = q.buildMetricsComparisonTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
+				sql, args, err = q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), security, true)
 				if err != nil {
 					return fmt.Errorf("error building query: %w", err)
 				}
 			} else {
-				sql, args, err = q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
+				sql, args, err = q.buildMetricsTopListSQL(mv, olap.Dialect(), security, true)
 				if err != nil {
 					return fmt.Errorf("error building query: %w", err)
 				}
@@ -963,12 +980,16 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
+			return err
+		}
+	case drivers.DialectClickHouse:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
 			return err
 		}
 	default:

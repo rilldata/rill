@@ -122,7 +122,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 
 	buf.WriteString("## " + name + "\n\n")
 	buf.WriteString(cmd.Short + "\n\n")
-	if len(cmd.Long) > 0 {
+	if cmd.Long != "" {
 		buf.WriteString("### Synopsis\n\n")
 		buf.WriteString(cmd.Long + "\n\n")
 	}
@@ -131,7 +131,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.UseLine())
 	}
 
-	if len(cmd.Example) > 0 {
+	if cmd.Example != "" {
 		buf.WriteString("### Examples\n\n")
 		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}

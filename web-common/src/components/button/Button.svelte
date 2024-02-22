@@ -7,6 +7,7 @@
     | "dashed"
     | "link"
     | "text"
+    | "add"
     // NOTE: this is deprecated in the new design system
     | "highlighted";
 
@@ -65,7 +66,7 @@
   class:small
   class:dashed
   class:compact
-  class:danger
+  class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
@@ -84,11 +85,7 @@
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
-    @apply px-3 h-7 min-h-[28px];
-  }
-
-  button:focus {
-    @apply outline-none ring-2 ring-slate-800;
+    @apply px-3 h-7 min-h-[28px] cursor-pointer;
   }
 
   button:disabled {
@@ -133,7 +130,8 @@
 
   /* SECONDARY STYLES */
 
-  .secondary {
+  .secondary,
+  .add {
     @apply bg-white text-slate-600;
     @apply px-3 h-7 border border-slate-300;
 
@@ -192,6 +190,7 @@
     @apply flex-grow-0 flex-shrink-0;
   }
 
+  .rounded,
   .circle {
     @apply rounded-full;
   }
@@ -223,6 +222,20 @@
     @apply border-slate-300;
   }
 
+  /* TEXT STYLES */
+
+  .text {
+    @apply px-0 font-medium text-slate-600;
+  }
+
+  .text:hover {
+    @apply text-primary-700;
+  }
+
+  .text:active {
+    @apply text-primary-800;
+  }
+
   /* TWEAKS */
 
   .small {
@@ -248,5 +261,14 @@
 
   .dashed {
     @apply border border-dashed;
+  }
+
+  /* ADD BUTTON STYLES */
+
+  .add {
+    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply flex items-center justify-center;
+    @apply border border-dashed border-slate-300;
+    @apply bg-white px-0;
   }
 </style>

@@ -10,8 +10,8 @@
     sourceImportedName,
   } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
-  import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
+  import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
@@ -55,12 +55,17 @@
     <BlockingOverlayContainer
       bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
     >
-      <div slot="title">
-        <span class="font-bold">{$overlay?.title}</span>
-        {#if $overlay?.message}
-          <div>{$overlay?.message}</div>
-        {/if}
+      <div slot="title" class="font-bold">
+        {$overlay?.title}
       </div>
+      <svelte:fragment slot="detail">
+        {#if $overlay?.detail}
+          <svelte:component
+            this={$overlay.detail.component}
+            {...$overlay.detail.props}
+          />
+        {/if}
+      </svelte:fragment>
     </BlockingOverlayContainer>
   {/if}
 

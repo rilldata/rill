@@ -24,7 +24,7 @@
     {/if}
   </TooltipContent>
   <button
-    class="h-6 px-1.5 rounded-sm hover:bg-gray-200 text-gray-700"
+    class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
     on:click={() => dispatch("toggle-all-search-items")}
   >
     {areAllTableRowsSelected ? "Deselect all" : "Select all"}
