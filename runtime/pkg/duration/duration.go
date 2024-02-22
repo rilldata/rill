@@ -38,6 +38,14 @@ var (
 		"PQ": {Month: 3},
 		"PY": {Year: 1},
 	}
+	daxOffsetRangeNotations = map[string]TruncToDateDuration{
+		// TODO: add mapping with offset to support these in places where only backend is involved like reports/alerts
+		"PDC": {timeutil.TimeGrainDay},
+		"PWC": {timeutil.TimeGrainWeek},
+		"PMC": {timeutil.TimeGrainMonth},
+		"PQC": {timeutil.TimeGrainQuarter},
+		"PYC": {timeutil.TimeGrainYear},
+	}
 )
 
 // ParseISO8601 parses an ISO8601 duration as well as some Rill-specific extensions.
@@ -59,6 +67,9 @@ func ParseISO8601(from string) (Duration, error) {
 			return TruncToDateDuration{anchor: a}, nil
 		}
 		if o, ok := daxOffsetNotations[rillDur]; ok {
+			return o, nil
+		}
+		if o, ok := daxOffsetRangeNotations[rillDur]; ok {
 			return o, nil
 		}
 	}
