@@ -1,25 +1,21 @@
 <script lang="ts">
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import { get } from "svelte/store";
   import TableIcon from "../../components/icons/TableIcon.svelte";
   import PreviewTable from "../../components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "../../components/virtualized-table/types";
   import {
     createQueryServiceMetricsViewAggregation,
     V1Expression,
+    V1TimeRange,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
-  import { getLabelForFieldName } from "./utils";
 
   export let metricsView: string;
   export let measure: string;
   export let dimension: string;
   export let filter: V1Expression;
   export let criteria: V1Expression | undefined = undefined;
-
-  const ctx = getStateManagers();
-  const timeControls = get(ctx.selectors.timeRangeSelectors.timeControlsState);
+  export let timeRange: V1TimeRange | undefined = undefined;
 
   $: aggregation = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -29,10 +25,7 @@
       dimensions: dimension ? [{ name: dimension }] : [],
       where: sanitiseExpression(filter, undefined),
       having: sanitiseExpression(undefined, criteria),
-      timeRange: {
-        start: timeControls.timeStart,
-        end: timeControls.timeEnd,
-      },
+      timeRange: timeRange,
     },
     {
       query: {
@@ -43,7 +36,7 @@
             return {
               name: field.name,
               type: field.type?.code,
-              label: getLabelForFieldName(ctx, field.name as string),
+              // label: getLabelForFieldName(ctx, field.name as string), // TODO: this can't use the ctx (e.g. in Edit Alert Form)
             };
           }) as VirtualizedTableColumns[];
           return { rows, schema };

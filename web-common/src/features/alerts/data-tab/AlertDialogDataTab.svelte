@@ -1,10 +1,10 @@
 <script lang="ts">
   import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import FilterChips from "../../dashboards/filters/FilterChips.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useMetricsView } from "../../dashboards/selectors";
   import DataPreview from "./../DataPreview.svelte";
   import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
@@ -12,29 +12,21 @@
 
   const { form, errors, handleChange } = formState;
 
-  const {
-    dashboardStore,
-    selectors: {
-      measures: { allMeasures },
-      dimensions: { allDimensions },
-      measureFilters: { hasAtLeastOneMeasureFilter },
-      dimensionFilters: { hasAtLeastOneDimensionFilter },
-    },
-  } = getStateManagers();
+  $: metricsView = useMetricsView(
+    $runtime.instanceId,
+    $form["metricsViewName"],
+  );
 
-  $: measureOptions =
-    $allMeasures?.map((measure) => ({
-      value: measure.name as string,
-      label: measure.label,
-    })) ?? [];
-  $: dimensionOptions =
-    $allDimensions?.map((dimension) => ({
-      value: dimension.name as string,
-      label: dimension.label,
-    })) ?? [];
+  $: measureOptions = $metricsView.data?.measures?.map((m) => ({
+    value: m.name,
+    label: m.label?.length ? m.label : m.expression,
+  }));
+  $: dimensionOptions = $metricsView.data?.dimensions?.map((d) => ({
+    value: d.name,
+    label: d.label?.length ? d.label : d.expression,
+  }));
 
-  $: hasAtLeastOneFilter =
-    $hasAtLeastOneDimensionFilter || $hasAtLeastOneMeasureFilter;
+  $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -54,7 +46,8 @@
     title="Filters"
   >
     {#if hasAtLeastOneFilter}
-      <FilterChips readOnly />
+      TODO: read-only FilterChips without StateManagers ctx
+      <!-- <FilterChips readOnly /> -->
     {:else}
       <NoFiltersSelected />
     {/if}
@@ -88,9 +81,9 @@
   <FormSection title="Data preview">
     <DataPreview
       dimension={$form["splitByDimension"]}
-      filter={$dashboardStore.whereFilter}
+      filter={$form["whereFilter"]}
       measure={$form["measure"]}
-      metricsView={$dashboardStore.name}
+      metricsView={$form["metricsViewName"]}
     />
   </FormSection>
 </div>
