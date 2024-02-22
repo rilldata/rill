@@ -79,6 +79,7 @@ export function transformDate(
         absoluteTime,
         transformation.duration,
         transformation.operationType,
+        zone,
       );
     } else if (
       transformation.truncationType === TimeTruncationType.START_OF_PERIOD

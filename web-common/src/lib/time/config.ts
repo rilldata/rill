@@ -297,6 +297,144 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   },
 };
 
+export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
+  [TimeRangePreset.YESTERDAY_COMPLETE]: {
+    label: "Yesterday",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        {
+          duration: "P1D",
+          operationType: TimeOffsetType.SUBTRACT,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
+  [TimeRangePreset.PREVIOUS_WEEK_COMPLETE]: {
+    label: "Previous week complete",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.WEEK,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        {
+          duration: "P1W",
+          operationType: TimeOffsetType.SUBTRACT,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.WEEK,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
+  [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
+    label: "Previous month complete",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.MONTH,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        {
+          duration: "P1M",
+          operationType: TimeOffsetType.SUBTRACT,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.MONTH,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
+  [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
+    label: "Previous quarter complete",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        {
+          period: Period.QUARTER,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        {
+          duration: "P3M",
+          operationType: TimeOffsetType.SUBTRACT,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        {
+          period: Period.QUARTER,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
+  [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
+    label: "Previous year complete",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        {
+          period: Period.YEAR,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+        {
+          duration: "P1Y",
+          operationType: TimeOffsetType.SUBTRACT,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        {
+          period: Period.YEAR,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
+};
+
 export const ALL_TIME = {
   label: "All Time",
   rangePreset: RangePresetType.ALL_TIME,
@@ -320,6 +458,7 @@ export const DEFAULT = {
 export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
+  ...PREVIOUS_COMPLETE_DATE_RANGES,
   [TimeRangePreset.ALL_TIME]: ALL_TIME,
   CUSTOM,
   DEFAULT,
