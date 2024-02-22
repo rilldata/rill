@@ -2,8 +2,8 @@ package queries_test
 
 import (
 	"context"
-	"math"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
