@@ -185,3 +185,9 @@ rill start --db-driver clickhouse --db "<clickhouse://<host>:<port>?username=<us
 ```
 This would open up browser and shows all the existing clickhouse tables in Rill. Dashboards can be then created on top of existing source.
 Note: Data modeling is not supported for clickhouse driver at the moment.
+
+#### Deploying a Clickhouse project to Rill cloud
+The driver and the dsn can be passed in the `rill deploy` command as below - 
+```bash
+rill deploy --prod-db-driver clickhouse --prod-db-dsn <clickhouse_dsn>
+```
