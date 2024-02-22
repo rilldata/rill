@@ -2,7 +2,7 @@
 title: Snowflake 
 description: Connect to data in Snowflake
 sidebar_label: Snowflake
-sidebar_position: 60
+sidebar_position: 80
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

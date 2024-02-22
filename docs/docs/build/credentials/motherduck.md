@@ -2,7 +2,7 @@
 title: MotherDuck
 description: Connect to data in your MotherDuck account
 sidebar_label: MotherDuck
-sidebar_position: 100
+sidebar_position: 60
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

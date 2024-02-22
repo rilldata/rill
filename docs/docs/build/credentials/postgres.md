@@ -2,7 +2,7 @@
 title: Postgres
 description: Connect to data in a Postgres server
 sidebar_label: Postgres
-sidebar_position: 80
+sidebar_position: 70
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

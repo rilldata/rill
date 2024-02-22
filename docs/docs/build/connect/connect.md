@@ -84,7 +84,7 @@ When running Rill locally, Rill attempts to find existing credentials configured
 
 For more details on configuring sources, continue to [Source Credentials](../deploy/credentials).
 
-
-
-<!-- WARNING: There are links to this heading in source code. If you change it, find and replace the links. -->
-
+## Live connections 
+A live connection enables users to discover existing tables and perform OLAP queries directly on the engine without transfering data to another OLAP engine.
+OLAP driver can be configured by passing additional `--db-driver` config in `rill start` CLI command. 
+The default OLAP engine is DuckDB. 
