@@ -29,22 +29,21 @@
 
 <div class="header">
   <div class="header-row">
-    <span class="row-label"> <Column size="16px" /> Columns</span>
+    <span class="row-label"> <Row size="16px" />Rows</span>
     <DragList
-      removable
-      items={$columns.dimension.concat($columns.measure)}
-      style="horizontal"
-      on:update={updateColumn}
+      type="rows"
+      placeholder="Drag dimensions here"
+      on:update={updateRows}
+      items={$rows.dimension}
     />
   </div>
   <div class="header-row">
-    <span class="row-label"> <Row size="16px" /> Rows</span>
-
+    <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
-      removable
-      on:update={updateRows}
-      items={$rows.dimension}
-      style="horizontal"
+      type="columns"
+      items={$columns.dimension.concat($columns.measure)}
+      placeholder="Drag dimensions or measures here"
+      on:update={updateColumn}
     />
   </div>
 </div>
@@ -59,6 +58,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 w-20;
+    @apply flex items-center gap-x-1 w-20 flex-shrink-0;
   }
 </style>

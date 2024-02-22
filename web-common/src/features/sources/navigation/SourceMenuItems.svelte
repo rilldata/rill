@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
@@ -7,7 +6,6 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -19,7 +17,6 @@
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -29,12 +26,12 @@
   import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
-  import { useCreateDashboardFromSource } from "../createDashboard";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../createModel";
   import {
     refreshSource,
@@ -71,9 +68,13 @@
 
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
-  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
+  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+    $runtime.instanceId,
+    sourceName,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
@@ -105,52 +106,6 @@
     } catch (err) {
       console.error(err);
     }
-  };
-
-  const handleCreateDashboardFromSource = async (sourceName: string) => {
-    overlay.set({
-      title: "Creating a dashboard for " + sourceName,
-    });
-    const newModelName = getName(`${sourceName}_model`, $modelNames.data ?? []);
-    const newDashboardName = getName(
-      `${sourceName}_dashboard`,
-      $dashboardNames.data ?? [],
-    );
-
-    await waitUntil(() => !!$sourceQuery.data);
-    if (!$sourceQuery.data) {
-      // this should never happen because of above `waitUntil`,
-      // but adding this guard provides type narrowing below
-      return;
-    }
-
-    $createDashboardFromSourceMutation.mutate(
-      {
-        data: {
-          instanceId: $runtime.instanceId,
-          sourceResource: $sourceQuery.data,
-          newModelName,
-          newDashboardName,
-        },
-      },
-      {
-        onSuccess: async () => {
-          goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appScreen?.type;
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Menu,
-            MetricsEventSpace.LeftPanel,
-            previousActiveEntity,
-            MetricsEventScreenName.Dashboard,
-          );
-        },
-        onSettled: () => {
-          overlay.set(null);
-          toggleMenu(); // unmount component
-        },
-      },
-    );
   };
 
   const onRefreshSource = async (tableName: string) => {
@@ -189,11 +144,17 @@
 <MenuItem
   disabled={disableCreateDashboard}
   icon
-  on:select={() => handleCreateDashboardFromSource(sourceName)}
+  on:select={() => {
+    void createDashboardFromTable();
+    toggleMenu();
+  }}
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  Autogenerate dashboard
+  <div class="flex gap-x-2 items-center">
+    Generate dashboard with AI
+    <WandIcon class="w-3 h-3" />
+  </div>
   <svelte:fragment slot="description">
     {#if $sourceHasError}
       Source has errors

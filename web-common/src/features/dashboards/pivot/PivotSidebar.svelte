@@ -4,41 +4,25 @@
   import PivotDrag from "./PivotDrag.svelte";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import { PivotChipType } from "./types";
+  import type { PivotChipData } from "./types";
+  import Search from "@rilldata/web-common/components/icons/Search.svelte";
+
+  const CHIP_HEIGHT = 34;
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
-      dimensions: { visibleDimensions },
-      pivot: { columns, rows },
+      pivot: { measures, dimensions, columns, rows },
     },
   } = stateManagers;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  // Todo: Move to external selectors
-  $: measures = $visibleMeasures
-    .filter((m) => !$columns.measure.find((c) => c.id === m.name))
-    .map((measure) => ({
-      id: measure.name || "Unknown",
-      title: measure.label || measure.name || "Unknown",
-      type: PivotChipType.Measure,
-    }));
+  let inputEl: HTMLInputElement;
+  let sidebarHeight = 0;
+  let searchText = "";
 
-  $: dimensions = $visibleDimensions
-    .filter((d) => {
-      return !(
-        $columns.dimension.find((c) => c.id === d.name) ||
-        $rows.dimension.find((r) => r.id === d.name)
-      );
-    })
-    .map((dimension) => ({
-      id: dimension.name || dimension.column || "Unknown",
-      title: dimension.label || dimension.name || dimension.column || "Unknown",
-      type: PivotChipType.Dimension,
-    }));
-
-  $: timeGrainOptions = getAllowedTimeGrains(
+  $: allTimeGrains = getAllowedTimeGrains(
     new Date($timeControlsStore.timeStart!),
     new Date($timeControlsStore.timeEnd!),
   ).map((tgo) => {
@@ -48,25 +32,89 @@
       type: PivotChipType.Time,
     };
   });
+
+  $: usedTimeGrains = $columns.dimension
+    .filter((m) => m.type === PivotChipType.Time)
+    .concat($rows.dimension.filter((d) => d.type === PivotChipType.Time));
+
+  $: timeGrainOptions = allTimeGrains.filter(
+    (tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id),
+  );
+
+  $: filteredMeasures = filterBasedOnSearch($measures, searchText);
+  $: filteredDimensions = filterBasedOnSearch($dimensions, searchText);
+
+  // All of the following reactive statements can be avoided
+  // If and when Chrome/Firefox supports max-height with flex-basis
+  $: availableChipSpaces = Math.floor((sidebarHeight - 120) / CHIP_HEIGHT);
+
+  $: totalChips =
+    filteredMeasures.length +
+    filteredDimensions.length +
+    timeGrainOptions.length;
+
+  $: chipsPerSection = Math.floor(availableChipSpaces / 3);
+
+  $: extraSpace = availableChipSpaces - totalChips > 0;
+
+  function filterBasedOnSearch(fullList: PivotChipData[], search: string) {
+    return fullList.filter((d) =>
+      d.title.toLowerCase().includes(search.toLowerCase()),
+    );
+  }
 </script>
 
-<div class="sidebar">
-  <div class="container">
-    <PivotDrag title="Time" items={timeGrainOptions} />
-    <PivotDrag title="Measures" items={measures} />
-    <PivotDrag title="Dimensions" items={dimensions} />
+<div class="sidebar" bind:clientHeight={sidebarHeight}>
+  <div class="input-wrapper">
+    <button on:click={() => inputEl.focus()}>
+      <Search size="16px" />
+    </button>
+
+    <input
+      type="text"
+      placeholder="Search"
+      class="w-full h-full"
+      bind:value={searchText}
+      bind:this={inputEl}
+    />
   </div>
+
+  <PivotDrag
+    title="Time"
+    {extraSpace}
+    {chipsPerSection}
+    items={timeGrainOptions}
+    otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
+  />
+
+  <PivotDrag
+    title="Measures"
+    {extraSpace}
+    {chipsPerSection}
+    items={filteredMeasures}
+    otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
+  />
+
+  <PivotDrag
+    title="Dimensions"
+    {extraSpace}
+    {chipsPerSection}
+    items={filteredDimensions}
+    otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
+  />
 </div>
 
 <style lang="postcss">
   .sidebar {
-    @apply h-full min-w-fit py-2 p-4;
-    @apply overflow-y-auto;
+    @apply flex flex-col items-start;
+    @apply h-full min-w-60 w-fit;
     @apply bg-white border-r border-slate-200;
+    @apply overflow-hidden;
   }
 
-  .container {
-    @apply flex flex-col gap-y-4;
-    @apply min-w-[120px];
+  .input-wrapper {
+    @apply flex w-full h-fit items-center;
+    @apply border-b border-slate-200;
+    @apply gap-x-2 p-2;
   }
 </style>

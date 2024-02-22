@@ -26,8 +26,8 @@
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
-  export let highlightedCol: number;
-  export let scrubPos: { start: number; end: number };
+  export let highlightedCol: number | undefined;
+  export let scrubPos: { start?: number; end?: number };
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
@@ -83,6 +83,7 @@
 
     const isScrubbed =
       scrubPos?.start !== undefined &&
+      scrubPos?.end !== undefined &&
       data.x >= scrubPos.start &&
       data.x <= scrubPos.end - 1;
 

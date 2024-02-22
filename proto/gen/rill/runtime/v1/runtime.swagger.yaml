@@ -448,11 +448,15 @@ paths:
           schema:
             type: object
             properties:
+              environment:
+                type: string
               olapConnector:
                 type: string
               repoConnector:
                 type: string
               adminConnector:
+                type: string
+              aiConnector:
                 type: string
               connectors:
                 type: array
@@ -679,6 +683,41 @@ paths:
                   Will cause the operation to fail if the file already exists.
                   It should only be set when create = true.
             title: Request message for RuntimeService.PutFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/generate-metrics-view:
+    post:
+      summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+      operationId: RuntimeService_GenerateMetricsViewFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateMetricsViewFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              connector:
+                type: string
+              table:
+                type: string
+              path:
+                type: string
+              useAi:
+                type: boolean
+            title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/rename:
@@ -3290,11 +3329,15 @@ definitions:
     properties:
       instanceId:
         type: string
+      environment:
+        type: string
       olapConnector:
         type: string
       repoConnector:
         type: string
       adminConnector:
+        type: string
+      aiConnector:
         type: string
       connectors:
         type: array
@@ -3458,6 +3501,12 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1GenerateMetricsViewFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
+        type: boolean
+    title: Response message for RuntimeService.GenerateMetricsViewFile
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -3513,11 +3562,15 @@ definitions:
     properties:
       instanceId:
         type: string
+      environment:
+        type: string
       olapConnector:
         type: string
       repoConnector:
         type: string
       adminConnector:
+        type: string
+      aiConnector:
         type: string
       createdOn:
         type: string
@@ -3717,7 +3770,12 @@ definitions:
         title: Optional
       timeZone:
         type: string
+<<<<<<< HEAD
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+=======
+      alias:
+        type: string
+>>>>>>> origin/main
   v1MetricsViewAggregationMeasure:
     type: object
     properties:
@@ -5430,11 +5488,13 @@ definitions:
       - CODE_INT32
       - CODE_INT64
       - CODE_INT128
+      - CODE_INT256
       - CODE_UINT8
       - CODE_UINT16
       - CODE_UINT32
       - CODE_UINT64
       - CODE_UINT128
+      - CODE_UINT256
       - CODE_FLOAT32
       - CODE_FLOAT64
       - CODE_TIMESTAMP

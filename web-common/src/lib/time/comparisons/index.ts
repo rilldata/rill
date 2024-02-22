@@ -113,14 +113,18 @@ export function isRangeLargerThanDuration(
 }
 
 // Checks if last period is a duplicate comparison.
-function isLastPeriodDuplicate(start: Date, end: Date) {
+function isLastPeriodDuplicate(
+  start: Date,
+  end: Date,
+  comparisonOptions: Array<TimeComparisonOption>,
+) {
   const lastPeriod = getComparisonRange(
     start,
     end,
     TimeComparisonOption.CONTIGUOUS,
   );
 
-  const comparisonOptions = [...Object.values(TimeComparisonOption)].filter(
+  comparisonOptions = comparisonOptions.filter(
     (option) =>
       option !== TimeComparisonOption.CUSTOM &&
       option !== TimeComparisonOption.CONTIGUOUS,
@@ -180,7 +184,7 @@ export function getAvailableComparisonsForTimeRange(
     );
   });
 
-  if (isLastPeriodDuplicate(start, end)) {
+  if (isLastPeriodDuplicate(start, end, comparisonOptions)) {
     comparisons = comparisons.filter(
       (comparison) => comparison !== TimeComparisonOption.CONTIGUOUS,
     );

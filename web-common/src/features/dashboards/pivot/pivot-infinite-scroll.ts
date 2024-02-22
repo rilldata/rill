@@ -1,92 +1,80 @@
+import type {
+  PivotDataRow,
+  PivotDataStoreConfig,
+  TimeFilters,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import {
+  extractNumbers,
+  getTimeGrainFromDimension,
+  isTimeDimension,
+  sortAcessors,
+} from "./pivot-utils";
 
 const NUM_COLUMNS_PER_PAGE = 50;
 
-type ColumnNode = {
-  value: string;
-  depth: number;
-};
+function getSortedColumnKeys(
+  config: PivotDataStoreConfig,
+  totalsRow: PivotDataRow,
+) {
+  const { measureNames, rowDimensionNames } = config;
 
-function getTotalNodes(tree: Array<Array<string>>): number {
-  return tree.reduce((acc, level) => acc * level.length, 1);
+  const allColumnKeys = totalsRow ? Object.keys(totalsRow) : [];
+  const colHeaderKeys = allColumnKeys.filter(
+    (key) => !(measureNames.includes(key) || rowDimensionNames[0] === key),
+  );
+  return sortAcessors(colHeaderKeys);
 }
 
-function getColumnPage(
-  tree: Array<Array<string>>,
-  pageNumber: number,
-  pageSize: number,
-): Record<number, Set<string>> {
-  const startIndex = (pageNumber - 1) * pageSize;
-  const totalNodes = getTotalNodes(tree);
-
-  if (startIndex >= totalNodes || startIndex < 0) {
-    return []; // Page number out of range
-  }
-
-  const result: ColumnNode[] = [];
-  let currentIndex = 0;
-
-  function dfs(level: number, path: ColumnNode[]) {
-    if (level === tree.length) {
-      if (currentIndex >= startIndex && currentIndex < startIndex + pageSize) {
-        result.push(...path);
-      }
-      currentIndex++;
-      return;
-    }
-    for (const child of tree[level]) {
-      if (currentIndex >= startIndex + pageSize) {
-        break; // Stop processing once the page is filled
-      }
-      dfs(level + 1, [...path, { value: child, depth: level }]);
-    }
-  }
-
-  dfs(0, []);
-
-  const groups: Record<number, Set<string>> = {};
-
-  result.forEach(({ value, depth }) => {
-    groups[depth] = groups[depth] || new Set();
-    groups[depth].add(value);
-  });
-
-  return groups;
-}
-
-/** Slice column axes databased on page
+/**
+ * Slice column axes data based on page
  * number. This is used for column definition in pivot table.
  */
 export function sliceColumnAxesDataForDef(
-  colDimensionNames: string[],
+  config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
-  colDimensionPageNumber: number,
-  numMeasures: number,
+  totalsRow: PivotDataRow,
 ) {
+  const { colDimensionNames } = config;
+  const colDimensionPageNumber = config.pivot.columnPage;
   if (!colDimensionNames.length) return colDimensionAxes;
 
   const totalColumnsToBeDisplayed =
-    Math.floor(NUM_COLUMNS_PER_PAGE / numMeasures) * colDimensionPageNumber;
+    NUM_COLUMNS_PER_PAGE * colDimensionPageNumber;
 
-  const colDimensionValues = colDimensionNames.map((colDimensionName) => {
-    return colDimensionAxes[colDimensionName];
-  });
+  const maxIndexVisible: Record<string, number> = {};
 
-  const pageGroups = getColumnPage(
-    colDimensionValues,
-    1,
+  const sortedColumnKeys = getSortedColumnKeys(config, totalsRow);
+
+  const columnKeysForPage = sortedColumnKeys.slice(
+    0,
     totalColumnsToBeDisplayed,
   );
 
+  columnKeysForPage.forEach((accessor) => {
+    // Strip the measure string from the accessor
+    const [accessorWithoutMeasure] = accessor.split("m");
+    accessorWithoutMeasure.split("_").forEach((part) => {
+      const { c, v } = extractNumbers(part);
+      const columnDimensionName = colDimensionNames[c];
+      maxIndexVisible[columnDimensionName] = Math.max(
+        maxIndexVisible[columnDimensionName] || 0,
+        v + 1,
+      );
+    });
+  });
+
   const slicedAxesData: Record<string, string[]> = {};
 
-  Object.keys(pageGroups).forEach((key) => {
-    const colDimensionName = colDimensionNames[parseInt(key)];
-    slicedAxesData[colDimensionName] = Array.from(
-      pageGroups[key] as Set<string>,
-    );
+  Object.keys(maxIndexVisible).forEach((dimensionName) => {
+    if (maxIndexVisible[dimensionName] > 0) {
+      slicedAxesData[dimensionName] = colDimensionAxes[dimensionName].slice(
+        0,
+        maxIndexVisible[dimensionName],
+      );
+    }
   });
+
   return slicedAxesData;
 }
 
@@ -95,31 +83,72 @@ export function sliceColumnAxesDataForDef(
  * page number and page size
  */
 export function getColumnFiltersForPage(
-  colDimensionNames: string[],
+  config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
-  colDimensionPageNumber: number,
-  numMeasures: number,
-): V1Expression[] {
-  if (!colDimensionNames.length || numMeasures == 0) return [];
+  totalsRow: PivotDataRow,
+) {
+  const { measureNames, colDimensionNames } = config;
+  const colDimensionPageNumber = config.pivot.columnPage;
 
-  const effectiveColumnsPerPage = Math.floor(
-    NUM_COLUMNS_PER_PAGE / numMeasures,
+  if (!colDimensionNames.length || measureNames.length == 0)
+    return { filters: [], timeFilters: [] };
+
+  const pageStartIndex = NUM_COLUMNS_PER_PAGE * (colDimensionPageNumber - 1);
+
+  const sortedColumnKeys = getSortedColumnKeys(config, totalsRow);
+
+  const columnKeysForPage = sortedColumnKeys.slice(
+    pageStartIndex,
+    pageStartIndex + NUM_COLUMNS_PER_PAGE,
   );
 
-  const colDimensionValues = colDimensionNames.map((colDimensionName) => {
-    return colDimensionAxes[colDimensionName];
+  const minIndexVisible: Record<string, number> = {};
+  const maxIndexVisible: Record<string, number> = {};
+
+  columnKeysForPage.forEach((accessor) => {
+    // Strip the measure string from the accessor
+    const [accessorWithoutMeasure] = accessor.split("m");
+    accessorWithoutMeasure.split("_").forEach((part) => {
+      const { c, v } = extractNumbers(part);
+      const dimension = colDimensionNames[c];
+      maxIndexVisible[dimension] = Math.max(
+        maxIndexVisible[dimension] || 0,
+        v + 1,
+      );
+      minIndexVisible[dimension] = Math.min(
+        minIndexVisible[dimension] ?? Number.MAX_SAFE_INTEGER,
+        v,
+      );
+    });
   });
 
-  const pageGroups = getColumnPage(
-    colDimensionValues,
-    colDimensionPageNumber,
-    effectiveColumnsPerPage,
-  );
+  const slicedAxesData: Record<string, string[]> = {};
 
-  return Object.entries(pageGroups).map(([colDimensionId, values]) =>
-    createInExpression(
-      colDimensionNames[parseInt(colDimensionId)],
-      Array.from(values),
-    ),
-  );
+  Object.keys(minIndexVisible).forEach((dimension) => {
+    slicedAxesData[dimension] = colDimensionAxes[dimension].slice(
+      minIndexVisible[dimension],
+      maxIndexVisible[dimension],
+    );
+  });
+
+  const timeFilters: TimeFilters[] = [];
+  const filters = colDimensionNames
+    .filter((dimension) => {
+      if (isTimeDimension(dimension, config.time.timeDimension)) {
+        const dates = slicedAxesData[dimension].map((d) =>
+          new Date(d).getTime(),
+        );
+        const timeStart = new Date(Math.min(...dates)).toISOString();
+        const timeEnd = new Date(Math.max(...dates)).toISOString();
+        const interval = getTimeGrainFromDimension(dimension);
+        timeFilters.push({ timeStart, timeEnd, interval });
+        return false;
+      }
+      return true;
+    })
+    .map((dimension) =>
+      createInExpression(dimension, slicedAxesData[dimension]),
+    );
+
+  return { filters, timeFilters };
 }

@@ -1,0 +1,1 @@
+ALTER TABLE instances ADD COLUMN environment TEXT NOT NULL DEFAULT 'production';

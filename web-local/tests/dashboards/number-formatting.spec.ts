@@ -4,12 +4,12 @@ import {
   interactWithTimeRangeMenu,
   waitForDashboard,
 } from "../utils/dashboardHelpers";
-import { test, expect } from "@playwright/test";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { expect } from "@playwright/test";
+
 import { updateCodeEditor } from "../utils/commonHelpers";
+import { test } from "../utils/test";
 
 test.describe("smoke tests for number formatting", () => {
-  startRuntimeForEachTest();
   useDashboardFlowTestSetup();
 
   test("smoke tests for number formatting", async ({ page }) => {

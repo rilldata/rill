@@ -357,6 +357,7 @@ message MetricsViewAggregationDimension {
   TimeGrain time_grain = 2;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 3;
+  string alias = 4;
 }
 
 message MetricsViewAggregationMeasure {

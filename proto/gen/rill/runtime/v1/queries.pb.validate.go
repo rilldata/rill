@@ -3248,6 +3248,8 @@ func (m *MetricsViewAggregationDimension) validate(all bool) error {
 
 	// no validation rules for TimeZone
 
+	// no validation rules for Alias
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationDimensionMultiError(errors)
 	}

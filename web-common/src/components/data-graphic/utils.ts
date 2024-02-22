@@ -11,6 +11,7 @@ import type {
   ScaleStore,
   SimpleConfigurationStore,
 } from "./state/types";
+import { ScaleType } from "./state";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -123,8 +124,9 @@ export function getTicks(
   xOrY: string,
   scale: GraphicScale,
   axisLength: number,
-  isDate: boolean,
+  scaleType: ScaleType,
 ) {
+  const isDate = scaleType === ScaleType.DATE;
   const tickCount = Math.trunc(axisLength / (xOrY === "x" ? 100 : 50));
 
   let ticks = scale.ticks(tickCount);
