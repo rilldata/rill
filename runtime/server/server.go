@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -47,6 +48,8 @@ type Options struct {
 	AuthIssuerURL    string
 	AuthAudienceURL  string
 	DownloadRowLimit *int64
+	CertPath 	   string
+	KeyPath 	   string
 }
 
 type Server struct {
@@ -78,6 +81,15 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec = securetoken.NewRandom()
 	} else {
 		codec = securetoken.NewCodec(opts.SessionKeyPairs)
+	}
+
+	if opts.CertPath != "" && opts.KeyPath != "" {
+		if _, err := os.Stat(opts.CertPath); os.IsNotExist(err) {
+			return nil, fmt.Errorf("cert file not found: %s", opts.CertPath)
+		}
+		if _, err := os.Stat(opts.KeyPath); os.IsNotExist(err) {
+			return nil, fmt.Errorf("key file not found: %s", opts.KeyPath)
+		}
 	}
 
 	srv := &Server{
@@ -162,7 +174,13 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
-	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
+	var options = graceful.Options{
+		Port: s.opts.HTTPPort,
+		CertPath: s.opts.CertPath,
+		KeyPath: s.opts.KeyPath,
+
+	}
+	return graceful.ServeHTTP(ctx, server, options)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.

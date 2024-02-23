@@ -11,18 +11,27 @@ import (
 
 const httpShutdownTimeout = 15 * time.Second
 
+type Options struct {
+	// Port is the port to listen on.
+	Port int 
+	// CertPath is the path to the certificate file.
+	CertPath string `json:"certPath,omitempty" bson:",omitempty"`
+	// KeyPath is the path to the key file.
+	KeyPath string `json:"keyPath,omitempty" bson:",omitempty"`
+}
+
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
-func ServeHTTP(ctx context.Context, server *http.Server, port int) error {
+func ServeHTTP(ctx context.Context, server *http.Server, options Options) error {
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
-	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", port))
+	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", options.Port))
 	if err == nil {
 		lis.Close()
-		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
+		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", options.Port))
 	}
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
-			return fmt.Errorf("http port %d is in use by another process. Either kill that process or pass `--port PORT` to run Rill on another port", port)
+			return fmt.Errorf("http port %d is in use by another process. Either kill that process or pass `--port PORT` to run Rill on another port", options.Port)
 		}
 		return err
 	}
@@ -30,7 +39,14 @@ func ServeHTTP(ctx context.Context, server *http.Server, port int) error {
 	cctx, cancel := context.WithCancel(ctx)
 	var serveErr error
 	go func() {
-		serveErr = server.Serve(lis)
+		if options.CertPath != "" && options.KeyPath != "" {
+		
+
+			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
+		} else {
+			serveErr = server.Serve(lis)
+		}
+	
 		cancel()
 	}()
 

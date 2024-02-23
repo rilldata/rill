@@ -119,5 +119,9 @@ func StartPingServer(ctx context.Context, port int) error {
 		Handler: httpMux,
 	}
 
-	return graceful.ServeHTTP(ctx, srv, port)
+	var options = graceful.Options{
+		Port: port,
+	}
+
+	return graceful.ServeHTTP(ctx, srv, options)
 }

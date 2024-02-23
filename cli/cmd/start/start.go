@@ -34,6 +34,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var logFormat string
 	var env []string
 	var vars []string
+	var certPath string
+	var keyPath string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -139,7 +141,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				userID, _ = cmdutil.FetchUserID(context.Background(), cfg)
 			}
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID)
+			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, certPath, keyPath)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -158,6 +160,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
+	startCmd.Flags().StringVar(&certPath, "cert", "", "Path to TLS certificate")
+	startCmd.Flags().StringVar(&keyPath, "key", "", "Path to TLS key")
 
 	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
 	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
