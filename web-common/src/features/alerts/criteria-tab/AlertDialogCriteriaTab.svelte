@@ -2,14 +2,11 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
-  import DataPreview from "@rilldata/web-common/features/alerts/DataPreview.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import AlertDataPreview from "@rilldata/web-common/features/alerts/AlertDataPreview.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
 
   const { form } = formState;
-
-  const { dashboardStore } = getStateManagers();
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -20,12 +17,11 @@
     <CriteriaGroup {formState} />
   </FormSection>
   <FormSection title="Alert Preview">
-    <DataPreview
+    <AlertDataPreview
       criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
       dimension={$form["splitByDimension"]}
-      filter={$dashboardStore.whereFilter}
       measure={$form["measure"]}
-      metricsView={$dashboardStore.name}
+      splitByTimeGrain={$form["splitByTimeGrain"]}
     />
   </FormSection>
 </div>
