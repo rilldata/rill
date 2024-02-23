@@ -13,6 +13,7 @@ sidebar_position: 00
 - [Azure Blob Storage (Azure)](../../build/credentials/azure.md)
 - [Amazon Athena](../../build/credentials/athena.md)
 - [BigQuery](../../build/credentials/bigquery.md)
+- [ClickHouse](../../build/credentials/clickhouse.md)
 - [MotherDuck](../../build/credentials/motherduck.md)
 - [Postgres](../../build/credentials/postgres.md)
 - [Salesforce](../../build/credentials/salesforce.md)

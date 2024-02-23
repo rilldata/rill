@@ -15,6 +15,7 @@ For instructions on how to create a service account and set credentials in Rill 
 - [Azure Blob Storage (Azure)](azure.md)
 - [Amazon Athena](athena.md)
 - [BigQuery](bigquery.md)
+- [ClickHouse](../../build/credentials/clickhouse.md)
 - [MotherDuck](motherduck.md)
 - [Postgres](postgres.md)
 - [Salesforce](salesforce.md)

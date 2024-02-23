@@ -72,3 +72,7 @@ In addition to time comparisons, you can select multiple dimension values to com
 De-select the comparison option or clear the filter bar to remove your comparisons.
 
 ![comparisons](<Screen Cast 2024-02-22 at 4.15.23 PM.gif>)
+
+:::note
+For more advanced time and dimension comparisons, visit the [Time Dimension Detail](tdd.md) page.
+:::
