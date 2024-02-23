@@ -33,6 +33,8 @@ import type {
 } from "./types";
 import { transposeArray } from "./util";
 
+type MeasureValue = number | null | undefined;
+
 export type TimeDimensionDataState = {
   isFetching: boolean;
   comparing?: TDDComparison;
@@ -164,7 +166,8 @@ function prepareDimensionData(
   );
 
   let body = [
-    totalsTableData?.map((v) => formatter(v[measureName] as number)) || [],
+    totalsTableData?.map((v) => formatter(v[measureName] as MeasureValue)) ||
+      [],
   ];
 
   body = body?.concat(
@@ -172,7 +175,7 @@ function prepareDimensionData(
       if (v?.isFetching)
         return new Array(columnCount).fill(undefined) as undefined[];
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
-      return dimData?.map((v) => formatter(v[measureName] as number));
+      return dimData?.map((v) => formatter(v[measureName] as MeasureValue));
     }),
   );
   /* 
@@ -265,28 +268,20 @@ function prepareTimeData(
       tableData?.map((v) => {
         if (v[measureName] === null && v[`comparison.${measureName}`] === null)
           return null;
-        if (
-          typeof v[measureName] !== "number" ||
-          typeof v[`comparison.${measureName}`] !== "number"
-        )
-          return null;
+
         const total =
-          (v[measureName] as number) +
-          (v[`comparison.${measureName}`] as number);
+          ((v[measureName] as MeasureValue) || 0) +
+          ((v[`comparison.${measureName}`] as MeasureValue) || 0);
         return formatter(total);
       }),
     );
 
     // Push current range
-    body.push(
-      tableData?.map((v) =>
-        formatter(v[measureName] as number | null | undefined),
-      ),
-    );
+    body.push(tableData?.map((v) => formatter(v[measureName] as MeasureValue)));
 
     body.push(
       tableData?.map((v) =>
-        formatter(v[`comparison.${measureName}`] as number | null | undefined),
+        formatter(v[`comparison.${measureName}`] as MeasureValue),
       ),
     );
 
@@ -297,7 +292,7 @@ function prepareTimeData(
           | number
           | null
           | undefined;
-        const currentValue = v[measureName] as number | null | undefined;
+        const currentValue = v[measureName] as MeasureValue;
         const comparisonPercChange =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? (currentValue - comparisonValue) / comparisonValue
@@ -316,7 +311,7 @@ function prepareTimeData(
           | number
           | null
           | undefined;
-        const currentValue = v[measureName] as number | null | undefined;
+        const currentValue = v[measureName] as MeasureValue;
         const change =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? currentValue - comparisonValue
@@ -327,11 +322,7 @@ function prepareTimeData(
       }),
     );
   } else {
-    body.push(
-      tableData?.map((v) =>
-        formatter(v[measureName] as number | null | undefined),
-      ),
-    );
+    body.push(tableData?.map((v) => formatter(v[measureName] as MeasureValue)));
   }
 
   const rowCount = rowHeaderData.length;

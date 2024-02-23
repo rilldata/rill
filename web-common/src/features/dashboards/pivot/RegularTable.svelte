@@ -39,8 +39,8 @@
 
   export function scrollToCell(x: number, y: number) {
     if (initialized) {
-      table.scrollToCell(x, y, columnCount, rowCount);
-      table.invalidate();
+      table?.scrollToCell(x, y, columnCount, rowCount);
+      table?.invalidate();
     }
   }
 
@@ -233,10 +233,10 @@
 
   const handlerCache = new Map();
   function addHandler(type: string, handler: (evt: MouseEvent) => any) {
-    table.addEventListener(type, handler);
+    table?.addEventListener(type, handler);
     const prevHandler = handlerCache.get(type);
     if (prevHandler) {
-      table.removeEventListener(type, prevHandler);
+      table?.removeEventListener(type, prevHandler);
     }
     handlerCache.set(type, handler);
   }
@@ -256,22 +256,22 @@
   let lastColumnSizer: null | ((x: number) => number | void) = null;
   let lastRowHeaderSizer: null | ((x: number) => number | void) = null;
   function styleListener() {
-    for (const td of Array.from(table.querySelectorAll("tbody td"))) {
+    for (const td of Array.from(table?.querySelectorAll("tbody td") || [])) {
       style_td(td as HTMLTableCellElement);
     }
 
-    for (const th of Array.from(table.querySelectorAll("tbody th"))) {
+    for (const th of Array.from(table?.querySelectorAll("tbody th") || [])) {
       style_row_th(th as HTMLTableCellElement);
     }
 
     for (const th of Array.from(
-      table.querySelectorAll("thead th:not(.rt-group-corner)"),
+      table?.querySelectorAll("thead th:not(.rt-group-corner)") || [],
     )) {
       style_column_th(th as HTMLTableCellElement);
     }
 
     for (const th of Array.from(
-      table.querySelectorAll("thead th.rt-group-corner"),
+      table?.querySelectorAll("thead th.rt-group-corner") || [],
     )) {
       style_row_corner(th as HTMLTableCellElement);
     }
@@ -284,7 +284,7 @@
       lastColumnSizer !== getColumnWidth ||
       lastRowHeaderSizer !== getRowHeaderWidth
     ) {
-      table.invalidate();
+      table?.invalidate();
       lastColumnSizer = getColumnWidth;
       lastRowHeaderSizer = getRowHeaderWidth;
     }
