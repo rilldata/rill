@@ -12,11 +12,11 @@ export interface TableData {
   columnCount: number;
   columnHeaderData: HeaderData[][];
   body: TDDCellData[][];
-  selectedValues: string[];
+  selectedValues: (string | null)[];
 }
 
 export interface HighlightedCell {
-  dimensionValue: string | undefined;
+  dimensionValue: string | undefined | null;
   time: Date | undefined;
 }
 

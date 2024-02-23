@@ -38,7 +38,7 @@
   export let metricViewName: string;
   export let dimensionName: string;
   export let isFetching = false;
-  export let comparing: TDDComparison;
+  export let comparing: TDDComparison | undefined;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
 
