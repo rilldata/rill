@@ -1,18 +1,13 @@
-import { get } from "svelte/store";
-import type { StateManagers } from "../dashboards/state-managers/state-managers";
+import type { V1MetricsViewSpec } from "../../runtime-client";
 
-export function getLabelForFieldName(ctx: StateManagers, fieldName: string) {
-  const {
-    selectors: {
-      measures: { allMeasures },
-      dimensions: { allDimensions },
-    },
-  } = ctx;
-
-  const measureLabel = get(allMeasures)?.find(
+export function getLabelForFieldName(
+  metricsViewSpec: V1MetricsViewSpec,
+  fieldName: string,
+) {
+  const measureLabel = metricsViewSpec.measures?.find(
     (m) => m.name === fieldName,
   )?.label;
-  const dimensionLabel = get(allDimensions)?.find(
+  const dimensionLabel = metricsViewSpec.dimensions?.find(
     (d) => d.name === fieldName,
   )?.label;
 

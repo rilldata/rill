@@ -6,9 +6,12 @@
   import {
     createQueryServiceMetricsViewAggregation,
     V1Expression,
+    V1MetricsViewSpec,
     V1TimeRange,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { useMetricsView } from "../dashboards/selectors";
+  import { getLabelForFieldName } from "./utils";
 
   export let metricsView: string;
   export let measure: string;
@@ -16,6 +19,9 @@
   export let filter: V1Expression;
   export let criteria: V1Expression | undefined = undefined;
   export let timeRange: V1TimeRange | undefined = undefined;
+
+  $: metricsViewQuery = useMetricsView($runtime.instanceId, metricsView);
+  $: metricsViewSpec = $metricsViewQuery.data;
 
   $: aggregation = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -29,14 +35,17 @@
     },
     {
       query: {
-        enabled: !!measure,
+        enabled: !!measure && !!metricsViewSpec,
         select: (data) => {
           const rows = data.data;
           const schema = data.schema?.fields?.map((field) => {
             return {
               name: field.name,
               type: field.type?.code,
-              // label: getLabelForFieldName(ctx, field.name as string), // TODO: this can't use the ctx (e.g. in Edit Alert Form)
+              label: getLabelForFieldName(
+                metricsViewSpec as V1MetricsViewSpec,
+                field.name as string,
+              ),
             };
           }) as VirtualizedTableColumns[];
           return { rows, schema };
