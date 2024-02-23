@@ -284,6 +284,7 @@
 
   /* TEXT STYLES */
   .text {
+    /* @include link; */
     @apply text-slate-600;
 
     &:hover,
@@ -304,14 +305,19 @@
 
   /* DANGER STYLES */
 
-  .danger {
+  .primary.danger {
     @apply bg-red-500 text-white;
     &:hover,
     &.selected {
       @apply bg-red-600;
     }
-    &:active {
+    &:active,
+    &.active {
       @apply bg-red-700;
+    }
+
+    &.loading {
+      @apply text-slate-600;
     }
 
     &:disabled {
@@ -321,10 +327,53 @@
     }
   }
 
-  .danger.secondary {
+  .secondary.danger {
     @apply bg-white;
     @apply text-red-500;
     @apply border-red-500;
+
+    &:hover,
+    &.selected {
+      @apply text-red-600;
+      @apply border-red-600;
+    }
+    &:active,
+    &.active {
+      @apply bg-primary-100;
+    }
+    &.loading {
+      @apply bg-slate-50;
+      @apply text-slate-600;
+      @apply border-slate-300;
+    }
+    &:disabled {
+      @apply bg-slate-50;
+      @apply text-slate-400;
+      @apply border-slate-300;
+    }
+  }
+
+  .link.danger,
+  .text.danger {
+    @apply bg-white;
+    @apply text-red-500;
+
+    &:hover,
+    &.selected {
+      @apply text-red-600;
+    }
+    &:active,
+    &.active {
+      @apply bg-primary-100;
+    }
+    &.loading {
+      @apply bg-slate-50;
+      @apply text-slate-600;
+    }
+    &:disabled {
+      @apply bg-slate-50;
+      @apply text-slate-400;
+    }
   }
 
   /* ADD BUTTON STYLES */

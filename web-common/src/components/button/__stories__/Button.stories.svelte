@@ -59,6 +59,9 @@
     for (const danger of dangers) {
       for (const size of sizes) {
         for (const state of states) {
+          if ((state === "status" || state === "active") && danger) {
+            continue;
+          }
           figmaRows.push({
             shape,
             size,
