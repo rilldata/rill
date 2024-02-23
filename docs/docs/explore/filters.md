@@ -13,9 +13,7 @@ Rill is particularly suited for exploratory analysis - to be able to slice & dic
 
 The primary/easiest way to filter data is by selecting values in the dimension tables. Leaderboards within Rill are fully interactive. Selecting any dimension in the table will automatically filter the remaining leaderboards and metrics by that selection. 
 
-To add or remove dimensions on the page - select the All Dimensions picker above the Leaderboards. 
-
-Next to the All Dimensions picker, you can also change which Metric is being highlighted to be able to update the entire page and cycle through each dimension table sorted by each metric.
+To add or remove dimensions on the page - select the All Dimensions picker above the Leaderboards. Next to the All Dimensions picker, you can also change which Metric is being highlighted to be able to update the entire page and cycle through each dimension table sorted by each metric.
 
 You can also expand each dimension table to see all metrics and full list of those dimensions. In the expanded Leaderboard, you can search for dimension values, select all values returned, or exclude values from the result. 
 
@@ -45,28 +43,27 @@ As an example - to see most active enterprise customers - filter all customers w
 :::
 
 ### Time & Dimension Comparisons
-Time comparison is a key feature of Rill and recommended to find insights quicker by highlighting differences between periods. 
 
-To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker.
+#### Time Comparisons
+Time comparison is a key feature of Rill and recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker.
 
 After selecting that range, select Compare by Time - either defaulting to the same prior period or selecting a custom comparison period. 
-
-![time-picker](image-3.png)
 
 :::note
 Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](../reference/project-files/dashboards.md) for more details
 :::
 
-Once you have select a comparison period, the time series charts and leaderboards will update to show period over period differences - in absolute value or percent change. You can also sort leaderboards based on that comparison to identify largest movers and shakers in your data. 
+![time-picker](image-3.png)
 
 :::tip
 Rill provides different options for time period comparison - by time period or by selected hours. 
 
-For the former, you can let data "fill in" by selecting time period options like last day, previous 7 days, last week. Use cases here would be for pacing reports or seeing data refresh during business hours. Empty periods will show 'no data.'
+For the former, you can let data "fill in" by selecting time period options like last day, previous 7 days, last week. Future periods will show 'no data.' Use cases here would be for pacing reports or seeing data refresh during business hours. 
 
 For the latter, you can compare the full period looking with options like last 24 hours vs. prior 24 hours. In this case, the time series will be fully complete, comparing up to the most recent period vs. the same hour/day/week in prior periods.  
 :::
 
+#### Dimension Comparisons
 In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. There are two options for turning on dimension comparison:
 
 - Use the same top filter bar as the time comparison, instead selecting a dimension for comparison
