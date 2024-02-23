@@ -59,6 +59,14 @@ Default and comparison periods can be configured in your dashboard file. Visit [
 
 Once you have select a comparison period, the time series charts and leaderboards will update to show period over period differences - in absolute value or percent change. You can also sort leaderboards based on that comparison to identify largest movers and shakers in your data. 
 
+:::tip
+Rill provides different options for time period comparison - by time period or by selected hours. 
+
+For the former, you can let data "fill in" by selecting time period options like last day, previous 7 days, last week. Use cases here would be for pacing reports or seeing data refresh during business hours. Empty periods will show 'no data.'
+
+For the latter, you can compare the full period looking with options like last 24 hours vs. prior 24 hours. In this case, the time series will be fully complete, comparing up to the most recent period vs. the same hour/day/week in prior periods.  
+:::
+
 In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. There are two options for turning on dimension comparison:
 
 - Use the same top filter bar as the time comparison, instead selecting a dimension for comparison
