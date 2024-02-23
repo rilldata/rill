@@ -7,10 +7,6 @@
     ButtonKind,
   } from "@rilldata/web-common/components/button/Button.svelte";
 
-  // export const meta = {
-  //   title: "Button stories",
-  // };
-
   type ButtonTypes = "primary" | "secondary" | "text";
   type ButtonStatuses = "info" | "error";
   type ButtonProps = {
@@ -121,9 +117,6 @@
     > (as of Feb 2024).
   </p>
   <br />
-  <!-- {#each figmaRows as row}
-    <h1>{shape}</h1>
-  {/each} -->
 
   <table>
     <thead>
@@ -140,14 +133,11 @@
         <td>
           {#if row.size === "xl" && row.state === "normal"}
             <h1>{row.danger ? "dangerous" : row.shape}</h1>
-            <!-- {:else} -->
           {/if}
           {#if row.state === "normal"}
             <h2>{row.size}</h2>
-            <!-- {:else} -->
           {/if}
           {row.state}
-          <!-- <br />{JSON.stringify(row)} -->
         </td>
         {#each buttonTypes as buttonType}
           <td>

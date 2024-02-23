@@ -60,9 +60,6 @@
   $: circle = shape === "circle";
   $: square = shape === "square";
 
-  // $: small = size === "small";
-  // $: large = size === "large";
-
   $: finalType = type;
 
   let dashed = false;
@@ -145,7 +142,7 @@
     @apply cursor-not-allowed;
   }
 
-  /* BRAND STYLES - REMOVED IN DESIGN SYSTEM */
+  /* BRAND STYLES (REMOVE - NOT IN DESIGN SYSTEM) */
 
   .brand {
     @apply bg-primary-600 text-white;
@@ -284,7 +281,6 @@
 
   /* TEXT STYLES */
   .text {
-    /* @include link; */
     @apply text-slate-600;
 
     &:hover,
@@ -376,7 +372,7 @@
     }
   }
 
-  /* ADD BUTTON STYLES */
+  /* ADD BUTTON STYLES (NOT IN DESIGN SYSTEM???)*/
 
   .add {
     @apply w-[34px] h-[26px] rounded-2xl;
@@ -401,7 +397,7 @@
     }
   }
 
-  /* HIGHLGHTED STYLES (REMOVE) */
+  /* HIGHLIGHTED STYLES (REMOVE - NOT IN DESIGN SYSTEM) */
 
   .highlighted {
     @apply bg-white text-slate-700;
@@ -431,22 +427,7 @@
     @apply rounded-full;
   }
 
-  /* TEXT STYLES */
-
-  .text {
-    @apply px-0 font-medium text-slate-600;
-  }
-
-  .text:hover {
-    @apply text-primary-700;
-  }
-
-  .text:active {
-    @apply text-primary-800;
-  }
-
-  /* TWEAKS */
-
+  /* SIZE STYLES */
   .small {
     @apply h-6 text-[11px] min-h-[24px];
     @apply px-2;
@@ -466,10 +447,7 @@
     @apply px-4;
   }
 
-  .large.square,
-  .large.circle {
-    @apply h-10;
-  }
+  /* TWEAKS */
 
   .compact {
     @apply px-2;
