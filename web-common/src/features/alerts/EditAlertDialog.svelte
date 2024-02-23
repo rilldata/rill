@@ -2,6 +2,8 @@
   import { page } from "$app/stores";
   import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
+  import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -11,6 +13,7 @@
     V1MetricsViewAggregationRequest,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    type V1MetricsViewSpec,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { ResourceKind } from "../entity-management/resource-selectors";
@@ -19,11 +22,13 @@
   import {
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
-    getFormValuesFromAlertQueryArgs,
   } from "./form-utils";
 
   export let open: boolean;
   export let alertSpec: V1AlertSpec;
+  // Since form state is not loaded async we need to make sure this is fetched before this component
+  // So it is easier to get it from the parent
+  export let metricsViewSpec: V1MetricsViewSpec;
 
   const editAlert = createAdminServiceEditAlert();
   const queryClient = useQueryClient();
@@ -41,7 +46,7 @@
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
-      ...getFormValuesFromAlertQueryArgs(queryArgsJson),
+      ...extractAlertFormValues(queryArgsJson, metricsViewSpec),
     },
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {
@@ -88,14 +93,17 @@
   });
 </script>
 
-<Dialog class="fixed inset-0 flex items-center justify-center z-50" {open}>
+<Dialog
+  class="fixed inset-0 flex items-center justify-center overflow-auto z-50"
+  {open}
+>
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
   <BaseAlertForm
-    on:close
+    dialogTitle="Edit alert"
     formId="edit-alert-form"
     {formState}
-    dialogTitle="Edit alert"
+    on:close
   />
 </Dialog>

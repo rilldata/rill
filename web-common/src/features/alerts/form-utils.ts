@@ -2,10 +2,8 @@ import {
   createAndExpression,
   createBinaryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
+import type {
   V1Expression,
-  V1MetricsViewAggregationDimension,
-  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1Operation,
   V1TimeRange,
@@ -32,22 +30,6 @@ export type AlertFormValues = {
   timeRange: V1TimeRange;
 };
 
-// TODO: revisit if Partial<AlertFormValues> could work instead
-export type AlertFormValuesSubset = {
-  metricsViewName: string;
-  whereFilter: V1Expression;
-  timeRange: V1TimeRange;
-  measure: string;
-  splitByDimension: string;
-  splitByTimeGrain: string;
-  criteria: {
-    field: string;
-    operation: string;
-    value: string;
-  }[];
-  criteriaOperation: V1Operation;
-};
-
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
 ): V1MetricsViewAggregationRequest {
@@ -67,41 +49,6 @@ export function getAlertQueryArgsFromFormValues(
         ),
       ),
     ),
-  };
-}
-
-export function getFormValuesFromAlertQueryArgs(
-  queryArgs: V1MetricsViewAggregationRequest,
-): AlertFormValuesSubset {
-  if (!queryArgs) return {} as AlertFormValuesSubset;
-
-  console.log("queryArgs", queryArgs);
-
-  const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
-  const dimensions =
-    queryArgs.dimensions as V1MetricsViewAggregationDimension[];
-
-  return {
-    // TODO: get measure label, if available
-    measure: measures[0].name as string,
-    // TODO: ensure I don't pick up a time dimension
-    splitByDimension:
-      dimensions.length > 0 ? (dimensions[0].name as string) : "",
-    // TODO: filter the dimensions list for a time dimension
-    splitByTimeGrain: "",
-    // TODO: get criteria from queryArgs
-    criteria: [
-      {
-        field: "",
-        operation: "",
-        value: "0",
-      },
-    ],
-    criteriaOperation: V1Operation.OPERATION_AND,
-    // These are not part of the form, but are used to track the state of the form
-    metricsViewName: queryArgs.metricsView as string,
-    whereFilter: queryArgs.where as V1Expression,
-    timeRange: (queryArgs.timeRange as V1TimeRange) ?? { isoOffset: "P7D" },
   };
 }
 

@@ -178,10 +178,11 @@
   </div>
 {/if}
 
-{#if $alertQuery.data}
+{#if $alertQuery.data && $dashboard.data?.metricsView.spec}
   <EditAlertDialog
     open={showEditAlertDialog}
     alertSpec={$alertQuery.data.resource.alert.spec}
+    metricsViewSpec={$dashboard.data?.metricsView.spec}
     on:close={() => (showEditAlertDialog = false)}
   />
 {/if}
