@@ -185,7 +185,7 @@ export function createTimeSeriesDataStore(
           comparisonTotal,
           dimensionChart,
         ]) => {
-          let timeSeriesData = primary?.data?.data || [];
+          let timeSeriesData = (primary?.data?.data || []) as TimeSeriesDatum[];
 
           if (!primary.isFetching && interval) {
             timeSeriesData = prepareTimeSeries(
