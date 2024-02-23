@@ -4,7 +4,15 @@ export function transposeArray(arr, rowCount, columnCount) {
   for (let i = 0; i < columnCount; i++) {
     const column = [];
     for (let j = 0; j < rowCount; j++) {
-      column.push(arr[j][i]);
+      try {
+        column.push(arr[j][i]);
+      } catch (e) {
+        column.push(null);
+        console.error(
+          `failed to access arr[${j}][${i}] during transpose of array ${arr}; see issue https://github.com/rilldata/rill/issues/3989`,
+          e,
+        );
+      }
     }
     columnarBody.push(column);
   }
