@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -143,13 +144,21 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	if err != nil {
 		return nil, err
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb", []string{"duckdb"})
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
 	connectors, err := parser.AnalyzeConnectors(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors: %w", err)
+	}
+
+	// Remove the default DuckDB connector we always add
+	for i, c := range connectors {
+		if c.Name == "duckdb" {
+			connectors = slices.Delete(connectors, i, i+1)
+			break
+		}
 	}
 
 	// Exit early if all connectors can be used anonymously
@@ -165,18 +174,18 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 
 	// Start the flow
 	tel.Emit(telemetry.ActionDataAccessStart)
-	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill does not have access to the following data sources:\n\n")
+	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill requires credentials for the following connectors:\n\n")
 	for _, c := range connectors {
 		if c.AnonymousAccess {
 			continue
 		}
-		for _, r := range c.Resources {
-			fmt.Printf(" - %s", r.Name.Name)
-			if len(r.Paths) > 0 {
-				fmt.Printf(" (%s)", r.Paths[0])
-			}
-			fmt.Print("\n")
+		fmt.Printf(" - %s", c.Name)
+		if len(c.Resources) == 1 {
+			fmt.Printf(" (used by %s)", c.Resources[0].Name.Name)
+		} else if len(c.Resources) > 1 {
+			fmt.Printf(" (used by %s and others)", c.Resources[0].Name.Name)
 		}
+		fmt.Print("\n")
 	}
 
 	// Prompt for credentials

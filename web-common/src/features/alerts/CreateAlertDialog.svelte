@@ -46,8 +46,8 @@
   const formState = createForm({
     initialValues: {
       name: "",
-      measure: "",
-      splitByDimension: "",
+      measure: $dashboardStore.leaderboardMeasureName ?? "",
+      splitByDimension: $dashboardStore.selectedDimensionName ?? "",
       splitByTimeGrain: "",
       criteria: [
         {

@@ -21,6 +21,12 @@ import type {
   PivotTimeConfig,
 } from "./types";
 
+function sanitizeHeaderValue(value: unknown): string {
+  if (value === "") return "\u00A0";
+  if (typeof value === "string") return value;
+  return String(value);
+}
+
 /***
  * Create nested and grouped column definitions for pivot table
  */
@@ -89,19 +95,15 @@ function createColumnDefinitionForDimensions(
           ) as (d: Date) => string;
 
           displayValue = timeFormatter(dt);
-        } else if (displayValue === null) displayValue = "null";
+        }
 
         const nestedColumns = createNestedColumns(level + 1, {
           ...colValuePair,
           [dimensionNames[level]]: value,
         });
 
-        if (displayValue === "") {
-          displayValue = "\u00A0";
-        }
-
         return {
-          header: displayValue,
+          header: sanitizeHeaderValue(displayValue),
           columns: nestedColumns,
         };
       })
@@ -115,7 +117,7 @@ function createColumnDefinitionForDimensions(
       const { label, name } = dimension;
 
       const headColumn = {
-        header: label || name,
+        header: sanitizeHeaderValue(label || name),
         columns: acc,
       };
 

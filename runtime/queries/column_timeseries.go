@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
@@ -527,14 +528,17 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 	defer rows.Close()
 
-	toTSV := func(ts int64, value *float64, bin float64) *runtimev1.TimeSeriesValue {
+	toTSV := func(ts int64, value *float64, bin *float64) *runtimev1.TimeSeriesValue {
 		tsv := &runtimev1.TimeSeriesValue{
 			Records: &structpb.Struct{
 				Fields: make(map[string]*structpb.Value),
 			},
 		}
 		tsv.Ts = timestamppb.New(time.UnixMilli(ts))
-		tsv.Bin = bin
+		tsv.Bin = math.NaN()
+		if bin != nil {
+			tsv.Bin = *bin
+		}
 		if value != nil {
 			tsv.Records.Fields["count"] = structpb.NewNumberValue(*value)
 		} else {
@@ -562,7 +566,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 		if argmaxVT != nil {
 			argmaxVTSafe = *argmaxVT
 		}
-		results = append(results, toTSV(minT, argminTV, *bin), toTSV(argminVTSafe, minV, *bin), toTSV(argmaxVTSafe, maxV, *bin), toTSV(maxT, argmaxTV, *bin))
+		results = append(results, toTSV(minT, argminTV, bin), toTSV(argminVTSafe, minV, bin), toTSV(argmaxVTSafe, maxV, bin), toTSV(maxT, argmaxTV, bin))
 
 		if argminVT != nil && argmaxVT != nil && *argminVT > *argmaxVT {
 			i := len(results)

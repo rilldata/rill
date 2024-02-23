@@ -125,6 +125,11 @@ export enum TimeRangePreset {
   MONTH_TO_DATE = "rill-MTD",
   QUARTER_TO_DATE = "rill-QTD",
   YEAR_TO_DATE = "rill-YTD",
+  YESTERDAY_COMPLETE = "rill-PDC",
+  PREVIOUS_WEEK_COMPLETE = "rill-PWC",
+  PREVIOUS_MONTH_COMPLETE = "rill-PMC",
+  PREVIOUS_QUARTER_COMPLETE = "rill-PQC",
+  PREVIOUS_YEAR_COMPLETE = "rill-PYC",
   CUSTOM = "CUSTOM",
   DEFAULT = "DEFAULT",
 }
