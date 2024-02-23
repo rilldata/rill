@@ -1,4 +1,3 @@
-import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
@@ -137,57 +136,4 @@ export function getTotalsRow(
   }
 
   return totalsRow;
-}
-
-const PivotMeasureRegex = /(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\+\d{2})_(.*)/;
-export function transformPivotToRows(
-  aggregationRows: V1MetricsViewAggregationResponseDataItem[],
-  timeDimension: string,
-  dimensions: string[],
-  measures: string[],
-): V1MetricsViewAggregationResponseDataItem[] {
-  const dimensionMap = getMapFromArray(dimensions, (d) => d);
-  const allRows: V1MetricsViewAggregationResponseDataItem[] = [];
-
-  for (const aggregationRow of aggregationRows) {
-    const dimValuesRow: V1MetricsViewAggregationResponseDataItem = {};
-    dimensions.forEach((d) => (dimValuesRow[d] = aggregationRow[d]));
-
-    const rowByTime = new Map<
-      string,
-      V1MetricsViewAggregationResponseDataItem
-    >();
-
-    for (const k in aggregationRow) {
-      if (dimensionMap.has(k)) continue;
-      const matches = PivotMeasureRegex.exec(k);
-      if (matches?.length !== 3) continue;
-
-      const [, timestamp, measure] = matches;
-
-      let row: V1MetricsViewAggregationResponseDataItem;
-      if (rowByTime.has(timestamp)) {
-        row = rowByTime.get(
-          timestamp,
-        ) as V1MetricsViewAggregationResponseDataItem;
-      } else {
-        row = {
-          ...dimValuesRow,
-          [timeDimension]: timestamp,
-        };
-        rowByTime.set(timestamp, row);
-      }
-
-      row[measure] = aggregationRow[k];
-    }
-
-    allRows.push(
-      ...Array.from(rowByTime.values()).filter((r) =>
-        measures.every((m) => r[m] !== null),
-      ),
-    );
-  }
-
-  allRows.sort((a, b) => (a[timeDimension] <= b[timeDimension] ? 1 : -1));
-  return allRows;
 }

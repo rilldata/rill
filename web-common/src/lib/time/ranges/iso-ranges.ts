@@ -124,21 +124,6 @@ export function isoDurationToTimeRangeMeta(
   };
 }
 
-export function scaleISODuration(
-  isoDuration: string,
-  scale: number,
-  ref: Date,
-): Date {
-  let duration = Duration.fromISO(isoDuration);
-  for (const { unit } of PeriodAndUnits) {
-    if (duration[unit]) {
-      duration = duration.set({ [unit]: (duration[unit] as number) * scale });
-    }
-  }
-  duration.shiftToAll();
-  return DateTime.fromJSDate(ref).minus(duration).toJSDate();
-}
-
 function getStartTimeTransformations(
   isoDuration: string,
 ): Array<RelativeTimeTransformation> {
