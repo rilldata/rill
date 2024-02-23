@@ -151,7 +151,7 @@ function prepareDimensionData(
         : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
     });
   }
-  let rowHeaderData = [totalsRow];
+  let rowHeaderData: HeaderData[][] = [totalsRow];
 
   rowHeaderData = rowHeaderData.concat(
     orderedData?.map((row) => {
