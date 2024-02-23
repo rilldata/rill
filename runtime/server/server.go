@@ -48,8 +48,8 @@ type Options struct {
 	AuthIssuerURL    string
 	AuthAudienceURL  string
 	DownloadRowLimit *int64
-	CertPath 	   string
-	KeyPath 	   string
+	CertPath         string
+	KeyPath          string
 }
 
 type Server struct {
@@ -175,10 +175,9 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	var options = graceful.Options{
-		Port: s.opts.HTTPPort,
+		Port:     s.opts.HTTPPort,
 		CertPath: s.opts.CertPath,
-		KeyPath: s.opts.KeyPath,
-
+		KeyPath:  s.opts.KeyPath,
 	}
 	return graceful.ServeHTTP(ctx, server, options)
 }

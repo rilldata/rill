@@ -16,6 +16,6 @@ func ServeHTTP(ctx context.Context, port int) error {
 	var options = graceful.Options{
 		Port: port,
 	}
-	
+
 	return graceful.ServeHTTP(ctx, srv, options)
 }

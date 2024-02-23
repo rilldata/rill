@@ -13,7 +13,7 @@ const httpShutdownTimeout = 15 * time.Second
 
 type Options struct {
 	// Port is the port to listen on.
-	Port int 
+	Port int
 	// CertPath is the path to the certificate file.
 	CertPath string `json:"certPath,omitempty" bson:",omitempty"`
 	// KeyPath is the path to the key file.
@@ -40,13 +40,12 @@ func ServeHTTP(ctx context.Context, server *http.Server, options Options) error 
 	var serveErr error
 	go func() {
 		if options.CertPath != "" && options.KeyPath != "" {
-		
 
 			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
 		} else {
 			serveErr = server.Serve(lis)
 		}
-	
+
 		cancel()
 	}()
 
