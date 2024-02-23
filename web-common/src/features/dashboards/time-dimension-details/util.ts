@@ -1,18 +1,35 @@
-export function transposeArray(arr, rowCount, columnCount) {
-  const columnarBody = [];
+import type { TDDCellData } from "./types";
+
+export function transposeArray(
+  arr: TDDCellData[][],
+  rowCount: number,
+  columnCount: number,
+) {
+  const columnarBody: TDDCellData[][] = [];
+
+  if (rowCount === 0 || columnCount === 0) return [];
+
+  // Check if transposition is possible
+  if (arr.length !== rowCount) {
+    console.warn(
+      `The actual row count (${arr.length}) does not match the expected row count (${rowCount}).`,
+    );
+    return [];
+  }
+
+  for (let i = 0; i < rowCount; i++) {
+    if (arr[i].length !== columnCount) {
+      console.warn(
+        `Row ${i} length (${arr[i].length}) does not match the expected column count (${columnCount}).`,
+      );
+      return [];
+    }
+  }
 
   for (let i = 0; i < columnCount; i++) {
-    const column = [];
+    const column: TDDCellData[] = [];
     for (let j = 0; j < rowCount; j++) {
-      try {
-        column.push(arr[j][i]);
-      } catch (e) {
-        column.push(null);
-        console.error(
-          `failed to access arr[${j}][${i}] during transpose of array ${arr}; see issue https://github.com/rilldata/rill/issues/3989`,
-          e,
-        );
-      }
+      column.push(arr[j][i]);
     }
     columnarBody.push(column);
   }

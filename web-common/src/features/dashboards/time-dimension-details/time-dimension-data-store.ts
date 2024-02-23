@@ -27,6 +27,7 @@ import type {
   ChartInteractionColumns,
   HeaderData,
   HighlightedCell,
+  TDDCellData,
   TDDComparison,
   TableData,
   TablePosition,
@@ -165,7 +166,7 @@ function prepareDimensionData(
     }),
   );
 
-  let body = [
+  let body: TDDCellData[][] = [
     totalsTableData?.map((v) => formatter(v[measureName] as MeasureValue)) ||
       [],
   ];
@@ -233,7 +234,7 @@ function prepareTimeData(
     },
   ]);
 
-  const body: unknown[] = [];
+  const body: TDDCellData[][] = [];
 
   if (hasTimeComparison) {
     rowHeaderData = rowHeaderData.concat([

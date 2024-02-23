@@ -3,13 +3,15 @@ export interface HeaderData {
   spark?: string;
 }
 
+export type TDDCellData = string | number | null | undefined;
+
 export interface TableData {
   rowCount: number;
   fixedColCount: number;
   rowHeaderData: HeaderData[][];
   columnCount: number;
   columnHeaderData: HeaderData[][];
-  body: Array<Array<string | number | null>>;
+  body: TDDCellData[][];
   selectedValues: string[];
 }
 
