@@ -1,4 +1,4 @@
-position: 70
-label: Reference
-collapsible: false
-collapsed: false
+position: 200
+label: " "
+collapsible: true
+collapsed: true

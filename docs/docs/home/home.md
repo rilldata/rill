@@ -3,6 +3,7 @@ title: Welcome to Rill
 slug: /
 sidebar_label: Welcome to Rill
 sidebar_position: 00
+hide_table_of_contents: true
 ---
 Dashboards that move as fast as your business. Build fast operational dashboards that your team will actually use.  
 

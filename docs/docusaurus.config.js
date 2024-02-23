@@ -101,6 +101,12 @@ const config = {
             label: "Docs",
           },
           {
+            type: "docSidebar",
+            sidebarId: "refSidebar",
+            position: "left",
+            label: "Reference",
+          },
+          {
             label: "Release Notes",
             to: "notes",
             position: "left",
@@ -117,41 +123,8 @@ const config = {
         ],
       },
       footer: {
-        style: "dark",
-        links: [
-          {
-            title: " ",
-            items: [
-              {
-                label: "Rill Data",
-                to: "https://www.rilldata.com",
-              },
-              {
-                label: "Docs",
-                to: "/",
-              },
-              {
-                label: "Release Notes",
-                to: "/notes",
-              },
-            ],
-          },
-          {
-            title: " ",
-            items: [
-              {
-                html: `
-                 <div style="display: flex; align-items: center; -webkit-box-align: center;">
-                 <a class="social-link" href="https://github.com/rilldata/rill" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1b8081e31a5e696066b_github-octocat.svg" loading="lazy" alt="github logo"></a>
-                 <a class="social-link" href="https://twitter.com/RillData" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f429995e55f34_social-twitter.svg" loading="lazy" alt="twitter logo"></a>
-                 <a class="social-link" href="https://discord.gg/eEvSYHdfWK" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1dc6a667e2367b552ae_Discord-Logo.svg" loading="lazy" alt="Discord logo"></a>
-                 </div>
-                `
-              },
-            ],
-          },
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} Rill Data, Inc. • <a href="https://www.rilldata.com/legal/privacy" target="_blank">Privacy Policy</a> • <a href="https://www.rilldata.com/legal/tos" target="_blank"> Terms of Service </a>`,
+        style: "light",
+        copyright: `© ${new Date().getFullYear()} Rill Data, Inc. • <a href="https://www.rilldata.com/legal/privacy" target="_blank">Privacy Policy</a> • <a href="https://www.rilldata.com/legal/tos" target="_blank"> Terms of Service </a>`,
       },
       prism: {
         theme: lightCodeTheme,

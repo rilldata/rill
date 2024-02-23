@@ -47,14 +47,14 @@
   --ifm-h3-font-size: 1rem !important;
   --ifm-h2-font-size: 1.25rem !important;
   --ifm-h1-font-size: 1.75rem !important;
+  --ifm-font-weight-semibold: 500;
+  --ifm-color-emphasis-300: #dadde1;
 
   /* Sidebar */
   --ifm-hover-overlay: var(--click-color-sidebar-item-active);
   --ifm-menu-color: #000000;
   --ifm-menu-link-padding-vertical: 0.1rem;
   --ifm-menu-link-padding-horizontal: 1rem;
-  --ifm-font-weight-semibold: 500;
-  --ifm-color-emphasis-300: #dadde1;
   --ifm-menu-color-active: #000000;
   --ifm-menu-link-sublist-icon: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11.9988 9.21211L16.2363 13.4684L15.4488 14.2559L11.9988 10.8059L8.54883 14.2559L7.76133 13.4684L11.9988 9.21211Z' fill='%23575C6B'/%3E%3Cpath d='M11.9988 9.21211L16.2363 13.4684L15.4488 14.2559L11.9988 10.8059L8.54883 14.2559L7.76133 13.4684L11.9988 9.21211Z' fill='black' fill-opacity='0.2'/%3E%3C/svg%3E");
   --ifm-menu-link-padding-horizontal: 1rem;
@@ -66,6 +66,10 @@
   --color-stroke: var(--palette_slate_100);
 
   --doc-menu-caret-right-padding: 20px;
+
+  /* Footer */
+  --ifm-footer-padding-vertical: 1rem;
+
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
@@ -132,6 +136,10 @@ body {
 
 /* Sidebar */
 
+nav.menu {
+  padding-top: 1rem;
+}
+
 .theme-doc-sidebar-item-category-level-1 .theme-doc-sidebar-item-link-level-1 {
   padding-left: 0;
 }
@@ -152,6 +160,10 @@ li.theme-doc-sidebar-item-category-level-1 {
     margin-top: 24px;
   }
 
+  /* This is a very hacky way to hide references from the main sidebar */
+  &:last-of-type {
+    display: none;
+  }
 }
 
 li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {

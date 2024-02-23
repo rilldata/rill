@@ -1,4 +1,4 @@
-position: 20
+position: 2
 label: Project Files
-collapsible: true
-collapsed: true
+collapsible: false
+collapsed: false
