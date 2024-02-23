@@ -3,7 +3,6 @@
   import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
   import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
