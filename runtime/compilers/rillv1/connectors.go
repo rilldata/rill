@@ -49,7 +49,7 @@ type connectorAnalyzer struct {
 
 // analyze is the entrypoint for connector analysis. After running it, you can access the result.
 func (a *connectorAnalyzer) analyze(ctx context.Context) error {
-	if a.parser.RillYAML.OLAPConnector != "" {
+	if a.parser.RillYAML != nil && a.parser.RillYAML.OLAPConnector != "" {
 		err := a.trackConnector(a.parser.RillYAML.OLAPConnector, nil, false)
 		if err != nil {
 			return err
