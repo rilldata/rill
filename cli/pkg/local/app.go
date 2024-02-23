@@ -560,7 +560,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector, []string{"duckdb"})
+	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
 	if err != nil {
 		return err
 	}

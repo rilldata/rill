@@ -29,6 +29,8 @@
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
+    // Disable AI when running e2e tests
+    featureFlags.set(!import.meta.env.VITE_PLAYWRIGHT_TEST, "ai");
 
     appBuildMetaStore.set({
       version: config.version,
