@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -81,15 +80,6 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec = securetoken.NewRandom()
 	} else {
 		codec = securetoken.NewCodec(opts.SessionKeyPairs)
-	}
-
-	if opts.CertPath != "" && opts.KeyPath != "" {
-		if _, err := os.Stat(opts.CertPath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("cert file not found: %s", opts.CertPath)
-		}
-		if _, err := os.Stat(opts.KeyPath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("key file not found: %s", opts.KeyPath)
-		}
 	}
 
 	srv := &Server{

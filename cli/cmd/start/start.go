@@ -114,6 +114,19 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// If keypath or certpath provided, but not the other, display error
+			// If keypath and certpath provided, check if the file exists
+			if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
+				return fmt.Errorf("both --cert and --key must be provided")
+			} else if (certPath != "" && keyPath != "") {
+				if _, err := os.Stat(certPath); os.IsNotExist(err) {
+					return fmt.Errorf("certificate not found: %s", certPath)
+				}
+				if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+					return fmt.Errorf("key not found: %s", keyPath)
+				}
+			}
+
 			client := activity.NewNoopClient()
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{

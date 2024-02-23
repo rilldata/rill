@@ -12,12 +12,9 @@ import (
 const httpShutdownTimeout = 15 * time.Second
 
 type Options struct {
-	// Port is the port to listen on.
-	Port int
-	// CertPath is the path to the certificate file.
-	CertPath string `json:"certPath,omitempty" bson:",omitempty"`
-	// KeyPath is the path to the key file.
-	KeyPath string `json:"keyPath,omitempty" bson:",omitempty"`
+	Port     int
+	CertPath string
+	KeyPath  string
 }
 
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
