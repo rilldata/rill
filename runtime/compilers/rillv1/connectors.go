@@ -161,10 +161,12 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 func (a *connectorAnalyzer) connectorForName(name string) (string, drivers.Driver, error) {
 	// Unless overridden in rill.yaml, the connector name is the driver name
 	driver := name
-	for _, c := range a.parser.RillYAML.Connectors {
-		if c.Name == name {
-			driver = c.Type
-			break
+	if a.parser.RillYAML != nil {
+		for _, c := range a.parser.RillYAML.Connectors {
+			if c.Name == name {
+				driver = c.Type
+				break
+			}
 		}
 	}
 
