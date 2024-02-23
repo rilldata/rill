@@ -101,7 +101,7 @@
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     class:big-number={!isMeasureExpanded}
-    class="big-number m-0.5 rounded flex items-start {isMeasureExpanded
+    class="group big-number m-0.5 rounded flex items-start {isMeasureExpanded
       ? 'cursor-default'
       : 'cursor-pointer'}"
     on:click={(e) => {
