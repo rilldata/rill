@@ -48,7 +48,7 @@ function getHeaderDataForRow(
   row: DimensionDataItem,
   isAllTime: boolean,
   measureName: string,
-  formatter: (v: number | undefined | null) => string | undefined | null,
+  formatter: (v: MeasureValue) => string | undefined | null,
   validPercentOfTotal: boolean,
   unfilteredTotal: number,
 ) {
