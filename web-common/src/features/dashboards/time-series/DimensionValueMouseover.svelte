@@ -9,7 +9,7 @@
   export let yAccessor: string;
   export let mouseoverFormat;
   export let dimensionData: DimensionDataItem[];
-  export let dimensionValue: string | undefined;
+  export let dimensionValue: string | null | undefined;
   export let validPercTotal: number | null;
   export let hovered = false;
 
@@ -64,8 +64,8 @@
         yOverride: currentPointIsNull,
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
-        key: dimension.name,
-        label: hovered ? truncate(dimension.name) : "",
+        key: dimension.name === null ? "null" : dimension.name,
+        label: hovered ? truncate(dimension.name || "null") : "",
         pointColorClass: dimension.fillClass,
         valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",

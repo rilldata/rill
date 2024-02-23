@@ -30,7 +30,7 @@ import {
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 
 export interface DimensionDataItem {
-  value: string;
+  value: string | null;
   total?: number;
   strokeClass: string;
   fillClass: string;
