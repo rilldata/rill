@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useMetricsView } from "../../dashboards/selectors";
-  import DataPreview from "./../DataPreview.svelte";
+  import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
   import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
@@ -83,11 +84,14 @@
     />
   </FormSection>
   <FormSection title="Data preview">
-    <DataPreview
-      dimension={$form["splitByDimension"]}
-      filter={$form["whereFilter"]}
+    <AlertDataPreview
+      criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
       measure={$form["measure"]}
-      metricsView={$form["metricsViewName"]}
+      metricsViewName={$form["metricsViewName"]}
+      splitByDimension={$form["splitByDimension"]}
+      splitByTimeGrain={$form["splitByTimeGrain"]}
+      timeRange={$form["timeRange"]}
+      whereFilter={$form["whereFilter"]}
     />
   </FormSection>
 </div>

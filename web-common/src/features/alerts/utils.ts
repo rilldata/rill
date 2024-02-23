@@ -1,4 +1,4 @@
-import type { V1MetricsViewSpec } from "../../runtime-client";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function getLabelForFieldName(
   metricsViewSpec: V1MetricsViewSpec,

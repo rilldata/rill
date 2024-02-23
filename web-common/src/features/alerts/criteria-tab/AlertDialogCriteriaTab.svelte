@@ -2,7 +2,7 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
-  import DataPreview from "@rilldata/web-common/features/alerts/DataPreview.svelte";
+  import AlertDataPreview from "@rilldata/web-common/features/alerts/AlertDataPreview.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
 
@@ -17,13 +17,14 @@
     <CriteriaGroup {formState} />
   </FormSection>
   <FormSection title="Alert Preview">
-    <DataPreview
-      metricsView={$form["metricsViewName"]}
+    <AlertDataPreview
       criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
-      dimension={$form["splitByDimension"]}
-      filter={$form["whereFilter"]}
       measure={$form["measure"]}
+      metricsViewName={$form["metricsViewName"]}
+      splitByDimension={$form["splitByDimension"]}
+      splitByTimeGrain={$form["splitByTimeGrain"]}
       timeRange={$form["timeRange"]}
+      whereFilter={$form["whereFilter"]}
     />
   </FormSection>
 </div>

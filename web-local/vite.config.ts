@@ -39,6 +39,7 @@ const config = defineConfig(({ mode }) => ({
   },
   define: {
     RILL_RUNTIME_URL: `"${runtimeUrl}"`,
+    "import.meta.env.VITE_PLAYWRIGHT_TEST": process.env.PLAYWRIGHT_TEST,
   },
   plugins: [sveltekit()],
 }));
