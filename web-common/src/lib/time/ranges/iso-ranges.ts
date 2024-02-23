@@ -15,7 +15,7 @@ import {
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
-import { DateTime, Duration } from "luxon";
+import { Duration } from "luxon";
 
 /**
  * Converts an ISO duration to a time range.
