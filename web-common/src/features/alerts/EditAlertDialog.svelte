@@ -15,7 +15,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseAlertForm from "./BaseAlertForm.svelte";
-  import { SnoozeOptions } from "./delivery-tab/snooze";
+  import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
@@ -35,14 +35,13 @@
   const queryArgsJson = JSON.parse(
     alertSpec.queryArgsJson as string,
   ) as V1MetricsViewAggregationRequest;
-  const metricsView = queryArgsJson?.metricsView ?? "";
 
   const formState = createForm({
     initialValues: {
       name: alertSpec.title as string,
-      ...getFormValuesFromAlertQueryArgs(queryArgsJson),
-      snooze: SnoozeOptions[0].value, // TODO: get actual value from alertSpec
+      snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
+      ...getFormValuesFromAlertQueryArgs(queryArgsJson),
     },
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {
@@ -54,12 +53,12 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: undefined,
+              intervalDuration: values.splitByTimeGrain,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
               ),
-              metricsViewName: metricsView,
+              metricsViewName: values.metricsViewName,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
               emailRenotify: !!values.snooze,
               emailRenotifyAfterSeconds: values.snooze

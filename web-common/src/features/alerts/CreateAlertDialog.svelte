@@ -62,7 +62,7 @@
         { email: "" },
       ],
       // The remaining fields are not editable in the form, but it's helpful to have access to them throughout the alert dialog
-      // In the future, they also might even be editable.
+      // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
       timeRange: {
@@ -84,7 +84,7 @@
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
               ),
-              metricsViewName: $metricsViewName,
+              metricsViewName: values.metricsViewName,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
               emailRenotify: !!values.snooze,
               emailRenotifyAfterSeconds: values.snooze
