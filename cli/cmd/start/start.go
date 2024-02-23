@@ -150,8 +150,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	startCmd.Flags().SortFlags = false
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
-	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
-	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
@@ -164,6 +162,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
 	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
 	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
+
+	// We have deprecated the ability configure the OLAP database via the CLI. This should now be done via rill.yaml.
+	// Keeping these for backwards compatibility for a while.
+	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
+	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
+	if err := startCmd.Flags().MarkHidden("db"); err != nil {
+		panic(err)
+	}
+	if err := startCmd.Flags().MarkHidden("db-driver"); err != nil {
+		panic(err)
+	}
 
 	return startCmd
 }

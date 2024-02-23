@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -59,14 +60,22 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&opts.DBDriver, "prod-db-driver", "duckdb", "Database driver")
-	deployCmd.Flags().StringVar(&opts.DBDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", 2, "Slots to allocate for production deployments")
-
 	if !ch.Config.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
 		}
+	}
+
+	// 2024-02-19: We have deprecated configuration of the OLAP DB using flags in favor of using rill.yaml.
+	// When the migration is complete, we can remove the flags as well as the admin-server support for them.
+	deployCmd.Flags().StringVar(&opts.DBDriver, "prod-db-driver", "duckdb", "Database driver")
+	deployCmd.Flags().StringVar(&opts.DBDSN, "prod-db-dsn", "", "Database driver configuration")
+	if err := deployCmd.Flags().MarkHidden("prod-db-driver"); err != nil {
+		panic(err)
+	}
+	if err := deployCmd.Flags().MarkHidden("prod-db-dsn"); err != nil {
+		panic(err)
 	}
 
 	return deployCmd
@@ -535,13 +544,21 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 	if err != nil {
 		return
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb", []string{"duckdb"})
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
 	if err != nil {
 		return
 	}
 	connectors, err := parser.AnalyzeConnectors(ctx)
 	if err != nil {
 		return
+	}
+
+	// Remove the default DuckDB connector we always add
+	for i, c := range connectors {
+		if c.Name == "duckdb" {
+			connectors = slices.Delete(connectors, i, i+1)
+			break
+		}
 	}
 
 	// Exit early if all connectors can be used anonymously
@@ -555,18 +572,18 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		return
 	}
 
-	ch.Printer.PrintlnWarn("\nCould not ingest all sources. Rill requires credentials for the following sources:\n")
+	ch.Printer.PrintlnWarn("\nCould not access all connectors. Rill requires credentials for the following connectors:\n")
 	for _, c := range connectors {
 		if c.AnonymousAccess {
 			continue
 		}
-		for _, r := range c.Resources {
-			fmt.Printf(" - %s", r.Name.Name)
-			if len(r.Paths) > 0 {
-				fmt.Printf(" (%s)", r.Paths[0])
-			}
-			fmt.Print("\n")
+		fmt.Printf(" - %s", c.Name)
+		if len(c.Resources) == 1 {
+			fmt.Printf(" (used by %s)", c.Resources[0].Name.Name)
+		} else if len(c.Resources) > 1 {
+			fmt.Printf(" (used by %s and others)", c.Resources[0].Name.Name)
 		}
+		fmt.Print("\n")
 	}
 	ch.Printer.PrintlnWarn(fmt.Sprintf("\nRun `rill env configure --project %s` to provide credentials.\n", projectName))
 	time.Sleep(2 * time.Second)

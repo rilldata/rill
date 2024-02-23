@@ -3,7 +3,6 @@ package rillv1
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -70,7 +69,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	}
 
 	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
-	if p.DefaultConnector == "olap" && node.Connector == "duckdb" && slices.Contains(p.DuckDBConnectors, p.DefaultConnector) {
+	if p.DefaultOLAPConnector == "olap" && node.Connector == "duckdb" {
 		node.Connector = "olap"
 	}
 
@@ -92,7 +91,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
-	r.SourceSpec.SinkConnector = p.DefaultConnector // Sink connector not currently configurable
+	r.SourceSpec.SinkConnector = p.defaultOLAPConnector() // Sink connector not currently configurable
 	if node.Connector != "" {
 		r.SourceSpec.SourceConnector = node.Connector // Source connector
 	}
