@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
+  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -41,7 +42,9 @@
       <StateManagersProvider metricsViewName={dashboardName}>
         <DashboardStateProvider metricViewName={dashboardName}>
           <DashboardURLStateProvider metricViewName={dashboardName}>
-            <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+            <DashboardThemeProvider>
+              <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+            </DashboardThemeProvider>
           </DashboardURLStateProvider>
         </DashboardStateProvider>
       </StateManagersProvider>
