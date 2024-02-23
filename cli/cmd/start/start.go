@@ -1,7 +1,6 @@
 package start
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -134,7 +133,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID := ""
 			if ch.IsAuthenticated() {
-				user, err := ch.CurrentUser(context.Background())
+				user, err := ch.CurrentUser(cmd.Context())
 				if err == nil {
 					userID = user.Id
 				}
