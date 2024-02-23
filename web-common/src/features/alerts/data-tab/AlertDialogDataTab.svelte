@@ -17,14 +17,16 @@
     $form["metricsViewName"],
   );
 
-  $: measureOptions = $metricsView.data?.measures?.map((m) => ({
-    value: m.name,
-    label: m.label?.length ? m.label : m.expression,
-  }));
-  $: dimensionOptions = $metricsView.data?.dimensions?.map((d) => ({
-    value: d.name,
-    label: d.label?.length ? d.label : d.expression,
-  }));
+  $: measureOptions =
+    $metricsView.data?.measures?.map((m) => ({
+      value: m.name as string,
+      label: m.label?.length ? m.label : m.expression,
+    })) ?? [];
+  $: dimensionOptions =
+    $metricsView.data?.dimensions?.map((d) => ({
+      value: d.name as string,
+      label: d.label?.length ? d.label : d.expression,
+    })) ?? [];
 
   $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
 </script>
@@ -67,17 +69,17 @@
       bind:value={$form["splitByDimension"]}
       id="splitByDimension"
       label="Split by dimension"
+      optional
       options={dimensionOptions}
       placeholder="Select a dimension"
-      optional
     />
     <Select
       bind:value={$form["splitByTimeGrain"]}
       id="splitByTimeGrain"
       label="Split by time grain"
+      optional
       options={AlertIntervalOptions}
       placeholder="Select a time grain"
-      optional
     />
   </FormSection>
   <FormSection title="Data preview">
