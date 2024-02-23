@@ -10,6 +10,8 @@ import {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewTimeSeriesResponse,
+  V1TimeSeriesValue,
+  V1TimeSeriesValueRecords,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -20,12 +22,18 @@ import {
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
 
+export interface TimeSeriesDatum extends V1TimeSeriesValue {
+  ts_comparison?: Date;
+  ts_position?: Date;
+  [key: string]: string | number | undefined | V1TimeSeriesValueRecords;
+}
+
 export type TimeSeriesDataState = {
   isFetching: boolean;
   isError?: boolean;
 
   // Computed prepared data for charts and table
-  timeSeriesData?: unknown[];
+  timeSeriesData?: TimeSeriesDatum[];
   total?: V1MetricsViewAggregationResponseDataItem;
   unfilteredTotal?: V1MetricsViewAggregationResponseDataItem;
   comparisonTotal?: V1MetricsViewAggregationResponseDataItem;
@@ -93,7 +101,9 @@ function createMetricsViewTimeSeries(
   );
 }
 
-export function createTimeSeriesDataStore(ctx: StateManagers) {
+export function createTimeSeriesDataStore(
+  ctx: StateManagers,
+): TimeSeriesDataStore {
   return derived(
     [useMetricsView(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
     ([metricsView, timeControls, dashboardStore], set) => {
@@ -175,7 +185,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           comparisonTotal,
           dimensionChart,
         ]) => {
-          let timeSeriesData = primary?.data?.data;
+          let timeSeriesData = primary?.data?.data || [];
 
           if (!primary.isFetching && interval) {
             timeSeriesData = prepareTimeSeries(
@@ -197,7 +207,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         },
       ).subscribe(set);
     },
-  ) as TimeSeriesDataStore;
+  );
 }
 
 /**

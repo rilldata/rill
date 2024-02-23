@@ -1,9 +1,14 @@
+export interface HeaderData {
+  value: string | null | undefined;
+  spark?: string;
+}
+
 export interface TableData {
   rowCount: number;
   fixedColCount: number;
-  rowHeaderData: Array<Array<{ value: string }>>;
+  rowHeaderData: HeaderData[][];
   columnCount: number;
-  columnHeaderData: Array<Array<{ value: string }>>;
+  columnHeaderData: HeaderData[][];
   body: Array<Array<string | number | null>>;
   selectedValues: string[];
 }

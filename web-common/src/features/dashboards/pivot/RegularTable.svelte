@@ -1,8 +1,8 @@
 <script lang="ts">
   import "regular-table";
-  import "./regular-table-style.css";
   import type { RegularTableElement } from "regular-table";
   import { createEventDispatcher, onMount } from "svelte";
+  import "./regular-table-style.css";
   import type { PivotPos, PivotRenderCallback } from "./types";
   import { isEmptyPos, range } from "./util";
 
@@ -293,7 +293,7 @@
   }
 
   onMount(() => {
-    table.addStyleListener(styleListener);
+    table?.addStyleListener(styleListener);
   });
 
   $: cssVarStyles = `--row-height: ${rowHeight}px;`;
