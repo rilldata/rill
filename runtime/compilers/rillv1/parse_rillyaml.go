@@ -11,11 +11,12 @@ var _reservedConnectorNames = map[string]bool{"admin": true, "repo": true, "meta
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
-	Title       string
-	Description string
-	Connectors  []*ConnectorDef
-	Variables   []*VariableDef
-	Defaults    map[ResourceKind]yaml.Node
+	Title         string
+	Description   string
+	OLAPConnector string
+	Connectors    []*ConnectorDef
+	Variables     []*VariableDef
+	Defaults      map[ResourceKind]yaml.Node
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -33,14 +34,15 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
-	Title       string            `yaml:"title"`
-	Description string            `yaml:"description"`
-	Vars        map[string]string `yaml:"vars"`
-	Connectors  []struct {
+	Title         string `yaml:"title"`
+	Description   string `yaml:"description"`
+	OLAPConnector string `yaml:"olap_connector"`
+	Connectors    []struct {
 		Type     string            `yaml:"type"`
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
+	Vars       map[string]string    `yaml:"vars"`
 	Env        map[string]yaml.Node `yaml:"env"`
 	Sources    yaml.Node            `yaml:"sources"`
 	Models     yaml.Node            `yaml:"models"`
@@ -103,10 +105,11 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	res := &RillYAML{
-		Title:       tmp.Title,
-		Description: tmp.Description,
-		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:   make([]*VariableDef, len(tmp.Vars)),
+		Title:         tmp.Title,
+		Description:   tmp.Description,
+		OLAPConnector: tmp.OLAPConnector,
+		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
+		Variables:     make([]*VariableDef, len(tmp.Vars)),
 		Defaults: map[ResourceKind]yaml.Node{
 			ResourceKindSource:      tmp.Sources,
 			ResourceKindModel:       tmp.Models,

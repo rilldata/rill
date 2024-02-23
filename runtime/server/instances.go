@@ -69,7 +69,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.repo_connector", req.RepoConnector),
 		attribute.String("args.admin_connector", req.AdminConnector),
 		attribute.String("args.ai_connector", req.AiConnector),
-		attribute.StringSlice("args.connectors", toString(req.Connectors)),
+		attribute.StringSlice("args.connectors", connectorsStrings(req.Connectors)),
 	)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
@@ -120,7 +120,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.ai_connector", *req.AiConnector))
 	}
 	if len(req.Connectors) > 0 {
-		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", toString(req.Connectors)))
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", connectorsStrings(req.Connectors)))
 	}
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
@@ -151,6 +151,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ID:                           req.InstanceId,
 		Environment:                  valOrDefault(req.Environment, oldInst.Environment),
 		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
+		ProjectOLAPConnector:         oldInst.ProjectOLAPConnector,
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
 		AIConnector:                  valOrDefault(req.AiConnector, oldInst.AIConnector),
@@ -180,7 +181,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.drop_db", req.DropDb),
+		attribute.String("args.drop_olap", boolPtrStr(req.DropOlap)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -189,7 +190,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropDb)
+	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropOlap)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -265,9 +266,14 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 }
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
+	olapConnector := inst.OLAPConnector
+	if inst.ProjectOLAPConnector != "" {
+		olapConnector = inst.ProjectOLAPConnector
+	}
+
 	return &runtimev1.Instance{
 		InstanceId:                   inst.ID,
-		OlapConnector:                inst.OLAPConnector,
+		OlapConnector:                olapConnector,
 		RepoConnector:                inst.RepoConnector,
 		AdminConnector:               inst.AdminConnector,
 		AiConnector:                  inst.AIConnector,
@@ -293,10 +299,17 @@ func valOrDefault[T any](ptr *T, def T) T {
 	return def
 }
 
-func toString(connectors []*runtimev1.Connector) []string {
+func connectorsStrings(connectors []*runtimev1.Connector) []string {
 	res := make([]string, len(connectors))
 	for i, c := range connectors {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
+}
+
+func boolPtrStr(b *bool) string {
+	if b == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%v", *b)
 }

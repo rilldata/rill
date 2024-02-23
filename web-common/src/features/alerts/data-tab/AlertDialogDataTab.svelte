@@ -69,13 +69,15 @@
       label="Split by dimension"
       options={dimensionOptions}
       placeholder="Select a dimension"
+      optional
     />
     <Select
       bind:value={$form["splitByTimeGrain"]}
       id="splitByTimeGrain"
-      label="Split By Time Grain"
+      label="Split by time grain"
       options={AlertIntervalOptions}
       placeholder="Select a time grain"
+      optional
     />
   </FormSection>
   <FormSection title="Data preview">
