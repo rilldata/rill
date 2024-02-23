@@ -116,7 +116,7 @@
     >
       <h2
         style:overflow-wrap="anywhere"
-        class="line-clamp-2 ui-copy-primary font-semibold"
+        class="line-clamp-2 ui-header-primary font-semibold"
         style:font-size={withTimeseries ? "" : "0.8rem"}
       >
         {name}

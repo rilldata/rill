@@ -36,8 +36,8 @@
     @apply text-gray-600 dark:text-gray-200;
   }
 
-  .ui-copy-primary {
-    @apply text-primary-700 dark:text-primary-200;
+  .ui-header-primary {
+    @apply text-slate-600 dark:text-slate-100;
   }
 
   .ui-copy-strong {
