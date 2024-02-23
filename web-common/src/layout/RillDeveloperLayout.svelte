@@ -13,7 +13,7 @@
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
-  import type { Writable } from "svelte/store";
+  import { type Writable } from "svelte/store";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
   import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
@@ -29,6 +29,8 @@
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
+    // Disable AI when running e2e tests
+    featureFlags.set(!import.meta.env.VITE_PLAYWRIGHT_TEST, "ai");
 
     appBuildMetaStore.set({
       version: config.version,
