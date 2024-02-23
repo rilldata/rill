@@ -1,7 +1,7 @@
 ---
-title: "Filters & Comparison"
-description: Filters & Comparison
-sidebar_label: "Filters & Comparison"
+title: "Filters & Comparisons"
+description: Filters & Comparisons
+sidebar_label: "Filters & Comparisons"
 sidebar_position: 10
 ---
 
@@ -64,6 +64,6 @@ In addition to time comparisons, you can select multiple dimension values to com
 - Use the same top filter bar as the time comparison, instead selecting a dimension for comparison
 - Select the comparison option on the top left of any leaderboard and select multiple dimensions
 
-De-select the comparison option or clear the filter bar to remove your comparisons
+De-select the comparison option or clear the filter bar to remove your comparisons.
 
 ![comparisons](<Screen Cast 2024-02-22 at 4.15.23 PM.gif>)
