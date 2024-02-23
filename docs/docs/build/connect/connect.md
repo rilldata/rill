@@ -7,21 +7,15 @@ sidebar_position: 00
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-:::note Full List of Connectors
-Rill is continually adding new sources and defined connectors. For a full list, visit our [Connectors](/reference/connectors) page
-:::
-
 
 Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, download using HTTP(S), connect to databases like MotherDuck or BigQuery. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). 
 
 You can also push logic into source definition during important to filter the data for your source (see Using Code below).
 
 
-
-:::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](/reference/glob-patterns).
+:::note Full List of Connectors
+Rill is continually adding new sources and defined connectors. For a full list, visit our [Connectors](/reference/connectors) page
 :::
-
 ## Adding a local file
 
 ### Using the UI
@@ -42,7 +36,11 @@ Rill will ingest the data next time you run `rill start`.
 
 Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
 
-:::tip Source Properties
+:::tip Import from multiple files
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](/reference/glob-patterns).
+:::
+
+:::note Source Properties
 
 For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
 
@@ -70,7 +68,11 @@ You can also push filters to your source definition using inline editing. Common
 - Push transformations for key fields to source (particularly casting time fields, data types)
 - Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
-:::tip Source Properties
+:::tip Import from multiple files
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](/reference/glob-patterns).
+:::
+
+:::note Source Properties
 
 For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
 
