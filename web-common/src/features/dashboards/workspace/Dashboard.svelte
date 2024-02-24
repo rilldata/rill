@@ -28,6 +28,8 @@
   export let metricViewName: string;
   export let leftMargin = undefined;
 
+  const { cloudDataViewer } = featureFlags;
+
   let exploreContainerWidth;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
@@ -154,7 +156,7 @@
       {/if}
     </div>
 
-    {#if isRillDeveloper && !expandedMeasureName && !showPivot}
+    {#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !showPivot}
       <RowsViewerAccordion {metricViewName} />
     {/if}
   {/if}
