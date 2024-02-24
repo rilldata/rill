@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -86,7 +85,7 @@ func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 		return err
 	}
 
-	members, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
+	members, err := client.ListProjectMembers(cmd.Context(), &adminv1.ListProjectMembersRequest{
 		Organization: org,
 		Project:      project,
 		PageSize:     pageSize,
@@ -112,7 +111,7 @@ func listProjectInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 		return err
 	}
 
-	invites, err := client.ListProjectInvites(context.Background(), &adminv1.ListProjectInvitesRequest{
+	invites, err := client.ListProjectInvites(cmd.Context(), &adminv1.ListProjectInvitesRequest{
 		Organization: org,
 		Project:      project,
 		PageSize:     pageSize,
@@ -142,7 +141,7 @@ func listOrgMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 		return err
 	}
 
-	members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
+	members, err := client.ListOrganizationMembers(cmd.Context(), &adminv1.ListOrganizationMembersRequest{
 		Organization: org,
 		PageSize:     pageSize,
 		PageToken:    pageToken,
@@ -166,7 +165,7 @@ func listOrgInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 		return err
 	}
 
-	invites, err := client.ListOrganizationInvites(context.Background(), &adminv1.ListOrganizationInvitesRequest{
+	invites, err := client.ListOrganizationInvites(cmd.Context(), &adminv1.ListOrganizationInvitesRequest{
 		Organization: org,
 		PageSize:     pageSize,
 		PageToken:    pageToken,

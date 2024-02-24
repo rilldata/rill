@@ -117,15 +117,15 @@ func (p *Printer) PrintfBold(str string, i ...interface{}) {
 }
 
 func (p *Printer) PrintfSuccess(str string, i ...interface{}) {
-	p.Println(ColorGreenBold.Sprintf(str, i...))
+	p.Print(ColorGreenBold.Sprintf(str, i...))
 }
 
 func (p *Printer) PrintfWarn(str string, i ...interface{}) {
-	p.Println(ColorYellowBold.Sprintf(str, i...))
+	p.Print(ColorYellowBold.Sprintf(str, i...))
 }
 
 func (p *Printer) PrintfError(str string, i ...interface{}) {
-	p.Println(ColorRedBold.Sprintf(str, i...))
+	p.Print(ColorRedBold.Sprintf(str, i...))
 }
 
 func (p *Printer) OverrideHumanOutput(out io.Writer) {

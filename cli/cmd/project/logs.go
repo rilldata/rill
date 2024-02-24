@@ -40,7 +40,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             name,
 			})
@@ -69,7 +69,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if follow {
-				logClient, err := rt.WatchLogs(context.Background(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
+				logClient, err := rt.WatchLogs(cmd.Context(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
 				if err != nil {
 					return fmt.Errorf("failed to watch logs: %w", err)
 				}
@@ -94,7 +94,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			res, err := rt.GetLogs(context.Background(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
+			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
 			if err != nil {
 				return fmt.Errorf("failed to get logs: %w", err)
 			}

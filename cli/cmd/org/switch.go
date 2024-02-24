@@ -1,7 +1,6 @@
 package org
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -23,7 +22,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var defaultOrg string
 			if len(args) == 0 {
-				res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+				res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{})
 				if err != nil {
 					return err
 				}
@@ -33,7 +32,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			} else {
-				_, err = client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
+				_, err = client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
 					Name: args[0],
 				})
 				if err != nil {

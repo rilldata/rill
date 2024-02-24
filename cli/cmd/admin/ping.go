@@ -1,8 +1,6 @@
 package admin
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -23,7 +21,7 @@ func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			pong, err := client.Ping(context.Background(), &adminv1.PingRequest{})
+			pong, err := client.Ping(cmd.Context(), &adminv1.PingRequest{})
 			if err != nil {
 				return err
 			}

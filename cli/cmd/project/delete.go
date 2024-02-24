@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -52,7 +51,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			_, err = client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
+			_, err = client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             name,
 			})

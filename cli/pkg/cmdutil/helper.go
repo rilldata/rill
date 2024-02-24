@@ -19,12 +19,15 @@ type Helper struct {
 	AdminTokenDefault  string
 	Org                string
 	Interactive        bool
-	admin              *client.Client
+
+	adminClient      *client.Client
+	adminClientURL   string
+	adminClientToken string
 }
 
 func (h *Helper) Close() error {
-	if h.admin != nil {
-		return h.admin.Close()
+	if h.adminClient != nil {
+		return h.adminClient.Close()
 	}
 	return nil
 }
@@ -45,22 +48,35 @@ func (h *Helper) AdminToken() string {
 }
 
 func (h *Helper) Client() (*client.Client, error) {
-	if h.admin == nil {
+	// We allow the admin token and URL to be changed (e.g. during login or env switching).
+	// If either of them have changed, we should close the existing client.
+	token := h.AdminToken()
+	if h.adminClient != nil && (h.adminClientToken != token || h.adminClientURL != h.AdminURL) {
+		_ = h.adminClient.Close()
+		h.adminClient = nil
+		h.adminClientURL = ""
+		h.adminClientToken = ""
+	}
+
+	if h.adminClient == nil {
 		cliVersion := h.Version.Number
 		if cliVersion == "" {
 			cliVersion = "unknown"
 		}
 
+		h.adminClientURL = h.AdminURL
+		h.adminClientToken = token
+
 		userAgent := fmt.Sprintf("rill-cli/%v", cliVersion)
-		c, err := client.New(h.AdminURL, h.AdminToken(), userAgent)
+		c, err := client.New(h.adminClientURL, h.adminClientToken, userAgent)
 		if err != nil {
 			return nil, err
 		}
 
-		h.admin = c
+		h.adminClient = c
 	}
 
-	return h.admin, nil
+	return h.adminClient, nil
 }
 
 func (h *Helper) CurrentUser(ctx context.Context) (*adminv1.User, error) {

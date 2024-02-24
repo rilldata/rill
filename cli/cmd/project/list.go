@@ -1,8 +1,6 @@
 package project
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -21,7 +19,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{
+			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{
 				OrganizationName: ch.Org,
 				PageSize:         pageSize,
 				PageToken:        pageToken,

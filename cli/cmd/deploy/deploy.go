@@ -96,8 +96,8 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// Setup telemetry
 	tel := telemetry.New(ch.Version)
 	if ch.IsAuthenticated() {
-		user, err := ch.CurrentUser(ctx)
-		if err == nil {
+		user, _ := ch.CurrentUser(ctx)
+		if user != nil {
 			tel.WithUserID(user.Id)
 		}
 	}
@@ -242,7 +242,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// Set a default org for the user if necessary
 	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
 	if ch.Org == "" {
-		res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+		res, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		if err != nil {
 			return fmt.Errorf("listing orgs failed: %w", err)
 		}
@@ -365,8 +365,8 @@ func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 		}
 		return fmt.Errorf("login failed: %w", err)
 	}
-	user, err := ch.CurrentUser(ctx)
-	if err == nil {
+	user, _ := ch.CurrentUser(ctx)
+	if user != nil {
 		tel.WithUserID(user.Id)
 	}
 	// fire this after we potentially get the user id

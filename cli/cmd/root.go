@@ -107,16 +107,16 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Check version
 	err = update.CheckVersion(ctx, ver.Number)
 	if err != nil {
-		ch.PrintfWarn("Warning: version check failed: %v\n", err)
+		ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
 	}
 
 	// Print warning if currently acting as an assumed user
 	representingUser, err := dotrill.GetRepresentingUser()
 	if err != nil {
-		fmt.Printf("could not parse representing user email\n")
+		ch.PrintfWarn("Could not parse representing user email\n\n")
 	}
 	if representingUser != "" {
-		ch.PrintfWarn("Warning: Running action as %q\n", representingUser)
+		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
 	}
 
 	// Cobra config

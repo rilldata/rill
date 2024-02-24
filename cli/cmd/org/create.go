@@ -1,7 +1,6 @@
 package org
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -35,7 +34,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
+			res, err := client.CreateOrganization(cmd.Context(), &adminv1.CreateOrganizationRequest{
 				Name:        name,
 				Description: description,
 			})

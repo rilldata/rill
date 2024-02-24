@@ -1,7 +1,6 @@
 package org
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -36,7 +35,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Find all the projects for the given org
-			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: name})
+			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: name})
 			if err != nil {
 				return err
 			}
@@ -67,7 +66,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			for _, proj := range projects {
-				_, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{OrganizationName: name, Name: proj})
+				_, err := client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{OrganizationName: name, Name: proj})
 				if err != nil {
 					return err
 				}
@@ -75,7 +74,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				fmt.Printf("Deleted project %s/%s\n", name, proj)
 			}
 
-			_, err = client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{Name: name})
+			_, err = client.DeleteOrganization(cmd.Context(), &adminv1.DeleteOrganizationRequest{Name: name})
 			if err != nil {
 				return err
 			}

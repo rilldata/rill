@@ -1,8 +1,6 @@
 package project
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -32,7 +30,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             name,
 			})

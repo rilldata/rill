@@ -133,8 +133,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID := ""
 			if ch.IsAuthenticated() {
-				user, err := ch.CurrentUser(cmd.Context())
-				if err == nil {
+				user, _ := ch.CurrentUser(cmd.Context())
+				if user != nil {
 					userID = user.Id
 				}
 			}

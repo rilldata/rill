@@ -1,7 +1,6 @@
 package whitelist
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -30,7 +29,7 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			_, err = client.CreateWhitelistedDomain(context.Background(), &adminv1.CreateWhitelistedDomainRequest{
+			_, err = client.CreateWhitelistedDomain(cmd.Context(), &adminv1.CreateWhitelistedDomainRequest{
 				Organization: ch.Org,
 				Domain:       domain,
 				Role:         role,
