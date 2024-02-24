@@ -1,13 +1,13 @@
 <script lang="ts">
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
-  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import MeasureFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterReadOnlyChip.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { fly } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { fly } from "svelte/transition";
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
@@ -16,11 +16,7 @@
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
   $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
-  $: measureIdMap = getMapFromArray(
-    measures,
-    (measure) => measure.name as string,
-  );
-
+  $: measureIdMap = getMapFromArray(measures, (measure) => measure.name);
   $: measureFilters = getMeasureFilters(measureIdMap, filters);
 </script>
 
@@ -30,7 +26,7 @@
     {#if filtersLength}
       {#each measureFilters as { name, label, dimensionName, expr } (name)}
         <div animate:flip={{ duration: 200 }}>
-          <MeasureFilter {name} {label} {dimensionName} {expr} readOnly />
+          <MeasureFilterReadOnlyChip {label} {dimensionName} {expr} />
         </div>
       {/each}
     {:else}
