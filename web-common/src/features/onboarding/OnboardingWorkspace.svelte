@@ -48,7 +48,7 @@
     },
   ];
 
-  // Onboarding steps for non-DuckDB OLAP drivers (Clickhouse, Druid)
+  // Onboarding steps for non-DuckDB OLAP drivers (ClickHouse, Druid)
   const nonDuckDbSteps: OnboardingStep[] = [
     {
       id: "table",

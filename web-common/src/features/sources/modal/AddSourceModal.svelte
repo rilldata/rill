@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
@@ -25,6 +26,7 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import ClickHouseInstructions from "./ClickHouseInstructions.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
@@ -50,6 +52,7 @@
     "salesforce",
     "local_file",
     "https",
+    "clickhouse",
   ];
 
   const ICONS = {
@@ -67,6 +70,7 @@
     salesforce: Salesforce,
     local_file: LocalFile,
     https: Https,
+    clickhouse: ClickHouse,
   };
 
   const connectors = createRuntimeServiceListConnectors({
@@ -172,6 +176,8 @@
       {#if selectedConnector}
         {#if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
+        {:else if selectedConnector.name === "clickhouse"}
+          <ClickHouseInstructions on:back={resetModal} />
         {:else}
           <RemoteSourceForm
             connector={selectedConnector}
