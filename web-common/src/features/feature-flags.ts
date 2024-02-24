@@ -16,6 +16,7 @@ const flags = {
   pivot: features?.includes("pivot") || false,
   alerts: features?.includes("alerts") || false,
   ai: true,
+  cloudDataViewer: features?.includes("data-viewer") || false,
 };
 
 export type FeatureFlags = typeof flags;
