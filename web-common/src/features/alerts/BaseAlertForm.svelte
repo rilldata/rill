@@ -8,11 +8,13 @@
   import AlertDialogDeliveryTab from "./delivery-tab/AlertDialogDeliveryTab.svelte";
   import { checkIsTabValid } from "./form-utils";
 
-  export let formId: string;
   export let formState: any; // svelte-forms-lib's FormState
-  export let dialogTitle: string;
+  export let isEditForm: boolean;
 
   const dispatch = createEventDispatcher();
+
+  const formId = isEditForm ? "edit-alert-form" : "create-alert-form";
+  const dialogTitle = isEditForm ? "Edit Alert" : "Create Alert";
 
   const { form, errors, handleSubmit, isSubmitting } = formState;
 
@@ -60,7 +62,7 @@
     </DialogTabs.List>
     <div class="p-3 bg-slate-100">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {formState} />
+        <AlertDialogDataTab {formState} {isEditForm} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
         <AlertDialogCriteriaTab {formState} />

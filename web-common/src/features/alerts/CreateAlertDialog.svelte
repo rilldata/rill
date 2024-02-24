@@ -121,10 +121,5 @@
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
-  <BaseAlertForm
-    on:close
-    formId="create-alert-form"
-    {formState}
-    dialogTitle="Create Alert"
-  />
+  <BaseAlertForm isEditForm={false} {formState} on:close />
 </Dialog>
