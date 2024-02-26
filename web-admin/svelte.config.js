@@ -8,11 +8,6 @@ const config = {
   preprocess: preprocess(),
 
   kit: {
-    csp: {
-      directives: {
-        'script-src': ['self']
-      }
-    },
     adapter: adapter({
       fallback: "index.html",
     }),
