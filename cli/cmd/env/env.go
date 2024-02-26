@@ -13,8 +13,9 @@ func EnvCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	envCmd.AddCommand(ConfigureCmd(ch))
 	envCmd.AddCommand(PullCmd(ch))
+	envCmd.AddCommand(PushCmd(ch))
 	envCmd.AddCommand(SetCmd(ch))
 	envCmd.AddCommand(RmCmd(ch))
-	envCmd.AddCommand(ShowEnvCmd(ch))
+	envCmd.AddCommand(ShowCmd(ch))
 	return envCmd
 }

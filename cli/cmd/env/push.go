@@ -1,28 +1,23 @@
 package env
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"path/filepath"
-	"regexp"
-	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
-func PullCmd(ch *cmdutil.Helper) *cobra.Command {
+func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName string
 
 	pullCmd := &cobra.Command{
-		Use:   "pull",
-		Short: "Pull cloud credentials into local .env file",
+		Use:   "push",
+		Short: "Push local .env contents to cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If projectPath is provided, normalize it
 			if projectPath != "" {
@@ -71,39 +66,28 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// If the variables match any existing .env file, do nothing
-			if maps.Equal(res.Variables, parser.DotEnv) {
-				if len(res.Variables) == 0 {
-					ch.Printf("No cloud credentials found for project %q.\n", projectName)
-				} else {
-					ch.Printf("Local .env file is already up to date with cloud credentials.\n")
-				}
-				return nil
-			}
-
-			// Merge the current .env file with pulled variables
+			// Merge the current .env file with the cloud variables
 			vars := make(map[string]string)
-			for k, v := range parser.DotEnv {
-				vars[k] = v
-			}
 			for k, v := range res.Variables {
 				vars[k] = v
 			}
-			err = godotenv.Write(vars, filepath.Join(projectPath, ".env"))
-			if err != nil {
-				return err
+			for k, v := range parser.DotEnv {
+				vars[k] = v
 			}
 
-			// Add to gitignore if necessary
-			changed, err := ensureGitignoreHas(cmd.Context(), repo, ".env")
-			if err != nil {
-				return err
-			}
-			if changed {
-				ch.Printf("Added .env to .gitignore.\n")
+			// Write the merged variables back to the cloud project
+			if !maps.Equal(res.Variables, vars) {
+				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
+					OrganizationName: ch.Org,
+					Name:             projectName,
+					Variables:        vars,
+				})
+				if err != nil {
+					return err
+				}
 			}
 
-			ch.Printf("Updated .env file with cloud credentials from project %q.\n", projectName)
+			ch.Printf("Updated cloud env for project %q with variables from %q.\n", projectName, filepath.Join(projectPath, ".env"))
 			return nil
 		},
 	}
@@ -112,30 +96,4 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 	pullCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 
 	return pullCmd
-}
-
-var gitignoreHasDotenvRegexp = regexp.MustCompile(`(?m)^\.env$`)
-
-func ensureGitignoreHas(ctx context.Context, repo drivers.RepoStore, line string) (bool, error) {
-	// Read .gitignore
-	gitignore, _ := repo.Get(ctx, ".gitignore")
-
-	// If .gitignore already has .env, do nothing
-	if gitignoreHasDotenvRegexp.MatchString(gitignore) {
-		return false, nil
-	}
-
-	// Add .env to the end of .gitignore
-	if gitignore != "" {
-		gitignore += "\n"
-	}
-	gitignore += line + "\n"
-
-	// Write .gitignore
-	err := repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
 }

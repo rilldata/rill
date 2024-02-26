@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -109,6 +110,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// Parser variables from "a=b" format to map
+			varsMap, err := parseVariables(vars)
+			if err != nil {
+				return err
+			}
+
 			client := activity.NewNoopClient()
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
@@ -121,7 +128,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				OlapDSN:     olapDSN,
 				ProjectPath: projectPath,
 				LogFormat:   parsedLogFormat,
-				Variables:   vars,
+				Variables:   varsMap,
 				Activity:    client,
 				AdminURL:    ch.AdminURL,
 				AdminToken:  ch.AdminToken(),
@@ -201,4 +208,18 @@ func countFilesInDirectory(path string) (int, error) {
 	}
 
 	return fileCount, nil
+}
+
+func parseVariables(vals []string) (map[string]string, error) {
+	res := make(map[string]string)
+	for _, v := range vals {
+		v, err := godotenv.Unmarshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse variable %q: %w", v, err)
+		}
+		for k, v := range v {
+			res[k] = v
+		}
+	}
+	return res, nil
 }
