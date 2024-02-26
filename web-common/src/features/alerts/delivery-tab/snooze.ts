@@ -1,3 +1,5 @@
+import type { V1AlertSpec } from "../../../runtime-client";
+
 const SEC = 1;
 const MIN = 60 * SEC;
 const HOUR = 60 * MIN;
@@ -27,3 +29,7 @@ export const SnoozeOptions = [
     label: "Rest of the month",
   },
 ];
+
+export function getSnoozeValueFromAlertSpec(alertSpec: V1AlertSpec): string {
+  return alertSpec?.emailRenotifyAfterSeconds?.toString() || "0";
+}

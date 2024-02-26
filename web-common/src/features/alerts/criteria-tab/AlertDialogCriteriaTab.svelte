@@ -19,9 +19,12 @@
   <FormSection title="Alert Preview">
     <AlertDataPreview
       criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
-      dimension={$form["splitByDimension"]}
       measure={$form["measure"]}
+      metricsViewName={$form["metricsViewName"]}
+      splitByDimension={$form["splitByDimension"]}
       splitByTimeGrain={$form["splitByTimeGrain"]}
+      timeRange={$form["timeRange"]}
+      whereFilter={$form["whereFilter"]}
     />
   </FormSection>
 </div>

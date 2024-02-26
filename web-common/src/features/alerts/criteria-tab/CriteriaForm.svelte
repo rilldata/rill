@@ -2,14 +2,19 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let index: number;
 
-  const metricsView = useMetricsView(getStateManagers());
+  const { form, errors } = formState;
+
+  $: metricsView = useMetricsView(
+    $runtime.instanceId,
+    $form["metricsViewName"],
+  );
 
   $: measure = $metricsView.data?.measures?.find(
     (m) => m.name === $form["measure"],
@@ -20,8 +25,6 @@
       label: measure?.label?.length ? measure.label : measure?.expression,
     },
   ];
-
-  const { form, errors } = formState;
 
   // Debounce the update of value. This avoid constant refetches
   let value: string = $form["criteria"][index].value;

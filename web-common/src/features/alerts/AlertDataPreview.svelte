@@ -2,23 +2,29 @@
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import TableIcon from "../../components/icons/TableIcon.svelte";
   import PreviewTable from "../../components/preview-table/PreviewTable.svelte";
-  import type { V1Expression } from "../../runtime-client";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
+  import type { V1Expression, V1TimeRange } from "../../runtime-client";
 
+  export let metricsViewName: string;
   export let measure: string;
-  export let dimension: string;
+  export let splitByDimension: string;
+  export let splitByTimeGrain: string;
+  export let whereFilter: V1Expression;
   export let criteria: V1Expression | undefined = undefined;
-  export let splitByTimeGrain: string | undefined = undefined;
+  export let timeRange: V1TimeRange;
 
-  const ctx = getStateManagers();
+  const queryClient = useQueryClient();
 
-  $: alertPreviewQuery = getAlertPreviewData(ctx, {
+  $: alertPreviewQuery = getAlertPreviewData(queryClient, {
+    metricsViewName,
     measure,
-    dimension,
-    criteria,
+    splitByDimension,
     splitByTimeGrain,
+    whereFilter,
+    criteria,
+    timeRange,
   });
 </script>
 
