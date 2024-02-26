@@ -60,9 +60,9 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
     - `percentage` — output transformed from a rate to a percentage appended with a percentage sign
     - `interval_ms` — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
 
-_**`available_time_ranges`**_ — Override the list of default time range selections available in the dropdown _(optional)_. Note that `All Time` and `Custom` selections are always available.
-  - _**`range`**_ — a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions) for the selection _(required)_
-  - _**`comparison_offsets`**_ — list of time comparison options for this time range selection _(optional)_. Must be one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions).
+**`available_time_ranges`** — Override the list of default time range selections available in the dropdown _(optional)_. Note that `All Time` and `Custom` selections are always available.
+  - **`range`** — a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions) for the selection _(required)_
+  - **`comparison_offsets`** — list of time comparison options for this time range selection _(optional)_. Must be one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions).
   - **Example**:
     ```yaml
     available_time_ranges:
@@ -79,12 +79,12 @@ _**`available_time_ranges`**_ — Override the list of default time range select
     - rill-WTD // Week-To-date
     ```
 
-_**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
-  - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
-  - _**`row_filter`**_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
-  - _**`exclude`**_ - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included. _(optional)_
+**`security`** - define a [security policy](../../develop/security) for the dashboard _(optional)_
+  - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
+  - **`row_filter`** - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
+  - **`exclude`** - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included. _(optional)_
     - **`if`** - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean. _(required)_
     - **`names`** - List of fields to exclude. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_
-  - _**`include`**_ - List of dimension or measure names to include in the dashboard. If `include` is defined all other dimensions and measures are excluded. _(optional)_
+  - **`include`** - List of dimension or measure names to include in the dashboard. If `include` is defined all other dimensions and measures are excluded. _(optional)_
     - **`if`** - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean. _(required)_
     - **`names`** - List of fields to include. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_

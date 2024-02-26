@@ -10,11 +10,11 @@ To apply that theme to a dashboard, add `default_theme: <name of theme>` to the 
 
 ## Properties
 
-_**`kind`**_ - is mandatory and must be `theme`. _(required)_
+**`kind`** - is mandatory and must be `theme`. _(required)_  
 
-_**`colors`**_ - used to override the dashboard colors.
-  - _**`primary`**_ - overrides the primary blue color in the dashboard. Can have any hex (without the # character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
-  - _**`secondary`**_ - overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the # character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+**`colors`** - used to override the dashboard colors.
+  - **`primary`** - overrides the primary blue color in the dashboard. Can have any hex (without the # character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+  - **`secondary`** - overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the # character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
 ## Example
 You can copy this directly into your <theme_name>.yaml file:

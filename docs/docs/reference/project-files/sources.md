@@ -10,34 +10,34 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 **`type`**
  —  the type of connector you are using for the source _(required)_. Possible values include:
-  - _`https`_ — public files available on the web.
-  - _`s3`_ — a file available on amazon s3. 
+  - `https` — public files available on the web.
+  - `s3` — a file available on amazon s3. 
     - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
-  - _`gcs`_ — a file available on google cloud platform.
-  - _`local_file`_ — a locally available file.
-  - _`motherduck`_ - data stored in motherduck
-  - _`athena`_ - a data store defined in Amazon Athena
-  - _`postgres`_ - data stored in Postgres
-  - _`sqlite`_ - data stored in SQLite
-  - _`snowflake`_ - data stored in Snowflake
-  - _`bigquery`_ - data stored in BigQuery
+  - `gcs` — a file available on google cloud platform.
+  - `local_file` — a locally available file.
+  - `motherduck` - data stored in motherduck
+  - `athena` - a data store defined in Amazon Athena
+  - `postgres` - data stored in Postgres
+  - `sqlite` - data stored in SQLite
+  - `snowflake` - data stored in Snowflake
+  - `bigquery` - data stored in BigQuery
 
 **`uri`**
  —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
-  - _`s3://your-org/bucket/file.parquet`_ —  the s3 URI of your file
-  - _`gs://your-org/bucket/file.parquet`_ —  the gsutil URI of your file
-  - _`https://data.example.org/path/to/file.parquet`_ —  the web address of your file
+  - `s3://your-org/bucket/file.parquet` —  the s3 URI of your file
+  - `gs://your-org/bucket/file.parquet` —  the gsutil URI of your file
+  - `https://data.example.org/path/to/file.parquet` —  the web address of your file
 
 **`path`**
  — the _local path_ of the connector you are using for the source relative to your project's root directory.   _(required for type: file)_
-- _`/path/to/file.csv`_ —  the path to your file
+- `/path/to/file.csv` —  the path to your file
 
 **`sql`**
 - Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite/Snowflake) 
 
 **`region`**
  — Optionally sets the cloud region of the bucket or Athena you want to connect to. Only available for S3 and Athena.
-  - _`us-east-1`_ —  the cloud region identifier
+  - `us-east-1` —  the cloud region identifier
 
 **`endpoint`**
  — Optionally overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.
