@@ -1,3 +1,4 @@
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -16,11 +17,71 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
+  PivotAxesData,
   PivotDataRow,
   PivotDataStoreConfig,
   PivotTimeConfig,
   TimeFilters,
 } from "./types";
+
+/**
+ * Returns a sorted data array by appending the missing values in
+ * sorted row axes data
+ */
+export function reconcileMissingDimensionValues(
+  anchorDimension: string,
+  sortedRowAxes: PivotAxesData | null,
+  unsortedRowAxes: PivotAxesData | null,
+) {
+  // Return empty data if either sortedRowAxes or unsortedRowAxes is null
+  if (!sortedRowAxes || !unsortedRowAxes) {
+    return { rows: [], totals: [] };
+  }
+
+  // Extract data and totals from sortedRowAxes
+  const sortedRowAxisValues = sortedRowAxes.data?.[anchorDimension] || [];
+  const sortedTotals = sortedRowAxes.totals?.[anchorDimension] || [];
+
+  // Return early if there are too many values
+  if (sortedRowAxisValues.length >= 100) {
+    return {
+      rows: sortedRowAxisValues.slice(0, 100),
+      totals: sortedTotals.slice(0, 100),
+    };
+  }
+
+  // Extract data and totals from unsortedRowAxes
+  const unsortedRowAxisValues = unsortedRowAxes.data?.[anchorDimension] || [];
+  const unsortedTotals = unsortedRowAxes.totals?.[anchorDimension] || [];
+
+  // Find missing values that are in unsortedRowAxes but not in sortedRowAxes
+  const missingValues = unsortedRowAxisValues.filter(
+    (value) => !sortedRowAxisValues.includes(value),
+  );
+
+  // Combine and limit the rows to 100
+  const combinedRows = [...sortedRowAxisValues, ...missingValues].slice(0, 100);
+
+  // Reorder the totals to match the order of combinedRows
+  const reorderedTotals = combinedRows.map((rowValue) => {
+    const sortedTotal = sortedTotals.find(
+      (total) => total[anchorDimension] === rowValue,
+    );
+    if (sortedTotal) {
+      return sortedTotal;
+    }
+    // Use the total from unsortedRowAxes if not found in sortedTotals
+    const unsortedTotal = unsortedTotals.find(
+      (total) => total[anchorDimension] === rowValue,
+    );
+    return unsortedTotal || { [anchorDimension]: rowValue };
+  });
+
+  return {
+    rows: combinedRows,
+    totals: reorderedTotals,
+  };
+}
 
 /**
  * Construct a key for a pivot config to store expanded table data
@@ -272,7 +333,7 @@ export function getSortForAccessor(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
 ): {
-  where?: V1Expression;
+  where: V1Expression;
   sortPivotBy: V1MetricsViewAggregationSort[];
   timeRange: TimeRangeString;
 } {
@@ -286,6 +347,7 @@ export function getSortForAccessor(
   // Return un-changed filter if no sorting is applied
   if (config.pivot?.sorting?.length === 0) {
     return {
+      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -304,6 +366,7 @@ export function getSortForAccessor(
       },
     ];
     return {
+      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -318,6 +381,7 @@ export function getSortForAccessor(
       },
     ];
     return {
+      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -359,10 +423,9 @@ export function getSortForAccessor(
       });
   }
 
-  let filterForSort: V1Expression | undefined;
-  if (colDimensionFilters.length) {
-    filterForSort = createAndExpression(colDimensionFilters);
-  }
+  const filterForSort: V1Expression = createAndExpression(colDimensionFilters);
+  const mergedFilter = mergeFilters(config.whereFilter, filterForSort);
+
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
   sortPivotBy = [
@@ -373,7 +436,7 @@ export function getSortForAccessor(
   ];
 
   return {
-    where: filterForSort,
+    where: mergedFilter,
     sortPivotBy,
     timeRange,
   };

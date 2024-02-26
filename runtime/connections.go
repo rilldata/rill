@@ -117,7 +117,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPConnector)
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.ResolveOLAPConnector())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -125,7 +125,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
 		release()
-		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", inst.OLAPConnector)
+		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", inst.ResolveOLAPConnector())
 	}
 
 	return olap, release, nil
@@ -138,7 +138,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPConnector)
+		conn, release, err := r.AcquireHandle(ctx, instanceID, inst.ResolveOLAPConnector())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -146,7 +146,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		store, ok := conn.AsCatalogStore(instanceID)
 		if !ok {
 			release()
-			return nil, nil, fmt.Errorf("can't embed catalog because it is not supported by the connector %q", inst.OLAPConnector)
+			return nil, nil, fmt.Errorf("can't embed catalog because it is not supported by the connector %q", inst.ResolveOLAPConnector())
 		}
 
 		return store, release, nil

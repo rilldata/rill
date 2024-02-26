@@ -32,7 +32,10 @@ export async function updateDevJWT(
 
   selectedMockUserJWT.set(jwt);
   runtime.update((runtimeState) => {
-    runtimeState.jwt = jwt;
+    runtimeState.jwt = {
+      token: jwt,
+      receivedAt: Date.now(),
+    };
     return runtimeState;
   });
   return invalidateAllMetricsViews(queryClient, get(runtime).instanceId);

@@ -35,7 +35,10 @@ export async function setViewedAsUser(
   const jwt = jwtResp.accessToken;
 
   runtime.update((runtimeState) => {
-    runtimeState.jwt = jwt;
+    runtimeState.jwt = {
+      token: jwt,
+      receivedAt: Date.now(),
+    };
     return runtimeState;
   });
 
