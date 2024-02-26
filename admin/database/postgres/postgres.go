@@ -1245,9 +1245,9 @@ func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID str
 }
 
 // FindBookmarks returns a list of bookmarks for a user per project
-func (c *connection) FindBookmarks(ctx context.Context, projectID, userID string) ([]*database.Bookmark, error) {
+func (c *connection) FindBookmarks(ctx context.Context, projectID, dashboardName, userID string) ([]*database.Bookmark, error) {
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM bookmarks WHERE project_id = $1 and user_id = $2", projectID, userID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM bookmarks WHERE project_id = $1 and dashboard_name = $2 and (user_id = $3 or is_global = true)", projectID, dashboardName, userID)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -1271,9 +1271,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, data, dashboard_name, project_id, user_id, is_global) 
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-		opts.DisplayName, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID, opts.IsGlobal).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, dashboard_name, project_id, user_id, is_global) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.DisplayName, opts.Description, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID, opts.IsGlobal).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -1284,7 +1284,8 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, data=$2, is_global=$3 WHERE bookmark_id=$4`, opts.DisplayName, opts.Data, opts.IsGlobal, opts.BookmarkID)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, is_global=$4 WHERE bookmark_id=$5`,
+		opts.DisplayName, opts.Description, opts.Data, opts.IsGlobal, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }
 

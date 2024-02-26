@@ -12339,6 +12339,8 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Description
+
 	// no validation rules for Data
 
 	// no validation rules for DashboardName
@@ -12583,6 +12585,8 @@ func (m *UpdateBookmarkRequest) validate(all bool) error {
 	// no validation rules for BookmarkId
 
 	// no validation rules for DisplayName
+
+	// no validation rules for Description
 
 	// no validation rules for Data
 
@@ -21367,6 +21371,8 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Description
+
 	// no validation rules for Data
 
 	// no validation rules for DashboardName
@@ -21374,6 +21380,8 @@ func (m *Bookmark) validate(all bool) error {
 	// no validation rules for ProjectId
 
 	// no validation rules for UserId
+
+	// no validation rules for IsGlobal
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

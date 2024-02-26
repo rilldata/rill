@@ -179,7 +179,7 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
-	FindBookmarks(ctx context.Context, projectID, userID string) ([]*Bookmark, error)
+	FindBookmarks(ctx context.Context, projectID, dashboardName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
 	UpdateBookmark(ctx context.Context, opts *UpdateBookmarkOptions) error
@@ -650,6 +650,7 @@ type InsertProjectInviteOptions struct {
 type Bookmark struct {
 	ID            string
 	DisplayName   string    `db:"display_name"`
+	Description   string    `db:"description"`
 	Data          []byte    `db:"data"`
 	DashboardName string    `db:"dashboard_name"`
 	ProjectID     string    `db:"project_id"`
@@ -664,14 +665,17 @@ type InsertBookmarkOptions struct {
 	DisplayName   string `json:"display_name"`
 	Data          []byte `json:"data"`
 	DashboardName string `json:"dashboard_name"`
+	Description   string `json:"description"`
 	ProjectID     string `json:"project_id"`
 	UserID        string `json:"user_id"`
 	IsGlobal      bool   `json:"is_global"`
 }
 
+// UpdateBookmarkOptions defines options for updating an existing bookmark
 type UpdateBookmarkOptions struct {
 	BookmarkID  string `json:"bookmark_id"`
 	DisplayName string `json:"display_name"`
+	Description string `json:"description"`
 	Data        []byte `json:"data"`
 	IsGlobal    bool   `json:"is_global"`
 }

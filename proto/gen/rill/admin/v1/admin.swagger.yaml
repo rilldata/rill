@@ -2208,6 +2208,8 @@ definitions:
         type: string
       displayName:
         type: string
+      description:
+        type: string
       data:
         type: string
         format: byte
@@ -2217,6 +2219,8 @@ definitions:
         type: string
       userId:
         type: string
+      isGlobal:
+        type: boolean
       createdOn:
         type: string
         format: date-time
@@ -2252,6 +2256,8 @@ definitions:
     type: object
     properties:
       displayName:
+        type: string
+      description:
         type: string
       data:
         type: string
@@ -2996,6 +3002,8 @@ definitions:
       bookmarkId:
         type: string
       displayName:
+        type: string
+      description:
         type: string
       data:
         type: string

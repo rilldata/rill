@@ -276,6 +276,7 @@ export interface V1UpdateBookmarkResponse {
 export interface V1UpdateBookmarkRequest {
   bookmarkId?: string;
   displayName?: string;
+  description?: string;
   data?: string;
   isGlobal?: boolean;
 }
@@ -789,6 +790,7 @@ export interface V1CreateBookmarkResponse {
 
 export interface V1CreateBookmarkRequest {
   displayName?: string;
+  description?: string;
   data?: string;
   dashboardName?: string;
   projectId?: string;
@@ -815,10 +817,12 @@ export interface V1CompleteRequest {
 export interface V1Bookmark {
   id?: string;
   displayName?: string;
+  description?: string;
   data?: string;
   dashboardName?: string;
   projectId?: string;
   userId?: string;
+  isGlobal?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }

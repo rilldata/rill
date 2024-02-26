@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// Listbookmarks server returns the bookmarks for the user per project
+// ListBookmarks server returns the bookmarks for the user per project
 func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRequest) (*adminv1.ListBookmarksResponse, error) {
 	claims := auth.GetClaims(ctx)
 	// Error if authenticated as anything other than a user
@@ -21,7 +21,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, claims.OwnerID())
+	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.DashboardName, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -106,6 +106,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
 		DisplayName:   req.DisplayName,
+		Description:   req.Description,
 		Data:          req.Data,
 		DashboardName: req.DashboardName,
 		ProjectID:     req.ProjectId,
@@ -156,6 +157,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 	err = s.admin.DB.UpdateBookmark(ctx, &database.UpdateBookmarkOptions{
 		BookmarkID:  bookmark.ID,
 		DisplayName: req.DisplayName,
+		Description: req.Description,
 		Data:        req.Data,
 		IsGlobal:    req.IsGlobal,
 	})
@@ -206,10 +208,12 @@ func bookmarkToPB(u *database.Bookmark) *adminv1.Bookmark {
 	return &adminv1.Bookmark{
 		Id:            u.ID,
 		DisplayName:   u.DisplayName,
+		Description:   u.Description,
 		Data:          u.Data,
 		DashboardName: u.DashboardName,
 		ProjectId:     u.ProjectID,
 		UserId:        u.UserID,
+		IsGlobal:      u.IsGlobal,
 		CreatedOn:     timestamppb.New(u.CreatedOn),
 		UpdatedOn:     timestamppb.New(u.UpdatedOn),
 	}

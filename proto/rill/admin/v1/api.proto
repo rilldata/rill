@@ -992,6 +992,7 @@ message GetBookmarkResponse {
 
 message CreateBookmarkRequest {
   string display_name = 1;
+  string description = 6;
   bytes data = 2;
   string dashboard_name = 3;
   string project_id = 4;
@@ -1005,6 +1006,7 @@ message CreateBookmarkResponse {
 message UpdateBookmarkRequest {
   string bookmark_id = 1;
   string display_name = 2;
+  string description = 5;
   bytes data = 3;
   bool is_global = 4;
 }
@@ -1422,10 +1424,12 @@ message WhitelistedDomain {
 message Bookmark {
   string id = 1;
   string display_name = 2;
+  string description = 9;
   bytes data = 3;
   string dashboard_name = 4;
   string project_id = 5;
   string user_id = 6;
+  bool is_global = 10;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }

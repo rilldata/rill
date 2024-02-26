@@ -4189,6 +4189,11 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   displayName = "";
 
   /**
+   * @generated from field: string description = 6;
+   */
+  description = "";
+
+  /**
    * @generated from field: bytes data = 2;
    */
   data = new Uint8Array(0);
@@ -4217,6 +4222,7 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   static readonly typeName = "rill.admin.v1.CreateBookmarkRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 3, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4292,6 +4298,11 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   displayName = "";
 
   /**
+   * @generated from field: string description = 5;
+   */
+  description = "";
+
+  /**
    * @generated from field: bytes data = 3;
    */
   data = new Uint8Array(0);
@@ -4311,6 +4322,7 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "bookmark_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 4, name: "is_global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -7735,6 +7747,11 @@ export class Bookmark extends Message<Bookmark> {
   displayName = "";
 
   /**
+   * @generated from field: string description = 9;
+   */
+  description = "";
+
+  /**
    * @generated from field: bytes data = 3;
    */
   data = new Uint8Array(0);
@@ -7753,6 +7770,11 @@ export class Bookmark extends Message<Bookmark> {
    * @generated from field: string user_id = 6;
    */
   userId = "";
+
+  /**
+   * @generated from field: bool is_global = 10;
+   */
+  isGlobal = false;
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 7;
@@ -7774,10 +7796,12 @@ export class Bookmark extends Message<Bookmark> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 4, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "is_global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);
