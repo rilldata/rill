@@ -45,7 +45,8 @@
     class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
     style:max-width={labelMaxWidth}
   >
-    {label} for {dimensionName}
+    {label}
+    {#if dimensionName}for {dimensionName}{/if}
   </div>
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">
     {#if shortLabel}

@@ -31,7 +31,8 @@
       label: d.label?.length ? d.label : d.expression,
     })) ?? [];
 
-  $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
+  $: hasAtLeastOneFilter =
+    $form.whereFilter.cond.exprs.length > 0 || $form["timeRange"];
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -54,6 +55,7 @@
       <FilterChipsReadOnly
         metricsViewName={$form["metricsViewName"]}
         filters={$form["whereFilter"]}
+        timeRange={$form["timeRange"]}
       />
     {:else}
       <NoFiltersSelected {isEditForm} />

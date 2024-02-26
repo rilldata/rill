@@ -1,3 +1,4 @@
+import { getAlertPreviewQueryRequest } from "@rilldata/web-common/features/alerts/alert-preview-data";
 import {
   createAndExpression,
   createBinaryExpression,
@@ -5,6 +6,7 @@ import {
 import type {
   V1Expression,
   V1MetricsViewAggregationRequest,
+  V1MetricsViewSpec,
   V1Operation,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -32,31 +34,28 @@ export type AlertFormValues = {
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
+  metricsViewSpec: V1MetricsViewSpec,
 ): V1MetricsViewAggregationRequest {
-  return {
-    metricsView: formValues.metricsViewName,
-    measures: [{ name: formValues.measure }],
-    dimensions: formValues.splitByDimension
-      ? [{ name: formValues.splitByDimension }]
-      : [],
-    where: formValues.whereFilter,
-    having: createAndExpression(
-      formValues.criteria.map((c) =>
-        createBinaryExpression(
-          c.field,
-          c.operation as V1Operation,
-          Number(c.value),
+  return getAlertPreviewQueryRequest(
+    {
+      metricsViewName: formValues.metricsViewName,
+      measure: formValues.measure,
+      splitByDimension: formValues.splitByDimension,
+      splitByTimeGrain: formValues.splitByTimeGrain,
+      timeRange: formValues.timeRange,
+      whereFilter: formValues.whereFilter,
+      criteria: createAndExpression(
+        formValues.criteria.map((c) =>
+          createBinaryExpression(
+            c.field,
+            c.operation as V1Operation,
+            Number(c.value),
+          ),
         ),
       ),
-    ),
-    ...(formValues.splitByTimeGrain
-      ? {
-          timeRange: {
-            isoDuration: formValues.splitByTimeGrain,
-          },
-        }
-      : {}),
-  };
+    },
+    metricsViewSpec,
+  );
 }
 
 export const alertFormValidationSchema = yup.object({

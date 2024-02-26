@@ -4,6 +4,7 @@ import { getLabelForFieldName } from "@rilldata/web-common/features/alerts/utils
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { mapDurationToGrain } from "@rilldata/web-common/lib/time/grains";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
@@ -14,6 +15,7 @@ import {
   type V1MetricsViewAggregationSort,
   type V1MetricsViewSpec,
   V1TimeGrain,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/query-core";
@@ -49,7 +51,8 @@ export function getAlertPreviewData(
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
         params.metricsViewName,
-        getAlertPreviewQueryRequest(params, metricsViewResp.data ?? {}),
+        // Add an arbitrary limit to not pull too much of data
+        getAlertPreviewQueryRequest(params, metricsViewResp.data ?? {}, 50),
         {
           query: getAlertPreviewQueryOptions(
             queryClient,
@@ -61,9 +64,10 @@ export function getAlertPreviewData(
   );
 }
 
-function getAlertPreviewQueryRequest(
+export function getAlertPreviewQueryRequest(
   params: AlertPreviewParams,
   metricsViewSpec: V1MetricsViewSpec,
+  limit?: number,
 ): V1MetricsViewAggregationRequest {
   const dimensions: V1MetricsViewAggregationDimension[] = [];
   const sort: V1MetricsViewAggregationSort[] = [];
@@ -84,13 +88,27 @@ function getAlertPreviewQueryRequest(
     sort.push({ name: params.splitByDimension, desc: true });
   }
 
+  let timeRange: V1TimeRange = {
+    isoDuration: params.timeRange.isoDuration,
+  };
+  if (params.timeRange.isoDuration === TimeRangePreset.CUSTOM) {
+    timeRange = {
+      start: params.timeRange.start,
+      end: params.timeRange.end,
+    };
+  } else if (params.timeRange.isoDuration === TimeRangePreset.DEFAULT) {
+    timeRange.isoDuration =
+      metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME;
+  }
+
   return {
+    metricsView: params.metricsViewName,
     measures: [{ name: params.measure }],
     dimensions,
     where: sanitiseExpression(params.whereFilter, undefined),
     having: sanitiseExpression(undefined, params.criteria),
-    timeRange: params.timeRange,
-    limit: "50", // arbitrary limit to make sure we do not pull too much of data
+    timeRange,
+    ...(limit ? { limit: limit.toString() } : {}),
     sort,
   };
 }

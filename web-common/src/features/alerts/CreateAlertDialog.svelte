@@ -11,6 +11,7 @@
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     V1Operation,
@@ -33,14 +34,16 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
+  const ctx = getStateManagers();
   const {
     metricsViewName,
     dashboardStore,
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
-  } = getStateManagers();
+  } = ctx;
   const timeControls = get(timeControlsState);
+  const metricsView = useMetricsView(ctx);
 
   const formState = createForm({
     initialValues: {
@@ -66,6 +69,7 @@
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
       timeRange: {
+        isoDuration: timeControls.selectedTimeRange?.name,
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
       },
@@ -82,7 +86,10 @@
               intervalDuration: values.splitByTimeGrain,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
-                getAlertQueryArgsFromFormValues(values),
+                getAlertQueryArgsFromFormValues(
+                  values,
+                  $metricsView.data ?? {},
+                ),
               ),
               metricsViewName: values.metricsViewName,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
@@ -121,5 +128,5 @@
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
-  <BaseAlertForm isEditForm={false} {formState} on:close />
+  <BaseAlertForm {formState} isEditForm={false} on:close />
 </Dialog>

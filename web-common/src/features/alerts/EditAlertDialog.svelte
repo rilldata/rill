@@ -60,7 +60,7 @@
               intervalDuration: values.splitByTimeGrain,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
-                getAlertQueryArgsFromFormValues(values),
+                getAlertQueryArgsFromFormValues(values, metricsViewSpec),
               ),
               metricsViewName: values.metricsViewName,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
@@ -99,5 +99,5 @@
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
-  <BaseAlertForm isEditForm={true} {formState} on:close />
+  <BaseAlertForm {formState} isEditForm={true} on:close />
 </Dialog>
