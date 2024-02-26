@@ -28,13 +28,11 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Search projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			pattern := "%"
 			// If args is not empty, use the first element as the pattern
@@ -53,15 +51,12 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Names) == 0 {
-				ch.Printer.PrintlnWarn("No projects found")
+				ch.PrintfWarn("No projects found\n")
 				return nil
 			}
 
 			if !statusFlag {
-				err = ch.Printer.PrintResource(res.Names)
-				if err != nil {
-					return err
-				}
+				ch.PrintData(res.Names)
 			} else {
 				// We need to fetch the status of each project by connecting to their individual runtime instances.
 				// Using an errgroup to parallelize the requests.
@@ -88,10 +83,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				err = ch.Printer.PrintResource(table)
-				if err != nil {
-					return err
-				}
+				ch.PrintData(table)
 			}
 
 			if res.NextPageToken != "" {

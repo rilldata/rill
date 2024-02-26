@@ -18,7 +18,6 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -68,7 +67,7 @@ type App struct {
 	Instance              *drivers.Instance
 	Logger                *zap.SugaredLogger
 	BaseLogger            *zap.Logger
-	Version               config.Version
+	Version               cmdutil.Version
 	Verbose               bool
 	Debug                 bool
 	ProjectPath           string
@@ -78,7 +77,7 @@ type App struct {
 }
 
 type AppOptions struct {
-	Version     config.Version
+	Version     cmdutil.Version
 	Verbose     bool
 	Debug       bool
 	Reset       bool

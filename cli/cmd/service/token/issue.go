@@ -1,8 +1,6 @@
 package token
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -15,26 +13,24 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Issue service token",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
 			res, err := client.IssueServiceAuthToken(cmd.Context(), &adminv1.IssueServiceAuthTokenRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				ServiceName:      name,
 			})
 			if err != nil {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Issued token: %v", res.Token))
+			ch.PrintfSuccess("Issued token: %v\n", res.Token)
 
 			return nil
 		},

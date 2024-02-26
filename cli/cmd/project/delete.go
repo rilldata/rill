@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -18,19 +17,17 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
@@ -41,7 +38,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !force {
-				ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Deleting the project %q will remove all metadata associated with the project", name))
+				ch.PrintfWarn("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				project, err := cmdutil.InputPrompt(msg, "")
@@ -54,15 +51,15 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			_, err = client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
-				OrganizationName: cfg.Org,
+			_, err = client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
+				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
+			ch.PrintfSuccess("Deleted project: %v\n", name)
 			return nil
 		},
 	}

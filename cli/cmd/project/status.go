@@ -21,26 +21,24 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
 			}
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {
@@ -48,7 +46,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 1. Print project info
-			ch.Printer.PrintlnSuccess("Project info\n")
+			ch.PrintfSuccess("Project info\n\n")
 			fmt.Printf("  Name: %s\n", proj.Project.Name)
 			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
 			fmt.Printf("  Public: %v\n", proj.Project.Public)
@@ -62,7 +60,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			ch.Printer.PrintlnSuccess("\nDeployment info\n")
+			ch.PrintfSuccess("\nDeployment info\n\n")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
@@ -110,11 +108,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			ch.Printer.PrintlnSuccess("\nResources\n")
-			err = ch.Printer.PrintResource(table)
-			if err != nil {
-				return err
-			}
+			ch.PrintfSuccess("\nResources\n\n")
+			ch.PrintData(table)
 
 			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
@@ -122,11 +117,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					table = append(table, newParseErrorTableRow(e))
 				}
 
-				ch.Printer.PrintlnSuccess("\nParse errors\n")
-				err = ch.Printer.PrintResource(table)
-				if err != nil {
-					return err
-				}
+				ch.PrintfSuccess("\nParse errors\n\n")
+				ch.PrintData(table)
 			}
 
 			return nil
