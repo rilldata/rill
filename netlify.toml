@@ -9,3 +9,4 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
+    X-Frame-Options = "allow-from *"
