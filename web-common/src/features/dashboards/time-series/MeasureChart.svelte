@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
@@ -7,37 +9,38 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
+  import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
+  import {
+    DashboardTimeControls,
+    TimeComparisonOption,
+    TimeRangePreset,
+    TimeRoundingStrategy,
+  } from "../../../lib/time/types";
+  import ChartBody from "./ChartBody.svelte";
+  import MeasureScrub from "./MeasureScrub.svelte";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import {
     getOrderedStartEnd,
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import {
-    TimeRangePreset,
-    TimeRoundingStrategy,
-  } from "../../../lib/time/types";
-  import { getContext } from "svelte";
-  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import MeasureScrub from "./MeasureScrub.svelte";
-  import ChartBody from "./ChartBody.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
-  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
-  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -192,6 +195,27 @@
     });
   }
 
+  function updateRange(start: Date, end: Date) {
+    const timeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: start,
+      end: end,
+    };
+
+    const comparisonTimeRange = showComparison
+      ? ({
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
+      : undefined;
+
+    metricsExplorerStore.selectTimeRange(
+      metricViewName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+    );
+  }
+
   function onMouseClick() {
     // skip if still scrubbing
     if (preventScrubReset) return;
@@ -344,6 +368,10 @@
       start={scrubStart}
       stop={scrubEnd}
       timeGrainLabel={TIME_GRAIN[timeGrain].label}
+    />
+    <MeasurePan
+      on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
+      hovering={hovered}
     />
   </SimpleDataGraphic>
 </div>
