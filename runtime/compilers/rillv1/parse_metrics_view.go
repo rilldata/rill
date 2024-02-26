@@ -171,18 +171,9 @@ const (
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}
-	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
-		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
-		}
-	}
-	if node.YAMLRaw != "" {
-		// Can't use node.YAML because we need to set KnownFields for metrics views
-		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
-		dec.KnownFields(true)
-		if err := dec.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
-		}
+	err := p.decodeNodeYAML(node, true, tmp)
+	if err != nil {
+		return err
 	}
 
 	// Backwards compatibility
@@ -254,8 +245,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	for _, dimension := range tmp.DefaultDimensions {
-		if v, ok := names[dimension]; !ok || v != nameIsDimension {
-			return fmt.Errorf("default selected dimension not found: %q", dimension)
+		if v, ok := names[strings.ToLower(dimension)]; !ok || v != nameIsDimension {
+			return fmt.Errorf(`dimension %q referenced in "default_dimensions" not found`, dimension)
 		}
 	}
 
@@ -287,8 +278,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	for _, measure := range tmp.DefaultMeasures {
-		if v, ok := names[measure]; !ok || v != nameIsMeasure {
-			return fmt.Errorf("default selected measure not found: %q", measure)
+		if v, ok := names[strings.ToLower(measure)]; !ok || v != nameIsMeasure {
+			return fmt.Errorf(`measure %q referenced in "default_dimensions" not found`, measure)
 		}
 	}
 
@@ -297,7 +288,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
 	}
 	if tmp.DefaultComparison.Dimension != "" {
-		if v, ok := names[tmp.DefaultComparison.Dimension]; !ok && v != nameIsDimension {
+		if v, ok := names[strings.ToLower(tmp.DefaultComparison.Dimension)]; !ok && v != nameIsDimension {
 			return fmt.Errorf("default comparison dimension %q doesn't exist", tmp.DefaultComparison.Dimension)
 		}
 	}
@@ -326,13 +317,16 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.Security != nil {
-		templateData := TemplateData{User: map[string]interface{}{
-			"name":   "dummy",
-			"email":  "mock@example.org",
-			"domain": "example.org",
-			"groups": []interface{}{"all"},
-			"admin":  false,
-		}}
+		templateData := TemplateData{
+			Environment: p.Environment,
+			User: map[string]interface{}{
+				"name":   "dummy",
+				"email":  "mock@example.org",
+				"domain": "example.org",
+				"groups": []interface{}{"all"},
+				"admin":  false,
+			},
+		}
 
 		if tmp.Security.Access != "" {
 			access, err := ResolveTemplate(tmp.Security.Access, templateData)
@@ -362,11 +356,12 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				seen := make(map[string]bool)
 				for _, name := range include.Names {
-					if seen[name] {
+					lower := strings.ToLower(name)
+					if seen[lower] {
 						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
 					}
-					seen[name] = true
-					if _, ok := names[name]; !ok {
+					seen[lower] = true
+					if _, ok := names[lower]; !ok {
 						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
 					}
 				}
@@ -387,11 +382,12 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				seen := make(map[string]bool)
 				for _, name := range exclude.Names {
-					if seen[name] {
+					lower := strings.ToLower(name)
+					if seen[lower] {
 						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
 					}
-					seen[name] = true
-					if _, ok := names[name]; !ok {
+					seen[lower] = true
+					if _, ok := names[lower]; !ok {
 						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
 					}
 				}

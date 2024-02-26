@@ -3248,6 +3248,8 @@ func (m *MetricsViewAggregationDimension) validate(all bool) error {
 
 	// no validation rules for TimeZone
 
+	// no validation rules for Alias
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationDimensionMultiError(errors)
 	}
@@ -4202,6 +4204,17 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	if len(m.GetMeasures()) < 1 {
+		err := MetricsViewComparisonRequestValidationError{
+			field:  "Measures",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	for idx, item := range m.GetMeasures() {
 		_, _ = idx, item
 
@@ -4234,6 +4247,17 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if len(m.GetSort()) < 1 {
+		err := MetricsViewComparisonRequestValidationError{
+			field:  "Sort",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	for idx, item := range m.GetSort() {

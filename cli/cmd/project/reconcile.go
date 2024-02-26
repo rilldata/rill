@@ -12,37 +12,35 @@ func ReconcileCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var refresh, reset, force bool
 	var refreshSources []string
-	cfg := ch.Config
 
 	reconcileCmd := &cobra.Command{
 		Use:               "reconcile [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
 		Short:             "Send trigger to deployment",
 		Hidden:            true,
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				project = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				var err error
-				project, err = inferProjectName(ctx, client, cfg.Org, path)
+				project, err = ch.InferProjectName(ctx, ch.Org, path)
 				if err != nil {
 					return err
 				}
 			}
 
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             project,
 			})
 			if err != nil {
@@ -57,7 +55,7 @@ func ReconcileCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 				}
 
-				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: project})
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: ch.Org, Project: project})
 				if err != nil {
 					return err
 				}

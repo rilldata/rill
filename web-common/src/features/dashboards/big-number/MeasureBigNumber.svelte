@@ -10,7 +10,10 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import type {
+    TimeComparisonOption,
+    TimeRangePreset,
+  } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import {
@@ -24,13 +27,20 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-  export let comparisonOption: TimeComparisonOption | undefined = undefined;
+  export let comparisonOption:
+    | TimeComparisonOption
+    | TimeRangePreset
+    | undefined = undefined;
   export let comparisonValue: number | undefined = undefined;
-  export let comparisonPercChange: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+
+  $: comparisonPercChange =
+    comparisonValue && value !== undefined && value !== null
+      ? (value - comparisonValue) / comparisonValue
+      : undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -91,7 +101,7 @@
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     class:big-number={!isMeasureExpanded}
-    class="big-number m-0.5 rounded flex items-start {isMeasureExpanded
+    class="group big-number m-0.5 rounded flex items-start {isMeasureExpanded
       ? 'cursor-default'
       : 'cursor-pointer'}"
     on:click={(e) => {
@@ -106,7 +116,7 @@
     >
       <h2
         style:overflow-wrap="anywhere"
-        class="line-clamp-2 ui-copy-primary font-semibold"
+        class="line-clamp-2 ui-header-primary font-semibold"
         style:font-size={withTimeseries ? "" : "0.8rem"}
       >
         {name}

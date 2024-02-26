@@ -85,36 +85,53 @@ export const getMeasureFilterItems = (
     const addedMeasure = new Set<string>();
 
     for (const dtf of dashData.dashboard.dimensionThresholdFilters) {
-      forEachExpression(dtf.filter, (e, depth) => {
-        if (depth > 0 || !e.cond?.exprs?.length) {
-          return;
-        }
-        const ident =
-          e.cond?.exprs?.[0].ident ?? e.cond?.exprs?.[0].cond?.exprs?.[0].ident;
-        if (
-          ident === undefined ||
-          addedMeasure.has(ident) ||
-          !measureIdMap.has(ident)
-        ) {
-          return;
-        }
-        const measure = measureIdMap.get(ident);
-        if (!measure) {
-          return;
-        }
-        addedMeasure.add(ident);
-        filteredMeasures.push({
-          dimensionName: dtf.name,
-          name: ident,
-          label: measure.label || measure.expression || ident,
-          expr: e,
-        });
-      });
+      filteredMeasures.push(
+        ...getMeasureFilters(measureIdMap, dtf.filter, dtf.name, addedMeasure),
+      );
     }
 
     return filteredMeasures;
   };
 };
+
+export function getMeasureFilters(
+  measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+  filter: V1Expression | undefined,
+  name = "",
+  addedMeasure = new Set<string>(),
+) {
+  if (!filter) return [];
+
+  const filteredMeasures = new Array<MeasureFilterItem>();
+
+  forEachExpression(filter, (e, depth) => {
+    if (depth > 0 || !e.cond?.exprs?.length) {
+      return;
+    }
+    const ident =
+      e.cond?.exprs?.[0].ident ?? e.cond?.exprs?.[0].cond?.exprs?.[0].ident;
+    if (
+      ident === undefined ||
+      addedMeasure.has(ident) ||
+      !measureIdMap.has(ident)
+    ) {
+      return;
+    }
+    const measure = measureIdMap.get(ident);
+    if (!measure) {
+      return;
+    }
+    addedMeasure.add(ident);
+    filteredMeasures.push({
+      dimensionName: name,
+      name: ident,
+      label: measure.label || measure.expression || ident,
+      expr: e,
+    });
+  });
+
+  return filteredMeasures;
+}
 
 export const getAllMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,

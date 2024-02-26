@@ -4,6 +4,15 @@
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
   import { WorkspaceContainer } from "../../layout/workspace";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+
+  let steps: OnboardingStep[];
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: if (olapConnector) {
+    steps = olapConnector === "duckdb" ? duckDbSteps : nonDuckDbSteps;
+  }
 
   interface OnboardingStep {
     id: string;
@@ -11,7 +20,8 @@
     description: string;
   }
 
-  const steps: OnboardingStep[] = [
+  // Onboarding steps for DuckDB OLAP driver
+  const duckDbSteps: OnboardingStep[] = [
     {
       id: "source",
       heading: "Import your data source",
@@ -38,6 +48,28 @@
     },
   ];
 
+  // Onboarding steps for non-DuckDB OLAP drivers (ClickHouse, Druid)
+  const nonDuckDbSteps: OnboardingStep[] = [
+    {
+      id: "table",
+      heading: "Explore your tables",
+      description:
+        "Find your database tables in the left-hand-side navigational sidebar.",
+    },
+    {
+      id: "metrics",
+      heading: "Define your metrics and dimensions",
+      description:
+        "Define aggregate metrics and break out dimensions for your tables.",
+    },
+    {
+      id: "dashboard",
+      heading: "Explore your metrics dashboard",
+      description:
+        "Interactively explore line charts and leaderboards to uncover insights.",
+    },
+  ];
+
   let showAddSourceModal = false;
   function openAddSourceModal() {
     showAddSourceModal = true;
@@ -53,23 +85,25 @@
     <ol
       class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
     >
-      {#each steps as step, i (step.heading)}
-        <li class="flex gap-x-0.5">
-          <span class="font-bold">{i + 1}.</span>
-          <div class="flex flex-col items-start gap-y-2">
-            <div class="flex flex-col items-start gap-y-0.5">
-              <h5 class="font-bold">{step.heading}</h5>
-              <p>{step.description}</p>
+      {#if olapConnector}
+        {#each steps as step, i (step.heading)}
+          <li class="flex gap-x-0.5">
+            <span class="font-bold">{i + 1}.</span>
+            <div class="flex flex-col items-start gap-y-2">
+              <div class="flex flex-col items-start gap-y-0.5">
+                <h5 class="font-bold">{step.heading}</h5>
+                <p>{step.description}</p>
+              </div>
+              {#if step.id === "source"}
+                <Button type="secondary" on:click={openAddSourceModal}>
+                  <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
+                  <span>Add data</span>
+                </Button>
+              {/if}
             </div>
-            {#if step.id === "source"}
-              <Button type="secondary" on:click={openAddSourceModal}>
-                <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                <span>Add data</span>
-              </Button>
-            {/if}
-          </div>
-        </li>
-      {/each}
+          </li>
+        {/each}
+      {/if}
     </ol>
     <AddSourceModal
       open={showAddSourceModal}

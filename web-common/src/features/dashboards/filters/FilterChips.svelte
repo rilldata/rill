@@ -15,8 +15,6 @@ The main feature-set component for dashboard filters
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
 
-  export let readOnly = false;
-
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
@@ -76,17 +74,15 @@ The main feature-set component for dashboard filters
   }
 </script>
 
-{#if !readOnly}
-  <div
-    class:ui-copy-icon={true}
-    class:ui-copy-icon-inactive={false}
-    class="grid items-center place-items-center"
-    style:height={ROW_HEIGHT}
-    style:width={ROW_HEIGHT}
-  >
-    <Filter size="16px" />
-  </div>
-{/if}
+<div
+  class:ui-copy-icon={true}
+  class:ui-copy-icon-inactive={false}
+  class="grid items-center place-items-center"
+  style:height={ROW_HEIGHT}
+  style:width={ROW_HEIGHT}
+>
+  <Filter size="16px" />
+</div>
 <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
   {#if !allDimensionFilters.length && !allMeasureFilters.length}
     <div
@@ -106,7 +102,6 @@ The main feature-set component for dashboard filters
             {label}
             {selectedValues}
             column={dimension.column}
-            {readOnly}
             on:remove={() => removeDimensionFilter(name)}
             on:apply={(event) =>
               toggleDimensionValueSelection(name, event.detail, true)}
@@ -121,7 +116,6 @@ The main feature-set component for dashboard filters
           {label}
           {dimensionName}
           {expr}
-          {readOnly}
           on:remove={() => removeMeasureFilter(dimensionName, name)}
           on:apply={({ detail: { dimension, oldDimension, expr } }) =>
             handleMeasureFilterApply(dimension, name, oldDimension, expr)}
@@ -129,26 +123,24 @@ The main feature-set component for dashboard filters
       </div>
     {/each}
   {/if}
-  {#if !readOnly}
-    <FilterButton />
-    <!-- if filters are present, place a chip at the end of the flex container 
+  <FilterButton />
+  <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
-    {#if hasFilters}
-      <div class="ml-auto">
-        <Chip
-          bgBaseClass="surface"
-          bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-          textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
-          bgActiveClass="bg-gray-200 dark:bg-gray-600"
-          outlineBaseClass="outline-gray-400"
-          on:click={clearAllFilters}
-        >
-          <span slot="icon" class="ui-copy-disabled-faint">
-            <FilterRemove size="16px" />
-          </span>
-          <svelte:fragment slot="body">Clear filters</svelte:fragment>
-        </Chip>
-      </div>
-    {/if}
+  {#if hasFilters}
+    <div class="ml-auto">
+      <Chip
+        bgBaseClass="surface"
+        bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
+        textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
+        bgActiveClass="bg-gray-200 dark:bg-gray-600"
+        outlineBaseClass="outline-gray-400"
+        on:click={clearAllFilters}
+      >
+        <span slot="icon" class="ui-copy-disabled-faint">
+          <FilterRemove size="16px" />
+        </span>
+        <svelte:fragment slot="body">Clear filters</svelte:fragment>
+      </Chip>
+    </div>
   {/if}
 </div>

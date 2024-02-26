@@ -17,7 +17,7 @@ To apply that theme to a dashboard, add `default_theme: <name of theme>` to the 
   - **`secondary`** - overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the # character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
 ## Example
-You can copy this directly into your <theme_name>.yaml file:
+You can copy this directly into your \<theme_name>.yaml file:
 ```yaml
 kind: theme
 colors:

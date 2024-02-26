@@ -2,159 +2,155 @@ package printer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/gocarina/gocsv"
 	"github.com/lensesio/tableprinter"
 )
-
-type Printer struct {
-	humanOut    io.Writer
-	resourceOut io.Writer
-	format      *Format
-}
 
 type Format int
 
 const (
-	Human Format = iota
-	JSON
+	FormatUnspecified Format = iota
+	FormatHuman
+	FormatJSON
+	FormatCSV
 )
 
-func NewFormatValue(val Format, p *Format) *Format {
-	*p = val
-	return p
+func (f Format) String() string {
+	switch f {
+	case FormatHuman:
+		return "human"
+	case FormatJSON:
+		return "json"
+	case FormatCSV:
+		return "csv"
+	}
+	return "unknown format"
 }
 
 func (f *Format) Type() string {
 	return "string"
 }
 
-func NewPrinter(format *Format) *Printer {
-	return &Printer{
-		format: format,
+func (f *Format) Set(s string) error {
+	var v Format
+	switch s {
+	case "human":
+		v = FormatHuman
+	case "json":
+		v = FormatJSON
+	case "csv":
+		v = FormatCSV
+	default:
+		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v", s, []string{"human", "json", "csv"})
 	}
-}
-
-// Format returns the format that was set for this printer
-func (p *Printer) Format() Format { return *p.format }
-
-// SetHumanOutput sets the output for human readable messages.
-func (p *Printer) SetHumanOutput(out io.Writer) {
-	p.humanOut = out
-}
-
-// SetResourceOutput sets the output for pringing resources via PrintResource.
-func (p *Printer) SetResourceOutput(out io.Writer) {
-	p.resourceOut = out
-}
-
-func (p *Printer) PrintResource(v interface{}) error {
-	if p.format == nil {
-		return errors.New("printer.Format is not set")
-	}
-
-	var out io.Writer = os.Stdout
-	if p.resourceOut != nil {
-		out = p.resourceOut
-	}
-
-	switch *p.format {
-	case Human:
-		var b strings.Builder
-		tableprinter.Print(&b, v)
-		fmt.Fprint(out, b.String())
-		return nil
-	case JSON:
-		return p.PrintJSON(v)
-	}
-	return fmt.Errorf("unknown printer.Format: %T", *p.format)
-}
-
-func (p *Printer) PrintJSON(v interface{}) error {
-	var out io.Writer = os.Stdout
-	if p.resourceOut != nil {
-		out = p.resourceOut
-	}
-
-	buf, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintln(out, string(buf))
+	*f = v
 	return nil
 }
 
-func (p *Printer) Printf(format string, i ...interface{}) {
-	fmt.Fprintf(p.out(), format, i...)
+var (
+	ColorBold       = color.New(color.Bold)
+	ColorGreenBold  = color.New(color.FgGreen).Add(color.Bold)
+	ColorYellowBold = color.New(color.FgYellow).Add(color.Bold)
+	ColorRedBold    = color.New(color.FgRed).Add(color.Bold)
+)
+
+// Printer is a helper for printing output in a specific format.
+// It differentiates between human-readable and machine-readable output.
+// Regular log messages are always produced as human-readable output.
+// Human-readable output is discarded when the format is not FormatHuman.
+type Printer struct {
+	Format           Format
+	humanOutOverride io.Writer
+	dataOutOverride  io.Writer
 }
 
-func (p *Printer) Println(i ...interface{}) {
-	fmt.Fprintln(p.out(), i...)
+func NewPrinter(format Format) *Printer {
+	return &Printer{
+		Format: format,
+	}
+}
+
+func (p *Printer) PrintData(v interface{}) {
+	out := p.dataOut()
+	switch p.Format {
+	case FormatHuman:
+		var b strings.Builder
+		tableprinter.Print(&b, v)
+		fmt.Fprint(out, b.String())
+	case FormatJSON:
+		buf, err := json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal JSON: %w", err))
+		}
+		fmt.Fprintln(out, string(buf))
+	case FormatCSV:
+		buf, err := gocsv.MarshalString(v)
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal CSV: %w", err))
+		}
+		fmt.Fprint(out, buf)
+	default:
+		panic(fmt.Errorf("unexpected print format <%v>", p.Format))
+	}
 }
 
 func (p *Printer) Print(i ...interface{}) {
-	fmt.Fprint(p.out(), i...)
+	fmt.Fprint(p.humanOut(), i...)
 }
 
-func (p *Printer) PrintlnSuccess(str string) {
-	p.Println(BoldGreen(str))
+func (p *Printer) Println(i ...interface{}) {
+	fmt.Fprintln(p.humanOut(), i...)
 }
 
-func (p *Printer) PrintlnWarn(str string) {
-	p.Println(BoldYellow(str))
+func (p *Printer) Printf(format string, i ...interface{}) {
+	fmt.Fprintf(p.humanOut(), format, i...)
 }
 
-func (p *Printer) PrintlnError(str string) {
-	p.Println(BoldRed(str))
+func (p *Printer) PrintfBold(str string, i ...interface{}) {
+	p.Print(ColorBold.Sprintf(str, i...))
 }
 
-func (p *Printer) PrintlnInfo(str string) {
-	p.Println(BoldWhite(str))
+func (p *Printer) PrintfSuccess(str string, i ...interface{}) {
+	p.Print(ColorGreenBold.Sprintf(str, i...))
 }
 
-func (p *Printer) PrintBold(str string) {
-	p.Print(Bold(str))
+func (p *Printer) PrintfWarn(str string, i ...interface{}) {
+	p.Print(ColorYellowBold.Sprintf(str, i...))
 }
 
-// BoldGreen returns a string formatted with green and bold.
-func BoldGreen(msg interface{}) string {
-	return color.New(color.FgGreen).Add(color.Bold).Sprint(msg)
+func (p *Printer) PrintfError(str string, i ...interface{}) {
+	p.Print(ColorRedBold.Sprintf(str, i...))
 }
 
-// BoldYellow returns a string formatted with yellow and bold.
-func BoldYellow(msg interface{}) string {
-	return color.New(color.FgYellow).Add(color.Bold).Sprint(msg)
+func (p *Printer) OverrideHumanOutput(out io.Writer) {
+	p.humanOutOverride = out
 }
 
-// BoldRed returns a string formatted with red and bold.
-func BoldRed(msg interface{}) string {
-	return color.New(color.FgRed).Add(color.Bold).Sprint(msg)
+func (p *Printer) OverrideDataOutput(out io.Writer) {
+	p.dataOutOverride = out
 }
 
-// BoldWhite returns a string formatted with white and bold.
-func BoldWhite(msg interface{}) string {
-	return color.New(color.FgWhite).Add(color.Bold).Sprint(msg)
-}
-
-// Bold returns a string formatted with bold.
-func Bold(msg interface{}) string {
-	return color.New(color.Bold).Sprint(msg)
-}
-
-func (p *Printer) out() io.Writer {
-	if p.humanOut != nil {
-		return p.humanOut
+func (p *Printer) humanOut() io.Writer {
+	if p.humanOutOverride != nil {
+		return p.humanOutOverride
 	}
 
-	if *p.format == Human {
+	if p.Format == FormatHuman {
 		return color.Output
 	}
 
 	return io.Discard
+}
+
+func (p *Printer) dataOut() io.Writer {
+	if p.dataOutOverride != nil {
+		return p.dataOutOverride
+	}
+	return os.Stdout
 }

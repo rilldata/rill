@@ -29,7 +29,7 @@ If you do not have the AWS CLI installed and authenticated, follow these steps:
 
 3. If your organization does not have SSO configured:
 
-    a. Follow the steps described under [How to create an AWS service account using the AWS Management Console](#how-to-create-an-aws-service-account-using-the-aws-management-console), which you will find below on this page.
+    a. Follow the steps described in [How to create an AWS service account using the AWS Management Console](./s3.md#how-to-create-an-aws-service-account-using-the-aws-management-console), which you will find below on this page.
 
     b. Run the following command and provide the access key, access secret, and default region when prompted (you can leave the "Default output format" blank):
     ```

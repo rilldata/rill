@@ -21,12 +21,19 @@ type RegistryStore interface {
 type Instance struct {
 	// Identifier
 	ID string
+	// Environment is the environment that the instance represents
+	Environment string
 	// Driver name to connect to for OLAP
 	OLAPConnector string
+	// ProjectOLAPConnector is an override of OLAPConnector that may be set in rill.yaml.
+	// NOTE: Hopefully we can merge this with OLAPConnector if/when we remove the ability to set OLAPConnector using flags.
+	ProjectOLAPConnector string
 	// Driver name for reading/editing code artifacts
 	RepoConnector string
 	// Driver name for the admin service managing the deployment (optional)
 	AdminConnector string
+	// Driver name for the AI service (optional)
+	AIConnector string
 	// Driver name for catalog
 	CatalogConnector string
 	// CreatedOn is when the instance was created
@@ -57,6 +64,14 @@ type Instance struct {
 	ModelMaterializeDelaySeconds uint32 `db:"model_materialize_delay_seconds"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
+}
+
+// ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
+func (i *Instance) ResolveOLAPConnector() string {
+	if i.ProjectOLAPConnector != "" {
+		return i.ProjectOLAPConnector
+	}
+	return i.OLAPConnector
 }
 
 // ResolveVariables returns the final resolved variables

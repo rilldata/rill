@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -42,7 +43,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		ProvisionerSpec: provisionerSpec,
 	}
 
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh)
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop())
 	if err != nil {
 		return nil, err
 	}

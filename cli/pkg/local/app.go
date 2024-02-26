@@ -17,13 +17,15 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
@@ -65,7 +67,7 @@ type App struct {
 	Instance              *drivers.Instance
 	Logger                *zap.SugaredLogger
 	BaseLogger            *zap.Logger
-	Version               config.Version
+	Version               cmdutil.Version
 	Verbose               bool
 	Debug                 bool
 	ProjectPath           string
@@ -74,9 +76,25 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+type AppOptions struct {
+	Version     cmdutil.Version
+	Verbose     bool
+	Debug       bool
+	Reset       bool
+	Environment string
+	OlapDriver  string
+	OlapDSN     string
+	ProjectPath string
+	LogFormat   LogFormat
+	Variables   []string
+	Activity    activity.Client
+	AdminURL    string
+	AdminToken  string
+}
+
+func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Setup logger
-	logger, cleanupFn := initLogger(verbose, logFormat)
+	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat)
 	sugarLogger := logger.Sugar()
 
 	// Init Prometheus telemetry
@@ -84,14 +102,14 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		MetricsExporter: observability.PrometheusExporter,
 		TracesExporter:  observability.NoopExporter,
 		ServiceName:     "rill-local",
-		ServiceVersion:  ver.String(),
+		ServiceVersion:  opts.Version.String(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Get full path to project
-	projectPath, err = filepath.Abs(projectPath)
+	projectPath, err := filepath.Abs(opts.ProjectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +128,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		logger.Info("Dropping old stage.db file and rebuilding project")
 	}
 
-	parsedVariables, err := variable.Parse(variables)
+	parsedVariables, err := variable.Parse(opts.Variables)
 	if err != nil {
 		return nil, err
 	}
@@ -159,15 +177,19 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(sender))
+	rt, err := runtime.New(ctx, rtOpts, logger, opts.Activity, email.New(sender))
 	if err != nil {
 		return nil, err
 	}
 
+	// Prepare connectors for the instance
+	var connectors []*runtimev1.Connector
+
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	defaultOLAP := false
+	olapDSN := opts.OlapDSN
 	olapCfg := make(map[string]string)
-	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
+	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
 		val, err := isExternalStorageEnabled(dbDirPath, parsedVariables)
@@ -178,8 +200,8 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		olapCfg["external_table_storage"] = strconv.FormatBool(val)
 	}
 
-	if reset {
-		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
+	if opts.Reset {
+		err := drivers.Drop(opts.OlapDriver, map[string]any{"dsn": olapDSN}, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
 		}
@@ -192,12 +214,47 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 
 	// Set default DuckDB pool size to 4
 	olapCfg["dsn"] = olapDSN
-	if olapDriver == "duckdb" {
+	if opts.OlapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
 		if !defaultOLAP {
 			olapCfg["error_on_incompatible_version"] = "true"
 		}
 	}
+
+	// Add OLAP connector
+	olapConnector := &runtimev1.Connector{
+		Type:   opts.OlapDriver,
+		Name:   opts.OlapDriver,
+		Config: olapCfg,
+	}
+	connectors = append(connectors, olapConnector)
+
+	// The repo connector is the local project directory
+	repoConnector := &runtimev1.Connector{
+		Type:   "file",
+		Name:   "repo",
+		Config: map[string]string{"dsn": projectPath},
+	}
+	connectors = append(connectors, repoConnector)
+
+	// The catalog connector is a SQLite database in the project directory's tmp folder
+	catalogConnector := &runtimev1.Connector{
+		Type:   "sqlite",
+		Name:   "catalog",
+		Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))},
+	}
+	connectors = append(connectors, catalogConnector)
+
+	// Use the admin service for AI
+	aiConnector := &runtimev1.Connector{
+		Name: "admin",
+		Type: "admin",
+		Config: map[string]string{
+			"admin_url":    opts.AdminURL,
+			"access_token": opts.AdminToken,
+		},
+	}
+	connectors = append(connectors, aiConnector)
 
 	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
 	isInit := IsProjectInit(projectPath)
@@ -208,29 +265,15 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:               DefaultInstanceID,
-		OLAPConnector:    olapDriver,
-		RepoConnector:    "repo",
-		CatalogConnector: "catalog",
-		Connectors: []*runtimev1.Connector{
-			{
-				Type:   "file",
-				Name:   "repo",
-				Config: map[string]string{"dsn": projectPath},
-			},
-			{
-				Type:   olapDriver,
-				Name:   olapDriver,
-				Config: olapCfg,
-			},
-			{
-				Type:   "sqlite",
-				Name:   "catalog",
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))},
-			},
-		},
-		Variables:   parsedVariables,
-		Annotations: map[string]string{},
-		WatchRepo:   true,
+		Environment:      opts.Environment,
+		OLAPConnector:    olapConnector.Name,
+		RepoConnector:    repoConnector.Name,
+		AIConnector:      aiConnector.Name,
+		CatalogConnector: catalogConnector.Name,
+		Connectors:       connectors,
+		Variables:        parsedVariables,
+		Annotations:      map[string]string{},
+		WatchRepo:        true,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
@@ -246,14 +289,22 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		Instance:              inst,
 		Logger:                sugarLogger,
 		BaseLogger:            logger,
-		Version:               ver,
-		Verbose:               verbose,
-		Debug:                 debug,
+		Version:               opts.Version,
+		Verbose:               opts.Verbose,
+		Debug:                 opts.Debug,
 		ProjectPath:           projectPath,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
-		activity:              client,
+		activity:              opts.Activity,
 	}
+
+	// Collect and emit information about registered source types
+	go func() {
+		err := app.emitStartEvent(ctx)
+		if err != nil {
+			logger.Debug("failed to emit start event", zap.Error(err))
+		}
+	}()
 
 	return app, nil
 }
@@ -500,6 +551,34 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Done
 		w.WriteHeader(http.StatusOK)
 	})
+}
+
+func (a *App) emitStartEvent(ctx context.Context) error {
+	repo, instanceID, err := cmdutil.RepoForProjectPath(a.ProjectPath)
+	if err != nil {
+		return err
+	}
+
+	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	if err != nil {
+		return err
+	}
+
+	connectors, err := parser.AnalyzeConnectors(ctx)
+	if err != nil {
+		return err
+	}
+
+	var sourceDrivers []string
+	for _, connector := range connectors {
+		sourceDrivers = append(sourceDrivers, connector.Name)
+	}
+
+	tel := telemetry.New(a.Version)
+	tel.EmitStartEvent(sourceDrivers, a.Instance.OLAPConnector)
+
+	err = tel.Flush(ctx)
+	return err
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.

@@ -538,7 +538,7 @@ func TestResolveMetricsView(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := newSecurityEngine(1, zap.NewNop())
-			got, err := p.resolveMetricsViewSecurity(tt.args.attr, "", tt.args.mv, time.Now())
+			got, err := p.resolveMetricsViewSecurity("", "test", tt.args.mv, time.Now(), tt.args.attr)
 			if tt.wantErr {
 				if err == nil || !strings.Contains(err.Error(), tt.errMsgContains) {
 					t.Errorf("ResolveMetricsViewSecurity() error = %v, wantErr %v", err, tt.wantErr)

@@ -4,9 +4,10 @@
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
   import { createEventDispatcher } from "svelte";
-  import type { PivotChipData } from "./types";
-  import { PivotChipType } from "./types";
-  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
+  import { PivotChipData, PivotChipType } from "./types";
+  import { Writable, writable } from "svelte/store";
+
+  const dragging: Writable<null | PivotChipType> = writable(null);
 </script>
 
 <script lang="ts">
@@ -20,6 +21,11 @@
   const dispatch = createEventDispatcher();
   const flipDurationMs = 200;
 
+  $: valid =
+    type &&
+    $dragging &&
+    (type === "columns" || $dragging !== PivotChipType.Measure);
+
   function handleConsider(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
   }
@@ -28,34 +34,34 @@
     items = e.detail.items;
     dispatch("update", items);
   }
-
-  function onSelectTimeGrain(item: PivotChipData, timeGrain: TimeGrain) {
-    items = items.map((i) => {
-      if (i.id !== item.id) return i;
-
-      return {
-        id: timeGrain.grain,
-        title: timeGrain.label,
-        type: PivotChipType.Time,
-      };
-    });
-
-    dispatch("update", items);
-  }
 </script>
 
 <div
-  class="container"
+  class:valid
+  class="flex flex-col gap-y-2 py-2 rounded-sm text-gray-500 w-full max-w-full"
   class:horizontal
-  use:dndzone={{ items, flipDurationMs }}
+  use:dndzone={{ items, flipDurationMs, dropFromOthersDisabled: !valid }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
   {#if !items.length && placeholder}
-    <p class="text-gray-500">{placeholder}</p>
+    {placeholder}
   {/if}
   {#each items as item (item.id)}
-    <div class="item" animate:flip={{ duration: flipDurationMs }}>
+    <button
+      on:mousedown={() => {
+        dragging.set(item.type);
+
+        const onMouseUp = () => {
+          dragging.set(null);
+          window.removeEventListener("mouseup", onMouseUp);
+        };
+
+        window.addEventListener("mouseup", onMouseUp);
+      }}
+      class="item"
+      animate:flip={{ duration: flipDurationMs }}
+    >
       <PivotChip
         {removable}
         {item}
@@ -63,11 +69,8 @@
           items = items.filter((i) => i.id !== item.id);
           dispatch("update", items);
         }}
-        on:select-time-grain={(e) => {
-          onSelectTimeGrain(item, e.detail.timeGrain);
-        }}
       />
-    </div>
+    </button>
   {/each}
   {#if removable}
     <AddField {type} />
@@ -76,19 +79,20 @@
 
 <style type="postcss">
   .item {
-    @apply text-center h-6;
-  }
-
-  .container {
-    @apply flex flex-col gap-y-2 py-2 rounded-sm;
+    @apply text-center;
   }
 
   .horizontal {
-    @apply flex flex-row bg-slate-50 w-full p-2 gap-x-2 h-10;
+    @apply flex flex-row flex-wrap bg-slate-50 w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
+    @apply border border-slate-50;
   }
 
   div {
     outline: none !important;
+  }
+
+  .valid {
+    @apply border-blue-400;
   }
 </style>

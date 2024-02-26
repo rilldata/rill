@@ -31,7 +31,7 @@
   let justCreatedScrub = false;
   let moveStartDelta = 0;
   let moveEndDelta = 0;
-  let isResizing: "start" | "end" = undefined;
+  let isResizing: "start" | "end" | undefined = undefined;
   let isMovingScrub = false;
 
   const dispatch = createEventDispatcher();
@@ -46,14 +46,14 @@
 
   $: hasSubrangeSelected = Boolean(start && stop);
 
-  export let cursorClass = "";
+  export let cursorClass = "cursor-pointer";
   $: cursorClass = isMovingScrub
     ? "cursor-grabbing"
     : isInsideScrub
       ? "cursor-grab"
       : isScrubbing || isOverStart || isOverEnd
         ? "cursor-ew-resize"
-        : "";
+        : "cursor-pointer";
 
   export let preventScrubReset;
   $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;

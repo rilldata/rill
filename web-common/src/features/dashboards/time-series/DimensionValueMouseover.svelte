@@ -11,11 +11,11 @@
   export let dimensionData: DimensionDataItem[];
   export let dimensionValue: string | undefined;
   export let validPercTotal: number | null;
-  export let hovered: boolean | undefined;
+  export let hovered = false;
 
   $: x = point?.[xAccessor];
 
-  function truncate(str) {
+  function truncate(str: string) {
     if (!str?.length) return str;
 
     const truncateLength = 34;
@@ -39,7 +39,10 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    const y = bisectData(x, "center", xAccessor, dimension?.data)[yAccessor];
+    const bisected = bisectData(x, "center", xAccessor, dimension?.data);
+    if (bisected === undefined)
+      return { y: null, fillClass: undefined, name: "" };
+    const y = bisected[yAccessor];
     return {
       y,
       fillClass: dimension?.fillClass,

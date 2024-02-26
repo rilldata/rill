@@ -1,0 +1,1 @@
+ALTER TABLE instances ADD COLUMN ai_connector TEXT NOT NULL DEFAULT '';

@@ -44,7 +44,7 @@ jobs:
         if: steps.filter.outputs.common == 'true'
         run: |-
           npx eslint web-common --quiet
-          npx svelte-check --workspace web-common --no-tsconfig --ignore "src/features/dashboards/time-series/(MetricsTimeSeriesCharts.svelte|MeasureValueMouseover.svelte|ChartBody.svelte|MeasureChart.svelte|MeasureScrub.svelte|MeasureZoom.svelte|BackToOverview.svelte),src/features/dashboards/time-controls/(TimeRangeSelector.svelte|TimeControls.svelte),src/components/data-graphic/elements/GraphicContext.svelte"
+          npx svelte-check --workspace web-common --no-tsconfig --ignore "src/components/data-graphic/elements/GraphicContext.svelte"
 
       - name: lint and type checks for web local
         if: steps.filter.outputs.local == 'true'

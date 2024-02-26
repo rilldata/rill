@@ -17,7 +17,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.27.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/apache/arrow/go/v14 v14.0.1
+	github.com/apache/arrow/go/v14 v14.0.2
 	github.com/apache/calcite-avatica-go/v5 v5.3.0
 	github.com/aws/aws-sdk-go v1.44.314
 	github.com/aws/aws-sdk-go-v2 v1.21.0
@@ -28,7 +28,6 @@ require (
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
-	github.com/briandowns/spinner v1.23.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/confluentinc/confluent-kafka-go/v2 v2.2.0
 	github.com/coreos/go-oidc/v3 v3.6.0
@@ -43,6 +42,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/uuid v1.6.0
@@ -67,7 +67,8 @@ require (
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.9.0
-	github.com/snowflakedb/gosnowflake v1.7.0
+	github.com/sashabaranov/go-openai v1.19.3
+	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -93,6 +94,7 @@ require (
 	golang.org/x/oauth2 v0.13.0
 	golang.org/x/sync v0.5.0
 	golang.org/x/sys v0.16.0
+	golang.org/x/text v0.14.0
 	google.golang.org/api v0.149.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
 	google.golang.org/grpc v1.60.1
@@ -119,7 +121,7 @@ require (
 	github.com/apache/arrow/go/v12 v12.0.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
@@ -285,7 +287,6 @@ require (
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
@@ -308,10 +309,6 @@ require (
 // details on breaking changes here : https://github.com/marcboeker/go-duckdb/pull/147#issuecomment-1895771714
 // changes done on top of v1.5.5 : https://github.com/rilldata/go-duckdb/compare/branch_v1.5.5...rilldata:go-duckdb:appender_revert
 replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb v0.0.0-20240205054225-f83b5ddead91
-
-// snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
-// revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977
-replace github.com/snowflakedb/gosnowflake v1.7.0 => github.com/esevastyanov/gosnowflake v0.0.0-20231129090721-012eca4e3448
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a

@@ -3,6 +3,7 @@ package queries_test
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -103,6 +104,27 @@ func instanceWithSparkModel(t *testing.T) (*runtime.Runtime, string) {
 	return rt, instanceID
 }
 
+func instanceWithSparkSameTimestampModel(t *testing.T) (*runtime.Runtime, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+	`)
+	return rt, instanceID
+}
+
 func TestTimeseries_normaliseTimeRange(t *testing.T) {
 	rt, instanceID := instanceWith2RowsModel(t)
 
@@ -156,6 +178,25 @@ func TestTimeseries_normaliseTimeRange_Specified(t *testing.T) {
 	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z").AsTime(), r.Start.AsTime())
 	require.Equal(t, parseTime(t, "2020-01-01T00:00:00.000Z").AsTime(), r.End.AsTime())
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
+}
+
+func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
+	time.Local = time.UTC
+
+	rt, instanceID := instanceWithSparkSameTimestampModel(t)
+
+	q := &queries.ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		Pixels:              2.0,
+	}
+	ctx := context.Background()
+	olap, release, err := rt.OLAP(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+	values, err := q.CreateTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")
+	require.NoError(t, err)
+	require.True(t, math.IsNaN(values[0].Bin))
 }
 
 func TestTimeseries_SparkOnly(t *testing.T) {

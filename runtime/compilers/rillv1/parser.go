@@ -133,10 +133,10 @@ type Diff struct {
 // Parser is not concurrency safe.
 type Parser struct {
 	// Options
-	Repo             drivers.RepoStore
-	InstanceID       string
-	DefaultConnector string
-	DuckDBConnectors []string
+	Repo                 drivers.RepoStore
+	InstanceID           string
+	Environment          string
+	DefaultOLAPConnector string
 
 	// Output
 	RillYAML  *RillYAML
@@ -173,15 +173,12 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 }
 
 // Parse creates a new parser and parses the entire project.
-//
-// Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
-// To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) (*Parser, error) {
 	p := &Parser{
-		Repo:             repo,
-		InstanceID:       instanceID,
-		DefaultConnector: defaultConnector,
-		DuckDBConnectors: duckDBConnectors,
+		Repo:                 repo,
+		InstanceID:           instanceID,
+		Environment:          environment,
+		DefaultOLAPConnector: defaultOLAPConnector,
 	}
 
 	err := p.reload(ctx)
@@ -829,6 +826,36 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 		StartLocation: loc,
 		External:      external,
 	})
+}
+
+// driverForConnector resolves a connector name to a connector driver.
+// It should not be invoked until after rill.yaml has been parsed.
+func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error) {
+	// Unless overridden in rill.yaml, the connector name is the driver name
+	driver := name
+	if p.RillYAML != nil {
+		for _, c := range p.RillYAML.Connectors {
+			if c.Name == name {
+				driver = c.Type
+				break
+			}
+		}
+	}
+
+	connector, ok := drivers.Connectors[driver]
+	if !ok {
+		return "", nil, fmt.Errorf("unknown connector type %q", driver)
+	}
+	return driver, connector, nil
+}
+
+// defaultOLAPConnector resolves the project's default OLAP connector.
+// It should not be invoked until after rill.yaml has been parsed.
+func (p *Parser) defaultOLAPConnector() string {
+	if p.RillYAML != nil && p.RillYAML.OLAPConnector != "" {
+		return p.RillYAML.OLAPConnector
+	}
+	return p.DefaultOLAPConnector
 }
 
 // pathIsSQL returns true if the path is a SQL file

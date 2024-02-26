@@ -1,8 +1,6 @@
 package user
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -12,7 +10,6 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
 	var keepProjectRoles bool
-	cfg := ch.Config
 
 	removeCmd := &cobra.Command{
 		Use:   "remove",
@@ -20,15 +17,14 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmdutil.StringPromptIfEmpty(&email, "Enter email")
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if projectName != "" {
 				_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
 				})
@@ -36,24 +32,24 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, cfg.Org, projectName))
+				ch.PrintfSuccess("Removed user %q from project \"%s/%s\"\n", email, ch.Org, projectName)
 			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
-					Organization:     cfg.Org,
+					Organization:     ch.Org,
 					Email:            email,
 					KeepProjectRoles: keepProjectRoles,
 				})
 				if err != nil {
 					return err
 				}
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from organization %q", email, cfg.Org))
+				ch.PrintfSuccess("Removed user %q from organization %q\n", email, ch.Org)
 			}
 
 			return nil
 		},
 	}
 
-	removeCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
+	removeCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	removeCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	removeCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	removeCmd.Flags().BoolVar(&keepProjectRoles, "keep-project-roles", false, "Keep roles granted directly on projects in the org")

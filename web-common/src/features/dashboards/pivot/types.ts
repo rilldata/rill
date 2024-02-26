@@ -1,5 +1,4 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -54,6 +53,8 @@ export interface PivotDataRow {
 export interface TimeFilters {
   timeStart: string;
   interval: V1TimeGrain;
+  // Time end represents the start time of the last interval for a range
+  timeEnd?: string;
 }
 
 export interface PivotTimeConfig {
@@ -61,7 +62,6 @@ export interface PivotTimeConfig {
   timeEnd: string | undefined;
   timeZone: string;
   timeDimension: string;
-  interval: AvailableTimeGrain;
 }
 
 /**

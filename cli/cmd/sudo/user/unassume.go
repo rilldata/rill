@@ -16,14 +16,12 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Short: "Revert a call to `assume`",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			originalToken, err := dotrill.GetBackupToken()
 			if err != nil {
@@ -44,7 +42,7 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg.AdminTokenDefault = originalToken
+			ch.AdminTokenDefault = originalToken
 
 			// Set original_token as empty
 			err = dotrill.SetBackupToken("")

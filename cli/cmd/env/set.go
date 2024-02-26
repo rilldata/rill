@@ -14,18 +14,16 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		Short: "Set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
 			key := args[0]
 			value := args[1]
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			ctx := cmd.Context()
 			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 			})
 			if err != nil {
@@ -41,7 +39,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			resp.Variables[key] = value
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 				Variables:        resp.Variables,
 			})
@@ -49,7 +47,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Updated project variables")
+			ch.PrintfSuccess("Updated project variables\n")
 			return nil
 		},
 	}

@@ -420,7 +420,7 @@ paths:
           schema:
             type: object
             properties:
-              dropDb:
+              dropOlap:
                 type: boolean
             title: Request message for RuntimeService.DeleteInstance
       tags:
@@ -448,11 +448,15 @@ paths:
           schema:
             type: object
             properties:
+              environment:
+                type: string
               olapConnector:
                 type: string
               repoConnector:
                 type: string
               adminConnector:
+                type: string
+              aiConnector:
                 type: string
               connectors:
                 type: array
@@ -681,6 +685,41 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-metrics-view:
+    post:
+      summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+      operationId: RuntimeService_GenerateMetricsViewFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateMetricsViewFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              connector:
+                type: string
+              table:
+                type: string
+              path:
+                type: string
+              useAi:
+                type: boolean
+            title: Request message for RuntimeService.GenerateMetricsViewFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/rename:
     post:
       summary: RenameFile renames a file in a repo
@@ -907,14 +946,17 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Required
           in: path
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
         - name: columnName
+          description: Required
           in: query
           required: false
           type: string
@@ -973,10 +1015,12 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
         - name: columnName
+          description: Required
           in: query
           required: false
           type: string
@@ -1024,7 +1068,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
     post:
-      summary: MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+      summary: MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
       operationId: QueryService_MetricsViewAggregation
       responses:
         "200":
@@ -1041,6 +1085,7 @@ paths:
           required: true
           type: string
         - name: metricsView
+          description: Required
           in: path
           required: true
           type: string
@@ -1055,18 +1100,22 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationDimension'
+                title: Required
               measures:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+                title: Required
               sort:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationSort'
+                title: Optional. Defaults to unsorted
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
+                title: Optional. Defaults to unbounded
               timeStart:
                 type: string
                 format: date-time
@@ -1079,26 +1128,50 @@ paths:
                 type: array
                 items:
                   type: string
+                title: Optional. List of dimensions/measures. No pivot is done if ommitted
               where:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               having:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               limit:
                 type: string
                 format: int64
+                title: Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
               offset:
                 type: string
                 format: int64
+                title: Optional. Defaults to 0
               priority:
                 type: integer
                 format: int32
+                title: Optional
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
-                title: Deprecated. should be removed once UI is moved to use new filters
+                description: Deprecated. should be removed once UI is moved to use new filters
+                title: Optional
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
     post:
+      summary: |-
+        MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+        Returns a toplist without comparison data if comparison time range is omitted.
+      description: |-
+        ie. comparsion toplist:
+        | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+        |---------------|---------------------|---------------------|--------------------|-----------|
+        | 2             | 2                   | 0                   | 0                  | Safari    |
+        | 1             | 0                   | 1                   | N/A                | Chrome    |
+        | 0             | 4                   | -4                  | -1.0               | Firefox   |
+
+        ie. toplist:
+        | measure1 | measure2 | dimension |
+        |----------|----------|-----------|
+        | 2        | 45       | Safari    |
+        | 1        | 350      | Chrome    |
+        | 0        | 25       | Firefox   |
       operationId: QueryService_MetricsViewComparison
       responses:
         "200":
@@ -1126,53 +1199,83 @@ paths:
             properties:
               dimension:
                 $ref: '#/definitions/v1MetricsViewAggregationDimension'
+                title: Required
               measures:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+                title: Required
               comparisonMeasures:
                 type: array
                 items:
                   type: string
+                title: |-
+                  Measures that should be compared
+                  Optional. Defaults to all measures
               sort:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewComparisonSort'
+                title: Required
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
+                title: Optional
               comparisonTimeRange:
                 $ref: '#/definitions/v1TimeRange'
+                title: Optional, if omitted than the request prepares the toplist without a comparison
               where:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               having:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               aliases:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+                title: Optional
               limit:
                 type: string
                 format: int64
+                title: Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
               offset:
                 type: string
                 format: int64
+                title: Optional. Defaults to 0
               priority:
                 type: integer
                 format: int32
+                title: Optional
               exact:
                 type: boolean
+                title: Optional, defaults to false
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
-                title: Deprecated. should be removed once UI is moved to use new filters
+                description: Deprecated. should be removed once UI is moved to use new filters
+                title: Optional
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
       summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+      description: |-
+        ie. without granularity
+        | column1 | column2 | dimension |
+        |---------|---------|-----------|
+        | 2       | 2       | Safari    |
+        | 1       | 0       | Chrome    |
+        | 0       | 4       | Firefox   |
+
+        ie. with granularity
+        | timestamp__day0      | column1 | column2 | dimension |
+        |----------------------|---------|---------|-----------|
+        | 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+        | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+        | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
       operationId: QueryService_MetricsViewRows
       responses:
         "200":
@@ -1201,29 +1304,37 @@ paths:
               timeStart:
                 type: string
                 format: date-time
+                title: Optional, defaults to min
               timeEnd:
                 type: string
                 format: date-time
+                title: Optional, defaults to max
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
+                title: Optional, doesn't prepend the timestamp rollup column if ommitted
               where:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               sort:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewSort'
+                title: Optional
               limit:
                 type: integer
                 format: int32
+                title: Optional
               offset:
                 type: string
                 format: int64
+                title: Optional
               priority:
                 type: integer
                 format: int32
               timeZone:
                 type: string
+                title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
@@ -1325,6 +1436,7 @@ paths:
                 type: array
                 items:
                   type: string
+                title: Required either measure_names or inline_measures
               inlineMeasures:
                 type: array
                 items:
@@ -1333,17 +1445,23 @@ paths:
               timeStart:
                 type: string
                 format: date-time
+                title: Optional. Defaults to min
               timeEnd:
                 type: string
                 format: date-time
+                title: Optional. Defaults to max
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
+                title: Required
               where:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               having:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               timeZone:
                 type: string
+                title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
               priority:
                 type: integer
                 format: int32
@@ -1355,6 +1473,7 @@ paths:
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
     post:
       summary: |-
+        Deprecated - use MetricsViewComparison instead.
         MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
         It's a convenience API for querying a metrics view.
       operationId: QueryService_MetricsViewToplist
@@ -1420,6 +1539,7 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+            title: Deprecated, use MetricsViewComparisonRequest without a comparison time range
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
@@ -1456,6 +1576,7 @@ paths:
                 type: array
                 items:
                   type: string
+                title: Required either measure_names or inline_measures
               inlineMeasures:
                 type: array
                 items:
@@ -1464,11 +1585,14 @@ paths:
               timeStart:
                 type: string
                 format: date-time
+                title: Optional. Defaults to min
               timeEnd:
                 type: string
                 format: date-time
+                title: Optional. Defaults to max
               where:
                 $ref: '#/definitions/v1Expression'
+                title: Optional
               priority:
                 type: integer
                 format: int32
@@ -1496,10 +1620,12 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
         - name: columnName
+          description: Required
           in: query
           required: false
           type: string
@@ -1571,6 +1697,7 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
@@ -1582,6 +1709,7 @@ paths:
             properties:
               columnName:
                 type: string
+                title: Required
               priority:
                 type: integer
                 format: int32
@@ -1673,10 +1801,12 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
         - name: columnName
+          description: Required
           in: query
           required: false
           type: string
@@ -1706,6 +1836,7 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
@@ -1768,6 +1899,7 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
@@ -1782,21 +1914,27 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
+                title: Optional. Defaults to [count(*)]
               timestampColumnName:
                 type: string
+                title: Required
               timeRange:
                 $ref: '#/definitions/v1TimeSeriesTimeRange'
+                title: Optional. Defaults to [min, max)
               pixels:
                 type: integer
                 format: int32
+                title: Optional. Spark is not calculated if ommitted. See http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
               sampleSize:
                 type: integer
                 format: int32
+                title: Unused
               priority:
                 type: integer
                 format: int32
               timeZone:
                 type: string
+                title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
@@ -1820,6 +1958,7 @@ paths:
           required: true
           type: string
         - name: tableName
+          description: Required
           in: path
           required: true
           type: string
@@ -1831,6 +1970,7 @@ paths:
             properties:
               columnName:
                 type: string
+                title: Required
               agg:
                 type: string
                 title: default is count(*)
@@ -2350,12 +2490,13 @@ definitions:
     properties:
       id:
         type: string
+        title: Unused
       expression:
         type: string
-        title: mandatory user defined metadata
+        title: Required. IE 'count(*)'
       sqlName:
         type: string
-        title: optional user defined metadata
+        title: Optional. Defaults to 'measure_{i}', ie measure_0
   ConnectorSpecProperty:
     type: object
     properties:
@@ -2621,10 +2762,12 @@ definitions:
   TopKEntry:
     type: object
     properties:
-      value: {}
+      value:
+        title: Not optional, not null
       count:
         type: number
         format: double
+        title: Not optional, not null
   protobufAny:
     type: object
     properties:
@@ -2915,10 +3058,13 @@ definitions:
     properties:
       instanceId:
         type: string
+        title: Required
       tableName:
         type: string
+        title: Required
       columnName:
         type: string
+        title: Required
       priority:
         type: integer
         format: int32
@@ -2927,6 +3073,7 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+        title: Not optional, not null
   v1ColumnDescriptiveStatisticsRequest:
     type: object
     properties:
@@ -2934,8 +3081,10 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       columnName:
         type: string
+        title: Required
       priority:
         type: integer
         format: int32
@@ -2951,8 +3100,10 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       columnName:
         type: string
+        title: Required
       priority:
         type: integer
         format: int32
@@ -2962,6 +3113,7 @@ definitions:
       count:
         type: number
         format: double
+        title: Not optional, not null
   v1ColumnNumericHistogramRequest:
     type: object
     properties:
@@ -2988,8 +3140,10 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       columnName:
         type: string
+        title: Required
       priority:
         type: integer
         format: int32
@@ -2999,11 +3153,14 @@ definitions:
       start:
         type: string
         format: date-time
+        title: Minimum timestamp
       end:
         type: string
         format: date-time
+        title: Maximum timestamp
       interval:
         $ref: '#/definitions/v1TimeGrain'
+        title: Human friendly time grain that is still bounded by (min, max), ie 'minute' time grain for an hour time range
   v1ColumnRugHistogramRequest:
     type: object
     properties:
@@ -3028,8 +3185,10 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       columnName:
         type: string
+        title: Required
       priority:
         type: integer
         format: int32
@@ -3062,26 +3221,33 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
+        title: Optional. Defaults to [count(*)]
       timestampColumnName:
         type: string
+        title: Required
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
+        title: Optional. Defaults to [min, max)
       pixels:
         type: integer
         format: int32
+        title: Optional. Spark is not calculated if ommitted. See http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
       sampleSize:
         type: integer
         format: int32
+        title: Unused
       priority:
         type: integer
         format: int32
       timeZone:
         type: string
+        title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   v1ColumnTimeSeriesResponse:
     type: object
     properties:
@@ -3094,8 +3260,10 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       columnName:
         type: string
+        title: Required
       agg:
         type: string
         title: default is count(*)
@@ -3161,11 +3329,15 @@ definitions:
     properties:
       instanceId:
         type: string
+      environment:
+        type: string
       olapConnector:
         type: string
       repoConnector:
         type: string
       adminConnector:
+        type: string
+      aiConnector:
         type: string
       connectors:
         type: array
@@ -3329,6 +3501,12 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1GenerateMetricsViewFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
+        type: boolean
+    title: Response message for RuntimeService.GenerateMetricsViewFile
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -3375,18 +3553,24 @@ definitions:
     properties:
       name:
         type: string
+        title: Required
       expression:
         type: string
+        title: Required, ie 'count(*)'
   v1Instance:
     type: object
     properties:
       instanceId:
+        type: string
+      environment:
         type: string
       olapConnector:
         type: string
       repoConnector:
         type: string
       adminConnector:
+        type: string
+      aiConnector:
         type: string
       createdOn:
         type: string
@@ -3580,20 +3764,28 @@ definitions:
     properties:
       name:
         type: string
+        title: Required
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
+        title: Optional
       timeZone:
+        type: string
+        title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+      alias:
         type: string
   v1MetricsViewAggregationMeasure:
     type: object
     properties:
       name:
         type: string
+        title: Required
       builtinMeasure:
         $ref: '#/definitions/v1BuiltinMeasure'
+        title: Optional
       builtinMeasureArgs:
         type: array
         items: {}
+        title: Required if BUILTIN_MEASURE_COUNT_DISTINCT
       filter:
         $ref: '#/definitions/v1Expression'
   v1MetricsViewAggregationRequest:
@@ -3603,23 +3795,28 @@ definitions:
         type: string
       metricsView:
         type: string
+        title: Required
       dimensions:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationDimension'
+        title: Required
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+        title: Required
       sort:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationSort'
+        title: Optional. Defaults to unsorted
       timeRange:
         $ref: '#/definitions/v1TimeRange'
+        title: Optional. Defaults to unbounded
       timeStart:
         type: string
         format: date-time
@@ -3632,47 +3829,61 @@ definitions:
         type: array
         items:
           type: string
+        title: Optional. List of dimensions/measures. No pivot is done if ommitted
       where:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       having:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       limit:
         type: string
         format: int64
+        title: Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
       offset:
         type: string
         format: int64
+        title: Optional. Defaults to 0
       priority:
         type: integer
         format: int32
+        title: Optional
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
-        title: Deprecated. should be removed once UI is moved to use new filters
+        description: Deprecated. should be removed once UI is moved to use new filters
+        title: Optional
   v1MetricsViewAggregationResponse:
     type: object
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
+        title: Not optional, not null
   v1MetricsViewAggregationSort:
     type: object
     properties:
       name:
         type: string
+        title: Required. Dimension or measure name
       desc:
         type: boolean
+        title: Optional
   v1MetricsViewColumn:
     type: object
     properties:
       name:
         type: string
+        title: Not optional, not null
       type:
         type: string
+        title: Not optional, not null
       nullable:
         type: boolean
+        title: Not optional, not null
   v1MetricsViewComparisonMeasureAlias:
     type: object
     properties:
@@ -3700,47 +3911,63 @@ definitions:
         type: string
       dimension:
         $ref: '#/definitions/v1MetricsViewAggregationDimension'
+        title: Required
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+        title: Required
       comparisonMeasures:
         type: array
         items:
           type: string
+        title: |-
+          Measures that should be compared
+          Optional. Defaults to all measures
       sort:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonSort'
+        title: Required
       timeRange:
         $ref: '#/definitions/v1TimeRange'
+        title: Optional
       comparisonTimeRange:
         $ref: '#/definitions/v1TimeRange'
+        title: Optional, if omitted than the request prepares the toplist without a comparison
       where:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       having:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       aliases:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+        title: Optional
       limit:
         type: string
         format: int64
+        title: Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
       offset:
         type: string
         format: int64
+        title: Optional. Defaults to 0
       priority:
         type: integer
         format: int32
+        title: Optional
       exact:
         type: boolean
+        title: Optional, defaults to false
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
-        title: Deprecated. should be removed once UI is moved to use new filters
+        description: Deprecated. should be removed once UI is moved to use new filters
+        title: Optional
     title: Request message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonResponse:
     type: object
@@ -3750,23 +3977,28 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonRow'
+        title: Not optional, not null
     title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
     properties:
-      dimensionValue: {}
+      dimensionValue:
+        title: Not optional, not null
       measureValues:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonValue'
+        title: Not optional, not null
   v1MetricsViewComparisonSort:
     type: object
     properties:
       name:
         type: string
+        title: Required
       desc:
         type: boolean
+        title: Optional, defaults to false
       type:
         $ref: '#/definitions/v1MetricsViewComparisonSortType'
         title: Deprecated. Present for backwards compatibility for older reports
@@ -3787,10 +4019,15 @@ definitions:
     properties:
       measureName:
         type: string
-      baseValue: {}
-      comparisonValue: {}
-      deltaAbs: {}
-      deltaRel: {}
+        title: Not optional, not null
+      baseValue:
+        title: Can be null
+      comparisonValue:
+        title: Can be null
+      deltaAbs:
+        title: Can be null
+      deltaRel:
+        title: Can be null
   v1MetricsViewFilter:
     type: object
     properties:
@@ -3814,29 +4051,37 @@ definitions:
       timeStart:
         type: string
         format: date-time
+        title: Optional, defaults to min
       timeEnd:
         type: string
         format: date-time
+        title: Optional, defaults to max
       timeGranularity:
         $ref: '#/definitions/v1TimeGrain'
+        title: Optional, doesn't prepend the timestamp rollup column if ommitted
       where:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       sort:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewSort'
+        title: Optional
       limit:
         type: integer
         format: int32
+        title: Optional
       offset:
         type: string
         format: int64
+        title: Optional
       priority:
         type: integer
         format: int32
       timeZone:
         type: string
+        title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
@@ -3848,10 +4093,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
+        title: Not optional, not null
   v1MetricsViewSchemaResponse:
     type: object
     properties:
@@ -3862,8 +4109,10 @@ definitions:
     properties:
       name:
         type: string
+        title: Required
       ascending:
         type: boolean
+        title: Optional, defaults to false
   v1MetricsViewSpec:
     type: object
     properties:
@@ -3954,6 +4203,7 @@ definitions:
     properties:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
+        title: Not optional, not null
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -3965,6 +4215,7 @@ definitions:
         type: array
         items:
           type: string
+        title: Required either measure_names or inline_measures
       inlineMeasures:
         type: array
         items:
@@ -3973,17 +4224,23 @@ definitions:
       timeStart:
         type: string
         format: date-time
+        title: Optional. Defaults to min
       timeEnd:
         type: string
         format: date-time
+        title: Optional. Defaults to max
       timeGranularity:
         $ref: '#/definitions/v1TimeGrain'
+        title: Required
       where:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       having:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       timeZone:
         type: string
+        title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
       priority:
         type: integer
         format: int32
@@ -3998,11 +4255,13 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
+        title: Not optional, not null
   v1MetricsViewToplistRequest:
     type: object
     properties:
@@ -4048,6 +4307,7 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+    title: Deprecated, use MetricsViewComparisonRequest without a comparison time range
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -4056,10 +4316,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
+        title: Not optional, not null
       data:
         type: array
         items:
           type: object
+        title: Not optional, not null
   v1MetricsViewTotalsRequest:
     type: object
     properties:
@@ -4071,6 +4333,7 @@ definitions:
         type: array
         items:
           type: string
+        title: Required either measure_names or inline_measures
       inlineMeasures:
         type: array
         items:
@@ -4079,11 +4342,14 @@ definitions:
       timeStart:
         type: string
         format: date-time
+        title: Optional. Defaults to min
       timeEnd:
         type: string
         format: date-time
+        title: Optional. Defaults to max
       where:
         $ref: '#/definitions/v1Expression'
+        title: Optional
       priority:
         type: integer
         format: int32
@@ -4098,8 +4364,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewColumn'
+        title: Not optional, not null
       data:
         type: object
+        title: Not optional, not null
   v1MetricsViewV2:
     type: object
     properties:
@@ -4200,6 +4468,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/NumericHistogramBinsBin'
+    title: All fields are not null
   v1NumericOutliers:
     type: object
     properties:
@@ -4208,6 +4477,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/NumericOutliersOutlier'
+    title: All fields are not null
   v1NumericStatistics:
     type: object
     properties:
@@ -4232,6 +4502,7 @@ definitions:
       sd:
         type: number
         format: double
+    title: All fields are not null
   v1NumericSummary:
     type: object
     properties:
@@ -4310,11 +4581,14 @@ definitions:
     properties:
       name:
         type: string
+        title: Not optional, not null
       type:
         type: string
+        title: Not optional, not null
       largestStringLength:
         type: integer
         format: int32
+        title: Unused
   v1ProjectParser:
     type: object
     properties:
@@ -5018,6 +5292,7 @@ definitions:
         type: string
       tableName:
         type: string
+        title: Required
       priority:
         type: integer
         format: int32
@@ -5027,6 +5302,7 @@ definitions:
       cardinality:
         type: string
         format: int64
+        title: Not optional, not null
   v1TableColumnsRequest:
     type: object
     properties:
@@ -5108,28 +5384,37 @@ definitions:
       start:
         type: string
         format: date-time
+        title: Optional. Defaults to min
       end:
         type: string
         format: date-time
+        title: Optional. Defaults to max
       isoDuration:
         type: string
+        title: Optional, ie PT1M
       isoOffset:
         type: string
+        title: Optional, ie PT1M
       roundToGrain:
         $ref: '#/definitions/v1TimeGrain'
       timeZone:
         type: string
+        title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+    title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object
     properties:
       min:
         type: string
         format: date-time
+        title: Not optional, not null
       max:
         type: string
         format: date-time
+        title: Not optional, not null
       interval:
         $ref: '#/definitions/TimeRangeSummaryInterval'
+        title: Not optional, not null
   v1TimeSeriesResponse:
     type: object
     properties:
@@ -5138,36 +5423,46 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
+        title: Not optional, not null
       spark:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
+        title: Not optional, not null, empty if 'pixels' is not specified
       sampleSize:
         type: integer
         format: int32
+        title: Not optional, not null, unused
   v1TimeSeriesTimeRange:
     type: object
     properties:
       start:
         type: string
         format: date-time
+        title: Optional. Defaults to min
       end:
         type: string
         format: date-time
+        title: Optional. Defaults to max
       interval:
         $ref: '#/definitions/v1TimeGrain'
+        title: Optional. Defaults to the most human friendly for [min, max) range, ie 'minute' for hour range
+    title: Either [start, end] or interval should be specified
   v1TimeSeriesValue:
     type: object
     properties:
       ts:
         type: string
         format: date-time
+        title: Not optional, not null
       bin:
         type: number
         format: double
+        title: 0-based. Can be NaN if timestamps are the same. (Used for spark data only.)
       records:
         type: object
+        title: Not optional, not null
   v1TopK:
     type: object
     properties:
@@ -5176,6 +5471,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/TopKEntry'
+        title: Not optional, not null
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh

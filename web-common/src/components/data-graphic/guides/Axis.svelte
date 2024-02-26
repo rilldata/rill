@@ -143,12 +143,7 @@ This component will draw an axis on the specified side.
     if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
     else axisLength = $plotConfig.graphicHeight;
 
-    ticks = getTicks(
-      xOrY,
-      scale,
-      axisLength,
-      $plotConfig[`${xOrY}Type`] === "date",
-    );
+    ticks = getTicks(xOrY, scale, axisLength, $plotConfig[`${xOrY}Type`]);
   }
 
   let formatterFunction;

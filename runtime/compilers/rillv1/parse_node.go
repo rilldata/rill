@@ -19,6 +19,7 @@ type Node struct {
 	Refs              []ResourceName
 	Paths             []string
 	YAML              *yaml.Node
+	YAMLOverride      *yaml.Node
 	YAMLRaw           string
 	YAMLPath          string
 	Connector         string
@@ -67,6 +68,8 @@ type commonYAML struct {
 	Connector string `yaml:"connector"`
 	// SQL contains the SQL string for this resource. It may be specified inline, or will be loaded from a file at the same stem. It may not be supported in all resources.
 	SQL string `yaml:"sql"`
+	// Environment-specific overrides
+	Env map[string]yaml.Node `yaml:"env"`
 }
 
 // parseStem parses a pair of YAML and SQL files with the same path stem (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
@@ -101,6 +104,11 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath
+
+		// Set environment-specific override
+		if envOverride := cfg.Env[p.Environment]; !envOverride.IsZero() {
+			res.YAMLOverride = &envOverride
+		}
 
 		// Handle templating config
 		if cfg.ParserConfig.Templating != nil {
@@ -231,13 +239,63 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		}
 	}
 
-	// If connector wasn't set explicitly, default to DefaultConnector
+	// If connector wasn't set explicitly, use the default OLAP connector
 	if res.Connector == "" {
-		res.Connector = p.DefaultConnector
+		res.Connector = p.defaultOLAPConnector()
 		res.ConnectorInferred = true
 	}
 
 	return res, nil
+}
+
+// decodeNodeYAML decodes a Node into a YAML struct.
+// If knownFields is true, it will return an error if the YAML contains unknown fields.
+// It applies defaults from rill.yaml, then the YAML, then the YAML's environment-specific overrides, and finally the SQL annotations.
+// If an error is returned, it will be a pathError associated with the node.
+func (p *Parser) decodeNodeYAML(node *Node, knownFields bool, dst any) error {
+	// Apply defaults from rill.yaml
+	if p.RillYAML != nil {
+		defaults := p.RillYAML.Defaults[node.Kind]
+		if !defaults.IsZero() {
+			if err := defaults.Decode(dst); err != nil {
+				return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
+			}
+		}
+	}
+
+	// Apply YAML
+	if node.YAML != nil {
+		var err error
+		if knownFields {
+			// Using node.YAMLRaw instead of node.YAML because we need to set KnownFields for metrics views
+			dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
+			dec.KnownFields(true)
+			err = dec.Decode(dst)
+		} else {
+			err = node.YAML.Decode(dst)
+		}
+		if err != nil {
+			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
+		}
+	}
+
+	// Override YAML config with SQL annotations
+	if len(node.SQLAnnotations) > 0 {
+		err := mapstructureUnmarshal(node.SQLAnnotations, dst)
+		if err != nil {
+			return pathError{path: node.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
+		}
+	}
+
+	// Apply environment-specific overrides
+	if node.YAMLOverride != nil {
+		err := node.YAMLOverride.Decode(dst)
+		if err != nil {
+			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
+		}
+	}
+
+	return nil
 }
 
 // parseYAMLRefs parses a list of YAML nodes into a list of ResourceNames.

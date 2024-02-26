@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Chip } from "@rilldata/web-common/components/chip";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
@@ -73,79 +72,66 @@
   }
 </script>
 
-{#if !readOnly}
-  <div
-    class:ui-copy-icon={true}
-    class:ui-copy-icon-inactive={false}
-    class="grid items-center place-items-center"
-    style:height={ROW_HEIGHT}
-    style:width={ROW_HEIGHT}
-  >
-    <Filter size="16px" />
-  </div>
-{/if}
-<div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
-  {#if !allDimensionFilters.length && !allMeasureFilters.length}
+<div class="flex gap-x-1 pb-2 px-2 flex-grow-0">
+  {#if !readOnly}
     <div
-      in:fly|local={{ duration: 200, x: 8 }}
-      class="ui-copy-disabled grid items-center"
-      style:min-height={ROW_HEIGHT}
+      class:ui-copy-icon={true}
+      class:ui-copy-icon-inactive={false}
+      class="flex items-center text-center justify-center flex-shrink-0"
+      style:height={ROW_HEIGHT}
+      style:width={ROW_HEIGHT}
     >
-      No filters selected
+      <Filter size="16px" />
     </div>
-  {:else}
-    {#each allDimensionFilters as { name, label, selectedValues } (name)}
-      {@const dimension = dimensions.find((d) => d.name === name)}
-      <div animate:flip={{ duration: 200 }}>
-        {#if dimension?.column}
-          <DimensionFilter
+  {/if}
+
+  <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
+    {#if !allDimensionFilters.length && !allMeasureFilters.length}
+      <div
+        in:fly|local={{ duration: 200, x: 8 }}
+        class="ui-copy-disabled grid items-center"
+        style:min-height={ROW_HEIGHT}
+      >
+        No filters selected
+      </div>
+    {:else}
+      {#each allDimensionFilters as { name, label, selectedValues } (name)}
+        {@const dimension = dimensions.find((d) => d.name === name)}
+        <div animate:flip={{ duration: 200 }}>
+          {#if dimension?.column}
+            <DimensionFilter
+              {name}
+              {label}
+              {selectedValues}
+              column={dimension.column}
+              on:remove={() => removeDimensionFilter(name)}
+              on:apply={(event) =>
+                toggleDimensionValueSelection(name, event.detail, true)}
+            />
+          {/if}
+        </div>
+      {/each}
+      {#each allMeasureFilters as { name, label, dimensionName, expr } (name)}
+        <div animate:flip={{ duration: 200 }}>
+          <MeasureFilter
             {name}
             {label}
-            {selectedValues}
-            column={dimension.column}
-            {readOnly}
-            on:remove={() => removeDimensionFilter(name)}
-            on:apply={(event) =>
-              toggleDimensionValueSelection(name, event.detail, true)}
+            {dimensionName}
+            {expr}
+            on:remove={() => removeMeasureFilter(dimensionName, name)}
+            on:apply={({ detail: { dimension, oldDimension, expr } }) =>
+              handleMeasureFilterApply(dimension, name, oldDimension, expr)}
           />
-        {/if}
-      </div>
-    {/each}
-    {#each allMeasureFilters as { name, label, dimensionName, expr } (name)}
-      <div animate:flip={{ duration: 200 }}>
-        <MeasureFilter
-          {name}
-          {label}
-          {dimensionName}
-          {expr}
-          {readOnly}
-          on:remove={() => removeMeasureFilter(dimensionName, name)}
-          on:apply={({ detail: { dimension, oldDimension, expr } }) =>
-            handleMeasureFilterApply(dimension, name, oldDimension, expr)}
-        />
-      </div>
-    {/each}
-  {/if}
-  {#if !readOnly}
-    <FilterButton />
-    <!-- if filters are present, place a chip at the end of the flex container 
-      that enables clearing all filters -->
-    {#if hasFilters}
-      <div class="ml-auto">
-        <Chip
-          bgBaseClass="surface"
-          bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-          textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
-          bgActiveClass="bg-gray-200 dark:bg-gray-600"
-          outlineBaseClass="outline-gray-400"
-          on:click={clearAllFilters}
-        >
-          <span slot="icon" class="ui-copy-disabled-faint">
-            <FilterRemove size="16px" />
-          </span>
-          <svelte:fragment slot="body">Clear filters</svelte:fragment>
-        </Chip>
-      </div>
+        </div>
+      {/each}
     {/if}
-  {/if}
+    {#if !readOnly}
+      <FilterButton />
+      <!-- if filters are present, place a chip at the end of the flex container 
+      that enables clearing all filters -->
+      {#if hasFilters}
+        <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+      {/if}
+    {/if}
+  </div>
 </div>
