@@ -12,6 +12,7 @@ func EnvCmd(ch *cmdutil.Helper) *cobra.Command {
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 	envCmd.AddCommand(ConfigureCmd(ch))
+	envCmd.AddCommand(PullCmd(ch))
 	envCmd.AddCommand(SetCmd(ch))
 	envCmd.AddCommand(RmCmd(ch))
 	envCmd.AddCommand(ShowEnvCmd(ch))

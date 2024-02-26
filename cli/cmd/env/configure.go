@@ -18,7 +18,7 @@ import (
 )
 
 func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, subPath string
+	var projectPath, projectName string
 	var redeploy bool
 
 	configureCommand := &cobra.Command{
@@ -33,14 +33,9 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			fullProjectPath := projectPath
-			if subPath != "" {
-				fullProjectPath = filepath.Join(projectPath, subPath)
-			}
-
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(fullProjectPath) {
-				fullpath, err := filepath.Abs(fullProjectPath)
+			if !rillv1beta.HasRillProject(projectPath) {
+				fullpath, err := filepath.Abs(projectPath)
 				if err != nil {
 					return err
 				}
@@ -59,7 +54,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			if projectName == "" {
 				// no project name provided infer name from githubURL
 				// Verify projectPath is a Git repo with remote on Github
-				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "")
+				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "", true)
 				if err != nil {
 					return err
 				}
@@ -78,7 +73,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, fullProjectPath, nil)
+			variables, err := VariablesFlow(ctx, projectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables: %w", err)
 			}
@@ -129,7 +124,6 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
 	configureCommand.Flags().BoolVar(&redeploy, "redeploy", false, "Redeploy project")
 
