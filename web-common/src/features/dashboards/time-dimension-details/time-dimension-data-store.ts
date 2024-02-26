@@ -44,6 +44,15 @@ export type TimeDimensionDataState = {
 
 export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
 
+function sanitizeMeasure(value: unknown): MeasureValue {
+  if (value === null || value === undefined) return value;
+  if (typeof value === "number") return value;
+
+  console.warn("Invalid type for measure value", value);
+  // fail safely by returning null
+  return null;
+}
+
 function getHeaderDataForRow(
   row: DimensionDataItem,
   isAllTime: boolean,
@@ -151,7 +160,7 @@ function prepareDimensionData(
         : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
     });
   }
-  let rowHeaderData: HeaderData[][] = [totalsRow];
+  let rowHeaderData: HeaderData<string>[][] = [totalsRow];
 
   rowHeaderData = rowHeaderData.concat(
     orderedData?.map((row) => {
@@ -167,7 +176,7 @@ function prepareDimensionData(
   );
 
   let body: TDDCellData[][] = [
-    totalsTableData?.map((v) => formatter(v[measureName] as MeasureValue)) ||
+    totalsTableData?.map((v) => formatter(sanitizeMeasure(v[measureName]))) ||
       [],
   ];
 
@@ -176,7 +185,7 @@ function prepareDimensionData(
       if (v?.isFetching)
         return new Array(columnCount).fill(undefined) as undefined[];
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
-      return dimData?.map((v) => formatter(v[measureName] as MeasureValue));
+      return dimData?.map((v) => formatter(sanitizeMeasure(v[measureName])));
     }),
   );
   /* 
@@ -223,7 +232,7 @@ function prepareTimeData(
 
   const columnCount = columnHeaderData?.length;
 
-  let rowHeaderData: HeaderData[][] = [];
+  let rowHeaderData: HeaderData<string>[][] = [];
   rowHeaderData.push([
     { value: "Total" },
     {
@@ -271,18 +280,20 @@ function prepareTimeData(
           return null;
 
         const total =
-          ((v[measureName] as MeasureValue) || 0) +
-          ((v[`comparison.${measureName}`] as MeasureValue) || 0);
+          (sanitizeMeasure(v[measureName]) || 0) +
+          (sanitizeMeasure(v[`comparison.${measureName}`]) || 0);
         return formatter(total);
       }),
     );
 
     // Push current range
-    body.push(tableData?.map((v) => formatter(v[measureName] as MeasureValue)));
+    body.push(
+      tableData?.map((v) => formatter(sanitizeMeasure(v[measureName]))),
+    );
 
     body.push(
       tableData?.map((v) =>
-        formatter(v[`comparison.${measureName}`] as MeasureValue),
+        formatter(sanitizeMeasure(v[`comparison.${measureName}`])),
       ),
     );
 
@@ -293,7 +304,7 @@ function prepareTimeData(
           | number
           | null
           | undefined;
-        const currentValue = v[measureName] as MeasureValue;
+        const currentValue = sanitizeMeasure(v[measureName]);
         const comparisonPercChange =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? (currentValue - comparisonValue) / comparisonValue
@@ -312,7 +323,7 @@ function prepareTimeData(
           | number
           | null
           | undefined;
-        const currentValue = v[measureName] as MeasureValue;
+        const currentValue = sanitizeMeasure(v[measureName]);
         const change =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? currentValue - comparisonValue
@@ -323,7 +334,9 @@ function prepareTimeData(
       }),
     );
   } else {
-    body.push(tableData?.map((v) => formatter(v[measureName] as MeasureValue)));
+    body.push(
+      tableData?.map((v) => formatter(sanitizeMeasure(v[measureName]))),
+    );
   }
 
   const rowCount = rowHeaderData.length;

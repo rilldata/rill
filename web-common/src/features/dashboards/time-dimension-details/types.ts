@@ -1,5 +1,5 @@
-export interface HeaderData {
-  value: Date | string | null | undefined;
+export interface HeaderData<T> {
+  value: T | null | undefined;
   spark?: string;
 }
 
@@ -8,9 +8,9 @@ export type TDDCellData = string | number | null | undefined;
 export interface TableData {
   rowCount: number;
   fixedColCount: number;
-  rowHeaderData: HeaderData[][];
+  rowHeaderData: HeaderData<string>[][];
   columnCount: number;
-  columnHeaderData: HeaderData[][];
+  columnHeaderData: HeaderData<Date>[][];
   body: TDDCellData[][];
   selectedValues: (string | null)[];
 }
