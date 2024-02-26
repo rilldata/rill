@@ -2,7 +2,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https: 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data: blob:; frame-src data:; frame-ancestors *; object-src 'none'; connect-src https:; require-trusted-types-for 'script'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https: 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data: blob:; frame-src data:; frame-ancestors *; object-src 'none'; connect-src https:;"
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
