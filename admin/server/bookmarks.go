@@ -96,6 +96,10 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		permissions.ReadProd = true
 	}
 
+	if !permissions.ManageProject {
+		req.IsGlobal = false // only users that can manage the project can
+	}
+
 	if !permissions.ReadProject && !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
 	}
@@ -106,6 +110,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		DashboardName: req.DashboardName,
 		ProjectID:     req.ProjectId,
 		UserID:        claims.OwnerID(),
+		IsGlobal:      req.IsGlobal,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -114,6 +119,51 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	return &adminv1.CreateBookmarkResponse{
 		Bookmark: bookmarkToPB(bookmark),
 	}, nil
+}
+
+// UpdateBookmark updates a bookmark for the given user for the given project
+func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmarkRequest) (*adminv1.UpdateBookmarkResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+
+	if !permissions.ManageProject {
+		req.IsGlobal = false // only users that can manage the project can
+	}
+
+	if (!req.IsGlobal || !bookmark.IsGlobal) && bookmark.UserID != claims.OwnerID() {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete the bookmark")
+	}
+
+	err = s.admin.DB.UpdateBookmark(ctx, &database.UpdateBookmarkOptions{
+		BookmarkID:  bookmark.ID,
+		DisplayName: req.DisplayName,
+		Data:        req.Data,
+		IsGlobal:    req.IsGlobal,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.UpdateBookmarkResponse{}, nil
 }
 
 // RemoveBookmark server removes a bookmark for bookmark id
@@ -130,7 +180,17 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if bookmark.UserID != claims.OwnerID() {
+	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+
+	if (!bookmark.IsGlobal && bookmark.UserID != claims.OwnerID()) || !permissions.ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete the bookmark")
 	}
 

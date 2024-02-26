@@ -1971,7 +1971,7 @@ paths:
         - AdminService
   /v1/users/bookmarks:
     get:
-      summary: ListBookmarks lists all the bookmarks for the user
+      summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
       operationId: AdminService_ListBookmarks
       responses:
         "200":
@@ -1987,10 +1987,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: dashboardName
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
     post:
-      summary: CreateBookmark creates a bookmark for the given user for the given project
+      summary: CreateBookmark creates a bookmark for the given user or for all users for the dashboard
       operationId: AdminService_CreateBookmark
       responses:
         "200":
@@ -2007,6 +2011,26 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateBookmarkRequest'
+      tags:
+        - AdminService
+    put:
+      summary: UpdateBookmark updates a bookmark for the given user for the given project
+      operationId: AdminService_UpdateBookmark
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateBookmarkResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UpdateBookmarkRequest'
       tags:
         - AdminService
   /v1/users/bookmarks/{bookmarkId}:
@@ -2030,7 +2054,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: RemoveBookmark removes the bookmark for the given user for the given project
+      summary: RemoveBookmark removes the bookmark for the given user or all users
       operationId: AdminService_RemoveBookmark
       responses:
         "200":
@@ -2236,6 +2260,8 @@ definitions:
         type: string
       projectId:
         type: string
+      isGlobal:
+        type: boolean
   v1CreateBookmarkResponse:
     type: object
     properties:
@@ -2963,6 +2989,20 @@ definitions:
   v1UnsubscribeAlertResponse:
     type: object
   v1UnsubscribeReportResponse:
+    type: object
+  v1UpdateBookmarkRequest:
+    type: object
+    properties:
+      bookmarkId:
+        type: string
+      displayName:
+        type: string
+      data:
+        type: string
+        format: byte
+      isGlobal:
+        type: boolean
+  v1UpdateBookmarkResponse:
     type: object
   v1UpdateOrganizationResponse:
     type: object

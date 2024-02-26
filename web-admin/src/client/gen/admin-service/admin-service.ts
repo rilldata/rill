@@ -127,6 +127,8 @@ import type {
   AdminServiceListBookmarksParams,
   V1CreateBookmarkResponse,
   V1CreateBookmarkRequest,
+  V1UpdateBookmarkResponse,
+  V1UpdateBookmarkRequest,
   V1GetBookmarkResponse,
   V1RemoveBookmarkResponse,
   V1GetCurrentUserResponse,
@@ -4205,7 +4207,7 @@ export const createAdminServiceGetUser = <
 };
 
 /**
- * @summary ListBookmarks lists all the bookmarks for the user
+ * @summary ListBookmarks lists all the bookmarks for the user and global ones for dashboard
  */
 export const adminServiceListBookmarks = (
   params?: AdminServiceListBookmarksParams,
@@ -4265,7 +4267,7 @@ export const createAdminServiceListBookmarks = <
 };
 
 /**
- * @summary CreateBookmark creates a bookmark for the given user for the given project
+ * @summary CreateBookmark creates a bookmark for the given user or for all users for the dashboard
  */
 export const adminServiceCreateBookmark = (
   v1CreateBookmarkRequest: V1CreateBookmarkRequest,
@@ -4310,6 +4312,55 @@ export const createAdminServiceCreateBookmark = <
     Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
     TError,
     { data: V1CreateBookmarkRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary UpdateBookmark updates a bookmark for the given user for the given project
+ */
+export const adminServiceUpdateBookmark = (
+  v1UpdateBookmarkRequest: V1UpdateBookmarkRequest,
+) => {
+  return httpClient<V1UpdateBookmarkResponse>({
+    url: `/v1/users/bookmarks`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: v1UpdateBookmarkRequest,
+  });
+};
+
+export type AdminServiceUpdateBookmarkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateBookmark>>
+>;
+export type AdminServiceUpdateBookmarkMutationBody = V1UpdateBookmarkRequest;
+export type AdminServiceUpdateBookmarkMutationError = RpcStatus;
+
+export const createAdminServiceUpdateBookmark = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+    TError,
+    { data: V1UpdateBookmarkRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+    { data: V1UpdateBookmarkRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceUpdateBookmark(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+    TError,
+    { data: V1UpdateBookmarkRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -4375,7 +4426,7 @@ export const createAdminServiceGetBookmark = <
 };
 
 /**
- * @summary RemoveBookmark removes the bookmark for the given user for the given project
+ * @summary RemoveBookmark removes the bookmark for the given user or all users
  */
 export const adminServiceRemoveBookmark = (bookmarkId: string) => {
   return httpClient<V1RemoveBookmarkResponse>({

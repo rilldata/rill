@@ -1271,13 +1271,21 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, data, dashboard_name, project_id, user_id) 
-		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		opts.DisplayName, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, data, dashboard_name, project_id, user_id, is_global) 
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+		opts.DisplayName, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID, opts.IsGlobal).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
 	return res, nil
+}
+
+func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBookmarkOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, data=$2, is_global=$3 WHERE bookmark_id=$4`, opts.DisplayName, opts.Data, opts.IsGlobal, opts.BookmarkID)
+	return checkUpdateRow("bookmark", res, err)
 }
 
 // DeleteBookmark deletes a bookmark for a given bookmark id

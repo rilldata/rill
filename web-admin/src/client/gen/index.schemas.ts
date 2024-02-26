@@ -10,7 +10,10 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
-export type AdminServiceListBookmarksParams = { projectId?: string };
+export type AdminServiceListBookmarksParams = {
+  projectId?: string;
+  dashboardName?: string;
+};
 
 export type AdminServiceGetUserParams = { email?: string };
 
@@ -264,6 +267,17 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UpdateBookmarkResponse {
+  [key: string]: any;
+}
+
+export interface V1UpdateBookmarkRequest {
+  bookmarkId?: string;
+  displayName?: string;
+  data?: string;
+  isGlobal?: boolean;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -778,6 +792,7 @@ export interface V1CreateBookmarkRequest {
   data?: string;
   dashboardName?: string;
   projectId?: string;
+  isGlobal?: boolean;
 }
 
 export interface V1CreateAlertResponse {
