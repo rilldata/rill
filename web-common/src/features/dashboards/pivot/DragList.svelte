@@ -22,9 +22,12 @@
   const flipDurationMs = 200;
 
   $: valid =
-    type &&
-    $dragging &&
+    Boolean(type) &&
+    Boolean($dragging) &&
     (type === "columns" || $dragging !== PivotChipType.Measure);
+
+  $: dropFromOthersDisabled =
+    Boolean(!type) || (type === "rows" && $dragging === PivotChipType.Measure);
 
   function handleConsider(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
@@ -34,13 +37,33 @@
     items = e.detail.items;
     dispatch("update", items);
   }
+
+  function onMouseUp() {
+    dragging.set(null);
+    window.removeEventListener("mouseup", onMouseUp);
+  }
+
+  function handleMouseDown(
+    e: MouseEvent & {
+      currentTarget: EventTarget & HTMLButtonElement;
+    },
+  ) {
+    const type = e.currentTarget.dataset.type as PivotChipType;
+    console.log(type);
+    dragging.set(type);
+    window.addEventListener("mouseup", onMouseUp);
+  }
 </script>
 
 <div
-  class:valid
   class="flex flex-col gap-y-2 py-2 rounded-sm text-gray-500 w-full max-w-full"
   class:horizontal
-  use:dndzone={{ items, flipDurationMs, dropFromOthersDisabled: !valid }}
+  class:valid
+  use:dndzone={{
+    items,
+    flipDurationMs,
+    dropFromOthersDisabled,
+  }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
@@ -49,18 +72,11 @@
   {/if}
   {#each items as item (item.id)}
     <button
-      on:mousedown={() => {
-        dragging.set(item.type);
-
-        const onMouseUp = () => {
-          dragging.set(null);
-          window.removeEventListener("mouseup", onMouseUp);
-        };
-
-        window.addEventListener("mouseup", onMouseUp);
-      }}
       class="item"
+      title={item.type}
+      data-type={item.type}
       animate:flip={{ duration: flipDurationMs }}
+      on:mousedown={handleMouseDown}
     >
       <PivotChip
         {removable}
