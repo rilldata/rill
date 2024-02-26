@@ -16,6 +16,6 @@ export function memoizeMetricsStore<Store extends Readable<any>>(
         cache.set(name, store);
       }
       return store.subscribe(set);
-    });
+    }) as Store;
   };
 }
