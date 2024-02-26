@@ -1,5 +1,5 @@
 export interface HeaderData {
-  value: string | null | undefined;
+  value: Date | string | null | undefined;
   spark?: string;
 }
 
