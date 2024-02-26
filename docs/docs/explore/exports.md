@@ -27,11 +27,8 @@ Exports are available from:
 Follow these simple steps to schedule an email report:
 
 1. **Navigate to Content:** Expand a dimension table by clicking on the dimension name.
-
 2. **Export Options:** Click on the Export button and select "Create scheduled report..." Filters, comparisons, and sort orders will be preserved for your report.
-
 3. **Configure Report Settings:** Choose a frequency and set a time to receive the output. Choose a report format (csv/excel/parquet) and specify a list of recipients.
-
 4. **Complete and Enjoy:** Click "Done." User-created reports will be delivered directly to your inbox 🎉.
 
 ![export-overview](../../static/img/explore/exports/scheduled.png)
@@ -41,13 +38,9 @@ Follow these simple steps to schedule an email report:
 Reports are managed from your homescreen. To navigate to the report admin page, select the Home button on the top left and the Reports tab from your homepage.
 
 - **Accessing Reports:** When browsing projects, find related assets for each project, including dashboards, reports, and logs.
-
 - **Permissions:** Viewers can see their own reports, while administrators can view both their own and other users' reports.
-
 - **Report Details:** Click into a report to view schedule details, next run information, recipients, and execution history.
-
 - **Deletion:** To delete a report, click the three-dot menu next to the report name and select "Delete Report."
-
 - **Unsubscribe Option:** Recipients have the option to unsubscribe by clicking the provided link within the report delivery email.
 
 
