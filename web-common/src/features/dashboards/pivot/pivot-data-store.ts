@@ -1,15 +1,9 @@
-import {
-  measureFilterResolutionsStore,
-  prepareMeasureFilterResolutions,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { prepareMeasureFilterResolutions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import {
-  timeControlStateSelector,
-  useTimeControlStore,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsViewAggregationResponse,
