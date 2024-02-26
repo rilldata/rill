@@ -73,7 +73,7 @@
   {#each items as item (item.id)}
     <button
       class="item"
-      title={item.type}
+      title={item.title}
       data-type={item.type}
       animate:flip={{ duration: flipDurationMs }}
       on:mousedown={handleMouseDown}
