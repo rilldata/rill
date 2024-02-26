@@ -2,10 +2,10 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data: blob:; frame-ancestors *; object-src 'none'; connect-src https:; require-trusted-types-for 'script'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data: blob:; frame-src *; object-src 'none'; connect-src https:; require-trusted-types-for 'script'"
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
-    Cross-Origin-Embedder-Policy = "unsafe-none"
+    Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
