@@ -155,3 +155,12 @@ export function findValidTimeGrain(
   // If no valid timeGrain is found, return the default timeGrain as fallback
   return timeGrain;
 }
+
+export function mapDurationToGrain(duration: string): V1TimeGrain {
+  for (const g in TIME_GRAIN) {
+    if (TIME_GRAIN[g].duration === duration) {
+      return TIME_GRAIN[g].grain;
+    }
+  }
+  return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+}

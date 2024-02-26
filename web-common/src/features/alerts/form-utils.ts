@@ -2,13 +2,15 @@ import {
   createAndExpression,
   createBinaryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
+  V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
+import * as yup from "yup";
 
-export type AlertFormValue = {
+export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
@@ -21,20 +23,23 @@ export type AlertFormValue = {
   criteriaOperation: V1Operation;
   snooze: string;
   recipients: { email: string }[];
+  // The following fields are not editable in the form, but they're state that's used throughout the form, so
+  // it's helpful to have them here. Also, in the future they may be editable in the form.
+  metricsViewName: string;
+  whereFilter: V1Expression;
+  timeRange: V1TimeRange;
 };
 
-export function getAlertQueryArgs(
-  metricsViewName: string,
-  formValues: AlertFormValue,
-  dashboard: MetricsExplorerEntity,
+export function getAlertQueryArgsFromFormValues(
+  formValues: AlertFormValues,
 ): V1MetricsViewAggregationRequest {
   return {
-    metricsView: metricsViewName,
+    metricsView: formValues.metricsViewName,
     measures: [{ name: formValues.measure }],
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: dashboard.whereFilter,
+    where: formValues.whereFilter,
     having: createAndExpression(
       formValues.criteria.map((c) =>
         createBinaryExpression(
@@ -44,12 +49,38 @@ export function getAlertQueryArgs(
         ),
       ),
     ),
+    ...(formValues.splitByTimeGrain
+      ? {
+          timeRange: {
+            isoDuration: formValues.splitByTimeGrain,
+          },
+        }
+      : {}),
   };
 }
 
+export const alertFormValidationSchema = yup.object({
+  name: yup.string().required("Required"),
+  measure: yup.string().required("Required"),
+  criteria: yup.array().of(
+    yup.object().shape({
+      field: yup.string().required("Required"),
+      operation: yup.string().required("Required"),
+      value: yup.number().required("Required"),
+    }),
+  ),
+  criteriaOperation: yup.string().required("Required"),
+  snooze: yup.string().required("Required"),
+  recipients: yup.array().of(
+    yup.object().shape({
+      email: yup.string().email("Invalid email"),
+    }),
+  ),
+});
+
 export function checkIsTabValid(
   tabIndex: number,
-  formValues: AlertFormValue,
+  formValues: AlertFormValues,
   errors: Record<string, string>,
 ): boolean {
   let hasRequiredFields: boolean;
