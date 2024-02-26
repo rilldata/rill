@@ -10,7 +10,6 @@ import {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewTimeSeriesResponse,
-  V1TimeSeriesValueRecords,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -26,7 +25,7 @@ export interface TimeSeriesDatum {
   bin?: number;
   ts_comparison?: Date;
   ts_position?: Date;
-  [key: string]: string | number | undefined | V1TimeSeriesValueRecords;
+  [key: string]: Date | string | number | undefined;
 }
 
 export type TimeSeriesDataState = {

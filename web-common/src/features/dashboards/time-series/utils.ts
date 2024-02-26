@@ -68,7 +68,7 @@ export function prepareTimeSeries(
       return emptyPt;
     }
     const ts = adjustOffsetForZone(originalPt.ts, zone);
-    if (typeof ts === "string") {
+    if (!ts || typeof ts === "string") {
       return emptyPt;
     }
     const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
