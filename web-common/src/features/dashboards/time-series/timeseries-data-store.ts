@@ -10,7 +10,6 @@ import {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewTimeSeriesResponse,
-  V1TimeSeriesValue,
   V1TimeSeriesValueRecords,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
@@ -22,7 +21,9 @@ import {
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
 
-export interface TimeSeriesDatum extends V1TimeSeriesValue {
+export interface TimeSeriesDatum {
+  ts?: Date;
+  bin?: number;
   ts_comparison?: Date;
   ts_position?: Date;
   [key: string]: string | number | undefined | V1TimeSeriesValueRecords;
@@ -185,20 +186,22 @@ export function createTimeSeriesDataStore(
           comparisonTotal,
           dimensionChart,
         ]) => {
-          let timeSeriesData = (primary?.data?.data || []) as TimeSeriesDatum[];
+          let preparedTimeSeriesData: TimeSeriesDatum[] = [];
 
           if (!primary.isFetching && interval) {
-            timeSeriesData = prepareTimeSeries(
-              primary?.data?.data,
-              comparison?.data?.data,
-              TIME_GRAIN[interval]?.duration,
+            const intervalDuration = TIME_GRAIN[interval]?.duration;
+            preparedTimeSeriesData = prepareTimeSeries(
+              primary?.data?.data || [],
+              comparison?.data?.data || [],
+              intervalDuration,
               dashboardStore.selectedTimezone,
             );
           }
+
           return {
             isFetching: !primary?.data && !primaryTotal?.data,
             isError: false, // FIXME Handle errors
-            timeSeriesData,
+            preparedTimeSeriesData,
             total: primaryTotal?.data?.data?.[0],
             unfilteredTotal: unfilteredTotal?.data?.data?.[0],
             comparisonTotal: comparisonTotal?.data?.data?.[0],

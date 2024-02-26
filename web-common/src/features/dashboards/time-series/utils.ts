@@ -1,15 +1,18 @@
+import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import {
   createAndExpression,
-  matchExpressionByName,
   filterExpressions,
+  matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
-import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
+import type {
+  V1Expression,
+  V1TimeSeriesValue,
+} from "@rilldata/web-common/runtime-client";
 import { removeZoneOffset } from "../../../lib/time/timezone";
+import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -46,15 +49,28 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
 }
 
 export function prepareTimeSeries(
-  original,
-  comparison,
+  original: V1TimeSeriesValue[],
+  comparison: V1TimeSeriesValue[] | undefined,
   timeGrainDuration: string,
   zone: string,
 ) {
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
 
+    const emptyPt = {
+      ts: undefined,
+      ts_position: undefined,
+      bin: undefined,
+      ...originalPt.records,
+    };
+
+    if (!originalPt?.ts) {
+      return emptyPt;
+    }
     const ts = adjustOffsetForZone(originalPt.ts, zone);
+    if (typeof ts === "string") {
+      return emptyPt;
+    }
     const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
     const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     return {

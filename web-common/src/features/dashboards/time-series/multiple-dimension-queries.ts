@@ -20,10 +20,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   V1Expression,
-  V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
@@ -34,7 +34,7 @@ export interface DimensionDataItem {
   total?: number;
   strokeClass: string;
   fillClass: string;
-  data: V1TimeSeriesValue[];
+  data: TimeSeriesDatum[];
   isFetching: boolean;
 }
 
@@ -261,10 +261,10 @@ export function getDimensionValueTimeSeries(
               ),
             ],
             ([value, timeseries]) => {
-              let prepData = timeseries?.data?.data;
-              if (!timeseries?.isFetching) {
+              let prepData: TimeSeriesDatum[] = [];
+              if (!timeseries?.isFetching && interval) {
                 prepData = prepareTimeSeries(
-                  timeseries?.data?.data,
+                  timeseries?.data?.data || [],
                   undefined,
                   TIME_GRAIN[interval]?.duration,
                   zone,

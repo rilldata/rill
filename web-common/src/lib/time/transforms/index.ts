@@ -9,14 +9,16 @@
  * in a configuration file.
  */
 import { PeriodToUnitsMap } from "@rilldata/web-common/lib/time/config";
+import { DateTime, Duration } from "luxon";
 import {
+  Period,
   ReferencePoint,
   RelativePointInTime,
   RelativeTimeTransformation,
+  TimeOffsetType,
   TimeTruncationType,
+  TimeUnit,
 } from "../types";
-import { DateTime, Duration } from "luxon";
-import { Period, TimeOffsetType, TimeUnit } from "../types";
 
 /** Returns the current time */
 export function getPresentTime() {
@@ -140,7 +142,10 @@ export function relativePointInTimeToAbsolute(
 }
 
 /** Returns the ISO Duration as a multiple of given duration  */
-export function getDurationMultiple(duration: string, multiple: number) {
+export function getDurationMultiple(
+  duration: string,
+  multiple: number,
+): string {
   const durationObj = Duration.fromISO(duration);
   const totalDuration = durationObj.as("milliseconds");
   const newDuration = totalDuration * multiple;
