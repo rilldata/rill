@@ -66,7 +66,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	addCmd.Flags().StringVar(&email, "email", "", "Email of the user")
-	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user [%v]", strings.Join(userRoles, ", ")))
+	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(userRoles, ", ")))
 
 	return addCmd
 }

@@ -272,9 +272,9 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
-		ch.PrintfSuccess("Created org %q. Run `rill org edit` to change name if required.\n", ch.Org)
+		ch.PrintfSuccess("Created org %q. Run `rill org edit` to change name if required.\n\n", ch.Org)
 	} else {
-		ch.PrintfBold("Using org %q.\n", ch.Org)
+		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
 	// Check if a project matching githubURL already exists in this org
@@ -288,7 +288,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			}
 		}
 
-		ch.PrintfWarn(fmt.Sprintf("Another project %q already deploys from %q.\n", projects[0], githubURL))
+		ch.PrintfWarn("Another project %q already deploys from %q.\n", projects[0], githubURL)
 		ch.PrintfBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
 		ch.PrintfBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
 		ch.PrintfBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")

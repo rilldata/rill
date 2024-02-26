@@ -1,8 +1,6 @@
 package whitelist
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -44,7 +42,7 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	setupCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
-	setupCmd.Flags().StringVar(&role, "role", "viewer", fmt.Sprintf("Role of the user [%v]", "admin, viewer"))
+	setupCmd.Flags().StringVar(&role, "role", "viewer", "Role of the user")
 
 	return setupCmd
 }

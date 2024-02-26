@@ -56,7 +56,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	setRoleCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	setRoleCmd.Flags().StringVar(&email, "email", "", "Email of the user")
-	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user [%v]", strings.Join(userRoles, ", ")))
+	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(userRoles, ", ")))
 
 	return setRoleCmd
 }
