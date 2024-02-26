@@ -6,6 +6,6 @@
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
-    Cross-Origin-Resource-Policy = "cross-origin"
+    Cross-Origin-Embedder-Policy = "unsafe-none"
     Cross-Origin-Opener-Policy = "unsafe-none"
-
+    Cross-Origin-Resource-Policy = "cross-origin"
