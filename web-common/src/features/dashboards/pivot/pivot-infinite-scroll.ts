@@ -11,7 +11,7 @@ import {
   sortAcessors,
 } from "./pivot-utils";
 
-const NUM_COLUMNS_PER_PAGE = 40;
+const NUM_COLUMNS_PER_PAGE = 50;
 
 function getSortedColumnKeys(
   config: PivotDataStoreConfig,

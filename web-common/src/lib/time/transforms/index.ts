@@ -28,7 +28,7 @@ export function getStartOfPeriod(
   referenceTime: Date,
   period: Period,
   zone = "UTC",
-) {
+): Date {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.startOf(TimeUnit[period]).toJSDate();
 }
@@ -38,7 +38,7 @@ export function getEndOfPeriod(
   referenceTime: Date,
   period: Period,
   zone = "UTC",
-) {
+): Date {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.endOf(TimeUnit[period]).toJSDate();
 }
@@ -49,7 +49,7 @@ export function getOffset(
   duration: string,
   direction: TimeOffsetType,
   zone = "UTC",
-) {
+): Date {
   const durationObj = Duration.fromISO(duration);
   return DateTime.fromJSDate(referenceTime, { zone })
     [direction === TimeOffsetType.ADD ? "plus" : "minus"](durationObj)
@@ -79,6 +79,7 @@ export function transformDate(
         absoluteTime,
         transformation.duration,
         transformation.operationType,
+        zone,
       );
     } else if (
       transformation.truncationType === TimeTruncationType.START_OF_PERIOD

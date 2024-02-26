@@ -1,8 +1,6 @@
 package project
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -10,27 +8,25 @@ import (
 
 func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name string
-	cfg := ch.Config
 
 	jwtCmd := &cobra.Command{
 		Use:    "jwt [<project-name>]",
 		Args:   cobra.MaximumNArgs(1),
 		Short:  "Generate the token for connecting directly to the deployment",
-		Hidden: !cfg.IsDev(),
+		Hidden: !ch.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				names, err := projectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
@@ -39,22 +35,22 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select project", names, "")
 			}
 
-			res, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
+				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {
 				return err
 			}
 			if res.ProdDeployment == nil {
-				ch.Printer.PrintlnWarn("Project does not have a production deployment")
+				ch.PrintfWarn("Project does not have a production deployment\n")
 				return nil
 			}
 
-			ch.Printer.PrintlnSuccess("Runtime info")
-			ch.Printer.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
-			ch.Printer.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
-			ch.Printer.Printf("  JWT: %s\n", res.Jwt)
+			ch.Printf("Runtime info\n")
+			ch.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
+			ch.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
+			ch.Printf("  JWT: %s\n", res.Jwt)
 
 			return nil
 		},

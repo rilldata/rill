@@ -65,7 +65,7 @@ jobs:
         run: npm install
 
       - name: Build and embed static UI
-        run: make cli
+        run: PLAYWRIGHT_TEST=true make cli
 
       - name: Install browser for UI tests
         run: npx playwright install

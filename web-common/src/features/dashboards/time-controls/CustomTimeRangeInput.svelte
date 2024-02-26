@@ -22,7 +22,7 @@
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
-  export let defaultDate: DashboardTimeControls;
+  export let defaultDate: DashboardTimeControls | undefined;
   export let zone: string;
 
   const dispatch = createEventDispatcher();

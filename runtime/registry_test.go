@@ -382,7 +382,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 	tests := []struct {
 		name       string
 		instanceID string
-		dropDB     bool
+		dropOLAP   bool
 		wantErr    bool
 	}{
 		{"delete valid no drop", "default", false, false},
@@ -426,7 +426,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.NoError(t, olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
 
 			// delete instance
-			err = rt.DeleteInstance(ctx, tt.instanceID, tt.dropDB)
+			err = rt.DeleteInstance(ctx, tt.instanceID, &tt.dropOLAP)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Runtime.DeleteInstance() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -447,7 +447,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 
 			// verify db file is dropped if requested
 			_, err = os.Stat(dbFile)
-			require.Equal(t, tt.dropDB, os.IsNotExist(err))
+			require.Equal(t, tt.dropOLAP, os.IsNotExist(err))
 		})
 	}
 }
@@ -502,8 +502,8 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.Error(t, err)
 	require.FileExists(t, dbpath)
 
-	// Delete instance and check it still drops the .db file
-	err = rt.DeleteInstance(ctx, inst.ID, true)
+	// Delete instance and check it still drops the .db file for DuckDB
+	err = rt.DeleteInstance(ctx, inst.ID, nil)
 	require.NoError(t, err)
 	require.NoFileExists(t, dbpath)
 }

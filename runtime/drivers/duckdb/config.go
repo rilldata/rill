@@ -19,6 +19,9 @@ const (
 type config struct {
 	// DSN is the connection string
 	DSN string `mapstructure:"dsn"`
+	// Path is a path to the database file. If set, it will take precedence over the path contained in DSN.
+	// This is a convenience option for setting the path in a more human-readable way.
+	Path string `mapstructure:"path"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
@@ -60,6 +63,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	qry, err := url.ParseQuery(uri.RawQuery)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse dsn: %w", err)
+	}
+
+	// Override DSN.Path with config.Path
+	if cfg.Path != "" {
+		uri.Path = cfg.Path
 	}
 
 	// Infer DBFilePath

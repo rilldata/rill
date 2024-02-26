@@ -87,7 +87,12 @@ export function getChildTimeRanges(
         minTimeGrain,
         allowedMaxGrain.grain,
       );
-      if (isGrainPossible && hasSomeGrainMatches) {
+
+      const isRangeValid =
+        isWithinRange(timeRangeDates.startDate, start, end) ||
+        isWithinRange(timeRangeDates.endDate, start, end);
+
+      if (isRangeValid && isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
           name: timePreset as TimeRangePreset,
           label: timeRange.label,
@@ -369,11 +374,11 @@ export function getAdjustedChartTime(
   start: Date | undefined,
   end: Date | undefined,
   zone: string,
-  interval: V1TimeGrain,
-  timePreset: TimeRangePreset,
-  defaultTimeRange: string,
+  interval: V1TimeGrain | undefined,
+  timePreset: TimeRangePreset | TimeComparisonOption | undefined,
+  defaultTimeRange: string | undefined,
 ) {
-  if (!start || !end)
+  if (!start || !end || !interval)
     return {
       start,
       end,
@@ -382,20 +387,25 @@ export function getAdjustedChartTime(
   const grainDuration = TIME_GRAIN[interval].duration;
   const offsetDuration = getDurationMultiple(grainDuration, 0.45);
 
+  let adjustedStart = new Date(start);
   let adjustedEnd = new Date(end);
 
   if (timePreset === TimeRangePreset.ALL_TIME) {
     // No offset has been applied to All time range so far
     // Adjust end according to the interval
-    start = getStartOfPeriod(start, grainDuration, zone);
-    start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
+    adjustedStart = getStartOfPeriod(adjustedStart, grainDuration, zone);
+    adjustedStart = getOffset(
+      adjustedStart,
+      offsetDuration,
+      TimeOffsetType.ADD,
+    );
     adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
   } else if (timePreset && timePreset === TimeRangePreset.DEFAULT) {
     // For default presets the iso range can be mixed. There the offset added will be the smallest unit in the range.
     // But for the graph we need the offset based on selected grain.
     const smallestTimeGrain = getSmallestTimeGrain(defaultTimeRange);
     // Only add this if the selected grain is greater than the smallest unit in the iso range
-    if (isGrainBigger(interval, smallestTimeGrain)) {
+    if (smallestTimeGrain && isGrainBigger(interval, smallestTimeGrain)) {
       adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
     }
   } else {
@@ -415,7 +425,11 @@ export function getAdjustedChartTime(
      * To get the correct values, we need to remove the local time zone offset
      * and add the offset of the selected time zone.
      */
-    start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
+    start: addZoneOffset(removeLocalTimezoneOffset(adjustedStart), zone),
     end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
   };
+}
+
+function isWithinRange(time: Date, start: Date, end: Date) {
+  return time.getTime() >= start.getTime() && time.getTime() <= end.getTime();
 }
