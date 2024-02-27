@@ -619,6 +619,11 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
    */
   name = "";
 
+  /**
+   * @generated from field: uint32 access_token_ttl_seconds = 3;
+   */
+  accessTokenTtlSeconds = 0;
+
   constructor(data?: PartialMessage<GetProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -629,6 +634,7 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectRequest {

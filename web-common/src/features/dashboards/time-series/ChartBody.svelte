@@ -1,26 +1,26 @@
 <script lang="ts">
   import {
+    ChunkedLine,
+    ClippedChunkedLine,
+  } from "@rilldata/web-common/components/data-graphic/marks";
+  import {
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
     TimeComparisonLineColor,
-    AreaMutedColorGradientDark,
-    AreaMutedColorGradientLight,
-    LineMutedColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import { writable } from "svelte/store";
-  import {
-    ChunkedLine,
-    ClippedChunkedLine,
-  } from "@rilldata/web-common/components/data-graphic/marks";
-  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
+  import { writable } from "svelte/store";
 
   export let xMin: Date | undefined = undefined;
   export let xMax: Date | undefined = undefined;
   export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
-  export let dimensionValue: string | undefined;
+  export let dimensionValue: string | undefined | null;
   export let isHovering: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];

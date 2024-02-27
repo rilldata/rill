@@ -32,7 +32,6 @@ const contextColumnToSortType = {
 };
 
 export const toggleSortByActiveContextColumn = (args: DashboardMutables) => {
-  args.cancelQueries();
   const contextColumnSortType =
     contextColumnToSortType[args.dashboard.leaderboardContextColumn];
   toggleSort(args, contextColumnSortType);

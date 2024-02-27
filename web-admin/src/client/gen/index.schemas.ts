@@ -86,6 +86,8 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
 };
 
+export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
+
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 
 export type AdminServiceCreateProjectBody = {

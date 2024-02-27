@@ -9,11 +9,16 @@
   export let project: string;
 
   let projectPermissions: CreateQueryResult<V1ProjectPermissions>;
-  $: projectPermissions = createAdminServiceGetProject(organization, project, {
-    query: {
-      select: (data) => data.projectPermissions,
+  $: projectPermissions = createAdminServiceGetProject(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        select: (data) => data.projectPermissions,
+      },
     },
-  });
+  );
 </script>
 
 {#if $projectPermissions?.data}
