@@ -47,10 +47,10 @@ export function getFileAPIPathFromNameAndType(
       return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
       return `dashboards/${name}.yaml`;
+    case EntityType.Chart:
+      return `charts/${name}.yaml`;
     default:
-      throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
-      );
+      throw new Error("Unrecognized EntityType");
   }
 }
 

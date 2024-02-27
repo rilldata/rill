@@ -17,6 +17,7 @@ export enum ResourceKind {
   Report = "rill.runtime.v1.Report",
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
+  Chart = "rill.runtime.v1.Chart",
 }
 export const SingletonProjectParserName = "parser";
 
