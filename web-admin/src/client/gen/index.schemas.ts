@@ -86,6 +86,8 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
 };
 
+export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
+
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 
 export type AdminServiceCreateProjectBody = {
@@ -278,7 +280,8 @@ export interface V1UpdateBookmarkRequest {
   displayName?: string;
   description?: string;
   data?: string;
-  isGlobal?: boolean;
+  default?: boolean;
+  shared?: boolean;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -794,7 +797,8 @@ export interface V1CreateBookmarkRequest {
   data?: string;
   dashboardName?: string;
   projectId?: string;
-  isGlobal?: boolean;
+  default?: boolean;
+  shared?: boolean;
 }
 
 export interface V1CreateAlertResponse {
@@ -822,7 +826,8 @@ export interface V1Bookmark {
   dashboardName?: string;
   projectId?: string;
   userId?: string;
-  isGlobal?: boolean;
+  default?: boolean;
+  shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }

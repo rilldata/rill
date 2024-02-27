@@ -1271,9 +1271,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, dashboard_name, project_id, user_id, is_global) 
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, dashboard_name, project_id, user_id, default, shared) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.DisplayName, opts.Description, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID, opts.IsGlobal).StructScan(res)
+		opts.DisplayName, opts.Description, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -1284,8 +1284,8 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, is_global=$4 WHERE id=$5`,
-		opts.DisplayName, opts.Description, opts.Data, opts.IsGlobal, opts.BookmarkID)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3 WHERE id=$5`,
+		opts.DisplayName, opts.Description, opts.Data, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }
 

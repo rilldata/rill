@@ -77,6 +77,7 @@ import type {
   V1CreateProjectResponse,
   AdminServiceCreateProjectBody,
   V1GetProjectResponse,
+  AdminServiceGetProjectParams,
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   AdminServiceUpdateProjectBody,
@@ -2598,11 +2599,13 @@ export const createAdminServiceCreateProject = <
 export const adminServiceGetProject = (
   organizationName: string,
   name: string,
+  params?: AdminServiceGetProjectParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetProjectResponse>({
     url: `/v1/organizations/${organizationName}/projects/${name}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -2610,7 +2613,11 @@ export const adminServiceGetProject = (
 export const getAdminServiceGetProjectQueryKey = (
   organizationName: string,
   name: string,
-) => [`/v1/organizations/${organizationName}/projects/${name}`];
+  params?: AdminServiceGetProjectParams,
+) => [
+  `/v1/organizations/${organizationName}/projects/${name}`,
+  ...(params ? [params] : []),
+];
 
 export type AdminServiceGetProjectQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetProject>>
@@ -2623,6 +2630,7 @@ export const createAdminServiceGetProject = <
 >(
   organizationName: string,
   name: string,
+  params?: AdminServiceGetProjectParams,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof adminServiceGetProject>>,
@@ -2635,11 +2643,12 @@ export const createAdminServiceGetProject = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetProjectQueryKey(organizationName, name);
+    getAdminServiceGetProjectQueryKey(organizationName, name, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetProject>>
-  > = ({ signal }) => adminServiceGetProject(organizationName, name, signal);
+  > = ({ signal }) =>
+    adminServiceGetProject(organizationName, name, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetProject>>,

@@ -1793,6 +1793,8 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for AccessTokenTtlSeconds
+
 	if len(errors) > 0 {
 		return GetProjectRequestMultiError(errors)
 	}
@@ -12347,7 +12349,9 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for IsGlobal
+	// no validation rules for Default
+
+	// no validation rules for Shared
 
 	if len(errors) > 0 {
 		return CreateBookmarkRequestMultiError(errors)
@@ -12590,7 +12594,9 @@ func (m *UpdateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for Data
 
-	// no validation rules for IsGlobal
+	// no validation rules for Default
+
+	// no validation rules for Shared
 
 	if len(errors) > 0 {
 		return UpdateBookmarkRequestMultiError(errors)
@@ -21381,7 +21387,9 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for UserId
 
-	// no validation rules for IsGlobal
+	// no validation rules for Default
+
+	// no validation rules for Shared
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

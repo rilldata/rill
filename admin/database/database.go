@@ -655,7 +655,8 @@ type Bookmark struct {
 	DashboardName string    `db:"dashboard_name"`
 	ProjectID     string    `db:"project_id"`
 	UserID        string    `db:"user_id"`
-	IsGlobal      bool      `db:"is_global"`
+	Default       bool      `db:"default"`
+	Shared        bool      `db:"shared"`
 	CreatedOn     time.Time `db:"created_on"`
 	UpdatedOn     time.Time `db:"updated_on"`
 }
@@ -668,7 +669,8 @@ type InsertBookmarkOptions struct {
 	Description   string `json:"description"`
 	ProjectID     string `json:"project_id"`
 	UserID        string `json:"user_id"`
-	IsGlobal      bool   `json:"is_global"`
+	Default       bool   `json:"default"`
+	Shared        bool   `json:"shared"`
 }
 
 // UpdateBookmarkOptions defines options for updating an existing bookmark
@@ -677,7 +679,6 @@ type UpdateBookmarkOptions struct {
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	Data        []byte `json:"data"`
-	IsGlobal    bool   `json:"is_global"`
 }
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)
