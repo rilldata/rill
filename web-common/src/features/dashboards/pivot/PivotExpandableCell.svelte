@@ -22,7 +22,16 @@
       </div>
     </button>
   {/if}
-  {value === "LOADING_CELL" ? "" : value}
+
+  <span class="truncate">
+    {#if value === "LOADING_CELL"}
+      {""}
+    {:else if value === ""}
+      {"\u00A0"}
+    {:else}
+      {value}
+    {/if}
+  </span>
 </div>
 
 <style lang="postcss">

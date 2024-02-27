@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -55,6 +56,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		issuer,
 		emailClient,
 		github,
+		ai.NewNoop(),
 	)
 	require.NoError(t, err)
 

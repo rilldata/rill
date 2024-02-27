@@ -225,6 +225,11 @@ export class Instance extends Message<Instance> {
   adminConnector = "";
 
   /**
+   * @generated from field: string ai_connector = 21;
+   */
+  aiConnector = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 11;
    */
   createdOn?: Timestamp;
@@ -297,6 +302,7 @@ export class Instance extends Message<Instance> {
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "created_on", kind: "message", T: Timestamp },
     { no: 12, name: "updated_on", kind: "message", T: Timestamp },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
@@ -584,6 +590,11 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   adminConnector = "";
 
   /**
+   * @generated from field: string ai_connector = 17;
+   */
+  aiConnector = "";
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
    */
   connectors: Connector[] = [];
@@ -636,6 +647,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -714,9 +726,9 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: bool drop_db = 2;
+   * @generated from field: optional bool drop_olap = 2;
    */
-  dropDb = false;
+  dropOlap?: boolean;
 
   constructor(data?: PartialMessage<DeleteInstanceRequest>) {
     super();
@@ -727,7 +739,7 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.DeleteInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "drop_db", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "drop_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteInstanceRequest {
@@ -813,6 +825,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   adminConnector?: string;
 
   /**
+   * @generated from field: optional string ai_connector = 18;
+   */
+  aiConnector?: string;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Connector connectors = 9;
    */
   connectors: Connector[] = [];
@@ -865,6 +882,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 16, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -1754,6 +1772,108 @@ export class UnpackEmptyResponse extends Message<UnpackEmptyResponse> {
 
   static equals(a: UnpackEmptyResponse | PlainMessage<UnpackEmptyResponse> | undefined, b: UnpackEmptyResponse | PlainMessage<UnpackEmptyResponse> | undefined): boolean {
     return proto3.util.equals(UnpackEmptyResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GenerateMetricsViewFile
+ *
+ * @generated from message rill.runtime.v1.GenerateMetricsViewFileRequest
+ */
+export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string table = 3;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string path = 4;
+   */
+  path = "";
+
+  /**
+   * @generated from field: bool use_ai = 5;
+   */
+  useAi = false;
+
+  constructor(data?: PartialMessage<GenerateMetricsViewFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateMetricsViewFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileRequest {
+    return new GenerateMetricsViewFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateMetricsViewFileRequest {
+    return new GenerateMetricsViewFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateMetricsViewFileRequest {
+    return new GenerateMetricsViewFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateMetricsViewFileRequest | PlainMessage<GenerateMetricsViewFileRequest> | undefined, b: GenerateMetricsViewFileRequest | PlainMessage<GenerateMetricsViewFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateMetricsViewFileRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateMetricsViewFile
+ *
+ * @generated from message rill.runtime.v1.GenerateMetricsViewFileResponse
+ */
+export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsViewFileResponse> {
+  /**
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
+  constructor(data?: PartialMessage<GenerateMetricsViewFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateMetricsViewFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileResponse {
+    return new GenerateMetricsViewFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateMetricsViewFileResponse {
+    return new GenerateMetricsViewFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateMetricsViewFileResponse {
+    return new GenerateMetricsViewFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateMetricsViewFileResponse | PlainMessage<GenerateMetricsViewFileResponse> | undefined, b: GenerateMetricsViewFileResponse | PlainMessage<GenerateMetricsViewFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateMetricsViewFileResponse, a, b);
   }
 }
 

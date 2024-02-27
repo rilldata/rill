@@ -21,6 +21,12 @@ import type {
   PivotTimeConfig,
 } from "./types";
 
+function sanitizeHeaderValue(value: unknown): string {
+  if (value === "") return "\u00A0";
+  if (typeof value === "string") return value;
+  return String(value);
+}
+
 /***
  * Create nested and grouped column definitions for pivot table
  */
@@ -29,15 +35,19 @@ function createColumnDefinitionForDimensions(
   colDimensions: { label: string; name: string }[],
   headers: Record<string, string[]>,
   leafData: ColumnDef<PivotDataRow>[],
+  totals: PivotDataRow,
 ): ColumnDef<PivotDataRow>[] {
   const dimensionNames = config.colDimensionNames;
   const timeConfig = config.time;
+
+  const filterColumns = Boolean(dimensionNames.length);
 
   const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
     createIndexMap(headers[colDimension]),
   );
 
   const levels = dimensionNames.length;
+
   // Recursive function to create nested columns
   function createNestedColumns(
     level: number,
@@ -53,37 +63,51 @@ function createColumnDefinitionForDimensions(
       );
 
       // Base case: return leaf columns
-      return leafData.map((leaf, i) => ({
+      const leafNodes = leafData.map((leaf, i) => ({
         ...leaf,
         // Change accessor key to match the nested column structure
         accessorKey: accessors[i],
       }));
+
+      if (!filterColumns) {
+        return leafNodes;
+      }
+      return leafNodes.filter((leaf) =>
+        Object.keys(totals).includes(leaf.accessorKey),
+      );
     }
 
     // Recursive case: create nested headers
     const headerValues = headers[dimensionNames?.[level]];
-    return headerValues?.map((value) => {
-      let displayValue = value;
-      if (isTimeDimension(dimensionNames?.[level], timeConfig?.timeDimension)) {
-        const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
-        const dt = addZoneOffset(
-          removeLocalTimezoneOffset(new Date(value)),
-          timeConfig?.timeZone,
-        );
-        const timeFormatter = timeFormat(
-          timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
-        ) as (d: Date) => string;
+    return headerValues
+      ?.map((value) => {
+        let displayValue = value;
+        if (
+          isTimeDimension(dimensionNames?.[level], timeConfig?.timeDimension)
+        ) {
+          const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
+          const dt = addZoneOffset(
+            removeLocalTimezoneOffset(new Date(value)),
+            timeConfig?.timeZone,
+          );
+          const timeFormatter = timeFormat(
+            timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
+          ) as (d: Date) => string;
 
-        displayValue = timeFormatter(dt);
-      } else if (displayValue === null) displayValue = "null";
-      return {
-        header: displayValue,
-        columns: createNestedColumns(level + 1, {
+          displayValue = timeFormatter(dt);
+        }
+
+        const nestedColumns = createNestedColumns(level + 1, {
           ...colValuePair,
           [dimensionNames[level]]: value,
-        }),
-      };
-    });
+        });
+
+        return {
+          header: sanitizeHeaderValue(displayValue),
+          columns: nestedColumns,
+        };
+      })
+      .filter((column) => column.columns.length > 0);
   }
 
   // Construct column def for Row Totals
@@ -93,7 +117,7 @@ function createColumnDefinitionForDimensions(
       const { label, name } = dimension;
 
       const headColumn = {
-        header: label || name,
+        header: sanitizeHeaderValue(label || name),
         columns: acc,
       };
 
@@ -141,6 +165,7 @@ function formatRowDimensionValue(
 export function getColumnDefForPivot(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> | undefined,
+  totals: PivotDataRow,
 ) {
   const IsNested = true;
 
@@ -232,6 +257,7 @@ export function getColumnDefForPivot(
     colDimensions,
     columnDimensionAxes || {},
     leafColumns,
+    totals,
   );
 
   return [...rowDefinitions, ...groupedColDef];

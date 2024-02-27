@@ -16,13 +16,11 @@ func gitCloneCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Create git clone token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res, err := client.GetGitCredentials(ctx, &adminv1.GetGitCredentialsRequest{
 				Organization: args[0],

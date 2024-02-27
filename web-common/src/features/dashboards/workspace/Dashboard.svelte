@@ -28,6 +28,8 @@
   export let metricViewName: string;
   export let leftMargin = undefined;
 
+  const { cloudDataViewer } = featureFlags;
+
   let exploreContainerWidth;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
@@ -68,8 +70,6 @@
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
-
-  const FILTERS_MIN_CONTAINER_HEIGHT = "34px";
 </script>
 
 <section
@@ -99,18 +99,15 @@
     {:else}
       <div class="-ml-3 px-1 pt-2 space-y-2">
         <TimeControls {metricViewName} />
-        <div class="flex justify-between">
-          {#key metricViewName}
-            <section
-              class="pl-2 grid gap-x-2 items-start"
-              style:grid-template-columns="max-content auto"
-              style:min-height={FILTERS_MIN_CONTAINER_HEIGHT}
-            >
-              <Filters />
-            </section>
-            <TabBar />
-          {/key}
-        </div>
+
+        {#key metricViewName}
+          <section class="flex justify-between gap-x-4">
+            <Filters />
+            <div class="flex flex-col justify-end">
+              <TabBar />
+            </div>
+          </section>
+        {/key}
       </div>
     {/if}
   </div>
@@ -159,7 +156,7 @@
       {/if}
     </div>
 
-    {#if isRillDeveloper && !expandedMeasureName && !showPivot}
+    {#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !showPivot}
       <RowsViewerAccordion {metricViewName} />
     {/if}
   {/if}

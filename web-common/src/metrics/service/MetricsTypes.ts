@@ -29,6 +29,7 @@ export enum MetricsEventSpace {
 }
 
 export enum MetricsEventScreenName {
+  Table = "table",
   Source = "source",
   Model = "model",
   Dashboard = "dashboard",

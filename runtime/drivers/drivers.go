@@ -119,6 +119,10 @@ type Handle interface {
 	// An admin store enables an instance to request contextual information from the admin service that deployed it.
 	AsAdmin(instanceID string) (AdminService, bool)
 
+	// AsAI returns an AIService if the driver can serve as such, otherwise returns false.
+	// An AI service enables an instance to request prompt-based text inference.
+	AsAI(instanceID string) (AIService, bool)
+
 	// AsOLAP returns an OLAP if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.
 	AsOLAP(instanceID string) (OLAPStore, bool)

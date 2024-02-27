@@ -101,7 +101,7 @@
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     class:big-number={!isMeasureExpanded}
-    class="big-number m-0.5 rounded flex items-start {isMeasureExpanded
+    class="group big-number m-0.5 rounded flex items-start {isMeasureExpanded
       ? 'cursor-default'
       : 'cursor-pointer'}"
     on:click={(e) => {
@@ -116,7 +116,7 @@
     >
       <h2
         style:overflow-wrap="anywhere"
-        class="line-clamp-2 ui-copy-primary font-semibold"
+        class="line-clamp-2 ui-header-primary font-semibold"
         style:font-size={withTimeseries ? "" : "0.8rem"}
       >
         {name}

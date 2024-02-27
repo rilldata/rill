@@ -8,7 +8,12 @@
   $: runtime.set({
     host: host,
     instanceId: instanceId,
-    jwt: jwt,
+    jwt: jwt
+      ? {
+          token: jwt,
+          receivedAt: Date.now(),
+        }
+      : undefined,
   });
 </script>
 

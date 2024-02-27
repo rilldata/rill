@@ -79,6 +79,10 @@ _**`available_time_ranges`**_ — Override the list of default time range select
     - rill-WTD // Week-To-date
     ```
 
+_**`default_dimensions`**_ - A list of dimensions that should be visible by default.
+
+_**`default_measures`**_ - A list of measures that should be visible by default.
+
 _**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
   - _**`row_filter`**_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_

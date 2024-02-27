@@ -11,36 +11,34 @@ import (
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var source []string
-	cfg := ch.Config
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
 		Short:             "Refresh the project's data sources",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				project = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				var err error
-				project, err = inferProjectName(ctx, client, cfg.Org, path)
+				project, err = ch.InferProjectName(ctx, ch.Org, path)
 				if err != nil {
 					return err
 				}
 			}
 
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             project,
 			})
 			if err != nil {

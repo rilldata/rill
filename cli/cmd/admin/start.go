@@ -12,6 +12,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -69,6 +70,7 @@ type Config struct {
 	EmailSenderEmail         string                 `split_words:"true"`
 	EmailSenderName          string                 `split_words:"true"`
 	EmailBCC                 string                 `split_words:"true"`
+	OpenAIAPIKey             string                 `envconfig:"openai_api_key"`
 	ActivitySinkType         string                 `default:"" split_words:"true"`
 	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
 	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
@@ -83,8 +85,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Start admin service",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			cliCfg := ch.Config
-			printer := ch.Printer
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -92,7 +92,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			var conf Config
 			err := envconfig.Process("rill_admin", &conf)
 			if err != nil {
-				printer.Printf("failed to load config: %s\n", err.Error())
+				fmt.Printf("failed to load config: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -101,7 +101,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			cfg.Level.SetLevel(conf.LogLevel)
 			logger, err := cfg.Build()
 			if err != nil {
-				printer.Printf("error: failed to create logger: %s\n", err.Error())
+				fmt.Printf("error: failed to create logger: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -118,12 +118,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
-				printer.Printf("error: invalid frontend URL: %s\n", err.Error())
+				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
-				printer.Printf("error: invalid external URL: %s\n", err.Error())
+				fmt.Printf("error: invalid external URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 			_, err = url.Parse(conf.ExternalGRPCURL)
@@ -137,7 +137,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "admin-server",
-				ServiceVersion:  cliCfg.Version.String(),
+				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
 				logger.Fatal("error starting telemetry", zap.Error(err))
@@ -184,6 +184,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating github client", zap.Error(err))
 			}
 
+			// Init AI client
+			var aiClient ai.Client
+			if conf.OpenAIAPIKey != "" {
+				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey)
+				if err != nil {
+					logger.Fatal("error creating OpenAI client", zap.Error(err))
+				}
+			} else {
+				aiClient = ai.NewNoop()
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:  conf.DatabaseDriver,
@@ -191,7 +202,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProvisionerSpec: conf.ProvisionerSpec,
 				ExternalURL:     conf.ExternalGRPCURL, // NOTE: using gRPC url
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -225,7 +236,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivityUISinkKafkaTopic,
 				logger,
 				"admin-server",
-				cliCfg.Version.String(),
+				ch.Version.String(),
 			)
 
 			// Init and run server

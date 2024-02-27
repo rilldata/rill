@@ -7,7 +7,6 @@ import (
 )
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
 	var pageSize uint32
 	var pageToken string
 
@@ -17,11 +16,10 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "List users",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			orgName := args[0]
 			projectName := ""
@@ -40,10 +38,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				err = cmdutil.PrintMembers(ch.Printer, members.Members)
-				if err != nil {
-					return err
-				}
+				ch.PrintMembers(members.Members)
 
 				if members.NextPageToken != "" {
 					cmd.Println()
@@ -59,10 +54,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				err = cmdutil.PrintMembers(ch.Printer, members.Members)
-				if err != nil {
-					return err
-				}
+				ch.PrintMembers(members.Members)
 
 				if members.NextPageToken != "" {
 					cmd.Println()
