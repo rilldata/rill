@@ -26,7 +26,7 @@
 </script>
 
 <DropdownMenuContent class="w-[450px]">
-  <DropdownMenuItem on:click={() => dispatch("new-bookmark")}>
+  <DropdownMenuItem on:click={() => dispatch("create")}>
     <div class="flex flex-row items-center">
       <BookmarkPlusIcon size="16px" />
       <div>Bookmark current view</div>
@@ -45,7 +45,7 @@
         Your bookmarks
       </DropdownMenuLabel>
       {#each $bookmarks.data.own as bookmark}
-        <DropdownMenuItem><BookmarkItem {bookmark} /></DropdownMenuItem>
+        <DropdownMenuItem><BookmarkItem {bookmark} on:edit /></DropdownMenuItem>
       {/each}
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
@@ -55,11 +55,11 @@
       </DropdownMenuLabel>
       {#if $bookmarks.data.home}
         <DropdownMenuItem>
-          <BookmarkItem bookmark={$bookmarks.data.home} />
+          <BookmarkItem bookmark={$bookmarks.data.home} on:edit />
         </DropdownMenuItem>
       {/if}
       {#each $bookmarks.data.global as bookmark}
-        <DropdownMenuItem><BookmarkItem {bookmark} /></DropdownMenuItem>
+        <DropdownMenuItem><BookmarkItem {bookmark} on:edit /></DropdownMenuItem>
       {/each}
     </DropdownMenuGroup>
   {/if}

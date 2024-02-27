@@ -1284,7 +1284,7 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, is_global=$4 WHERE bookmark_id=$5`,
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, is_global=$4 WHERE id=$5`,
 		opts.DisplayName, opts.Description, opts.Data, opts.IsGlobal, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }

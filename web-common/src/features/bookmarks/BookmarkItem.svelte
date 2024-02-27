@@ -4,9 +4,11 @@
     type V1Bookmark,
   } from "@rilldata/web-admin/client";
   import { PencilIcon, TrashIcon } from "lucide-svelte";
+  import { createEventDispatcher } from "svelte";
 
   export let bookmark: V1Bookmark;
 
+  const dispatch = createEventDispatcher();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   async function deleteBookmark() {
@@ -23,6 +25,8 @@
       </div>
     {/if}
   </div>
-  <button><PencilIcon size="16px" /></button>
+  <button on:click={() => dispatch("edit", bookmark)}>
+    <PencilIcon size="16px" />
+  </button>
   <button on:click={deleteBookmark}><TrashIcon size="16px" /></button>
 </div>
