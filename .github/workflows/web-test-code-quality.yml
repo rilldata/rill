@@ -66,4 +66,4 @@ jobs:
 
       - name: type check non-svelte files (with temporary whitelist)
         run: |-
-          sh ./scripts/tsc-with-whitelist.sh
+          bash ./scripts/tsc-with-whitelist.sh
