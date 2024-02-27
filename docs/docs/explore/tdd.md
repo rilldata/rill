@@ -9,7 +9,7 @@ sidebar_position: 25
 
 The Time Dimension Detail is a separate visualization accessed by clicking on any time series chart in Explore. Expanding the time series allows for more surface area to compare a larger number of dimensions trended over time. Additionally, you can create rapid pivot tables based on time across any dimension
 
-### Time Dimension Detail (TDD)
+## Time Dimension Detail (TDD)
 
 Within the TTD screen, you can apply all of the same filters and comparisons as Explore. Any filters applied will be carried into the TDD or will be carried out to Explore if you return to the main page on the top left. 
 

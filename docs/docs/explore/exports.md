@@ -12,7 +12,7 @@ Rill provides the ability to export data from multiple locations - leaderboards,
 - [How to Schedule an Email Report](#how-to-schedule-an-email-report)
 - [Managing Scheduled Reports](#managing-scheduled-reports)
 
-### Exporting from Rill
+## Exporting from Rill
 
 There are several places to export your data from Rill. In each case, you will see options for exporting to csv, xlsx or parquet formats. 
 
@@ -22,7 +22,7 @@ Exports are available from:
 - Time Dimension Detail: after choosing a comparison, select Export on the time series chart
 - Pivot Tables: _coming soon_ 
 
-### How to Schedule an Email Report
+## How to Schedule an Email Report
 
 Follow these simple steps to schedule an email report:
 
@@ -33,7 +33,7 @@ Follow these simple steps to schedule an email report:
 
 ![export-overview](../../static/img/explore/exports/scheduled.png)
 
-### Managing Scheduled Reports
+## Managing Scheduled Reports
 
 Reports are managed from your homescreen. To navigate to the report admin page, select the Home button on the top left and the Reports tab from your homepage.
 

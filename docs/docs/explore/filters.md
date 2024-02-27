@@ -9,7 +9,7 @@ sidebar_position: 10
 
 Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with as all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
 
-### Filter by Dimensions
+## Filter by Dimensions
 
 The primary/easiest way to filter data is by selecting values in the dimension tables. Leaderboards within Rill are fully interactive. Selecting any dimension in the table will automatically filter the remaining leaderboards and metrics by that selection. 
 
@@ -21,7 +21,7 @@ Any filter applied in the Leaderboard will also show up in the filter bar at nex
 
 ![dimension-filter](../../static/img/explore/filters/filter.gif)
 
-### Filter by Metrics
+## Filter by Metrics
 
 There are also use cases where you want to filter by the metric values returned. As an example - all customers over $1000 in revenue, all campaigns with at least 1 million impressions, all delivery locations with late times over 4%, etc. 
 
@@ -42,9 +42,9 @@ Metric filters are a good way to "sort" by two different metrics. First, apply y
 As an example - to see most active enterprise customers - filter all customers with revenue greater than $1000 then sorted by number of users increased descending.
 :::
 
-### Time & Dimension Comparisons
+## Time & Dimension Comparisons
 
-#### Time Comparisons
+### Time Comparisons
 Time comparison is a key feature of Rill and recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker.
 
 After selecting that range, select Compare by Time - either defaulting to the same prior period or selecting a custom comparison period. 
@@ -63,7 +63,7 @@ For the former, you can let data "fill in" by selecting time period options like
 For the latter, you can compare the full period looking with options like last 24 hours vs. prior 24 hours. In this case, the time series will be fully complete, comparing up to the most recent period vs. the same hour/day/week in prior periods.  
 :::
 
-#### Dimension Comparisons
+### Dimension Comparisons
 In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. There are two options for turning on dimension comparison:
 
 - Use the same top filter bar as the time comparison, instead selecting a dimension for comparison

@@ -14,7 +14,7 @@ Rill's multi-dimensional pivot provides lightning fast Excel style pivot tables 
 - Time analysis: Dimensions by time columns for daily or weekly comparisons 
 - Data export: Scheduled exports for generating csvs for external analysis (_coming soon_)
 
-### Using Rill's Pivot View
+## Using Rill's Pivot View
 
 Pivots can be split by time, measures and dimensions. You can drag and drop any of these options to rows and columns to create your pivot table (and can drag between columns/rows as well). Dimensions are also searchable in the top left or select the ```+``` to see the dimension list. As each dimension is added, you can track the kernels on the top left to see which rows have been added to the table. Each column dimesion will also be visuaized in the pivot. Like Time Dimension Detail, the same filter bar can be used to filter the pivot table overall. 
 
