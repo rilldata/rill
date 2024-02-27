@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
@@ -29,7 +30,6 @@
   import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
-  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
 
   export let metricViewName;
   export let workspaceWidth: number;

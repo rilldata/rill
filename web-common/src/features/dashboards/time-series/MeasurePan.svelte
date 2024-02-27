@@ -5,8 +5,11 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import {
+    getDurationFromMS,
+    getOffset,
+    getTimeWidth,
+  } from "@rilldata/web-common/lib/time/transforms";
   import {
     TimeOffsetType,
     TimeRange,
@@ -53,15 +56,19 @@
 
   function panCharts(direction: PanDirection) {
     const selectedTimeRange = $timeControlsStore?.selectedTimeRange;
+    if (!selectedTimeRange) return;
+
     const timeZone = $dashboardStore?.selectedTimezone || "UTC";
-    const interval = selectedTimeRange?.interval;
+    const { start, end, interval } = selectedTimeRange;
     const allTimeRange = $timeControlsStore?.allTimeRange;
 
-    if (!allTimeRange || !interval || !selectedTimeRange?.start) return;
+    if (!allTimeRange || !interval || !start || !end) return;
 
     const offsetType =
       direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
-    const panAmount = TIME_GRAIN[interval].duration;
+
+    const currentRangeWidth = getTimeWidth(start, end);
+    const panAmount = getDurationFromMS(currentRangeWidth);
 
     const newStart = getOffset(
       selectedTimeRange?.start,

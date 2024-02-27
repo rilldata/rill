@@ -1,20 +1,20 @@
 <script lang="ts">
   import {
+    ChunkedLine,
+    ClippedChunkedLine,
+  } from "@rilldata/web-common/components/data-graphic/marks";
+  import {
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
     TimeComparisonLineColor,
-    AreaMutedColorGradientDark,
-    AreaMutedColorGradientLight,
-    LineMutedColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import { writable } from "svelte/store";
-  import {
-    ChunkedLine,
-    ClippedChunkedLine,
-  } from "@rilldata/web-common/components/data-graphic/marks";
-  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
+  import { writable } from "svelte/store";
 
   export let xMin: Date | undefined = undefined;
   export let xMax: Date | undefined = undefined;
@@ -28,6 +28,8 @@
   export let yAccessor: string;
   export let scrubStart;
   export let scrubEnd;
+
+  $: console.log(data);
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
