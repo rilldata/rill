@@ -78,13 +78,13 @@
 
     const newStart = getOffset(
       selectedTimeRange?.start,
-      panAmount,
+      panAmount.toString(),
       offsetType,
       timeZone,
     );
     const newEnd = getOffset(
       selectedTimeRange?.end,
-      panAmount,
+      panAmount.toString(),
       offsetType,
       timeZone,
     );
