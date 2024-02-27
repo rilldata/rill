@@ -74,20 +74,10 @@
       direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
 
     const currentRangeWidth = getTimeWidth(start, end);
-    const panAmount = getDurationFromMS(currentRangeWidth);
+    const panAmount = getDurationFromMS(currentRangeWidth).toString() as string;
 
-    const newStart = getOffset(
-      selectedTimeRange?.start,
-      panAmount.toString(),
-      offsetType,
-      timeZone,
-    );
-    const newEnd = getOffset(
-      selectedTimeRange?.end,
-      panAmount.toString(),
-      offsetType,
-      timeZone,
-    );
+    const newStart = getOffset(start, panAmount, offsetType, timeZone);
+    const newEnd = getOffset(end, panAmount, offsetType, timeZone);
 
     return { start: newStart, end: newEnd };
   }
