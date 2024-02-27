@@ -11,15 +11,13 @@ import (
 )
 
 func verifyInstallCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
-
 	cmd := &cobra.Command{
 		Use:    "verify-install",
 		Short:  "Verify installation (called by install script)",
-		Hidden: !cfg.IsDev(),
+		Hidden: !ch.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Emit telemetry event
-			tel := telemetry.New(cfg.Version)
+			tel := telemetry.New(ch.Version)
 			tel.Emit(telemetry.ActionInstallSuccess)
 
 			// Flush telemetry with a 10s timeout

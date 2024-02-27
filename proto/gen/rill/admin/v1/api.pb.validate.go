@@ -1793,6 +1793,8 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for AccessTokenTtlSeconds
+
 	if len(errors) > 0 {
 		return GetProjectRequestMultiError(errors)
 	}

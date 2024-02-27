@@ -1,40 +1,37 @@
 <script lang="ts">
+  import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import FilterChips from "../../dashboards/filters/FilterChips.svelte";
-  import DataPreview from "./../DataPreview.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
+  import { useMetricsView } from "../../dashboards/selectors";
   import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
+  export let isEditForm: boolean;
 
   const { form, errors, handleChange } = formState;
 
-  const {
-    dashboardStore,
-    selectors: {
-      measures: { allMeasures },
-      dimensions: { allDimensions },
-      measureFilters: { hasAtLeastOneMeasureFilter },
-      dimensionFilters: { hasAtLeastOneDimensionFilter },
-    },
-  } = getStateManagers();
+  $: metricsView = useMetricsView(
+    $runtime.instanceId,
+    $form["metricsViewName"],
+  );
 
   $: measureOptions =
-    $allMeasures?.map((measure) => ({
-      value: measure.name as string,
-      label: measure.label,
+    $metricsView.data?.measures?.map((m) => ({
+      value: m.name as string,
+      label: m.label?.length ? m.label : m.expression,
     })) ?? [];
   $: dimensionOptions =
-    $allDimensions?.map((dimension) => ({
-      value: dimension.name as string,
-      label: dimension.label,
+    $metricsView.data?.dimensions?.map((d) => ({
+      value: d.name as string,
+      label: d.label?.length ? d.label : d.expression,
     })) ?? [];
 
-  $: hasAtLeastOneFilter =
-    $hasAtLeastOneDimensionFilter || $hasAtLeastOneMeasureFilter;
+  $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -54,9 +51,12 @@
     title="Filters"
   >
     {#if hasAtLeastOneFilter}
-      <FilterChips readOnly />
+      <FilterChipsReadOnly
+        metricsViewName={$form["metricsViewName"]}
+        filters={$form["whereFilter"]}
+      />
     {:else}
-      <NoFiltersSelected />
+      <NoFiltersSelected {isEditForm} />
     {/if}
   </FormSection>
   <FormSection
@@ -74,23 +74,28 @@
       bind:value={$form["splitByDimension"]}
       id="splitByDimension"
       label="Split by dimension"
+      optional
       options={dimensionOptions}
       placeholder="Select a dimension"
     />
     <Select
       bind:value={$form["splitByTimeGrain"]}
       id="splitByTimeGrain"
-      label="Split By Time Grain"
+      label="Split by time grain"
+      optional
       options={AlertIntervalOptions}
       placeholder="Select a time grain"
     />
   </FormSection>
   <FormSection title="Data preview">
-    <DataPreview
-      dimension={$form["splitByDimension"]}
-      filter={$dashboardStore.whereFilter}
+    <AlertDataPreview
+      criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
       measure={$form["measure"]}
-      metricsView={$dashboardStore.name}
+      metricsViewName={$form["metricsViewName"]}
+      splitByDimension={$form["splitByDimension"]}
+      splitByTimeGrain={$form["splitByTimeGrain"]}
+      timeRange={$form["timeRange"]}
+      whereFilter={$form["whereFilter"]}
     />
   </FormSection>
 </div>

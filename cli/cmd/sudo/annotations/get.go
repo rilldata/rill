@@ -15,13 +15,11 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Get annotations for project in an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				OrganizationName: args[0],
 				Name:             args[1],
@@ -31,7 +29,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Project.Annotations) == 0 {
-				ch.Printer.PrintlnWarn("No annotations found")
+				ch.PrintfWarn("No annotations found\n")
 				return nil
 			}
 

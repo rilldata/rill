@@ -250,5 +250,6 @@ export const sanitiseExpression = (
       ...(having.cond?.exprs ?? []),
     ]);
   }
+  if (!where?.cond?.exprs?.length) return undefined;
   return where;
 };

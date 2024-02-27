@@ -11,21 +11,21 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "list",
 		Short: "List service",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res, err := client.ListServices(cmd.Context(), &adminv1.ListServicesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
-			return ch.Printer.PrintResource(toTable(res.Services))
+			ch.PrintServices(res.Services)
+
+			return nil
 		},
 	}
 

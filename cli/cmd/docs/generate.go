@@ -16,13 +16,11 @@ import (
 )
 
 func GenerateCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
-
 	docsCmd := &cobra.Command{
 		Use:    "generate",
 		Short:  "Generate CLI documentation",
 		Args:   cobra.ExactArgs(1),
-		Hidden: !cfg.IsDev(),
+		Hidden: !ch.IsDev(),
 		Run: func(cmd *cobra.Command, args []string) {
 			dir := args[0]
 			rootCmd.DisableAutoGenTag = true
