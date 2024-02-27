@@ -10,6 +10,7 @@
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import ChartAssets from "../../features/charts/ChartAssets.svelte";
+  import CustomDashboardAssets from "../../features/custom-dashboards/CustomDashboardAssets.svelte";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
   import TableAssets from "../../features/tables/TableAssets.svelte";
@@ -126,6 +127,7 @@
         <DashboardAssets />
         {#if $customDashboards}
           <ChartAssets />
+          <CustomDashboardAssets />
         {/if}
         {#if isModelerEnabled}
           <OtherFiles />
