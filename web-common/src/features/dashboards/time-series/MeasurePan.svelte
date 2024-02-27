@@ -49,8 +49,6 @@
     if (!panRange) return false;
     const { start, end } = panRange;
 
-    console.log(panRange);
-
     if (direction === "right" && start.getTime() > allTimeRange.end.getTime()) {
       return false;
     } else if (
