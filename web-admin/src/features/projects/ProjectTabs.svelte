@@ -14,42 +14,47 @@
   const { alerts } = featureFlags;
 
   // Get the list of tabs to display, depending on the user's permissions
-  $: tabsQuery = createAdminServiceGetProject(organization, project, {
-    query: {
-      select: (data) => {
-        let commonTabs = [
-          {
-            route: `/${organization}/${project}`,
-            label: "Dashboards",
-          },
-          {
-            route: `/${organization}/${project}/-/reports`,
-            label: "Reports",
-          },
-        ];
+  $: tabsQuery = createAdminServiceGetProject(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        select: (data) => {
+          let commonTabs = [
+            {
+              route: `/${organization}/${project}`,
+              label: "Dashboards",
+            },
+            {
+              route: `/${organization}/${project}/-/reports`,
+              label: "Reports",
+            },
+          ];
 
-        if ($alerts) {
-          commonTabs.push({
-            route: `/${organization}/${project}/-/alerts`,
-            label: "Alerts",
-          });
-        }
+          if ($alerts) {
+            commonTabs.push({
+              route: `/${organization}/${project}/-/alerts`,
+              label: "Alerts",
+            });
+          }
 
-        const adminTabs = [
-          {
-            route: `/${organization}/${project}/-/status`,
-            label: "Status",
-          },
-        ];
+          const adminTabs = [
+            {
+              route: `/${organization}/${project}/-/status`,
+              label: "Status",
+            },
+          ];
 
-        if (data.projectPermissions?.manageProject) {
-          return [...commonTabs, ...adminTabs];
-        } else {
-          return commonTabs;
-        }
+          if (data.projectPermissions?.manageProject) {
+            return [...commonTabs, ...adminTabs];
+          } else {
+            return commonTabs;
+          }
+        },
       },
     },
-  });
+  );
   $: tabs = $tabsQuery.data;
 
   function getCurrentTabIndex(tabs: { route: string }[], pathname: string) {

@@ -16,13 +16,11 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Get quota for user or org",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if org != "" {
 				res, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{

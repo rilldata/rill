@@ -12,7 +12,6 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -64,16 +63,14 @@ func TestUserWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	format := printer.Human
-	p := printer.NewPrinter(&format)
-	p.SetResourceOutput(&buf)
+	p := printer.NewPrinter(printer.FormatHuman)
+	p.OverrideDataOutput(&buf)
 	helper := &cmdutil.Helper{
-		Config: &config.Config{
-			AdminURL:          "http://localhost:9090",
-			AdminTokenDefault: adminAuthToken.Token().String(),
-		},
-		Printer: p,
+		AdminURL:          "http://localhost:9090",
+		AdminTokenDefault: adminAuthToken.Token().String(),
+		Printer:           p,
 	}
+	defer helper.Close()
 
 	// Create organization for testing
 	orgName := "test-org"
@@ -86,7 +83,7 @@ func TestUserWorkflow(t *testing.T) {
 
 	// Add user to organization
 	buf.Reset()
-	p.SetHumanOutput(&buf)
+	p.OverrideHumanOutput(&buf)
 	cmd = AddCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
@@ -99,9 +96,8 @@ func TestUserWorkflow(t *testing.T) {
 
 	// List users in organization
 	buf.Reset()
-	format = printer.JSON
-	p = printer.NewPrinter(&format)
-	p.SetResourceOutput(&buf)
+	p = printer.NewPrinter(printer.FormatJSON)
+	p.OverrideDataOutput(&buf)
 	helper.Printer = p
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
@@ -125,7 +121,7 @@ func TestUserWorkflow(t *testing.T) {
 	require.EqualValues(t, inviteList, expectedInviteList)
 	// Add one more user to organization
 	buf.Reset()
-	p.SetHumanOutput(&buf)
+	p.OverrideHumanOutput(&buf)
 	cmd = AddCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
@@ -137,9 +133,8 @@ func TestUserWorkflow(t *testing.T) {
 
 	// List invites again in same organization
 	buf.Reset()
-	format = printer.JSON
-	p = printer.NewPrinter(&format)
-	p.SetResourceOutput(&buf)
+	p = printer.NewPrinter(printer.FormatJSON)
+	p.OverrideDataOutput(&buf)
 	helper.Printer = p
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
@@ -159,7 +154,7 @@ func TestUserWorkflow(t *testing.T) {
 
 	// Remove user from organization
 	buf.Reset()
-	p.SetHumanOutput(&buf)
+	p.OverrideHumanOutput(&buf)
 	cmd = RemoveCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
@@ -171,9 +166,8 @@ func TestUserWorkflow(t *testing.T) {
 
 	// List invites again in same organization after removing user
 	buf.Reset()
-	format = printer.JSON
-	p = printer.NewPrinter(&format)
-	p.SetResourceOutput(&buf)
+	p = printer.NewPrinter(printer.FormatJSON)
+	p.OverrideDataOutput(&buf)
 	helper.Printer = p
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
@@ -195,7 +189,7 @@ func TestUserWorkflow(t *testing.T) {
 
 	// Set user role in organization
 	buf.Reset()
-	p.SetHumanOutput(&buf)
+	p.OverrideHumanOutput(&buf)
 	cmd = SetRoleCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)

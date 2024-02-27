@@ -1,8 +1,6 @@
 package project
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -16,15 +14,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "list",
 		Short: "List all the projects",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
-			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{
-				OrganizationName: cfg.Org,
+			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{
+				OrganizationName: ch.Org,
 				PageSize:         pageSize,
 				PageToken:        pageToken,
 			})
@@ -33,15 +29,13 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Projects) == 0 {
-				ch.Printer.PrintlnWarn("No projects found")
+				ch.PrintfWarn("No projects found\n")
 				return nil
 			}
 
-			ch.Printer.PrintlnSuccess("Projects list")
-			err = ch.Printer.PrintResource(toTable(res.Projects))
-			if err != nil {
-				return err
-			}
+			ch.PrintfSuccess("Projects list\n")
+			ch.PrintProjects(res.Projects)
+
 			if res.NextPageToken != "" {
 				cmd.Println()
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)

@@ -9,18 +9,16 @@ import (
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
-	cfg := ch.Config
 
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all organizations",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{
 				PageSize:  pageSize,
@@ -31,15 +29,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Organizations) == 0 {
-				ch.Printer.PrintlnWarn("No orgs found")
+				ch.PrintfWarn("No orgs found\n")
 				return nil
 			}
 
-			ch.Printer.PrintlnSuccess("Organizations list")
-			err = ch.Printer.PrintResource(toTable(res.Organizations, cfg.Org))
-			if err != nil {
-				return err
-			}
+			ch.PrintfSuccess("Organizations list\n")
+			ch.PrintOrgs(res.Organizations, ch.Org)
 
 			if res.NextPageToken != "" {
 				cmd.Println()
