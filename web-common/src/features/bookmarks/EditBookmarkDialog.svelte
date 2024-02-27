@@ -8,7 +8,7 @@
   } from "@rilldata/web-admin/client";
   import { Button, Switch } from "@rilldata/web-common/components/button";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
-  import { getBookmarkForDashboard } from "@rilldata/web-common/features/bookmarks/bookmark-dashboard-state";
+  import { getBookmarkForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkForDashboard";
   import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -73,7 +73,7 @@
 <Dialog on:close={handleClose} {open} widthOverride="w-[602px]">
   <svelte:fragment slot="title">Bookmark current view</svelte:fragment>
   <form
-    class="flex flex-col gap-4"
+    class="flex flex-col gap-4 z-50"
     id="create-bookmark-dialog"
     on:submit|preventDefault={handleSubmit}
     slot="body"
@@ -91,10 +91,19 @@
       label="Description"
       optional
     />
-    <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly">
+    <Switch
+      checked={$form["filtersOnly"]}
+      id="filtersOnly"
+      on:click={() => ($form["filtersOnly"] = !$form["filtersOnly"])}
+    >
       Save filters only
     </Switch>
-    <Switch bind:checked={$form["absoluteTimeRange"]} id="absoluteTimeRange">
+    <Switch
+      bind:checked={$form["absoluteTimeRange"]}
+      id="absoluteTimeRange"
+      on:click={() =>
+        ($form["absoluteTimeRange"] = !$form["absoluteTimeRange"])}
+    >
       Absolute time range (TODO range)
     </Switch>
   </form>

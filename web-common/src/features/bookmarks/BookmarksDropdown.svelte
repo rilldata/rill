@@ -5,14 +5,28 @@
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
+  import { createApplyBookmark } from "@rilldata/web-common/features/bookmarks/applyBookmark";
   import BookmarksContent from "@rilldata/web-common/features/bookmarks/BookmarksContent.svelte";
   import CreateBookmarkDialog from "@rilldata/web-common/features/bookmarks/CreateBookmarkDialog.svelte";
   import EditBookmarkDialog from "@rilldata/web-common/features/bookmarks/EditBookmarkDialog.svelte";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkIcon } from "lucide-svelte";
+
+  $: metricsViewName = $page.params.dashboard;
 
   let createBookmark = false;
   let editBookmark = false;
   let bookmark: V1Bookmark;
+
+  $: bookmarkApplier = createApplyBookmark(
+    $runtime?.instanceId,
+    metricsViewName,
+  );
+
+  function onSelect(bookmark: V1Bookmark) {
+    bookmarkApplier(bookmark);
+  }
 </script>
 
 <DropdownMenu>
@@ -25,18 +39,12 @@
       editBookmark = true;
       bookmark = detail;
     }}
+    on:select={({ detail }) => onSelect(detail)}
   />
 </DropdownMenu>
 
-<CreateBookmarkDialog
-  bind:open={createBookmark}
-  metricsViewName={$page.params.dashboard}
-/>
+<CreateBookmarkDialog bind:open={createBookmark} {metricsViewName} />
 
 {#if bookmark}
-  <EditBookmarkDialog
-    {bookmark}
-    bind:open={editBookmark}
-    metricsViewName={$page.params.dashboard}
-  />
+  <EditBookmarkDialog {bookmark} bind:open={editBookmark} {metricsViewName} />
 {/if}

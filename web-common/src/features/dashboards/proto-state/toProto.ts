@@ -131,8 +131,10 @@ export function getProtoFromDashboardState(
     state.leaderboardSortType = metrics.dashboardSortType;
   }
 
-  const pivotStates = toPivotProto(metrics.pivot);
-  Object.keys(pivotStates).forEach((pk) => (state[pk] = pivotStates[pk]));
+  if (metrics.pivot) {
+    const pivotStates = toPivotProto(metrics.pivot);
+    Object.keys(pivotStates).forEach((pk) => (state[pk] = pivotStates[pk]));
+  }
 
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());

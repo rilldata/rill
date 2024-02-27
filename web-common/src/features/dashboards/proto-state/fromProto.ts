@@ -112,14 +112,16 @@ export function getDashboardStateFromProto(
     // backwards compatibility
     correctComparisonTimeRange(entity.selectedComparisonTimeRange);
   }
-  entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
+  if (dashboard.showTimeComparison !== undefined) {
+    entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
+  }
 
-  entity.selectedTimeRange = dashboard.timeRange
-    ? fromTimeRangeProto(dashboard.timeRange)
-    : undefined;
-  if (dashboard.timeGrain && entity.selectedTimeRange) {
-    entity.selectedTimeRange.interval =
-      FromProtoTimeGrainMap[dashboard.timeGrain];
+  if (dashboard.timeRange) {
+    entity.selectedTimeRange = fromTimeRangeProto(dashboard.timeRange);
+    if (dashboard.timeGrain) {
+      entity.selectedTimeRange.interval =
+        FromProtoTimeGrainMap[dashboard.timeGrain];
+    }
   }
 
   if (dashboard.scrubRange) {
@@ -160,7 +162,7 @@ export function getDashboardStateFromProto(
     entity.visibleMeasureKeys = new Set(
       metricsView.measures?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
-  } else if (dashboard.visibleMeasures) {
+  } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
   }
@@ -170,7 +172,7 @@ export function getDashboardStateFromProto(
     entity.visibleDimensionKeys = new Set(
       metricsView.dimensions?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
-  } else if (dashboard.visibleDimensions) {
+  } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
   }
@@ -187,7 +189,9 @@ export function getDashboardStateFromProto(
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
-  entity.pivot = fromPivotProto(dashboard, metricsView);
+  if (dashboard.pivotIsActive !== undefined) {
+    entity.pivot = fromPivotProto(dashboard, metricsView);
+  }
 
   return entity;
 }

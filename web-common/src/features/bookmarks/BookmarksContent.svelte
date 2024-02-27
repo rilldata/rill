@@ -45,7 +45,9 @@
         Your bookmarks
       </DropdownMenuLabel>
       {#each $bookmarks.data.own as bookmark}
-        <DropdownMenuItem><BookmarkItem {bookmark} on:edit /></DropdownMenuItem>
+        <DropdownMenuItem>
+          <BookmarkItem {bookmark} on:edit on:select />
+        </DropdownMenuItem>
       {/each}
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
@@ -55,11 +57,13 @@
       </DropdownMenuLabel>
       {#if $bookmarks.data.home}
         <DropdownMenuItem>
-          <BookmarkItem bookmark={$bookmarks.data.home} on:edit />
+          <BookmarkItem bookmark={$bookmarks.data.home} on:edit on:select />
         </DropdownMenuItem>
       {/if}
       {#each $bookmarks.data.global as bookmark}
-        <DropdownMenuItem><BookmarkItem {bookmark} on:edit /></DropdownMenuItem>
+        <DropdownMenuItem>
+          <BookmarkItem {bookmark} on:edit on:select />
+        </DropdownMenuItem>
       {/each}
     </DropdownMenuGroup>
   {/if}

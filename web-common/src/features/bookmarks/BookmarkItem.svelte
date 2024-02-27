@@ -17,7 +17,10 @@
 </script>
 
 <div class="flex flex-row gap-2">
-  <div class="flex flex-col gap-2">
+  <div
+    class="flex flex-col gap-2"
+    on:click={() => dispatch("select", bookmark)}
+  >
     <div class="text-sm text-gray-700">{bookmark.displayName}</div>
     {#if bookmark.description}
       <div class="text-sm text-gray-500 h-8 text-ellipsis">
