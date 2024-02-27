@@ -2219,7 +2219,9 @@ definitions:
         type: string
       userId:
         type: string
-      isGlobal:
+      default:
+        type: boolean
+      shared:
         type: boolean
       createdOn:
         type: string
@@ -2266,7 +2268,9 @@ definitions:
         type: string
       projectId:
         type: string
-      isGlobal:
+      default:
+        type: boolean
+      shared:
         type: boolean
   v1CreateBookmarkResponse:
     type: object
@@ -3008,7 +3012,9 @@ definitions:
       data:
         type: string
         format: byte
-      isGlobal:
+      default:
+        type: boolean
+      shared:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object

@@ -96,12 +96,13 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		permissions.ReadProd = true
 	}
 
-	if !permissions.ManageProject {
-		req.IsGlobal = false // only users that can manage the project can
-	}
-
 	if !permissions.ReadProject && !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
+	}
+
+	if !permissions.ManageProject && (req.Default || req.Shared) {
+		// only admins can create shared/default bookmarks
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create the bookmark")
 	}
 
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
@@ -111,7 +112,8 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		DashboardName: req.DashboardName,
 		ProjectID:     req.ProjectId,
 		UserID:        claims.OwnerID(),
-		IsGlobal:      req.IsGlobal,
+		Default:       req.Default,
+		Shared:        req.Shared,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -146,12 +148,13 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if !permissions.ManageProject {
-		req.IsGlobal = false // only users that can manage the project can
+	if !permissions.ManageProject && (bookmark.Shared || bookmark.Default) {
+		// only admins can update shared/default bookmarks
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update the bookmark")
 	}
 
-	if (!req.IsGlobal || !bookmark.IsGlobal) && bookmark.UserID != claims.OwnerID() {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete the bookmark")
+	if !bookmark.Shared && !bookmark.Default && bookmark.UserID != claims.OwnerID() {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update the bookmark")
 	}
 
 	err = s.admin.DB.UpdateBookmark(ctx, &database.UpdateBookmarkOptions{
@@ -159,7 +162,6 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 		DisplayName: req.DisplayName,
 		Description: req.Description,
 		Data:        req.Data,
-		IsGlobal:    req.IsGlobal,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -192,7 +194,12 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if (!bookmark.IsGlobal && bookmark.UserID != claims.OwnerID()) || !permissions.ManageProject {
+	if !permissions.ManageProject && (bookmark.Shared || bookmark.Default) {
+		// only admins can delete shared/default bookmarks
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update the bookmark")
+	}
+
+	if !bookmark.Shared && !bookmark.Default && bookmark.UserID != claims.OwnerID() {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete the bookmark")
 	}
 
@@ -213,7 +220,8 @@ func bookmarkToPB(u *database.Bookmark) *adminv1.Bookmark {
 		DashboardName: u.DashboardName,
 		ProjectId:     u.ProjectID,
 		UserId:        u.UserID,
-		IsGlobal:      u.IsGlobal,
+		Default:       u.Default,
+		Shared:        u.Shared,
 		CreatedOn:     timestamppb.New(u.CreatedOn),
 		UpdatedOn:     timestamppb.New(u.UpdatedOn),
 	}

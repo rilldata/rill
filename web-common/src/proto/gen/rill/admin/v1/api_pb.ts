@@ -4209,9 +4209,14 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   projectId = "";
 
   /**
-   * @generated from field: bool is_global = 5;
+   * @generated from field: bool default = 7;
    */
-  isGlobal = false;
+  default = false;
+
+  /**
+   * @generated from field: bool shared = 8;
+   */
+  shared = false;
 
   constructor(data?: PartialMessage<CreateBookmarkRequest>) {
     super();
@@ -4226,7 +4231,8 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
     { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 3, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "is_global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateBookmarkRequest {
@@ -4298,7 +4304,7 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   displayName = "";
 
   /**
-   * @generated from field: string description = 5;
+   * @generated from field: string description = 4;
    */
   description = "";
 
@@ -4308,9 +4314,14 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   data = new Uint8Array(0);
 
   /**
-   * @generated from field: bool is_global = 4;
+   * @generated from field: bool default = 5;
    */
-  isGlobal = false;
+  default = false;
+
+  /**
+   * @generated from field: bool shared = 6;
+   */
+  shared = false;
 
   constructor(data?: PartialMessage<UpdateBookmarkRequest>) {
     super();
@@ -4322,9 +4333,10 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "bookmark_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 4, name: "is_global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBookmarkRequest {
@@ -7772,9 +7784,14 @@ export class Bookmark extends Message<Bookmark> {
   userId = "";
 
   /**
-   * @generated from field: bool is_global = 10;
+   * @generated from field: bool default = 10;
    */
-  isGlobal = false;
+  default = false;
+
+  /**
+   * @generated from field: bool shared = 11;
+   */
+  shared = false;
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 7;
@@ -7801,7 +7818,8 @@ export class Bookmark extends Message<Bookmark> {
     { no: 4, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "is_global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);
