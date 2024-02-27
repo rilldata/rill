@@ -1,7 +1,7 @@
 <script lang="ts">
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+
   import {
     SortDirection,
     SortType,
@@ -11,7 +11,6 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { timeFormat } from "d3-time-format";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
@@ -23,8 +22,6 @@
   import type { TDDComparison, TableData } from "./types";
 
   export let metricViewName;
-
-  const queryClient = useQueryClient();
 
   const stateManagers = getStateManagers();
   const {
@@ -136,8 +133,6 @@
   }
 
   function togglePin() {
-    cancelDashboardQueries(queryClient, metricViewName);
-
     const pinIndex = $dashboardStore?.pinIndex;
     let newPinIndex = -1;
 
@@ -172,7 +167,6 @@
   isRowsEmpty={!rowHeaderLabels.length}
   {metricViewName}
   on:search={(e) => {
-    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
   }}
   on:toggle-all-search-items={() => toggleAllSearchItems()}

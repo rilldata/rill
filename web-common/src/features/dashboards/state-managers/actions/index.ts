@@ -28,15 +28,6 @@ type DashboardConnectedMutators = {
    * Used to update the dashboard.
    */
   updateDashboard: DashboardCallbackExecutor;
-  /**
-   * A callback that can be used to cancel queries if needed.
-   *
-   * FIXME: can we move this out to the query layer, so that
-   * individual dashboard muations don't need to know about
-   * the query layer, and don't need to take responsibility
-   * for cancelling queries?
-   */
-  cancelQueries: () => void;
   persistentDashboardStore: PersistentDashboardStore;
 };
 
@@ -113,7 +104,6 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
       mutator(
         {
           dashboard: dash,
-          cancelQueries: connectedMutators.cancelQueries,
           persistentDashboardStore: connectedMutators.persistentDashboardStore,
         },
         ...x,
