@@ -5,8 +5,8 @@ import {
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
-import type { DashboardMutables } from "./types";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
+import type { DashboardMutables } from "./types";
 
 export function toggleDimensionValueSelection(
   { dashboard }: DashboardMutables,
@@ -101,7 +101,7 @@ export function removeDimensionFilter(
 export function selectItemsInFilter(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  values: string[],
+  values: (string | null)[],
 ) {
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
@@ -128,7 +128,7 @@ export function selectItemsInFilter(
 export function deselectItemsInFilter(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  values: string[],
+  values: (string | null)[],
 ) {
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {

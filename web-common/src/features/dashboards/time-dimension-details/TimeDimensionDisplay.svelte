@@ -66,7 +66,7 @@
 
   // Create a copy of the data to avoid flashing of table in transient states
   let timeDimensionDataCopy: TableData;
-  let comparisonCopy: TDDComparison;
+  let comparisonCopy: TDDComparison | undefined;
   $: if (
     $timeDimensionDataStore?.data &&
     $timeDimensionDataStore?.data?.columnHeaderData
@@ -82,8 +82,8 @@
   $: rowHeaderLabels =
     formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
 
-  $: areAllTableRowsSelected = rowHeaderLabels?.every((val) =>
-    formattedData?.selectedValues?.includes(val),
+  $: areAllTableRowsSelected = rowHeaderLabels?.every(
+    (val) => val !== undefined && formattedData?.selectedValues?.includes(val),
   );
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
@@ -98,8 +98,10 @@
 
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
     let time: Date | undefined = undefined;
-    if (columnHeaders?.[x]?.value) {
-      time = new Date(columnHeaders?.[x]?.value);
+
+    const colHeader = columnHeaders?.[x]?.value;
+    if (colHeader) {
+      time = new Date(colHeader);
     }
 
     tableInteractionStore.set({
@@ -113,8 +115,17 @@
   }
 
   function toggleAllSearchItems() {
+    const headerHasUndefined = rowHeaderLabels.some(
+      (label) => label === undefined,
+    );
+
+    if (headerHasUndefined) return;
+
     if (areAllTableRowsSelected) {
-      deselectItemsInFilter(dimensionName, rowHeaderLabels);
+      deselectItemsInFilter(
+        dimensionName,
+        rowHeaderLabels as (string | null)[],
+      );
 
       notifications.send({
         message: `Removed ${rowHeaderLabels.length} items from filter`,
@@ -125,7 +136,7 @@
         dimensionName,
         rowHeaderLabels,
       );
-      selectItemsInFilter(dimensionName, rowHeaderLabels);
+      selectItemsInFilter(dimensionName, rowHeaderLabels as (string | null)[]);
       notifications.send({
         message: `Added ${newValuesSelected.length} items to filter`,
       });
@@ -172,7 +183,7 @@
   on:toggle-all-search-items={() => toggleAllSearchItems()}
 />
 
-{#if formattedData}
+{#if formattedData && comparisonCopy}
   <TDDTable
     {excludeMode}
     {dimensionLabel}
