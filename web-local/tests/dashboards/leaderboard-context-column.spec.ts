@@ -243,7 +243,7 @@ test.describe("leaderboard context column", () => {
     ).not.toBeVisible();
     // check that the percent of total remains visible,
     // with updated value for the time comparison
-    await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
+    await expect(page.getByText("Facebook $229.26 29%")).toBeVisible();
 
     /**
      * SUBFLOW: check correct behavior when

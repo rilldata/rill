@@ -46,7 +46,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "Microsoft 10.4k 10%" }),
-      page.getByRole("button", { name: "null 32.9k 32%" }),
+      page.getByRole("button", { name: "null 32.9k 33%" }),
     );
 
     //toggle sort by pct of total

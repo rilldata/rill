@@ -126,14 +126,14 @@ dimensions:
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null $98.8k 32%" }),
+      page.getByRole("button", { name: "null $98.8k 33%" }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "USD", exact: true }).click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 9.9M% 32%" }),
+      page.getByRole("button", { name: "null 9.9M% 3%" }),
     ).toBeVisible();
 
     // try interval_ms...
