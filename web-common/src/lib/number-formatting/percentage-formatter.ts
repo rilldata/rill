@@ -10,6 +10,7 @@ import { PerRangeFormatter } from "./strategies/per-range";
  * supported.
  */
 export function formatMeasurePercentageDifference(value: number): NumberParts {
+  // no-op comment change to prove working
   if (value === 0) {
     return { percent: "%", int: "0", dot: "", frac: "", suffix: "" };
   } else if (value < 0.005 && value > 0) {
