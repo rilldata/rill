@@ -26,12 +26,12 @@
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  $: y1 = $plotConfig.plotTop + $plotConfig.top;
-  $: y2 = $plotConfig.plotBottom + $plotConfig.bottom - 10;
+  $: y1 = $plotConfig.plotTop + $plotConfig.top - 20;
+  $: y2 = $plotConfig.plotBottom + $plotConfig.bottom - 20;
 
   $: midY = (y1 + y2) / 2;
 
-  $: x1 = $plotConfig.plotLeft + $plotConfig.left + 5;
+  $: x1 = $plotConfig.plotLeft + $plotConfig.left - 20;
   $: x2 = $plotConfig.plotRight - 10;
 
   function isRangeValid(
@@ -89,7 +89,7 @@
       <!-- Left Pan Button -->
       <path
         role="presentation"
-        d="M6.66796 11.9962L15.484 4.11121C15.8061 3.82311 16.3173 4.05174 16.3173 4.48389L16.3173 19.5301C16.3173 19.9626 15.8054 20.1911 15.4835 19.9023L6.66796 11.9962Z"
+        d="M9.335 16.795L21.678 5.756C22.129 5.352 22.844 5.672 22.844 6.277L22.844 27.342C22.844 27.948 22.128 28.268 21.677 27.863L9.335 16.795Z"
         class="pan-button"
         on:click|self={() => panCharts("left")}
       />
@@ -98,7 +98,7 @@
       <!-- Right Pan Button -->
       <path
         role="presentation"
-        d="M17.332 12.0038L8.516 19.8888C8.19389 20.1769 7.68268 19.9483 7.68268 19.5161L7.68268 4.46989C7.68268 4.03741 8.19455 3.80891 8.51651 4.09766L17.332 12.0038Z"
+        d="M24.265 16.805L11.922 27.844C11.471 28.248 10.756 27.928 10.756 27.323L10.756 6.258C10.756 5.652 11.472 5.332 11.923 5.737L24.265 16.805Z"
         class="pan-button"
         on:click|self={() => panCharts("right")}
       />

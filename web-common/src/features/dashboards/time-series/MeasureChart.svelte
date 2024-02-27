@@ -261,6 +261,10 @@
   >
     <Axis {numberKind} side="right" />
     <Grid />
+    <MeasurePan
+      on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
+      hovering={hovered}
+    />
     <Body>
       <ChartBody
         {data}
@@ -368,10 +372,6 @@
       start={scrubStart}
       stop={scrubEnd}
       timeGrainLabel={TIME_GRAIN[timeGrain].label}
-    />
-    <MeasurePan
-      on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
-      hovering={hovered}
     />
   </SimpleDataGraphic>
 </div>
