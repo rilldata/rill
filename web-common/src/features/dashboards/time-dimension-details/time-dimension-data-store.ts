@@ -7,7 +7,10 @@ import {
   getDimensionValueTimeSeries,
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import {
+  TimeSeriesDatum,
+  useTimeSeriesDataStore,
+} from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
@@ -22,26 +25,39 @@ import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
   ChartInteractionColumns,
+  HeaderData,
   HighlightedCell,
+  TDDCellData,
   TDDComparison,
   TableData,
   TablePosition,
 } from "./types";
 import { transposeArray } from "./util";
 
+type MeasureValue = number | null | undefined;
+
 export type TimeDimensionDataState = {
   isFetching: boolean;
-  comparing: TDDComparison;
+  comparing?: TDDComparison;
   data?: TableData;
 };
 
 export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
 
+function sanitizeMeasure(value: unknown): MeasureValue {
+  if (value === null || value === undefined) return value;
+  if (typeof value === "number") return value;
+
+  console.warn("Invalid type for measure value", value);
+  // fail safely by returning null
+  return null;
+}
+
 function getHeaderDataForRow(
   row: DimensionDataItem,
   isAllTime: boolean,
   measureName: string,
-  formatter: (v: number | undefined | null) => string,
+  formatter: (v: MeasureValue) => string | undefined | null,
   validPercentOfTotal: boolean,
   unfilteredTotal: number,
 ) {
@@ -50,7 +66,9 @@ function getHeaderDataForRow(
     { value: row?.value },
     {
       value: formatter(row?.total),
-      spark: createSparkline(rowData, (v) => v[measureName]),
+      spark: createSparkline(rowData, (v) =>
+        typeof v?.[measureName] === "number" ? (v[measureName] as number) : 0,
+      ),
     },
   ];
   if (validPercentOfTotal) {
@@ -70,7 +88,7 @@ function getHeaderDataForRow(
  * Transpose the data to columnar format
  */
 function prepareDimensionData(
-  totalsData,
+  totalsData: TimeSeriesDatum[] | undefined,
   data: DimensionDataItem[],
   total: number,
   unfilteredTotal: number,
@@ -78,9 +96,9 @@ function prepareDimensionData(
   selectedValues: string[],
   isAllTime: boolean,
   pinIndex: number,
-): TableData {
+): TableData | undefined {
   if (!data || !totalsData || !measure || data?.length < selectedValues.length)
-    return;
+    return undefined;
 
   const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name as string;
@@ -126,7 +144,9 @@ function prepareDimensionData(
     { value: "Total" },
     {
       value: formatter(total),
-      spark: createSparkline(totalsTableData, (v) => v[measureName]),
+      spark: createSparkline(totalsTableData, (v) =>
+        typeof v?.[measureName] === "number" ? (v[measureName] as number) : 0,
+      ),
     },
   ];
 
@@ -140,7 +160,7 @@ function prepareDimensionData(
         : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
     });
   }
-  let rowHeaderData = [totalsRow];
+  let rowHeaderData: HeaderData<string>[][] = [totalsRow];
 
   rowHeaderData = rowHeaderData.concat(
     orderedData?.map((row) => {
@@ -155,13 +175,17 @@ function prepareDimensionData(
     }),
   );
 
-  let body = [totalsTableData?.map((v) => formatter(v[measureName])) || []];
+  let body: TDDCellData[][] = [
+    totalsTableData?.map((v) => formatter(sanitizeMeasure(v[measureName]))) ||
+      [],
+  ];
 
   body = body?.concat(
     orderedData?.map((v) => {
-      if (v?.isFetching) return new Array(columnCount).fill(undefined);
+      if (v?.isFetching)
+        return new Array(columnCount).fill(undefined) as undefined[];
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
-      return dimData?.map((v) => formatter(v[measureName]));
+      return dimData?.map((v) => formatter(sanitizeMeasure(v[measureName])));
     }),
   );
   /* 
@@ -188,16 +212,16 @@ function prepareDimensionData(
  * Transpose the data to columnar format
  */
 function prepareTimeData(
-  data,
+  data: TimeSeriesDatum[] | undefined,
   total: number,
   comparisonTotal: number,
   currentLabel: string,
   comparisonLabel: string,
   measure: MetricsViewSpecMeasureV2 | undefined,
-  hasTimeComparison,
+  hasTimeComparison: boolean,
   isAllTime: boolean,
-): TableData {
-  if (!data || !measure) return;
+): TableData | undefined {
+  if (!data || !measure) return undefined;
 
   const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name ?? "";
@@ -208,16 +232,18 @@ function prepareTimeData(
 
   const columnCount = columnHeaderData?.length;
 
-  let rowHeaderData: unknown[] = [];
+  let rowHeaderData: HeaderData<string>[][] = [];
   rowHeaderData.push([
     { value: "Total" },
     {
       value: formatter(total),
-      spark: createSparkline(tableData, (v) => v[measureName]),
+      spark: createSparkline(tableData, (v) =>
+        typeof v?.[measureName] === "number" ? (v[measureName] as number) : 0,
+      ),
     },
   ]);
 
-  const body: unknown[] = [];
+  const body: TDDCellData[][] = [];
 
   if (hasTimeComparison) {
     rowHeaderData = rowHeaderData.concat([
@@ -225,16 +251,21 @@ function prepareTimeData(
         { value: currentLabel },
         {
           value: formatter(total),
-          spark: createSparkline(tableData, (v) => v[measureName]),
+          spark: createSparkline(tableData, (v) =>
+            typeof v?.[measureName] === "number"
+              ? (v[measureName] as number)
+              : 0,
+          ),
         },
       ],
       [
         { value: comparisonLabel },
         {
           value: formatter(comparisonTotal),
-          spark: createSparkline(
-            tableData,
-            (v) => v[`comparison.${measureName}`],
+          spark: createSparkline(tableData, (v) =>
+            typeof v?.[`comparison.${measureName}`] === "number"
+              ? (v[`comparison.${measureName}`] as number)
+              : 0,
           ),
         },
       ],
@@ -247,20 +278,33 @@ function prepareTimeData(
       tableData?.map((v) => {
         if (v[measureName] === null && v[`comparison.${measureName}`] === null)
           return null;
-        return formatter(v[measureName] + v[`comparison.${measureName}`]);
+
+        const total =
+          (sanitizeMeasure(v[measureName]) || 0) +
+          (sanitizeMeasure(v[`comparison.${measureName}`]) || 0);
+        return formatter(total);
       }),
     );
 
     // Push current range
-    body.push(tableData?.map((v) => formatter(v[measureName])));
+    body.push(
+      tableData?.map((v) => formatter(sanitizeMeasure(v[measureName]))),
+    );
 
-    body.push(tableData?.map((v) => formatter(v[`comparison.${measureName}`])));
+    body.push(
+      tableData?.map((v) =>
+        formatter(sanitizeMeasure(v[`comparison.${measureName}`])),
+      ),
+    );
 
     // Push percentage change
     body.push(
       tableData?.map((v) => {
-        const comparisonValue = v[`comparison.${measureName}`];
-        const currentValue = v[measureName];
+        const comparisonValue = v[`comparison.${measureName}`] as
+          | number
+          | null
+          | undefined;
+        const currentValue = sanitizeMeasure(v[measureName]);
         const comparisonPercChange =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? (currentValue - comparisonValue) / comparisonValue
@@ -275,8 +319,11 @@ function prepareTimeData(
     // Push absolute change
     body.push(
       tableData?.map((v) => {
-        const comparisonValue = v[`comparison.${measureName}`];
-        const currentValue = v[measureName];
+        const comparisonValue = v[`comparison.${measureName}`] as
+          | number
+          | null
+          | undefined;
+        const currentValue = sanitizeMeasure(v[measureName]);
         const change =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? currentValue - comparisonValue
@@ -287,7 +334,9 @@ function prepareTimeData(
       }),
     );
   } else {
-    body.push(tableData?.map((v) => formatter(v[measureName])));
+    body.push(
+      tableData?.map((v) => formatter(sanitizeMeasure(v[measureName]))),
+    );
   }
 
   const rowCount = rowHeaderData.length;
@@ -309,6 +358,7 @@ function createDimensionTableData(
 ): Readable<DimensionDataItem[]> {
   return derived(ctx.dashboardStore, (dashboardStore, set) => {
     const measureName = dashboardStore?.expandedMeasureName;
+    if (!measureName) return set([]);
     return derived(
       getDimensionValueTimeSeries(ctx, [measureName], "table"),
       (data) => data,
@@ -323,7 +373,9 @@ export const useDimensionTableData = memoizeMetricsStore<
   Readable<DimensionDataItem[]>
 >((ctx: StateManagers) => createDimensionTableData(ctx));
 
-export function createTimeDimensionDataStore(ctx: StateManagers) {
+export function createTimeDimensionDataStore(
+  ctx: StateManagers,
+): TimeSeriesDataStore {
   return derived(
     [
       ctx.dashboardStore,
@@ -347,8 +399,15 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         return { isFetching: true };
 
       const measureName = dashboardStore?.expandedMeasureName;
+
+      if (!measureName) {
+        return { isFetching: false };
+      }
+
       const pinIndex = dashboardStore?.pinIndex;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
+
+      // Fix types in V1MetricsViewAggregationResponseDataItem
       const total = timeSeries?.total && timeSeries?.total[measureName];
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
@@ -362,7 +421,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       );
 
       let comparing;
-      let data: TableData;
+      let data: TableData | undefined = undefined;
 
       if (dimensionName) {
         comparing = "dimension";
@@ -409,7 +468,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
 
       return { isFetching: false, comparing, data };
     },
-  ) as TimeSeriesDataStore;
+  );
 }
 
 /**

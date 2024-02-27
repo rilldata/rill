@@ -10,18 +10,15 @@ import (
 
 // VersionCmd represents the version command
 func WhoamiCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
-
 	whoamiCmd := &cobra.Command{
 		Use:               "whoami",
 		Short:             "Show current user",
-		PersistentPreRunE: cmdutil.CheckAuth(cfg),
+		PersistentPreRunE: cmdutil.CheckAuth(ch),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res, err := client.GetCurrentUser(cmd.Context(), &adminv1.GetCurrentUserRequest{})
 			if err != nil {

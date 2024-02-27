@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 )
 
@@ -43,12 +43,12 @@ const (
 type Telemetry struct {
 	Enabled   bool
 	InstallID string
-	Version   config.Version
+	Version   cmdutil.Version
 	UserID    string
 	events    [][]byte
 }
 
-func New(ver config.Version) *Telemetry {
+func New(ver cmdutil.Version) *Telemetry {
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
 		// if there is any error just disable the telemetry.

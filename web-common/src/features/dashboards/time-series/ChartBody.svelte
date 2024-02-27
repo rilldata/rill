@@ -20,7 +20,7 @@
   export let xMax: Date | undefined = undefined;
   export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
-  export let dimensionValue: string | undefined;
+  export let dimensionValue: string | undefined | null;
   export let isHovering: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
