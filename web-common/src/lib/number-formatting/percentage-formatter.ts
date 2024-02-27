@@ -9,7 +9,7 @@ import { PerRangeFormatter } from "./strategies/per-range";
  * values and values of arbitrarily large magnitudes must be
  * supported.
  */
-export function formatMeasurePercentageDifference(value: number): NumberParts {
+export function formatMeasurePercentageDifference(value: number): undefined {
   if (value === 0) {
     return { percent: "%", int: "0", dot: "", frac: "", suffix: "" };
   } else if (value < 0.005 && value > 0) {
