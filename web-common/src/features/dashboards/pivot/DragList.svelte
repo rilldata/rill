@@ -49,7 +49,6 @@
     },
   ) {
     const type = e.currentTarget.dataset.type as PivotChipType;
-    console.log(type);
     dragging.set(type);
     window.addEventListener("mouseup", onMouseUp);
   }
