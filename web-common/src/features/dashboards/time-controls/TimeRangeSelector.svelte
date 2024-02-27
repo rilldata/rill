@@ -57,8 +57,8 @@
     $dashboardStore?.selectedScrubRange?.start &&
     $dashboardStore?.selectedScrubRange?.end
       ? {
-          start: $dashboardStore?.selectedScrubRange?.start,
-          end: $dashboardStore?.selectedScrubRange?.end,
+          start: $dashboardStore.selectedScrubRange.start,
+          end: $dashboardStore.selectedScrubRange.end,
         }
       : null;
 
