@@ -29,8 +29,6 @@
   export let scrubStart;
   export let scrubEnd;
 
-  $: console.log(data);
-
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: mainLineColor = hasSubrangeSelected ? LineMutedColor : MainLineColor;
