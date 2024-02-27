@@ -179,8 +179,9 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
-	FindBookmarks(ctx context.Context, projectID, dashboardName, userID string) ([]*Bookmark, error)
+	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
+	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
 	UpdateBookmark(ctx context.Context, opts *UpdateBookmarkOptions) error
 	DeleteBookmark(ctx context.Context, bookmarkID string) error

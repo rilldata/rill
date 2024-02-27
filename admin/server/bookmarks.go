@@ -21,7 +21,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.DashboardName, claims.OwnerID())
+	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, "MetricsView", req.DashboardName, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -103,6 +103,14 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	if !permissions.ManageProject && (req.Default || req.Shared) {
 		// only admins can create shared/default bookmarks
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create the bookmark")
+	}
+
+	if req.Default {
+		// only one default bookmark can exist for a project/dashboard combo
+		_, err := s.admin.DB.FindDefaultBookmark(ctx, req.ProjectId, "MetricsView", req.DashboardName)
+		if err == nil || errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "default bookmark already exists")
+		}
 	}
 
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
