@@ -1,6 +1,7 @@
 <script lang="ts">
   import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
+  import { onMount } from "svelte";
   import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
@@ -15,21 +16,24 @@
 
   const { form, errors, handleChange } = formState;
 
-  $: metricsView = useMetricsView(
-    $runtime.instanceId,
-    $form["metricsViewName"],
-  );
+  $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
+  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures?.map((m) => ({
       value: m.name as string,
       label: m.label?.length ? m.label : m.expression,
     })) ?? [];
-  $: dimensionOptions =
-    $metricsView.data?.dimensions?.map((d) => ({
+  $: dimensionOptions = [
+    {
+      value: "",
+      label: "None",
+    },
+    ...($metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
       label: d.label?.length ? d.label : d.expression,
-    })) ?? [];
+    })) ?? []),
+  ];
 
   $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
 </script>
