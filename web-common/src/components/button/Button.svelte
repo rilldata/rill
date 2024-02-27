@@ -48,7 +48,7 @@
    * because the "status" prop is already used for "info" and "error" states.
    * https://www.figma.com/file/nqqazRo1ckU9ooC9ym9weI/Rill-Design-System?type=design&node-id=74-246&mode=design&t=XqvJDtq7QqQfNKE5-0
    */
-  export let loading = true;
+  export let loading = false;
   export let form = "";
   export let label: string | undefined = undefined;
   export let shape: ButtonShape = "normal";
@@ -73,9 +73,6 @@
   $: danger = status === "error";
 
   $: if ((type === "ghost" || type === "subtle") && danger) {
-    console.warn(
-      `Button cannot be both type==="${type}" and "dangerous", falling back to type="secondary". See https://www.figma.com/file/nqqazRo1ckU9ooC9ym9weI/Rill-Design-System?type=design&node-id=74-246&mode=design&t=XqvJDtq7QqQfNKE5-0`,
-    );
     finalType = "secondary";
   }
 
@@ -83,19 +80,8 @@
     (type === "link" || type === "text") &&
     (shape === "circle" || shape === "square")
   ) {
-    console.warn(
-      `Button cannot be both type==="${type}" and shape==="${shape}", falling back to type="ghost". See https://www.figma.com/file/nqqazRo1ckU9ooC9ym9weI/Rill-Design-System?type=design&node-id=74-246&mode=design&t=XqvJDtq7QqQfNKE5-0`,
-    );
     finalType = "ghost";
   }
-
-  $: if (size === "xl" && danger) {
-    console.warn(
-      `"Dangerous" buttons should not be of size "XL". See https://www.figma.com/file/nqqazRo1ckU9ooC9ym9weI/Rill-Design-System?type=design&node-id=74-246&mode=design&t=XqvJDtq7QqQfNKE5-0`,
-    );
-  }
-
-  $: console.log({ type, finalType, dashed });
 
   const dispatch = createEventDispatcher();
 
@@ -414,19 +400,6 @@
     @apply bg-slate-200;
   }
 
-  /* SHAPE STYLES */
-
-  .square,
-  .circle {
-    @apply p-0 aspect-square;
-    @apply flex-grow-0 flex-shrink-0;
-  }
-
-  .rounded,
-  .circle {
-    @apply rounded-full;
-  }
-
   /* SIZE STYLES */
   .small {
     @apply h-6 text-[11px] min-h-[24px];
@@ -447,6 +420,18 @@
     @apply px-4;
   }
 
+  /* SHAPE STYLES */
+
+  .square,
+  .circle {
+    @apply p-0 aspect-square;
+    @apply flex-grow-0 flex-shrink-0;
+  }
+
+  .rounded,
+  .circle {
+    @apply rounded-full;
+  }
   /* TWEAKS */
 
   .compact {
