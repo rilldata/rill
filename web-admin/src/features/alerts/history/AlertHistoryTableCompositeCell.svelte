@@ -1,9 +1,10 @@
 <script lang="ts">
   import AlertHistoryStatusChip from "@rilldata/web-admin/features/alerts/history/AlertHistoryStatusChip.svelte";
   import { formatRunDate } from "@rilldata/web-admin/features/scheduled-reports/tableUtils";
-  import type {
-    V1AlertExecution,
-    V1AssertionResult,
+  import {
+    V1AssertionStatus,
+    type V1AlertExecution,
+    type V1AssertionResult,
   } from "@rilldata/web-common/runtime-client";
 
   export let alertTime: string;
@@ -18,4 +19,7 @@
     {formatRunDate(alertTime, timeZone)}
   </div>
   <AlertHistoryStatusChip {currentExecution} {result} />
+  {#if result.status === V1AssertionStatus.ASSERTION_STATUS_ERROR}
+    <span class="text-red-600">({result.errorMessage})</span>
+  {/if}
 </div>
