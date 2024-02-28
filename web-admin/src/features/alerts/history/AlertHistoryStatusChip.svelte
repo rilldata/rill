@@ -38,7 +38,7 @@
 </script>
 
 <div
-  class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.borderClass}"
+  class="flex space-x-1 items-center px-2 border rounded-full w-fit {currentStatusDisplay.borderClass}"
 >
   <span class={currentStatusDisplay.textClass}>{currentStatusDisplay.text}</span
   >
