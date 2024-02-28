@@ -4,13 +4,28 @@ import (
 	"errors"
 	"math"
 	"regexp"
+	"strconv"
 )
 
 // TODO: handle parameters in values
 
 func (a *AST) traverse() error {
 	if toBoolean(a.ast, astKeyError) {
-		return errors.New(toString(a.ast, astKeyErrorMessage))
+		originalErr := errors.New(toString(a.ast, astKeyErrorMessage))
+		pos := toString(a.ast, astKeyPosition)
+		if pos == "" {
+			return originalErr
+		}
+
+		num, err := strconv.Atoi(pos)
+		if err != nil {
+			return err
+		}
+
+		return PositionError{
+			originalErr,
+			num,
+		}
 	}
 
 	statements := toNodeArray(a.ast, astKeyStatements)
@@ -323,4 +338,13 @@ func forceConvertToNum[N int32 | int64 | uint32 | uint64 | float32 | float64](v 
 		return N(vt)
 	}
 	return 0
+}
+
+type PositionError struct {
+	error
+	Position int
+}
+
+func (e PositionError) Err() error {
+	return e.error
 }
