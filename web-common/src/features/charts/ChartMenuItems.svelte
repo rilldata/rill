@@ -1,10 +1,21 @@
 <script lang="ts">
   import { MenuItem } from "@rilldata/web-common/components/menu";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { deleteFileArtifact } from "../entity-management/actions";
+  import { EntityType } from "../entity-management/types";
+  import { useChartFileNames } from "./selectors";
 
   export let chartName: string;
 
-  function handleDeleteChart() {
-    console.log("delete chart", chartName);
+  $: chartFileNames = useChartFileNames($runtime.instanceId);
+
+  async function handleDeleteChart() {
+    await deleteFileArtifact(
+      $runtime.instanceId,
+      chartName,
+      EntityType.Chart,
+      $chartFileNames.data ?? [],
+    );
   }
 </script>
 
