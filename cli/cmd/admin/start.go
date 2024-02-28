@@ -203,7 +203,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProvisionerSetJSON: conf.ProvisionerSetJSON,
 				DefaultProvisioner: conf.DefaultProvisioner,
 				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
-				VersionNumber:      cliCfg.Version.Number,
+				VersionNumber:      ch.Version.Number,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
