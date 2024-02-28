@@ -1,6 +1,6 @@
 ---
 title: Configure connector credentials
-sidebar_label: Configure credentials
+sidebar_label: Configure Credentials
 sidebar_position: 00
 ---
 

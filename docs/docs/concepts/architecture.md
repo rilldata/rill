@@ -7,7 +7,7 @@ sidebar_position: 13
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## Architecture
+## Overview
 
-
+![architecture](../../static/img/concepts/architecture.png)
 
