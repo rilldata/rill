@@ -11,6 +11,7 @@
   export let timeZone: string;
   export let currentExecution: V1AlertExecution | null;
   export let result: V1AssertionResult;
+  $: console.log("result", result);
 </script>
 
 <div class="flex gap-x-2 items-center px-4 py-[10px]">
@@ -20,6 +21,6 @@
   </div>
   <AlertHistoryStatusChip {currentExecution} {result} />
   {#if result.status === V1AssertionStatus.ASSERTION_STATUS_ERROR}
-    <span class="text-red-600">({result.errorMessage})</span>
+    <span class="text-red-600">{result.errorMessage}</span>
   {/if}
 </div>
