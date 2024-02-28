@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    type V1AssertionResult,
     V1AssertionStatus,
+    type V1AssertionResult,
   } from "@rilldata/web-common/runtime-client";
 
   export let result: V1AssertionResult;
@@ -13,21 +13,22 @@
   };
   const statusDisplays: Record<V1AssertionStatus, StatusDisplay> = {
     [V1AssertionStatus.ASSERTION_STATUS_UNSPECIFIED]: {
-      text: "Pending",
-      textClass: "text-purple-600",
-      borderClass: "bg-purple-50 border-purple-300",
+      // This should never happen
+      text: "Status unknown",
+      textClass: "text-yellow-600",
+      borderClass: "bg-yellow-50 border-yellow-300",
     },
     [V1AssertionStatus.ASSERTION_STATUS_PASS]: {
-      text: "Pass",
-      textClass: "text-green-600",
-      borderClass: "bg-green-50 border-green-300",
-    },
-    [V1AssertionStatus.ASSERTION_STATUS_ERROR]: {
-      text: "Errored",
-      textClass: "text-red-600",
-      borderClass: "bg-red-50 border-red-300",
+      text: "Not triggered",
+      textClass: "text-gray-600",
+      borderClass: "bg-gray-50 border-gray-300",
     },
     [V1AssertionStatus.ASSERTION_STATUS_FAIL]: {
+      text: "Triggered",
+      textClass: "text-blue-600",
+      borderClass: "bg-blue-50 border-blue-300",
+    },
+    [V1AssertionStatus.ASSERTION_STATUS_ERROR]: {
       text: "Failed",
       textClass: "text-red-600",
       borderClass: "bg-red-50 border-red-300",
