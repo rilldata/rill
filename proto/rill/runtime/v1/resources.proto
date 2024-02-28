@@ -29,6 +29,8 @@ message Resource {
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
     Theme theme = 11;
+    Chart chart = 13;
+    Dashboard dashboard = 14;
   }
 }
 
@@ -385,6 +387,40 @@ message ThemeSpec {
 }
 
 message ThemeState {}
+
+message Chart {
+  ChartSpec spec = 1;
+  ChartState state = 2;
+}
+
+message ChartSpec {
+  string title = 1;
+  string query_name = 2;
+  string query_args_json = 3;
+  string vega_lite_config = 4;
+}
+
+message ChartState {}
+
+message Dashboard {
+  DashboardSpec spec = 1;
+  DashboardState state = 2;
+}
+
+message DashboardSpec {
+  string title = 1;
+  int64 grid_columns = 2;
+  int64 grid_rows = 3;
+  repeated DashboardComponent components = 4;
+}
+
+message DashboardState {}
+
+message DashboardComponent {
+  string chart = 1;
+  optional int64 columns = 2;
+  optional int64 rows = 3;
+}
 
 message Schedule {
   bool ref_update = 4;

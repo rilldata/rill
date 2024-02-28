@@ -37,6 +37,8 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
+	ChartSpec       *runtimev1.ChartSpec
+	DashboardSpec   *runtimev1.DashboardSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -68,6 +70,8 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
+	ResourceKindChart
+	ResourceKindDashboard
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -80,7 +84,7 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindSource, nil
 	case "model":
 		return ResourceKindModel, nil
-	case "metricsview", "metrics_view", "dashboard":
+	case "metricsview", "metrics_view":
 		return ResourceKindMetricsView, nil
 	case "migration":
 		return ResourceKindMigration, nil
@@ -90,6 +94,10 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
+	case "chart":
+		return ResourceKindChart, nil
+	case "dashboard":
+		return ResourceKindDashboard, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
 	}
@@ -113,6 +121,10 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
+	case ResourceKindChart:
+		return "Chart"
+	case ResourceKindDashboard:
+		return "Dashboard"
 	default:
 		panic(fmt.Sprintf("unexpected resource kind: %d", k))
 	}
@@ -715,6 +727,10 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
+	case ResourceKindChart:
+		r.ChartSpec = &runtimev1.ChartSpec{}
+	case ResourceKindDashboard:
+		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
 	}

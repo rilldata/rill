@@ -13,4 +13,6 @@ const (
 	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
 	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
 	ResourceKindTheme          string = "rill.runtime.v1.Theme"
+	ResourceKindChart          string = "rill.runtime.v1.Chart"
+	ResourceKindDashboard      string = "rill.runtime.v1.Dashboard"
 )
