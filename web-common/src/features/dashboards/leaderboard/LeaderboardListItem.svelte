@@ -20,10 +20,14 @@
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
+  import { page } from "$app/stores";
+  import { colorGetter } from "../filters/colorGetter";
+
+  const dashboardName = $page.params.name;
 
   export let dimensionName: string;
-
   export let itemData: LeaderboardItemData;
+
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
@@ -41,6 +45,10 @@
       dimensionsFilter: { toggleDimensionValueSelection },
     },
   } = getStateManagers();
+
+  $: checkColor =
+    (selected && colorGetter.get(dashboardName, dimensionName, label)) ??
+    "gray-300";
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);
   $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
@@ -114,6 +122,7 @@
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
+      color={checkColor}
       {excluded}
       {isBeingCompared}
       selectionIndex={itemData?.selectedIndex}
