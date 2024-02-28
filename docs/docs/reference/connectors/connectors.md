@@ -10,7 +10,7 @@ Rill supports connecting to a variety of data sources, including but not limited
 
 When running Rill locally, Rill Developer will establish a connection with existing credentials that have been configured on your computer (using embedded DuckDB). In Rill Cloud, a remote connection will be established using service account credentials that will need to be explicitly provided. 
 
-For more information about available connectors and how to use them in Rill (both locally and in the cloud), please refer to the following reference pages below.
+For more information about available connectors and how to use them in Rill (locally and in the cloud), please refer to the reference pages below.
 
 ## List of Rill Connectors
 
