@@ -9,16 +9,12 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import { getName } from "../entity-management/name-utils";
-  import {
-    ResourceKind,
-    useFilteredResourceNames,
-  } from "../entity-management/resource-selectors";
   import CustomDashboardMenuItems from "./CustomDashboardMenuItems.svelte";
   import { createCustomDashboard } from "./createCustomDashboard";
+  import { useCustomDashboardFileNames } from "./selectors";
 
-  $: customDashboardNames = useFilteredResourceNames(
+  $: customDashboardFileNames = useCustomDashboardFileNames(
     $runtime.instanceId,
-    ResourceKind.Dashboard,
   );
 
   let showCustomDashboards = true;
@@ -26,7 +22,7 @@
   async function handleAddCustomDashboard() {
     const newCustomDashboardName = getName(
       "dashboard",
-      $customDashboardNames.data ?? [],
+      $customDashboardFileNames.data ?? [],
     );
     await createCustomDashboard($runtime.instanceId, newCustomDashboardName);
     await goto(`/custom-dashboard/${newCustomDashboardName}`);
@@ -45,8 +41,8 @@
     class="pb-3 max-h-96 overflow-auto"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
   >
-    {#if $customDashboardNames?.data}
-      {#each $customDashboardNames.data as customDashboardName (customDashboardName)}
+    {#if $customDashboardFileNames?.data}
+      {#each $customDashboardFileNames.data as customDashboardName (customDashboardName)}
         <div
           animate:flip={{ duration: 200 }}
           out:slide|global={{ duration: LIST_SLIDE_DURATION }}

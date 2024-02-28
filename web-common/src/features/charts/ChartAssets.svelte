@@ -9,22 +9,16 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import { getName } from "../entity-management/name-utils";
-  import {
-    ResourceKind,
-    useFilteredResourceNames,
-  } from "../entity-management/resource-selectors";
   import ChartMenuItems from "./ChartMenuItems.svelte";
   import { createChart } from "./createChart";
+  import { useChartFileNames } from "./selectors";
 
-  $: chartNames = useFilteredResourceNames(
-    $runtime.instanceId,
-    ResourceKind.Chart,
-  );
+  $: chartFileNames = useChartFileNames($runtime.instanceId);
 
   let showCharts = true;
 
   async function handleAddChart() {
-    const newChartName = getName("chart", $chartNames.data ?? []);
+    const newChartName = getName("chart", $chartFileNames.data ?? []);
     await createChart($runtime.instanceId, newChartName);
     await goto(`/chart/${newChartName}`);
   }
@@ -39,8 +33,8 @@
     class="pb-3 max-h-96 overflow-auto"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
   >
-    {#if $chartNames?.data}
-      {#each $chartNames.data as chartName (chartName)}
+    {#if $chartFileNames?.data}
+      {#each $chartFileNames.data as chartName (chartName)}
         <div
           animate:flip={{ duration: 200 }}
           out:slide|global={{ duration: LIST_SLIDE_DURATION }}
