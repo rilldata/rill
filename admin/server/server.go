@@ -185,7 +185,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithErrorHandler(httpErrorHandler),
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
@@ -202,6 +202,19 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create regular http mux and mount gwMux on it
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", gwMux)
+
+	// Add runtime proxy
+	mux.Handle("/v1/orgs/{org}/projects/{project}/runtime/{path...}",
+		observability.TracingMiddleware(
+			observability.LoggingMiddleware(
+				s.logger,
+				s.authenticator.HTTPMiddlewareLenient(
+					http.HandlerFunc(s.runtimeProxyForOrgAndProject),
+				),
+			),
+			"runtime-proxy",
+		),
+	)
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -257,6 +270,15 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	handler := cors.New(corsOpts).Handler(mux)
 
 	return handler, nil
+}
+
+// Ping implements AdminService
+func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
+	resp := &adminv1.PingResponse{
+		Version: "", // TODO: Return version
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
@@ -315,23 +337,14 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	return attr, nil
 }
 
-// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// httpErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
 // code) to HTTP status code 400 instead of 500.
-func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+func httpErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
 	s := status.Convert(err)
 	if s.Code() == codes.Unknown {
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
-}
-
-// Ping implements AdminService
-func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
-	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
-		Time:    timestamppb.New(time.Now()),
-	}
-	return resp, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

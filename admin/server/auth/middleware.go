@@ -66,12 +66,30 @@ func (a *Authenticator) StreamServerInterceptor() grpc.StreamServerInterceptor {
 // It additionally supports reading access tokens from cookies.
 // It should be used for non-gRPC HTTP endpoints (CookieAuthAnnotator takes care of handling cookies in gRPC-gateway requests).
 func (a *Authenticator) HTTPMiddleware(next http.Handler) http.Handler {
+	return a.httpMiddleware(next, false)
+}
+
+// HTTPMiddlewareLenient is a lenient variant of HTTPMiddleware.
+// If the authoriztion header is malformed or invalid, it will still succeed, setting anonClaims on the request.
+func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
+	return a.httpMiddleware(next, true)
+}
+
+// httpMiddleware is the actual implementation of HTTPMiddleware and HTTPMiddlewareLenient.
+func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader != "" {
 			newCtx, err := a.parseClaimsFromBearer(r.Context(), authHeader)
 			if err != nil {
+				// In lenient model, we set anonClaims.
+				if lenient {
+					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+					next.ServeHTTP(w, r.WithContext(newCtx))
+					return
+				}
+
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
@@ -80,13 +98,13 @@ func (a *Authenticator) HTTPMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// There was no authorization header. Try the cookie.
+		// There was no authorization header. Try reading an access token from cookies.
 		sess := a.cookies.Get(r, cookieName)
-		// Read access token from cookie
 		authToken, ok := sess.Values[cookieFieldAccessToken].(string)
 		if ok && authToken != "" {
 			newCtx, err := a.parseClaimsFromToken(r.Context(), authToken)
 			if err != nil {
+				// NOTE: No lenient mode for cookies. It doesn't make sense at the moment.
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
