@@ -46,9 +46,9 @@
     },
   } = getStateManagers();
 
-  $: checkColor =
-    (selected && colorGetter.get(dashboardName, dimensionName, label)) ??
-    "gray-300";
+  $: checkColor = selected
+    ? colorGetter.get(dashboardName, dimensionName, label)
+    : "gray-300";
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);
   $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
