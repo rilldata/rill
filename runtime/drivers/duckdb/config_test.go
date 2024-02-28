@@ -122,5 +122,5 @@ func TestOverrides(t *testing.T) {
 	require.NoError(t, res.Scan(&mem))
 	require.NoError(t, res.Close())
 
-	require.Equal(t, "1.8GiB", mem)
+	require.Equal(t, "1.8 GiB", mem)
 }
