@@ -1,5 +1,9 @@
 export const AlertIntervalOptions = [
   {
+    label: "None",
+    value: "",
+  },
+  {
     label: "Hour",
     value: "PT1H",
   },
