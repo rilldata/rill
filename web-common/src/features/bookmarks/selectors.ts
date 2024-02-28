@@ -8,7 +8,7 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useProjectId(orgName: string, projectName: string) {
-  return createAdminServiceGetProject(orgName, projectName, {
+  return createAdminServiceGetProject(orgName, projectName, {}, {
     query: {
       enabled: !!orgName && !!projectName,
       select: (resp) => resp.project?.id,
@@ -18,8 +18,8 @@ export function useProjectId(orgName: string, projectName: string) {
 
 export type Bookmarks = {
   home: V1Bookmark | undefined;
-  own: V1Bookmark[];
-  global: V1Bookmark[];
+  personal: V1Bookmark[];
+  shared: V1Bookmark[];
 };
 export function getBookmarks(
   queryClient: QueryClient,
@@ -39,16 +39,18 @@ export function getBookmarks(
           select: (resp) => {
             const bookmarks: Bookmarks = {
               home: undefined,
-              own: resp.bookmarks?.filter((b) => !b.isGlobal) ?? [],
-              global: resp.bookmarks?.filter((b) => b.isGlobal) ?? [],
+              personal: [],
+              shared: [],
             };
-            const homeIndex = bookmarks.global.findIndex(
-              (b) => b.displayName === "Home",
-            );
-            if (homeIndex >= 0) {
-              bookmarks.home = bookmarks.global.splice(homeIndex, 1)[0];
-            }
-
+            resp.bookmarks?.forEach((bookmark) => {
+              if (bookmark.default) {
+                bookmarks.home = bookmark;
+              } else if (bookmark.shared) {
+                bookmarks.shared.push(bookmark);
+              } else {
+                bookmarks.personal.push(bookmark);
+              }
+            });
             return bookmarks;
           },
           queryClient,

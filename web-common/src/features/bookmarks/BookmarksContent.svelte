@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import {page} from "$app/stores";
   import {
     DropdownMenuContent,
     DropdownMenuGroup,
@@ -7,11 +7,11 @@
     DropdownMenuLabel,
     DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu/index";
-  import { getBookmarks } from "@rilldata/web-common/features/bookmarks/selectors";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { BookmarkPlusIcon } from "lucide-svelte";
   import BookmarkItem from "@rilldata/web-common/features/bookmarks/BookmarkItem.svelte";
-  import { createEventDispatcher } from "svelte";
+  import {getBookmarks} from "@rilldata/web-common/features/bookmarks/selectors";
+  import {useQueryClient} from "@tanstack/svelte-query";
+  import {BookmarkPlusIcon} from "lucide-svelte";
+  import {createEventDispatcher} from "svelte";
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
@@ -28,41 +28,41 @@
 <DropdownMenuContent class="w-[450px]">
   <DropdownMenuItem on:click={() => dispatch("create")}>
     <div class="flex flex-row items-center">
-      <BookmarkPlusIcon size="16px" />
+      <BookmarkPlusIcon size="16px"/>
       <div>Bookmark current view</div>
     </div>
   </DropdownMenuItem>
-  <DropdownMenuItem>
+  <DropdownMenuItem on:click={() => dispatch("create-home")}>
     <div class="flex flex-row items-center">
-      <BookmarkPlusIcon size="16px" />
+      <BookmarkPlusIcon size="16px"/>
       <div>Bookmark current view as Home</div>
     </div>
   </DropdownMenuItem>
-  <DropdownMenuSeparator />
+  <DropdownMenuSeparator/>
   {#if $bookmarks.data}
     <DropdownMenuGroup>
       <DropdownMenuLabel class="capitalize text-gray-500 text-sm">
         Your bookmarks
       </DropdownMenuLabel>
-      {#each $bookmarks.data.own as bookmark}
+      {#each $bookmarks.data.personal as bookmark}
         <DropdownMenuItem>
-          <BookmarkItem {bookmark} on:edit on:select />
+          <BookmarkItem {bookmark} on:edit on:select/>
         </DropdownMenuItem>
       {/each}
     </DropdownMenuGroup>
-    <DropdownMenuSeparator />
+    <DropdownMenuSeparator/>
     <DropdownMenuGroup>
       <DropdownMenuLabel class="capitalize text-gray-500 text-sm">
         Default bookmarks
       </DropdownMenuLabel>
       {#if $bookmarks.data.home}
         <DropdownMenuItem>
-          <BookmarkItem bookmark={$bookmarks.data.home} on:edit on:select />
+          <BookmarkItem bookmark={$bookmarks.data.home} on:edit on:select/>
         </DropdownMenuItem>
       {/if}
-      {#each $bookmarks.data.global as bookmark}
+      {#each $bookmarks.data.shared as bookmark}
         <DropdownMenuItem>
-          <BookmarkItem {bookmark} on:edit on:select />
+          <BookmarkItem {bookmark} on:edit on:select/>
         </DropdownMenuItem>
       {/each}
     </DropdownMenuGroup>

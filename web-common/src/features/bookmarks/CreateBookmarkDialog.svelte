@@ -30,7 +30,7 @@
     initialValues: {
       displayName: "Default Name",
       description: "",
-      isGlobal: false,
+      shared: "false",
       filtersOnly: false,
       absoluteTimeRange: false,
     },
@@ -45,7 +45,7 @@
           description: values.description,
           projectId: $projectId.data ?? "",
           dashboardName: metricsViewName,
-          isGlobal: values.isGlobal,
+          shared: values.shared === "true",
           data: getBookmarkForDashboard(
             $dashboardStore,
             values.filtersOnly,
@@ -92,12 +92,12 @@
       optional
     />
     <Select
-      bind:value={$form["isGlobal"]}
-      id="isGlobal"
+      bind:value={$form["shared"]}
+      id="shared"
       label="Category"
       options={[
-        { value: false, label: "Your bookmarks" },
-        { value: true, label: "Default bookmarks" },
+        { value: "false", label: "Your bookmarks" },
+        { value: "true", label: "Default bookmarks" },
       ]}
     />
     <Switch

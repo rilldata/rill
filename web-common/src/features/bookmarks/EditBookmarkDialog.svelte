@@ -31,7 +31,6 @@
     initialValues: {
       displayName: bookmark.displayName,
       description: (bookmark.description as string) ?? "",
-      isGlobal: !!bookmark.isGlobal,
       filtersOnly: false, // TODO
       absoluteTimeRange: false, // TODO
     },
@@ -45,7 +44,6 @@
           bookmarkId: bookmark.id,
           displayName: values.displayName,
           description: values.description,
-          isGlobal: values.isGlobal,
           data: getBookmarkForDashboard(
             $dashboardStore,
             values.filtersOnly,
