@@ -1,12 +1,12 @@
 ---
-title: Contributing and legal
-sidebar_label: Contributing and legal
+title: Contributing and Legal
+sidebar_label: Contributing and Legal
 sidebar_position: 100
 ---
 
 ## Developer guidelines
 
-We keep all information about developing and testing Rill in our monorepo at [github.com/rilldata/rill](http://github.com/rilldata/rill/). See the [`CONTRIBUTING.md`](https://github.com/rilldata/rill/blob/main/CONTRIBUTING.md) file as an entrypoint.
+We keep all information about developing and testing Rill in our monorepo at [github.com/rilldata/rill](http://github.com/rilldata/rill/). 
 
 ## Community guidelines
 
