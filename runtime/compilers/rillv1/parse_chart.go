@@ -9,7 +9,7 @@ import (
 
 type ChartYaml struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string `yaml:"title"`
+	Title      string           `yaml:"title"`
 	Data       struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`

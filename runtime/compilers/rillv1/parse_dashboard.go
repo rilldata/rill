@@ -10,7 +10,7 @@ import (
 
 type DashboardYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string `yaml:"title"`
+	Title      string           `yaml:"title"`
 	Grid       struct {
 		Columns int64 `yaml:"columns"`
 		Rows    int64 `yaml:"rows"`
