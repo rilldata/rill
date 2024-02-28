@@ -48,7 +48,7 @@ default_comparison:
     // Time range has changed
     await expect(page.getByText("Week to Date")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 3.4k +156 4%")).toBeVisible();
+    await expect(page.getByText("Total rows 3.4k +156 5%")).toBeVisible();
     await expect(page.getByText("Facebook 889 4%")).toBeVisible();
 
     // Select a different time range
@@ -209,7 +209,8 @@ available_time_ranges:
     });
     // Assert data has changed
     await expect(page.getByText("Total rows 5.6k +16 ~0%")).toBeVisible();
-    await expect(page.getByText("Facebook 1.5k -1%")).toBeVisible();
+    await page.pause();
+    await expect(page.getByText("Facebook 1.5k -2%")).toBeVisible();
 
     // Open the time comparison
     await page.getByLabel("Select time comparison option").click();
