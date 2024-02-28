@@ -4,9 +4,6 @@ description: Setting up gcs access
 sidebar_label: "GCS Bucket"
 sidebar_position: 20
 ---
-import Excerpt from '@site/src/components/Excerpt'
-
-<Excerpt text="Batch ingestion: integrating Rill with Google Cloud Storage" />
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google Cloud Storage Bucket.

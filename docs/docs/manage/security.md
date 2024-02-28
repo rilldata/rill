@@ -1,7 +1,7 @@
 ---
-title: "Access policies"
+title: "Access Policies"
 description: Granular, row-level security for dashboards
-sidebar_label: "Access policies"
+sidebar_label: "Access Policies"
 sidebar_position: 40
 ---
 

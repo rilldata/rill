@@ -1,17 +1,14 @@
 ---
 title: "Google BigQuery"
-description: Setting up BQ access
+description: Setting up BigQuery access
 sidebar_label: "Google BigQuery"
 sidebar_position: 30
 ---
-import Excerpt from '@site/src/components/Excerpt'
-
-<Excerpt text="Direction integration via Rill's BigQuery connector" />
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google BigQuery datasets.
 
-1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form <organization\>-\<workspace\>@rilldata.iam.gserviceaccount.com. 
+1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form ```organization```-```workspace name```>@rilldata.iam.gserviceaccount.com. 
 
 2. Go to your Google Cloud Console and select the project to which you want to grant access.
 ![](https://images.contentful.com/ve6smfzbifwz/4KskMcw6t4az7qdW5i9YDa/7c8fe66bdd9b02864ffd878a29031ac8/2c3627e-Project_selector.png)

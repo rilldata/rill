@@ -1,12 +1,10 @@
 ---
 title: "Azure Storage Container"
 description: Azure Storage Container
-sidebar_label: "Azuer Storage Container"
+sidebar_label: "Azure Storage Container"
 sidebar_position: 40
 ---
-import Excerpt from '@site/src/components/Excerpt'
-
-<Excerpt text="Integrating with Azure Cloud" />
+## Overview
 
 Rill would need access to the Azure Storage Container to fetch the data. For this Rill needs 
 * Storage Account

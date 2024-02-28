@@ -4,15 +4,12 @@ description: Setting up s3 access
 sidebar_label: "AWS S3 Bucket"
 sidebar_position: 10
 ---
-import Excerpt from '@site/src/components/Excerpt'
-
-<Excerpt text="Batch Ingestion: integrating Rill with S3 storage" />
 
 ## Setup instructions
 
 ### Setup S3 bucket
 
-* Create a new bucket, in the US Standard S3 region, named `rill-${ORG_NAME}-share`, where **"${ORG_NAME}"** is your organizational name. Make sure the bucket name is a DNS-compliant address. For example, the name should not include any underscores; use hyphens instead, as shown in the example above.
+* Create a new bucket, in the US Standard S3 region, named `rill-ORG_NAME-share`, where **"ORG_NAME"** is your organizational name. Make sure the bucket name is a DNS-compliant address. For example, the name should not include any underscores; use hyphens instead, as shown in the example above.
 * Be sure to disable the "Requester Pays" feature. For more information on S3 bucket name guidelines, see [the AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/RequesterPaysBuckets.html).
 
 ### Method 1: Bucket ACL Policies
@@ -28,7 +25,7 @@ arn:aws:iam::248432388601:root
 1. Open S3 bucket console: https://s3.console.aws.amazon.com/ 
 1. Choose the S3 bucket to be shared.
 1. Select Permissions -> Bucket Policy
-1. Add the following bucket policy for the access: (Replace rill-${ORG_NAME}-share or bucket-to-be-shared with the bucket name)
+1. Add the following bucket policy for the access: (Replace rill-ORG_NAME-share or bucket-to-be-shared with the bucket name)
 
 ```json
 {
@@ -45,7 +42,7 @@ arn:aws:iam::248432388601:root
                "s3:PutObjectAcl"
            ],
            "Resource": [
-               "arn:aws:s3:::rill-${ORG_NAME}-share/*"
+               "arn:aws:s3:::rill-ORG_NAME-share/*"
            ]
        },
        {
@@ -58,7 +55,7 @@ arn:aws:iam::248432388601:root
                "s3:GetBucketLocation"
            ],
            "Resource": [
-               "arn:aws:s3:::rill-${ORG_NAME}-share"
+               "arn:aws:s3:::rill-ORG_NAME-share"
            ]
        }
    ]
@@ -70,7 +67,7 @@ arn:aws:iam::248432388601:root
 
 We can use CLI to put the bucket policy too. Make sure you have access to put bucket policy.
 ```shell
-export BUCKET="rill-${ORG_NAME}-share" #Create a bucket with Name of Bucket to be shared
+export BUCKET="rill-ORG_NAME-share" #Create a bucket with Name of Bucket to be shared
 
 curl -s http://pkg.rilldata.com/aws/cross-account-s3-bucket-policy.json | sed "s/bucket-to-be-shared/${BUCKET}/" | tee policy.json
 
@@ -203,7 +200,7 @@ https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/crea
 
 4. The template allows you to set the following parameters:
     * **"Stack name"**
-      * Name the stack `rill-${ORG_NAME}-s3Logs`
+      * Name the stack `rill-ORG_NAME-s3Logs`
     * **"S3LogBucketName"**
       * Description: "New or existing bucket for S3 logs"
 
