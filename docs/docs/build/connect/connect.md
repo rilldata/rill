@@ -37,12 +37,12 @@ Rill will ingest the data next time you run `rill start`.
 Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
 
 :::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](/reference/glob-patterns).
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](../connect/glob-patterns.md).
 :::
 
 :::note Source Properties
 
-For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
+For more details about available configurations and properties, check our [Source YAML](../../reference/project-files/sources) reference page.
 
 :::
 
@@ -69,12 +69,12 @@ You can also push filters to your source definition using inline editing. Common
 - Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
 :::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](/reference/glob-patterns).
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](glob-patterns.md).
 :::
 
 :::note Source Properties
 
-For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
+For more details about available configurations and properties, check our [Source YAML](../../reference/project-files/sources) reference page.
 
 :::
 
@@ -84,7 +84,7 @@ Rill requires credentials to connect to remote data sources such as private buck
 
 When running Rill locally, Rill attempts to find existing credentials configured on your computer. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
 
-For more details on configuring sources, continue to [Source Credentials](../deploy/credentials).
+For more details on configuring sources, continue to [Source Credentials](../credentials/credentials).
 
 ## Live connections 
 A live connection enables users to discover existing tables and perform OLAP queries directly on the engine without transfering data to another OLAP engine.

@@ -10,7 +10,7 @@ Rill's BI-as-code approach allows you to build and manage dashboards in a codefu
 This tutorial is a step by step guide that will help you install Rill, ingest sources, model data and deploy a dashboard online.
 
 :::tip Example projects
-If you're looking for a place to get started, check out one of our [example projects](example-projects) which cover a variety of sources and use cases. 
+If you're looking for a place to get started, check out one of our [example projects](#installing-examples) which cover a variety of sources and use cases. 
 :::
 
 
