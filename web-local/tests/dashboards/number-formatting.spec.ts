@@ -133,7 +133,7 @@ dimensions:
     await page.getByRole("menuitem", { name: "percentage" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 9.9M% 3%" }),
+      page.getByRole("button", { name: "null 9.9M% 33%" }),
     ).toBeVisible();
 
     // try interval_ms...
