@@ -10,17 +10,17 @@ When running Rill locally, Rill attempts to find existing credentials configured
 
 For instructions on how to create a service account and set credentials in Rill Cloud, see our reference docs for:
 
-- [Amazon S3](s3.md) 
-- [Google Cloud Storage (GCS)](gcs.md)
-- [Azure Blob Storage (Azure)](azure.md)
-- [Amazon Athena](athena.md)
-- [BigQuery](bigquery.md)
-- [ClickHouse](../../build/credentials/clickhouse.md)
-- [MotherDuck](motherduck.md)
-- [Postgres](postgres.md)
-- [Salesforce](salesforce.md)
-- [Snowflake](snowflake.md)
-- [Google Sheets](googlesheets.md)
+- [Amazon S3](../../reference/connectors/s3.md) 
+- [Google Cloud Storage (GCS)](../../reference/connectors/gcs.md)
+- [Azure Blob Storage (Azure)](../../reference/connectors/azure.md)
+- [Amazon Athena](../../reference/connectors/athena.md)
+- [BigQuery](../../reference/connectors/bigquery.md)
+- [ClickHouse](../../reference/olap-engines/clickhouse.md)
+- [MotherDuck](../../reference/connectors/motherduck.md)
+- [Postgres](../../reference/connectors/postgres.md)
+- [Salesforce](../../reference/connectors/salesforce.md)
+- [Snowflake](../../reference/connectors/snowflake.md)
+- [Google Sheets](../../reference/connectors/googlesheets.md)
 
 
 
