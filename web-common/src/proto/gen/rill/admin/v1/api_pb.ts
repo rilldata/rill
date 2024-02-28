@@ -4041,9 +4041,14 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string dashboard_name = 2;
+   * @generated from field: string resource_kind = 2;
    */
-  dashboardName = "";
+  resourceKind = "";
+
+  /**
+   * @generated from field: string resource_name = 3;
+   */
+  resourceName = "";
 
   constructor(data?: PartialMessage<ListBookmarksRequest>) {
     super();
@@ -4054,7 +4059,8 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   static readonly typeName = "rill.admin.v1.ListBookmarksRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksRequest {
@@ -4195,22 +4201,27 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   displayName = "";
 
   /**
-   * @generated from field: string description = 6;
+   * @generated from field: string description = 2;
    */
   description = "";
 
   /**
-   * @generated from field: bytes data = 2;
+   * @generated from field: bytes data = 3;
    */
   data = new Uint8Array(0);
 
   /**
-   * @generated from field: string dashboard_name = 3;
+   * @generated from field: string resource_kind = 4;
    */
-  dashboardName = "";
+  resourceKind = "";
 
   /**
-   * @generated from field: string project_id = 4;
+   * @generated from field: string resource_name = 5;
+   */
+  resourceName = "";
+
+  /**
+   * @generated from field: string project_id = 6;
    */
   projectId = "";
 
@@ -4233,10 +4244,11 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   static readonly typeName = "rill.admin.v1.CreateBookmarkRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 3, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 4, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -7775,9 +7787,14 @@ export class Bookmark extends Message<Bookmark> {
   data = new Uint8Array(0);
 
   /**
-   * @generated from field: string dashboard_name = 4;
+   * @generated from field: string resource_kind = 10;
    */
-  dashboardName = "";
+  resourceKind = "";
+
+  /**
+   * @generated from field: string resource_name = 4;
+   */
+  resourceName = "";
 
   /**
    * @generated from field: string project_id = 5;
@@ -7790,12 +7807,12 @@ export class Bookmark extends Message<Bookmark> {
   userId = "";
 
   /**
-   * @generated from field: bool default = 10;
+   * @generated from field: bool default = 11;
    */
   default = false;
 
   /**
-   * @generated from field: bool shared = 11;
+   * @generated from field: bool shared = 12;
    */
   shared = false;
 
@@ -7821,11 +7838,12 @@ export class Bookmark extends Message<Bookmark> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 4, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "created_on", kind: "message", T: Timestamp },
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);

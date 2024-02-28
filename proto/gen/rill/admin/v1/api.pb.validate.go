@@ -11864,7 +11864,9 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for DashboardName
+	// no validation rules for ResourceKind
+
+	// no validation rules for ResourceName
 
 	if len(errors) > 0 {
 		return ListBookmarksRequestMultiError(errors)
@@ -12345,7 +12347,9 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for Data
 
-	// no validation rules for DashboardName
+	// no validation rules for ResourceKind
+
+	// no validation rules for ResourceName
 
 	// no validation rules for ProjectId
 
@@ -21381,7 +21385,9 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for Data
 
-	// no validation rules for DashboardName
+	// no validation rules for ResourceKind
+
+	// no validation rules for ResourceName
 
 	// no validation rules for ProjectId
 

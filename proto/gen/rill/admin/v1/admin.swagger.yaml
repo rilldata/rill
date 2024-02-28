@@ -1992,7 +1992,11 @@ paths:
           in: query
           required: false
           type: string
-        - name: dashboardName
+        - name: resourceKind
+          in: query
+          required: false
+          type: string
+        - name: resourceName
           in: query
           required: false
           type: string
@@ -2218,7 +2222,9 @@ definitions:
       data:
         type: string
         format: byte
-      dashboardName:
+      resourceKind:
+        type: string
+      resourceName:
         type: string
       projectId:
         type: string
@@ -2269,7 +2275,9 @@ definitions:
       data:
         type: string
         format: byte
-      dashboardName:
+      resourceKind:
+        type: string
+      resourceName:
         type: string
       projectId:
         type: string

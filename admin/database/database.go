@@ -649,29 +649,31 @@ type InsertProjectInviteOptions struct {
 }
 
 type Bookmark struct {
-	ID            string
-	DisplayName   string    `db:"display_name"`
-	Description   string    `db:"description"`
-	Data          []byte    `db:"data"`
-	DashboardName string    `db:"dashboard_name"`
-	ProjectID     string    `db:"project_id"`
-	UserID        string    `db:"user_id"`
-	Default       bool      `db:"default"`
-	Shared        bool      `db:"shared"`
-	CreatedOn     time.Time `db:"created_on"`
-	UpdatedOn     time.Time `db:"updated_on"`
+	ID           string
+	DisplayName  string    `db:"display_name"`
+	Description  string    `db:"description"`
+	Data         []byte    `db:"data"`
+	ResourceKind string    `db:"resource_kind"`
+	ResourceName string    `db:"resource_name"`
+	ProjectID    string    `db:"project_id"`
+	UserID       string    `db:"user_id"`
+	Default      bool      `db:"default"`
+	Shared       bool      `db:"shared"`
+	CreatedOn    time.Time `db:"created_on"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName   string `json:"display_name"`
-	Data          []byte `json:"data"`
-	DashboardName string `json:"dashboard_name"`
-	Description   string `json:"description"`
-	ProjectID     string `json:"project_id"`
-	UserID        string `json:"user_id"`
-	Default       bool   `json:"default"`
-	Shared        bool   `json:"shared"`
+	DisplayName  string `json:"display_name"`
+	Data         []byte `json:"data"`
+	ResourceKind string `json:"resource_kind"`
+	ResourceName string `json:"resource_name"`
+	Description  string `json:"description"`
+	ProjectID    string `json:"project_id"`
+	UserID       string `json:"user_id"`
+	Default      bool   `json:"default"`
+	Shared       bool   `json:"shared"`
 }
 
 // UpdateBookmarkOptions defines options for updating an existing bookmark

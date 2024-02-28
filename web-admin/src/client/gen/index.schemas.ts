@@ -12,7 +12,8 @@ export type AdminServiceSearchUsersParams = {
 
 export type AdminServiceListBookmarksParams = {
   projectId?: string;
-  dashboardName?: string;
+  resourceKind?: string;
+  resourceName?: string;
 };
 
 export type AdminServiceGetUserParams = { email?: string };
@@ -795,7 +796,8 @@ export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
   data?: string;
-  dashboardName?: string;
+  resourceKind?: string;
+  resourceName?: string;
   projectId?: string;
   default?: boolean;
   shared?: boolean;
@@ -823,7 +825,8 @@ export interface V1Bookmark {
   displayName?: string;
   description?: string;
   data?: string;
-  dashboardName?: string;
+  resourceKind?: string;
+  resourceName?: string;
   projectId?: string;
   userId?: string;
   default?: boolean;
