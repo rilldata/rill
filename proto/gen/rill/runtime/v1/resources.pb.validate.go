@@ -538,6 +538,88 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Chart:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetChart()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Chart",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Chart",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetChart()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Chart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Resource_Dashboard:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetDashboard()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Dashboard",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Dashboard",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDashboard()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Dashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -6609,6 +6691,877 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ThemeStateValidationError{}
+
+// Validate checks the field values on Chart with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Chart) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Chart with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ChartMultiError, or nil if none found.
+func (m *Chart) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Chart) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ChartValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ChartValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ChartValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ChartValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ChartValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ChartValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ChartMultiError(errors)
+	}
+
+	return nil
+}
+
+// ChartMultiError is an error wrapping multiple validation errors returned by
+// Chart.ValidateAll() if the designated constraints aren't met.
+type ChartMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ChartMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ChartMultiError) AllErrors() []error { return m }
+
+// ChartValidationError is the validation error returned by Chart.Validate if
+// the designated constraints aren't met.
+type ChartValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ChartValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ChartValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ChartValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ChartValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ChartValidationError) ErrorName() string { return "ChartValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ChartValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sChart.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ChartValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ChartValidationError{}
+
+// Validate checks the field values on ChartSpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ChartSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ChartSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ChartSpecMultiError, or nil
+// if none found.
+func (m *ChartSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ChartSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Title
+
+	// no validation rules for QueryName
+
+	// no validation rules for QueryArgsJson
+
+	// no validation rules for VegaLiteConfig
+
+	if len(errors) > 0 {
+		return ChartSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// ChartSpecMultiError is an error wrapping multiple validation errors returned
+// by ChartSpec.ValidateAll() if the designated constraints aren't met.
+type ChartSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ChartSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ChartSpecMultiError) AllErrors() []error { return m }
+
+// ChartSpecValidationError is the validation error returned by
+// ChartSpec.Validate if the designated constraints aren't met.
+type ChartSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ChartSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ChartSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ChartSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ChartSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ChartSpecValidationError) ErrorName() string { return "ChartSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ChartSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sChartSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ChartSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ChartSpecValidationError{}
+
+// Validate checks the field values on ChartState with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ChartState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ChartState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ChartStateMultiError, or
+// nil if none found.
+func (m *ChartState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ChartState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ChartStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// ChartStateMultiError is an error wrapping multiple validation errors
+// returned by ChartState.ValidateAll() if the designated constraints aren't met.
+type ChartStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ChartStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ChartStateMultiError) AllErrors() []error { return m }
+
+// ChartStateValidationError is the validation error returned by
+// ChartState.Validate if the designated constraints aren't met.
+type ChartStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ChartStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ChartStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ChartStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ChartStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ChartStateValidationError) ErrorName() string { return "ChartStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ChartStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sChartState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ChartStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ChartStateValidationError{}
+
+// Validate checks the field values on Dashboard with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Dashboard) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Dashboard with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DashboardMultiError, or nil
+// if none found.
+func (m *Dashboard) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Dashboard) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DashboardValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DashboardValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DashboardValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DashboardValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DashboardValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DashboardValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return DashboardMultiError(errors)
+	}
+
+	return nil
+}
+
+// DashboardMultiError is an error wrapping multiple validation errors returned
+// by Dashboard.ValidateAll() if the designated constraints aren't met.
+type DashboardMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DashboardMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DashboardMultiError) AllErrors() []error { return m }
+
+// DashboardValidationError is the validation error returned by
+// Dashboard.Validate if the designated constraints aren't met.
+type DashboardValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DashboardValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DashboardValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DashboardValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DashboardValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DashboardValidationError) ErrorName() string { return "DashboardValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DashboardValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDashboard.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DashboardValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DashboardValidationError{}
+
+// Validate checks the field values on DashboardSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DashboardSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DashboardSpec with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DashboardSpecMultiError, or
+// nil if none found.
+func (m *DashboardSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DashboardSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Title
+
+	// no validation rules for GridColumns
+
+	// no validation rules for GridRows
+
+	for idx, item := range m.GetComponents() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DashboardSpecValidationError{
+						field:  fmt.Sprintf("Components[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DashboardSpecValidationError{
+						field:  fmt.Sprintf("Components[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return DashboardSpecValidationError{
+					field:  fmt.Sprintf("Components[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return DashboardSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// DashboardSpecMultiError is an error wrapping multiple validation errors
+// returned by DashboardSpec.ValidateAll() if the designated constraints
+// aren't met.
+type DashboardSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DashboardSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DashboardSpecMultiError) AllErrors() []error { return m }
+
+// DashboardSpecValidationError is the validation error returned by
+// DashboardSpec.Validate if the designated constraints aren't met.
+type DashboardSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DashboardSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DashboardSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DashboardSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DashboardSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DashboardSpecValidationError) ErrorName() string { return "DashboardSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DashboardSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDashboardSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DashboardSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DashboardSpecValidationError{}
+
+// Validate checks the field values on DashboardState with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DashboardState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DashboardState with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DashboardStateMultiError,
+// or nil if none found.
+func (m *DashboardState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DashboardState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DashboardStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// DashboardStateMultiError is an error wrapping multiple validation errors
+// returned by DashboardState.ValidateAll() if the designated constraints
+// aren't met.
+type DashboardStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DashboardStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DashboardStateMultiError) AllErrors() []error { return m }
+
+// DashboardStateValidationError is the validation error returned by
+// DashboardState.Validate if the designated constraints aren't met.
+type DashboardStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DashboardStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DashboardStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DashboardStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DashboardStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DashboardStateValidationError) ErrorName() string { return "DashboardStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DashboardStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDashboardState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DashboardStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DashboardStateValidationError{}
+
+// Validate checks the field values on DashboardComponent with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DashboardComponent) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DashboardComponent with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DashboardComponentMultiError, or nil if none found.
+func (m *DashboardComponent) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DashboardComponent) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Chart
+
+	if m.Columns != nil {
+		// no validation rules for Columns
+	}
+
+	if m.Rows != nil {
+		// no validation rules for Rows
+	}
+
+	if len(errors) > 0 {
+		return DashboardComponentMultiError(errors)
+	}
+
+	return nil
+}
+
+// DashboardComponentMultiError is an error wrapping multiple validation errors
+// returned by DashboardComponent.ValidateAll() if the designated constraints
+// aren't met.
+type DashboardComponentMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DashboardComponentMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DashboardComponentMultiError) AllErrors() []error { return m }
+
+// DashboardComponentValidationError is the validation error returned by
+// DashboardComponent.Validate if the designated constraints aren't met.
+type DashboardComponentValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DashboardComponentValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DashboardComponentValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DashboardComponentValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DashboardComponentValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DashboardComponentValidationError) ErrorName() string {
+	return "DashboardComponentValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DashboardComponentValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDashboardComponent.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DashboardComponentValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DashboardComponentValidationError{}
 
 // Validate checks the field values on Schedule with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
