@@ -1,7 +1,6 @@
 <script lang="ts">
   import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
-  import { onMount } from "svelte";
   import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
