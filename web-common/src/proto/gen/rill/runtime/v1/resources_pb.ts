@@ -153,6 +153,12 @@ export class Resource extends Message<Resource> {
      */
     value: Theme;
     case: "theme";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.API api = 13;
+     */
+    value: API;
+    case: "api";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Resource>) {
@@ -175,6 +181,7 @@ export class Resource extends Message<Resource> {
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
     { no: 11, name: "theme", kind: "message", T: Theme, oneof: "resource" },
+    { no: 13, name: "api", kind: "message", T: API, oneof: "resource" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Resource {
@@ -3066,6 +3073,194 @@ export class CharLocation extends Message<CharLocation> {
 
   static equals(a: CharLocation | PlainMessage<CharLocation> | undefined, b: CharLocation | PlainMessage<CharLocation> | undefined): boolean {
     return proto3.util.equals(CharLocation, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.API
+ */
+export class API extends Message<API> {
+  /**
+   * @generated from field: rill.runtime.v1.APISpec spec = 1;
+   */
+  spec?: APISpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.APIState state = 2;
+   */
+  state?: APIState;
+
+  constructor(data?: PartialMessage<API>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.API";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: APISpec },
+    { no: 2, name: "state", kind: "message", T: APIState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): API {
+    return new API().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): API {
+    return new API().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): API {
+    return new API().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: API | PlainMessage<API> | undefined, b: API | PlainMessage<API> | undefined): boolean {
+    return proto3.util.equals(API, a, b);
+  }
+}
+
+/**
+ * API provide SQL based access to data stored in Rill
+ *
+ * @generated from message rill.runtime.v1.APISpec
+ */
+export class APISpec extends Message<APISpec> {
+  /**
+   * sql is free-form sql to query against any source/model stored in Rill
+   *
+   * @generated from field: string sql = 1;
+   */
+  sql = "";
+
+  /**
+   * metrics is used for querying against a metrics view
+   *
+   * @generated from field: rill.runtime.v1.MetricSQL metrics = 2;
+   */
+  metrics?: MetricSQL;
+
+  constructor(data?: PartialMessage<APISpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.APISpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics", kind: "message", T: MetricSQL },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {
+    return new APISpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): APISpec {
+    return new APISpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): APISpec {
+    return new APISpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: APISpec | PlainMessage<APISpec> | undefined, b: APISpec | PlainMessage<APISpec> | undefined): boolean {
+    return proto3.util.equals(APISpec, a, b);
+  }
+}
+
+/**
+ * MetricSQL is used for querying against a metrics view
+ * If sql is set, it is parsed and executed as metrics SQL
+ * Alternatively, you can also pass parameters similar to MetricsViewAggregation
+ *
+ * @generated from message rill.runtime.v1.MetricSQL
+ */
+export class MetricSQL extends Message<MetricSQL> {
+  /**
+   * @generated from field: string sql = 1;
+   */
+  sql = "";
+
+  /**
+   * @generated from field: string metrics_view = 2;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: repeated string measures = 3;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: string where = 4;
+   */
+  where = "";
+
+  /**
+   * @generated from field: string limit = 5;
+   */
+  limit = "";
+
+  constructor(data?: PartialMessage<MetricSQL>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricSQL";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "where", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "limit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricSQL {
+    return new MetricSQL().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricSQL {
+    return new MetricSQL().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricSQL {
+    return new MetricSQL().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricSQL | PlainMessage<MetricSQL> | undefined, b: MetricSQL | PlainMessage<MetricSQL> | undefined): boolean {
+    return proto3.util.equals(MetricSQL, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.APIState
+ */
+export class APIState extends Message<APIState> {
+  constructor(data?: PartialMessage<APIState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.APIState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APIState {
+    return new APIState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): APIState {
+    return new APIState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): APIState {
+    return new APIState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: APIState | PlainMessage<APIState> | undefined, b: APIState | PlainMessage<APIState> | undefined): boolean {
+    return proto3.util.equals(APIState, a, b);
   }
 }
 

@@ -37,6 +37,7 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
+	APISpec         *runtimev1.APISpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -68,6 +69,7 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
+	ResourceKindAPI
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -90,6 +92,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
+	case "api":
+		return ResourceKindAPI, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
 	}
@@ -113,6 +117,8 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
+	case ResourceKindAPI:
+		return "API"
 	default:
 		panic(fmt.Sprintf("unexpected resource kind: %d", k))
 	}
@@ -715,6 +721,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
+	case ResourceKindAPI:
+		r.APISpec = &runtimev1.APISpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
 	}

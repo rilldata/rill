@@ -2824,6 +2824,25 @@ definitions:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
     title: Type represents a data type in a schema
+  v1API:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1APISpec'
+      state:
+        $ref: '#/definitions/v1APIState'
+  v1APISpec:
+    type: object
+    properties:
+      sql:
+        type: string
+        title: sql is free-form sql to query against any source/model stored in Rill
+      metrics:
+        $ref: '#/definitions/v1MetricSQL'
+        title: metrics is used for querying against a metrics view
+    title: API provide SQL based access to data stored in Rill
+  v1APIState:
+    type: object
   v1Alert:
     type: object
     properties:
@@ -3708,6 +3727,25 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
+  v1MetricSQL:
+    type: object
+    properties:
+      sql:
+        type: string
+      metricsView:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      where:
+        type: string
+      limit:
+        type: string
+    title: |-
+      MetricSQL is used for querying against a metrics view
+      If sql is set, it is parsed and executed as metrics SQL
+      Alternatively, you can also pass parameters similar to MetricsViewAggregation
   v1MetricsView:
     type: object
     properties:
@@ -5060,6 +5098,8 @@ definitions:
         $ref: '#/definitions/v1BucketPlanner'
       theme:
         $ref: '#/definitions/v1Theme'
+      api:
+        $ref: '#/definitions/v1API'
   v1ResourceEvent:
     type: string
     enum:

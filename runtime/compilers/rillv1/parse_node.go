@@ -47,6 +47,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseAlert(ctx, node)
 	case ResourceKindTheme:
 		return p.parseTheme(ctx, node)
+	case ResourceKindAPI:
+		return p.parseAPI(ctx, node)
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
 	}

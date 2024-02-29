@@ -538,6 +538,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Api:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetApi()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Api",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Api",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetApi()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Api",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -7261,6 +7302,497 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CharLocationValidationError{}
+
+// Validate checks the field values on API with the rules defined in the proto
+// definition for this message. If any rules are violated, the first error
+// encountered is returned, or nil if there are no violations.
+func (m *API) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on API with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in APIMultiError, or nil if none found.
+func (m *API) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *API) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, APIValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, APIValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return APIValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, APIValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, APIValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return APIValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return APIMultiError(errors)
+	}
+
+	return nil
+}
+
+// APIMultiError is an error wrapping multiple validation errors returned by
+// API.ValidateAll() if the designated constraints aren't met.
+type APIMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m APIMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m APIMultiError) AllErrors() []error { return m }
+
+// APIValidationError is the validation error returned by API.Validate if the
+// designated constraints aren't met.
+type APIValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e APIValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e APIValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e APIValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e APIValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e APIValidationError) ErrorName() string { return "APIValidationError" }
+
+// Error satisfies the builtin error interface
+func (e APIValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAPI.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = APIValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = APIValidationError{}
+
+// Validate checks the field values on APISpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *APISpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on APISpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in APISpecMultiError, or nil if none found.
+func (m *APISpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *APISpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Sql
+
+	if all {
+		switch v := interface{}(m.GetMetrics()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, APISpecValidationError{
+					field:  "Metrics",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, APISpecValidationError{
+					field:  "Metrics",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetrics()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return APISpecValidationError{
+				field:  "Metrics",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return APISpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// APISpecMultiError is an error wrapping multiple validation errors returned
+// by APISpec.ValidateAll() if the designated constraints aren't met.
+type APISpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m APISpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m APISpecMultiError) AllErrors() []error { return m }
+
+// APISpecValidationError is the validation error returned by APISpec.Validate
+// if the designated constraints aren't met.
+type APISpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e APISpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e APISpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e APISpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e APISpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e APISpecValidationError) ErrorName() string { return "APISpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e APISpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAPISpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = APISpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = APISpecValidationError{}
+
+// Validate checks the field values on MetricSQL with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MetricSQL) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricSQL with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MetricSQLMultiError, or nil
+// if none found.
+func (m *MetricSQL) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricSQL) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Sql
+
+	// no validation rules for MetricsView
+
+	// no validation rules for Where
+
+	// no validation rules for Limit
+
+	if len(errors) > 0 {
+		return MetricSQLMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricSQLMultiError is an error wrapping multiple validation errors returned
+// by MetricSQL.ValidateAll() if the designated constraints aren't met.
+type MetricSQLMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricSQLMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricSQLMultiError) AllErrors() []error { return m }
+
+// MetricSQLValidationError is the validation error returned by
+// MetricSQL.Validate if the designated constraints aren't met.
+type MetricSQLValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricSQLValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricSQLValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricSQLValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricSQLValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricSQLValidationError) ErrorName() string { return "MetricSQLValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MetricSQLValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricSQL.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricSQLValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricSQLValidationError{}
+
+// Validate checks the field values on APIState with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *APIState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on APIState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in APIStateMultiError, or nil
+// if none found.
+func (m *APIState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *APIState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return APIStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// APIStateMultiError is an error wrapping multiple validation errors returned
+// by APIState.ValidateAll() if the designated constraints aren't met.
+type APIStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m APIStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m APIStateMultiError) AllErrors() []error { return m }
+
+// APIStateValidationError is the validation error returned by
+// APIState.Validate if the designated constraints aren't met.
+type APIStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e APIStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e APIStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e APIStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e APIStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e APIStateValidationError) ErrorName() string { return "APIStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e APIStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAPIState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = APIStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = APIStateValidationError{}
 
 // Validate checks the field values on MetricsViewSpec_DimensionV2 with the
 // rules defined in the proto definition for this message. If any rules are

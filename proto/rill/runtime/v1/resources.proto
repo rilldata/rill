@@ -29,6 +29,7 @@ message Resource {
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
     Theme theme = 11;
+    API api = 13;
   }
 }
 
@@ -418,3 +419,29 @@ message ExecutionError {
 message CharLocation {
   uint32 line = 1;
 }
+
+message API {
+  APISpec spec = 1;
+  APIState state = 2;
+}
+
+// API provide SQL based access to data stored in Rill
+message APISpec {
+  // sql is free-form sql to query against any source/model stored in Rill
+  string sql = 1;
+  // metrics is used for querying against a metrics view
+  MetricSQL metrics = 2;
+}
+
+// MetricSQL is used for querying against a metrics view
+// If sql is set, it is parsed and executed as metrics SQL
+// Alternatively, you can also pass parameters similar to MetricsViewAggregation
+message MetricSQL {
+  string sql = 1;
+  string metrics_view = 2;
+  repeated string measures = 3;
+  string where = 4;
+  string limit = 5;
+}
+
+message APIState {}
