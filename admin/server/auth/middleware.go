@@ -83,7 +83,7 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 		if authHeader != "" {
 			newCtx, err := a.parseClaimsFromBearer(r.Context(), authHeader)
 			if err != nil {
-				// In lenient model, we set anonClaims.
+				// In lenient mode, we set anonClaims.
 				if lenient {
 					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
 					next.ServeHTTP(w, r.WithContext(newCtx))
