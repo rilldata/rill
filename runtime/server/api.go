@@ -9,12 +9,16 @@ import (
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 // nolint
 func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	// todo :: check for any permissions
+	if !auth.GetClaims(req.Context()).CanInstance(pathParams["instance_id"], auth.ReadOLAP) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	ctx := req.Context()
 	if pathParams["name"] == "" {
@@ -38,7 +42,7 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams
 
 	queryParams := req.URL.Query()
 	for k, v := range queryParams {
-		// TODO : So that client does need to put array accessors in templates.
+		// set only the first value so that client does need to put array accessors in templates.
 		reqParams[k] = v[0]
 	}
 
