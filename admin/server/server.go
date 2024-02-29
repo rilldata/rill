@@ -107,13 +107,15 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	cookieStore.Options.Domain = ""
 
 	// We need to protect against CSRF and clickjacking attacks, but still support requests from the UI to the admin service.
-	// This is accomplished by setting SameSite=Strict (note that "site" just means the same root domain, not sub-domain).
+	// This is accomplished by setting SameSite=Lax (note that "site" just means the same root domain, not sub-domain).
 	// For example, cookies will be passed on requests from ui.rilldata.com to admin.rilldata.com (or localhost:3000 to localhost:8080),
 	// but not for requests from a different site AND NOT from an iframe of ui.rilldata.com on a different site.
 	//
+	// Note: We use Lax instead of Strict because we need cookies to be passed on redirects to the admin service from external providers, namely Auth0 and Github.
+	//
 	// Note on embedding: When embedding our UI, requests are only made to the runtime using the ephemeral JWT generated for the iframe. So we do not need cookies to be passed.
 	// In the future, if iframes need to communicate with the admin service, we should introduce a scheme involving ephemeral tokens and not rely on cookies.
-	cookieStore.Options.SameSite = http.SameSiteStrictMode
+	cookieStore.Options.SameSite = http.SameSiteLaxMode
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
 		AuthDomain:       opts.AuthDomain,
