@@ -39,7 +39,7 @@
   <div class="w-full h-fit overflow-scroll px-[2px] pb-2">
     {#if !collapsed}
       {#if items.length}
-        <DragList {items} />
+        <DragList {items} type={title} />
       {:else}
         <p class="text-gray-500 my-1">No available fields</p>
       {/if}

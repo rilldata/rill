@@ -20,11 +20,15 @@
 <script lang="ts">
   export let item: PivotChipData;
   export let removable = false;
+  export let grab = false;
 
   const dispatch = createEventDispatcher();
 </script>
 
 <Chip
+  {grab}
+  on:mousedown
+  on:click
   outline
   supressTooltip
   {removable}

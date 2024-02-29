@@ -13,6 +13,7 @@
   export let active = false;
   export let outline = false;
   export let readOnly = false;
+  export let grab = false;
 
   /** chip style props */
   export let extraRounded = true;
@@ -46,7 +47,7 @@
   {#if readOnly}
     <div
       class="
-      grid gap-x-2 items-center px-4
+      grid gap-x-2 items-center
       py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'}
       {textClass}
       {active ? bgActiveClass : bgBaseClass}
@@ -67,10 +68,9 @@
       {/if}
     </div>
   {:else}
-    <button
-      on:click
-      class="
-    grid gap-x-2 items-center pl-2 pr-{extraPadding ? '4' : '2'}
+    <div
+      class="w-fit
+    grid items-center
       py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'} cursor-pointer
     {textClass}
     {bgHoverClass} 
@@ -114,10 +114,21 @@
       {/if}
       <!-- body -->
       {#if $$slots.body}
-        <div>
+        <button
+          on:click
+          on:mousedown
+          class="px-2 pr-{extraPadding ? '4' : '2'} text-inherit w-full"
+          class:grab
+        >
           <slot name="body" />
-        </div>
+        </button>
       {/if}
-    </button>
+    </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  .grab {
+    @apply cursor-grab;
+  }
+</style>
