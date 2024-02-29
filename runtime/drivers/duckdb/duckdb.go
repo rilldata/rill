@@ -60,7 +60,8 @@ var spec = drivers.Spec{
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
-			Key: "dsn",
+			Key:  "path",
+			Type: drivers.StringPropertyType,
 		},
 	},
 }

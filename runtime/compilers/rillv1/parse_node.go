@@ -239,9 +239,9 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		}
 	}
 
-	// If connector wasn't set explicitly, default to DefaultConnector
+	// If connector wasn't set explicitly, use the default OLAP connector
 	if res.Connector == "" {
-		res.Connector = p.DefaultConnector
+		res.Connector = p.defaultOLAPConnector()
 		res.ConnectorInferred = true
 	}
 

@@ -58,11 +58,9 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex = selectedValues
-    .map((label) => {
-      return rows.findIndex((row) => row[dimensionColumnName] === label);
-    })
-    .filter((i) => i >= 0);
+  $: selectedIndex = selectedValues.map((label) => {
+    return rows.findIndex((row) => row[dimensionColumnName] === label);
+  });
 
   let rowScrollOffset = 0;
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;

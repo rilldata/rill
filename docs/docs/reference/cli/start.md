@@ -14,8 +14,6 @@ rill start [<path>] [flags]
 
 ```
       --no-open             Do not open browser
-      --db string           Database DSN (default "main.db")
-      --db-driver string    Database driver (default "duckdb")
       --port int            Port for HTTP (default 9009)
       --port-grpc int       Port for gRPC (internal) (default 49009)
       --readonly            Show only dashboards in UI
@@ -31,9 +29,10 @@ rill start [<path>] [flags]
 ### Global flags
 
 ```
-      --format string   Output format (options: "human", "json", "csv") (default "human")
-  -h, --help            Print usage
-      --interactive     Prompt for missing required parameters (default true)
+      --api-token string   Token for authenticating with the cloud API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
+  -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO

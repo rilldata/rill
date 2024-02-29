@@ -12,12 +12,10 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Revoke token",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			_, err = client.RevokeServiceAuthToken(cmd.Context(), &adminv1.RevokeServiceAuthTokenRequest{
 				TokenId: args[0],
@@ -26,7 +24,7 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Revoked token")
+			ch.PrintfSuccess("Revoked token\n")
 
 			return nil
 		},

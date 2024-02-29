@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
@@ -9,7 +10,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let readOnly = false;
 
@@ -104,7 +104,6 @@
               {label}
               {selectedValues}
               column={dimension.column}
-              {readOnly}
               on:remove={() => removeDimensionFilter(name)}
               on:apply={(event) =>
                 toggleDimensionValueSelection(name, event.detail, true)}
@@ -119,7 +118,6 @@
             {label}
             {dimensionName}
             {expr}
-            {readOnly}
             on:remove={() => removeMeasureFilter(dimensionName, name)}
             on:apply={({ detail: { dimension, oldDimension, expr } }) =>
               handleMeasureFilterApply(dimension, name, oldDimension, expr)}

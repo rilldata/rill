@@ -9,7 +9,7 @@ func WhitelistCmd(ch *cmdutil.Helper) *cobra.Command {
 	whitelistCmd := &cobra.Command{
 		Use:               "whitelist",
 		Short:             "Whitelist access by email domain",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch.Config), cmdutil.CheckOrganization(ch.Config)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
 	whitelistCmd.AddCommand(SetupCmd(ch))

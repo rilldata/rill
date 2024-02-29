@@ -248,6 +248,9 @@
   tr > .with-row-dimension:first-of-type {
     @apply sticky left-0 z-0;
     @apply bg-white;
+    @apply truncate;
+    /* re-evaluate this when adding resizing and virtualization */
+    max-width: 500px;
   }
 
   tr > td:first-of-type:not(:last-of-type) > .cell {

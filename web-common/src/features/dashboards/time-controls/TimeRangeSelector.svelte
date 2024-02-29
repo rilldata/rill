@@ -53,7 +53,14 @@
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
-  $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
+  $: selectedSubRange =
+    $dashboardStore?.selectedScrubRange?.start &&
+    $dashboardStore?.selectedScrubRange?.end
+      ? {
+          start: $dashboardStore.selectedScrubRange.start,
+          end: $dashboardStore.selectedScrubRange.end,
+        }
+      : null;
 
   function setIntermediateSelection(
     timeRangeName: TimeRangePreset | TimeComparisonOption | undefined,
@@ -154,18 +161,16 @@
   let:toggleFloatingElement
   on:open={handleMenuOpen}
 >
-  {#if hasSubRangeSelected}
+  {#if selectedSubRange}
     <div class="flex">
-      {#if $dashboardStore?.selectedScrubRange?.start && $dashboardStore?.selectedScrubRange?.end}
-        <TimeRangeScrubChip
-          on:click={toggleFloatingElement}
-          on:remove={() => dispatch("remove-scrub")}
-          {active}
-          start={$dashboardStore?.selectedScrubRange?.start}
-          end={$dashboardStore?.selectedScrubRange?.end}
-          zone={$dashboardStore?.selectedTimezone}
-        />
-      {/if}
+      <TimeRangeScrubChip
+        on:click={toggleFloatingElement}
+        on:remove={() => dispatch("remove-scrub")}
+        {active}
+        start={selectedSubRange.start}
+        end={selectedSubRange.end}
+        zone={$dashboardStore?.selectedTimezone}
+      />
     </div>
   {:else}
     <button
@@ -210,11 +215,11 @@
   {/if}
   <Menu
     label="Time range selector"
+    let:toggleFloatingElement
     maxWidth="300px"
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    let:toggleFloatingElement
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
@@ -222,7 +227,7 @@
       start: boundaryStart,
       end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
     }}
-    {#if hasSubRangeSelected}
+    {#if selectedSubRange}
       <MenuItem
         on:before-select={setIntermediateSelection(TimeRangePreset.CUSTOM)}
         on:select={() => zoomScrub(toggleFloatingElement)}
@@ -270,6 +275,20 @@
     {#if $timeRangeSelectorState.periodToDateRanges?.length}
       <Divider />
       {#each $timeRangeSelectorState.periodToDateRanges as timeRange}
+        <MenuItem
+          on:before-select={setIntermediateSelection(timeRange.name)}
+          on:select={() =>
+            onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
+        >
+          <span class:font-bold={intermediateSelection === timeRange.name}>
+            {timeRange.label}
+          </span>
+        </MenuItem>
+      {/each}
+    {/if}
+    {#if $timeRangeSelectorState.previousCompleteDateRanges?.length}
+      <Divider />
+      {#each $timeRangeSelectorState.previousCompleteDateRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>

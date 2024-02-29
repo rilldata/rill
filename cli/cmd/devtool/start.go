@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	minGoVersion   = "1.21"
+	minGoVersion   = "1.22"
 	minNodeVersion = "18"
 	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"

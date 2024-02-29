@@ -7,11 +7,10 @@ import (
 )
 
 func UserCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
 	userCmd := &cobra.Command{
 		Use:               "user",
 		Short:             "Manage users",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
 	userCmd.AddCommand(ListCmd(ch))

@@ -2,24 +2,35 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let index: number;
 
-  const {
-    selectors: {
-      measures: { allMeasures },
-    },
-  } = getStateManagers();
-
-  $: measureOptions =
-    $allMeasures?.map((m) => ({
-      value: m.name as string,
-      label: m.label?.length ? m.label : m.expression,
-    })) ?? [];
-
   const { form, errors } = formState;
+
+  $: metricsView = useMetricsView(
+    $runtime.instanceId,
+    $form["metricsViewName"],
+  );
+
+  $: measure = $metricsView.data?.measures?.find(
+    (m) => m.name === $form["measure"],
+  );
+  $: measureOptions = [
+    {
+      value: $form["measure"],
+      label: measure?.label?.length ? measure.label : measure?.expression,
+    },
+  ];
+
+  // Debounce the update of value. This avoid constant refetches
+  let value: string = $form["criteria"][index].value;
+  const valueUpdater = debounce(() => {
+    $form["criteria"][index].value = value;
+  }, 500);
 </script>
 
 <div class="grid grid-cols-2 flex-wrap gap-2">
@@ -40,14 +51,15 @@
   <Select
     id="compareWith"
     label=""
-    options={[{ value: "value" }, { value: "measure" }]}
+    options={[{ value: "value" }]}
     placeholder="compare with"
     value={"value"}
   />
   <InputV2
+    bind:value
+    error={$errors["criteria"][index]?.value}
     id="value"
-    bind:value={$form["criteria"][index]["value"]}
-    error={$errors["criteria"][index]["value"]}
+    on:input={valueUpdater}
     placeholder={"0"}
   />
 </div>
