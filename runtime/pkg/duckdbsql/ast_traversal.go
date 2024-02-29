@@ -1,6 +1,7 @@
 package duckdbsql
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 	"regexp"
@@ -336,6 +337,16 @@ func forceConvertToNum[N int32 | int64 | uint32 | uint64 | float32 | float64](v 
 		return N(vt)
 	case float64:
 		return N(vt)
+	case json.Number:
+		i, err := vt.Int64()
+		if err == nil {
+			return N(i)
+		}
+		f, err := vt.Float64()
+		if err == nil {
+			return N(f)
+		}
+		return 0
 	}
 	return 0
 }
