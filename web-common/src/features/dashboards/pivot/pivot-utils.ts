@@ -383,7 +383,7 @@ export function getSortForAccessor(
 export function getFilterForOtherMeasuresAxesQuery(
   config: PivotDataStoreConfig,
   rowDimensionValues: string[],
-) {
+): V1Expression {
   const { rowDimensionNames } = config;
   const anchorDimension = rowDimensionNames?.[0];
 
