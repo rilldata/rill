@@ -72,15 +72,7 @@
   style:left="{-$navVisibilityTween * $navigationWidth}px"
 >
   <div
-    class="
-  border-r
-  fixed
-  overflow-auto
-  border-gray-200
-  transition-colors
-  h-screen
-  bg-white
-"
+    class="sidebar"
     class:hidden={$navVisibilityTween === 1}
     class:pointer-events-none={!$navigationLayout?.visible}
     style:top="0px"
@@ -156,5 +148,10 @@
   </svelte:fragment>
 </SurfaceControlButton>
 
-<style>
+<style lang="postcss">
+  .sidebar {
+    @apply border-r fixed overflow-auto border-gray-200;
+    @apply h-screen;
+    @apply bg-white transition-colors;
+  }
 </style>
