@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
+  import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
-  import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
@@ -91,8 +90,7 @@
     />
   </FormSection>
   <FormSection title="Data preview">
-    <AlertDataPreview
-      criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
+    <DataPreview
       measure={$form["measure"]}
       metricsViewName={$form["metricsViewName"]}
       splitByDimension={$form["splitByDimension"]}
