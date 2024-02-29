@@ -38,6 +38,9 @@ func (p *Parser) parseAPI(ctx context.Context, node *Node) error {
 		return err
 	}
 
+	if tmp.Properties == nil {
+		tmp.Properties = make(map[string]any)
+	}
 	if node.SQL != "" {
 		if tmp.resolver != "" && tmp.resolver != "SQLResolver" {
 			return fmt.Errorf("resolver must be empty or SQLResolver")

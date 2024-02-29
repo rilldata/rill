@@ -1243,6 +1243,9 @@ sql: select * from m1
 `,
 	})
 
+	props, err := structpb.NewStruct(map[string]any{"sql": "select * from m1", "resolver": "SQLResolver"})
+	require.NoError(t, err)
+
 	resources := []*Resource{
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
@@ -1257,7 +1260,7 @@ sql: select * from m1
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Sql: "select * from m1",
+				ResolverProperties: props,
 			},
 		},
 	}
