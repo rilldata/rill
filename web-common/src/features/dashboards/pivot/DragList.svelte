@@ -1,20 +1,18 @@
 <script context="module" lang="ts">
   import AddField from "./AddField.svelte";
-  import PivotChip from "./PivotChip.svelte";
+  import PivotDragItem from "./PivotDragItem.svelte";
+  import PivotPortalItem from "./PivotPortalItem.svelte";
   import { createEventDispatcher } from "svelte";
   import { PivotChipData, PivotChipType } from "./types";
   import { writable } from "svelte/store";
+  import { swapListener } from "./swapListener";
 
-  type DragEvent<T> = MouseEvent & {
-    currentTarget: EventTarget & T;
-  };
-
-  export type Section = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
+  export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
   export type DragData = {
-    chip: PivotChipData;
-    source: Section;
+    source: Zone;
     width: number;
+    chip: PivotChipData;
     initialIndex: number;
   };
 
@@ -25,11 +23,12 @@
 <script lang="ts">
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
-  export let type: Section;
+  export let zone: Zone;
 
-  const isDropLocation = type === "columns" || type === "rows";
+  const isDropLocation = zone === "columns" || zone === "rows";
 
   const dispatch = createEventDispatcher();
+  const ghostIndex = writable<number | undefined>(undefined);
 
   $: dragData = $dragging;
   $: currentlyDragging = Boolean(dragData);
@@ -37,61 +36,49 @@
   $: dragChip = dragData?.chip;
   $: ghostWidth = dragData?.width;
   $: initialIndex = dragData?.initialIndex ?? -1;
-  $: zoneStartedDrag = source === type;
-  $: lastDimensionIndex = items.findIndex(
-    (i) => i.type === PivotChipType.Dimension,
+  $: zoneStartedDrag = source === zone;
+  $: lastDimensionIndex = items.findLastIndex(
+    (i) => i.type !== PivotChipType.Measure,
   );
 
   $: isValidDropZone =
     isDropLocation &&
     currentlyDragging &&
-    (type === "columns" || dragChip?.type !== PivotChipType.Measure);
+    (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
 
+  let swap = false;
   let container: HTMLDivElement;
-  let node: HTMLButtonElement;
   let offset = { x: 0, y: 0 };
-  let ghostIndex: number | undefined = undefined;
+  let dragStart = { left: 0, top: 0 };
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
+    e.preventDefault();
+
     const dragItem = document.getElementById(item.id);
     if (!dragItem) return;
 
-    node = dragItem.cloneNode(true) as HTMLButtonElement;
-
-    document.body.appendChild(node);
-
-    window.addEventListener("mousemove", trackDragItem);
-
     const { width, left, top } = dragItem.getBoundingClientRect();
 
-    node.style.left = `${left}px`;
-    node.style.top = `${top}px`;
+    dragStart = { left, top };
 
     offset = {
       x: e.clientX - left,
       y: e.clientY - top,
     };
 
-    node.classList.add(
-      "shadow-lg",
-      "shadow-slate-300",
-      "absolute",
-      "pointer-events-none",
-    );
-
-    document.body.style.cursor = "grabbing ";
-
     const index = Number(dragItem.dataset.index);
     initialIndex = index;
-    ghostIndex = index;
+    ghostIndex.set(index);
 
     if (isDropLocation) {
-      addSwapListeners(container);
+      swap = true;
 
       const temp = [...items];
       temp.splice(index, 1);
       items = temp;
 
+      // Allow us to abort this update if the pill is dropped to the same location
+      // This shouldn't be necessary after state management is updated
       const controller = new AbortController();
 
       controllerStore.set(controller);
@@ -108,181 +95,122 @@
       );
     }
 
-    window.addEventListener(
-      "mouseup",
-      () => {
-        window.removeEventListener("mousemove", trackDragItem);
-        resetGlobalDrag();
-      },
-      {
-        once: true,
-      },
-    );
-
     dragging.set({
       chip: item,
-      source: type,
+      source: zone,
       width,
       initialIndex,
     });
   }
 
-  function resetGlobalDrag() {
-    document.body.removeChild(node);
-    dragging.set(null);
-    document.body.style.cursor = "auto";
-  }
-
-  function trackDragItem(e: MouseEvent) {
-    e.preventDefault();
-
-    requestAnimationFrame(() => {
-      node.style.left = `${e.clientX - offset.x}px`;
-      node.style.top = `${e.clientY - offset.y}px`;
-    });
-  }
-
-  function handleMouseMove(e: DragEvent<HTMLButtonElement>) {
-    const index = Number(e.currentTarget.dataset.index);
-
-    const { width, left } = e.currentTarget.getBoundingClientRect();
-    const midwayPoint = left + width / 2;
-
-    const isLeft = e.clientX <= midwayPoint;
-
-    let newIndex = isLeft ? index : index + 1;
-
-    if (dragChip?.type === PivotChipType.Dimension) {
-      const maxIndex = items.findIndex((i) => i.type === PivotChipType.Measure);
-      if (maxIndex !== -1) {
-        newIndex = Math.min(maxIndex, newIndex);
-      }
-    } else {
-      newIndex = Math.max(lastDimensionIndex + 1, newIndex);
-    }
-
-    ghostIndex = newIndex;
-  }
-
-  function addSwapListeners(currentTarget: EventTarget & HTMLDivElement) {
-    const children = currentTarget.querySelectorAll(".drag-item");
-    children.forEach((child) => {
-      child.addEventListener("mousemove", handleMouseMove);
-    });
-  }
-
-  function removeSwapListeners(currentTarget: EventTarget & HTMLDivElement) {
-    const children = currentTarget.querySelectorAll(".drag-item");
-    children.forEach((child) => {
-      child.removeEventListener("mousemove", handleMouseMove);
-    });
-  }
-
-  function handleDrop(e: DragEvent<HTMLDivElement>) {
+  function handleDrop() {
     if (zoneStartedDrag) $controllerStore?.abort();
 
     if (isValidDropZone) {
-      if (dragChip && ghostIndex !== undefined) {
+      if (dragChip && $ghostIndex !== undefined) {
         const temp = [...items];
 
-        temp.splice(ghostIndex, 0, dragChip);
+        temp.splice($ghostIndex, 0, dragChip);
 
         items = temp;
 
         dispatch("update", items);
       }
-      removeSwapListeners(e.currentTarget);
+      swap = false;
     }
-    ghostIndex = undefined;
+    ghostIndex.set(undefined);
   }
 
-  function handleDragEnter(e: DragEvent<HTMLDivElement>) {
+  function handleDragEnter() {
     if (!currentlyDragging) return;
 
     if (zoneStartedDrag && !isDropLocation) {
-      ghostIndex = initialIndex;
+      ghostIndex.set(initialIndex);
       return;
     }
+
     if (!isValidDropZone) return;
 
-    ghostIndex =
-      dragChip?.type === PivotChipType.Dimension
-        ? lastDimensionIndex + 1
-        : items.length;
+    const defaultIndex =
+      dragChip?.type === PivotChipType.Measure
+        ? items.length
+        : lastDimensionIndex + 1;
 
-    addSwapListeners(e.currentTarget);
+    ghostIndex.set(defaultIndex);
+
+    swap = true;
   }
 
-  function handleDragLeave(e: DragEvent<HTMLDivElement>) {
+  function handleDragLeave() {
     if (!currentlyDragging) return;
-    ghostIndex = undefined;
-
-    removeSwapListeners(e.currentTarget);
+    $ghostIndex = undefined;
+    swap = false;
   }
 </script>
 
 <div
   role="presentation"
   class="dnd-zone group"
-  class:horizontal={isDropLocation}
   class:valid={isValidDropZone}
+  class:horizontal={isDropLocation}
   style:--ghost-width="{ghostWidth ?? 0}px"
   on:mouseup={handleDrop}
   on:mouseenter={handleDragEnter}
   on:mouseleave={handleDragLeave}
+  use:swapListener={{
+    condition: isDropLocation && swap,
+    ghostIndex,
+    chipType: dragChip?.type,
+  }}
   bind:this={container}
 >
-  {#each items as item, i (item.id)}
-    {#if i === ghostIndex}
+  {#each items as item, index (item.id)}
+    {#if index === $ghostIndex}
       <span
         class="ghost"
         class:rounded={dragChip?.type !== PivotChipType.Measure}
       />
     {/if}
 
-    <div
-      id={item.id}
-      title={item.title}
-      data-type={item.type}
-      data-index={i}
-      class="drag-item"
-      class:hidden={dragChip?.id === item.id && zoneStartedDrag}
-      class:rounded={item.type !== PivotChipType.Measure}
-    >
-      <PivotChip
-        grab
-        removable={isDropLocation}
-        {item}
-        on:mousedown={(e) => handleMouseDown(e, item)}
-        on:remove={() => {
-          items = items.filter((i) => i.id !== item.id);
-          dispatch("update", items);
-        }}
-      />
-    </div>
+    <PivotDragItem
+      {item}
+      {index}
+      removable={isDropLocation}
+      hidden={dragChip?.id === item.id && zoneStartedDrag}
+      on:mousedown={(e) => handleMouseDown(e, item)}
+      on:remove={() => {
+        items = items.filter((i) => i.id !== item.id);
+        dispatch("update", items);
+      }}
+    />
   {:else}
-    {#if ghostIndex === undefined}
+    {#if $ghostIndex === undefined}
       <p>{placeholder}</p>
     {/if}
   {/each}
 
-  {#if ghostIndex === items.length}
+  {#if $ghostIndex === items.length}
     <span
       class="ghost"
       class:rounded={dragChip?.type !== PivotChipType.Measure}
     />
   {/if}
 
-  {#if type === "columns" || type === "rows"}
-    <AddField {type} />
+  {#if zone === "columns" || zone === "rows"}
+    <AddField {zone} />
   {/if}
 </div>
 
-<style lang="postcss">
-  .drag-item {
-    @apply w-fit;
-  }
+{#if dragChip && zoneStartedDrag}
+  <PivotPortalItem
+    {offset}
+    item={dragChip}
+    position={dragStart}
+    removable={isDropLocation}
+  />
+{/if}
 
+<style lang="postcss">
   .ghost {
     @apply bg-gray-200 rounded-sm pointer-events-none;
     height: 26px;

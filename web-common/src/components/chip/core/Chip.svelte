@@ -14,6 +14,7 @@
   export let outline = false;
   export let readOnly = false;
   export let grab = false;
+  export let slideDuration = 150;
 
   /** chip style props */
   export let extraRounded = true;
@@ -43,7 +44,7 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div in:slideRight={{ duration: 150 }}>
+<div in:slideRight={{ duration: slideDuration }}>
   {#if readOnly}
     <div
       class="
@@ -117,7 +118,9 @@
         <button
           on:click
           on:mousedown
-          class="px-2 pr-{extraPadding ? '4' : '2'} text-inherit w-full"
+          class="px-2 pr-{extraPadding
+            ? '4'
+            : '2'} text-inherit w-full select-none"
           class:grab
         >
           <slot name="body" />
