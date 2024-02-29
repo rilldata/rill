@@ -122,6 +122,7 @@
             ? '4'
             : '2'} text-inherit w-full select-none"
           class:grab
+          aria-label={label}
         >
           <slot name="body" />
         </button>
