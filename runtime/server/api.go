@@ -1,21 +1,22 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 )
 
+// nolint
 func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 	// todo :: check for any permissions
 
-	ctx := context.Background()
+	ctx := req.Context()
 	if pathParams["name"] == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -23,15 +24,13 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		s.logger.Info("failed to read APIForName request", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	reqParams := make(map[string]interface{})
-	if len(body) > 0 { // post request
+	if len(body) > 0 { // post
 		if err := json.Unmarshal(body, &reqParams); err != nil {
-			s.logger.Info("failed to parse APIForName request body", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -39,7 +38,8 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams
 
 	queryParams := req.URL.Query()
 	for k, v := range queryParams {
-		reqParams[k] = v
+		// TODO : So that client does need to put array accessors in templates.
+		reqParams[k] = v[0]
 	}
 
 	observability.AddRequestAttributes(ctx,
@@ -49,12 +49,52 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams
 
 	s.addInstanceRequestAttributes(ctx, pathParams["instance_id"])
 
-	res, err := s.runtime.APIForName(ctx, pathParams["instance_id"], pathParams["name"], reqParams)
+	api, err := s.runtime.APIForName(ctx, pathParams["instance_id"], pathParams["name"], reqParams)
 	if err != nil {
-		// todo :: set correct error
+		if errors.Is(err, runtime.ErrAPINotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// Todo : for testing purposes only
+	res := []byte(api.Spec.Sql)
+	// TODO : what user attributes to get from ctx ?
+	// this all will go in resolver.go in runtime may be
+
+	// var resolverInitializer APIResolverInitializer
+	// var ok bool
+	// if api.Spec.Sql != "" {
+	// 	resolverInitializer, ok = APIResolverInitializers["SQLResolver"]
+	// 	if !ok {
+	// 		panic("no SQLResolver")
+	// 	}
+	// } else {
+	// 	resolverInitializer, ok = APIResolverInitializers["MetricsSQLResolver"]
+	// 	if !ok {
+	// 		return nil, status.Error(codes.InvalidArgument, "MetricsSQLResolver not found")
+	// 	}
+	// }
+
+	// resolver, err := resolverInitializer(ctx, &APIResolverOptions{
+	// 	Runtime:    r,
+	// 	InstanceID: instanceID,
+	// 	API:        api,
+	// 	Args:       reqParams,
+	// 	UserAttributes: reqParams,
+	// })
+	// if err != nil {
+	// 	return nil, status.Error(codes.InvalidArgument, err.Error())
+	// }
+
+	// res, err := resolver.ResolveInteractive(ctx, 100)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return res, nil
 
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(res)

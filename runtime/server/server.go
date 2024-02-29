@@ -196,7 +196,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	if err != nil {
 		panic(err)
 	}
-
 	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/api/{name=**}", auth.GatewayMiddleware(s.aud, s.APIForName))
 	if err != nil {
 		panic(err)
