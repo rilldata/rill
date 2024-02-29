@@ -14,9 +14,8 @@ export function portal(node: HTMLElement, target: Target = "#rill-portal") {
         await tick();
         possibleTarget = document.querySelector(newTarget);
       }
-
       if (possibleTarget === null) {
-        throw new Error(`Target ${newTarget} not found`);
+        possibleTarget = document.body;
       }
       targetElement = possibleTarget;
     } else {
