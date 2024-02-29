@@ -1881,7 +1881,7 @@ export interface V1ChartSpec {
   title?: string;
   queryName?: string;
   queryArgsJson?: string;
-  vegaLiteConfig?: string;
+  vegaLiteSpec?: string;
 }
 
 export interface V1Chart {

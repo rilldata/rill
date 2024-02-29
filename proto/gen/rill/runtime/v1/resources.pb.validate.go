@@ -6876,7 +6876,7 @@ func (m *ChartSpec) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
-	// no validation rules for VegaLiteConfig
+	// no validation rules for VegaLiteSpec
 
 	if len(errors) > 0 {
 		return ChartSpecMultiError(errors)
@@ -7475,13 +7475,9 @@ func (m *DashboardComponent) validate(all bool) error {
 
 	// no validation rules for Chart
 
-	if m.Columns != nil {
-		// no validation rules for Columns
-	}
+	// no validation rules for Columns
 
-	if m.Rows != nil {
-		// no validation rules for Rows
-	}
+	// no validation rules for Rows
 
 	if len(errors) > 0 {
 		return DashboardComponentMultiError(errors)

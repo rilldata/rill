@@ -2870,9 +2870,9 @@ export class ChartSpec extends Message<ChartSpec> {
   queryArgsJson = "";
 
   /**
-   * @generated from field: string vega_lite_config = 4;
+   * @generated from field: string vega_lite_spec = 4;
    */
-  vegaLiteConfig = "";
+  vegaLiteSpec = "";
 
   constructor(data?: PartialMessage<ChartSpec>) {
     super();
@@ -2885,7 +2885,7 @@ export class ChartSpec extends Message<ChartSpec> {
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "vega_lite_config", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ChartSpec {
@@ -3075,14 +3075,14 @@ export class DashboardComponent extends Message<DashboardComponent> {
   chart = "";
 
   /**
-   * @generated from field: optional int64 columns = 2;
+   * @generated from field: int64 columns = 2;
    */
-  columns?: bigint;
+  columns = protoInt64.zero;
 
   /**
-   * @generated from field: optional int64 rows = 3;
+   * @generated from field: int64 rows = 3;
    */
-  rows?: bigint;
+  rows = protoInt64.zero;
 
   constructor(data?: PartialMessage<DashboardComponent>) {
     super();
@@ -3093,8 +3093,8 @@ export class DashboardComponent extends Message<DashboardComponent> {
   static readonly typeName = "rill.runtime.v1.DashboardComponent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "chart", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "columns", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 3, name: "rows", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 2, name: "columns", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "rows", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardComponent {

@@ -3054,7 +3054,7 @@ definitions:
         type: string
       queryArgsJson:
         type: string
-      vegaLiteConfig:
+      vegaLiteSpec:
         type: string
   v1ChartState:
     type: object

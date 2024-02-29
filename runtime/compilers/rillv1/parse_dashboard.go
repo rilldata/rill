@@ -17,8 +17,8 @@ type DashboardYAML struct {
 	} `yaml:"grid"`
 	Components []struct {
 		Chart   string `yaml:"chart"`
-		Columns *int64 `yaml:"columns"`
-		Rows    *int64 `yaml:"rows"`
+		Columns int64  `yaml:"columns"`
+		Rows    int64  `yaml:"rows"`
 	} `yaml:"components"`
 }
 

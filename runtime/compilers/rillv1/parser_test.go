@@ -1232,7 +1232,7 @@ colors:
 }
 
 func TestChartsAndDashboard(t *testing.T) {
-	vegaLiteConfig := `
+	vegaLiteSpec := `
   {
     '$schema': "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
@@ -1255,7 +1255,7 @@ data:
 vega_lite: |-
 %s
 
-`, vegaLiteConfig),
+`, vegaLiteSpec),
 		`charts/c2.yaml`: fmt.Sprintf(`
 kind: chart
 data:
@@ -1265,7 +1265,7 @@ data:
 
 vega_lite: |%s
 
-`, vegaLiteConfig),
+`, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
 grid:
@@ -1279,25 +1279,23 @@ components:
 `,
 	})
 
-	rows := int64(1)
-	cols := int64(2)
 	resources := []*Resource{
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c1"},
 			Paths: []string{"/charts/c1.yaml"},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:      "MetricsViewAggregation",
-				QueryArgsJson:  `{"metrics_view":"foo"}`,
-				VegaLiteConfig: vegaLiteConfig,
+				QueryName:     "MetricsViewAggregation",
+				QueryArgsJson: `{"metrics_view":"foo"}`,
+				VegaLiteSpec:  vegaLiteSpec,
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c2"},
 			Paths: []string{"/charts/c2.yaml"},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:      "MetricsViewAggregation",
-				QueryArgsJson:  `{"metrics_view":"bar"}`,
-				VegaLiteConfig: vegaLiteConfig,
+				QueryName:     "MetricsViewAggregation",
+				QueryArgsJson: `{"metrics_view":"bar"}`,
+				VegaLiteSpec:  vegaLiteSpec,
 			},
 		},
 		{
@@ -1312,7 +1310,7 @@ components:
 				GridRows:    4,
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
-					{Chart: "c2", Rows: &rows, Columns: &cols},
+					{Chart: "c2", Rows: 1, Columns: 2},
 				},
 			},
 		},
