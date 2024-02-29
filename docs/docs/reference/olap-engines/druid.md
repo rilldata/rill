@@ -1,8 +1,8 @@
 ---
-title: ClickHouse
-description: Power Rill dashboards using ClickHouse
-sidebar_label: ClickHouse
-sidebar_position: 3
+title: Druid
+description: Power Rill dashboards using Druid
+sidebar_label: Druid
+sidebar_position: 2
 ---
 
 ## How to configure credentials in Rill

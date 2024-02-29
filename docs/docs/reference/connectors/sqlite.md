@@ -1,8 +1,8 @@
 ---
-title: PostgreSQL
-description: Connect to data in a PostgreSQL database
-sidebar_label: PostgreSQL
-sidebar_position: 7
+title: SQLite
+description: Connect to data in a SQLite database
+sidebar_label: SQLite
+sidebar_position: 9
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

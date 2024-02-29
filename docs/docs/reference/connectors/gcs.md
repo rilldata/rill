@@ -1,19 +1,20 @@
 ---
 title: Google Cloud Storage (GCS)
-description: Connect to data in a GCS bucket
+description: Connect to data in GCS
 sidebar_label: GCS
-sidebar_position: 20
+sidebar_position: 1
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## How to configure credentials in Rill
+## Overview
+[Google Cloud Storage (GCS)](https://cloud.google.com/storage/docs/introduction) is a scalable, fully managed, and highly reliable object storage service offered by Google Cloud, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including in common data storage formats such as CSV and parquet. Rill supports natively connecting to GCS using the provided [Google Cloud Storage URI](https://cloud.google.com/bigquery/docs/cloud-storage-transfer-overview#google-cloud-storage-uri) of your bucket to retrieve and read files.
 
-How you configure access to GCS depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
+![Connecting to GCS](/img/reference/connectors/gcs/gcs.png)
 
-### Configure credentials for local development
+## Local credentials
 
-When developing a project locally, Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
+When using Rill Developer on your local machine (i.e. `rill start`), Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
 
 1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated. 
 
@@ -25,13 +26,15 @@ You have now configured Google Cloud access from your local environment. Rill wi
 
 You can also run locally with assumed credentials such as a service account key. This is useful for when you have multiple profiles or may receive limited access to a bucket. 
 
-In that case, run the following command on start - replacing path_to_json_key_file with the service account file `GOOGLE_APPLICATION_CREDENTIALS=path_to_json_key_file rill start`
+In that case, run the following command upon start - replacing the `path_to_json_key_file` with the service account file:
+
+ `GOOGLE_APPLICATION_CREDENTIALS=<path_to_json_key_file> rill start`
 
 :::
 
-### Configure credentials for deployments on Rill Cloud
+## Cloud deployment
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to the buckets used in your project. 
+When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access / permissions to the buckets used in your project. 
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
 
@@ -39,9 +42,17 @@ If you subsequently add sources that require new credentials (or if you input th
 ```
 rill env configure
 ```
+
+:::info
+
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
 
-## How to create a service account using the Google Cloud Console
+:::
+
+
+## Reference
+
+### How to create a service account using the Google Cloud Console
 
 Here is a step-by-step guide on how to create a Google Cloud service account with read-only access to GCS:
 
@@ -62,7 +73,7 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
 
 8. Download and save the JSON key file to a secure location on your computer.
 
-## How to create a service account using the `gcloud` CLI
+### How to create a service account using the `gcloud` CLI
 
 1. Open a terminal window and follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) if you haven't already done so.
 

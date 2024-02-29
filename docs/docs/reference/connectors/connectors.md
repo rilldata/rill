@@ -2,7 +2,7 @@
 title: Connectors
 description: Connectors
 sidebar_label: Connectors
-sidebar_position: 00
+sidebar_position: 0
 ---
 ## Overview
 
@@ -14,13 +14,15 @@ For more information about available connectors and how to use them in Rill (loc
 
 ## List of Rill Connectors
 
-- [Amazon S3](s3.md) 
 - [Google Cloud Storage (GCS)](gcs.md)
+- [Amazon S3](s3.md) 
 - [Azure Blob Storage (Azure)](azure.md)
-- [Amazon Athena](athena.md)
 - [BigQuery](bigquery.md)
-- [MotherDuck](motherduck.md)
-- [Postgres](postgres.md)
-- [Salesforce](salesforce.md)
+- [Amazon Athena](athena.md)
+- [DuckDB / MotherDuck](motherduck.md)
+- [PostgreSQL](postgres.md)
+- [MySQL](mysql.md)
+- [SQLite](sqlite.md)
 - [Snowflake](snowflake.md)
+- [Salesforce](salesforce.md)
 - [Google Sheets](googlesheets.md)

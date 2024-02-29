@@ -2,7 +2,7 @@
 title: Google Sheets
 description: Connect to data in your Google Sheets account
 sidebar_label: Google Sheets
-sidebar_position: 100
+sidebar_position: 12
 ---
 
 

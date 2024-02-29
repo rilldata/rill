@@ -1,19 +1,20 @@
 ---
 title: Azure Blob Storage
-description: Connect to data in an Azure Blob Storage container.
-sidebar_label: Azure
-sidebar_position: 30
+description: Connect to data in Azure Blob Storage
+sidebar_label: ABS
+sidebar_position: 3
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## How to configure credentials in Rill
+## Overview
+[Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats for data such as CSV and parquet. Rill supports natively connecting to Azure Blob Storage using the appropriate [Resource](https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#resource-uri-syntax) [URI](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction-abfs-uri#uri-syntax) of your container / blob to retrieve and read files.
 
-How you configure access to Azure Blob Storage depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
+![Connecting to ABS](/img/reference/connectors/azure/abs.png)
 
-### Configure credentials for local development
+## Local credentials
 
-When developing a project locally, Rill uses the credentials configured in your local environment using the Azure CLI (`az`). Follow these steps to configure it:
+When using Rill Developer on your local machine (i.e. `rill start`), Rill uses by default the credentials configured in your local environment using the Azure CLI (`az`). Follow these steps to configure it:
 
 1. Open a terminal window and run the following command to log in to your Azure account:
 
@@ -27,7 +28,7 @@ When developing a project locally, Rill uses the credentials configured in your 
 
 2. Once you are logged in, Rill will automatically use the credentials obtained from `az login` to authenticate with Azure Blob Storage when you interact with Azure Blob Storage sources.
 
-#### Using Connection String
+### Using Connection String
 
 Alternatively, you can use an Azure Blob Storage connection string to configure the credentials. To do this:
 
@@ -43,9 +44,9 @@ Alternatively, you can use an Azure Blob Storage connection string to configure 
 
 3. Rill will automatically use the connection string from the `AZURE_STORAGE_CONNECTION_STRING` environment variable to authenticate with Azure Blob Storage when you interact with Azure Blob Storage sources.
 
-#### Using Shared Access Signature (SAS) Token
+### Using Shared Access Signature (SAS) Token
 
-Alternatively, you can configure credentials using a Shared Access Signature (SAS) token. To do this:
+As another alternative, you can configure credentials using a Shared Access Signature (SAS) token. To do this:
 
 1. Generate a SAS token for the Azure Blob Storage container or blob you want to access. You can create SAS tokens using the Azure Portal or programmatically using the Azure SDKs.
 
@@ -61,9 +62,9 @@ Alternatively, you can configure credentials using a Shared Access Signature (SA
 
 3. Rill will use the SAS token from the `AZURE_STORAGE_SAS_TOKEN` environment variable to authenticate with Azure Blob Storage when interacting with Azure Blob Storage sources.
 
-### Configure credentials for deployments on Rill Cloud
+## Cloud deployment
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide an Azure Blob Storage connection string, Azure Storage Key or Azure Storage SAS token for the Azure Blob Storage containers used in your project. 
+When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project. 
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
 
@@ -72,4 +73,9 @@ If you subsequently add sources that require new credentials (or if you input th
 ```bash
 rill env configure
 ```
+
+:::info
+
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+
+:::

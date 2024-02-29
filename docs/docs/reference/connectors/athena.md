@@ -2,7 +2,7 @@
 title: Amazon Athena
 description: Connect to data in Amazon Athena
 sidebar_label: Athena
-sidebar_position: 40
+sidebar_position: 5
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

@@ -1,8 +1,8 @@
 ---
-title: ClickHouse
-description: Power Rill dashboards using ClickHouse
-sidebar_label: ClickHouse
-sidebar_position: 3
+title: DuckDB
+description: Power Rill dashboards using DuckDB (default)
+sidebar_label: DuckDB
+sidebar_position: 1
 ---
 
 ## How to configure credentials in Rill

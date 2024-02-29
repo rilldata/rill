@@ -2,7 +2,7 @@
 title: Snowflake 
 description: Connect to data in Snowflake
 sidebar_label: Snowflake
-sidebar_position: 80
+sidebar_position: 10
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
@@ -18,7 +18,7 @@ When developing a project locally, Rill will use the credentials passed via the 
 <username>:<password>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>
 ```
 
-![Retrieving Snowflake connection parameters](/img/deploy/credentials/snowflake_conn_strings.png)
+![Retrieving Snowflake connection parameters](/img/reference/connectors/snowflake/snowflake_conn_strings.png)
 
 :::tip
 

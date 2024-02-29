@@ -1,8 +1,8 @@
 ---
-title: MotherDuck
-description: Connect to data in your MotherDuck account
-sidebar_label: MotherDuck
-sidebar_position: 60
+title: DuckDB / MotherDuck
+description: Connect to data in DuckDB locally or MotherDuck
+sidebar_label: DuckDB / MotherDuck
+sidebar_position: 6
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
