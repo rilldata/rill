@@ -74,7 +74,7 @@
       direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
 
     const currentRangeWidth = getTimeWidth(start, end);
-    const panAmount = getDurationFromMS(currentRangeWidth).toString() as string;
+    const panAmount = getDurationFromMS(currentRangeWidth);
 
     const newStart = getOffset(start, panAmount, offsetType, timeZone);
     const newEnd = getOffset(end, panAmount, offsetType, timeZone);
@@ -119,9 +119,9 @@
 
 <style lang="postcss">
   .pan-button {
-    @apply cursor-pointer fill-slate-300;
+    @apply cursor-pointer fill-slate-400;
   }
   .pan-button:hover {
-    @apply fill-slate-200;
+    @apply fill-slate-300;
   }
 </style>
