@@ -420,12 +420,12 @@ message CharLocation {
   uint32 line = 1;
 }
 
+// API provide access to data stored in Rill
 message API {
   APISpec spec = 1;
   APIState state = 2;
 }
 
-// API provide access to data stored in Rill
 message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;

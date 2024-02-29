@@ -46,7 +46,7 @@ func (p *Parser) parseAPI(ctx context.Context, node *Node) error {
 		tmp.Properties["sql"] = node.SQL
 	} else if tmp.Metrics.MetricsView != "" || tmp.Metrics.SQL != "" {
 		if tmp.resolver != "" && tmp.resolver != "MetricSQLResolver" {
-			return fmt.Errorf("resolver must be empty or SQLResolver")
+			return fmt.Errorf("resolver must be empty or MetricSQLResolver")
 		}
 		r.APISpec.Resolver = "MetricSQLResolver"
 		tmp.Properties["metrics"] = tmp.Metrics
@@ -56,6 +56,6 @@ func (p *Parser) parseAPI(ctx context.Context, node *Node) error {
 	if err != nil {
 		return fmt.Errorf("encountered invalid property type: %w", err)
 	}
-	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
+	r.APISpec.ResolverProperties = mergeStructPB(r.APISpec.ResolverProperties, props)
 	return nil
 }

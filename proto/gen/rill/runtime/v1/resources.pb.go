@@ -3629,6 +3629,7 @@ func (x *CharLocation) GetLine() uint32 {
 	return 0
 }
 
+// API provide access to data stored in Rill
 type API struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3684,7 +3685,6 @@ func (x *API) GetState() *APIState {
 	return nil
 }
 
-// API provide access to data stored in Rill
 type APISpec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

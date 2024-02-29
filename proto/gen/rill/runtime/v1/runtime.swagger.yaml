@@ -2831,6 +2831,7 @@ definitions:
         $ref: '#/definitions/v1APISpec'
       state:
         $ref: '#/definitions/v1APIState'
+    title: API provide access to data stored in Rill
   v1APISpec:
     type: object
     properties:
@@ -2838,7 +2839,6 @@ definitions:
         type: string
       resolverProperties:
         type: object
-    title: API provide access to data stored in Rill
   v1APIState:
     type: object
   v1Alert:

@@ -3077,6 +3077,8 @@ export class CharLocation extends Message<CharLocation> {
 }
 
 /**
+ * API provide access to data stored in Rill
+ *
  * @generated from message rill.runtime.v1.API
  */
 export class API extends Message<API> {
@@ -3120,8 +3122,6 @@ export class API extends Message<API> {
 }
 
 /**
- * API provide access to data stored in Rill
- *
  * @generated from message rill.runtime.v1.APISpec
  */
 export class APISpec extends Message<APISpec> {
