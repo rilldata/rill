@@ -3120,24 +3120,20 @@ export class API extends Message<API> {
 }
 
 /**
- * API provide SQL based access to data stored in Rill
+ * API provide access to data stored in Rill
  *
  * @generated from message rill.runtime.v1.APISpec
  */
 export class APISpec extends Message<APISpec> {
   /**
-   * sql is free-form sql to query against any source/model stored in Rill
-   *
-   * @generated from field: string sql = 1;
+   * @generated from field: string resolver = 1;
    */
-  sql = "";
+  resolver = "";
 
   /**
-   * metrics is used for querying against a metrics view
-   *
-   * @generated from field: rill.runtime.v1.MetricSQL metrics = 2;
+   * @generated from field: google.protobuf.Struct resolver_properties = 2;
    */
-  metrics?: MetricSQL;
+  resolverProperties?: Struct;
 
   constructor(data?: PartialMessage<APISpec>) {
     super();
@@ -3147,8 +3143,8 @@ export class APISpec extends Message<APISpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.APISpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "metrics", kind: "message", T: MetricSQL },
+    { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {
@@ -3165,71 +3161,6 @@ export class APISpec extends Message<APISpec> {
 
   static equals(a: APISpec | PlainMessage<APISpec> | undefined, b: APISpec | PlainMessage<APISpec> | undefined): boolean {
     return proto3.util.equals(APISpec, a, b);
-  }
-}
-
-/**
- * MetricSQL is used for querying against a metrics view
- * If sql is set, it is parsed and executed as metrics SQL
- * Alternatively, you can also pass parameters similar to MetricsViewAggregation
- *
- * @generated from message rill.runtime.v1.MetricSQL
- */
-export class MetricSQL extends Message<MetricSQL> {
-  /**
-   * @generated from field: string sql = 1;
-   */
-  sql = "";
-
-  /**
-   * @generated from field: string metrics_view = 2;
-   */
-  metricsView = "";
-
-  /**
-   * @generated from field: repeated string measures = 3;
-   */
-  measures: string[] = [];
-
-  /**
-   * @generated from field: string where = 4;
-   */
-  where = "";
-
-  /**
-   * @generated from field: string limit = 5;
-   */
-  limit = "";
-
-  constructor(data?: PartialMessage<MetricSQL>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricSQL";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "where", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "limit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricSQL {
-    return new MetricSQL().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricSQL {
-    return new MetricSQL().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricSQL {
-    return new MetricSQL().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricSQL | PlainMessage<MetricSQL> | undefined, b: MetricSQL | PlainMessage<MetricSQL> | undefined): boolean {
-    return proto3.util.equals(MetricSQL, a, b);
   }
 }
 

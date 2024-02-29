@@ -191,16 +191,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		panic(err)
 	}
 
-	// custom APIs
-	err = gwMux.HandlePath("GET", "/v1/instances/{instance_id}/api/{name=**}", auth.GatewayMiddleware(s.aud, s.APIForName))
-	if err != nil {
-		panic(err)
-	}
-	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/api/{name=**}", auth.GatewayMiddleware(s.aud, s.APIForName))
-	if err != nil {
-		panic(err)
-	}
-
 	// Call callback to register additional paths
 	// NOTE: This is so ugly, but not worth refactoring it properly right now.
 	httpMux := http.NewServeMux()
@@ -213,6 +203,9 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Add HTTP handler for query export downloads
 	httpMux.Handle("/v1/download", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler)))
+
+	// custom API handler
+	httpMux.Handle("/v1/instances/{instance_id}/api/{name...}", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.APIForName)))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {

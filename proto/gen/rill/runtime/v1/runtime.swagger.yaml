@@ -2834,13 +2834,11 @@ definitions:
   v1APISpec:
     type: object
     properties:
-      sql:
+      resolver:
         type: string
-        title: sql is free-form sql to query against any source/model stored in Rill
-      metrics:
-        $ref: '#/definitions/v1MetricSQL'
-        title: metrics is used for querying against a metrics view
-    title: API provide SQL based access to data stored in Rill
+      resolverProperties:
+        type: object
+    title: API provide access to data stored in Rill
   v1APIState:
     type: object
   v1Alert:
@@ -3727,25 +3725,6 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
-  v1MetricSQL:
-    type: object
-    properties:
-      sql:
-        type: string
-      metricsView:
-        type: string
-      measures:
-        type: array
-        items:
-          type: string
-      where:
-        type: string
-      limit:
-        type: string
-    title: |-
-      MetricSQL is used for querying against a metrics view
-      If sql is set, it is parsed and executed as metrics SQL
-      Alternatively, you can also pass parameters similar to MetricsViewAggregation
   v1MetricsView:
     type: object
     properties:

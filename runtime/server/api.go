@@ -7,21 +7,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 // nolint
-func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	if !auth.GetClaims(req.Context()).CanInstance(pathParams["instance_id"], auth.ReadOLAP) {
+func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
+	if !auth.GetClaims(req.Context()).CanInstance(req.PathValue("instance_id"), auth.ReadOLAP) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	ctx := req.Context()
-	if pathParams["name"] == "" {
+	if req.PathValue("name") == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -47,15 +47,15 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams
 	}
 
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", pathParams["instance_id"]),
-		attribute.String("args.name", pathParams["name"]),
+		attribute.String("args.instance_id", req.PathValue("instance_id")),
+		attribute.String("args.name", req.PathValue("name")),
 	)
 
-	s.addInstanceRequestAttributes(ctx, pathParams["instance_id"])
+	s.addInstanceRequestAttributes(ctx, req.PathValue("instance_id"))
 
-	api, err := s.runtime.APIForName(ctx, pathParams["instance_id"], pathParams["name"], reqParams)
+	api, err := s.runtime.APIForName(ctx, req.PathValue("instance_id"), req.PathValue("name"))
 	if err != nil {
-		if errors.Is(err, runtime.ErrAPINotFound) {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -64,29 +64,20 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request, pathParams
 	}
 
 	// Todo : for testing purposes only
-	res := []byte(api.Spec.Sql)
+	res := []byte(api.Spec.Resolver)
 	// TODO : what user attributes to get from ctx ?
 	// this all will go in resolver.go in runtime may be
 
-	// var resolverInitializer APIResolverInitializer
-	// var ok bool
-	// if api.Spec.Sql != "" {
-	// 	resolverInitializer, ok = APIResolverInitializers["SQLResolver"]
-	// 	if !ok {
-	// 		panic("no SQLResolver")
-	// 	}
-	// } else {
-	// 	resolverInitializer, ok = APIResolverInitializers["MetricsSQLResolver"]
-	// 	if !ok {
-	// 		return nil, status.Error(codes.InvalidArgument, "MetricsSQLResolver not found")
-	// 	}
+	// resolverInitializer, ok := APIResolverInitializers[api.Spec.Resolver]
+	// if !ok {
+	// 	panic("no resolverInitializer")
 	// }
 
 	// resolver, err := resolverInitializer(ctx, &APIResolverOptions{
 	// 	Runtime:    r,
 	// 	InstanceID: instanceID,
 	// 	API:        api,
-	// 	Args:       reqParams,
+	// 	Args:       api.Spec.ResolverProperties,
 	// 	UserAttributes: reqParams,
 	// })
 	// if err != nil {

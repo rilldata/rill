@@ -7480,14 +7480,14 @@ func (m *APISpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Sql
+	// no validation rules for Resolver
 
 	if all {
-		switch v := interface{}(m.GetMetrics()).(type) {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, APISpecValidationError{
-					field:  "Metrics",
+					field:  "ResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -7495,16 +7495,16 @@ func (m *APISpec) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, APISpecValidationError{
-					field:  "Metrics",
+					field:  "ResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetMetrics()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return APISpecValidationError{
-				field:  "Metrics",
+				field:  "ResolverProperties",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -7587,113 +7587,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = APISpecValidationError{}
-
-// Validate checks the field values on MetricSQL with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *MetricSQL) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on MetricSQL with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in MetricSQLMultiError, or nil
-// if none found.
-func (m *MetricSQL) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *MetricSQL) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Sql
-
-	// no validation rules for MetricsView
-
-	// no validation rules for Where
-
-	// no validation rules for Limit
-
-	if len(errors) > 0 {
-		return MetricSQLMultiError(errors)
-	}
-
-	return nil
-}
-
-// MetricSQLMultiError is an error wrapping multiple validation errors returned
-// by MetricSQL.ValidateAll() if the designated constraints aren't met.
-type MetricSQLMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m MetricSQLMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m MetricSQLMultiError) AllErrors() []error { return m }
-
-// MetricSQLValidationError is the validation error returned by
-// MetricSQL.Validate if the designated constraints aren't met.
-type MetricSQLValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e MetricSQLValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e MetricSQLValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e MetricSQLValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e MetricSQLValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e MetricSQLValidationError) ErrorName() string { return "MetricSQLValidationError" }
-
-// Error satisfies the builtin error interface
-func (e MetricSQLValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sMetricSQL.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = MetricSQLValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = MetricSQLValidationError{}
 
 // Validate checks the field values on APIState with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

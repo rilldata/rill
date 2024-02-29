@@ -3684,16 +3684,14 @@ func (x *API) GetState() *APIState {
 	return nil
 }
 
-// API provide SQL based access to data stored in Rill
+// API provide access to data stored in Rill
 type APISpec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// sql is free-form sql to query against any source/model stored in Rill
-	Sql string `protobuf:"bytes,1,opt,name=sql,proto3" json:"sql,omitempty"`
-	// metrics is used for querying against a metrics view
-	Metrics *MetricSQL `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
+	Resolver           string           `protobuf:"bytes,1,opt,name=resolver,proto3" json:"resolver,omitempty"`
+	ResolverProperties *structpb.Struct `protobuf:"bytes,2,opt,name=resolver_properties,json=resolverProperties,proto3" json:"resolver_properties,omitempty"`
 }
 
 func (x *APISpec) Reset() {
@@ -3728,100 +3726,18 @@ func (*APISpec) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{47}
 }
 
-func (x *APISpec) GetSql() string {
+func (x *APISpec) GetResolver() string {
 	if x != nil {
-		return x.Sql
+		return x.Resolver
 	}
 	return ""
 }
 
-func (x *APISpec) GetMetrics() *MetricSQL {
+func (x *APISpec) GetResolverProperties() *structpb.Struct {
 	if x != nil {
-		return x.Metrics
+		return x.ResolverProperties
 	}
 	return nil
-}
-
-// MetricSQL is used for querying against a metrics view
-// If sql is set, it is parsed and executed as metrics SQL
-// Alternatively, you can also pass parameters similar to MetricsViewAggregation
-type MetricSQL struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Sql         string   `protobuf:"bytes,1,opt,name=sql,proto3" json:"sql,omitempty"`
-	MetricsView string   `protobuf:"bytes,2,opt,name=metrics_view,json=metricsView,proto3" json:"metrics_view,omitempty"`
-	Measures    []string `protobuf:"bytes,3,rep,name=measures,proto3" json:"measures,omitempty"`
-	Where       string   `protobuf:"bytes,4,opt,name=where,proto3" json:"where,omitempty"`
-	Limit       string   `protobuf:"bytes,5,opt,name=limit,proto3" json:"limit,omitempty"`
-}
-
-func (x *MetricSQL) Reset() {
-	*x = MetricSQL{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *MetricSQL) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MetricSQL) ProtoMessage() {}
-
-func (x *MetricSQL) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MetricSQL.ProtoReflect.Descriptor instead.
-func (*MetricSQL) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{48}
-}
-
-func (x *MetricSQL) GetSql() string {
-	if x != nil {
-		return x.Sql
-	}
-	return ""
-}
-
-func (x *MetricSQL) GetMetricsView() string {
-	if x != nil {
-		return x.MetricsView
-	}
-	return ""
-}
-
-func (x *MetricSQL) GetMeasures() []string {
-	if x != nil {
-		return x.Measures
-	}
-	return nil
-}
-
-func (x *MetricSQL) GetWhere() string {
-	if x != nil {
-		return x.Where
-	}
-	return ""
-}
-
-func (x *MetricSQL) GetLimit() string {
-	if x != nil {
-		return x.Limit
-	}
-	return ""
 }
 
 type APIState struct {
@@ -3833,7 +3749,7 @@ type APIState struct {
 func (x *APIState) Reset() {
 	*x = APIState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3846,7 +3762,7 @@ func (x *APIState) String() string {
 func (*APIState) ProtoMessage() {}
 
 func (x *APIState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3859,7 +3775,7 @@ func (x *APIState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APIState.ProtoReflect.Descriptor instead.
 func (*APIState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{49}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{48}
 }
 
 // Dimensions are columns to filter and group by
@@ -3879,7 +3795,7 @@ type MetricsViewSpec_DimensionV2 struct {
 func (x *MetricsViewSpec_DimensionV2) Reset() {
 	*x = MetricsViewSpec_DimensionV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3892,7 +3808,7 @@ func (x *MetricsViewSpec_DimensionV2) String() string {
 func (*MetricsViewSpec_DimensionV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_DimensionV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3968,7 +3884,7 @@ type MetricsViewSpec_MeasureV2 struct {
 func (x *MetricsViewSpec_MeasureV2) Reset() {
 	*x = MetricsViewSpec_MeasureV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3981,7 +3897,7 @@ func (x *MetricsViewSpec_MeasureV2) String() string {
 func (*MetricsViewSpec_MeasureV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_MeasureV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4064,7 +3980,7 @@ type MetricsViewSpec_SecurityV2 struct {
 func (x *MetricsViewSpec_SecurityV2) Reset() {
 	*x = MetricsViewSpec_SecurityV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4077,7 +3993,7 @@ func (x *MetricsViewSpec_SecurityV2) String() string {
 func (*MetricsViewSpec_SecurityV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_SecurityV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4134,7 +4050,7 @@ type MetricsViewSpec_AvailableComparisonOffset struct {
 func (x *MetricsViewSpec_AvailableComparisonOffset) Reset() {
 	*x = MetricsViewSpec_AvailableComparisonOffset{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4147,7 +4063,7 @@ func (x *MetricsViewSpec_AvailableComparisonOffset) String() string {
 func (*MetricsViewSpec_AvailableComparisonOffset) ProtoMessage() {}
 
 func (x *MetricsViewSpec_AvailableComparisonOffset) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4190,7 +4106,7 @@ type MetricsViewSpec_AvailableTimeRange struct {
 func (x *MetricsViewSpec_AvailableTimeRange) Reset() {
 	*x = MetricsViewSpec_AvailableTimeRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4203,7 +4119,7 @@ func (x *MetricsViewSpec_AvailableTimeRange) String() string {
 func (*MetricsViewSpec_AvailableTimeRange) ProtoMessage() {}
 
 func (x *MetricsViewSpec_AvailableTimeRange) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4246,7 +4162,7 @@ type MetricsViewSpec_SecurityV2_FieldConditionV2 struct {
 func (x *MetricsViewSpec_SecurityV2_FieldConditionV2) Reset() {
 	*x = MetricsViewSpec_SecurityV2_FieldConditionV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4259,7 +4175,7 @@ func (x *MetricsViewSpec_SecurityV2_FieldConditionV2) String() string {
 func (*MetricsViewSpec_SecurityV2_FieldConditionV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_SecurityV2_FieldConditionV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5002,52 +4918,45 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x41, 0x50, 0x49, 0x53, 0x70, 0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63, 0x12, 0x2f, 0x0a,
 	0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72,
 	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41,
-	0x50, 0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x51,
-	0x0a, 0x07, 0x41, 0x50, 0x49, 0x53, 0x70, 0x65, 0x63, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x71, 0x6c,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x73, 0x71, 0x6c, 0x12, 0x34, 0x0a, 0x07, 0x6d,
-	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x72,
-	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d,
-	0x65, 0x74, 0x72, 0x69, 0x63, 0x53, 0x51, 0x4c, 0x52, 0x07, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63,
-	0x73, 0x22, 0x88, 0x01, 0x0a, 0x09, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x53, 0x51, 0x4c, 0x12,
-	0x10, 0x0a, 0x03, 0x73, 0x71, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x73, 0x71,
-	0x6c, 0x12, 0x21, 0x0a, 0x0c, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x76, 0x69, 0x65,
-	0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
-	0x56, 0x69, 0x65, 0x77, 0x12, 0x1a, 0x0a, 0x08, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x73,
-	0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x08, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x73,
-	0x12, 0x14, 0x0a, 0x05, 0x77, 0x68, 0x65, 0x72, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x05, 0x77, 0x68, 0x65, 0x72, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18,
-	0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0x0a, 0x0a, 0x08,
-	0x41, 0x50, 0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2a, 0x8a, 0x01, 0x0a, 0x0f, 0x52, 0x65, 0x63,
-	0x6f, 0x6e, 0x63, 0x69, 0x6c, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x20, 0x0a, 0x1c,
+	0x50, 0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x6f,
+	0x0a, 0x07, 0x41, 0x50, 0x49, 0x53, 0x70, 0x65, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x73,
+	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x65, 0x73,
+	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x12, 0x48, 0x0a, 0x13, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65,
+	0x72, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x12, 0x72, 0x65, 0x73,
+	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x22,
+	0x0a, 0x0a, 0x08, 0x41, 0x50, 0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2a, 0x8a, 0x01, 0x0a, 0x0f,
+	0x52, 0x65, 0x63, 0x6f, 0x6e, 0x63, 0x69, 0x6c, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12,
+	0x20, 0x0a, 0x1c, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41,
+	0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
+	0x00, 0x12, 0x19, 0x0a, 0x15, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53,
+	0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x49, 0x44, 0x4c, 0x45, 0x10, 0x01, 0x12, 0x1c, 0x0a, 0x18,
 	0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53,
+	0x5f, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x1c, 0x0a, 0x18, 0x52, 0x45,
+	0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x52,
+	0x55, 0x4e, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x03, 0x2a, 0x85, 0x01, 0x0a, 0x0f, 0x41, 0x73, 0x73,
+	0x65, 0x72, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x20, 0x0a, 0x1c,
+	0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53,
 	0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x19,
-	0x0a, 0x15, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54,
-	0x55, 0x53, 0x5f, 0x49, 0x44, 0x4c, 0x45, 0x10, 0x01, 0x12, 0x1c, 0x0a, 0x18, 0x52, 0x45, 0x43,
-	0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x50, 0x45,
-	0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x1c, 0x0a, 0x18, 0x52, 0x45, 0x43, 0x4f, 0x4e,
-	0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x52, 0x55, 0x4e, 0x4e,
-	0x49, 0x4e, 0x47, 0x10, 0x03, 0x2a, 0x85, 0x01, 0x0a, 0x0f, 0x41, 0x73, 0x73, 0x65, 0x72, 0x74,
-	0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x20, 0x0a, 0x1c, 0x41, 0x53, 0x53,
-	0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e,
-	0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x19, 0x0a, 0x15, 0x41,
-	0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f,
-	0x50, 0x41, 0x53, 0x53, 0x10, 0x01, 0x12, 0x19, 0x0a, 0x15, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54,
-	0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x46, 0x41, 0x49, 0x4c, 0x10,
-	0x02, 0x12, 0x1a, 0x0a, 0x16, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53,
-	0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x03, 0x42, 0xc1, 0x01,
-	0x0a, 0x13, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
-	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73,
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61, 0x2f, 0x72, 0x69, 0x6c,
-	0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x72, 0x69, 0x6c, 0x6c,
-	0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x76, 0x31, 0x3b, 0x72, 0x75, 0x6e, 0x74,
-	0x69, 0x6d, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x52, 0x58, 0xaa, 0x02, 0x0f, 0x52, 0x69,
-	0x6c, 0x6c, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0f,
-	0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0xe2,
-	0x02, 0x1b, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56,
-	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11,
-	0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x3a, 0x3a, 0x56,
-	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x0a, 0x15, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54,
+	0x55, 0x53, 0x5f, 0x50, 0x41, 0x53, 0x53, 0x10, 0x01, 0x12, 0x19, 0x0a, 0x15, 0x41, 0x53, 0x53,
+	0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x46, 0x41,
+	0x49, 0x4c, 0x10, 0x02, 0x12, 0x1a, 0x0a, 0x16, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f,
+	0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x03,
+	0x42, 0xc1, 0x01, 0x0a, 0x13, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72,
+	0x63, 0x65, 0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3c, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61, 0x2f,
+	0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x72,
+	0x69, 0x6c, 0x6c, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x76, 0x31, 0x3b, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x52, 0x58, 0xaa, 0x02,
+	0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x56, 0x31,
+	0xca, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c,
+	0x56, 0x31, 0xe2, 0x02, 0x1b, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0xea, 0x02, 0x11, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
+	0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5063,7 +4972,7 @@ func file_rill_runtime_v1_resources_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_resources_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
+var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
 var file_rill_runtime_v1_resources_proto_goTypes = []interface{}{
 	(ReconcileStatus)(0),                                // 0: rill.runtime.v1.ReconcileStatus
 	(AssertionStatus)(0),                                // 1: rill.runtime.v1.AssertionStatus
@@ -5117,21 +5026,20 @@ var file_rill_runtime_v1_resources_proto_goTypes = []interface{}{
 	(*CharLocation)(nil),                                // 49: rill.runtime.v1.CharLocation
 	(*API)(nil),                                         // 50: rill.runtime.v1.API
 	(*APISpec)(nil),                                     // 51: rill.runtime.v1.APISpec
-	(*MetricSQL)(nil),                                   // 52: rill.runtime.v1.MetricSQL
-	(*APIState)(nil),                                    // 53: rill.runtime.v1.APIState
-	(*MetricsViewSpec_DimensionV2)(nil),                 // 54: rill.runtime.v1.MetricsViewSpec.DimensionV2
-	(*MetricsViewSpec_MeasureV2)(nil),                   // 55: rill.runtime.v1.MetricsViewSpec.MeasureV2
-	(*MetricsViewSpec_SecurityV2)(nil),                  // 56: rill.runtime.v1.MetricsViewSpec.SecurityV2
-	(*MetricsViewSpec_AvailableComparisonOffset)(nil),   // 57: rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
-	(*MetricsViewSpec_AvailableTimeRange)(nil),          // 58: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
-	(*MetricsViewSpec_SecurityV2_FieldConditionV2)(nil), // 59: rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	nil,                           // 60: rill.runtime.v1.ReportSpec.AnnotationsEntry
-	nil,                           // 61: rill.runtime.v1.AlertSpec.AnnotationsEntry
-	(*timestamppb.Timestamp)(nil), // 62: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),       // 63: google.protobuf.Struct
-	(TimeGrain)(0),                // 64: rill.runtime.v1.TimeGrain
-	(ExportFormat)(0),             // 65: rill.runtime.v1.ExportFormat
-	(*Color)(nil),                 // 66: rill.runtime.v1.Color
+	(*APIState)(nil),                                    // 52: rill.runtime.v1.APIState
+	(*MetricsViewSpec_DimensionV2)(nil),                 // 53: rill.runtime.v1.MetricsViewSpec.DimensionV2
+	(*MetricsViewSpec_MeasureV2)(nil),                   // 54: rill.runtime.v1.MetricsViewSpec.MeasureV2
+	(*MetricsViewSpec_SecurityV2)(nil),                  // 55: rill.runtime.v1.MetricsViewSpec.SecurityV2
+	(*MetricsViewSpec_AvailableComparisonOffset)(nil),   // 56: rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
+	(*MetricsViewSpec_AvailableTimeRange)(nil),          // 57: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
+	(*MetricsViewSpec_SecurityV2_FieldConditionV2)(nil), // 58: rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	nil,                           // 59: rill.runtime.v1.ReportSpec.AnnotationsEntry
+	nil,                           // 60: rill.runtime.v1.AlertSpec.AnnotationsEntry
+	(*timestamppb.Timestamp)(nil), // 61: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),       // 62: google.protobuf.Struct
+	(TimeGrain)(0),                // 63: rill.runtime.v1.TimeGrain
+	(ExportFormat)(0),             // 64: rill.runtime.v1.ExportFormat
+	(*Color)(nil),                 // 65: rill.runtime.v1.Color
 }
 var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	5,  // 0: rill.runtime.v1.Resource.meta:type_name -> rill.runtime.v1.ResourceMeta
@@ -5150,61 +5058,61 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	6,  // 13: rill.runtime.v1.ResourceMeta.name:type_name -> rill.runtime.v1.ResourceName
 	6,  // 14: rill.runtime.v1.ResourceMeta.refs:type_name -> rill.runtime.v1.ResourceName
 	6,  // 15: rill.runtime.v1.ResourceMeta.owner:type_name -> rill.runtime.v1.ResourceName
-	62, // 16: rill.runtime.v1.ResourceMeta.created_on:type_name -> google.protobuf.Timestamp
-	62, // 17: rill.runtime.v1.ResourceMeta.spec_updated_on:type_name -> google.protobuf.Timestamp
-	62, // 18: rill.runtime.v1.ResourceMeta.state_updated_on:type_name -> google.protobuf.Timestamp
-	62, // 19: rill.runtime.v1.ResourceMeta.deleted_on:type_name -> google.protobuf.Timestamp
+	61, // 16: rill.runtime.v1.ResourceMeta.created_on:type_name -> google.protobuf.Timestamp
+	61, // 17: rill.runtime.v1.ResourceMeta.spec_updated_on:type_name -> google.protobuf.Timestamp
+	61, // 18: rill.runtime.v1.ResourceMeta.state_updated_on:type_name -> google.protobuf.Timestamp
+	61, // 19: rill.runtime.v1.ResourceMeta.deleted_on:type_name -> google.protobuf.Timestamp
 	0,  // 20: rill.runtime.v1.ResourceMeta.reconcile_status:type_name -> rill.runtime.v1.ReconcileStatus
-	62, // 21: rill.runtime.v1.ResourceMeta.reconcile_on:type_name -> google.protobuf.Timestamp
+	61, // 21: rill.runtime.v1.ResourceMeta.reconcile_on:type_name -> google.protobuf.Timestamp
 	6,  // 22: rill.runtime.v1.ResourceMeta.renamed_from:type_name -> rill.runtime.v1.ResourceName
 	8,  // 23: rill.runtime.v1.ProjectParser.spec:type_name -> rill.runtime.v1.ProjectParserSpec
 	9,  // 24: rill.runtime.v1.ProjectParser.state:type_name -> rill.runtime.v1.ProjectParserState
 	45, // 25: rill.runtime.v1.ProjectParserState.parse_errors:type_name -> rill.runtime.v1.ParseError
 	11, // 26: rill.runtime.v1.SourceV2.spec:type_name -> rill.runtime.v1.SourceSpec
 	12, // 27: rill.runtime.v1.SourceV2.state:type_name -> rill.runtime.v1.SourceState
-	63, // 28: rill.runtime.v1.SourceSpec.properties:type_name -> google.protobuf.Struct
+	62, // 28: rill.runtime.v1.SourceSpec.properties:type_name -> google.protobuf.Struct
 	44, // 29: rill.runtime.v1.SourceSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	62, // 30: rill.runtime.v1.SourceState.refreshed_on:type_name -> google.protobuf.Timestamp
+	61, // 30: rill.runtime.v1.SourceState.refreshed_on:type_name -> google.protobuf.Timestamp
 	14, // 31: rill.runtime.v1.ModelV2.spec:type_name -> rill.runtime.v1.ModelSpec
 	15, // 32: rill.runtime.v1.ModelV2.state:type_name -> rill.runtime.v1.ModelState
 	44, // 33: rill.runtime.v1.ModelSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	62, // 34: rill.runtime.v1.ModelState.refreshed_on:type_name -> google.protobuf.Timestamp
+	61, // 34: rill.runtime.v1.ModelState.refreshed_on:type_name -> google.protobuf.Timestamp
 	17, // 35: rill.runtime.v1.MetricsViewV2.spec:type_name -> rill.runtime.v1.MetricsViewSpec
 	18, // 36: rill.runtime.v1.MetricsViewV2.state:type_name -> rill.runtime.v1.MetricsViewState
-	54, // 37: rill.runtime.v1.MetricsViewSpec.dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionV2
-	55, // 38: rill.runtime.v1.MetricsViewSpec.measures:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureV2
-	64, // 39: rill.runtime.v1.MetricsViewSpec.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
-	56, // 40: rill.runtime.v1.MetricsViewSpec.security:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2
+	53, // 37: rill.runtime.v1.MetricsViewSpec.dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionV2
+	54, // 38: rill.runtime.v1.MetricsViewSpec.measures:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureV2
+	63, // 39: rill.runtime.v1.MetricsViewSpec.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
+	55, // 40: rill.runtime.v1.MetricsViewSpec.security:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2
 	2,  // 41: rill.runtime.v1.MetricsViewSpec.default_comparison_mode:type_name -> rill.runtime.v1.MetricsViewSpec.ComparisonMode
-	58, // 42: rill.runtime.v1.MetricsViewSpec.available_time_ranges:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
+	57, // 42: rill.runtime.v1.MetricsViewSpec.available_time_ranges:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
 	17, // 43: rill.runtime.v1.MetricsViewState.valid_spec:type_name -> rill.runtime.v1.MetricsViewSpec
 	20, // 44: rill.runtime.v1.Migration.spec:type_name -> rill.runtime.v1.MigrationSpec
 	21, // 45: rill.runtime.v1.Migration.state:type_name -> rill.runtime.v1.MigrationState
 	23, // 46: rill.runtime.v1.Report.spec:type_name -> rill.runtime.v1.ReportSpec
 	24, // 47: rill.runtime.v1.Report.state:type_name -> rill.runtime.v1.ReportState
 	44, // 48: rill.runtime.v1.ReportSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	65, // 49: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
-	60, // 50: rill.runtime.v1.ReportSpec.annotations:type_name -> rill.runtime.v1.ReportSpec.AnnotationsEntry
-	62, // 51: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
+	64, // 49: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
+	59, // 50: rill.runtime.v1.ReportSpec.annotations:type_name -> rill.runtime.v1.ReportSpec.AnnotationsEntry
+	61, // 51: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
 	25, // 52: rill.runtime.v1.ReportState.current_execution:type_name -> rill.runtime.v1.ReportExecution
 	25, // 53: rill.runtime.v1.ReportState.execution_history:type_name -> rill.runtime.v1.ReportExecution
-	62, // 54: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
-	62, // 55: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
-	62, // 56: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
+	61, // 54: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
+	61, // 55: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
+	61, // 56: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
 	27, // 57: rill.runtime.v1.Alert.spec:type_name -> rill.runtime.v1.AlertSpec
 	28, // 58: rill.runtime.v1.Alert.state:type_name -> rill.runtime.v1.AlertState
 	44, // 59: rill.runtime.v1.AlertSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	63, // 60: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
-	61, // 61: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
-	62, // 62: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
+	62, // 60: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
+	60, // 61: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
+	61, // 62: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
 	29, // 63: rill.runtime.v1.AlertState.current_execution:type_name -> rill.runtime.v1.AlertExecution
 	29, // 64: rill.runtime.v1.AlertState.execution_history:type_name -> rill.runtime.v1.AlertExecution
 	30, // 65: rill.runtime.v1.AlertExecution.result:type_name -> rill.runtime.v1.AssertionResult
-	62, // 66: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
-	62, // 67: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
-	62, // 68: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
+	61, // 66: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
+	61, // 67: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
+	61, // 68: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
 	1,  // 69: rill.runtime.v1.AssertionResult.status:type_name -> rill.runtime.v1.AssertionStatus
-	63, // 70: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
+	62, // 70: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
 	32, // 71: rill.runtime.v1.PullTrigger.spec:type_name -> rill.runtime.v1.PullTriggerSpec
 	33, // 72: rill.runtime.v1.PullTrigger.state:type_name -> rill.runtime.v1.PullTriggerState
 	35, // 73: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
@@ -5217,15 +5125,15 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	3,  // 80: rill.runtime.v1.BucketExtractPolicy.files_strategy:type_name -> rill.runtime.v1.BucketExtractPolicy.Strategy
 	42, // 81: rill.runtime.v1.Theme.spec:type_name -> rill.runtime.v1.ThemeSpec
 	43, // 82: rill.runtime.v1.Theme.state:type_name -> rill.runtime.v1.ThemeState
-	66, // 83: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
-	66, // 84: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
+	65, // 83: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
+	65, // 84: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
 	49, // 85: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
 	51, // 86: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
-	53, // 87: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
-	52, // 88: rill.runtime.v1.APISpec.metrics:type_name -> rill.runtime.v1.MetricSQL
-	59, // 89: rill.runtime.v1.MetricsViewSpec.SecurityV2.include:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	59, // 90: rill.runtime.v1.MetricsViewSpec.SecurityV2.exclude:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	57, // 91: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange.comparison_offsets:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
+	52, // 87: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
+	62, // 88: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
+	58, // 89: rill.runtime.v1.MetricsViewSpec.SecurityV2.include:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	58, // 90: rill.runtime.v1.MetricsViewSpec.SecurityV2.exclude:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	56, // 91: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange.comparison_offsets:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
 	92, // [92:92] is the sub-list for method output_type
 	92, // [92:92] is the sub-list for method input_type
 	92, // [92:92] is the sub-list for extension type_name
@@ -5819,18 +5727,6 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricSQL); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rill_runtime_v1_resources_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*APIState); i {
 			case 0:
 				return &v.state
@@ -5842,7 +5738,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_resources_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_resources_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_DimensionV2); i {
 			case 0:
 				return &v.state
@@ -5854,7 +5750,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_resources_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_resources_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_MeasureV2); i {
 			case 0:
 				return &v.state
@@ -5866,7 +5762,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_resources_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_resources_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_SecurityV2); i {
 			case 0:
 				return &v.state
@@ -5878,7 +5774,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_resources_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_resources_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_AvailableComparisonOffset); i {
 			case 0:
 				return &v.state
@@ -5890,7 +5786,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_resources_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_resources_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_AvailableTimeRange); i {
 			case 0:
 				return &v.state
@@ -5902,7 +5798,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_resources_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_resources_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_SecurityV2_FieldConditionV2); i {
 			case 0:
 				return &v.state
@@ -5943,7 +5839,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_resources_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   58,
+			NumMessages:   57,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
