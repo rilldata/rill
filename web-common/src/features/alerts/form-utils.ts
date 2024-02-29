@@ -1,6 +1,7 @@
 import {
   createAndExpression,
   createBinaryExpression,
+  sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1Expression,
@@ -39,13 +40,16 @@ export function getAlertQueryArgsFromFormValues(
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: formValues.whereFilter,
-    having: createAndExpression(
-      formValues.criteria.map((c) =>
-        createBinaryExpression(
-          c.field,
-          c.operation as V1Operation,
-          Number(c.value),
+    where: sanitiseExpression(formValues.whereFilter, undefined),
+    having: sanitiseExpression(
+      undefined,
+      createAndExpression(
+        formValues.criteria.map((c) =>
+          createBinaryExpression(
+            c.field,
+            c.operation as V1Operation,
+            Number(c.value),
+          ),
         ),
       ),
     ),

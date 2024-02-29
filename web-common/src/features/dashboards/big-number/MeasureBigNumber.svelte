@@ -110,7 +110,7 @@
     }}
   >
     <div
-      class="flex flex-col px-2 text-left
+      class="flex flex-col px-2 text-left w-full h-full
     {withTimeseries ? 'py-3' : 'py-1 justify-between'}
     "
     >
@@ -128,7 +128,7 @@
       >
         <div>
           {#if value !== null && status === EntityStatus.Idle}
-            <div class="w-max">
+            <div class="w-full overflow-hidden text-ellipsis">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
                 {measureValueFormatter(output)}
               </WithTween>
