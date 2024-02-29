@@ -24,26 +24,24 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
 			}
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
+				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {
@@ -56,7 +54,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				ch.Printer.PrintlnWarn(fmt.Sprintf("Deployment status not OK: %s", depl.Status.String()))
+				ch.PrintfWarn("Deployment status not OK: %s\n", depl.Status.String())
 				return nil
 			}
 
@@ -71,7 +69,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if follow {
-				logClient, err := rt.WatchLogs(context.Background(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
+				logClient, err := rt.WatchLogs(cmd.Context(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
 				if err != nil {
 					return fmt.Errorf("failed to watch logs: %w", err)
 				}
@@ -96,7 +94,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			res, err := rt.GetLogs(context.Background(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
+			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
 			if err != nil {
 				return fmt.Errorf("failed to get logs: %w", err)
 			}

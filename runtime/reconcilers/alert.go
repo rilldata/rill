@@ -373,7 +373,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 	if err == nil { // Connected successfully
 		defer release()
-		adminMeta, err = admin.GetAlertMetadata(ctx, a.Spec.QueryName, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
+		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
 		if err != nil {
 			return fmt.Errorf("failed to get alert metadata: %w", err)
 		}

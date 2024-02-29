@@ -6,12 +6,10 @@ import (
 )
 
 func EnvCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
-
 	envCmd := &cobra.Command{
 		Use:               "env",
 		Short:             "Manage variables for a project",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 	envCmd.AddCommand(ConfigureCmd(ch))
 	envCmd.AddCommand(SetCmd(ch))

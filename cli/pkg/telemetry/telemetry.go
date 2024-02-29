@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 )
 
@@ -37,17 +37,18 @@ const (
 	ActionDataAccessSuccess      Action = "dataaccess-success"
 	ActionLoginStart             Action = "login-start"
 	ActionLoginSuccess           Action = "login-success"
+	ActionAppStart               Action = "app-start"
 )
 
 type Telemetry struct {
 	Enabled   bool
 	InstallID string
-	Version   config.Version
+	Version   cmdutil.Version
 	UserID    string
 	events    [][]byte
 }
 
-func New(ver config.Version) *Telemetry {
+func New(ver cmdutil.Version) *Telemetry {
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
 		// if there is any error just disable the telemetry.
@@ -69,7 +70,12 @@ func (t *Telemetry) WithUserID(userID string) {
 }
 
 func (t *Telemetry) Emit(action Action) {
-	t.emitBehaviourEvent(string(action), "cli", "terminal", "terminal")
+	t.emitBehaviourEvent(string(action), "cli", "terminal", "terminal", nil)
+}
+
+func (t *Telemetry) EmitStartEvent(sourceDrivers []string, olapDriver string) {
+	payload := map[string]any{"connectors": sourceDrivers, "olap_connector": olapDriver}
+	t.emitBehaviourEvent(string(ActionAppStart), "cli", "terminal", "terminal", payload)
 }
 
 func (t *Telemetry) Flush(ctx context.Context) error {
@@ -88,22 +94,23 @@ func (t *Telemetry) Flush(ctx context.Context) error {
 }
 
 type behaviourEventFields struct {
-	AppName       string `json:"app_name"`
-	InstallID     string `json:"install_id"`
-	BuildID       string `json:"build_id"`
-	Version       string `json:"version"`
-	UserID        string `json:"user_id"`
-	IsDev         bool   `json:"is_dev"`
-	Mode          string `json:"mode"`
-	Action        string `json:"action"`
-	Medium        string `json:"medium"`
-	Space         string `json:"space"`
-	ScreenName    string `json:"screen_name"`
-	EventDatetime int64  `json:"event_datetime"`
-	EventType     string `json:"event_type"`
+	AppName       string         `json:"app_name"`
+	InstallID     string         `json:"install_id"`
+	BuildID       string         `json:"build_id"`
+	Version       string         `json:"version"`
+	UserID        string         `json:"user_id"`
+	IsDev         bool           `json:"is_dev"`
+	Mode          string         `json:"mode"`
+	Action        string         `json:"action"`
+	Medium        string         `json:"medium"`
+	Space         string         `json:"space"`
+	ScreenName    string         `json:"screen_name"`
+	EventDatetime int64          `json:"event_datetime"`
+	EventType     string         `json:"event_type"`
+	Payload       map[string]any `json:"payload"`
 }
 
-func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string) {
+func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string, payload map[string]any) {
 	if t == nil || !t.Enabled {
 		return
 	}
@@ -122,6 +129,7 @@ func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string)
 		ScreenName:    screenName,
 		EventDatetime: time.Now().Unix() * 1000,
 		EventType:     "behavioral",
+		Payload:       payload,
 	}
 	event, err := json.Marshal(&fields)
 	if err != nil {

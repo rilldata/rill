@@ -245,6 +245,14 @@ const metricViewReducers = {
         }
       });
 
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = dimensions?.[0]?.id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
+
       metricsExplorer.pivot.rows = {
         dimension: dimensions,
       };
@@ -264,6 +272,14 @@ const metricViewReducers = {
         }
       });
 
+      // Reset sorting if the sorting field is not in the pivot columns
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
       metricsExplorer.pivot.columns = {
         dimension: dimensions,
         measure: measures,

@@ -243,7 +243,7 @@ test.describe("leaderboard context column", () => {
     ).not.toBeVisible();
     // check that the percent of total remains visible,
     // with updated value for the time comparison
-    await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
+    await expect(page.getByText("Facebook $229.26 29%")).toBeVisible();
 
     /**
      * SUBFLOW: check correct behavior when
@@ -263,7 +263,7 @@ test.describe("leaderboard context column", () => {
     //close the context column menu
     await page.getByLabel("Select a context column").click();
     // check that the percent change is visible+correct
-    await expect(page.getByText("Facebook $229.26 3%")).toBeVisible();
+    await expect(page.getByText("Facebook $229.26 4%")).toBeVisible();
 
     // open the context column menu
     await page.getByLabel("Select a context column").click();
@@ -272,7 +272,7 @@ test.describe("leaderboard context column", () => {
     //close the context column menu
     await page.getByLabel("Select a context column").click();
     // check that the percent of total is visible+correct
-    await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
+    await expect(page.getByText("Facebook $229.26 29%")).toBeVisible();
 
     /**
      * Go back to measure without valid_percent_of_total

@@ -101,7 +101,7 @@
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     class:big-number={!isMeasureExpanded}
-    class="big-number m-0.5 rounded flex items-start {isMeasureExpanded
+    class="group big-number m-0.5 rounded flex items-start {isMeasureExpanded
       ? 'cursor-default'
       : 'cursor-pointer'}"
     on:click={(e) => {
@@ -110,13 +110,13 @@
     }}
   >
     <div
-      class="flex flex-col px-2 text-left
+      class="flex flex-col px-2 text-left w-full h-full
     {withTimeseries ? 'py-3' : 'py-1 justify-between'}
     "
     >
       <h2
         style:overflow-wrap="anywhere"
-        class="line-clamp-2 ui-copy-primary font-semibold"
+        class="line-clamp-2 ui-header-primary font-semibold"
         style:font-size={withTimeseries ? "" : "0.8rem"}
       >
         {name}
@@ -128,7 +128,7 @@
       >
         <div>
           {#if value !== null && status === EntityStatus.Idle}
-            <div class="w-max">
+            <div class="w-full overflow-hidden text-ellipsis">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
                 {measureValueFormatter(output)}
               </WithTween>

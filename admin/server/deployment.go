@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -220,7 +221,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		}
 	}
 
-	ttlDuration := runtimeAccessTokenTTL
+	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
@@ -324,7 +325,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 	}
 
-	ttlDuration := runtimeAccessTokenTTL
+	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
@@ -352,18 +353,25 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	s.admin.Used.Deployment(prodDepl.ID)
 
 	if req.Kind == "" {
-		req.Kind = "MetricsView"
+		req.Kind = runtime.ResourceKindMetricsView
 	}
 
-	iFrameURL, err := urlutil.WithQuery(urlutil.MustJoinURL(s.opts.FrontendURL, "/-/embed"), map[string]string{
+	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
 		"kind":         req.Kind,
 		"resource":     req.Resource,
-		"state":        "",
-		"theme":        req.Query["theme"],
-	})
+		"state":        req.State,
+	}
+	for k, v := range req.Query {
+		if _, ok := iframeQuery[k]; ok {
+			return nil, status.Errorf(codes.InvalidArgument, "query parameter %q is reserved", k)
+		}
+		iframeQuery[k] = v
+	}
+
+	iFrameURL, err := urlutil.WithQuery(urlutil.MustJoinURL(s.opts.FrontendURL, "/-/embed"), iframeQuery)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
 	}

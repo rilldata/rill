@@ -215,6 +215,6 @@ export function getTotalsRowQuery(
     mergedFilter,
     config.measureFilter,
     sortBy,
-    "1000",
+    "300",
   );
 }

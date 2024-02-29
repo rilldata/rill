@@ -17,6 +17,14 @@ import (
 
 func init() {
 	drivers.Register("clickhouse", driver{})
+	drivers.RegisterAsConnector("clickhouse", driver{})
+}
+
+var spec = drivers.Spec{
+	DisplayName: "ClickHouse",
+	Description: "Connect to ClickHouse.",
+	// This spec is intentionally missing a source schema, as the frontend provides
+	// custom instructions for how to connect Clickhouse as the OLAP driver.
 }
 
 type driver struct{}
@@ -63,7 +71,7 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d driver) Spec() drivers.Spec {
-	return drivers.Spec{}
+	return spec
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
@@ -123,6 +131,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

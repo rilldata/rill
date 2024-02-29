@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetricsView,
     useModelHasTimeSeries,
@@ -19,7 +18,6 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     metricsExplorerStore,
     useDashboardStore,
@@ -37,7 +35,6 @@
 
   const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
-  const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange | undefined;
@@ -77,18 +74,24 @@
       localUserPreferences.set({ timeZone: "UTC" });
     }
 
-    baseTimeRange ??= {
-      ...$dashboardStore.selectedTimeRange,
-    };
+    baseTimeRange = $dashboardStore.selectedTimeRange?.start &&
+      $dashboardStore.selectedTimeRange?.end && {
+        name: $dashboardStore.selectedTimeRange?.name,
+        start: $dashboardStore.selectedTimeRange.start,
+        end: $dashboardStore.selectedTimeRange.end,
+      };
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes
   let timeGrainOptions: TimeGrain[];
-  $: timeGrainOptions = getAllowedTimeGrains(
-    new Date($timeControlsStore.timeStart),
-    new Date($timeControlsStore.timeEnd),
-  );
+  $: timeGrainOptions =
+    $timeControlsStore.timeStart && $timeControlsStore.timeEnd
+      ? getAllowedTimeGrains(
+          new Date($timeControlsStore.timeStart),
+          new Date($timeControlsStore.timeEnd),
+        )
+      : [];
 
   function onSelectTimeRange(name: TimeRangePreset, start: Date, end: Date) {
     baseTimeRange = {
@@ -103,12 +106,17 @@
     ).grain;
 
     // Get valid option for the new time range
-    const validComparison = getValidComparisonOption(
-      $metricsView.data,
-      baseTimeRange,
-      $dashboardStore.selectedComparisonTimeRange?.name,
-      $timeControlsStore.allTimeRange,
-    );
+    const validComparison =
+      $metricsView.data &&
+      $timeControlsStore.allTimeRange &&
+      getValidComparisonOption(
+        $metricsView.data,
+        baseTimeRange,
+        $dashboardStore.selectedComparisonTimeRange?.name as
+          | TimeComparisonOption
+          | undefined,
+        $timeControlsStore.allTimeRange,
+      );
 
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
@@ -122,11 +130,13 @@
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
-    makeTimeSeriesTimeRangeAndUpdateAppState(
-      baseTimeRange,
-      timeGrain,
-      $dashboardStore?.selectedComparisonTimeRange,
-    );
+    if (baseTimeRange) {
+      makeTimeSeriesTimeRangeAndUpdateAppState(
+        baseTimeRange,
+        timeGrain,
+        $dashboardStore?.selectedComparisonTimeRange,
+      );
+    }
   }
 
   function onSelectTimeZone(timeZone: string) {
@@ -155,8 +165,6 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    cancelDashboardQueries(queryClient, metricViewName);
-
     metricsExplorerStore.selectTimeRange(
       metricViewName,
       timeRange,
@@ -169,7 +177,7 @@
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
     <NoTimeDimensionCTA />
-  {:else if allTimeRange?.start}
+  {:else if allTimeRange?.start && minTimeGrain && $timeControlsStore.selectedTimeRange}
     <TimeRangeSelector
       {metricViewName}
       {minTimeGrain}

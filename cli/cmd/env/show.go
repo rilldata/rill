@@ -15,15 +15,13 @@ func ShowEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "show",
 		Short: "Show credentials and other variables",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 			})
 			if err != nil {
@@ -38,7 +36,9 @@ func ShowEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
 	showCmd.Flags().StringVar(&projectName, "project", "", "")
 	_ = showCmd.MarkFlagRequired("project")
+
 	return showCmd
 }

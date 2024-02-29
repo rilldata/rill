@@ -52,6 +52,7 @@
 
     // DuckDB-backed projects should head to the Welcome page for user-guided initialization
     if (olapConnector === "duckdb") {
+      ready = true;
       await goto("/welcome");
       return;
     }

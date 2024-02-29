@@ -74,7 +74,7 @@ func (s *Server) ScanConnectors(ctx context.Context, req *runtimev1.ScanConnecto
 	}
 	defer release()
 
-	p, err := rillv1.Parse(ctx, repo, req.InstanceId, inst.Environment, "", nil)
+	p, err := rillv1.Parse(ctx, repo, req.InstanceId, inst.Environment, "")
 	if err != nil {
 		return nil, err
 	}
