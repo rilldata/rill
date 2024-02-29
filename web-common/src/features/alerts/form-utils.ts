@@ -81,6 +81,11 @@ export const alertFormValidationSchema = yup.object({
     }),
   ),
 });
+export const FieldsByTab: (keyof AlertFormValues)[][] = [
+  ["name", "measure"],
+  ["criteria", "criteriaOperation"],
+  ["snooze", "recipients"],
+];
 
 export function checkIsTabValid(
   tabIndex: number,
@@ -105,7 +110,7 @@ export function checkIsTabValid(
       }
     });
     hasErrors = false;
-    (errors.criteria as unknown as any[]).forEach((criteriaError) => {
+    (errors.criteria as unknown as any[])?.forEach?.((criteriaError) => {
       if (
         criteriaError.field ||
         criteriaError.operation ||
