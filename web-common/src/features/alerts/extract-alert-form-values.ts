@@ -1,9 +1,7 @@
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
