@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { DEFAULT_INSPECTOR_WIDTH } from "../config";
   import { drag } from "../drag";
   import type { LayoutElement } from "./types";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   /** the core inspector width element is stored in localStorage. */
   const inspectorLayout = getContext(
@@ -42,22 +42,21 @@
   >
     <!-- draw handler -->
     {#if $inspectorLayout.visible}
-      <Portal>
-        <div
-          role="separator"
-          class="fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen"
-          style:right="{$visibilityTween * $inspectorWidth}px"
-          style:top="var(--header-height)"
-          style:bottom="0px"
-          use:drag={{ minSize: 300, store: inspectorLayout, reverse: true }}
-          on:dblclick={() => {
-            inspectorLayout.update((state) => {
-              state.value = DEFAULT_INSPECTOR_WIDTH;
-              return state;
-            });
-          }}
-        />
-      </Portal>
+      <div
+        use:portal
+        role="separator"
+        class="fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen"
+        style:right="{$visibilityTween * $inspectorWidth}px"
+        style:top="var(--header-height)"
+        style:bottom="0px"
+        use:drag={{ minSize: 300, store: inspectorLayout, reverse: true }}
+        on:dblclick={() => {
+          inspectorLayout.update((state) => {
+            state.value = DEFAULT_INSPECTOR_WIDTH;
+            return state;
+          });
+        }}
+      />
     {/if}
 
     <div class="w-full pt-2">

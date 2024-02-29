@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
-  import Portal from "../Portal.svelte";
   import { FloatingElement } from "./index";
   import type { FloatingElementRelationship } from "./types";
 
@@ -44,26 +43,22 @@
 <div class:inline bind:this={parent}>
   <slot {active} {handleClose} {toggleFloatingElement} />
   {#if active && !suppress}
-    <Portal>
-      <div style="z-index: 50;">
-        <FloatingElement
-          target={parent}
-          {relationship}
-          {location}
-          {alignment}
-          {distance}
-          {pad}
-          {overflowFlipY}
-          {mousePos}
-        >
-          <slot
-            name="floating-element"
-            {active}
-            {handleClose}
-            {toggleFloatingElement}
-          />
-        </FloatingElement>
-      </div>
-    </Portal>
+    <FloatingElement
+      target={parent}
+      {relationship}
+      {location}
+      {alignment}
+      {distance}
+      {pad}
+      {overflowFlipY}
+      {mousePos}
+    >
+      <slot
+        name="floating-element"
+        {active}
+        {handleClose}
+        {toggleFloatingElement}
+      />
+    </FloatingElement>
   {/if}
 </div>
