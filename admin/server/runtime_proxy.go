@@ -14,8 +14,9 @@ import (
 
 // runtimeProxyForOrgAndProject proxies a request to the runtime service for a specific project.
 // This provides a way to directly query a project's runtime on a stable URL without needing to call GetProject or GetDeploymentCredentials to discover the runtime URL.
-// If the request is made using an Authorization header or cookie recognized by the admin service, the proxied request is made with a newly minted JWT similar to the one that could be obtained by calling GetProject.
-// If the Authorization header of the request is not recognized, it is proxied through to the runtime service.
+// If the request is made using an Authorization header or cookie recognized by the admin service,
+// the proxied request is made with a newly minted JWT similar to the one that could be obtained by calling GetProject.
+// If the Authorization header of the request is not recognized by the admin service, it is proxied through to the runtime service.
 func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Request) {
 	// Get args from URL path components
 	org := r.PathValue("org")
@@ -53,6 +54,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	case auth.OwnerTypeUser, auth.OwnerTypeService:
 		// If the client is authenticated with the admin service, we issue a new ephemeral runtime JWT.
 		// The JWT should have the same permissions/configuration as one they would get by calling AdminService.GetProject.
+
 		permissions := claims.ProjectPermissions(r.Context(), proj.OrganizationID, depl.ProjectID)
 		if !permissions.ReadProd {
 			http.Error(w, "does not have permission to access the production deployment", http.StatusForbidden)

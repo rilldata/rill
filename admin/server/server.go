@@ -205,14 +205,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add runtime proxy
 	mux.Handle("/v1/orgs/{org}/projects/{project}/runtime/{path...}",
-		observability.TracingMiddleware(
-			observability.LoggingMiddleware(
-				s.logger,
-				s.authenticator.HTTPMiddlewareLenient(
-					http.HandlerFunc(s.runtimeProxyForOrgAndProject),
-				),
-			),
+		observability.Middleware(
 			"runtime-proxy",
+			s.logger,
+			s.authenticator.HTTPMiddlewareLenient(http.HandlerFunc(s.runtimeProxyForOrgAndProject)),
 		),
 	)
 
