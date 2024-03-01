@@ -65,7 +65,6 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 
 	// Todo : for testing purposes only
 	res := []byte(api.Spec.Resolver)
-	// TODO : what user attributes to get from ctx ?
 	// this all will go in resolver.go in runtime may be
 
 	// resolverInitializer, ok := APIResolverInitializers[api.Spec.Resolver]
@@ -77,8 +76,8 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 	// 	Runtime:    r,
 	// 	InstanceID: instanceID,
 	// 	API:        api,
-	// 	Args:       api.Spec.ResolverProperties,
-	// 	UserAttributes: reqParams,
+	// 	Args:       reqParams,
+	// 	UserAttributes: auth.GetClaims(ctx).Attributes(),
 	// })
 	// if err != nil {
 	// 	return nil, status.Error(codes.InvalidArgument, err.Error())
