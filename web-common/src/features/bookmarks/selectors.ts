@@ -138,7 +138,7 @@ export function getPrettySelectedTimeRange(
         timeRangeState.selectedTimeRange?.start,
         timeRangeState.selectedTimeRange?.end,
         timeRangeState.selectedTimeRange?.name,
-        metricsExplorerEntity.selectedTimezone,
+        metricsExplorerEntity?.selectedTimezone,
       );
     },
   );
