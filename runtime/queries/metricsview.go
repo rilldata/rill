@@ -165,6 +165,9 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 
 	data, err := rowsToData(rows)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, nil, status.Error(codes.Canceled, err.Error())
+		}
 		return nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -185,6 +188,9 @@ func olapQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql st
 
 	data, err := rowsToData(rows)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, nil, status.Error(codes.Canceled, err.Error())
+		}
 		return nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
