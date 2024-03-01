@@ -65,11 +65,11 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			for k, v := range res.Variables {
 				vars[k] = v
 			}
-			new := 0
+			added := 0
 			changed := 0
 			for k, v := range parser.DotEnv {
 				if _, ok := vars[k]; !ok {
-					new++
+					added++
 				} else if vars[k] != v {
 					changed++
 				}
@@ -77,7 +77,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// If there were no changes, exit early
-			if new+changed == 0 {
+			if added+changed == 0 {
 				ch.Print("There are no new or changed variables in your local .env file.\n")
 				return nil
 			}
@@ -91,7 +91,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Write the merged variables back to the cloud project
-			if new+changed != 0 {
+			if added+changed != 0 {
 				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
 					OrganizationName: ch.Org,
 					Name:             projectName,
