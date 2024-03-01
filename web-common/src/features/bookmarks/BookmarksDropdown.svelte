@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { V1Bookmark } from "@rilldata/web-admin/client";
   import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -11,6 +10,7 @@
   import { createHomeBookmarkModifier } from "@rilldata/web-common/features/bookmarks/createOrUpdateHomeBookmark";
   import EditBookmarkDialog from "@rilldata/web-common/features/bookmarks/EditBookmarkDialog.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
+  import type { BookmarkEntry } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkIcon } from "lucide-svelte";
@@ -19,7 +19,7 @@
 
   let createBookmark = false;
   let editBookmark = false;
-  let bookmark: V1Bookmark;
+  let bookmark: BookmarkEntry;
 
   $: bookmarkApplier = createBookmarkApplier(
     $runtime?.instanceId,
@@ -30,8 +30,8 @@
 
   const homeBookmarkModifier = createHomeBookmarkModifier();
 
-  function onSelect(bookmark: V1Bookmark) {
-    bookmarkApplier(bookmark);
+  function onSelect(bookmark: BookmarkEntry) {
+    bookmarkApplier(bookmark.resource);
   }
 
   async function createHomeBookmark() {

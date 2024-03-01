@@ -4,12 +4,14 @@
   import {
     createAdminServiceUpdateBookmark,
     getAdminServiceListBookmarksQueryKey,
-    type V1Bookmark,
   } from "@rilldata/web-admin/client";
   import { Button, Switch } from "@rilldata/web-common/components/button";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
-  import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
+  import {
+    type BookmarkEntry,
+    useProjectId,
+  } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -18,7 +20,7 @@
 
   export let open: boolean;
   export let metricsViewName: string;
-  export let bookmark: V1Bookmark;
+  export let bookmark: BookmarkEntry;
 
   const queryClient = useQueryClient();
 
@@ -30,10 +32,10 @@
 
   const formState = createForm({
     initialValues: {
-      displayName: bookmark.displayName,
-      description: (bookmark.description as string) ?? "",
-      filtersOnly: false, // TODO
-      absoluteTimeRange: false, // TODO
+      displayName: bookmark.resource.displayName ?? "",
+      description: (bookmark.resource.description as string) ?? "",
+      filtersOnly: bookmark.filtersOnly,
+      absoluteTimeRange: bookmark.absoluteTimeRange,
     },
     validationSchema: yup.object({
       displayName: yup.string().required("Required"),
@@ -42,7 +44,7 @@
     onSubmit: async (values) => {
       await $bookmarkUpdater.mutateAsync({
         data: {
-          bookmarkId: bookmark.id,
+          bookmarkId: bookmark.resource.id,
           displayName: values.displayName,
           description: values.description,
           data: getBookmarkDataForDashboard(

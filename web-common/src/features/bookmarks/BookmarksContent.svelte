@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/components/dropdown-menu/index";
   import BookmarkItem from "@rilldata/web-common/features/bookmarks/BookmarkItem.svelte";
   import { getBookmarks } from "@rilldata/web-common/features/bookmarks/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
@@ -20,6 +21,7 @@
   let bookmarks: ReturnType<typeof getBookmarks>;
   $: bookmarks = getBookmarks(
     queryClient,
+    $runtime?.instanceId,
     $page.params.organization,
     $page.params.project,
     $page.params.dashboard,

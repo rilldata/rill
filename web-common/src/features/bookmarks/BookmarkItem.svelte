@@ -1,14 +1,17 @@
 <script lang="ts">
+  import { createAdminServiceRemoveBookmark } from "@rilldata/web-admin/client";
+  import type { BookmarkEntry } from "@rilldata/web-common/features/bookmarks/selectors";
   import {
-    createAdminServiceRemoveBookmark,
-    type V1Bookmark,
-  } from "@rilldata/web-admin/client";
-  import { PencilIcon, TrashIcon, BookmarkIcon } from "lucide-svelte";
+    PencilIcon,
+    TrashIcon,
+    BookmarkIcon,
+    FilterIcon,
+  } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu/index";
 
-  export let bookmark: V1Bookmark;
+  export let bookmark: BookmarkEntry;
 
   const dispatch = createEventDispatcher();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
@@ -36,19 +39,21 @@
       tabindex="0"
     >
       <div class="pt-0.5">
-        {#if bookmark.default}
+        {#if bookmark.resource.default}
           <HomeBookmark size="16px" />
+        {:else if bookmark.filtersOnly}
+          <FilterIcon size="16px" />
         {:else}
           <BookmarkIcon size="16px" />
         {/if}
       </div>
       <div class="flex flex-col">
         <div class="text-sm text-gray-700 h-5 text-ellipsis overflow-hidden">
-          {bookmark.displayName}
+          {bookmark.resource.displayName}
         </div>
-        {#if bookmark.description}
+        {#if bookmark.resource.description}
           <div class="text-sm text-gray-500 h-5 text-ellipsis overflow-hidden">
-            {bookmark.description}
+            {bookmark.resource.description}
           </div>
         {/if}
       </div>
