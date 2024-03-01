@@ -66,9 +66,9 @@ func WriteError(w http.ResponseWriter, err error) {
 
 	// Write error as JSON
 	obj := map[string]string{"error": err.Error()}
-	json, err := json.Marshal(obj)
+	data, err := json.Marshal(obj)
 	if err != nil {
 		panic(err)
 	}
-	w.Write(json)
+	_, _ = w.Write(data)
 }

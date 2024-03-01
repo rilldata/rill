@@ -206,7 +206,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/v1/", gwMux)
 
 	// Add runtime proxy
-	mux.Handle("/v1/orgs/{org}/projects/{project}/runtime/{path...}",
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
 		observability.Middleware(
 			"runtime-proxy",
 			s.logger,
