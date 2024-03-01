@@ -5,23 +5,32 @@ sidebar_label: "Access Policies"
 sidebar_position: 40
 ---
 
-Rill supports granular access policies for dashboards. They allow the dashboard developer to configure dashboard-level, row-level and column-level restrictions based on user attributes such as email address and domain. Some of the typical use cases include:
+Rill supports granular access policies for dashboards. They allow the dashboard developer to configure dashboard-level, row-level and column-level restrictions based on user attributes such as email address and domain. Our goal with access to policies is to avoid dashboard sprawl by creating a single configuration of the dashboard that can then be sliced or restricted into multiple views via different policies. Using those access controls, a single dashboard can now serve dozens of teams and use cases to ensure consistent metric definitions and better dashboard findability.
+
+Some of the typical use cases include:
 
 - Restricting access to certain dashboards to admin users
+- Limiting dashboards to relevent fields or metrics by team for ease of use (creating a lookup and filter by role) 
 - Limiting access to sensitive dimensions or measures to users from a specific department
 - Partner-filtered dashboards where external users can only see the subset of data that relates to them
 
-Note: Access policies only apply to users who have been invited to access the project. They provide granular access control for your data, but are not the first layer of security for your project.
+:::note User Access vs. Access Policies
+Access policies only apply to users who have been invited to access the project. They provide granular access control for your data, but are not the first layer of security for your project.
+:::
 
 ## Configuration
 
 You define access policies for dashboards under the `security` key in a dashboard's YAML file. The key properties are:
 
-- Dashboard-level access: `access` – a boolean expression that determines if a user can or can't access the dashboard
-- Row-level access: `row_filter` – a SQL expression that will be injected into the `WHERE` clause of all dashboard queries to restrict access to a subset of rows
-- Column-level access: `include` or `exclude` – lists of boolean expressions that determine which dimension and measure names will be available to the user
+- **Dashboard-level access:** `access` – a boolean expression that determines if a user can or can't access the dashboard
+- **Row-level access:** `row_filter` – a SQL expression that will be injected into the `WHERE` clause of all dashboard queries to restrict access to a subset of rows
+- **Column-level access:** `include` or `exclude` – lists of boolean expressions that determine which dimension and measure names will be available to the user
+
+![access](../../static/img/manage/security/access.png)
 
 See the [Dashboard YAML](../reference/project-files/dashboards) reference docs for all the available fields.
+
+See the [Examples](#examples) below for how to set up each type of configuration.
 
 ## User attributes
 
@@ -34,9 +43,9 @@ When developing access policies, you can leverage a fixed set of user attributes
 <!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
 <!-- - `.user.groups` - a list of usergroups the user belongs to in the project's org. Custom usergroups are not currently supported, so this will always be `["all"]`. -->
 
-Note: Rill requires users to confirm their email address before letting them interact with the platform. So a user can't trivially fake an email address or email domain.
+Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
 
-If you require additional user attributes to enforce access policies, see the example for custom attributes further down on this page.
+If you require additional user attributes to enforce access policies, see the [example for custom attributes below](#advanced-example-custom-attributes) for more details.
 
 ## Templating and expression evaluation
 
@@ -62,7 +71,8 @@ mock_users:
 - email: anon@unknown.com
 ```
 
-On the dashboard page, provided you've added a policy, you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
+On the dashboard page (provided you've added a policy) you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
+
 ## Examples
 
 ### Restrict dashboard access to users matching specific criteria
@@ -73,7 +83,9 @@ security:
   access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
 ```
 
-> **_Note:_** If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone.
+:::note DEFAULT SECURITY IS FALSE
+If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to invited individually.
+:::
 
 ### Show only data from the user's own domain
 
@@ -85,7 +97,9 @@ security:
   row_filter: "domain = '{{ .user.domain }}'"
 ```
 
-> **_Note:_** The `filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
+:::note FILTERS SHOULD BE VALID SQL
+The `filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
+:::
 
 ### Conditionally hide a dashboard dimension or measure
 
