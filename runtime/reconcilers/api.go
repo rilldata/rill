@@ -59,5 +59,7 @@ func (r *APIReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName
 		return runtime.ReconcileResult{Err: errors.New("not an API")}
 	}
 
+	// TODO: Add validation of the resolver properties when the resolver abstractions are implemented
+
 	return runtime.ReconcileResult{}
 }

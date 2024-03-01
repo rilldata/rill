@@ -1231,20 +1231,114 @@ colors:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestChartsAndDashboard(t *testing.T) {
+	vegaLiteSpec := `
+  {
+    '$schema': "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "A simple bar chart with embedded data.",
+    "mark": "bar",
+    "encoding": {
+      "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
+      "y": {"field": "total_sales", "type": "quantitative"}
+    }
+  }`
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`charts/c1.yaml`: fmt.Sprintf(`
+kind: chart
+data:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: foo
+
+vega_lite: |-
+%s
+
+`, vegaLiteSpec),
+		`charts/c2.yaml`: fmt.Sprintf(`
+kind: chart
+data:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: bar
+
+vega_lite: |%s
+
+`, vegaLiteSpec),
+		`dashboards/d1.yaml`: `
+kind: dashboard
+grid:
+  rows: 3
+  columns: 4
+components:
+  - chart: c1
+  - chart: c2
+    rows: 1
+    columns: 2
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindChart, Name: "c1"},
+			Paths: []string{"/charts/c1.yaml"},
+			ChartSpec: &runtimev1.ChartSpec{
+				QueryName:     "MetricsViewAggregation",
+				QueryArgsJson: `{"metrics_view":"foo"}`,
+				VegaLiteSpec:  vegaLiteSpec,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindChart, Name: "c2"},
+			Paths: []string{"/charts/c2.yaml"},
+			ChartSpec: &runtimev1.ChartSpec{
+				QueryName:     "MetricsViewAggregation",
+				QueryArgsJson: `{"metrics_view":"bar"}`,
+				VegaLiteSpec:  vegaLiteSpec,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindDashboard, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindChart, Name: "c1"},
+				{Kind: ResourceKindChart, Name: "c2"},
+			},
+			DashboardSpec: &runtimev1.DashboardSpec{
+				GridColumns: 3,
+				GridRows:    4,
+				Components: []*runtimev1.DashboardComponent{
+					{Chart: "c1"},
+					{Chart: "c2", Rows: 1, Columns: 2},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func TestAPI(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		// model m1
 		`models/m1.sql`: `SELECT 1`,
+		// api a1
 		`apis/a1.yaml`: `
 kind: api
 sql: select * from m1
 `,
+		// api a2
+		`apis/a2.yaml`: `
+kind: api
+metrics:
+  sql: select * from m1
+`,
 	})
-
-	props, err := structpb.NewStruct(map[string]any{"sql": "select * from m1", "resolver": "SQLResolver"})
-	require.NoError(t, err)
 
 	resources := []*Resource{
 		{
@@ -1260,7 +1354,16 @@ sql: select * from m1
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
-				ResolverProperties: props,
+				Resolver:           "SQL",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
+			Paths: []string{"/apis/a2.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "Metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
 	}

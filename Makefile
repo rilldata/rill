@@ -19,9 +19,10 @@ coverage.go:
 	rm -rf coverage/go.out
 	mkdir -p coverage
 	# Run tests with coverage output. First builds the list of packages to include in coverage, excluding generated code in 'proto/gen'.
+	# NOTE(2024-03-01): Coverage fails on the generated code in 'proto/gen' without GOEXPERIMENT=nocoverageredesign. See https://github.com/golang/go/issues/55953.
 	set -e ; \
 		PACKAGES=$$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$$//' | sed -e 's/github.com\/rilldata\/rill/./g') ;\
-		go test ./... -short -v -coverprofile ./coverage/go.out -coverpkg $$PACKAGES
+		GOEXPERIMENT=nocoverageredesign go test ./... -short -v -coverprofile ./coverage/go.out -coverpkg $$PACKAGES
 	go tool cover -func coverage/go.out
 
 .PHONY: docs.generate
