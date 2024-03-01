@@ -1,7 +1,10 @@
 package env
 
 import (
+	"path/filepath"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -18,4 +21,17 @@ func EnvCmd(ch *cmdutil.Helper) *cobra.Command {
 	envCmd.AddCommand(RmCmd(ch))
 	envCmd.AddCommand(ShowCmd(ch))
 	return envCmd
+}
+
+// normalizeProjectPath normalizes a project path provided by the user
+func normalizeProjectPath(projectPath string) (string, error) {
+	res, err := fileutil.ExpandHome(projectPath)
+	if err != nil {
+		return "", err
+	}
+	res, err = filepath.Abs(res)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
 }

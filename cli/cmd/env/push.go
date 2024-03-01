@@ -2,13 +2,11 @@ package env
 
 import (
 	"fmt"
-	"maps"
 	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -22,11 +20,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// If projectPath is provided, normalize it
 			if projectPath != "" {
 				var err error
-				projectPath, err = fileutil.ExpandHome(projectPath)
-				if err != nil {
-					return err
-				}
-				projectPath, err = filepath.Abs(projectPath)
+				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
 					return err
 				}
@@ -71,12 +65,33 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			for k, v := range res.Variables {
 				vars[k] = v
 			}
+			new := 0
+			changed := 0
 			for k, v := range parser.DotEnv {
+				if _, ok := vars[k]; !ok {
+					new++
+				} else if vars[k] != v {
+					changed++
+				}
 				vars[k] = v
 			}
 
+			// If there were no changes, exit early
+			if new+changed == 0 {
+				ch.Print("There are no new or changed variables in your local .env file.\n")
+				return nil
+			}
+
+			// Prompt for confirmation if any existing variables have changed
+			if changed != 0 {
+				ch.Printf("Found %d variable(s) in your local .env file that will overwrite existing variables in the cloud env for project %q.\n", changed, projectName)
+				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
+					return nil
+				}
+			}
+
 			// Write the merged variables back to the cloud project
-			if !maps.Equal(res.Variables, vars) {
+			if new+changed != 0 {
 				_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
 					OrganizationName: ch.Org,
 					Name:             projectName,

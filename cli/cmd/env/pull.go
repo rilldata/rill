@@ -13,7 +13,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -27,11 +26,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 			// If projectPath is provided, normalize it
 			if projectPath != "" {
 				var err error
-				projectPath, err = fileutil.ExpandHome(projectPath)
-				if err != nil {
-					return err
-				}
-				projectPath, err = filepath.Abs(projectPath)
+				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
 					return err
 				}

@@ -3,7 +3,6 @@ package env
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"slices"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -13,7 +12,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +23,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "configure",
 		Short: "Configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// If projectPath is provided, normalize it
 			if projectPath != "" {
 				var err error
-				projectPath, err = fileutil.ExpandHome(projectPath)
+				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
 					return err
 				}
@@ -35,12 +34,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Verify that the projectPath contains a Rill project
 			if !rillv1beta.HasRillProject(projectPath) {
-				fullpath, err := filepath.Abs(projectPath)
-				if err != nil {
-					return err
-				}
-
-				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", fullpath)
+				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", projectPath)
 				ch.PrintfWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
 			}
