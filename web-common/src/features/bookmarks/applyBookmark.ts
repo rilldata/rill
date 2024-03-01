@@ -4,7 +4,7 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
-export function createApplyBookmark(
+export function createBookmarkApplier(
   instanceId: string,
   metricsViewName: string,
 ) {

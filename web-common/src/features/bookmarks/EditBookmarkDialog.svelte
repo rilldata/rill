@@ -8,9 +8,10 @@
   } from "@rilldata/web-admin/client";
   import { Button, Switch } from "@rilldata/web-common/components/button";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
-  import { getBookmarkForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkForDashboard";
+  import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
   import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -44,7 +45,7 @@
           bookmarkId: bookmark.id,
           displayName: values.displayName,
           description: values.description,
-          data: getBookmarkForDashboard(
+          data: getBookmarkDataForDashboard(
             $dashboardStore,
             values.filtersOnly,
             values.absoluteTimeRange,
@@ -54,7 +55,8 @@
       queryClient.refetchQueries(
         getAdminServiceListBookmarksQueryKey({
           projectId: $projectId.data ?? "",
-          dashboardName: metricsViewName,
+          resourceKind: ResourceKind.MetricsView,
+          resourceName: metricsViewName,
         }),
       );
       handleClose();

@@ -3,17 +3,23 @@ import {
   createAdminServiceListBookmarks,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { QueryClient } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useProjectId(orgName: string, projectName: string) {
-  return createAdminServiceGetProject(orgName, projectName, {}, {
-    query: {
-      enabled: !!orgName && !!projectName,
-      select: (resp) => resp.project?.id,
+  return createAdminServiceGetProject(
+    orgName,
+    projectName,
+    {},
+    {
+      query: {
+        enabled: !!orgName && !!projectName,
+        select: (resp) => resp.project?.id,
+      },
     },
-  });
+  );
 }
 
 export type Bookmarks = {
@@ -25,17 +31,18 @@ export function getBookmarks(
   queryClient: QueryClient,
   orgName: string,
   projectName: string,
-  dashboardName: string,
+  metricsViewName: string,
 ): CreateQueryResult<Bookmarks> {
   return derived([useProjectId(orgName, projectName)], ([projectId], set) =>
     createAdminServiceListBookmarks(
       {
         projectId: projectId.data,
-        dashboardName,
+        resourceKind: ResourceKind.MetricsView,
+        resourceName: metricsViewName,
       },
       {
         query: {
-          enabled: !!projectId?.data && !!dashboardName,
+          enabled: !!projectId?.data && !!metricsViewName,
           select: (resp) => {
             const bookmarks: Bookmarks = {
               home: undefined,

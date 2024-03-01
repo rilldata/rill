@@ -2,7 +2,7 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
-export function getBookmarkForDashboard(
+export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
   filtersOnly: boolean,
   absoluteTimeRange: boolean,
