@@ -168,7 +168,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 		// Extract the Git remote and infer the githubURL.
 		var remote *gitutil.Remote
-		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName)
+		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
 			// It's not a valid remote for Github. But we still navigate user to login and then fail afterwards.
 			if !ch.IsAuthenticated() {
