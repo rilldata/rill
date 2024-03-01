@@ -37,6 +37,8 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
+	ChartSpec       *runtimev1.ChartSpec
+	DashboardSpec   *runtimev1.DashboardSpec
 	APISpec         *runtimev1.APISpec
 }
 
@@ -69,6 +71,8 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
+	ResourceKindChart
+	ResourceKindDashboard
 	ResourceKindAPI
 )
 
@@ -82,7 +86,7 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindSource, nil
 	case "model":
 		return ResourceKindModel, nil
-	case "metricsview", "metrics_view", "dashboard":
+	case "metricsview", "metrics_view":
 		return ResourceKindMetricsView, nil
 	case "migration":
 		return ResourceKindMigration, nil
@@ -92,6 +96,10 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
+	case "chart":
+		return ResourceKindChart, nil
+	case "dashboard":
+		return ResourceKindDashboard, nil
 	case "api":
 		return ResourceKindAPI, nil
 	default:
@@ -117,6 +125,10 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
+	case ResourceKindChart:
+		return "Chart"
+	case ResourceKindDashboard:
+		return "Dashboard"
 	case ResourceKindAPI:
 		return "API"
 	default:
@@ -721,6 +733,10 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
+	case ResourceKindChart:
+		r.ChartSpec = &runtimev1.ChartSpec{}
+	case ResourceKindDashboard:
+		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	default:

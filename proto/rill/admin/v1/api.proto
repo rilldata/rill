@@ -357,7 +357,7 @@ service AdminService {
     };
   }
 
-  // ListBookmarks lists all the bookmarks for the user
+  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
@@ -367,15 +367,23 @@ service AdminService {
     option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
   }
 
-  // CreateBookmark creates a bookmark for the given user for the given project
+  // CreateBookmark creates a bookmark for the given user or for all users for the dashboard
   rpc CreateBookmark(CreateBookmarkRequest) returns (CreateBookmarkResponse) {
     option (google.api.http) = {
       post: "/v1/users/bookmarks",
       body: "*"
     };
   }
+
+  // UpdateBookmark updates a bookmark for the given user for the given project
+  rpc UpdateBookmark(UpdateBookmarkRequest) returns (UpdateBookmarkResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/bookmarks",
+      body: "*"
+    };
+  }
   
-  // RemoveBookmark removes the bookmark for the given user for the given project
+  // RemoveBookmark removes the bookmark for the given user or all users
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
   }
@@ -959,42 +967,59 @@ message UserPreferences {
 }
 
 message UpdateUserPreferencesRequest {
-    UserPreferences preferences = 1;
+  UserPreferences preferences = 1;
 }
 
 message UpdateUserPreferencesResponse {
-    UserPreferences preferences = 1;
+  UserPreferences preferences = 1;
 }
 
 message ListBookmarksRequest {
-    string project_id = 1;
+  string project_id = 1;
+  string resource_kind = 2;
+  string resource_name = 3;
 }
 
 message ListBookmarksResponse {
-    repeated Bookmark bookmarks = 1;
+  repeated Bookmark bookmarks = 1;
 }
 
 message GetBookmarkRequest {
-    string bookmark_id = 1;
+  string bookmark_id = 1;
 }
 
 message GetBookmarkResponse {
-    Bookmark bookmark = 1;
+  Bookmark bookmark = 1;
 }
 
 message CreateBookmarkRequest {
   string display_name = 1;
-  bytes data = 2;
-  string dashboard_name = 3;
-  string project_id = 4;
+  string description = 2;
+  bytes data = 3;
+  string resource_kind = 4;
+  string resource_name = 5;
+  string project_id = 6;
+  bool default = 7;
+  bool shared = 8;
 }
 
 message CreateBookmarkResponse {
   Bookmark bookmark = 1;
 }
 
+message UpdateBookmarkRequest {
+  string bookmark_id = 1;
+  string display_name = 2;
+  string description = 4;
+  bytes data = 3;
+  bool default = 5;
+  bool shared = 6;
+}
+
+message UpdateBookmarkResponse {}
+
 message RemoveBookmarkRequest {
-    string bookmark_id = 1;
+  string bookmark_id = 1;
 }
 
 message RemoveBookmarkResponse {}
@@ -1404,10 +1429,14 @@ message WhitelistedDomain {
 message Bookmark {
   string id = 1;
   string display_name = 2;
+  string description = 9;
   bytes data = 3;
-  string dashboard_name = 4;
+  string resource_kind = 10;
+  string resource_name = 4;
   string project_id = 5;
   string user_id = 6;
+  bool default = 11;
+  bool shared = 12;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }

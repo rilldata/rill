@@ -2831,7 +2831,7 @@ definitions:
         $ref: '#/definitions/v1APISpec'
       state:
         $ref: '#/definitions/v1APIState'
-    title: API provide access to data stored in Rill
+    description: API defines a custom operation for querying data stored in Rill.
   v1APISpec:
     type: object
     properties:
@@ -3055,6 +3055,26 @@ definitions:
       cardinality:
         type: number
         format: double
+  v1Chart:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ChartSpec'
+      state:
+        $ref: '#/definitions/v1ChartState'
+  v1ChartSpec:
+    type: object
+    properties:
+      title:
+        type: string
+      queryName:
+        type: string
+      queryArgsJson:
+        type: string
+      vegaLiteSpec:
+        type: string
+  v1ChartState:
+    type: object
   v1Color:
     type: object
     properties:
@@ -3390,6 +3410,42 @@ definitions:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.CreateInstance
   v1CreateTriggerResponse:
+    type: object
+  v1Dashboard:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1DashboardSpec'
+      state:
+        $ref: '#/definitions/v1DashboardState'
+  v1DashboardComponent:
+    type: object
+    properties:
+      chart:
+        type: string
+      columns:
+        type: string
+        format: int64
+      rows:
+        type: string
+        format: int64
+  v1DashboardSpec:
+    type: object
+    properties:
+      title:
+        type: string
+      gridColumns:
+        type: string
+        format: int64
+      gridRows:
+        type: string
+        format: int64
+      components:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DashboardComponent'
+  v1DashboardState:
     type: object
   v1DeleteFileAndReconcileRequest:
     type: object
@@ -5077,6 +5133,10 @@ definitions:
         $ref: '#/definitions/v1BucketPlanner'
       theme:
         $ref: '#/definitions/v1Theme'
+      chart:
+        $ref: '#/definitions/v1Chart'
+      dashboard:
+        $ref: '#/definitions/v1Dashboard'
       api:
         $ref: '#/definitions/v1API'
   v1ResourceEvent:
