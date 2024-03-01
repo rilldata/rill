@@ -7,13 +7,15 @@ sidebar_position: 4
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## How to configure credentials in Rill
+## Overview
 
-How you configure access to BigQuery depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
+[Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully-managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets using SQL-like queries. It supports a highly scalable and flexible architecture, allowing users to analyze large amounts of data in real-time and making it suitable for BI/ML applications. Rill supports natively connecting to and reading from BigQuery as a source by leveraging the [BigQuery SDK](https://cloud.google.com/bigquery/docs/reference/libraries).
 
-### Configure credentials for local development
+![Connecting to BigQuery](/img/reference/connectors/bigquery/bigquery.png)
 
-When developing a project locally, Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
+## Local credentials
+
+When using Rill Developer on your local machine (i.e. `rill start`), Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
 
 1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated. 
 
@@ -21,9 +23,9 @@ When developing a project locally, Rill uses the credentials configured in your 
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
 
-### Configure credentials for deployments on Rill Cloud
+## Cloud deployment
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. 
+When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. 
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
 
@@ -31,9 +33,16 @@ If you subsequently add sources that require new credentials (or if you input th
 ```
 rill env configure
 ```
+
+:::info
+
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
 
-## How to create a service account using the Google Cloud Console
+:::
+
+## Appendix
+
+### How to create a service account using the Google Cloud Console
 
 Here is a step-by-step guide on how to create a Google Cloud service account with access to BigQuery:
 
