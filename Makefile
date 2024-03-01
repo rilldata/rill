@@ -22,7 +22,7 @@ coverage.go:
 	# NOTE(2024-03-01): Coverage fails on the generated code in 'proto/gen' without GOEXPERIMENT=nocoverageredesign. See https://github.com/golang/go/issues/55953.
 	set -e ; \
 		PACKAGES=$$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$$//' | sed -e 's/github.com\/rilldata\/rill/./g') ;\
-		GOEXPERIMENT=nocoverageredesign go test ./proto/gen... -short -v -coverprofile ./coverage/go.out -coverpkg $$PACKAGES
+		GOEXPERIMENT=nocoverageredesign go test ./... -short -v -coverprofile ./coverage/go.out -coverpkg $$PACKAGES
 	go tool cover -func coverage/go.out
 
 .PHONY: docs.generate
