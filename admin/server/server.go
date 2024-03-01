@@ -107,13 +107,15 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	cookieStore.Options.Domain = ""
 
 	// We need to protect against CSRF and clickjacking attacks, but still support requests from the UI to the admin service.
-	// This is accomplished by setting SameSite=Strict (note that "site" just means the same root domain, not sub-domain).
+	// This is accomplished by setting SameSite=Lax (note that "site" just means the same root domain, not sub-domain).
 	// For example, cookies will be passed on requests from ui.rilldata.com to admin.rilldata.com (or localhost:3000 to localhost:8080),
 	// but not for requests from a different site AND NOT from an iframe of ui.rilldata.com on a different site.
 	//
+	// Note: We use Lax instead of Strict because we need cookies to be passed on redirects to the admin service from external providers, namely Auth0 and Github.
+	//
 	// Note on embedding: When embedding our UI, requests are only made to the runtime using the ephemeral JWT generated for the iframe. So we do not need cookies to be passed.
 	// In the future, if iframes need to communicate with the admin service, we should introduce a scheme involving ephemeral tokens and not rely on cookies.
-	cookieStore.Options.SameSite = http.SameSiteStrictMode
+	cookieStore.Options.SameSite = http.SameSiteLaxMode
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
 		AuthDomain:       opts.AuthDomain,
@@ -185,7 +187,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithErrorHandler(httpErrorHandler),
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
@@ -202,6 +204,15 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create regular http mux and mount gwMux on it
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", gwMux)
+
+	// Add runtime proxy
+	mux.Handle("/v1/orgs/{org}/projects/{project}/runtime/{path...}",
+		observability.Middleware(
+			"runtime-proxy",
+			s.logger,
+			s.authenticator.HTTPMiddlewareLenient(http.HandlerFunc(s.runtimeProxyForOrgAndProject)),
+		),
+	)
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -257,6 +268,15 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	handler := cors.New(corsOpts).Handler(mux)
 
 	return handler, nil
+}
+
+// Ping implements AdminService
+func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
+	resp := &adminv1.PingResponse{
+		Version: "", // TODO: Return version
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
@@ -315,23 +335,14 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	return attr, nil
 }
 
-// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// httpErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
 // code) to HTTP status code 400 instead of 500.
-func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+func httpErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
 	s := status.Convert(err)
 	if s.Code() == codes.Unknown {
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
-}
-
-// Ping implements AdminService
-func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
-	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
-		Time:    timestamppb.New(time.Now()),
-	}
-	return resp, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

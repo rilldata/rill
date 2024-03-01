@@ -21,7 +21,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.DashboardName, claims.OwnerID())
+	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -105,15 +105,28 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create the bookmark")
 	}
 
+	if req.Default {
+		// only one default bookmark can exist for a project/dashboard combo
+		res, err := s.admin.DB.FindDefaultBookmark(ctx, req.ProjectId, req.ResourceKind, req.ResourceName)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if res != nil {
+			return nil, status.Error(codes.InvalidArgument, "default bookmark already exists")
+		}
+	}
+
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
-		DisplayName:   req.DisplayName,
-		Description:   req.Description,
-		Data:          req.Data,
-		DashboardName: req.DashboardName,
-		ProjectID:     req.ProjectId,
-		UserID:        claims.OwnerID(),
-		Default:       req.Default,
-		Shared:        req.Shared,
+		DisplayName:  req.DisplayName,
+		Description:  req.Description,
+		Data:         req.Data,
+		ResourceKind: req.ResourceKind,
+		ResourceName: req.ResourceName,
+		ProjectID:    req.ProjectId,
+		UserID:       claims.OwnerID(),
+		Default:      req.Default,
+		Shared:       req.Shared,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -213,16 +226,17 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 func bookmarkToPB(u *database.Bookmark) *adminv1.Bookmark {
 	return &adminv1.Bookmark{
-		Id:            u.ID,
-		DisplayName:   u.DisplayName,
-		Description:   u.Description,
-		Data:          u.Data,
-		DashboardName: u.DashboardName,
-		ProjectId:     u.ProjectID,
-		UserId:        u.UserID,
-		Default:       u.Default,
-		Shared:        u.Shared,
-		CreatedOn:     timestamppb.New(u.CreatedOn),
-		UpdatedOn:     timestamppb.New(u.UpdatedOn),
+		Id:           u.ID,
+		DisplayName:  u.DisplayName,
+		Description:  u.Description,
+		Data:         u.Data,
+		ResourceKind: u.ResourceKind,
+		ResourceName: u.ResourceName,
+		ProjectId:    u.ProjectID,
+		UserId:       u.UserID,
+		Default:      u.Default,
+		Shared:       u.Shared,
+		CreatedOn:    timestamppb.New(u.CreatedOn),
+		UpdatedOn:    timestamppb.New(u.UpdatedOn),
 	}
 }

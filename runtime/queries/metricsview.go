@@ -400,7 +400,7 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 
 func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) <= 1 {
-		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
+		return "", nil, fmt.Errorf("in/not in expression should have at least 2 sub expressions")
 	}
 
 	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
@@ -473,7 +473,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 
 func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
 	if len(cond.Exprs) == 0 {
-		return "", nil, fmt.Errorf("or/and expression should have atleast 1 sub expressions")
+		return "", nil, fmt.Errorf("or/and expression should have at least 1 sub expression")
 	}
 
 	clauses := make([]string, 0)

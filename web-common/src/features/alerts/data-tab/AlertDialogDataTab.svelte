@@ -15,21 +15,24 @@
 
   const { form, errors, handleChange } = formState;
 
-  $: metricsView = useMetricsView(
-    $runtime.instanceId,
-    $form["metricsViewName"],
-  );
+  $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
+  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures?.map((m) => ({
       value: m.name as string,
       label: m.label?.length ? m.label : m.expression,
     })) ?? [];
-  $: dimensionOptions =
-    $metricsView.data?.dimensions?.map((d) => ({
+  $: dimensionOptions = [
+    {
+      value: "",
+      label: "None",
+    },
+    ...($metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
       label: d.label?.length ? d.label : d.expression,
-    })) ?? [];
+    })) ?? []),
+  ];
 
   $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
 </script>

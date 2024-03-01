@@ -976,7 +976,8 @@ message UpdateUserPreferencesResponse {
 
 message ListBookmarksRequest {
   string project_id = 1;
-  string dashboard_name = 2;
+  string resource_kind = 2;
+  string resource_name = 3;
 }
 
 message ListBookmarksResponse {
@@ -993,10 +994,11 @@ message GetBookmarkResponse {
 
 message CreateBookmarkRequest {
   string display_name = 1;
-  string description = 6;
-  bytes data = 2;
-  string dashboard_name = 3;
-  string project_id = 4;
+  string description = 2;
+  bytes data = 3;
+  string resource_kind = 4;
+  string resource_name = 5;
+  string project_id = 6;
   bool default = 7;
   bool shared = 8;
 }
@@ -1429,11 +1431,12 @@ message Bookmark {
   string display_name = 2;
   string description = 9;
   bytes data = 3;
-  string dashboard_name = 4;
+  string resource_kind = 10;
+  string resource_name = 4;
   string project_id = 5;
   string user_id = 6;
-  bool default = 10;
-  bool shared = 11;
+  bool default = 11;
+  bool shared = 12;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }
