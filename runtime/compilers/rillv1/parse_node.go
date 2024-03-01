@@ -51,6 +51,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseChart(ctx, node)
 	case ResourceKindDashboard:
 		return p.parseDashboard(ctx, node)
+	case ResourceKindAPI:
+		return p.parseAPI(ctx, node)
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
 	}

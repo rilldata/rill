@@ -165,6 +165,12 @@ export class Resource extends Message<Resource> {
      */
     value: Dashboard;
     case: "dashboard";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.API api = 15;
+     */
+    value: API;
+    case: "api";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Resource>) {
@@ -189,6 +195,7 @@ export class Resource extends Message<Resource> {
     { no: 11, name: "theme", kind: "message", T: Theme, oneof: "resource" },
     { no: 13, name: "chart", kind: "message", T: Chart, oneof: "resource" },
     { no: 14, name: "dashboard", kind: "message", T: Dashboard, oneof: "resource" },
+    { no: 15, name: "api", kind: "message", T: API, oneof: "resource" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Resource {
@@ -3111,6 +3118,125 @@ export class DashboardComponent extends Message<DashboardComponent> {
 
   static equals(a: DashboardComponent | PlainMessage<DashboardComponent> | undefined, b: DashboardComponent | PlainMessage<DashboardComponent> | undefined): boolean {
     return proto3.util.equals(DashboardComponent, a, b);
+  }
+}
+
+/**
+ * API defines a custom operation for querying data stored in Rill.
+ *
+ * @generated from message rill.runtime.v1.API
+ */
+export class API extends Message<API> {
+  /**
+   * @generated from field: rill.runtime.v1.APISpec spec = 1;
+   */
+  spec?: APISpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.APIState state = 2;
+   */
+  state?: APIState;
+
+  constructor(data?: PartialMessage<API>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.API";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: APISpec },
+    { no: 2, name: "state", kind: "message", T: APIState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): API {
+    return new API().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): API {
+    return new API().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): API {
+    return new API().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: API | PlainMessage<API> | undefined, b: API | PlainMessage<API> | undefined): boolean {
+    return proto3.util.equals(API, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.APISpec
+ */
+export class APISpec extends Message<APISpec> {
+  /**
+   * @generated from field: string resolver = 1;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 2;
+   */
+  resolverProperties?: Struct;
+
+  constructor(data?: PartialMessage<APISpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.APISpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {
+    return new APISpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): APISpec {
+    return new APISpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): APISpec {
+    return new APISpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: APISpec | PlainMessage<APISpec> | undefined, b: APISpec | PlainMessage<APISpec> | undefined): boolean {
+    return proto3.util.equals(APISpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.APIState
+ */
+export class APIState extends Message<APIState> {
+  constructor(data?: PartialMessage<APIState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.APIState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APIState {
+    return new APIState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): APIState {
+    return new APIState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): APIState {
+    return new APIState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: APIState | PlainMessage<APIState> | undefined, b: APIState | PlainMessage<APIState> | undefined): boolean {
+    return proto3.util.equals(APIState, a, b);
   }
 }
 

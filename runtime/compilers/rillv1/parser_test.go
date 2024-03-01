@@ -1321,6 +1321,58 @@ components:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAPI(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		// api a1
+		`apis/a1.yaml`: `
+kind: api
+sql: select * from m1
+`,
+		// api a2
+		`apis/a2.yaml`: `
+kind: api
+metrics:
+  sql: select * from m1
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Connector:       "duckdb",
+				Sql:             `SELECT 1`,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
+			Paths: []string{"/apis/a1.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "SQL",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
+			Paths: []string{"/apis/a2.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "Metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
