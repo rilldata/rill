@@ -12,6 +12,7 @@ func (r *Runtime) APIForName(ctx context.Context, instanceID, name string) (*run
 	if api, ok := BuiltinAPIs[name]; ok {
 		return api, nil
 	}
+
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, err

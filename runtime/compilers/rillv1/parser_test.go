@@ -1237,14 +1237,18 @@ func TestAPI(t *testing.T) {
 		`rill.yaml`: ``,
 		// model m1
 		`models/m1.sql`: `SELECT 1`,
+		// api a1
 		`apis/a1.yaml`: `
 kind: api
 sql: select * from m1
 `,
+		// api a2
+		`apis/a2.yaml`: `
+kind: api
+metrics:
+  sql: select * from m1
+`,
 	})
-
-	props, err := structpb.NewStruct(map[string]any{"sql": "select * from m1", "resolver": "SQLResolver"})
-	require.NoError(t, err)
 
 	resources := []*Resource{
 		{
@@ -1260,7 +1264,16 @@ sql: select * from m1
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
-				ResolverProperties: props,
+				Resolver:           "SQL",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
+			Paths: []string{"/apis/a2.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "Metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
 	}
