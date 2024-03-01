@@ -4,7 +4,23 @@ sidebar_label: Configure Credentials
 sidebar_position: 00
 ---
 
-Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck).
+Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](../../reference/connectors/connectors.md) and [OLAP engine](../../reference/olap-engines/olap-engines.md) page for instructions to configure credentials accordingly.
+
+At a high level, configuring credentials and credentials management can be broken down into the three categories:
+- Setting credentials for Rill Developer
+- Setting credentials for a Rill Cloud project
+- Pushing and pulling credentials to / from Rill Cloud
+
+## Setting credentials for Rill Developer
+
+When using a source (or different OLAP engine), 
+
+
+## Setting credentials for a Rill Cloud project
+
+## Pushing and pulling credentials to / from Rill Cloud
+
+
 
 When running Rill locally, Rill attempts to find existing credentials configured on your computer. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
 
