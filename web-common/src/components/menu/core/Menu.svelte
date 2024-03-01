@@ -1,8 +1,3 @@
-<script lang="ts" context="module">
-  // only one at a time
-  const globalActiveMenu = writable<string | undefined>(undefined);
-</script>
-
 <script lang="ts">
   import {
     createEventDispatcher,
@@ -33,8 +28,6 @@
     setContext("rill:menu:dark", dark);
   }
   const dispatch = createEventDispatcher();
-
-  const menuID = guidGenerator();
 
   let key;
 
@@ -99,18 +92,12 @@
 
   let mounted = false;
   onMount(() => {
-    $globalActiveMenu = menuID;
     mounted = true;
   });
 
   // once open, we should select the first menu item.
   $: if (focusOnMount && mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
-  }
-
-  // This will effectively close any additional menus that might be open.
-  $: if ($globalActiveMenu !== menuID) {
-    dispatch("escape");
   }
 
   /** Accessibility properties */
