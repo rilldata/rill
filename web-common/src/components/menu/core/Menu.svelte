@@ -8,7 +8,6 @@
   import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import { clickOutside } from "../../../lib/actions/click-outside";
-  import { guidGenerator } from "../../../lib/guid";
 
   export let dark: boolean | undefined = undefined;
   export let maxWidth: string | undefined = undefined;
