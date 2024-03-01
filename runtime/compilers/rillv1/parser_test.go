@@ -1232,7 +1232,7 @@ colors:
 }
 
 func TestChartsAndDashboard(t *testing.T) {
-	vegaLiteConfig := `
+	vegaLiteSpec := `
   {
     '$schema': "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
@@ -1255,7 +1255,7 @@ data:
 vega_lite: |-
 %s
 
-`, vegaLiteConfig),
+`, vegaLiteSpec),
 		`charts/c2.yaml`: fmt.Sprintf(`
 kind: chart
 data:
@@ -1265,7 +1265,7 @@ data:
 
 vega_lite: |%s
 
-`, vegaLiteConfig),
+`, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
 grid:
@@ -1279,25 +1279,23 @@ components:
 `,
 	})
 
-	rows := int64(1)
-	cols := int64(2)
 	resources := []*Resource{
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c1"},
 			Paths: []string{"/charts/c1.yaml"},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:      "MetricsViewAggregation",
-				QueryArgsJson:  `{"metrics_view":"foo"}`,
-				VegaLiteConfig: vegaLiteConfig,
+				QueryName:     "MetricsViewAggregation",
+				QueryArgsJson: `{"metrics_view":"foo"}`,
+				VegaLiteSpec:  vegaLiteSpec,
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c2"},
 			Paths: []string{"/charts/c2.yaml"},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:      "MetricsViewAggregation",
-				QueryArgsJson:  `{"metrics_view":"bar"}`,
-				VegaLiteConfig: vegaLiteConfig,
+				QueryName:     "MetricsViewAggregation",
+				QueryArgsJson: `{"metrics_view":"bar"}`,
+				VegaLiteSpec:  vegaLiteSpec,
 			},
 		},
 		{
@@ -1312,8 +1310,60 @@ components:
 				GridRows:    4,
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
-					{Chart: "c2", Rows: &rows, Columns: &cols},
+					{Chart: "c2", Rows: 1, Columns: 2},
 				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAPI(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		// api a1
+		`apis/a1.yaml`: `
+kind: api
+sql: select * from m1
+`,
+		// api a2
+		`apis/a2.yaml`: `
+kind: api
+metrics:
+  sql: select * from m1
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Connector:       "duckdb",
+				Sql:             `SELECT 1`,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
+			Paths: []string{"/apis/a1.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "SQL",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
+			Paths: []string{"/apis/a2.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "Metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
 	}

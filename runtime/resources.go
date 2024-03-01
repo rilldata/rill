@@ -15,4 +15,5 @@ const (
 	ResourceKindTheme          string = "rill.runtime.v1.Theme"
 	ResourceKindChart          string = "rill.runtime.v1.Chart"
 	ResourceKindDashboard      string = "rill.runtime.v1.Dashboard"
+	ResourceKindAPI            string = "rill.runtime.v1.API"
 )

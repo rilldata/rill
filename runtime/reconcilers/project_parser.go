@@ -543,6 +543,10 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalDashboardSpec(existing.GetDashboard().Spec, def.DashboardSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Dashboard{Dashboard: &runtimev1.Dashboard{Spec: def.DashboardSpec}}}
 		}
+	case compilerv1.ResourceKindAPI:
+		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
+		}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", def.Name.Kind))
 	}
@@ -684,6 +688,8 @@ func resourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindChart, Name: name.Name}
 	case compilerv1.ResourceKindDashboard:
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindDashboard, Name: name.Name}
+	case compilerv1.ResourceKindAPI:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindAPI, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -709,6 +715,8 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindChart, Name: name.Name}
 	case runtime.ResourceKindDashboard:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindDashboard, Name: name.Name}
+	case runtime.ResourceKindAPI:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindAPI, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -763,5 +771,9 @@ func equalChartSpec(a, b *runtimev1.ChartSpec) bool {
 }
 
 func equalDashboardSpec(a, b *runtimev1.DashboardSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalAPISpec(a, b *runtimev1.APISpec) bool {
 	return proto.Equal(a, b)
 }

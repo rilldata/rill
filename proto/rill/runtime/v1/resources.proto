@@ -31,6 +31,7 @@ message Resource {
     Theme theme = 11;
     Chart chart = 13;
     Dashboard dashboard = 14;
+    API api = 15;
   }
 }
 
@@ -397,7 +398,7 @@ message ChartSpec {
   string title = 1;
   string query_name = 2;
   string query_args_json = 3;
-  string vega_lite_config = 4;
+  string vega_lite_spec = 4;
 }
 
 message ChartState {}
@@ -418,9 +419,22 @@ message DashboardState {}
 
 message DashboardComponent {
   string chart = 1;
-  optional int64 columns = 2;
-  optional int64 rows = 3;
+  int64 columns = 2;
+  int64 rows = 3;
 }
+
+// API defines a custom operation for querying data stored in Rill.
+message API {
+  APISpec spec = 1;
+  APIState state = 2;
+}
+
+message APISpec {
+  string resolver = 1;
+  google.protobuf.Struct resolver_properties = 2;
+}
+
+message APIState {}
 
 message Schedule {
   bool ref_update = 4;

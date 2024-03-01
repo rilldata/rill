@@ -3,7 +3,6 @@ package env
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"slices"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -13,39 +12,29 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
 func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, subPath string
+	var projectPath, projectName string
 	var redeploy bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
 		Short: "Configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// If projectPath is provided, normalize it
 			if projectPath != "" {
 				var err error
-				projectPath, err = fileutil.ExpandHome(projectPath)
+				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
 					return err
 				}
-			}
-
-			fullProjectPath := projectPath
-			if subPath != "" {
-				fullProjectPath = filepath.Join(projectPath, subPath)
 			}
 
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(fullProjectPath) {
-				fullpath, err := filepath.Abs(fullProjectPath)
-				if err != nil {
-					return err
-				}
-
-				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", fullpath)
+			if !rillv1beta.HasRillProject(projectPath) {
+				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", projectPath)
 				ch.PrintfWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
 			}
@@ -59,7 +48,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			if projectName == "" {
 				// no project name provided infer name from githubURL
 				// Verify projectPath is a Git repo with remote on Github
-				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "")
+				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "", true)
 				if err != nil {
 					return err
 				}
@@ -78,7 +67,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, fullProjectPath, nil)
+			variables, err := VariablesFlow(ctx, projectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables: %w", err)
 			}
@@ -129,7 +118,6 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
 	configureCommand.Flags().BoolVar(&redeploy, "redeploy", false, "Redeploy project")
 

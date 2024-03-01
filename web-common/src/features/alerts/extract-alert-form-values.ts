@@ -1,8 +1,7 @@
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
@@ -48,9 +47,7 @@ export function extractAlertFormValues(
   return {
     measure: measures[0].name as string,
     splitByDimension: dimensions[0] ?? "",
-    splitByTimeGrain: timeDimension[0]?.timeGrain
-      ? (TIME_GRAIN[timeDimension[0].timeGrain].duration as string)
-      : "",
+    splitByTimeGrain: queryArgs.timeRange?.isoDuration ?? "",
 
     criteria:
       queryArgs.having?.cond?.exprs?.map((e) => ({
@@ -62,7 +59,7 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
-    whereFilter: queryArgs.where as V1Expression,
+    whereFilter: queryArgs.where ?? createAndExpression([]),
     timeRange: (queryArgs.timeRange as V1TimeRange) ?? {
       isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
     },

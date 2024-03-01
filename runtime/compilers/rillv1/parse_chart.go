@@ -36,7 +36,7 @@ func (p *Parser) parseChart(ctx context.Context, node *Node) error {
 
 	// Query name
 	if tmp.Data.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "Data.name"`, tmp.Data.Name)
+		return fmt.Errorf(`invalid value %q for property "data.name"`, tmp.Data.Name)
 	}
 
 	// Query args
@@ -71,7 +71,7 @@ func (p *Parser) parseChart(ctx context.Context, node *Node) error {
 	r.ChartSpec.Title = tmp.Title
 	r.ChartSpec.QueryName = tmp.Data.Name
 	r.ChartSpec.QueryArgsJson = tmp.Data.ArgsJSON
-	r.ChartSpec.VegaLiteConfig = tmp.VegaLite
+	r.ChartSpec.VegaLiteSpec = tmp.VegaLite
 
 	return nil
 }
