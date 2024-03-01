@@ -204,9 +204,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
 
-	// custom API handler
-	httpMux.Handle("/v1/instances/{instance_id}/api/{name...}", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.APIForName)))
-
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		httpMux.Handle("/metrics", promhttp.Handler())
