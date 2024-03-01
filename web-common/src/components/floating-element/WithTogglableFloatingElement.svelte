@@ -19,7 +19,7 @@
    * Since this element is not strictly within the parent of the menu (which is in a Portal),
    * we will need to check to see if this element was also clicked before firing the outside click callback.
    */
-  const triggerElementStore = writable(undefined);
+  const triggerElementStore = writable<Element | undefined>(undefined);
   $: triggerElementStore.set(parent?.children?.[0]);
   setContext("rill:menu:menuTrigger", triggerElementStore);
 
@@ -29,7 +29,7 @@
     if (!active) dispatch("close");
   }
 
-  let parent;
+  let parent: HTMLDivElement | null = null;
 
   function handleClose() {
     active = false;
