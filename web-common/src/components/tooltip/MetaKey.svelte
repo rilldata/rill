@@ -6,4 +6,4 @@
 
 {#if isMac()}
   <span style="font-family: var(--system);">⌘</span>
-{:else}ctrl{/if} + Click
+{:else}ctrl{/if}

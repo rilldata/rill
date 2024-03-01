@@ -14,12 +14,14 @@
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
 
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
+  import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
 
   import { getStateManagers } from "../state-managers/state-managers";
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
+  import { tooltip } from "@rilldata/web-common/components/tooltip/tooltip";
 
   export let dimensionName: string;
 
@@ -94,6 +96,25 @@
 
 <Tooltip location="right">
   <button
+    use:tooltip={{
+      position: "left",
+      alignment: "center",
+      title: label,
+      shortcuts: [
+        {
+          description: "Copy this dimension value to clipboard",
+          modifiers: ["shift"],
+          click: true,
+          condition: isClipboardApiSupported(),
+        },
+        {
+          description: "Exclusively select this dimension value",
+          modifiers: ["meta"],
+          click: true,
+          condition: !selected && atLeastOneActive,
+        },
+      ],
+    }}
     class="flex flex-row items-center w-full text-left transition-color"
     on:blur={onLeave}
     on:click={(e) => {
@@ -179,14 +200,14 @@
     <LongBarZigZag />
   {/if}
 
-  <LeaderboardTooltipContent
+  <!-- <LeaderboardTooltipContent
     {atLeastOneActive}
     {excluded}
     {filterExcludeMode}
     {label}
     {selected}
     slot="tooltip-content"
-  />
+  /> -->
 </Tooltip>
 
 <style>

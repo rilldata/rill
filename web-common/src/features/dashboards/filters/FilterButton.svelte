@@ -8,6 +8,8 @@
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import { getMeasureDisplayName } from "./getDisplayName";
+  import Tip from "@rilldata/web-common/components/tooltip/Tip.svelte";
+  import { tooltip } from "@rilldata/web-common/components/tooltip/tooltip";
 
   const {
     selectors: {
@@ -51,12 +53,12 @@
   let:active
   let:toggleFloatingElement
 >
-  <Tooltip distance={8} suppress={active}>
-    <button class:active on:click={toggleFloatingElement}>
-      <Add size="17px" />
-    </button>
-    <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
-  </Tooltip>
+  <!-- <Tooltip distance={8} suppress={active}> -->
+  <button class:active on:click={toggleFloatingElement} use:tooltip>
+    <Add size="17px" />
+  </button>
+  <!-- <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+  </Tooltip> -->
 
   <SearchableFilterDropdown
     allowMultiSelect={false}

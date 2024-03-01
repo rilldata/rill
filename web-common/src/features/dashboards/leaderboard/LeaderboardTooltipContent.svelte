@@ -45,6 +45,7 @@ see more button
     {/if}
     <Shortcut>Click</Shortcut>
   </TooltipShortcutContainer>
+
   {#if isClipboardApiSupported()}
     <TooltipShortcutContainer>
       <div>
@@ -56,11 +57,12 @@ see more button
       </Shortcut>
     </TooltipShortcutContainer>
   {/if}
+
   {#if !selected && atLeastOneActive}
     <TooltipShortcutContainer>
       <div>Exclusively select this dimension value</div>
       <Shortcut>
-        <MetaKey />
+        <MetaKey /> + Click
       </Shortcut>
     </TooltipShortcutContainer>
   {/if}
