@@ -42,7 +42,7 @@
 
 <div class:inline bind:this={parent}>
   <slot {active} {handleClose} {toggleFloatingElement} />
-  {#if active && !suppress}
+  {#if parent && active && !suppress}
     <FloatingElement
       target={parent}
       {relationship}
