@@ -118,7 +118,11 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 
 	// Override the authorization header with the JWT (note use of Set instead of Add).
-	req.Header.Set("Authorization", "Bearer "+jwt)
+	if jwt != "" {
+		req.Header.Set("Authorization", "Bearer "+jwt)
+	} else {
+		req.Header.Del("Authorization")
+	}
 
 	// Send the proxied request using http.DefaultClient. The default client automatically handles caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)
