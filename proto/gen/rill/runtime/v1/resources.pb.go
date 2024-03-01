@@ -6401,7 +6401,6 @@ func file_rill_runtime_v1_resources_proto_init() {
 		(*AlertSpec_QueryForAttributes)(nil),
 	}
 	file_rill_runtime_v1_resources_proto_msgTypes[38].OneofWrappers = []interface{}{}
-	file_rill_runtime_v1_resources_proto_msgTypes[46].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

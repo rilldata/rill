@@ -783,6 +783,13 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -1173,23 +1180,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1324,6 +1314,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1350,36 +1347,10 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
   alias?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewColumn {
@@ -1502,6 +1473,11 @@ export interface V1ListResourcesResponse {
   resources?: V1Resource[];
 }
 
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
+}
+
 export interface V1ListFilesResponse {
   paths?: string[];
 }
@@ -1555,11 +1531,6 @@ export interface V1Instance {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
 }
 
 export interface V1InlineMeasure {

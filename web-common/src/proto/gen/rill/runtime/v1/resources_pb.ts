@@ -4,10 +4,10 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, Struct, Timestamp, proto3, protoInt64 } from "@bufbuild/protobuf";
-import { Color } from "./colors_pb.js";
-import { ExportFormat } from "./export_format_pb.js";
+import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { TimeGrain } from "./time_grain_pb.js";
+import { ExportFormat } from "./export_format_pb.js";
+import { Color } from "./colors_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.ReconcileStatus
