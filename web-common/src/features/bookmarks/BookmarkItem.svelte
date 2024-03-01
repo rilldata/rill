@@ -43,11 +43,12 @@
         {/if}
       </div>
       <div class="flex flex-col">
-        <div class="text-sm text-gray-700">{bookmark.displayName}</div>
+        <div class="text-sm text-gray-700 h-5 text-ellipsis overflow-hidden">
+          {bookmark.displayName}
+        </div>
         {#if bookmark.description}
           <div class="text-sm text-gray-500 h-5 text-ellipsis overflow-hidden">
-            {bookmark.description} asdkljnai wdbiqwbd jsdnfg jebsifj asdqwe dfvef
-            sdfgqe qwgrgfbss
+            {bookmark.description}
           </div>
         {/if}
       </div>

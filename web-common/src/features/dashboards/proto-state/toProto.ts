@@ -256,6 +256,7 @@ function toPbValue(val: unknown) {
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
   if (!pivotState.active)
     return {
+      pivotIsActive: false,
       pivotExpanded: {},
       pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
     };
