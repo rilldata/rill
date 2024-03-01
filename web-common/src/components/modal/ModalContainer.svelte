@@ -73,8 +73,6 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<!-- <Portal> -->
-
 <div
   use:portal
   bind:this={container}
@@ -84,8 +82,6 @@
   <Overlay />
   <slot />
 </div>
-
-<!-- </Portal> -->
 
 <style>
   :global(.sl-scroll-lock) {
