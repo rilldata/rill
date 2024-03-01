@@ -9,9 +9,14 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
-  import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
+  import {
+    getPrettySelectedTimeRange,
+    useProjectId,
+  } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -24,6 +29,12 @@
   $: dashboardStore = useDashboardStore(metricsViewName);
 
   $: projectId = useProjectId($page.params.organization, $page.params.project);
+
+  $: selectedTimeRange = getPrettySelectedTimeRange(
+    queryClient,
+    $runtime?.instanceId,
+    metricsViewName,
+  );
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
 
@@ -116,7 +127,10 @@
       on:click={() =>
         ($form["absoluteTimeRange"] = !$form["absoluteTimeRange"])}
     >
-      Absolute time range (TODO range)
+      <div class="flex flex-col">
+        <div class="text-left">Absolute time range</div>
+        <div class="text-gray-500">{$selectedTimeRange}</div>
+      </div>
     </Switch>
   </form>
   <div class="flex flex-row mt-4 gap-2" slot="footer">

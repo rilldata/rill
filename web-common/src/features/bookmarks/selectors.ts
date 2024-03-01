@@ -5,16 +5,21 @@ import {
 } from "@rilldata/web-admin/client";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
+  createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewSpec,
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 
 export function useProjectId(orgName: string, projectName: string) {
   return createAdminServiceGetProject(
@@ -94,6 +99,48 @@ export function getBookmarks(
           },
         },
       ).subscribe(set),
+  );
+}
+
+export function getPrettySelectedTimeRange(
+  queryClient: QueryClient,
+  instanceId: string,
+  metricsViewName: string,
+): Readable<string> {
+  return derived(
+    [
+      useMetricsView(instanceId, metricsViewName),
+      derived(
+        [runtime, useMetricsView(instanceId, metricsViewName)],
+        ([runtime, metricsView], set) =>
+          createQueryServiceMetricsViewTimeRange(
+            runtime.instanceId,
+            metricsViewName,
+            {},
+            {
+              query: {
+                queryClient: queryClient,
+                enabled: !!metricsView.data?.timeDimension,
+              },
+            },
+          ).subscribe(set),
+      ),
+      useDashboardStore(metricsViewName),
+    ],
+    ([metricViewSpec, timeRangeSummary, metricsExplorerEntity]) => {
+      const timeRangeState = timeControlStateSelector([
+        metricViewSpec,
+        timeRangeSummary,
+        metricsExplorerEntity,
+      ]);
+      if (!timeRangeState.ready) return "";
+      return prettyFormatTimeRange(
+        timeRangeState.selectedTimeRange?.start,
+        timeRangeState.selectedTimeRange?.end,
+        timeRangeState.selectedTimeRange?.name,
+        metricsExplorerEntity.selectedTimezone,
+      );
+    },
   );
 }
 

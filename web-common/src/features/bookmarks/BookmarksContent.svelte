@@ -32,13 +32,13 @@
   <DropdownMenuItem on:click={() => dispatch("create")}>
     <div class="flex flex-row gap-x-2 items-center">
       <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
-      <div>Bookmark current view</div>
+      <div class="text-xs">Bookmark current view</div>
     </div>
   </DropdownMenuItem>
   <DropdownMenuItem on:click={() => dispatch("create-home")}>
     <div class="flex flex-row gap-x-2 items-center">
       <HomeBookmarkPlus size="16px" />
-      <div>Bookmark current view as Home</div>
+      <div class="text-xs">Bookmark current view as Home</div>
     </div>
   </DropdownMenuItem>
   {#if $bookmarks.data}
@@ -56,8 +56,9 @@
     {#if $bookmarks.data.shared?.length || $bookmarks.data.home}
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="capitalize text-gray-500 text-sm">
-          Default bookmarks
+        <DropdownMenuLabel class="capitalize text-gray-500 ">
+          <div class="text-sm capitalize font-semibold">Default bookmarks</div>
+          <div class="text-[11px] font-normal">Created by project admin</div>
         </DropdownMenuLabel>
         {#if $bookmarks.data.home}
           <BookmarkItem bookmark={$bookmarks.data.home} on:edit on:select />

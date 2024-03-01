@@ -1,12 +1,8 @@
 <script lang="ts">
   import { createAdminServiceRemoveBookmark } from "@rilldata/web-admin/client";
   import type { BookmarkEntry } from "@rilldata/web-common/features/bookmarks/selectors";
-  import {
-    PencilIcon,
-    TrashIcon,
-    BookmarkIcon,
-    FilterIcon,
-  } from "lucide-svelte";
+  import { PencilIcon, TrashIcon, BookmarkIcon } from "lucide-svelte";
+  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import { createEventDispatcher } from "svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu/index";
@@ -17,7 +13,9 @@
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   async function deleteBookmark() {
-    await $bookmarkDeleter.mutateAsync({ bookmarkId: bookmark.id as string });
+    await $bookmarkDeleter.mutateAsync({
+      bookmarkId: bookmark.resource.id as string,
+    });
   }
 
   let hovered = false;
@@ -38,21 +36,23 @@
       role="button"
       tabindex="0"
     >
-      <div class="pt-0.5">
-        {#if bookmark.resource.default}
-          <HomeBookmark size="16px" />
-        {:else if bookmark.filtersOnly}
-          <FilterIcon size="16px" />
-        {:else}
-          <BookmarkIcon size="16px" />
-        {/if}
-      </div>
+      {#if bookmark.resource.default}
+        <HomeBookmark size="16px" />
+      {:else if bookmark.filtersOnly}
+        <Filter size="16px" />
+      {:else}
+        <BookmarkIcon size="16px" />
+      {/if}
       <div class="flex flex-col">
-        <div class="text-sm text-gray-700 h-5 text-ellipsis overflow-hidden">
+        <div
+          class="text-xs font-medium text-gray-700 h-5 text-ellipsis overflow-hidden"
+        >
           {bookmark.resource.displayName}
         </div>
         {#if bookmark.resource.description}
-          <div class="text-sm text-gray-500 h-5 text-ellipsis overflow-hidden">
+          <div
+            class="text-[11px] font-normal text-gray-500 h-5 text-ellipsis overflow-hidden"
+          >
             {bookmark.resource.description}
           </div>
         {/if}
