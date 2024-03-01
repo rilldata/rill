@@ -124,12 +124,7 @@
   on:mouseleave={() => {
     $currentItem = undefined;
   }}
-  use:clickOutside={[
-    [$menuTrigger],
-    () => {
-      dispatch("click-outside");
-    },
-  ]}
+  use:clickOutside={[$menuTrigger, () => dispatch("click-outside")]}
   class:rounded
   class="
         pt-{paddingTop} 
