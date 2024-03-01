@@ -667,8 +667,8 @@ type Bookmark struct {
 type InsertBookmarkOptions struct {
 	DisplayName  string `json:"display_name"`
 	Data         []byte `json:"data"`
-	ResourceKind string `db:"resource_kind"`
-	ResourceName string `db:"resource_name"`
+	ResourceKind string `json:"resource_kind"`
+	ResourceName string `json:"resource_name"`
 	Description  string `json:"description"`
 	ProjectID    string `json:"project_id"`
 	UserID       string `json:"user_id"`
