@@ -214,6 +214,14 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		),
 	)
 
+	// Temporary endpoint for testing headers.
+	// TODO: Remove this.
+	mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range r.Header {
+			fmt.Fprintf(w, "%s: %v\n", k, v)
+		}
+	})
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
