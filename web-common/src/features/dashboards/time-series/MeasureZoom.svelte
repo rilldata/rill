@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Button } from "@rilldata/web-common/components/button";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import {
@@ -9,12 +8,15 @@
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
-  export let metricViewName;
+  export let metricViewName: string;
 
-  let axisTop;
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  function onKeyDown(e) {
+  function onKeyDown(
+    e: KeyboardEvent & {
+      currentTarget: EventTarget & Window;
+    },
+  ) {
     if ($dashboardStore?.selectedScrubRange?.end) {
       // if key Z is pressed, zoom the scrub
       if (e.key === "z") {
@@ -46,26 +48,17 @@
   }
 </script>
 
-<div bind:this={axisTop} style:height="24px" style:padding-left="24px">
+<div class="flex items-center justify-center h-6">
   {#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
-    <FloatingElement
-      target={axisTop}
-      location="top"
-      relationship="direct"
-      alignment="middle"
-      distance={10}
-      pad={0}
-    >
-      <div style:left="-40px" class="absolute flex justify-center">
-        <Button compact type="highlighted" on:click={() => zoomScrub()}>
-          <div class="flex items-center gap-x-2">
-            <Zoom size="16px" />
-            Zoom
-            <span class="font-semibold">(Z)</span>
-          </div>
-        </Button>
-      </div>
-    </FloatingElement>
+    <div class="flex justify-center">
+      <Button compact type="highlighted" on:click={() => zoomScrub()}>
+        <div class="flex items-center gap-x-2">
+          <Zoom size="16px" />
+          Zoom
+          <span class="font-semibold">(Z)</span>
+        </div>
+      </Button>
+    </div>
   {/if}
 </div>
 
