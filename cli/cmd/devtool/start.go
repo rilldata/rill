@@ -153,7 +153,7 @@ func checkRillRepo(ctx context.Context) error {
 		return fmt.Errorf("you must run `rill devtool` from the root of the rill repository")
 	}
 
-	_, githubURL, err := gitutil.ExtractGitRemote("", "")
+	_, githubURL, err := gitutil.ExtractGitRemote("", "", false)
 	if err != nil {
 		return fmt.Errorf("error extracting git remote: %w", err)
 	}

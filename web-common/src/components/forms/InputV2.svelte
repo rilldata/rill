@@ -13,6 +13,7 @@
   export let hint = "";
   export let optional = false;
   export let claimFocusOnMount = false;
+  export let alwaysShowError = false;
 
   const dispatch = createEventDispatcher();
 
@@ -57,21 +58,21 @@
   {/if}
 
   <input
-    {id}
-    type="text"
-    {placeholder}
-    name={id}
     autocomplete="off"
-    class:error={error && value}
-    on:change
-    on:input
-    on:keydown={handleKeyDown}
-    on:focus={() => (focus = true)}
-    on:blur={() => (focus = false)}
     bind:this={inputElement}
     bind:value
+    class:error={error && value}
+    {id}
+    name={id}
+    on:blur={() => (focus = false)}
+    on:change
+    on:focus={() => (focus = true)}
+    on:input
+    on:keydown={handleKeyDown}
+    {placeholder}
+    type="text"
   />
-  {#if error && !focus && value}
+  {#if error && (alwaysShowError || (!focus && value))}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>

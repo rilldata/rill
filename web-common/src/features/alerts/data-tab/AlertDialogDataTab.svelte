@@ -39,6 +39,7 @@
 <div class="flex flex-col gap-y-3">
   <FormSection title="Alert name">
     <InputV2
+      alwaysShowError
       error={$errors["name"]}
       id="name"
       on:change={handleChange}

@@ -517,6 +517,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -544,12 +550,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -636,12 +636,23 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export type V1SourceSpecProperties = { [key: string]: any };
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
+}
+
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
-
-export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -659,17 +670,6 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
-}
-
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
 }
 
 export interface V1ScannedConnector {
@@ -755,6 +755,9 @@ export interface V1Resource {
   refreshTrigger?: V1RefreshTrigger;
   bucketPlanner?: V1BucketPlanner;
   theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -1008,12 +1011,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
-}
-
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -1039,6 +1036,12 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
   external?: boolean;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1151,16 +1154,23 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewTotalsResponseData;
+}
+
+export interface V1MetricsViewTotalsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  where?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
@@ -1173,21 +1183,6 @@ export interface V1MetricsViewToplistResponse {
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  having?: V1Expression;
-  timeZone?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewTimeRangeResponse {
@@ -1226,9 +1221,25 @@ export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
 }
 
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewSchemaResponse {
+  schema?: V1StructType;
+}
+
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewToplistRequest {
@@ -1248,30 +1259,17 @@ export interface V1MetricsViewToplistRequest {
   filter?: V1MetricsViewFilter;
 }
 
-export interface V1MetricsViewSchemaResponse {
-  schema?: V1StructType;
-}
-
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewTotalsRequest {
+export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
   inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   where?: V1Expression;
+  having?: V1Expression;
+  timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
@@ -1332,25 +1330,6 @@ export interface V1MetricsViewComparisonResponse {
   rows?: V1MetricsViewComparisonRow[];
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-}
-
 export type V1MetricsViewComparisonMeasureType =
   (typeof V1MetricsViewComparisonMeasureType)[keyof typeof V1MetricsViewComparisonMeasureType];
 
@@ -1380,6 +1359,11 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1404,6 +1388,25 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewAggregationRequest {
@@ -1664,6 +1667,28 @@ export interface V1DeleteFileAndReconcileRequest {
   strict?: boolean;
 }
 
+export interface V1DashboardState {
+  [key: string]: any;
+}
+
+export interface V1DashboardComponent {
+  chart?: string;
+  columns?: string;
+  rows?: string;
+}
+
+export interface V1DashboardSpec {
+  title?: string;
+  gridColumns?: string;
+  gridRows?: string;
+  components?: V1DashboardComponent[];
+}
+
+export interface V1Dashboard {
+  spec?: V1DashboardSpec;
+  state?: V1DashboardState;
+}
+
 export interface V1CreateTriggerResponse {
   [key: string]: any;
 }
@@ -1849,6 +1874,22 @@ export interface V1Color {
   alpha?: number;
 }
 
+export interface V1ChartState {
+  [key: string]: any;
+}
+
+export interface V1ChartSpec {
+  title?: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  vegaLiteSpec?: string;
+}
+
+export interface V1Chart {
+  spec?: V1ChartSpec;
+  state?: V1ChartState;
+}
+
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;
@@ -1978,6 +2019,25 @@ export interface V1AlertExecution {
 export interface V1Alert {
   spec?: V1AlertSpec;
   state?: V1AlertState;
+}
+
+export interface V1APIState {
+  [key: string]: any;
+}
+
+export type V1APISpecResolverProperties = { [key: string]: any };
+
+export interface V1APISpec {
+  resolver?: string;
+  resolverProperties?: V1APISpecResolverProperties;
+}
+
+/**
+ * API defines a custom operation for querying data stored in Rill.
+ */
+export interface V1API {
+  spec?: V1APISpec;
+  state?: V1APIState;
 }
 
 export interface Runtimev1Type {

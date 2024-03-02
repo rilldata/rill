@@ -1,15 +1,13 @@
 package env
 
 import (
-	"fmt"
-
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ShowEnvCmd(ch *cmdutil.Helper) *cobra.Command {
+func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	showCmd := &cobra.Command{
 		Use:   "show",
@@ -28,10 +26,12 @@ func ShowEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			vals := variable.Serialize(resp.Variables)
-			for _, v := range vals {
-				fmt.Println(v)
+			res, err := godotenv.Marshal(resp.Variables)
+			if err != nil {
+				return err
 			}
+
+			ch.Println(res)
 
 			return nil
 		},
