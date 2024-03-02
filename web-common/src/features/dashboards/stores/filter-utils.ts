@@ -255,36 +255,33 @@ export const sanitiseExpression = (
   return where;
 };
 
+// Check if the operation is unspecified at any level of the condition.
+function isOperationUnspecified(cond: V1Condition): boolean {
+  if (cond.op === V1Operation.OPERATION_UNSPECIFIED || cond.op === undefined) {
+    return true;
+  }
+  // Check nested conditions
+  return (
+    cond.exprs?.some(
+      (expr) => expr.cond && isOperationUnspecified(expr.cond),
+    ) ?? false
+  );
+}
+
+// Check if the val is defined and non-empty at any level of the nested expressions.
+function isValDefinedAndNonEmpty(expr: V1Expression): boolean {
+  if (expr.val !== undefined && expr.val !== "") {
+    return true; // val is defined and non-empty
+  }
+  // If there is a nested condition, check if any nested expression has a defined and non-empty val
+  return (
+    expr.cond?.exprs?.some((nestedExpr) =>
+      isValDefinedAndNonEmpty(nestedExpr),
+    ) ?? false
+  );
+}
+
 export function isExpressionIncomplete(expression: V1Expression): boolean {
-  // Check if the operation is unspecified at any level of the condition.
-  function isOperationUnspecified(cond: V1Condition): boolean {
-    if (
-      cond.op === V1Operation.OPERATION_UNSPECIFIED ||
-      cond.op === undefined
-    ) {
-      return true;
-    }
-    // Check nested conditions
-    return (
-      cond.exprs?.some(
-        (expr) => expr.cond && isOperationUnspecified(expr.cond),
-      ) ?? false
-    );
-  }
-
-  // Check if the val is defined and non-empty at any level of the nested expressions.
-  function isValDefinedAndNonEmpty(expr: V1Expression): boolean {
-    if (expr.val !== undefined && expr.val !== "") {
-      return true; // val is defined and non-empty
-    }
-    // If there is a nested condition, check if any nested expression has a defined and non-empty val
-    return (
-      expr.cond?.exprs?.some((nestedExpr) =>
-        isValDefinedAndNonEmpty(nestedExpr),
-      ) ?? false
-    );
-  }
-
   // Check the top-level expression's operation
   if (expression.cond && isOperationUnspecified(expression.cond)) {
     return true; // The top-level operation is unspecified, thus incomplete
