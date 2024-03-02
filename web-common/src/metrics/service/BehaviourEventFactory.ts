@@ -1,4 +1,8 @@
-import { BehaviourEvent, BehaviourEventAction, BehaviourEventMedium } from "./BehaviourEventTypes";
+import {
+  BehaviourEvent,
+  BehaviourEventAction,
+  BehaviourEventMedium,
+} from "./BehaviourEventTypes";
 import { MetricsEventFactory } from "./MetricsEventFactory";
 import {
   CommonFields,
