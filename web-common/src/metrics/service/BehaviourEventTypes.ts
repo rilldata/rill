@@ -4,8 +4,8 @@ import type { SourceEventFields } from "./SourceEventTypes";
 
 export enum BehaviourEventAction {
   Navigate = "navigate",
-  PublishStart = "publish-start",
-  PublishSuccess = "publish-success",
+
+  DeployIntent = "deploy-intent",
 
   // Splash Screen Actions
   ExampleAdd = "example-add",
