@@ -3,10 +3,10 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { slide } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let index: number;
@@ -56,9 +56,9 @@
   <Select
     id="compareWith"
     label=""
-    options={[{ value: "value" }]}
+    options={[{ value: "Value" }]}
     placeholder="compare with"
-    value={"value"}
+    value={"Value"}
   />
   <InputV2
     alwaysShowError
