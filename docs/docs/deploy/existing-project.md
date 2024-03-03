@@ -34,6 +34,13 @@ rill deploy
 
 The CLI will guide you through authenticating with Rill Cloud and granting read-only access to your Rill project on Github.
 
+:::tip configure credentials
+Cloud datastores will require service keys to access data. Make sure to create the necessary key and then run ```rill env configure``` with the correct credentials. 
+
+More details on credentials by source can be found in our [connectors section](../build/credentials/credentials.md). 
+:::
+
+
 ## Checking deployment status
 
 Once the deployment has completed, the browser will open on your project's status page. You can also check the project status from the command-line by running:
@@ -45,7 +52,7 @@ rill project status
 Projects can sometimes be in an error state for a variety of a reasons. A hard reset can often clear these issues.
 
 To execute a hard reset, use the following command from the CLI `rill project reconcile --reset` 
-:::info
+:::
 
 ## Updating the deployment
 
