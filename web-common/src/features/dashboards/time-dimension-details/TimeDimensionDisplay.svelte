@@ -201,9 +201,7 @@
       </div>
     </div>
   </div>
-{/if}
-
-{#if formattedData && comparisonCopy}
+{:else if formattedData && comparisonCopy}
   <TDDTable
     {excludeMode}
     {dimensionLabel}
