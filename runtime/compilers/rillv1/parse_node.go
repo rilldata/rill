@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/sqlparse"
 	"gopkg.in/yaml.v3"
 )
@@ -220,9 +220,9 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 	// If name is not set in YAML or SQL, infer it from path
 	if res.Name == "" {
 		if ymlPath != "" {
-			res.Name = fileutil.Stem(ymlPath)
+			res.Name = filepath.Base(pathStem(ymlPath))
 		} else if sqlPath != "" {
-			res.Name = fileutil.Stem(sqlPath)
+			res.Name = filepath.Base(pathStem(sqlPath))
 		}
 	}
 

@@ -912,7 +912,7 @@ func normalizePath(path string) string {
 }
 
 // pathStem returns a slice of the path without the final file extension.
-// If the path does not contain a file extension, the entire path is returned.f
+// If the path does not contain a file extension, the entire path is returned
 func pathStem(path string) string {
 	i := strings.LastIndexByte(path, '.')
 	if i == -1 {
