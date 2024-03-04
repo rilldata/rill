@@ -30,7 +30,7 @@
 
   const { cloudDataViewer } = featureFlags;
 
-  let exploreContainerWidth;
+  let exploreContainerWidth: number;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
@@ -77,8 +77,8 @@
   use:listenToNodeResize
 >
   <div
-    class="border-b w-full flex flex-col bg-slate-50"
     id="header"
+    class="border-b w-full flex flex-col bg-slate-50"
     style:padding-left={leftSide}
   >
     {#if isRillDeveloper}
@@ -115,38 +115,32 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div class="h-full overflow-hidden">
+    <div class="h-full w-full overflow-hidden">
       {#if showPivot}
-        <div class="overflow-y-hidden flex-1">
-          <PivotDisplay />
-        </div>
+        <PivotDisplay />
       {:else}
         <div
-          style:padding-left={leftSide}
           class="flex gap-x-1 gap-y-4 mt-3 w-full h-full flex-{dashboardAlignment} overflow-hidden"
+          style:padding-left={leftSide}
         >
-          <div class="h-full flex-content max-h-fit">
-            {#key metricViewName}
-              {#if hasTimeSeries}
-                <MetricsTimeSeriesCharts
-                  {metricViewName}
-                  workspaceWidth={exploreContainerWidth}
-                />
-              {:else}
-                <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-              {/if}
-            {/key}
-          </div>
-
-          <div class="overflow-y-hidden h-full w-full pb-4">
-            {#if expandedMeasureName}
-              <TimeDimensionDisplay {metricViewName} />
-            {:else if selectedDimensionName}
-              <DimensionDisplay />
+          {#key metricViewName}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {metricViewName}
+                workspaceWidth={exploreContainerWidth}
+              />
             {:else}
-              <LeaderboardDisplay />
+              <MeasuresContainer {exploreContainerWidth} {metricViewName} />
             {/if}
-          </div>
+          {/key}
+
+          {#if expandedMeasureName}
+            <TimeDimensionDisplay {metricViewName} />
+          {:else if selectedDimensionName}
+            <DimensionDisplay />
+          {:else}
+            <LeaderboardDisplay />
+          {/if}
         </div>
       {/if}
     </div>
