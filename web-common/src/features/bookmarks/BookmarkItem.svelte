@@ -12,7 +12,18 @@
   const dispatch = createEventDispatcher();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
-  async function deleteBookmark() {
+  function selectBookmark(e) {
+    if (e.skipSelection) return;
+    dispatch("select", bookmark);
+  }
+
+  function editBookmark(e) {
+    e.skipSelection = true;
+    dispatch("edit", bookmark);
+  }
+
+  async function deleteBookmark(e) {
+    e.skipSelection = true;
     await $bookmarkDeleter.mutateAsync({
       bookmarkId: bookmark.resource.id as string,
     });
@@ -24,18 +35,14 @@
 <DropdownMenuItem>
   <div
     class="flex justify-between gap-x-2 w-full"
+    on:click={selectBookmark}
+    on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
     on:mouseenter={() => (hovered = true)}
     on:mouseleave={() => (hovered = false)}
     role="menuitem"
     tabindex="0"
   >
-    <div
-      class="flex flex-row gap-x-2"
-      on:click={() => dispatch("select", bookmark)}
-      on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
-      role="button"
-      tabindex="0"
-    >
+    <div class="flex flex-row gap-x-2">
       {#if bookmark.resource.default}
         <HomeBookmark size="16px" />
       {:else if bookmark.filtersOnly}
@@ -58,12 +65,14 @@
         {/if}
       </div>
     </div>
-    <div class="flex flex-row justify-end gap-x-2 items-start pt-1 w-20">
+    <div class="flex flex-row justify-end gap-x-2 items-start w-20">
       {#if hovered}
-        <button on:click={() => dispatch("edit", bookmark)}>
+        <button on:click={editBookmark}>
           <PencilIcon size="16px" />
         </button>
-        <button on:click={deleteBookmark}><TrashIcon size="16px" /></button>
+        <button on:click={deleteBookmark}>
+          <TrashIcon size="16px" />
+        </button>
       {/if}
     </div>
   </div>

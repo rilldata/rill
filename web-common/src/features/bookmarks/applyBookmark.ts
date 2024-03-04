@@ -21,8 +21,14 @@ export function createBookmarkApplier(
       !bookmark.data ||
       !metricsViewSpecResp.data ||
       !metricsSchemaResp.data?.schema
-    )
+    ) {
+      console.log(
+        bookmark,
+        !metricsViewSpecResp.data,
+        !metricsSchemaResp.data?.schema,
+      );
       return;
+    }
     metricsExplorerStore.syncFromUrl(
       metricsViewName,
       decodeURIComponent(bookmark.data),
