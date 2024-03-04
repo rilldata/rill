@@ -97,13 +97,15 @@
     value={hoveredValue}
   />
 
-  <button
+  <svelte:element
+    this={isMeasureExpanded ? "div" : "button"}
+    role={isMeasureExpanded ? "presentation" : "button"}
+    tabindex={isMeasureExpanded ? -1 : 0}
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
-    class:big-number={!isMeasureExpanded}
-    class="group big-number m-0.5 rounded flex items-start {isMeasureExpanded
-      ? 'cursor-default'
-      : 'cursor-pointer'}"
+    class:shadow-grad={!isMeasureExpanded}
+    class:cursor-pointer={!isMeasureExpanded}
+    class="group big-number m-0.5 rounded flex items-start"
     on:click={(e) => {
       if (e.shiftKey) return;
       dispatch("expand-measure");
@@ -202,11 +204,15 @@
         </div>
       </div>
     </div>
-  </button>
+  </svelte:element>
 </Tooltip>
 
 <style>
-  .big-number:hover {
+  .big-number {
+    width: 118px;
+    height: 85px;
+  }
+  .shadow-grad:hover {
     /* ui-card */
     background: var(
       --gradient_white-slate50,

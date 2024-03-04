@@ -208,7 +208,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class="bg-white sticky top-0 flex pl-1 z-10">
+  <div class="flex pl-1">
     {#if expandedMeasureName}
       <BackToOverview {metricViewName} />
     {:else}
@@ -223,96 +223,103 @@
       />
     {/if}
   </div>
-  <div class="bg-white sticky left-0 top-0 overflow-visible z-10">
-    <!-- top axis element -->
-    <div />
-    <MeasureZoom {metricViewName} />
-    {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
-      <SimpleDataGraphic
-        height={26}
-        overflowHidden={false}
-        top={29}
-        bottom={0}
-        xMin={startValue}
-        xMax={endValue}
-      >
-        <Axis superlabel side="top" placement="start" />
-      </SimpleDataGraphic>
-    {/if}
-  </div>
-  <!-- bignumbers and line charts -->
-  {#if renderedMeasures}
-    <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-    {#each renderedMeasures as measure (measure.name)}
-      <!-- FIXME: I can't select the big number by the measure id. -->
-      <!-- for bigNum, catch nulls and convert to undefined.  -->
-      {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
-      {@const comparisonValue = measure.name
-        ? totalsComparisons?.[measure.name]
-        : undefined}
-      {@const isValidPercTotal = measure.name
-        ? $isMeasureValidPercentOfTotal(measure.name)
-        : false}
 
-      <MeasureBigNumber
-        {measure}
-        value={bigNum}
-        isMeasureExpanded={!!expandedMeasureName}
-        {showComparison}
-        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
-        {comparisonValue}
-        status={$timeSeriesDataStore?.isFetching
-          ? EntityStatus.Running
-          : EntityStatus.Idle}
-        on:expand-measure={() => {
-          metricsExplorerStore.setExpandedMeasureName(
-            metricViewName,
-            measure.name,
-          );
-        }}
-      />
-
-      <div style:height="125px">
-        {#if $timeSeriesDataStore?.isError}
-          <div class="p-5"><CrossIcon /></div>
-        {:else if formattedData && interval}
-          <MeasureChart
-            bind:mouseoverValue
-            {measure}
-            {isScrubbing}
-            {scrubStart}
-            {scrubEnd}
-            {metricViewName}
-            data={formattedData}
-            {dimensionData}
-            zone={$dashboardStore.selectedTimezone}
-            xAccessor="ts_position"
-            labelAccessor="ts"
-            timeGrain={interval}
-            yAccessor={measure.name}
+  <div class="z-10 gap-x-9 flex flex-row pt-4 pl-[118px]">
+    <div class="relative w-full">
+      <MeasureZoom {metricViewName} />
+      <div class="translate-x-5">
+        {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+          <SimpleDataGraphic
+            height={26}
+            overflowHidden={false}
+            top={29}
+            bottom={0}
             xMin={startValue}
             xMax={endValue}
-            {showComparison}
-            validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
-              ? bigNum
-              : null}
-            mouseoverTimeFormat={(value) => {
-              /** format the date according to the time grain */
-
-              return interval
-                ? new Date(value).toLocaleDateString(
-                    undefined,
-                    TIME_GRAIN[interval].formatDate,
-                  )
-                : value.toString();
-            }}
-          />
-        {:else}
-          <div class="flex items-center justify-center w-24">
-            <Spinner status={EntityStatus.Running} />
-          </div>
+          >
+            <Axis superlabel side="top" placement="start" />
+          </SimpleDataGraphic>
         {/if}
       </div>
-    {/each}
+    </div>
+  </div>
+
+  <!-- bignumbers and line charts -->
+  {#if renderedMeasures}
+    <div class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit">
+      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
+      {#each renderedMeasures as measure (measure.name)}
+        <!-- FIXME: I can't select the big number by the measure id. -->
+        <!-- for bigNum, catch nulls and convert to undefined.  -->
+        {@const bigNum = measure.name ? totals?.[measure.name] : undefined}
+        {@const comparisonValue = measure.name
+          ? totalsComparisons?.[measure.name]
+          : undefined}
+        {@const isValidPercTotal = measure.name
+          ? $isMeasureValidPercentOfTotal(measure.name)
+          : false}
+
+        <div class="flex flex-row gap-x-9">
+          <MeasureBigNumber
+            {measure}
+            value={bigNum}
+            isMeasureExpanded={!!expandedMeasureName}
+            {showComparison}
+            comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
+              ?.name}
+            {comparisonValue}
+            status={$timeSeriesDataStore?.isFetching
+              ? EntityStatus.Running
+              : EntityStatus.Idle}
+            on:expand-measure={() => {
+              metricsExplorerStore.setExpandedMeasureName(
+                metricViewName,
+                measure.name,
+              );
+            }}
+          />
+
+          {#if $timeSeriesDataStore?.isError}
+            <div class="p-5"><CrossIcon /></div>
+          {:else if formattedData && interval}
+            <MeasureChart
+              bind:mouseoverValue
+              {measure}
+              {isScrubbing}
+              {scrubStart}
+              {scrubEnd}
+              {metricViewName}
+              data={formattedData}
+              {dimensionData}
+              zone={$dashboardStore.selectedTimezone}
+              xAccessor="ts_position"
+              labelAccessor="ts"
+              timeGrain={interval}
+              yAccessor={measure.name}
+              xMin={startValue}
+              xMax={endValue}
+              {showComparison}
+              validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
+                ? bigNum
+                : null}
+              mouseoverTimeFormat={(value) => {
+                /** format the date according to the time grain */
+
+                return interval
+                  ? new Date(value).toLocaleDateString(
+                      undefined,
+                      TIME_GRAIN[interval].formatDate,
+                    )
+                  : value.toString();
+              }}
+            />
+          {:else}
+            <div class="flex items-center justify-center w-24">
+              <Spinner status={EntityStatus.Running} />
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
   {/if}
 </TimeSeriesChartContainer>

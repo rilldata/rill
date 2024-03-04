@@ -47,30 +47,17 @@
   }
 </script>
 
-<div bind:this={axisTop} style:height="24px" style:padding-left="24px">
-  {#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
-    <Portal>
-      <FloatingElement
-        target={axisTop}
-        location="top"
-        relationship="direct"
-        alignment="middle"
-        distance={10}
-        pad={0}
-      >
-        <div style:left="-40px" class="absolute flex justify-center">
-          <Button compact type="highlighted" on:click={() => zoomScrub()}>
-            <div class="flex items-center gap-x-2">
-              <Zoom size="16px" />
-              Zoom
-              <span class="font-semibold">(Z)</span>
-            </div>
-          </Button>
-        </div>
-      </FloatingElement>
-    </Portal>
-  {/if}
-</div>
+{#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
+  <div class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2">
+    <Button compact type="highlighted" on:click={() => zoomScrub()}>
+      <div class="flex items-center gap-x-2">
+        <Zoom size="16px" />
+        Zoom
+        <span class="font-semibold">(Z)</span>
+      </div>
+    </Button>
+  </div>
+{/if}
 
 <!-- Only to be used on singleton components to avoid multiple state dispatches -->
 <svelte:window on:keydown={onKeyDown} />

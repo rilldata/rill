@@ -73,7 +73,7 @@
 </script>
 
 <section
-  class="flex flex-col h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col h-screen w-full overflow-hidden dashboard-theme-boundary"
   use:listenToNodeResize
 >
   <div
@@ -115,7 +115,7 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div class="flex h-full overflow-hidden">
+    <div class="h-full overflow-hidden">
       {#if showPivot}
         <div class="overflow-y-hidden flex-1">
           <PivotDisplay />
@@ -123,12 +123,9 @@
       {:else}
         <div
           style:padding-left={leftSide}
-          class="flex gap-x-1 mt-3 w-full h-full overflow-hidden flex-{dashboardAlignment}"
+          class="flex gap-x-1 gap-y-4 mt-3 w-full h-full flex-{dashboardAlignment} overflow-hidden"
         >
-          <div
-            class:fixed-metric-height={expandedMeasureName}
-            class="overflow-y-scroll pb-8 flex-none"
-          >
+          <div class="h-full flex-content max-h-fit">
             {#key metricViewName}
               {#if hasTimeSeries}
                 <MetricsTimeSeriesCharts
@@ -141,9 +138,7 @@
             {/key}
           </div>
 
-          <div
-            class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}"
-          >
+          <div class="overflow-y-hidden h-full w-full pb-4">
             {#if expandedMeasureName}
               <TimeDimensionDisplay {metricViewName} />
             {:else if selectedDimensionName}

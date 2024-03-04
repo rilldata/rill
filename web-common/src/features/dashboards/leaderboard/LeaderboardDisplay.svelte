@@ -41,7 +41,7 @@
 <!-- container for the metrics leaderboard components and controls -->
 <div
   bind:this={leaderboardContainer}
-  class="flex flex-col overflow-hidden h-full"
+  class="flex flex-col overflow-y-scroll h-full"
   style:min-width="365px"
 >
   <div class="pl-1 pb-3">
