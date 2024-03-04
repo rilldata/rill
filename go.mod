@@ -95,6 +95,7 @@ require (
 	golang.org/x/oauth2 v0.13.0
 	golang.org/x/sync v0.5.0
 	golang.org/x/sys v0.16.0
+	golang.org/x/text v0.14.0
 	google.golang.org/api v0.149.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
 	google.golang.org/grpc v1.60.1
@@ -287,7 +288,6 @@ require (
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
@@ -306,5 +306,7 @@ require (
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
+
+replace github.com/marcboeker/go-duckdb v1.6.1 => github.com/esevastyanov/go-duckdb v0.0.0-20240304150144-9e04c8d3d68e
 
 exclude modernc.org/sqlite v1.18.1
