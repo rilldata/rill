@@ -233,7 +233,7 @@
   }
 </script>
 
-<div class={cursorClass}>
+<div class={`${cursorClass} select-none`}>
   <SimpleDataGraphic
     bind:hovered
     bind:mouseoverValue

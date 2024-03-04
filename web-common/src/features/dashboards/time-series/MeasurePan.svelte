@@ -5,12 +5,6 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
-  import {
-    getDurationFromMS,
-    getOffset,
-    getTimeWidth,
-  } from "@rilldata/web-common/lib/time/transforms";
-  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher, getContext } from "svelte";
   import type { Writable } from "svelte/store";
 
@@ -22,7 +16,12 @@
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
 
   const StateManagers = getStateManagers();
-  const { dashboardStore } = StateManagers;
+  const {
+    dashboardStore,
+    selectors: {
+      charts: { canPanLeft, canPanRight, getNewPanRage },
+    },
+  } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -34,56 +33,8 @@
   $: x1 = $plotConfig.plotLeft + $plotConfig.left - 20;
   $: x2 = $plotConfig.plotRight - 14;
 
-  let canPanRight = false;
-  let canPanLeft = false;
-  $: if ($timeControlsStore.selectedTimeRange?.start) {
-    canPanRight = hovering && isRangeValid("right");
-    canPanLeft = hovering && isRangeValid("left");
-  }
-
-  function isRangeValid(direction: PanDirection) {
-    const allTimeRange = $timeControlsStore?.allTimeRange;
-    if (!allTimeRange) return false;
-    const panRange = getPanRange(direction);
-
-    if (!panRange) return false;
-    const { start, end } = panRange;
-
-    if (direction === "right" && start.getTime() > allTimeRange.end.getTime()) {
-      return false;
-    } else if (
-      direction === "left" &&
-      end.getTime() < allTimeRange.start.getTime()
-    ) {
-      return false;
-    }
-    return true;
-  }
-
-  function getPanRange(direction: PanDirection) {
-    const selectedTimeRange = $timeControlsStore?.selectedTimeRange;
-    if (!selectedTimeRange) return;
-
-    const timeZone = $dashboardStore?.selectedTimezone || "UTC";
-    const { start, end, interval } = selectedTimeRange;
-    const allTimeRange = $timeControlsStore?.allTimeRange;
-
-    if (!allTimeRange || !interval || !start || !end) return;
-
-    const offsetType =
-      direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
-
-    const currentRangeWidth = getTimeWidth(start, end);
-    const panAmount = getDurationFromMS(currentRangeWidth);
-
-    const newStart = getOffset(start, panAmount, offsetType, timeZone);
-    const newEnd = getOffset(end, panAmount, offsetType, timeZone);
-
-    return { start: newStart, end: newEnd };
-  }
-
   function panCharts(direction: PanDirection) {
-    const panRange = getPanRange(direction);
+    const panRange = $getNewPanRage(direction);
     if (!panRange) return;
     const { start, end } = panRange;
     dispatch("pan", { start, end });
@@ -92,7 +43,7 @@
 
 {#if hovering}
   <WithGraphicContexts>
-    {#if canPanLeft}
+    {#if $canPanLeft}
       <g transform={`translate(${x1}, ${midY})`} class="pan-controls">
         <!-- Left Pan Button -->
         <path
@@ -103,7 +54,7 @@
         />
       </g>
     {/if}
-    {#if canPanRight}
+    {#if $canPanRight}
       <g transform={`translate(${x2}, ${midY})`} class="pan-controls">
         <!-- Right Pan Button -->
         <path
