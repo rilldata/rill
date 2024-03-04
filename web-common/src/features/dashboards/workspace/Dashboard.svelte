@@ -43,9 +43,6 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  // flex-row flex-col
-  $: dashboardAlignment = expandedMeasureName ? "col" : "row";
-
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
@@ -115,12 +112,14 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div class="h-full w-full overflow-hidden">
+    <div class="size-full overflow-hidden">
       {#if showPivot}
         <PivotDisplay />
       {:else}
         <div
-          class="flex gap-x-1 gap-y-4 mt-3 w-full h-full flex-{dashboardAlignment} overflow-hidden"
+          class="flex gap-x-1 gap-y-4 mt-3 size-full overflow-hidden"
+          class:flex-col={expandedMeasureName}
+          class:flex-row={!expandedMeasureName}
           style:padding-left={leftSide}
         >
           {#key metricViewName}
@@ -150,9 +149,3 @@
     {/if}
   {/if}
 </section>
-
-<style>
-  .fixed-metric-height {
-    height: 280px;
-  }
-</style>

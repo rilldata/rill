@@ -101,15 +101,15 @@
     this={isMeasureExpanded ? "div" : "button"}
     role={isMeasureExpanded ? "presentation" : "button"}
     tabindex={isMeasureExpanded ? -1 : 0}
-    use:shiftClickAction
-    on:shift-click={() => shiftClickHandler(hoveredValue)}
+    class="group big-number m-0.5 rounded flex items-start"
     class:shadow-grad={!isMeasureExpanded}
     class:cursor-pointer={!isMeasureExpanded}
-    class="group big-number m-0.5 rounded flex items-start"
     on:click={(e) => {
       if (e.shiftKey) return;
       dispatch("expand-measure");
     }}
+    on:shift-click={() => shiftClickHandler(hoveredValue)}
+    use:shiftClickAction
   >
     <div
       class="flex flex-col px-2 text-left w-full h-full
@@ -192,7 +192,8 @@
             <CrossIcon />
           {:else if status === EntityStatus.Running}
             <div
-              class="{withTimeseries ? '' : 'bottom-0'} absolute p-2"
+              class="absolute p-2"
+              class:bottom-0={withTimeseries}
               in:receive={{ key: "spinner" }}
               out:send={{ key: "spinner" }}
             >
@@ -212,6 +213,7 @@
     width: 118px;
     height: 85px;
   }
+
   .shadow-grad:hover {
     /* ui-card */
     background: var(

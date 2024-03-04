@@ -224,7 +224,7 @@
     {/if}
   </div>
 
-  <div class="z-10 gap-x-9 flex flex-row pt-4 pl-[118px]">
+  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
     <div class="relative w-full">
       <MeasureZoom {metricViewName} />
       <div class="translate-x-5">
