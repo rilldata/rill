@@ -2,7 +2,11 @@
   import { goto } from "$app/navigation";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
+  import {
+    isDuplicateName,
+    nameRegex,
+    nameRegexErrorMessage,
+  } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -15,10 +19,9 @@
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+    if (!e.target.value.match(nameRegex)) {
       notifications.send({
-        message:
-          "Dashboard name must start with a letter or underscore and contain only letters, numbers, and underscores",
+        message: nameRegexErrorMessage,
       });
       e.target.value = metricsDefName; // resets the input
       return;

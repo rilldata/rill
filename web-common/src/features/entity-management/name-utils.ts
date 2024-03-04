@@ -1,3 +1,8 @@
+export const nameRegex = /^[a-zA-Z0-9_]+$/;
+
+export const nameRegexErrorMessage =
+  "Name must contain only letters, numbers, and underscores";
+
 // sourced from https://www.steveruiz.me/posts/incrementing-name
 
 // Will return "1" from "table_name_1"

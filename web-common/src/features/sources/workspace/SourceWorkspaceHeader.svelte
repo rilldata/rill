@@ -42,7 +42,11 @@
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
-  import { isDuplicateName } from "../../entity-management/name-utils";
+  import {
+    isDuplicateName,
+    nameRegex,
+    nameRegexErrorMessage,
+  } from "../../entity-management/name-utils";
   import { createModelFromSourceV2 } from "../createModel";
   import {
     refreshSource,
@@ -77,10 +81,9 @@
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+    if (!e.target.value.match(nameRegex)) {
       notifications.send({
-        message:
-          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+        message: nameRegexErrorMessage,
       });
       e.target.value = sourceName; // resets the input
       return;

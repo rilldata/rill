@@ -1,5 +1,9 @@
 import type { V1ConnectorSpec } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
+import {
+  nameRegex,
+  nameRegexErrorMessage,
+} from "../../entity-management/name-utils";
 
 export function getYupSchema(connector: V1ConnectorSpec) {
   switch (connector.name) {
@@ -11,10 +15,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("S3 URI is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
         aws_region: yup.string(),
       });
@@ -26,10 +27,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("GS URI is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
       });
     case "https":
@@ -40,10 +38,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("Path is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
       });
     case "duckdb":
@@ -52,10 +47,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         db: yup.string().required("db is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
       });
     case "sqlite":
@@ -64,10 +56,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         table: yup.string().required("table is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
       });
     case "bigquery":
@@ -75,10 +64,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
         project_id: yup.string().required("project_id is required"),
       });
@@ -98,10 +84,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
         database_url: yup.string(),
       });
@@ -110,10 +93,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
         dsn: yup.string(),
       });
@@ -127,10 +107,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
         output_location: yup.string(),
         workgroup: yup.string(),
@@ -140,10 +117,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
+          .matches(nameRegex, nameRegexErrorMessage)
           .required("Source name is required"),
         dsn: yup.string(),
       });
