@@ -17,7 +17,6 @@
 
   const StateManagers = getStateManagers();
   const {
-    dashboardStore,
     selectors: {
       charts: { canPanLeft, canPanRight, getNewPanRage },
     },
