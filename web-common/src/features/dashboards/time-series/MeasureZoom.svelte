@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Button } from "@rilldata/web-common/components/button";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import {
@@ -12,7 +10,6 @@
 
   export let metricViewName;
 
-  let axisTop;
   $: dashboardStore = useDashboardStore(metricViewName);
 
   function onKeyDown(e) {
