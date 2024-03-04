@@ -323,7 +323,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID string, certPath string, keyPath string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, certPath, keyPath string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -408,7 +408,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	return nil
 }
 
-func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool, secure bool) {
+func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
 	scheme := "http"
 
 	if secure {
