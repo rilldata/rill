@@ -111,10 +111,10 @@ export function getPrettySelectedTimeRange(
     [
       useMetricsView(instanceId, metricsViewName),
       derived(
-        [runtime, useMetricsView(instanceId, metricsViewName)],
-        ([runtime, metricsView], set) =>
+        [useMetricsView(instanceId, metricsViewName)],
+        ([metricsView], set) =>
           createQueryServiceMetricsViewTimeRange(
-            runtime.instanceId,
+            instanceId,
             metricsViewName,
             {},
             {

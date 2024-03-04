@@ -61,5 +61,7 @@
 <CreateBookmarkDialog bind:open={createBookmark} {metricsViewName} />
 
 {#if bookmark}
-  <EditBookmarkDialog {bookmark} bind:open={editBookmark} {metricsViewName} />
+  {#key bookmark.resource.id}
+    <EditBookmarkDialog {bookmark} bind:open={editBookmark} {metricsViewName} />
+  {/key}
 {/if}

@@ -5,18 +5,14 @@
     createAdminServiceCreateBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import BookmarkFormSwitches from "@rilldata/web-common/features/bookmarks/BookmarkFormSwitches.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
-  import {
-    getPrettySelectedTimeRange,
-    useProjectId,
-  } from "@rilldata/web-common/features/bookmarks/selectors";
+  import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -29,12 +25,6 @@
   $: dashboardStore = useDashboardStore(metricsViewName);
 
   $: projectId = useProjectId($page.params.organization, $page.params.project);
-
-  $: selectedTimeRange = getPrettySelectedTimeRange(
-    queryClient,
-    $runtime?.instanceId,
-    metricsViewName,
-  );
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
 
@@ -114,24 +104,7 @@
         { value: "true", label: "Default bookmarks" },
       ]}
     />
-    <Switch
-      checked={$form["filtersOnly"]}
-      id="filtersOnly"
-      on:click={() => ($form["filtersOnly"] = !$form["filtersOnly"])}
-    >
-      Save filters only
-    </Switch>
-    <Switch
-      checked={$form["absoluteTimeRange"]}
-      id="absoluteTimeRange"
-      on:click={() =>
-        ($form["absoluteTimeRange"] = !$form["absoluteTimeRange"])}
-    >
-      <div class="flex flex-col">
-        <div class="text-left">Absolute time range</div>
-        <div class="text-gray-500">{$selectedTimeRange}</div>
-      </div>
-    </Switch>
+    <BookmarkFormSwitches {formState} {metricsViewName} />
   </form>
   <div class="flex flex-row mt-4 gap-2" slot="footer">
     <Button on:click={handleClose} type="secondary">Cancel</Button>

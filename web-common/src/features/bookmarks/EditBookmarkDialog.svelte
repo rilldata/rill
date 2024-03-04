@@ -5,17 +5,16 @@
     createAdminServiceUpdateBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import BookmarkFormSwitches from "@rilldata/web-common/features/bookmarks/BookmarkFormSwitches.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
   import {
     type BookmarkEntry,
-    getPrettySelectedTimeRange,
     useProjectId,
   } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -29,12 +28,6 @@
   $: dashboardStore = useDashboardStore(metricsViewName);
 
   $: projectId = useProjectId($page.params.organization, $page.params.project);
-
-  $: selectedTimeRange = getPrettySelectedTimeRange(
-    queryClient,
-    $runtime?.instanceId,
-    metricsViewName,
-  );
 
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
@@ -101,22 +94,7 @@
       label="Description"
       optional
     />
-    <Switch
-      checked={$form["filtersOnly"]}
-      id="filtersOnly"
-      on:click={() => ($form["filtersOnly"] = !$form["filtersOnly"])}
-    >
-      Save filters only
-    </Switch>
-    <Switch
-      bind:checked={$form["absoluteTimeRange"]}
-      id="absoluteTimeRange"
-      on:click={() =>
-        ($form["absoluteTimeRange"] = !$form["absoluteTimeRange"])}
-    >
-      <div>Absolute time range</div>
-      <div>{$selectedTimeRange}</div>
-    </Switch>
+    <BookmarkFormSwitches {formState} {metricsViewName} />
   </form>
   <div class="flex flex-row mt-4 gap-2" slot="footer">
     <Button on:click={handleClose} type="secondary">Cancel</Button>
