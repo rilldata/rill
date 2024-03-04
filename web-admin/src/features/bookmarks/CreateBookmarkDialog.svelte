@@ -64,6 +64,7 @@
           ),
         },
       });
+      handleReset();
       queryClient.refetchQueries(
         getAdminServiceListBookmarksQueryKey({
           projectId: $projectId.data ?? "",
@@ -75,7 +76,7 @@
     },
   });
 
-  const { form, errors, handleSubmit } = formState;
+  const { form, errors, handleSubmit, handleReset } = formState;
 
   function handleClose() {
     open = false;

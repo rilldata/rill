@@ -14,7 +14,7 @@
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import BookmarksDropdown from "@rilldata/web-admin/features/bookmarks/BookmarksDropdown.svelte";
+  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -60,7 +60,7 @@
     {#if onDashboardPage}
       <LastRefreshedDate />
       <ShareDashboardButton />
-      <BookmarksDropdown />
+      <Bookmarks />
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}
