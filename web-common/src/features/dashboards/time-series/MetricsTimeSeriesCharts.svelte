@@ -26,8 +26,8 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
+  import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./MeasureChart.svelte";
-  import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
 
@@ -226,7 +226,7 @@
   <div class="bg-white sticky left-0 top-0 overflow-visible z-10">
     <!-- top axis element -->
     <div />
-    <MeasureZoom {metricViewName} />
+    <ChartInteractions {metricViewName} {showComparison} timeGrain={interval} />
     {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
       <SimpleDataGraphic
         height={26}
