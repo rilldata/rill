@@ -1,7 +1,7 @@
-export const nameRegex = /^[a-zA-Z0-9_]+$/;
+export const nameRegex = /^[^<>:"/\\|?*]+$/;
 
 export const nameRegexErrorMessage =
-  "Name must contain only letters, numbers, and underscores";
+  'Filename cannot contain special characters like /, <, >, :, ", \\, |, ?, or *. Please choose a different name.';
 
 // sourced from https://www.steveruiz.me/posts/incrementing-name
 
