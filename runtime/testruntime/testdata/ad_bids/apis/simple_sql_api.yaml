@@ -1,0 +1,2 @@
+kind : api
+sql: select * from ad_bids LIMIT 5

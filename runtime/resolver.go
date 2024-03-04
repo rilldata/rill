@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -56,13 +58,26 @@ func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
 		return nil, err
 	}
 	defer resolver.Close()
-	if err := resolver.Validate(ctx); err != nil {
+
+	// Get dependency cache keys
+	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
+	if err != nil {
 		return nil, err
 	}
-	depKey := ""
+	depKeys := make([]string, 0, len(resolver.Deps()))
 	for _, dep := range resolver.Deps() {
-		depKey += dep.Kind + ":" + dep.Name
+		res, err := ctrl.Get(ctx, dep, false)
+		if err != nil {
+			// Deps are approximate, not exact (see docstring for Deps()), so they may not all exist
+			continue
+		}
+		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
+		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
+		depKeys = append(depKeys, key)
 	}
+
+	depKey := strings.Join(depKeys, ";")
+
 	key := queryCacheKey{
 		instanceID:    opts.InstanceID,
 		queryKey:      resolver.Key(),

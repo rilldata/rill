@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterAPIResolverInitializer("sql", New)
+	runtime.RegisterAPIResolverInitializer("SQL", New)
 }
 
 type SQLResolver struct {
@@ -63,14 +63,11 @@ func (r *SQLResolver) Deps() []*runtimev1.ResourceName {
 
 // Validate the query without running any "expensive" operations
 func (r *SQLResolver) Validate(ctx context.Context) error {
-	res, err := r.olap.Execute(ctx, &drivers.Statement{
+	_, err := r.olap.Execute(ctx, &drivers.Statement{
 		Query:  r.resolvedSQL,
 		DryRun: true,
 	})
-	if err != nil {
-		return err
-	}
-	return res.Close()
+	return err
 }
 
 // ResolveInteractive Resolve for interactive use (e.g. API requests or alerts)
@@ -227,7 +224,7 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 		}
 		for _, t := range ast.GetTableRefs() {
 			if !t.LocalAlias && t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
-				deps = append(deps, &runtimev1.ResourceName{Name: t.Name})
+				deps = append(deps, &runtimev1.ResourceName{Kind: compilerv1.ResourceKindModel.String(), Name: t.Name})
 			}
 		}
 	} else {
@@ -236,7 +233,7 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 			return "", nil, err
 		}
 		for _, ref := range meta.Refs {
-			deps = append(deps, &runtimev1.ResourceName{Name: ref.Name})
+			deps = append(deps, &runtimev1.ResourceName{Kind: ref.Kind.String(), Name: ref.Name})
 		}
 	}
 
