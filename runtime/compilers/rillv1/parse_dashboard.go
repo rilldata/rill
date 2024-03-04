@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -22,7 +21,7 @@ type DashboardYAML struct {
 	} `yaml:"components"`
 }
 
-func (p *Parser) parseDashboard(ctx context.Context, node *Node) error {
+func (p *Parser) parseDashboard(node *Node) error {
 	// Parse YAML
 	tmp := &DashboardYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)

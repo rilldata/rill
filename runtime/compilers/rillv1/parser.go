@@ -592,9 +592,9 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	}
 
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
-	node, err := p.parseStem(ctx, paths, yamlPath, yaml, sqlPath, sql)
+	node, err := p.parseStem(paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		err = p.parseNode(ctx, node)
+		err = p.parseNode(node)
 	}
 
 	// Spread error across the node's paths (YAML and/or SQL files)
@@ -912,7 +912,7 @@ func normalizePath(path string) string {
 }
 
 // pathStem returns a slice of the path without the final file extension.
-// If the path does not contain a file extension, the entire path is returned.f
+// If the path does not contain a file extension, the entire path is returned
 func pathStem(path string) string {
 	i := strings.LastIndexByte(path, '.')
 	if i == -1 {

@@ -102,16 +102,16 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
 	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
 	default:
@@ -121,7 +121,7 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 	return nil
 }
 
-func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore) error {
+func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
