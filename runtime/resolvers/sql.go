@@ -30,7 +30,7 @@ type SQLResolver struct {
 }
 
 func New(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
-	sql := opts.API.Spec.Sql
+	sql := opts.API.Spec.ResolverProperties.Fields["sql"].GetStringValue()
 	if sql == "" {
 		return nil, errors.New("no sql query found for sql resolver")
 	}

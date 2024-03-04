@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/runtime"
 	"io"
 	"net/http"
 
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// nolint
 func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 	if !auth.GetClaims(req.Context()).CanInstance(req.PathValue("instance_id"), auth.ReadOLAP) {
 		w.WriteHeader(http.StatusForbidden)
@@ -63,32 +63,18 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Todo : for testing purposes only
-	res := []byte(api.Spec.Resolver)
-	// this all will go in resolver.go in runtime may be
-
-	// resolverInitializer, ok := APIResolverInitializers[api.Spec.Resolver]
-	// if !ok {
-	// 	panic("no resolverInitializer")
-	// }
-
-	// resolver, err := resolverInitializer(ctx, &APIResolverOptions{
-	// 	Runtime:    r,
-	// 	InstanceID: instanceID,
-	// 	API:        api,
-	// 	Args:       reqParams,
-	// 	UserAttributes: auth.GetClaims(ctx).Attributes(),
-	// })
-	// if err != nil {
-	// 	return nil, status.Error(codes.InvalidArgument, err.Error())
-	// }
-
-	// res, err := resolver.ResolveInteractive(ctx, 100)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return res, nil
+	res, err := runtime.Resolve(ctx, &runtime.APIResolverOptions{
+		Runtime:        s.runtime,
+		InstanceID:     req.PathValue("instance_id"),
+		API:            api,
+		Args:           reqParams,
+		UserAttributes: auth.GetClaims(ctx).Attributes(),
+		Priority:       0,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(res)
