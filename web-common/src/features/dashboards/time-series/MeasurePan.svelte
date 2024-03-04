@@ -3,7 +3,6 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
   import { createEventDispatcher, getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -21,8 +20,6 @@
       charts: { canPanLeft, canPanRight, getNewPanRage },
     },
   } = StateManagers;
-
-  const timeControlsStore = useTimeControlStore(StateManagers);
 
   $: y1 = $plotConfig.plotTop + $plotConfig.top - 20;
   $: y2 = $plotConfig.plotBottom + $plotConfig.bottom - 20;
