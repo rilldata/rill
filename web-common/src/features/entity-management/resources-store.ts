@@ -166,7 +166,7 @@ export function getAllErrorsForFile(
       }
       return [
         ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
-          (e) => e.filePath === filePath,
+          (e) => e.filePath && removeLeadingSlash(e.filePath) === filePath,
         ),
         ...(resource.data?.meta?.reconcileError
           ? [
