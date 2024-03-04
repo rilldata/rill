@@ -1,13 +1,14 @@
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
-import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
   V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { removeLeadingSlash } from "./entity-mappers";
 
 export function startWatchFilesClient(queryClient: QueryClient) {
   return new WatchRequestClient<V1WatchFilesResponse>(
@@ -22,7 +23,8 @@ function handleWatchFileResponse(
   queryClient: QueryClient,
   res: V1WatchFilesResponse,
 ) {
-  if (res.path.includes(".db")) return;
+  if (!res?.path || res.path.includes(".db")) return;
+
   // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
   if (
     !res.path.endsWith(".sql") &&
@@ -37,13 +39,19 @@ function handleWatchFileResponse(
   switch (res.event) {
     case "FILE_EVENT_WRITE":
       queryClient.refetchQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+        getRuntimeServiceGetFileQueryKey(
+          instanceId,
+          removeLeadingSlash(res.path),
+        ),
       );
       break;
 
     case "FILE_EVENT_DELETE":
       queryClient.removeQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+        getRuntimeServiceGetFileQueryKey(
+          instanceId,
+          removeLeadingSlash(res.path),
+        ),
       );
       resourcesStore.deleteFile(res.path);
       break;
