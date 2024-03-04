@@ -377,7 +377,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -610,7 +610,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
-	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -621,7 +621,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, whereClauseArgs...)
 	}
 
-	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -1126,7 +1126,7 @@ func (q *MetricsViewComparison) generateFilename() string {
 
 // TODO: a) Ensure correct time zone handling, b) Implement support for tr.RoundToGrain
 // (Maybe consider pushing all this logic into the SQL instead?)
-func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
+func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, timeCol string, args *[]any) (string, error) {
 	var clause string
 	if isTimeRangeNil(tr) {
 		return clause, nil

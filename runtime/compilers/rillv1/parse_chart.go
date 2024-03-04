@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +17,7 @@ type ChartYaml struct {
 	VegaLite string `yaml:"vega_lite"`
 }
 
-func (p *Parser) parseChart(ctx context.Context, node *Node) error {
+func (p *Parser) parseChart(node *Node) error {
 	// Parse YAML
 	tmp := &ChartYaml{}
 	err := p.decodeNodeYAML(node, true, tmp)

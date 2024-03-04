@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"time"
@@ -22,7 +21,7 @@ type ModelYAML struct {
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseModel(ctx context.Context, node *Node) error {
+func (p *Parser) parseModel(node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)

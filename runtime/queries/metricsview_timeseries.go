@@ -233,7 +233,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 	mv := r.GetMetricsView().Spec
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(mv))
+		err = opts.PreWriteHook(q.generateFilename())
 		if err != nil {
 			return err
 		}
@@ -262,7 +262,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+func (q *MetricsViewTimeSeries) generateFilename() string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
@@ -332,7 +332,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		sql = q.buildDuckDBSQL(mv, tsAlias, selectCols, whereClause, havingClause, timezone)
 	case drivers.DialectDruid:
 		args = append([]any{timezone}, args...)
-		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause, havingClause)
+		sql = q.buildDruidSQL(mv, tsAlias, selectCols, whereClause, havingClause)
 	case drivers.DialectClickHouse:
 		sql = q.buildClickHouseSQL(mv, tsAlias, selectCols, whereClause, havingClause, timezone)
 	default:
@@ -342,7 +342,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	return sql, tsAlias, args, nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause string) string {
+func (q *MetricsViewTimeSeries) buildDruidSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause string) string {
 	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
 
 	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
