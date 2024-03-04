@@ -224,7 +224,7 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 		}
 		for _, t := range ast.GetTableRefs() {
 			if !t.LocalAlias && t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
-				deps = append(deps, &runtimev1.ResourceName{Kind: compilerv1.ResourceKindModel.String(), Name: t.Name})
+				deps = append(deps, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: t.Name})
 			}
 		}
 	} else {
