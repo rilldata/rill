@@ -13,7 +13,7 @@ import (
 func ServeHTTP(ctx context.Context, port int) error {
 	srv := &http.Server{} // An empty server will serve http.DefaultServeMux
 
-	var options = graceful.Options{
+	options := graceful.Options{
 		Port: port,
 	}
 

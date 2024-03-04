@@ -37,7 +37,6 @@ func ServeHTTP(ctx context.Context, server *http.Server, options Options) error 
 	var serveErr error
 	go func() {
 		if options.CertPath != "" && options.KeyPath != "" {
-
 			serveErr = server.ServeTLS(lis, options.CertPath, options.KeyPath)
 		} else {
 			serveErr = server.Serve(lis)

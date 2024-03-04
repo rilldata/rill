@@ -164,7 +164,7 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
-	var options = graceful.Options{
+	options := graceful.Options{
 		Port:     s.opts.HTTPPort,
 		CertPath: s.opts.CertPath,
 		KeyPath:  s.opts.KeyPath,

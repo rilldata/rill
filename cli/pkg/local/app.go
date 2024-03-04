@@ -394,7 +394,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// if keypath and certpath are provided
-	var secure = certPath != "" && keyPath != ""
+	secure := certPath != "" && keyPath != ""
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
