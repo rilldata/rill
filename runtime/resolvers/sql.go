@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"time"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -13,8 +16,6 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/reconcilers"
 	"google.golang.org/protobuf/types/known/structpb"
-	"io"
-	"time"
 )
 
 func init() {
@@ -22,11 +23,10 @@ func init() {
 }
 
 type SQLResolver struct {
-	resolvedSql string
+	resolvedSQL string
 	deps        []*runtimev1.ResourceName
 	olap        drivers.OLAPStore
 	releaseFunc func()
-	opts        *runtime.APIResolverOptions
 }
 
 func New(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
@@ -34,14 +34,17 @@ func New(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIReso
 	if sql == "" {
 		return nil, errors.New("no sql query found for sql resolver")
 	}
-	resolvedSql, deps, err := resolveSQLAndDeps(ctx, sql, opts)
+	resolvedSQL, deps, err := resolveSQLAndDeps(ctx, sql, opts)
 	if err != nil {
 		return nil, err
 	}
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
 
 	return &SQLResolver{
-		resolvedSql: resolvedSql,
+		resolvedSQL: resolvedSQL,
 		deps:        deps,
 		olap:        olap,
 		releaseFunc: release,
@@ -50,7 +53,7 @@ func New(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIReso
 
 // Key that can be used for caching
 func (r *SQLResolver) Key() string {
-	return r.resolvedSql
+	return r.resolvedSQL
 }
 
 // Deps referenced by the query
@@ -61,7 +64,7 @@ func (r *SQLResolver) Deps() []*runtimev1.ResourceName {
 // Validate the query without running any "expensive" operations
 func (r *SQLResolver) Validate(ctx context.Context) error {
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:  r.resolvedSql,
+		Query:  r.resolvedSQL,
 		DryRun: true,
 	})
 	if err != nil {
@@ -73,7 +76,7 @@ func (r *SQLResolver) Validate(ctx context.Context) error {
 // ResolveInteractive Resolve for interactive use (e.g. API requests or alerts)
 func (r *SQLResolver) ResolveInteractive(ctx context.Context, priority int) (runtime.Result, error) {
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.resolvedSql,
+		Query:    r.resolvedSQL,
 		Priority: priority,
 	})
 	if err != nil {
@@ -106,7 +109,7 @@ func (r *SQLResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			filename := r.generateFilename()
-			if err := queries.DuckDBCopyExport(ctx, w, opts, r.resolvedSql, nil, filename, r.olap, opts.Format); err != nil {
+			if err := queries.DuckDBCopyExport(ctx, w, opts, r.resolvedSQL, nil, filename, r.olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
@@ -131,7 +134,7 @@ func (r *SQLResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 
 func (r *SQLResolver) generalExport(ctx context.Context, w io.Writer, opts *runtime.ExportOptions) error {
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.resolvedSql,
+		Query:    r.resolvedSQL,
 		Priority: opts.Priority,
 	})
 	if err != nil {
@@ -213,6 +216,9 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 			return compilerv1.TemplateResource{}, nil
 		},
 	})
+	if err != nil {
+		return "", nil, err
+	}
 
 	if dialect == drivers.DialectDuckDB {
 		ast, err := duckdbsql.Parse(sql)

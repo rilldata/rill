@@ -29,7 +29,7 @@ type APIResolver interface {
 }
 
 // APIResolverInitializers Resolvers should register themselves in this map from their package's init() function
-var APIResolverInitializers map[string]APIResolverInitializer = make(map[string]APIResolverInitializer)
+var APIResolverInitializers = make(map[string]APIResolverInitializer)
 
 func RegisterAPIResolverInitializer(name string, resolverInitializer APIResolverInitializer) {
 	APIResolverInitializers[name] = resolverInitializer
@@ -95,7 +95,6 @@ func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
 		return nil, err
 	}
 	return val.([]byte), nil
-
 }
 
 // TODO: Add a function for exporting the result to a file
