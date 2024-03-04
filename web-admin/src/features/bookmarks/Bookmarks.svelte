@@ -18,6 +18,7 @@
     type BookmarkEntry,
     useProjectId,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -39,7 +40,7 @@
   $: projectId = useProjectId($page.params.organization, $page.params.project);
 
   const queryClient = useQueryClient();
-  const homeBookmarkModifier = createHomeBookmarkModifier();
+  $: homeBookmarkModifier = createHomeBookmarkModifier($runtime?.instanceId);
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   function selectBookmark(bookmark: BookmarkEntry) {
@@ -50,6 +51,9 @@
     await homeBookmarkModifier(
       getBookmarkDataForDashboard($dashboardStore, false, false),
     );
+    notifications.send({
+      message: "Home bookmark created",
+    });
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
@@ -60,9 +64,12 @@
   }
 
   async function deleteBookmark(bookmark: BookmarkEntry) {
-    // TODO: add confirmation
+    // TODO: add confirmation?
     await $bookmarkDeleter.mutateAsync({
-      bookmarkId: bookmark.resource.id as string,
+      bookmarkId: bookmark.resource.id,
+    });
+    notifications.send({
+      message: `Bookmark ${bookmark.resource.displayName} delete`,
     });
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({

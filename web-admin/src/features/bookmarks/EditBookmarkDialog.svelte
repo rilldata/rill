@@ -15,6 +15,7 @@
     type BookmarkEntry,
     useProjectId,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -64,6 +65,9 @@
           resourceName: metricsViewName,
         }),
       );
+      notifications.send({
+        message: "Bookmark updated",
+      });
       handleClose();
     },
   });
