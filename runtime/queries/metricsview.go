@@ -159,13 +159,13 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	data, err := rowsToData(rows)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, err
 	}
 
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
@@ -179,13 +179,13 @@ func olapQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql st
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	data, err := rowsToData(rows)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, err
 	}
 
 	return rows.Schema, data, nil
