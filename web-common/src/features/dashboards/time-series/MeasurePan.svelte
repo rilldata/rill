@@ -17,7 +17,7 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      charts: { canPanLeft, canPanRight, getNewPanRage },
+      charts: { canPanLeft, canPanRight, getNewPanRange },
     },
   } = StateManagers;
 
@@ -30,7 +30,7 @@
   $: x2 = $plotConfig.plotRight - 14;
 
   function panCharts(direction: PanDirection) {
-    const panRange = $getNewPanRage(direction);
+    const panRange = $getNewPanRange(direction);
     if (!panRange) return;
     const { start, end } = panRange;
     dispatch("pan", { start, end });

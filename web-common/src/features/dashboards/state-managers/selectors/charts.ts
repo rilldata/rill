@@ -25,7 +25,7 @@ export const chartSelectors = {
       (selectedEnd?.getTime() || -Infinity) <= (endRange?.getTime() || Infinity)
     );
   },
-  getNewPanRage: (dashData: DashboardDataSources) => {
+  getNewPanRange: (dashData: DashboardDataSources) => {
     const timeControls = timeControlsState(dashData);
 
     return (direction: "left" | "right") => {
