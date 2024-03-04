@@ -66,6 +66,12 @@ As another alternative, you can configure credentials using a Shared Access Sign
 
 3. Rill will use the SAS token from the `AZURE_STORAGE_SAS_TOKEN` environment variable to authenticate with Azure Blob Storage when interacting with Azure Blob Storage sources.
 
+:::tip Did you know?
+
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](../../build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials that you have set locally for this source.
+
+:::
+
 ## Cloud deployment
 
 When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project. 
@@ -81,5 +87,11 @@ rill env configure
 :::info
 
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+
+:::
+
+:::tip Did you know?
+
+If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](../../build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
 
 :::

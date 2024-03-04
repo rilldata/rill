@@ -1,11 +1,23 @@
 ---
 title: SQLite
-description: Connect to data in a SQLite database
+description: Connect to data in SQLite
 sidebar_label: SQLite
 sidebar_position: 9
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
+## Overview
+
+
+
+## Local credentials
+
+
+## Cloud deployment
+
+
+
 
 ## How to configure credentials in Rill
 

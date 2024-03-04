@@ -23,6 +23,12 @@ When using Rill Developer on your local machine (i.e. `rill start`), Rill uses t
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
 
+:::tip Did you know?
+
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](../../build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials that you have set locally for this source.
+
+:::
+
 ## Cloud deployment
 
 When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. 
@@ -37,6 +43,12 @@ rill env configure
 :::info
 
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+
+:::
+
+:::tip Did you know?
+
+If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](../../build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
 
 :::
 

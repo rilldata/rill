@@ -1,6 +1,6 @@
 ---
 title: PostgreSQL
-description: Connect to data in a PostgreSQL database
+description: Connect to data in PostgreSQL
 sidebar_label: PostgreSQL
 sidebar_position: 7
 ---
@@ -9,7 +9,7 @@ sidebar_position: 7
 
 ## Overview
 
-PostgreSQL, often referred to as Postgres, is an open-source object-relational database system known for its reliability, feature robustness, and performance. With support for advanced data types, full ACID compliance for transactional integrity, and extensible architecture, Postgres provides a highly scalable environment for managing diverse datasets ranging from small applications to large-scale data warehouses. Its extensive SQL compliance, support for various programming languages, and strong community backing make it a versatile choice for a wide range of business intelligence and analytical applications. Rill supports natively connecting to and reading from Postgres as a source by using either a [supported connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) or [connection URI syntax](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
+[PostgreSQL](https://www.postgresql.org/docs/current/intro-whatis.html) is an open-source object-relational database system known for its reliability, feature robustness, and performance. With support for advanced data types, full ACID compliance for transactional integrity, and extensible architecture, PostgreSQL provides a highly scalable environment for managing diverse datasets ranging from small applications to large-scale data warehouses. Its extensive SQL compliance, support for various programming languages, and strong community backing make it a versatile choice for a wide range of business intelligence and analytical applications. Rill supports natively connecting to and reading from PostgreSQL as a source by using either a [supported connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) or [connection URI syntax](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
 
 As an example of a connection string:
 ```bash
@@ -32,7 +32,7 @@ An example of using this syntax in terminal:
 rill start --var connector.postgres.database_url="postgresql://postgres:postgres@localhost:5432/postgres"
 ```
 
-Alternatively, you can include the connection string directly in the source code by adding the `database_url` parameter. 
+Alternatively, you can include the connection string directly in the source YAML definition by adding the `database_url` parameter. 
 An example of a source using this approach:
 
 ```yaml
@@ -41,15 +41,21 @@ sql: "select * from my_table"
 database_url: "postgresql://postgres:postgres@localhost:5432/postgres"
 ```
 
-:::warning
+:::warning Beware of committing credentials to Git
 
-This approach is generally not recommended outside of local development because it places the connection string (which may contain sensitive information like passwords!) in the source file, <u>which is committed to Git</u>.
+This second approach is generally not recommended outside of local development because it places the connection details (which may contain sensitive information like passwords!) in the source file, <u>which is committed to Git</u>.
 
 :::
 
 :::info Source Properties
 
 For more information about available source properties / configurations, please refer to our reference documentation on [Source YAML](../../reference/project-files/index.md).
+
+:::
+
+:::tip Did you know?
+
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](../../build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials that you have set locally for this source.
 
 :::
 
@@ -64,5 +70,11 @@ rill env configure
 :::info
 
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+
+:::
+
+:::tip Did you know?
+
+If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](../../build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
 
 :::
