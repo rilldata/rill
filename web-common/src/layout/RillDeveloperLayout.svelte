@@ -31,6 +31,10 @@
     featureFlags.set(config.readonly, "readOnly");
     // Disable AI when running e2e tests
     featureFlags.set(!import.meta.env.VITE_PLAYWRIGHT_TEST, "ai");
+    // Temporary flag to show/hide the WIP custom dashboards feature
+    if (localStorage.getItem("customDashboards") === "true") {
+      featureFlags.set(true, "customDashboards");
+    }
 
     appBuildMetaStore.set({
       version: config.version,
