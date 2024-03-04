@@ -38,7 +38,7 @@ function handleWatchFileResponse(
   // so, we should not `await` here on `refetchQueries`
   switch (res.event) {
     case "FILE_EVENT_WRITE":
-      queryClient.refetchQueries(
+      void queryClient.refetchQueries(
         getRuntimeServiceGetFileQueryKey(
           instanceId,
           removeLeadingSlash(res.path),
@@ -53,11 +53,13 @@ function handleWatchFileResponse(
           removeLeadingSlash(res.path),
         ),
       );
-      resourcesStore.deleteFile(res.path);
+      resourcesStore.deleteFile(removeLeadingSlash(res.path));
       break;
   }
   // TODO: should this be throttled?
-  queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId));
+  void queryClient.refetchQueries(
+    getRuntimeServiceListFilesQueryKey(instanceId),
+  );
 }
 
 async function invalidateAllFiles(queryClient: QueryClient) {
