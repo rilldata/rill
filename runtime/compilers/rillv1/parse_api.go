@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"fmt"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -17,7 +16,7 @@ type APIYAML struct {
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseAPI(ctx context.Context, node *Node) error {
+func (p *Parser) parseAPI(node *Node) error {
 	// Parse YAML
 	tmp := &APIYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)
