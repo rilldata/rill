@@ -207,6 +207,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				Records: records,
 			})
 		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
 		meta := structTypeToMetricsViewColumn(rows.Schema)
 		rows.Close()
 
