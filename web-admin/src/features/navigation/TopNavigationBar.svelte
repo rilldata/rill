@@ -14,7 +14,7 @@
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import BookmarksDropdown from "@rilldata/web-common/features/bookmarks/BookmarksDropdown.svelte";
+  import BookmarksDropdown from "@rilldata/web-admin/features/bookmarks/BookmarksDropdown.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 

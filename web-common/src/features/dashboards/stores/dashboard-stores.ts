@@ -203,7 +203,6 @@ const metricViewReducers = {
     // Hence, it is a Partial<MetricsExplorerEntity>
     const partial = getDashboardStateFromUrl(urlState, metricsView, schema);
     if (!partial) return;
-    console.log("syncFromUrl", name, partial);
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partial) {

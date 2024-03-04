@@ -9,12 +9,12 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import BookmarkTimeRangeSwitch from "@rilldata/web-common/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
-  import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
+  import BookmarkTimeRangeSwitch from "@rilldata/web-admin/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
+  import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import {
     type BookmarkEntry,
     useProjectId,
-  } from "@rilldata/web-common/features/bookmarks/selectors";
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";

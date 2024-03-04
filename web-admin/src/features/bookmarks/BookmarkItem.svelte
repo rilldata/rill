@@ -1,12 +1,13 @@
 <script lang="ts">
-  import type { BookmarkEntry } from "@rilldata/web-common/features/bookmarks/selectors";
+  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { PencilIcon, TrashIcon, BookmarkIcon } from "lucide-svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import { createEventDispatcher } from "svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
-  import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu/index";
+  import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
 
   export let bookmark: BookmarkEntry;
+  export let readonly = false;
 
   const dispatch = createEventDispatcher();
 
@@ -61,15 +62,17 @@
         {/if}
       </div>
     </div>
-    <div class="flex flex-row justify-end gap-x-2 items-start w-20">
-      {#if hovered}
-        <button on:click={editBookmark}>
-          <PencilIcon size="16px" />
-        </button>
-        <button on:click={deleteBookmark}>
-          <TrashIcon size="16px" />
-        </button>
-      {/if}
-    </div>
+    {#if !readonly}
+      <div class="flex flex-row justify-end gap-x-2 items-start w-20">
+        {#if hovered}
+          <button on:click={editBookmark}>
+            <PencilIcon size="16px" />
+          </button>
+          <button on:click={deleteBookmark}>
+            <TrashIcon size="16px" />
+          </button>
+        {/if}
+      </div>
+    {/if}
   </div>
 </DropdownMenuItem>

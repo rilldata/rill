@@ -8,16 +8,16 @@
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import { createBookmarkApplier } from "@rilldata/web-common/features/bookmarks/applyBookmark";
-  import BookmarksContent from "@rilldata/web-common/features/bookmarks/BookmarksContent.svelte";
-  import CreateBookmarkDialog from "@rilldata/web-common/features/bookmarks/CreateBookmarkDialog.svelte";
-  import { createHomeBookmarkModifier } from "@rilldata/web-common/features/bookmarks/createOrUpdateHomeBookmark";
-  import EditBookmarkDialog from "@rilldata/web-common/features/bookmarks/EditBookmarkDialog.svelte";
-  import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
+  import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
+  import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksContent.svelte";
+  import CreateBookmarkDialog from "@rilldata/web-admin/features/bookmarks/CreateBookmarkDialog.svelte";
+  import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
+  import EditBookmarkDialog from "@rilldata/web-admin/features/bookmarks/EditBookmarkDialog.svelte";
+  import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import {
     type BookmarkEntry,
     useProjectId,
-  } from "@rilldata/web-common/features/bookmarks/selectors";
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

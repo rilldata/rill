@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import {
     createAdminServiceCreateBookmark,
@@ -10,9 +11,9 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import BookmarkTimeRangeSwitch from "@rilldata/web-common/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
-  import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
-  import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
+  import BookmarkTimeRangeSwitch from "@rilldata/web-admin/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
+  import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
+  import { useProjectId } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -27,6 +28,11 @@
   $: dashboardStore = useDashboardStore(metricsViewName);
 
   $: projectId = useProjectId($page.params.organization, $page.params.project);
+  $: projectPermissions = getProjectPermissions(
+    $page.params.organization,
+    $page.params.project,
+  );
+  $: manageProject = $projectPermissions.data?.manageProject;
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
 
@@ -99,15 +105,17 @@
       label="Description"
       optional
     />
-    <Select
-      bind:value={$form["shared"]}
-      id="shared"
-      label="Category"
-      options={[
-        { value: "false", label: "Your bookmarks" },
-        { value: "true", label: "Default bookmarks" },
-      ]}
-    />
+    {#if manageProject}
+      <Select
+        bind:value={$form["shared"]}
+        id="shared"
+        label="Category"
+        options={[
+          { value: "false", label: "Your bookmarks" },
+          { value: "true", label: "Default bookmarks" },
+        ]}
+      />
+    {/if}
     <div class="flex items-center space-x-2">
       <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
       <Label for="filtersOnly">Save filters only</Label>

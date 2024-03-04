@@ -1,14 +1,15 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
   import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-  } from "@rilldata/web-common/components/dropdown-menu/index";
-  import BookmarkItem from "@rilldata/web-common/features/bookmarks/BookmarkItem.svelte";
-  import { getBookmarks } from "@rilldata/web-common/features/bookmarks/selectors";
+  } from "@rilldata/web-common/components/dropdown-menu";
+  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarkItem.svelte";
+  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
@@ -18,14 +19,20 @@
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
 
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+
   let bookmarks: ReturnType<typeof getBookmarks>;
   $: bookmarks = getBookmarks(
     queryClient,
     $runtime?.instanceId,
-    $page.params.organization,
-    $page.params.project,
+    organization,
+    project,
     $page.params.dashboard,
   );
+
+  $: projectPermissions = getProjectPermissions(organization, project);
+  $: manageProject = $projectPermissions.data?.manageProject;
 </script>
 
 <DropdownMenuContent class="w-[450px]">
@@ -35,12 +42,17 @@
       <div class="text-xs">Bookmark current view</div>
     </div>
   </DropdownMenuItem>
-  <DropdownMenuItem on:click={() => dispatch("create-home")}>
-    <div class="flex flex-row gap-x-2 items-center">
-      <HomeBookmarkPlus size="16px" />
-      <div class="text-xs">Bookmark current view as Home</div>
-    </div>
-  </DropdownMenuItem>
+  {#if manageProject}
+    <DropdownMenuItem
+      on:click={() => dispatch("create-home")}
+      slot="manage-project"
+    >
+      <div class="flex flex-row gap-x-2 items-center">
+        <HomeBookmarkPlus size="16px" />
+        <div class="text-xs">Bookmark current view as Home</div>
+      </div>
+    </DropdownMenuItem>
+  {/if}
   {#if $bookmarks.data}
     {#if $bookmarks.data.personal?.length}
       <DropdownMenuSeparator />
@@ -66,10 +78,17 @@
             on:edit
             on:select
             on:delete
+            readonly={!manageProject}
           />
         {/if}
         {#each $bookmarks.data.shared as bookmark}
-          <BookmarkItem {bookmark} on:edit on:select on:delete />
+          <BookmarkItem
+            {bookmark}
+            on:edit
+            on:select
+            on:delete
+            readonly={!manageProject}
+          />
         {/each}
       </DropdownMenuGroup>
     {/if}
