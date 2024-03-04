@@ -110,7 +110,6 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	if len(q.PivotOn) == 0 {
 		schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
 		if err != nil {
-			fmt.Println(sqlString, args, err.Error())
 			return err
 		}
 
