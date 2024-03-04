@@ -121,7 +121,7 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 			State: state,
 		},
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return safeSQLName(ref.Name), nil
+			return SafeSQLName(ref.Name), nil
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 			if name.Kind == compilerv1.ResourceKindUnspecified {

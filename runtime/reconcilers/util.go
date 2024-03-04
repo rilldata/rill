@@ -149,8 +149,8 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	return olap.RenameTable(ctx, fromName, toName, fromIsView)
 }
 
-// safeSQLName returns a quoted SQL identifier.
-func safeSQLName(name string) string {
+// SafeSQLName returns a quoted SQL identifier.
+func SafeSQLName(name string) string {
 	if name == "" {
 		return name
 	}
@@ -200,7 +200,7 @@ func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self comp
 		ExtraProps:  map[string]interface{}{},
 		Self:        self,
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return safeSQLName(ref.Name), nil
+			return SafeSQLName(ref.Name), nil
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 			if name.Kind == compilerv1.ResourceKindUnspecified {

@@ -393,11 +393,11 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, q.Result.Data, w)
+		return WriteCSV(meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, q.Result.Data, w)
+		return WriteXLSX(meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, q.Result.Data, w)
+		return WriteParquet(meta, q.Result.Data, w)
 	}
 
 	return nil

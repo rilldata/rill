@@ -252,11 +252,11 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, tmp, w)
+		return WriteCSV(meta, tmp, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, tmp, w)
+		return WriteXLSX(meta, tmp, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, tmp, w)
+		return WriteParquet(meta, tmp, w)
 	}
 
 	return nil
