@@ -5,7 +5,7 @@ import {
 import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
 
 export function getProjectPermissions(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+  return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       select: (data) => data?.projectPermissions,
     },
@@ -13,7 +13,7 @@ export function getProjectPermissions(orgName: string, projName: string) {
 }
 
 export function useProjectRuntime(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+  return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       // Proactively refetch the JWT before it expires
       refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2,

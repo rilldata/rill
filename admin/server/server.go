@@ -22,13 +22,13 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -107,13 +107,15 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	cookieStore.Options.Domain = ""
 
 	// We need to protect against CSRF and clickjacking attacks, but still support requests from the UI to the admin service.
-	// This is accomplished by setting SameSite=Strict (note that "site" just means the same root domain, not sub-domain).
+	// This is accomplished by setting SameSite=Lax (note that "site" just means the same root domain, not sub-domain).
 	// For example, cookies will be passed on requests from ui.rilldata.com to admin.rilldata.com (or localhost:3000 to localhost:8080),
 	// but not for requests from a different site AND NOT from an iframe of ui.rilldata.com on a different site.
 	//
+	// Note: We use Lax instead of Strict because we need cookies to be passed on redirects to the admin service from external providers, namely Auth0 and Github.
+	//
 	// Note on embedding: When embedding our UI, requests are only made to the runtime using the ephemeral JWT generated for the iframe. So we do not need cookies to be passed.
 	// In the future, if iframes need to communicate with the admin service, we should introduce a scheme involving ephemeral tokens and not rely on cookies.
-	cookieStore.Options.SameSite = http.SameSiteStrictMode
+	cookieStore.Options.SameSite = http.SameSiteLaxMode
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
 		AuthDomain:       opts.AuthDomain,
@@ -192,7 +194,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithErrorHandler(httpErrorHandler),
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
@@ -210,6 +212,23 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", gwMux)
 
+	// Add runtime proxy
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
+		observability.Middleware(
+			"runtime-proxy",
+			s.logger,
+			s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
+		),
+	)
+
+	// Temporary endpoint for testing headers.
+	// TODO: Remove this.
+	mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range r.Header {
+			fmt.Fprintf(w, "%s: %v\n", k, v)
+		}
+	})
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
@@ -223,9 +242,6 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
-
-	// Add temporary internal endpoint for refreshing sources
-	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
 
 	// Build CORS options for admin server
 
@@ -264,6 +280,15 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	handler := cors.New(corsOpts).Handler(mux)
 
 	return handler, nil
+}
+
+// Ping implements AdminService
+func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
+	resp := &adminv1.PingResponse{
+		Version: "", // TODO: Return version
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
@@ -322,23 +347,14 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	return attr, nil
 }
 
-// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// httpErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
 // code) to HTTP status code 400 instead of 500.
-func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+func httpErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
 	s := status.Convert(err)
 	if s.Code() == codes.Unknown {
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
-}
-
-// Ping implements AdminService
-func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
-	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
-		Time:    timestamppb.New(time.Now()),
-	}
-	return resp, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

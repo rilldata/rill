@@ -1793,6 +1793,8 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for AccessTokenTtlSeconds
+
 	if len(errors) > 0 {
 		return GetProjectRequestMultiError(errors)
 	}
@@ -11862,6 +11864,10 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
+	// no validation rules for ResourceKind
+
+	// no validation rules for ResourceName
+
 	if len(errors) > 0 {
 		return ListBookmarksRequestMultiError(errors)
 	}
@@ -12337,11 +12343,19 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Description
+
 	// no validation rules for Data
 
-	// no validation rules for DashboardName
+	// no validation rules for ResourceKind
+
+	// no validation rules for ResourceName
 
 	// no validation rules for ProjectId
+
+	// no validation rules for Default
+
+	// no validation rules for Shared
 
 	if len(errors) > 0 {
 		return CreateBookmarkRequestMultiError(errors)
@@ -12553,6 +12567,222 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreateBookmarkResponseValidationError{}
+
+// Validate checks the field values on UpdateBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateBookmarkRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateBookmarkRequestMultiError, or nil if none found.
+func (m *UpdateBookmarkRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateBookmarkRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for BookmarkId
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
+	// no validation rules for Data
+
+	// no validation rules for Default
+
+	// no validation rules for Shared
+
+	if len(errors) > 0 {
+		return UpdateBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateBookmarkRequestMultiError is an error wrapping multiple validation
+// errors returned by UpdateBookmarkRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateBookmarkRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateBookmarkRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateBookmarkRequestMultiError) AllErrors() []error { return m }
+
+// UpdateBookmarkRequestValidationError is the validation error returned by
+// UpdateBookmarkRequest.Validate if the designated constraints aren't met.
+type UpdateBookmarkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateBookmarkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateBookmarkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateBookmarkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateBookmarkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateBookmarkRequestValidationError) ErrorName() string {
+	return "UpdateBookmarkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateBookmarkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateBookmarkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateBookmarkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateBookmarkRequestValidationError{}
+
+// Validate checks the field values on UpdateBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateBookmarkResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateBookmarkResponseMultiError, or nil if none found.
+func (m *UpdateBookmarkResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateBookmarkResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return UpdateBookmarkResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateBookmarkResponseMultiError is an error wrapping multiple validation
+// errors returned by UpdateBookmarkResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateBookmarkResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateBookmarkResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateBookmarkResponseMultiError) AllErrors() []error { return m }
+
+// UpdateBookmarkResponseValidationError is the validation error returned by
+// UpdateBookmarkResponse.Validate if the designated constraints aren't met.
+type UpdateBookmarkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateBookmarkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateBookmarkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateBookmarkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateBookmarkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateBookmarkResponseValidationError) ErrorName() string {
+	return "UpdateBookmarkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateBookmarkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateBookmarkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateBookmarkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateBookmarkResponseValidationError{}
 
 // Validate checks the field values on RemoveBookmarkRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -21151,13 +21381,21 @@ func (m *Bookmark) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Description
+
 	// no validation rules for Data
 
-	// no validation rules for DashboardName
+	// no validation rules for ResourceKind
+
+	// no validation rules for ResourceName
 
 	// no validation rules for ProjectId
 
 	// no validation rules for UserId
+
+	// no validation rules for Default
+
+	// no validation rules for Shared
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

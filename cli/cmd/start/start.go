@@ -1,12 +1,12 @@
 package start
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -42,8 +42,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-
 			var projectPath string
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -56,7 +54,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					projectPath = repoName
 				}
 			} else if !rillv1beta.HasRillProject("") {
-				if !cfg.Interactive {
+				if !ch.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
 
@@ -84,7 +82,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
 				confirm := cmdutil.ConfirmPrompt(msg, "", defval)
 				if !confirm {
-					ch.Printer.PrintlnWarn("Aborted")
+					ch.PrintfWarn("Aborted\n")
 					return nil
 				}
 			}
@@ -95,7 +93,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if n > maxProjectFiles {
-				ch.Printer.PrintlnError(fmt.Sprintf("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.", maxProjectFiles, n))
+				ch.PrintfError("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.\n", maxProjectFiles, n)
 				return nil
 			}
 
@@ -114,6 +112,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// Parser variables from "a=b" format to map
+			varsMap, err := parseVariables(vars)
+			if err != nil {
+				return err
+			}
+
 			// If keypath or certpath provided, but not the other, display error
 			// If keypath and certpath provided, check if the file exists
 			if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
@@ -130,7 +134,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			client := activity.NewNoopClient()
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
-				Version:     cfg.Version,
+				Version:     ch.Version,
 				Verbose:     verbose,
 				Debug:       debug,
 				Reset:       reset,
@@ -139,10 +143,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				OlapDSN:     olapDSN,
 				ProjectPath: projectPath,
 				LogFormat:   parsedLogFormat,
-				Variables:   vars,
+				Variables:   varsMap,
 				Activity:    client,
-				AdminURL:    cfg.AdminURL,
-				AdminToken:  cfg.AdminToken(),
+				AdminURL:    ch.AdminURL,
+				AdminToken:  ch.AdminToken(),
 			})
 			if err != nil {
 				return err
@@ -150,8 +154,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer app.Close()
 
 			userID := ""
-			if cfg.IsAuthenticated() {
-				userID, _ = cmdutil.FetchUserID(context.Background(), cfg)
+			if ch.IsAuthenticated() {
+				user, _ := ch.CurrentUser(cmd.Context())
+				if user != nil {
+					userID = user.Id
+				}
 			}
 
 			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, certPath, keyPath)
@@ -218,4 +225,18 @@ func countFilesInDirectory(path string) (int, error) {
 	}
 
 	return fileCount, nil
+}
+
+func parseVariables(vals []string) (map[string]string, error) {
+	res := make(map[string]string)
+	for _, v := range vals {
+		v, err := godotenv.Unmarshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse variable %q: %w", v, err)
+		}
+		for k, v := range v {
+			res[k] = v
+		}
+	}
+	return res, nil
 }

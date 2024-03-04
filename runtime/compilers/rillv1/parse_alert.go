@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,7 +46,7 @@ type AlertYAML struct {
 }
 
 // parseAlert parses an alert definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
+func (p *Parser) parseAlert(node *Node) error {
 	// Parse YAML
 	tmp := &AlertYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)

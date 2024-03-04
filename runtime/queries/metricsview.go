@@ -159,13 +159,13 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	data, err := rowsToData(rows)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, err
 	}
 
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
@@ -179,13 +179,13 @@ func olapQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql st
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	data, err := rowsToData(rows)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, err
 	}
 
 	return rows.Schema, data, nil
@@ -228,7 +228,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string, dialect drivers.Dialect) (string, bool) {
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string) (string, bool) {
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
 		if dim.Name == name {
@@ -309,7 +309,7 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident, dialect)
+		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident)
 		if !isIdent {
 			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
@@ -400,7 +400,7 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 
 func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) <= 1 {
-		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
+		return "", nil, fmt.Errorf("in/not in expression should have at least 2 sub expressions")
 	}
 
 	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
@@ -473,7 +473,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 
 func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
 	if len(cond.Exprs) == 0 {
-		return "", nil, fmt.Errorf("or/and expression should have atleast 1 sub expressions")
+		return "", nil, fmt.Errorf("or/and expression should have at least 1 sub expression")
 	}
 
 	clauses := make([]string, 0)

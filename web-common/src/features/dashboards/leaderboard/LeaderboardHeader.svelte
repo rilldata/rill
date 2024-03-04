@@ -84,7 +84,7 @@
       <Tooltip distance={16} location="top">
         <button
           on:click={() => setPrimaryDimension(dimensionName)}
-          class="ui-copy-primary pl-2 truncate flex justify-start"
+          class="ui-header-primary pl-2 truncate flex justify-start"
           style="max-width: calc(315px - 60px);"
           style:width="100%"
           aria-label="Open dimension details"

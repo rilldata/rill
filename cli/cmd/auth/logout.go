@@ -15,12 +15,11 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "logout",
 		Short: "Logout of the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
 			ctx := cmd.Context()
 
-			token := cfg.AdminToken()
+			token := ch.AdminToken()
 			if token == "" {
-				ch.Printer.PrintlnWarn("You are already logged out.")
+				ch.PrintfWarn("You are already logged out.\n")
 				return nil
 			}
 
@@ -29,7 +28,7 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Successfully logged out.")
+			ch.PrintfSuccess("Successfully logged out.\n")
 			return nil
 		},
 	}
@@ -37,16 +36,14 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func Logout(ctx context.Context, ch *cmdutil.Helper) error {
-	cfg := ch.Config
-	client, err := cmdutil.Client(cfg)
+	client, err := ch.Client()
 	if err != nil {
 		return err
 	}
-	defer client.Close()
 
 	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 	if err != nil {
-		ch.Printer.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
+		ch.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
 	}
 
 	err = dotrill.SetAccessToken("")
@@ -72,7 +69,7 @@ func Logout(ctx context.Context, ch *cmdutil.Helper) error {
 		return err
 	}
 
-	cfg.AdminTokenDefault = ""
+	ch.AdminTokenDefault = ""
 
 	return nil
 }

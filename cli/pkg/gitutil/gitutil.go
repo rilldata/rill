@@ -39,8 +39,10 @@ type Remote struct {
 	URL  string
 }
 
-func ExtractRemotes(projectPath string) ([]Remote, error) {
-	repo, err := git.PlainOpen(projectPath)
+func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
+	repo, err := git.PlainOpenWithOptions(projectPath, &git.PlainOpenOptions{
+		DetectDotGit: detectDotGit,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +136,8 @@ func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
 	return account, repo, true
 }
 
-func ExtractGitRemote(projectPath, remoteName string) (*Remote, string, error) {
-	remotes, err := ExtractRemotes(projectPath)
+func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (*Remote, string, error) {
+	remotes, err := ExtractRemotes(projectPath, detectDotGit)
 	if err != nil {
 		return nil, "", err
 	}

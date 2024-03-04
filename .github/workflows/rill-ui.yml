@@ -11,6 +11,7 @@ on:
       - ".github/workflows/rill-ui.yml"
       - "web-admin/**"
       - "web-common/**"
+      - "netlify.toml"
   workflow_dispatch:
     inputs:
       env:

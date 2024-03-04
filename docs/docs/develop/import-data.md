@@ -174,19 +174,19 @@ A live connection enables users to discover existing tables and perform OLAP que
 OLAP driver can be configured by passing additional `--db-driver` config in `rill start` CLI command. 
 The default OLAP engine is DuckDB. 
 
-### Clickhouse 
-Steps for configuring a Rill and Clickhouse connection - 
+### ClickHouse
+Steps for configuring a Rill and ClickHouse connection - 
 ```bash
-# Connecting to clickhouse local
+# Connecting to ClickHouse local
 rill start --db-driver clickhouse --db "clickhouse://localhost:9000"
 
-# Connecting to clickhouse cluster 
+# Connecting to ClickHouse cluster 
 rill start --db-driver clickhouse --db "<clickhouse://<host>:<port>?username=<username>&password=<pass>>"
 ```
-This would open up browser and shows all the existing clickhouse tables in Rill. Dashboards can be then created on top of existing source.
-Note: Data modeling is not supported for clickhouse driver at the moment.
+This would open up browser and shows all the existing ClickHouse tables in Rill. Dashboards can be then created on top of existing source.
+Note: Data modeling is not supported for ClickHouse driver at the moment.
 
-#### Deploying a Clickhouse project to Rill cloud
+#### Deploying a ClickHouse project to Rill cloud
 The driver and the dsn can be passed in the `rill deploy` command as below - 
 ```bash
 rill deploy --prod-db-driver clickhouse --prod-db-dsn <clickhouse_dsn>

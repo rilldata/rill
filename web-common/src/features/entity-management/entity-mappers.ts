@@ -47,10 +47,12 @@ export function getFileAPIPathFromNameAndType(
       return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
       return `dashboards/${name}.yaml`;
+    case EntityType.Chart:
+      return `charts/${name}.yaml`;
+    case EntityType.Dashboard:
+      return `custom-dashboards/${name}.yaml`;
     default:
-      throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
-      );
+      throw new Error("Unrecognized EntityType");
   }
 }
 
@@ -70,10 +72,12 @@ export function getRouteFromName(name: string, type: EntityType): string {
       return `/model/${name}`;
     case EntityType.MetricsDefinition:
       return `/dashboard/${name}`;
+    case EntityType.Chart:
+      return `/chart/${name}`;
+    case EntityType.Dashboard:
+      return `/custom-dashboard/${name}`;
     default:
-      throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
-      );
+      throw new Error("Unrecognized EntityType");
   }
 }
 
@@ -85,9 +89,11 @@ export function getLabel(entityType: EntityType) {
       return "model";
     case EntityType.MetricsDefinition:
       return "dashboard";
+    case EntityType.Chart:
+      return "chart";
+    case EntityType.Dashboard:
+      return "custom dashboard";
     default:
-      throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
-      );
+      throw new Error("Unrecognized EntityType");
   }
 }

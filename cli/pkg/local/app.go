@@ -18,11 +18,9 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/rilldata/rill/cli/pkg/update"
-	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -68,7 +66,7 @@ type App struct {
 	Instance              *drivers.Instance
 	Logger                *zap.SugaredLogger
 	BaseLogger            *zap.Logger
-	Version               config.Version
+	Version               cmdutil.Version
 	Verbose               bool
 	Debug                 bool
 	ProjectPath           string
@@ -78,7 +76,7 @@ type App struct {
 }
 
 type AppOptions struct {
-	Version     config.Version
+	Version     cmdutil.Version
 	Verbose     bool
 	Debug       bool
 	Reset       bool
@@ -87,7 +85,7 @@ type AppOptions struct {
 	OlapDSN     string
 	ProjectPath string
 	LogFormat   LogFormat
-	Variables   []string
+	Variables   map[string]string
 	Activity    activity.Client
 	AdminURL    string
 	AdminToken  string
@@ -127,11 +125,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
 		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
 		logger.Info("Dropping old stage.db file and rebuilding project")
-	}
-
-	parsedVariables, err := variable.Parse(opts.Variables)
-	if err != nil {
-		return nil, err
 	}
 
 	// Create a local runtime with an in-memory metastore
@@ -193,7 +186,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
-		val, err := isExternalStorageEnabled(dbDirPath, parsedVariables)
+		val, err := isExternalStorageEnabled(dbDirPath, opts.Variables)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +265,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		AIConnector:      aiConnector.Name,
 		CatalogConnector: catalogConnector.Name,
 		Connectors:       connectors,
-		Variables:        parsedVariables,
+		Variables:        opts.Variables,
 		Annotations:      map[string]string{},
 		WatchRepo:        true,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
@@ -553,7 +546,7 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			// Send proxied request
 			resp, err := http.DefaultClient.Do(proxyReq)
 			if err != nil {
-				a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+				a.BaseLogger.Debug("failed to send telemetry", zap.Error(err))
 				w.WriteHeader(http.StatusOK)
 				return
 			}
