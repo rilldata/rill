@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createAdminServiceRemoveBookmark } from "@rilldata/web-admin/client";
   import type { BookmarkEntry } from "@rilldata/web-common/features/bookmarks/selectors";
   import { PencilIcon, TrashIcon, BookmarkIcon } from "lucide-svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
@@ -10,7 +9,6 @@
   export let bookmark: BookmarkEntry;
 
   const dispatch = createEventDispatcher();
-  const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   function selectBookmark(e) {
     if (e.skipSelection) return;
@@ -22,11 +20,9 @@
     dispatch("edit", bookmark);
   }
 
-  async function deleteBookmark(e) {
+  function deleteBookmark(e) {
     e.skipSelection = true;
-    await $bookmarkDeleter.mutateAsync({
-      bookmarkId: bookmark.resource.id as string,
-    });
+    dispatch("delete", bookmark);
   }
 
   let hovered = false;

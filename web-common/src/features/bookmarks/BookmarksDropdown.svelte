@@ -1,6 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceRemoveBookmark,
+    getAdminServiceListBookmarksQueryKey,
+  } from "@rilldata/web-admin/client";
+  import {
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
@@ -10,9 +14,14 @@
   import { createHomeBookmarkModifier } from "@rilldata/web-common/features/bookmarks/createOrUpdateHomeBookmark";
   import EditBookmarkDialog from "@rilldata/web-common/features/bookmarks/EditBookmarkDialog.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
-  import type { BookmarkEntry } from "@rilldata/web-common/features/bookmarks/selectors";
+  import {
+    type BookmarkEntry,
+    useProjectId,
+  } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
 
   $: metricsViewName = $page.params.dashboard;
@@ -27,16 +36,40 @@
   );
 
   $: dashboardStore = useDashboardStore(metricsViewName);
+  $: projectId = useProjectId($page.params.organization, $page.params.project);
 
+  const queryClient = useQueryClient();
   const homeBookmarkModifier = createHomeBookmarkModifier();
+  const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
-  function onSelect(bookmark: BookmarkEntry) {
+  function selectBookmark(bookmark: BookmarkEntry) {
     bookmarkApplier(bookmark.resource);
   }
 
   async function createHomeBookmark() {
     await homeBookmarkModifier(
       getBookmarkDataForDashboard($dashboardStore, false, false),
+    );
+    return queryClient.refetchQueries(
+      getAdminServiceListBookmarksQueryKey({
+        projectId: $projectId.data ?? "",
+        resourceKind: ResourceKind.MetricsView,
+        resourceName: metricsViewName,
+      }),
+    );
+  }
+
+  async function deleteBookmark(bookmark: BookmarkEntry) {
+    // TODO: add confirmation
+    await $bookmarkDeleter.mutateAsync({
+      bookmarkId: bookmark.resource.id as string,
+    });
+    return queryClient.refetchQueries(
+      getAdminServiceListBookmarksQueryKey({
+        projectId: $projectId.data ?? "",
+        resourceKind: ResourceKind.MetricsView,
+        resourceName: metricsViewName,
+      }),
     );
   }
 
@@ -50,11 +83,12 @@
   <BookmarksContent
     on:create={() => (createBookmark = true)}
     on:create-home={() => createHomeBookmark()}
+    on:delete={({ detail }) => deleteBookmark(detail)}
     on:edit={({ detail }) => {
       editBookmark = true;
       bookmark = detail;
     }}
-    on:select={({ detail }) => onSelect(detail)}
+    on:select={({ detail }) => selectBookmark(detail)}
   />
 </DropdownMenu>
 

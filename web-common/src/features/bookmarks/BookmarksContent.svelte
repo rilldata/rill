@@ -49,7 +49,7 @@
           Your bookmarks
         </DropdownMenuLabel>
         {#each $bookmarks.data.personal as bookmark}
-          <BookmarkItem {bookmark} on:edit on:select />
+          <BookmarkItem {bookmark} on:edit on:select on:delete />
         {/each}
       </DropdownMenuGroup>
     {/if}
@@ -61,10 +61,15 @@
           <div class="text-[11px] font-normal">Created by project admin</div>
         </DropdownMenuLabel>
         {#if $bookmarks.data.home}
-          <BookmarkItem bookmark={$bookmarks.data.home} on:edit on:select />
+          <BookmarkItem
+            bookmark={$bookmarks.data.home}
+            on:edit
+            on:select
+            on:delete
+          />
         {/if}
         {#each $bookmarks.data.shared as bookmark}
-          <BookmarkItem {bookmark} on:edit on:select />
+          <BookmarkItem {bookmark} on:edit on:select on:delete />
         {/each}
       </DropdownMenuGroup>
     {/if}

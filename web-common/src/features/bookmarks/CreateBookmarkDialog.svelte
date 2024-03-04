@@ -7,8 +7,10 @@
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import BookmarkFormSwitches from "@rilldata/web-common/features/bookmarks/BookmarkFormSwitches.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import BookmarkTimeRangeSwitch from "@rilldata/web-common/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-common/features/bookmarks/getBookmarkDataForDashboard";
   import { useProjectId } from "@rilldata/web-common/features/bookmarks/selectors";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -79,7 +81,9 @@
   <form
     class="flex flex-col gap-4 z-50"
     id="create-bookmark-dialog"
-    on:submit|preventDefault={handleSubmit}
+    on:submit|preventDefault={() => {
+      /* Switch was triggering this causing clicking on them submitting the form */
+    }}
     slot="body"
   >
     <InputV2
@@ -104,7 +108,14 @@
         { value: "true", label: "Default bookmarks" },
       ]}
     />
-    <BookmarkFormSwitches {formState} {metricsViewName} />
+    <div class="flex items-center space-x-2">
+      <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
+      <Label for="filtersOnly">Save filters only</Label>
+    </div>
+    <BookmarkTimeRangeSwitch
+      bind:checked={$form["absoluteTimeRange"]}
+      {metricsViewName}
+    />
   </form>
   <div class="flex flex-row mt-4 gap-2" slot="footer">
     <Button on:click={handleClose} type="secondary">Cancel</Button>
