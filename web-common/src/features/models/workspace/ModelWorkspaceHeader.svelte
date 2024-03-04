@@ -53,7 +53,7 @@
   );
 
   function formatModelName(str) {
-    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
+    return str.replace(/\.sql/, "");
   }
 
   const onChangeCallback = async (e) => {
