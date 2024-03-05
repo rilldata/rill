@@ -1,13 +1,20 @@
 ---
-title: Overview
-sidebar_label: Overview
+title: Share Projects 
+sidebar_label: Share Projects 
 sidebar_position: 00
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-Follow this tutorial to deploy an existing Rill project to Rill Cloud. Deploying a project makes its dashboards available online and enables you to invite others to access it.
-Flow diagram below shows the steps needed for deploying an existing project.  
+## Overview
+
+Follow this tutorial to deploy an existing Rill project to Rill Cloud. Deploying a project makes its dashboards available online and enables you to invite others to access it. Benefits of deploying your project:
+
+- Share dashboards with other users
+- Leverage Rill Cloud capabililies like [scheduled reports](../../explore/exports.md) and [alerts](../../explore/alerts.md) 
+- [Embed Rill](../../integrate/embedding.md) in other applications
+
+The flow diagram below shows the steps needed for deploying an existing project.  
 ```mermaid
 graph LR;
     A(Local code files);
@@ -37,7 +44,7 @@ The CLI will guide you through authenticating with Rill Cloud and granting read-
 :::tip configure credentials
 Cloud datastores will require service keys to access data. Make sure to create the necessary key and then run ```rill env configure``` with the correct credentials. 
 
-More details on credentials by source can be found in our [connectors section](../build/credentials/credentials.md). 
+More details on credentials by source can be found in our [connectors section](../../build/credentials/credentials.md). 
 :::
 
 
