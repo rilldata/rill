@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
+func (s *Server) apiForName(w http.ResponseWriter, req *http.Request) {
 	if !auth.GetClaims(req.Context()).CanInstance(req.PathValue("instance_id"), auth.ReadOLAP) {
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -59,6 +59,7 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		w.Write(errorResponse(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -73,6 +74,7 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorResponse(err))
 		return
 	}
 
@@ -82,4 +84,17 @@ func (s *Server) APIForName(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
 		return
 	}
+}
+
+func errorResponse(err error) []byte {
+	data := map[string]string{
+		"error": err.Error(),
+	}
+
+	jsonString, err := json.Marshal(data)
+	if err != nil {
+		return nil
+	}
+
+	return jsonString
 }
