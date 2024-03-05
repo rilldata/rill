@@ -9,7 +9,7 @@ import (
 
 type ChartYaml struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
+	Title      string `yaml:"title"`
 	Data       struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
@@ -59,6 +59,9 @@ func (p *Parser) parseChart(ctx context.Context, node *Node) error {
 
 	if tmp.VegaLite == "" {
 		return errors.New(`missing vega_lite configuration`)
+	}
+	if !json.Valid([]byte(tmp.VegaLite)) {
+		return errors.New(`failed to parse "vega_lite" as JSON`)
 	}
 
 	// Track chart
