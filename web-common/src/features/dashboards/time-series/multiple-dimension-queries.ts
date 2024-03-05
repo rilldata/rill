@@ -233,7 +233,7 @@ export function getDimensionValueTimeSeries(
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
-      const topListValues: string[] = dimensionValues?.values;
+      const topListValues = dimensionValues?.values || [];
       // create a copy
       const updatedFilter =
         filterExpressions(dimensionValues?.filter, () => true) ??
@@ -288,6 +288,7 @@ export function getDimensionValueTimeSeries(
           console.log("topListData", topListData?.data?.data);
 
           const transformedData = transformAggregateDimensionData(
+            timeDimension,
             dimensionName,
             topListValues,
             topListData?.data?.data,
@@ -295,7 +296,7 @@ export function getDimensionValueTimeSeries(
           console.log("transformedData", transformedData);
           return topListValues?.map((value, i) => {
             const prepData = prepareTimeSeries(
-              transformedData,
+              transformedData[i],
               undefined,
               TIME_GRAIN[timeGrain]?.duration,
               timeZone,

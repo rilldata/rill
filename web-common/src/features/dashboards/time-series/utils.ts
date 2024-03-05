@@ -139,34 +139,37 @@ export function getFilterForComparedDimension(
 }
 
 export function transformAggregateDimensionData(
+  timeDimension: string,
   dimensionName: string,
   values: string[],
   response: V1MetricsViewAggregationResponseDataItem[],
 ) {
-  const aggregatedMap: Record<
-    string,
-    V1MetricsViewAggregationResponseDataItem[]
-  > = {};
+  const aggregatedMap: Record<string, V1TimeSeriesValue[]> = {};
 
   const valuesMap = createIndexMap(values);
 
   // The response has the values alphabetically and time sorted
   for (const cell of response) {
-    const key = cell[dimensionName] as string;
+    const { [dimensionName]: key, [timeDimension]: ts, ...rest } = cell;
+    const timeSeriesCell: V1TimeSeriesValue = {
+      ts,
+      bin: 0,
+      records: { ...rest },
+    };
 
     if (!(key in aggregatedMap)) {
-      aggregatedMap[key] = [cell];
+      aggregatedMap[key] = [timeSeriesCell];
     } else {
-      aggregatedMap[key].push(cell);
+      aggregatedMap[key].push(timeSeriesCell);
     }
   }
 
-  const data = new Array(values.length);
+  const data: V1TimeSeriesValue[][] = new Array(values.length).fill([]);
 
   for (const value of values) {
     const rowIndex = valuesMap.get(value);
     if (rowIndex === undefined) {
-      return;
+      return data;
     }
     data[rowIndex] = aggregatedMap[value];
   }
