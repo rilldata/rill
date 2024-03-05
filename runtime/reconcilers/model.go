@@ -435,7 +435,7 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 				State: state,
 			},
 			Resolve: func(ref compilerv1.ResourceName) (string, error) {
-				return SafeSQLName(ref.Name), nil
+				return safeSQLName(ref.Name), nil
 			},
 			Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 				if name.Kind == compilerv1.ResourceKindUnspecified {

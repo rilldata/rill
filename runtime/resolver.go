@@ -11,7 +11,7 @@ import (
 )
 
 type Result struct {
-	Rows  []byte
+	Data  []byte // marshalled array of Jsons
 	Cache bool
 }
 
@@ -51,7 +51,7 @@ type APIResolverOptions struct {
 func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
 	resolverInitializer, ok := APIResolverInitializers[opts.API.Spec.Resolver]
 	if !ok {
-		return nil, fmt.Errorf("no resolver found of type %s", opts.API.Spec.Resolver)
+		return nil, fmt.Errorf("no resolver found of type %q", opts.API.Spec.Resolver)
 	}
 	resolver, err := resolverInitializer(ctx, opts)
 	if err != nil {
@@ -102,9 +102,9 @@ func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
 		}
 
 		if res.Cache {
-			opts.Runtime.queryCache.cache.Set(key, res.Rows, int64(len(res.Rows)))
+			opts.Runtime.queryCache.cache.Set(key, res.Data, int64(len(res.Data)))
 		}
-		return res.Rows, nil
+		return res.Data, nil
 	})
 	if err != nil {
 		return nil, err

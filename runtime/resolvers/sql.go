@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -14,12 +15,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/queries"
-	"github.com/rilldata/rill/runtime/reconcilers"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
-	runtime.RegisterAPIResolverInitializer("SQL", New)
+	runtime.RegisterAPIResolverInitializer("SQL", newSQL)
 }
 
 type SQLResolver struct {
@@ -29,7 +29,7 @@ type SQLResolver struct {
 	releaseFunc func()
 }
 
-func New(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
+func newSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
 	sql := opts.API.Spec.ResolverProperties.Fields["sql"].GetStringValue()
 	if sql == "" {
 		return nil, errors.New("no sql query found for sql resolver")
@@ -95,7 +95,7 @@ func (r *SQLResolver) ResolveInteractive(ctx context.Context, priority int) (run
 	}
 
 	return runtime.Result{
-		Rows:  b,
+		Data:  b,
 		Cache: r.olap.Dialect() == drivers.DialectDuckDB,
 	}, nil
 }
@@ -206,7 +206,7 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 			State: opts.API.State,
 		},
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return reconcilers.SafeSQLName(ref.Name), nil
+			return safeSQLName(ref.Name), nil
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 			// TODO: Implement this, do we need to support this?
@@ -260,4 +260,12 @@ func connectorToDialect(connector string) drivers.Dialect {
 	default:
 		return drivers.DialectUnspecified
 	}
+}
+
+// safeSQLName returns a quoted SQL identifier.
+func safeSQLName(name string) string {
+	if name == "" {
+		return name
+	}
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
