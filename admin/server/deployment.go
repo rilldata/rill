@@ -319,22 +319,29 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	s.admin.Used.Deployment(prodDepl.ID)
 
-	if req.Kind == "" {
-		req.Kind = runtime.ResourceKindMetricsView
-	}
-
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
-		"kind":         req.Kind,
-		"resource":     req.Resource,
-		"state":        req.State,
+	}
+	if req.Kind == "" {
+		iframeQuery["kind"] = runtime.ResourceKindMetricsView
+	} else {
+		iframeQuery["kind"] = req.Kind
+	}
+	if req.Resource != "" {
+		iframeQuery["resource"] = req.Resource
+	}
+	if req.Theme != "" {
+		iframeQuery["theme"] = req.Theme
+	}
+	if req.Navigation {
+		iframeQuery["navigation"] = "true"
+	}
+	if req.State != "" {
+		iframeQuery["state"] = req.State
 	}
 	for k, v := range req.Query {
-		if _, ok := iframeQuery[k]; ok {
-			return nil, status.Errorf(codes.InvalidArgument, "query parameter %q is reserved", k)
-		}
 		iframeQuery[k] = v
 	}
 
