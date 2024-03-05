@@ -1,6 +1,5 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
-  import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/delivery-tab/intervals";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
@@ -9,7 +8,6 @@
   import { useMetricsView } from "../../dashboards/selectors";
 
   export let formState: any; // svelte-forms-lib's FormState
-  export let isEditForm: boolean;
 
   const { form, errors, handleChange } = formState;
 
