@@ -7,13 +7,6 @@ export function getBookmarkDataForDashboard(
   filtersOnly: boolean,
   absoluteTimeRange: boolean,
 ): string {
-  if (filtersOnly) {
-    return getProtoFromDashboardState({
-      whereFilter: dashboard.whereFilter,
-      dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-    } as MetricsExplorerEntity);
-  }
-
   if (absoluteTimeRange) {
     dashboard = {
       ...dashboard,
@@ -40,6 +33,14 @@ export function getBookmarkDataForDashboard(
         end: dashboard.selectedComparisonTimeRange.end,
       };
     }
+  }
+
+  if (filtersOnly) {
+    return getProtoFromDashboardState({
+      whereFilter: dashboard.whereFilter,
+      dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
+      selectedTimeRange: dashboard.selectedTimeRange,
+    } as MetricsExplorerEntity);
   }
 
   return getProtoFromDashboardState(dashboard);

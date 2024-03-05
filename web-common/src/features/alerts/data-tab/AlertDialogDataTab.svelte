@@ -57,6 +57,8 @@
       <FilterChipsReadOnly
         metricsViewName={$form["metricsViewName"]}
         filters={$form["whereFilter"]}
+        dimensionThresholdFilters={[]}
+        timeRange={$form["timeRange"]}
       />
     {:else}
       <NoFiltersSelected {isEditForm} />

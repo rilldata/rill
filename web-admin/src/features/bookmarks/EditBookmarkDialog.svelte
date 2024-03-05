@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import BookmarkFiltersFormSection from "@rilldata/web-admin/features/bookmarks/BookmarkFiltersFormSection.svelte";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import {
     createAdminServiceUpdateBookmark,
@@ -95,6 +96,7 @@
       id="displayName"
       label="Name"
     />
+    <BookmarkFiltersFormSection {metricsViewName} />
     <InputV2
       bind:value={$form["description"]}
       error={$errors["description"]}

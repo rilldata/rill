@@ -8,6 +8,7 @@ import {
   forEachExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   MetricsViewSpecMeasureV2,
   V1Expression,
@@ -81,18 +82,28 @@ export const getMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   return (measureIdMap: Map<string, MetricsViewSpecMeasureV2>) => {
-    const filteredMeasures = new Array<MeasureFilterItem>();
-    const addedMeasure = new Set<string>();
-
-    for (const dtf of dashData.dashboard.dimensionThresholdFilters) {
-      filteredMeasures.push(
-        ...getMeasureFilters(measureIdMap, dtf.filter, dtf.name, addedMeasure),
-      );
-    }
-
-    return filteredMeasures;
+    return getMeasureAllFilters(
+      measureIdMap,
+      dashData.dashboard.dimensionThresholdFilters,
+    );
   };
 };
+
+export function getMeasureAllFilters(
+  measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
+  dimensionThresholdFilters: DimensionThresholdFilter[],
+) {
+  const filteredMeasures = new Array<MeasureFilterItem>();
+  const addedMeasure = new Set<string>();
+
+  for (const dtf of dimensionThresholdFilters) {
+    filteredMeasures.push(
+      ...getMeasureFilters(measureIdMap, dtf.filter, dtf.name, addedMeasure),
+    );
+  }
+
+  return filteredMeasures;
+}
 
 export function getMeasureFilters(
   measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
