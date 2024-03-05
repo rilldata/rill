@@ -101,7 +101,7 @@
     this={isMeasureExpanded ? "div" : "button"}
     role={isMeasureExpanded ? "presentation" : "button"}
     tabindex={isMeasureExpanded ? -1 : 0}
-    class="group big-number m-0.5 rounded flex items-start"
+    class="group big-number"
     class:shadow-grad={!isMeasureExpanded}
     class:cursor-pointer={!isMeasureExpanded}
     on:click={(e) => {
@@ -111,107 +111,101 @@
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     use:shiftClickAction
   >
-    <div
-      class="flex flex-col px-2 text-left w-full h-full
-    {withTimeseries ? 'py-3' : 'py-1 justify-between'}
-    "
+    <h2
+      class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"
+      style:font-size={withTimeseries ? "" : "0.8rem"}
     >
-      <h2
-        style:overflow-wrap="anywhere"
-        class="line-clamp-2 ui-header-primary font-semibold"
-        style:font-size={withTimeseries ? "" : "0.8rem"}
-      >
-        {name}
-      </h2>
-      <div
-        class="ui-copy-muted relative"
-        style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
-        style:font-weight="light"
-      >
-        <div>
-          {#if value !== null && status === EntityStatus.Idle}
-            <div class="w-full overflow-hidden text-ellipsis">
-              <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-                {measureValueFormatter(output)}
-              </WithTween>
-            </div>
-            {#if showComparison && comparisonOption && comparisonValue}
-              <div class="flex items-baseline gap-x-3">
-                {#if comparisonValue != null}
-                  <div
-                    role="complementary"
-                    on:mouseenter={() =>
-                      (hoveredValue =
-                        measureValueFormatterUnabridged(diff) ?? "no data")}
-                    on:mouseleave={() =>
-                      (hoveredValue =
-                        measureValueFormatterUnabridged(value) ?? "no data")}
-                    class="w-max text-sm ui-copy-inactive"
-                    class:font-semibold={isComparisonPositive}
-                  >
-                    {#if !noChange}
-                      {formattedDiff}
-                    {:else}
-                      <span
-                        class="ui-copy-disabled-faint italic"
-                        style:font-size=".9em">no change</span
-                      >
-                    {/if}
-                  </div>
-                {/if}
-                {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
-                  <div
-                    role="complementary"
-                    on:mouseenter={() =>
-                      (hoveredValue = numberPartsToString(
-                        formatMeasurePercentageDifference(
-                          comparisonPercChange ?? 0,
-                        ),
-                      ))}
-                    on:mouseleave={() =>
-                      (hoveredValue =
-                        measureValueFormatterUnabridged(value) ?? "no data")}
-                    class="w-max text-sm
-              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
-                  >
-                    <WithTween
-                      value={comparisonPercChange}
-                      tweenProps={{ duration: 500 }}
-                      let:output
+      {name}
+    </h2>
+    <div
+      class="ui-copy-muted relative"
+      style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
+      style:font-weight="light"
+    >
+      <div>
+        {#if value !== null && status === EntityStatus.Idle}
+          <div class="w-full overflow-hidden text-ellipsis">
+            <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+              {measureValueFormatter(output)}
+            </WithTween>
+          </div>
+          {#if showComparison && comparisonOption && comparisonValue}
+            <div class="flex items-baseline gap-x-3">
+              {#if comparisonValue != null}
+                <div
+                  role="complementary"
+                  on:mouseenter={() =>
+                    (hoveredValue =
+                      measureValueFormatterUnabridged(diff) ?? "no data")}
+                  on:mouseleave={() =>
+                    (hoveredValue =
+                      measureValueFormatterUnabridged(value) ?? "no data")}
+                  class="w-max text-sm ui-copy-inactive"
+                  class:font-semibold={isComparisonPositive}
+                >
+                  {#if !noChange}
+                    {formattedDiff}
+                  {:else}
+                    <span
+                      class="ui-copy-disabled-faint italic"
+                      style:font-size=".9em">no change</span
                     >
-                      <PercentageChange
-                        tabularNumber={false}
-                        value={formatMeasurePercentageDifference(output)}
-                      />
-                    </WithTween>
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          {:else if status === EntityStatus.Error}
-            <CrossIcon />
-          {:else if status === EntityStatus.Running}
-            <div
-              class="absolute p-2"
-              class:bottom-0={withTimeseries}
-              in:receive={{ key: "spinner" }}
-              out:send={{ key: "spinner" }}
-            >
-              <Spinner status={EntityStatus.Running} />
+                  {/if}
+                </div>
+              {/if}
+              {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
+                <div
+                  role="complementary"
+                  on:mouseenter={() =>
+                    (hoveredValue = numberPartsToString(
+                      formatMeasurePercentageDifference(
+                        comparisonPercChange ?? 0,
+                      ),
+                    ))}
+                  on:mouseleave={() =>
+                    (hoveredValue =
+                      measureValueFormatterUnabridged(value) ?? "no data")}
+                  class="w-max text-sm
+              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
+                >
+                  <WithTween
+                    value={comparisonPercChange}
+                    tweenProps={{ duration: 500 }}
+                    let:output
+                  >
+                    <PercentageChange
+                      tabularNumber={false}
+                      value={formatMeasurePercentageDifference(output)}
+                    />
+                  </WithTween>
+                </div>
+              {/if}
             </div>
-          {:else if value === null}
-            <span class="ui-copy-disabled-faint italic text-sm">no data</span>
           {/if}
-        </div>
+        {:else if status === EntityStatus.Error}
+          <CrossIcon />
+        {:else if status === EntityStatus.Running}
+          <div
+            class="absolute p-2"
+            class:bottom-0={withTimeseries}
+            in:receive={{ key: "spinner" }}
+            out:send={{ key: "spinner" }}
+          >
+            <Spinner status={EntityStatus.Running} />
+          </div>
+        {:else if value === null}
+          <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+        {/if}
       </div>
     </div>
   </svelte:element>
 </Tooltip>
 
-<style>
+<style lang="postcss">
   .big-number {
-    width: 118px;
-    height: 85px;
+    @apply h-fit w-32 m-0.5 rounded p-2;
+    min-height: 85px;
+    @apply items-start flex flex-col text-left;
   }
 
   .shadow-grad:hover {
