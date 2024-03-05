@@ -149,9 +149,7 @@ export function getDurationMultiple(
   const durationObj = Duration.fromISO(duration);
   const totalDuration = durationObj.as("milliseconds");
   const newDuration = totalDuration * multiple;
-  return Duration.fromMillis(newDuration)
-    .shiftTo("days", "hours", "minutes", "seconds")
-    .toISO();
+  return getDurationFromMS(newDuration);
 }
 
 export function subtractFromPeriod(
@@ -161,4 +159,10 @@ export function subtractFromPeriod(
   const period_duration = PeriodToUnitsMap[period];
   if (!period_duration) return duration;
   return duration.minus({ [period_duration]: 1 });
+}
+
+export function getDurationFromMS(ms: number): string {
+  return Duration.fromMillis(ms)
+    .shiftTo("days", "hours", "minutes", "seconds")
+    .toISO();
 }
