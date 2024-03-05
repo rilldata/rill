@@ -43,6 +43,12 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
 	if srcCfg.Database != "" { // query to be run against an external DB
+		if !strings.HasPrefix(srcCfg.Database, "md:") {
+			srcCfg.Database, err = fileutil.ResolveLocalPath(srcCfg.Database, opts.RepoRoot, opts.AllowHostAccess)
+			if err != nil {
+				return err
+			}
+		}
 		return t.transferFromExternalDB(ctx, srcCfg, sinkCfg)
 	}
 
