@@ -1,4 +1,5 @@
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+import { createIndexMap } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   createAndExpression,
   filterExpressions,
@@ -7,6 +8,7 @@ import {
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import type {
   V1Expression,
+  V1MetricsViewAggregationResponseDataItem,
   V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
 import { removeZoneOffset } from "../../../lib/time/timezone";
@@ -134,4 +136,40 @@ export function getFilterForComparedDimension(
   }
 
   return { includedValues, updatedFilter };
+}
+
+export function transformAggregateDimensionData(
+  dimensionName: string,
+  values: string[],
+  response: V1MetricsViewAggregationResponseDataItem[],
+) {
+  const aggregatedMap: Record<
+    string,
+    V1MetricsViewAggregationResponseDataItem[]
+  > = {};
+
+  const valuesMap = createIndexMap(values);
+
+  // The response has the values alphabetically and time sorted
+  for (const cell of response) {
+    const key = cell[dimensionName] as string;
+
+    if (!(key in aggregatedMap)) {
+      aggregatedMap[key] = [cell];
+    } else {
+      aggregatedMap[key].push(cell);
+    }
+  }
+
+  const data = new Array(values.length);
+
+  for (const value of values) {
+    const rowIndex = valuesMap.get(value);
+    if (rowIndex === undefined) {
+      return;
+    }
+    data[rowIndex] = aggregatedMap[value];
+  }
+
+  return data;
 }

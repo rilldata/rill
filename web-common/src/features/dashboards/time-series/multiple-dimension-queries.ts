@@ -24,9 +24,14 @@ import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/t
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   V1Expression,
+  V1TimeGrain,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
-import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
+import {
+  getFilterForComparedDimension,
+  prepareTimeSeries,
+  transformAggregateDimensionData,
+} from "./utils";
 
 export interface DimensionDataItem {
   value: string | null;
@@ -74,10 +79,10 @@ export function getDimensionValuesForComparison(
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
-      if (!isValidMeasureList) return;
-
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
+
+      if (!isValidMeasureList || !dimensionName) return;
 
       // Values to be compared
       let comparisonValues: string[] = [];
@@ -217,7 +222,8 @@ export function getDimensionValueTimeSeries(
       const start = timeStore?.adjustedStart;
       const end = timeStore?.adjustedEnd;
       const timeGrain =
-        timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain;
+        (timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain) ||
+        V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
       const timeDimension = timeStore?.timeDimension;
       const isValidMeasureList =
@@ -265,10 +271,8 @@ export function getDimensionValueTimeSeries(
         },
       );
 
-      console.log(dimensionValues);
-
       return derived(aggQueryForTopList, (topListData) => {
-        if (topListData?.isFetching) {
+        if (topListData?.isFetching || !topListData?.data?.data) {
           return topListValues?.map((value) => {
             return {
               value,
@@ -280,32 +284,40 @@ export function getDimensionValueTimeSeries(
               data: [],
             };
           });
-        }
+        } else {
+          console.log("topListData", topListData?.data?.data);
 
-        console.log("topListData", topListData?.data?.data);
-
-        return topListValues?.map((value, i) => {
-          const prepData = prepareTimeSeries(
+          const transformedData = transformAggregateDimensionData(
+            dimensionName,
+            topListValues,
             topListData?.data?.data,
-            value,
-            TIME_GRAIN[timeGrain]?.duration,
-            timeZone,
           );
+          console.log("transformedData", transformedData);
+          return topListValues?.map((value, i) => {
+            const prepData = prepareTimeSeries(
+              transformedData,
+              undefined,
+              TIME_GRAIN[timeGrain]?.duration,
+              timeZone,
+            );
 
-          let total;
-          if (surface === "table") {
-            total = dimensionValues?.totals?.[i];
-          }
+            let total;
+            if (surface === "table") {
+              total = dimensionValues?.totals?.[i];
+            }
 
-          return {
-            value,
-            total,
-            strokeClass: "stroke-" + LINE_COLORS[i],
-            fillClass: CHECKMARK_COLORS[i] ? "fill-" + CHECKMARK_COLORS[i] : "",
-            data: prepData,
-            isFetching: topListData.isFetching,
-          };
-        });
+            return {
+              value,
+              total,
+              strokeClass: "stroke-" + LINE_COLORS[i],
+              fillClass: CHECKMARK_COLORS[i]
+                ? "fill-" + CHECKMARK_COLORS[i]
+                : "",
+              data: prepData,
+              isFetching: topListData.isFetching,
+            };
+          });
+        }
       }).subscribe(set);
       // return derived(
       //   (dimensionValues?.values ?? [])?.map((value, i) => {
