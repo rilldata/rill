@@ -86,7 +86,7 @@
   ) as Writable<number>;
 
   let hasNoError = 1;
-  let hasInspector = true;
+  // let hasInspector = true;
 </script>
 
 <div
@@ -105,8 +105,8 @@
   style:padding-right="{(1 - $visibilityTween) *
     SIDE_PAD *
     hasNoError *
-    (hasInspector ? 1 : 0)}px"
-  style:right="{hasInspector && hasNoError
+    (inspector ? 1 : 0)}px"
+  style:right="{inspector && hasNoError
     ? $inspectorWidth * $visibilityTween
     : 0}px"
 >

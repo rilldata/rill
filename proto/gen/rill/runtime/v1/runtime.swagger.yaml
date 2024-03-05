@@ -2783,7 +2783,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3423,10 +3423,16 @@ definitions:
     properties:
       chart:
         type: string
-      columns:
+      x:
         type: string
         format: int64
-      rows:
+      "y":
+        type: string
+        format: int64
+      width:
+        type: string
+        format: int64
+      height:
         type: string
         format: int64
   v1DashboardSpec:
@@ -3437,7 +3443,7 @@ definitions:
       gridColumns:
         type: string
         format: int64
-      gridRows:
+      gridGap:
         type: string
         format: int64
       components:

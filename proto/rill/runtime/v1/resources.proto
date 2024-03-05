@@ -411,7 +411,7 @@ message Dashboard {
 message DashboardSpec {
   string title = 1;
   int64 grid_columns = 2;
-  int64 grid_rows = 3;
+  int64 grid_gap = 3;
   repeated DashboardComponent components = 4;
 }
 
@@ -419,8 +419,10 @@ message DashboardState {}
 
 message DashboardComponent {
   string chart = 1;
-  int64 columns = 2;
-  int64 rows = 3;
+  int64 x = 2;
+  int64 y = 3;
+  int64 width = 4;
+  int64 height = 5;
 }
 
 // API defines a custom operation for querying data stored in Rill.

@@ -1310,7 +1310,7 @@ components:
 				GridRows:    4,
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
-					{Chart: "c2", Rows: 1, Columns: 2},
+					{Chart: "c2", Width: 1, Height: 2},
 				},
 			},
 		},
