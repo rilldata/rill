@@ -2,8 +2,12 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
+  import ReadOnlyTimeRange from "@rilldata/web-common/features/dashboards/filters/ReadOnlyTimeRange.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1Expression,
+    V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboard } from "../selectors";
@@ -14,6 +18,7 @@ The main feature-set component for dashboard filters
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
+  export let timeRange: V1TimeRange | undefined;
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
 
@@ -36,6 +41,9 @@ The main feature-set component for dashboard filters
 </script>
 
 <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
+  {#if timeRange}
+    <ReadOnlyTimeRange {timeRange} />
+  {/if}
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as { name, label, selectedValues } (name)}
       {@const dimension = dimensions.find((d) => d.name === name)}

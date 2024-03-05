@@ -11,7 +11,6 @@
   export let metricsViewName: string;
   export let measure: string;
   export let splitByDimension: string;
-  export let splitByTimeGrain: string;
   export let whereFilter: V1Expression;
   export let timeRange: V1TimeRange;
 
@@ -21,7 +20,6 @@
     metricsViewName,
     measure,
     splitByDimension,
-    splitByTimeGrain,
     whereFilter,
     criteria: undefined,
     timeRange,

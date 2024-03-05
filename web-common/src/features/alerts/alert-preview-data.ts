@@ -3,7 +3,6 @@ import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-
 import { getLabelForFieldName } from "@rilldata/web-common/features/alerts/utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { mapDurationToGrain } from "@rilldata/web-common/lib/time/grains";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
@@ -13,7 +12,6 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
   type V1MetricsViewSpec,
-  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/query-core";
@@ -30,7 +28,6 @@ export type AlertPreviewParams = Pick<
   | "timeRange"
   | "measure"
   | "splitByDimension"
-  | "splitByTimeGrain"
 > & {
   criteria: V1Expression | undefined;
 };
@@ -49,7 +46,7 @@ export function getAlertPreviewData(
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
         params.metricsViewName,
-        getAlertPreviewQueryRequest(params, metricsViewResp.data ?? {}),
+        getAlertPreviewQueryRequest(params),
         {
           query: getAlertPreviewQueryOptions(
             queryClient,
@@ -63,22 +60,10 @@ export function getAlertPreviewData(
 
 function getAlertPreviewQueryRequest(
   params: AlertPreviewParams,
-  metricsViewSpec: V1MetricsViewSpec,
 ): V1MetricsViewAggregationRequest {
   const dimensions: V1MetricsViewAggregationDimension[] = [];
   const sort: V1MetricsViewAggregationSort[] = [];
 
-  const pivotByTime =
-    !!params.splitByTimeGrain && !!metricsViewSpec?.timeDimension;
-  const grain = mapDurationToGrain(params.splitByTimeGrain ?? "");
-  if (pivotByTime && grain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
-    dimensions.push({
-      name: metricsViewSpec.timeDimension,
-      timeZone: "UTC", // TODO
-      timeGrain: grain,
-    });
-    sort.push({ name: metricsViewSpec.timeDimension, desc: true });
-  }
   if (params.splitByDimension) {
     dimensions.push({ name: params.splitByDimension });
     sort.push({ name: params.splitByDimension, desc: true });
@@ -89,7 +74,9 @@ function getAlertPreviewQueryRequest(
     dimensions,
     where: sanitiseExpression(params.whereFilter, undefined),
     having: sanitiseExpression(undefined, params.criteria),
-    timeRange: params.timeRange,
+    timeRange: {
+      isoDuration: params.timeRange.isoDuration,
+    },
     limit: "50", // arbitrary limit to make sure we do not pull too much of data
     sort,
   };

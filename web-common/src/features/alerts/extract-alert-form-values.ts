@@ -17,7 +17,6 @@ export type AlertFormValuesSubset = Pick<
   | "timeRange"
   | "measure"
   | "splitByDimension"
-  | "splitByTimeGrain"
   | "criteria"
   | "criteriaOperation"
 >;
@@ -29,25 +28,12 @@ export function extractAlertFormValues(
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
-
-  const dimensions: string[] = [];
-  const timeDimension: V1MetricsViewAggregationDimension[] = [];
-  queryArgs.dimensions?.forEach((dim) => {
-    if (
-      (metricsViewSpec.dimensions?.findIndex(
-        (dimSpec) => dimSpec.name === dim.name,
-      ) ?? -1) >= 0
-    ) {
-      dimensions.push(dim.name as string);
-    } else if (dim.name === metricsViewSpec.timeDimension) {
-      timeDimension.push(dim);
-    }
-  });
+  const dimensions =
+    queryArgs.dimensions as V1MetricsViewAggregationDimension[];
 
   return {
-    measure: measures[0].name as string,
-    splitByDimension: dimensions[0] ?? "",
-    splitByTimeGrain: queryArgs.timeRange?.isoDuration ?? "",
+    measure: measures[0]?.name ?? "",
+    splitByDimension: dimensions[0]?.name ?? "",
 
     criteria:
       queryArgs.having?.cond?.exprs?.map((e) => ({

@@ -45,6 +45,7 @@
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
+      splitByTimeGrain: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertFormValues(queryArgsJson, metricsViewSpec),
     },
     validationSchema: alertFormValidationSchema,
@@ -99,5 +100,5 @@
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
-  <BaseAlertForm isEditForm={true} {formState} on:close />
+  <BaseAlertForm {formState} isEditForm={true} on:close />
 </Dialog>

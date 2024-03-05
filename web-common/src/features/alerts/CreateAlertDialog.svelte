@@ -66,6 +66,7 @@
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
       timeRange: {
+        isoDuration: timeControls.selectedTimeRange?.name,
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
       },

@@ -1,4 +1,4 @@
-import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
+import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/delivery-tab/intervals";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
 import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";

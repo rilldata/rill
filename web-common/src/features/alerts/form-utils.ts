@@ -53,13 +53,9 @@ export function getAlertQueryArgsFromFormValues(
         ),
       ),
     ),
-    ...(formValues.splitByTimeGrain
-      ? {
-          timeRange: {
-            isoDuration: formValues.splitByTimeGrain,
-          },
-        }
-      : {}),
+    timeRange: {
+      isoDuration: formValues.timeRange.isoDuration,
+    },
   };
 }
 
