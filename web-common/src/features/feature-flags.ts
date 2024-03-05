@@ -1,6 +1,6 @@
 import type { BeforeNavigate } from "@sveltejs/kit";
-import { writable, derived } from "svelte/store";
 import type { Readable } from "svelte/store";
+import { derived, writable } from "svelte/store";
 
 export type DerivedReadables<T> = {
   [K in keyof T]: Readable<T[K]>;
@@ -14,6 +14,10 @@ const flags = {
   adminServer: false,
   readOnly: false,
   pivot: features?.includes("pivot") || false,
+  alerts: features?.includes("alerts") || false,
+  ai: true,
+  cloudDataViewer: features?.includes("data-viewer") || false,
+  customDashboards: features?.includes("custom-dashboards") || false,
 };
 
 export type FeatureFlags = typeof flags;
@@ -66,6 +70,5 @@ export const featureFlags = (() => {
 export function retainFeaturesFlags(navigation: BeforeNavigate) {
   const featureFlags = navigation?.from?.url?.searchParams.get("features");
   if (!featureFlags) return;
-
   navigation?.to?.url.searchParams.set("features", featureFlags);
 }

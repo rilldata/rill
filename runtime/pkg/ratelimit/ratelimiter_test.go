@@ -3,11 +3,12 @@ package ratelimit
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/alicebob/miniredis"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestRequestRateLimiter_Limit(t *testing.T) {

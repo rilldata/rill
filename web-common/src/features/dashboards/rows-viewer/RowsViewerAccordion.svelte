@@ -11,7 +11,6 @@
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { drag } from "../../../layout/drag";
   import type { LayoutElement } from "../../../layout/workspace/types";
-  import { featureFlags } from "../../feature-flags";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
 
@@ -100,8 +99,6 @@
     }
   }
 
-  $: isLocal = $featureFlags.readOnly === false;
-
   const rowsViewerLayout = writable<LayoutElement>({
     value: INITIAL_HEIGHT_EXPANDED,
     visible: true,
@@ -135,7 +132,7 @@
       {label}
     </button>
     <div class="ml-auto">
-      {#if isLocal}<ExportModelDataButton />{/if}
+      <ExportModelDataButton />
     </div>
   </div>
 

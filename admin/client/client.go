@@ -16,6 +16,7 @@ import (
 // It's a thin wrapper around the generated gRPC client for proto/rill/admin/v1.
 type Client struct {
 	adminv1.AdminServiceClient
+	adminv1.AIServiceClient
 	conn *grpc.ClientConn
 }
 
@@ -53,6 +54,7 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 
 	return &Client{
 		AdminServiceClient: adminv1.NewAdminServiceClient(conn),
+		AIServiceClient:    adminv1.NewAIServiceClient(conn),
 		conn:               conn,
 	}, nil
 }

@@ -88,7 +88,6 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		paths = append(paths, path)
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

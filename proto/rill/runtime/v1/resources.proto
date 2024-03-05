@@ -24,10 +24,14 @@ message Resource {
     MetricsViewV2 metrics_view = 5;
     Migration migration = 9;
     Report report = 10;
+    Alert alert = 12;
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
     Theme theme = 11;
+    Chart chart = 13;
+    Dashboard dashboard = 14;
+    API api = 15;
   }
 }
 
@@ -183,10 +187,16 @@ message MetricsViewSpec {
   string description = 4;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
+  // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+  string watermark_expression = 20;
   // Dimensions in the metrics view
   repeated DimensionV2 dimensions = 6;
+  // List of selected dimensions by defaults
+  repeated string default_dimensions = 18;
   // Measures in the metrics view
   repeated MeasureV2 measures = 7;
+  // List of selected measures by defaults
+  repeated string default_measures = 19;
   // Smallest time grain to show in the dashboard
   TimeGrain smallest_time_grain = 8;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
@@ -261,6 +271,67 @@ message ReportExecution {
   google.protobuf.Timestamp finished_on = 5;
 }
 
+message Alert {
+  AlertSpec spec = 1;
+  AlertState state = 2;
+}
+
+message AlertSpec {
+  bool trigger = 1;
+  string title = 2;
+  Schedule refresh_schedule = 3;
+  bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
+  string intervals_iso_duration = 5;
+  int32 intervals_limit = 6;
+  bool intervals_check_unclosed = 7;
+  uint32 timeout_seconds = 8;
+  string query_name = 9;
+  string query_args_json = 10;
+  oneof query_for {
+    string query_for_user_id = 11;
+    string query_for_user_email = 12;
+    google.protobuf.Struct query_for_attributes = 13;
+  }
+  repeated string email_recipients = 14;
+  bool email_on_recover = 15;
+  bool email_on_fail = 16;
+  bool email_on_error = 17;
+  bool email_renotify = 18;
+  uint32 email_renotify_after_seconds = 19;
+  map<string, string> annotations = 20;
+}
+
+message AlertState {
+  string spec_hash = 1;
+  string refs_hash = 2;
+  google.protobuf.Timestamp next_run_on = 3;
+  AlertExecution current_execution = 4;
+  repeated AlertExecution execution_history = 5;
+  uint32 execution_count = 6;
+}
+
+message AlertExecution {
+  bool adhoc = 1;
+  AssertionResult result = 2;
+  bool sent_emails = 3;
+  google.protobuf.Timestamp execution_time = 4;
+  google.protobuf.Timestamp started_on = 5;
+  google.protobuf.Timestamp finished_on = 6;
+}
+
+message AssertionResult {
+  AssertionStatus status = 1;
+  google.protobuf.Struct fail_row = 2;
+  string error_message = 3;
+}
+
+enum AssertionStatus {
+  ASSERTION_STATUS_UNSPECIFIED = 0;
+  ASSERTION_STATUS_PASS = 1;
+  ASSERTION_STATUS_FAIL = 2;
+  ASSERTION_STATUS_ERROR = 3;
+}
+
 message PullTrigger {
   PullTriggerSpec spec = 1;
   PullTriggerState state = 2;
@@ -318,7 +389,56 @@ message ThemeSpec {
 
 message ThemeState {}
 
+message Chart {
+  ChartSpec spec = 1;
+  ChartState state = 2;
+}
+
+message ChartSpec {
+  string title = 1;
+  string query_name = 2;
+  string query_args_json = 3;
+  string vega_lite_spec = 4;
+}
+
+message ChartState {}
+
+message Dashboard {
+  DashboardSpec spec = 1;
+  DashboardState state = 2;
+}
+
+message DashboardSpec {
+  string title = 1;
+  int64 grid_columns = 2;
+  int64 grid_rows = 3;
+  repeated DashboardComponent components = 4;
+}
+
+message DashboardState {}
+
+message DashboardComponent {
+  string chart = 1;
+  int64 columns = 2;
+  int64 rows = 3;
+}
+
+// API defines a custom operation for querying data stored in Rill.
+message API {
+  APISpec spec = 1;
+  APIState state = 2;
+}
+
+message APISpec {
+  string resolver = 1;
+  google.protobuf.Struct resolver_properties = 2;
+}
+
+message APIState {}
+
 message Schedule {
+  bool ref_update = 4;
+  bool disable = 5;
   string cron = 1;
   uint32 ticker_seconds = 2;
   string time_zone = 3;

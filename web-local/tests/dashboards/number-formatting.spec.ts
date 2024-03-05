@@ -4,12 +4,12 @@ import {
   interactWithTimeRangeMenu,
   waitForDashboard,
 } from "../utils/dashboardHelpers";
-import { test, expect } from "@playwright/test";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { expect } from "@playwright/test";
+
 import { updateCodeEditor } from "../utils/commonHelpers";
+import { test } from "../utils/test";
 
 test.describe("smoke tests for number formatting", () => {
-  startRuntimeForEachTest();
   useDashboardFlowTestSetup();
 
   test("smoke tests for number formatting", async ({ page }) => {
@@ -126,14 +126,14 @@ dimensions:
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null $98.8k 32%" }),
+      page.getByRole("button", { name: "null $98.8k 33%" }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "USD", exact: true }).click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 9.9M% 32%" }),
+      page.getByRole("button", { name: "null 9.9M% 33%" }),
     ).toBeVisible();
 
     // try interval_ms...

@@ -10,9 +10,11 @@ Rill CLI
 ### Flags
 
 ```
-  -h, --help          Print usage
-      --interactive   Prompt for missing required parameters (default true)
-  -v, --version       Show rill version
+      --api-token string   Token for authenticating with the cloud API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
+  -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
+  -v, --version            Show rill version
 ```
 
 ### SEE ALSO
@@ -24,6 +26,7 @@ Rill CLI
 * [rill logout](logout.md)	 - Logout of the Rill API
 * [rill org](org/org.md)	 - Manage organisations
 * [rill project](project/project.md)	 - Manage projects
+* [rill service](service/service.md)	 - Manage service accounts
 * [rill start](start.md)	 - Build project and start web app
 * [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
 * [rill user](user/user.md)	 - Manage users

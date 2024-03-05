@@ -9,7 +9,7 @@ import (
 func AdminCmd(ch *cmdutil.Helper) *cobra.Command {
 	adminCmd := &cobra.Command{
 		Use:    "admin",
-		Hidden: !ch.Config.IsDev(),
+		Hidden: !ch.IsDev(),
 		Short:  "Manage an admin server",
 	}
 	adminCmd.AddCommand(PingCmd(ch))

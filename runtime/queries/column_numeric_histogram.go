@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"math"
@@ -75,10 +74,18 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 	return ErrExportNotSupported
 }
 
-func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
+func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
-	querySQL := fmt.Sprintf(
-		"SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
+	var qryString string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		qryString = "SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s"
+	case drivers.DialectClickHouse:
+		qryString = "SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s)) AS iqr, uniq(%s) AS count, (max(%s) - min(%s)) AS range FROM %s"
+	default:
+		return 0, fmt.Errorf("unsupported dialect %v", olap.Dialect())
+	}
+	querySQL := fmt.Sprintf(qryString,
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,
@@ -97,7 +104,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 	}
 	defer rows.Close()
 
-	var iqr, rangeVal sql.NullFloat64
+	var iqr, rangeVal *float64
 	var count float64
 	if rows.Next() {
 		err = rows.Scan(&iqr, &count, &rangeVal)
@@ -111,7 +118,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		return 0, err
 	}
 
-	if !iqr.Valid || !rangeVal.Valid || rangeVal.Float64 == 0.0 {
+	if iqr == nil || rangeVal == nil || *rangeVal == 0.0 {
 		return 0, nil
 	}
 
@@ -121,8 +128,8 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		bucketSize = count
 	} else {
 		// Use Freedman–Diaconis rule for calculating number of bins
-		bucketWidth := (2 * iqr.Float64) / math.Cbrt(count)
-		FDEstimatorBucketSize := math.Ceil(rangeVal.Float64 / bucketWidth)
+		bucketWidth := (2 * *iqr) / math.Cbrt(count)
+		FDEstimatorBucketSize := math.Ceil(*rangeVal / bucketWidth)
 		bucketSize = math.Min(40, FDEstimatorBucketSize)
 	}
 	return bucketSize, nil
@@ -135,7 +142,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -143,12 +150,12 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	if err != nil {
 		return err
 	}
-	if !min.Valid || !max.Valid || !rng.Valid {
+	if min == nil || max == nil || rng == nil {
 		return nil
 	}
 
 	sanitizedColumnName := safeName(q.ColumnName)
-	bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
+	bucketSize, err := q.calculateBucketSize(ctx, olap, priority)
 	if err != nil {
 		return err
 	}
@@ -169,10 +176,10 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
             WHERE %[2]s IS NOT NULL
           ), buckets AS (
             SELECT
-              range as bucket,
-              (range) * (%[7]v) / %[4]v + (%[5]v) as low,
-              (range + 1) * (%[7]v) / %[4]v + (%[5]v) as high
-            FROM range(0, %[4]v, 1)
+              `+rangeNumbersCol(olap.Dialect())+`::DOUBLE as bucket,
+              (bucket) * (%[7]v) / %[4]v + (%[5]v) as low,
+              (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) as high
+            FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v)
           ),
           -- bin the values
           binned_data AS (
@@ -198,11 +205,11 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
             SELECT count(*) as c from values WHERE value = %[6]v
           )
           SELECT 
-            bucket,
-            low,
-            high,
+		  	ifNull(bucket, 0) AS bucket,
+		  	ifNull(low, 0) AS low,
+		  	ifNull(high, 0) AS high,
             -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+            ifNull(CASE WHEN high = (SELECT max(high) FROM histogram_stage) THEN count + (SELECT c FROM right_edge) ELSE count END, 0) AS count
             FROM histogram_stage
             ORDER BY bucket
 	      `,
@@ -210,9 +217,9 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		sanitizedColumnName,
 		safeName(q.TableName),
 		bucketSize,
-		min.Float64,
-		max.Float64,
-		rng.Float64,
+		*min,
+		*max,
+		*rng,
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
@@ -253,7 +260,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -261,16 +268,16 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	if err != nil {
 		return err
 	}
-	if !min.Valid || !max.Valid || !rng.Valid {
+	if min == nil || max == nil || rng == nil {
 		return nil
 	}
 
 	ticks := 40.0
-	if rng.Float64 < ticks {
-		ticks = rng.Float64
+	if *rng < ticks {
+		ticks = *rng
 	}
 
-	startTick, endTick, gap := NiceAndStep(min.Float64, max.Float64, ticks)
+	startTick, endTick, gap := NiceAndStep(*min, *max, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
 	if gap == 1 {
 		bucketCount++
@@ -295,11 +302,11 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 			WHERE %[2]s IS NOT NULL
 		), buckets AS (
 			SELECT
-				range as bucket,
-				(range * %[7]f::FLOAT + %[5]f) as low,
-				(range * %[7]f::FLOAT + %7f::FLOAT / 2 + %[5]f) as midpoint,
-				((range + 1) * %[7]f::FLOAT + %[5]f) as high
-			FROM range(0, %[4]d, 1)
+				`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket,
+				(bucket * %[7]f::FLOAT + %[5]f) as low,
+				(bucket * %[7]f::FLOAT + %7f::FLOAT / 2 + %[5]f) as midpoint,
+				((bucket + 1) * %[7]f::FLOAT + %[5]f) as high
+			FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]d)
 		),
 		-- bin the values
 		binned_data AS (
@@ -331,7 +338,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 			high,
 			midpoint,
 		-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-			CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+		ifNull(CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END, 0) AS count
 		FROM histogram_stage
     ORDER BY bucket
 		`,
@@ -377,15 +384,16 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 }
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
-func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (sql.NullFloat64, sql.NullFloat64, sql.NullFloat64, error) {
+func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (*float64, *float64, *float64, error) {
 	sanitizedColumnName := safeName(columnName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+
 	minMaxSQL := fmt.Sprintf(
 		`
 			SELECT
-				min(%[2]s) as min,
-				max(%[2]s) as max,
-				max(%[2]s) - min(%[2]s) as range
+				min(%[2]s) AS min,
+				max(%[2]s) AS max,
+				max(%[2]s) - min(%[2]s) AS range
 			FROM %[1]s
 			WHERE %[2]s IS NOT NULL
 		`,
@@ -399,15 +407,17 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tab
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return sql.NullFloat64{}, sql.NullFloat64{}, sql.NullFloat64{}, err
+		return nil, nil, nil, err
 	}
 
-	var min, max, rng sql.NullFloat64
+	// clickhouse does not support scanning non null values into sql.Nullx
+	// issue : https://github.com/ClickHouse/clickhouse-go/issues/754
+	var min, max, rng *float64
 	if minMaxRow.Next() {
 		err = minMaxRow.Scan(&min, &max, &rng)
 		if err != nil {
 			minMaxRow.Close()
-			return sql.NullFloat64{}, sql.NullFloat64{}, sql.NullFloat64{}, err
+			return nil, nil, nil, err
 		}
 	}
 

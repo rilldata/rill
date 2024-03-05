@@ -1,6 +1,7 @@
 <script lang="ts">
   import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createAdminServiceGetProject } from "../../client";
   import Tab from "../../components/tabs/Tab.svelte";
   import TabGroup from "../../components/tabs/TabGroup.svelte";
@@ -10,35 +11,50 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  // Get the list of tabs to display, depending on the user's permissions
-  $: tabsQuery = createAdminServiceGetProject(organization, project, {
-    query: {
-      select: (data) => {
-        const commonTabs = [
-          {
-            route: `/${organization}/${project}`,
-            label: "Dashboards",
-          },
-          {
-            route: `/${organization}/${project}/-/reports`,
-            label: "Reports",
-          },
-        ];
-        const adminTabs = [
-          {
-            route: `/${organization}/${project}/-/status`,
-            label: "Status",
-          },
-        ];
+  const { alerts } = featureFlags;
 
-        if (data.projectPermissions?.manageProject) {
-          return [...commonTabs, ...adminTabs];
-        } else {
-          return commonTabs;
-        }
+  // Get the list of tabs to display, depending on the user's permissions
+  $: tabsQuery = createAdminServiceGetProject(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        select: (data) => {
+          let commonTabs = [
+            {
+              route: `/${organization}/${project}`,
+              label: "Dashboards",
+            },
+            {
+              route: `/${organization}/${project}/-/reports`,
+              label: "Reports",
+            },
+          ];
+
+          if ($alerts) {
+            commonTabs.push({
+              route: `/${organization}/${project}/-/alerts`,
+              label: "Alerts",
+            });
+          }
+
+          const adminTabs = [
+            {
+              route: `/${organization}/${project}/-/status`,
+              label: "Status",
+            },
+          ];
+
+          if (data.projectPermissions?.manageProject) {
+            return [...commonTabs, ...adminTabs];
+          } else {
+            return commonTabs;
+          }
+        },
       },
     },
-  });
+  );
   $: tabs = $tabsQuery.data;
 
   function getCurrentTabIndex(tabs: { route: string }[], pathname: string) {

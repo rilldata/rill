@@ -13,12 +13,10 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "List tokens",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
@@ -26,18 +24,20 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.ListServiceAuthTokens(cmd.Context(), &adminv1.ListServiceAuthTokensRequest{
 				ServiceName:      name,
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
 			if len(res.Tokens) == 0 {
-				ch.Printer.PrintlnWarn("No tokens found")
+				ch.PrintfWarn("No tokens found\n")
 				return nil
 			}
 
-			return ch.Printer.PrintResource(toTable(res.Tokens))
+			ch.PrintServiceTokens(res.Tokens)
+
+			return nil
 		},
 	}
 

@@ -13,6 +13,7 @@
   export let hint = "";
   export let optional = false;
   export let claimFocusOnMount = false;
+  export let alwaysShowError = false;
 
   const dispatch = createEventDispatcher();
 
@@ -35,38 +36,43 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <div class="flex items-center gap-x-1">
-    <label class="text-gray-800 text-sm font-medium" for={id}>{label}</label>
-    {#if hint}
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-gray-500" style="transform:translateY(-.5px)">
-          <InfoCircle size="13px" />
-        </div>
-        <TooltipContent maxWidth="400px" slot="tooltip-content">
-          {@html hint}
-        </TooltipContent>
-      </Tooltip>
-    {/if}
-    {#if optional}
-      <span class="text-gray-500 text-sm">(optional)</span>
-    {/if}
-  </div>
+  {#if label}
+    <div class="flex items-center gap-x-1">
+      <label for={id} class="text-gray-800 text-sm font-medium">
+        {label}
+      </label>
+      {#if hint}
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-gray-500" style="transform:translateY(-.5px)">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            {@html hint}
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+      {#if optional}
+        <span class="text-gray-500 text-sm">(optional)</span>
+      {/if}
+    </div>
+  {/if}
+
   <input
-    {id}
-    type="text"
-    {placeholder}
-    name={id}
     autocomplete="off"
-    class:error={error && value}
-    on:change
-    on:input
-    on:keydown={handleKeyDown}
-    on:focus={() => (focus = true)}
-    on:blur={() => (focus = false)}
     bind:this={inputElement}
     bind:value
+    class:error={error && value}
+    {id}
+    name={id}
+    on:blur={() => (focus = false)}
+    on:change
+    on:focus={() => (focus = true)}
+    on:input
+    on:keydown={handleKeyDown}
+    {placeholder}
+    type="text"
   />
-  {#if error && !focus && value}
+  {#if error && (alwaysShowError || (!focus && value))}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>

@@ -8,15 +8,11 @@ import type { DimensionThresholdFilter } from "@rilldata/web-common/features/das
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function setMeasureFilter(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
   measureName: string,
   filter: V1Expression,
 ) {
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
-
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
   }
@@ -47,14 +43,10 @@ export function setMeasureFilter(
 }
 
 export function removeMeasureFilter(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
   measureName: string,
 ) {
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
-
   if (dashboard.temporaryFilterName === measureName) {
     dashboard.temporaryFilterName = null;
     return;

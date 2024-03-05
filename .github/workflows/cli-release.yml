@@ -42,7 +42,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: 1.22
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -79,7 +79,7 @@ jobs:
               -v `pwd`/sysroot:/sysroot \
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill \
-              goreleaser/goreleaser-cross:v1.21 \
+              goreleaser/goreleaser-cross:v1.22 \
               release ${NIGHTLY}
 
       - name: Authenticate GCS

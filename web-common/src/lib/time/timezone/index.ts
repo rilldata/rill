@@ -24,7 +24,7 @@ export function getLocalIANA(): string {
 }
 
 export function getUTCIANA(): string {
-  return "Etc/UTC";
+  return "UTC";
 }
 
 export function getTimeZoneNameFromIANA(now: Date, iana: string): string {

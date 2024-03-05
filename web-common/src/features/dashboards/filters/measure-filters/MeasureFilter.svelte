@@ -1,11 +1,10 @@
 <script lang="ts">
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { Chip } from "@rilldata/web-common/components/chip";
   import {
     ChipColors,
     measureChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
-
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";

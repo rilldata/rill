@@ -9,13 +9,13 @@
   export let yAccessor: string;
   export let mouseoverFormat;
   export let dimensionData: DimensionDataItem[];
-  export let dimensionValue: string | undefined;
+  export let dimensionValue: string | null | undefined;
   export let validPercTotal: number | null;
-  export let hovered: boolean | undefined;
+  export let hovered = false;
 
   $: x = point?.[xAccessor];
 
-  function truncate(str) {
+  function truncate(str: string) {
     if (!str?.length) return str;
 
     const truncateLength = 34;
@@ -39,7 +39,10 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    const y = bisectData(x, "center", xAccessor, dimension?.data)[yAccessor];
+    const bisected = bisectData(x, "center", xAccessor, dimension?.data);
+    if (bisected === undefined)
+      return { y: null, fillClass: undefined, name: "" };
+    const y = bisected[yAccessor];
     return {
       y,
       fillClass: dimension?.fillClass,
@@ -64,8 +67,8 @@
         yOverride: currentPointIsNull,
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
-        key: dimension.name,
-        label: hovered ? truncate(dimension.name) : "",
+        key: dimension.name === null ? "null" : dimension.name,
+        label: hovered ? truncate(dimension.name || "null") : "",
         pointColorClass: dimension.fillClass,
         valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",

@@ -7,14 +7,15 @@
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-  import { V1Operation } from "@rilldata/web-common/runtime-client";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import { V1Operation } from "@rilldata/web-common/runtime-client";
 
   export let dimensionName: string;
   export let label: string | undefined;
   export let expr: V1Expression | undefined;
   export let labelMaxWidth = "160px";
   export let active = false;
+  export let readOnly = false;
 
   let shortLabel: string | undefined;
   $: if (expr?.cond?.op) {
@@ -44,16 +45,19 @@
     class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
     style:max-width={labelMaxWidth}
   >
-    {label} for {dimensionName}
+    {label}{#if dimensionName}
+      for {dimensionName}{/if}
   </div>
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">
     {#if shortLabel}
       {shortLabel}
     {/if}
-    <IconSpaceFixer className="pl-2" pullRight>
-      <div class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon className="inline" size="10px" />
-      </div>
-    </IconSpaceFixer>
+    {#if !readOnly}
+      <IconSpaceFixer className="pl-2" pullRight>
+        <div class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon className="inline" size="10px" />
+        </div>
+      </IconSpaceFixer>
+    {/if}
   </div>
 </div>

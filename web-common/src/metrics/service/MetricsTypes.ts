@@ -29,10 +29,13 @@ export enum MetricsEventSpace {
 }
 
 export enum MetricsEventScreenName {
+  Table = "table",
   Source = "source",
   Model = "model",
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
+  Chart = "chart",
+  CustomDashboard = "custom-dashboard",
   CLI = "cli",
   Splash = "splash",
   Home = "home",
@@ -40,6 +43,7 @@ export enum MetricsEventScreenName {
   Project = "project",
   Report = "report",
   ReportExport = "report-export",
+  Alert = "alert",
   Unknown = "unknown",
 }
 

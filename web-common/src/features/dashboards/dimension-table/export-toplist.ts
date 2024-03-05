@@ -1,4 +1,4 @@
-import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -25,7 +25,7 @@ export default async function exportToplist({
   const timeControlState = get(
     ctx.selectors.timeRangeSelectors.timeControlsState,
   );
-  const measureFilters = await getMeasureFilters(ctx);
+  const measureFilters = await getResolvedMeasureFilters(ctx);
 
   // api now expects measure names for which comparison are calculated
   let comparisonMeasures: string[] = [];

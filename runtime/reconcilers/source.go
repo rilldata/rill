@@ -104,6 +104,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
+	// Exit early if disabled
+	if src.Spec.RefreshSchedule != nil && src.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
@@ -180,6 +185,9 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	ingestErr := r.ingestSource(ctx, self, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
+	} else if !r.C.Runtime.AllowHostAccess() {
+		// temporarily for debugging
+		logTableNameAndType(ctx, r.C, connector, stagingTableName)
 	}
 
 	if ingestErr == nil && src.Spec.StageChanges {
@@ -337,10 +345,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 	if err != nil {
 		return err
 	}
-	sinkConfig, err := driversSink(sinkConn, tableName)
-	if err != nil {
-		return err
-	}
+	sinkConfig := driversSink(tableName)
 
 	// Set timeout on ctx
 	timeout := _defaultIngestTimeout
@@ -396,6 +401,6 @@ func (r *SourceReconciler) driversSource(ctx context.Context, self *runtimev1.Re
 	return resolveTemplatedProps(ctx, r.C, tself, propsPB.AsMap())
 }
 
-func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
-	return map[string]any{"table": tableName}, nil
+func driversSink(tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }

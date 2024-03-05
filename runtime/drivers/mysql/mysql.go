@@ -32,7 +32,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Href:        "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
-			Hint:        "Either set this or pass --env connector.mysql.dsn=... to rill start",
+			Hint:        "Either set this or pass --var connector.mysql.dsn=... to rill start",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
@@ -114,6 +114,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

@@ -72,7 +72,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 
 	data, err := rowsToData(res)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	resp := &runtimev1.QueryResponse{

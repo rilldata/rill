@@ -1,26 +1,26 @@
 <script lang="ts">
   import {
+    ChunkedLine,
+    ClippedChunkedLine,
+  } from "@rilldata/web-common/components/data-graphic/marks";
+  import {
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
     TimeComparisonLineColor,
-    AreaMutedColorGradientDark,
-    AreaMutedColorGradientLight,
-    LineMutedColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import { writable } from "svelte/store";
-  import {
-    ChunkedLine,
-    ClippedChunkedLine,
-  } from "@rilldata/web-common/components/data-graphic/marks";
-  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
+  import { writable } from "svelte/store";
 
   export let xMin: Date | undefined = undefined;
   export let xMax: Date | undefined = undefined;
   export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
-  export let dimensionValue: string;
+  export let dimensionValue: string | undefined | null;
   export let isHovering: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
@@ -52,7 +52,7 @@
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
 
-  $: yMaxStore.set(yExtentMax);
+  $: if (typeof yExtentMax === "number") yMaxStore.set(yExtentMax);
   const timeRangeKey = writable(`${xMin}-${xMax}`);
 
   const previousTimeRangeKey = previousValueStore(timeRangeKey);
@@ -71,7 +71,9 @@
   }
 
   $: delay =
-    $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
+    $previousTimeRangeKey === $timeRangeKey &&
+    yExtentMax &&
+    $previousYMax < yExtentMax
       ? 100
       : 0;
 </script>

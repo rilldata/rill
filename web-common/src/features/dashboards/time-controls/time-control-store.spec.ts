@@ -41,9 +41,7 @@ describe("time-control-store", () => {
 
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_NAME);
-    getLocalUserPreferences().set({
-      timeZone: "UTC",
-    });
+    getLocalUserPreferences().updateTimeZone("UTC");
   });
 
   it("Switching from no timestamp column to having one", async () => {

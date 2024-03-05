@@ -60,7 +60,8 @@ var spec = drivers.Spec{
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
-			Key: "dsn",
+			Key:  "path",
+			Type: drivers.StringPropertyType,
 		},
 	},
 }
@@ -192,7 +193,7 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	}
 	if cfg.DBFilePath != "" {
 		err = os.Remove(cfg.DBFilePath)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 		// Hacky approach to remove the wal file
@@ -339,6 +340,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

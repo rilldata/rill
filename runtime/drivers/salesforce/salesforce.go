@@ -53,21 +53,21 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Placeholder: "user@example.com",
-			Hint:        "Either set this or pass --env connector.salesforce.username=... to rill start",
+			Hint:        "Either set this or pass --var connector.salesforce.username=... to rill start",
 		},
 		{
 			Key:         "password",
 			DisplayName: "Salesforce Password",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
-			Hint:        "Either set this or pass --env connector.salesforce.password=... to rill start",
+			Hint:        "Either set this or pass --var connector.salesforce.password=... to rill start",
 		},
 		{
 			Key:         "key",
 			DisplayName: "JWT Key for Authentication",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
-			Hint:        "Either set this or pass --env connector.salesforce.key=... to rill start",
+			Hint:        "Either set this or pass --var connector.salesforce.key=... to rill start",
 		},
 		{
 			Key:         "endpoint",
@@ -76,7 +76,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
-			Hint:        "Either set this or pass --env connector.salesforce.endpoint=... to rill start",
+			Hint:        "Either set this or pass --var connector.salesforce.endpoint=... to rill start",
 		},
 		{
 			Key:         "client_id",
@@ -84,7 +84,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Default:     defaultClientID,
-			Hint:        "Either set this or pass --env connector.salesforce.client_id=... to rill start",
+			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
@@ -184,6 +184,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

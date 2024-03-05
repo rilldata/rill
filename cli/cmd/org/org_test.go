@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -64,16 +63,15 @@ func TestOrganizationWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	format := printer.JSON
-	p := printer.NewPrinter(&format)
-	p.SetResourceOutput(&buf)
+	p := printer.NewPrinter(printer.FormatJSON)
+	p.OverrideDataOutput(&buf)
+
 	helper := &cmdutil.Helper{
-		Config: &config.Config{
-			AdminURL:          "http://localhost:9090",
-			AdminTokenDefault: adminAuthToken.Token().String(),
-		},
-		Printer: p,
+		AdminURL:          "http://localhost:9090",
+		AdminTokenDefault: adminAuthToken.Token().String(),
+		Printer:           p,
 	}
+	defer helper.Close()
 
 	// Create organization with name
 	cmd := CreateCmd(helper)
@@ -166,7 +164,7 @@ func TestOrganizationWorkflow(t *testing.T) {
 
 	// Switch organization
 	buf.Reset()
-	helper.Printer.SetHumanOutput(&buf)
+	helper.Printer.OverrideHumanOutput(&buf)
 	cmd = SwitchCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)

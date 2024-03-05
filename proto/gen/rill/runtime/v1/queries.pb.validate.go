@@ -3248,6 +3248,8 @@ func (m *MetricsViewAggregationDimension) validate(all bool) error {
 
 	// no validation rules for TimeZone
 
+	// no validation rules for Alias
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationDimensionMultiError(errors)
 	}
@@ -3387,6 +3389,35 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationMeasureValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationMeasureValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationMeasureValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
@@ -4173,6 +4204,17 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	if len(m.GetMeasures()) < 1 {
+		err := MetricsViewComparisonRequestValidationError{
+			field:  "Measures",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	for idx, item := range m.GetMeasures() {
 		_, _ = idx, item
 
@@ -4205,6 +4247,17 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if len(m.GetSort()) < 1 {
+		err := MetricsViewComparisonRequestValidationError{
+			field:  "Sort",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	for idx, item := range m.GetSort() {

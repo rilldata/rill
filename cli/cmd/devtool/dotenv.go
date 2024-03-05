@@ -33,7 +33,7 @@ func DotenvRefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
-			err := checkRillRepo(cmd.Context())
+			err := checkRillRepo()
 			if err != nil {
 				return err
 			}
@@ -61,7 +61,7 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
-			err := checkRillRepo(cmd.Context())
+			err := checkRillRepo()
 			if err != nil {
 				return err
 			}
@@ -71,8 +71,8 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnWarn("This will overwrite the .env file in shared storage with the contents of your local .env file.")
-			ch.Printer.PrintlnWarn("The updated .env will automatically be used by other users of the devtool.")
+			ch.PrintfWarn("This will overwrite the .env file in shared storage with the contents of your local .env file.\n")
+			ch.PrintfWarn("The updated .env will automatically be used by other users of the devtool.\n")
 			if !cmdutil.ConfirmPrompt("Do you want to continue?", "", false) {
 				return nil
 			}

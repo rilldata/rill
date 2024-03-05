@@ -11,6 +11,7 @@
   export let label: string;
   export let options: { value: string; label?: string }[];
   export let placeholder: string = "";
+  export let optional: boolean = false;
 
   // temporary till we figure out the menus
   export let detach = false;
@@ -29,7 +30,16 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <label class="text-gray-800 text-sm font-medium" for={id}>{label}</label>
+  {#if label?.length}
+    <label for={id} class="text-sm flex gap-x-1">
+      <span class="text-gray-800 font-medium">
+        {label}
+      </span>
+      {#if optional}
+        <span class="text-gray-500">(optional)</span>
+      {/if}
+    </label>
+  {/if}
   <Menu {detach}>
     <MenuButton
       className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center {hasNoValue

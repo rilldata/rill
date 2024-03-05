@@ -1,3 +1,4 @@
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type {
   SortDirection,
@@ -113,9 +114,9 @@ export interface MetricsExplorerEntity {
   selectedComparisonDimension?: string;
 
   /**
-   * user selected timezone
+   * user selected timezone, should default to "UTC" if no other value is set
    */
-  selectedTimezone?: string;
+  selectedTimezone: string;
 
   /**
    * Search text state for dimension tables. This search text state
@@ -151,6 +152,8 @@ export interface MetricsExplorerEntity {
    * is not shown.
    */
   selectedDimensionName?: string;
+
+  pivot: PivotState;
 
   proto?: string;
 }
