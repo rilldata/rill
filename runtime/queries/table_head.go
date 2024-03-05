@@ -98,7 +98,7 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 			filename := q.TableName
 			sql := q.buildTableHeadSQL()
 			args := []interface{}{}
-			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
@@ -140,11 +140,11 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, q.Result, w)
+		return WriteCSV(meta, q.Result, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, q.Result, w)
+		return WriteXLSX(meta, q.Result, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, q.Result, w)
+		return WriteParquet(meta, q.Result, w)
 	}
 
 	return nil
