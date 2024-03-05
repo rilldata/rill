@@ -11,10 +11,12 @@
 
   const mode = "vega-lite" as Mode;
   $: vegaLiteOptions = { ...options, mode: mode };
+
+  let error = "";
 </script>
 
-{#if spec === undefined}
-  <p>Chart not available</p>
+{#if error}
+  <p>{error}</p>
 {:else}
   <VegaEmbed
     {spec}
@@ -23,6 +25,6 @@
     options={vegaLiteOptions}
     bind:view
     on:onNewView
-    on:onError
+    on:onError={(e) => (error = e.detail)}
   />
 {/if}
