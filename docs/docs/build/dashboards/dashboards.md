@@ -1,8 +1,8 @@
 ---
-title: "Build Dashboards"
-description: Define your time dimension, measures and dimensions to create a dashboard
-sidebar_label: "Build Dashboards"
-sidebar_position: 10
+title: Create Dashboards
+description: Create dashboards using source data and your defined time, dimensions, and measures
+sidebar_label: Create Dashboards
+sidebar_position: 00
 ---
 
 In Rill, your dashboards are defined by _metric definitions_. Metric definitions are composed of:

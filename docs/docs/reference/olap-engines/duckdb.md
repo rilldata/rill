@@ -5,39 +5,14 @@ sidebar_label: DuckDB
 sidebar_position: 1
 ---
 
-## How to configure credentials in Rill
+## Overview
 
- A live connection enables users to discover existing tables and perform OLAP queries directly on the engine without transfering data to another OLAP engine.
+[DuckDB](https://duckdb.org/why_duckdb.html) is an in-memory, columnar, SQL database designed for analytical (OLAP) workloads, offering high-speed data processing and analysis. Its columnar storage model and vectorized query execution make it highly efficient for OLAP tasks, enabling fast aggregation, filtering, and joins on large datasets. DuckDB's ease of integration with data science tools and its ability to run directly within analytical environments like Python and R, without the need for a separate server, make it an attractive choice for OLAP applications seeking simplicity and performance.
 
-OLAP drivers can be configured by passing additional `--db-driver` config in `rill start` CLI command. 
+By default, Rill includes DuckDB as an embedded OLAP engine that is used to ingest data from [sources](../connectors/connectors.md) and power your dashboards. Nothing more needs to be done if you wish to power your dashboards on Rill Developer or Rill Cloud. 
 
+:::tip Interested in using DuckDB and another OLAP engine in the same project?
 
-### Configure credentials for ClickHouse local development
+Well now you can! For more details, see our page on [Using Multiple OLAP Engines](multiple-olap.md).
 
-Steps for configuring a Rill and ClickHouse connection
-
-```bash
-# Connecting to clickhouse local
-rill start --db-driver clickhouse --db "clickhouse://localhost:9000"
-```
-
-### Configure credentials for deployments on Rill Cloud
-
-Steps for configuring a Rill and ClickHouse cloud connection
-
-```bash
-# Connecting to ClickHouse cluster 
-rill start --db-driver clickhouse --db "<clickhouse://<host>:<port>?username=<username>&password=<pass>>"
-```
-This would open up browser and shows all the existing ClickHouse tables in Rill. Dashboards can be then created on top of existing source.
-
-Note: Data modeling is not supported for ClickHouse driver at the moment.
-
-
-### Deploying a ClickHouse project to Rill cloud
-
-The driver and the dsn can be passed in the `rill deploy` command as below 
-
-```bash
-rill deploy --prod-db-driver clickhouse --prod-db-dsn <clickhouse_dsn>
-```
+:::
