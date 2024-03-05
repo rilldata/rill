@@ -1,8 +1,8 @@
 import type { V1ConnectorSpec } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 import {
-  nameRegex,
-  nameRegexErrorMessage,
+  INVALID_NAME_MESSAGE,
+  VALID_NAME_PATTERN,
 } from "../../entity-management/name-utils";
 
 export function getYupSchema(connector: V1ConnectorSpec) {
@@ -15,7 +15,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("S3 URI is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
         aws_region: yup.string(),
       });
@@ -27,7 +27,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("GS URI is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
       });
     case "https":
@@ -38,7 +38,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("Path is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
       });
     case "duckdb":
@@ -47,7 +47,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         db: yup.string().required("db is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
       });
     case "sqlite":
@@ -56,7 +56,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         table: yup.string().required("table is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
       });
     case "bigquery":
@@ -64,7 +64,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
         project_id: yup.string().required("project_id is required"),
       });
@@ -84,7 +84,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
         database_url: yup.string(),
       });
@@ -93,7 +93,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
         dsn: yup.string(),
       });
@@ -107,7 +107,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
         output_location: yup.string(),
         workgroup: yup.string(),
@@ -117,7 +117,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
-          .matches(nameRegex, nameRegexErrorMessage)
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
         dsn: yup.string(),
       });

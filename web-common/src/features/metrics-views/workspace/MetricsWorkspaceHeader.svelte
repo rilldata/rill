@@ -3,9 +3,9 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
+    INVALID_NAME_MESSAGE,
+    VALID_NAME_PATTERN,
     isDuplicateName,
-    nameRegex,
-    nameRegexErrorMessage,
   } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -19,9 +19,9 @@
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const onChangeCallback = async (e) => {
-    if (!e.target.value.match(nameRegex)) {
+    if (!e.target.value.match(VALID_NAME_PATTERN)) {
       notifications.send({
-        message: nameRegexErrorMessage,
+        message: INVALID_NAME_MESSAGE,
       });
       e.target.value = metricsDefName; // resets the input
       return;

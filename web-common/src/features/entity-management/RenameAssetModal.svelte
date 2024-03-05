@@ -11,9 +11,9 @@
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import {
+    INVALID_NAME_MESSAGE,
+    VALID_NAME_PATTERN,
     isDuplicateName,
-    nameRegex,
-    nameRegexErrorMessage,
   } from "./name-utils";
 
   export let closeModal: () => void;
@@ -32,7 +32,7 @@
     validationSchema: yup.object({
       newName: yup
         .string()
-        .matches(nameRegex, nameRegexErrorMessage)
+        .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         .required("Enter a name!")
         .notOneOf([currentAssetName], `That's the current name!`),
     }),
