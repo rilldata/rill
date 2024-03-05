@@ -318,12 +318,16 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			-- generate a time series column that has the intended range
 			WITH template as (
 				SELECT
-					range as ` + tsAlias + `
-				FROM
-					range(
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
-					INTERVAL '1 ` + dateTruncSpecifier + `')
+					unnest(list_prepend(
+						-- prepend the first value in case a range is empty
+						date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+						-- take a tail of a range considering the first value is prepended
+						range(
+							date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+							date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+							INTERVAL '1 ` + dateTruncSpecifier + `'
+						)[1:]
+					)) as ` + tsAlias + `
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
@@ -344,6 +348,8 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 				ORDER BY template.` + tsAlias + `
 			) GROUP BY 1 ORDER BY 1
 		)`, []any{
+			timezone,
+			timeRange.Start.AsTime(),
 			timezone,
 			timeRange.Start.AsTime(),
 			timezone,
