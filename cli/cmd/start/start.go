@@ -123,6 +123,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
 				return fmt.Errorf("both --cert and --key must be provided")
 			} else if certPath != "" && keyPath != "" {
+				// Check to ensure the paths are valid
 				if _, err := os.Stat(certPath); os.IsNotExist(err) {
 					return fmt.Errorf("certificate not found: %s", certPath)
 				}
@@ -181,7 +182,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringVar(&certPath, "cert", "", "Path to TLS certificate")
-	startCmd.Flags().StringVar(&keyPath, "key", "", "Path to TLS key")
+	startCmd.Flags().StringVar(&keyPath, "key", "", "Path to TLS key file")
 
 	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
 	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
