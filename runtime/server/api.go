@@ -59,7 +59,7 @@ func (s *Server) apiForName(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.Write(errorResponse(err))
+		_, _ = w.Write(errorResponse(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -74,7 +74,7 @@ func (s *Server) apiForName(w http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorResponse(err))
+		_, _ = w.Write(errorResponse(err))
 		return
 	}
 

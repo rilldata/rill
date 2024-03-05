@@ -112,7 +112,7 @@ func Test_parsedSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parsedSQL(context.Background(), ctrl, tt.sql)
+			got, err := parseMetricsViewSQL(context.Background(), ctrl, tt.sql)
 			require.NoError(t, err)
 			got = regexp.MustCompile(`\s+`).ReplaceAllString(strings.ReplaceAll(strings.ReplaceAll(got, "\n", " "), "\t", " "), " ")
 			tt.want = regexp.MustCompile(`\s+`).ReplaceAllString(strings.ReplaceAll(strings.ReplaceAll(tt.want, "\n", " "), "\t", " "), " ")

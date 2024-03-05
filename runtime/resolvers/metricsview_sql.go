@@ -18,7 +18,7 @@ func init() {
 
 var (
 	aggRegexWithoutMV = regexp.MustCompile(`(?i)AGGREGATE\(([a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*")\)`)
-	fromMVRegex       = regexp.MustCompile(`(?i)FROM[\s]+([a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*")`)
+	fromMVRegex       = regexp.MustCompile(`(?i)FROM\s+([a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*")`)
 )
 
 func newMetricsViewSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
@@ -89,7 +89,7 @@ func parseMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, sql stri
 			continue
 		}
 
-		if mvConnector != "" && resource.GetMetricsView().Spec.Connector == mvConnector {
+		if mvConnector != "" && resource.GetMetricsView().Spec.Connector != mvConnector {
 			return "", fmt.Errorf("all referenced metrics views must use the same connector")
 		}
 		mvConnector = resource.GetMetricsView().Spec.Connector
@@ -109,7 +109,7 @@ func parseMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, sql stri
 			return "", err
 		}
 
-		// caputres AGGREGATE("mv name"."my measure"), my name, measure
+		// captures AGGREGATE("mv name"."my measure"), my name, measure
 		aggMatches := aggRegex.FindAllStringSubmatch(sql, -1)
 		for _, aggMatch := range aggMatches {
 			expr, ok := nameToExprMap[unquote(aggMatch[2])]
