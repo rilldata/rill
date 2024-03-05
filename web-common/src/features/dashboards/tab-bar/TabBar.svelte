@@ -51,9 +51,10 @@
       BehaviourEventMedium.Tab,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard,
-      selectedTab.label === "Pivot" ? MetricsEventScreenName.Pivot : MetricsEventScreenName.Explore,
+      selectedTab.label === "Pivot"
+        ? MetricsEventScreenName.Pivot
+        : MetricsEventScreenName.Explore,
     );
-
   }
 </script>
 
