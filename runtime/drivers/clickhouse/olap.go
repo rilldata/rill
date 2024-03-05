@@ -389,12 +389,13 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
-		nullable = true
+		return databaseTypeToPB(dbt, true)
 	}
 
 	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
+		return databaseTypeToPB(dbt, nullable)
 	}
 
 	match := true
