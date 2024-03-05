@@ -39,6 +39,7 @@
   $: currentTabIndex = $showPivot ? 1 : 0;
 
   function handleTabChange(index: number) {
+    if (currentTabIndex === index) return;
     const selectedTab = tabs[index];
 
     metricsExplorerStore.setPivotMode(
