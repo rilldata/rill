@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"fmt"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -11,13 +10,12 @@ import (
 type APIYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
 	Metrics    *struct {
-		Connector string `yaml:"connector"`
-		SQL       string `yaml:"sql"`
+		SQL string `yaml:"sql"`
 	} `yaml:"metrics"`
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseAPI(ctx context.Context, node *Node) error {
+func (p *Parser) parseAPI(node *Node) error {
 	// Parse YAML
 	tmp := &APIYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)
@@ -40,14 +38,12 @@ func (p *Parser) parseAPI(ctx context.Context, node *Node) error {
 
 	// Handle metrics resolver
 	if tmp.Metrics != nil {
-		connector := tmp.Metrics.Connector
-		if connector == "" { // Fall back to default connector
-			connector = node.Connector
+		if !node.ConnectorInferred && node.Connector != "" {
+			return fmt.Errorf(`can't set "connector" for the metrics resolver (it will use the connector of the metrics view)`)
 		}
 
 		resolvers++
 		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
-		resolverProps["connector"] = connector
 		resolverProps["sql"] = tmp.Metrics.SQL
 		// NOTE: May add support for outright dimensions:, measures:, etc. here
 	}

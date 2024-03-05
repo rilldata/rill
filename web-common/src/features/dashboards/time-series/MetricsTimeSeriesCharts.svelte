@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
@@ -25,11 +26,10 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
+  import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./MeasureChart.svelte";
-  import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
-  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -226,7 +226,11 @@
 
   <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
     <div class="relative w-full">
-      <MeasureZoom {metricViewName} />
+      <ChartInteractions
+        {metricViewName}
+        {showComparison}
+        timeGrain={interval}
+      />
       <div class="translate-x-5">
         {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
           <SimpleDataGraphic

@@ -77,7 +77,7 @@ func (g *Group[K, V]) Do(ctx context.Context, key K, fn func(context.Context) (V
 		}
 		g.m[key] = c
 		go func() {
-			g.doCall(c, key, fn)
+			g.doCall(c, fn)
 		}()
 	}
 	c.counter++
@@ -111,7 +111,7 @@ func (g *Group[K, V]) Do(ctx context.Context, key K, fn func(context.Context) (V
 }
 
 // doCall handles the single call for a key.
-func (g *Group[K, V]) doCall(c *call[V], key K, fn func(ctx context.Context) (V, error)) {
+func (g *Group[K, V]) doCall(c *call[V], fn func(ctx context.Context) (V, error)) {
 	normalReturn := false
 	recovered := false
 

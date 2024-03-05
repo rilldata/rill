@@ -41,26 +41,6 @@ export class BehaviourEventHandler {
     ]);
   }
 
-  public firePublishEvent(
-    entity_name: string,
-    medium: BehaviourEventMedium,
-    space: MetricsEventSpace,
-    source_screen: MetricsEventScreenName,
-    screen_name: MetricsEventScreenName,
-    isStart: boolean,
-  ) {
-    const hashedName = MD5(entity_name).toString();
-    return this.metricsService.dispatch("publishEvent", [
-      this.commonUserMetrics,
-      hashedName,
-      medium,
-      space,
-      source_screen,
-      screen_name,
-      isStart,
-    ]);
-  }
-
   public fireSplashEvent(
     action: BehaviourEventAction,
     medium: BehaviourEventMedium,
@@ -107,6 +87,12 @@ export class BehaviourEventHandler {
       medium,
       screen_name,
       space,
+    ]);
+  }
+
+  public fireDeployIntentEvent() {
+    return this.metricsService.dispatch("deployIntent", [
+      this.commonUserMetrics,
     ]);
   }
 }

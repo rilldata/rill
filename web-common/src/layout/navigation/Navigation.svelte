@@ -9,6 +9,8 @@
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
+  import ChartAssets from "../../features/charts/ChartAssets.svelte";
+  import CustomDashboardAssets from "../../features/custom-dashboards/CustomDashboardAssets.svelte";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
   import TableAssets from "../../features/tables/TableAssets.svelte";
@@ -19,6 +21,8 @@
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
+
+  const { customDashboards } = featureFlags;
 
   /** FIXME: come up with strong defaults here when needed */
   const navigationLayout =
@@ -121,6 +125,10 @@
           {/if}
         {/if}
         <DashboardAssets />
+        {#if $customDashboards}
+          <ChartAssets />
+          <CustomDashboardAssets />
+        {/if}
         {#if isModelerEnabled}
           <OtherFiles />
         {/if}
