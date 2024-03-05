@@ -11,7 +11,7 @@
 
 <Chip {...timeChipColors} outline readOnly>
   <svelte:fragment slot="body">
-    <div class="font-bold text-xs text-slate-800">
+    <div class="font-bold text-xs text-slate-800 px-2">
       {#if timeRange.isoDuration && timeRange.isoDuration !== TimeRangePreset.CUSTOM}
         {#if timeRange.isoDuration === TimeRangePreset.ALL_TIME}
           All Time
