@@ -8,7 +8,6 @@
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
@@ -17,7 +16,6 @@
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import { useProjectId } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
