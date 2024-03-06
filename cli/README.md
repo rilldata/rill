@@ -10,7 +10,7 @@ make cli
 # To output usage:
 ./rill
 
-# To run start (ensure you have a dev-project directory at the same location as the rill binary):
+# To run start:
 ./rill start dev-project
 ```
 
@@ -24,7 +24,7 @@ make cli.prepare
 # To output usage:
 go run ./cli
 
-# To run start (ensure you have a dev-project directory at the same location as the rill binary):
+# To run start:
 go run ./cli start dev-project
 ```
 
