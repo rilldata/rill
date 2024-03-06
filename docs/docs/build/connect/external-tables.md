@@ -9,17 +9,12 @@ import TwitterEmbed from '@site/src/components/TwitterEmbed';
 
 ## What are external OLAP tables?
 
-Simply put, Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](../../reference/olap-engines/olap-engines.md) that have been configured in a particular project. These tables are not managed by Rill, hence external, but allows users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need of unnecessarily ingesting this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allowing Rill to connect to the data directly (and submit analytical queries).
+Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](../../reference/olap-engines/olap-engines.md) that have been configured in a particular project. These tables are not managed by Rill, hence external, but allow users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need of unnecessarily ingesting this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allowing Rill to connect to the data directly (and submit analytical queries).
 
 <div className="center-content">
 ![Connecting to an external table](/img/build/connect/external-tables/external-olap-db.png)
 </div>
 
-The following example illustrates Rill connecting to an existing ClickHouse dataset that contains over a half trillion records (for subsecond analytical queries and interactive BI dashboarding):
-
-<div className="center-content">
-<TwitterEmbed tweetId="1755363204736463138" />
-</div>
 
 ## DuckDB
 
