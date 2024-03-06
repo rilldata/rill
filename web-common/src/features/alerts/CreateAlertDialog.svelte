@@ -47,7 +47,7 @@
       name: "",
       measure: $dashboardStore.leaderboardMeasureName ?? "",
       splitByDimension: $dashboardStore.selectedDimensionName ?? "",
-      splitByTimeGrain: "",
+      evaluationInterval: "",
       criteria: [
         {
           field: $dashboardStore.leaderboardMeasureName ?? "",
@@ -66,6 +66,7 @@
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
       timeRange: {
+        isoDuration: timeControls.selectedTimeRange?.name,
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
       },
@@ -79,7 +80,7 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.splitByTimeGrain,
+              intervalDuration: values.evaluationInterval,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
