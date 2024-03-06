@@ -15,14 +15,10 @@ dimensions:
 
 measures:
   - label: "Number of bids"
-    name: bid's number
     expression: count(*)
   - label: "Total volume"
-    name: total volume
     expression: sum(volume)
   - label: "Total impressions"
-    name: total impressions
     expression: sum(impressions)
   - label: "Total clicks"
-    name: total click"s
     expression: sum(clicks)

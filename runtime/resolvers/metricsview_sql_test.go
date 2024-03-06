@@ -69,11 +69,11 @@ func Test_parsedSQL(t *testing.T) {
 			},
 		},
 		{
-			"aggregate and spaces",
-			`SELECT pub,dom,AGGREGATE("bid's number"),AGGREGATE("total volume"),Aggregate("total click""s") From ad_bids_mini_metrics GROUP BY ALL`,
+			"aggregate and spaces with policy",
+			`SELECT pub,dom,AGGREGATE("bid's number"),AGGREGATE("total volume"),Aggregate("total click""s") From ad_bids_mini_metrics_with_policy GROUP BY ALL`,
 			result{
-				sql:  "SELECT pub,dom,count(*),sum(volume),sum(clicks) FROM \"ad_bids_mini\" GROUP BY ALL",
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics"}},
+				sql:  "SELECT pub,dom,count(*),sum(volume),sum(clicks) FROM (SELECT * FROM \"ad_bids_mini\") GROUP BY ALL",
+				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics_with_policy"}},
 			},
 		},
 		{
@@ -81,10 +81,10 @@ func Test_parsedSQL(t *testing.T) {
 			`with a as (
 				select
 					publisher,
-					AGGREGATE(ad_bids_mini_metrics."total volume") as total_volume,
-					AGGREGATE(ad_bids_mini_metrics."total click""s") as total_clicks
+					AGGREGATE(ad_bids_mini_metrics_with_policy."total volume") as total_volume,
+					AGGREGATE(ad_bids_mini_metrics_with_policy."total click""s") as total_clicks
 				from
-					ad_bids_mini_metrics
+					ad_bids_mini_metrics_with_policy
 				group by
 					publisher
 				),
@@ -113,7 +113,7 @@ func Test_parsedSQL(t *testing.T) {
 						publisher,
 						sum(volume) as total_volume,
 						sum(clicks) as total_clicks
-					FROM "ad_bids_mini"
+					FROM (SELECT * FROM "ad_bids_mini")
 					group by
 						publisher
 					),
@@ -135,7 +135,7 @@ func Test_parsedSQL(t *testing.T) {
 					join b on
 						a.publisher = b.publisher
 					`,
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics"}, {Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
+				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics_with_policy"}, {Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
 			},
 		},
 	}
@@ -220,7 +220,7 @@ func TestTemplateMVSQLApi(t *testing.T) {
 func TestPolicyMVSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	api, err := rt.APIForName(context.Background(), instanceID, "policy_mv_sql_api")
+	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
