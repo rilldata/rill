@@ -31,6 +31,7 @@ import {
 import {
   DashboardDimensionFilter,
   DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
@@ -97,14 +98,8 @@ export function getProtoFromDashboardState(
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
-  if (metrics.expandedMeasureName) {
-    state.expandedMeasure = metrics.expandedMeasureName;
-  }
   if (metrics.pinIndex !== undefined) {
     state.pinIndex = metrics.pinIndex;
-  }
-  if (metrics.selectedDimensionName) {
-    state.selectedDimension = metrics.selectedDimensionName;
   }
 
   if (metrics.allMeasuresVisible) {
@@ -132,9 +127,10 @@ export function getProtoFromDashboardState(
   }
 
   if (metrics.pivot) {
-    const pivotStates = toPivotProto(metrics.pivot);
-    Object.keys(pivotStates).forEach((pk) => (state[pk] = pivotStates[pk]));
+    Object.assign(state, toPivotProto(metrics.pivot));
   }
+
+  Object.assign(state, toActivePageProto(metrics));
 
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
@@ -278,9 +274,35 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
       .map((d) => d.id),
     pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
 
-    pivotExpanded: pivotState.expanded, // TODO
+    // pivotExpanded: pivotState.expanded,
     pivotSort: pivotState.sorting,
     pivotColumnPage: pivotState.columnPage,
     pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
   };
+}
+
+function toActivePageProto(
+  metrics: MetricsExplorerEntity,
+): PartialMessage<DashboardState> {
+  switch (metrics.activePage) {
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.PIVOT:
+      return {
+        activePage: metrics.activePage,
+      };
+
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      return {
+        activePage: metrics.activePage,
+        selectedDimension: metrics.selectedDimensionName,
+      };
+
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      return {
+        activePage: metrics.activePage,
+        expandedMeasure: metrics.expandedMeasureName,
+      };
+  }
+
+  return {};
 }

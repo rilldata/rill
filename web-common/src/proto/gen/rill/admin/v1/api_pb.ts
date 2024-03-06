@@ -1193,7 +1193,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * Kind of resource to embed. If not set, defaults to "dashboard".
+   * Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
    *
    * @generated from field: string kind = 4;
    */
