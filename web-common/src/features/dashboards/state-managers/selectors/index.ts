@@ -1,3 +1,4 @@
+import { chartSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type {
   RpcStatus,
@@ -16,9 +17,9 @@ import { dimensionFilterSelectors } from "./dimension-filters";
 import { dimensionTableSelectors } from "./dimension-table";
 import { dimensionSelectors } from "./dimensions";
 import { measureSelectors } from "./measures";
+import { pivotSelectors } from "./pivot";
 import { sortingSelectors } from "./sorting";
 import { timeRangeSelectors } from "./time-range";
-import { pivotSelectors } from "./pivot";
 import type { ReadablesObj, SelectorFnsObj } from "./types";
 
 export type DashboardDataReadables = {
@@ -148,6 +149,14 @@ export const createStateManagerReadables = (
      * Readables related to pivot state
      */
     pivot: createReadablesFromSelectors(pivotSelectors, dashboardDataReadables),
+
+    /**
+     * Readables related to the chart interactions state
+     */
+    charts: createReadablesFromSelectors(
+      chartSelectors,
+      dashboardDataReadables,
+    ),
   };
 };
 

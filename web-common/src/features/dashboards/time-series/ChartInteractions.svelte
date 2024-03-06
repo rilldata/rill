@@ -1,23 +1,44 @@
 <script lang="ts">
   import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Button } from "@rilldata/web-common/components/button";
+  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
-  import {
-    useDashboardStore,
-    metricsExplorerStore,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import {
+    DashboardTimeControls,
+    TimeComparisonOption,
+    TimeRangePreset,
+  } from "@rilldata/web-common/lib/time/types";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName;
+  export let showComparison = false;
+  export let timeGrain: V1TimeGrain | undefined;
+
+  const StateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    selectors: {
+      charts: { canPanLeft, canPanRight, getNewPanRange },
+    },
+  } = StateManagers;
 
   let axisTop;
-  $: dashboardStore = useDashboardStore(metricViewName);
 
   function onKeyDown(e) {
-    if ($dashboardStore?.selectedScrubRange?.end) {
-      // if key Z is pressed, zoom the scrub
+    if (e.key === "ArrowLeft") {
+      if ($canPanLeft) {
+        const panRange = $getNewPanRange("left");
+        if (panRange) updatePanRange(panRange.start, panRange.end);
+      }
+    } else if (e.key === "ArrowRight") {
+      if ($canPanRight) {
+        const panRange = $getNewPanRange("right");
+        if (panRange) updatePanRange(panRange.start, panRange.end);
+      }
+    } else if ($dashboardStore?.selectedScrubRange?.end) {
       if (e.key === "z") {
         zoomScrub();
       } else if (
@@ -27,6 +48,28 @@
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }
     }
+  }
+
+  function updatePanRange(start: Date, end: Date) {
+    if (!timeGrain) return;
+    const timeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: start,
+      end: end,
+    };
+
+    const comparisonTimeRange = showComparison
+      ? ({
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
+      : undefined;
+
+    metricsExplorerStore.selectTimeRange(
+      metricViewName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+    );
   }
 
   function zoomScrub() {

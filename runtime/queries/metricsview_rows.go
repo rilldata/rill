@@ -80,7 +80,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, instanceID, priority, q.MetricsView)
+	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, q.MetricsView)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 				q.Where = convertFilterToExpression(q.Filter)
 			}
 
-			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, instanceID, opts.Priority, q.MetricsView)
+			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, q.MetricsView)
 			if err != nil {
 				return err
 			}
@@ -144,20 +144,20 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 			}
 
 			filename := q.generateFilename(q.MetricsView)
-			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 			return err
 		}
 	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 			return err
 		}
 	default:
@@ -167,7 +167,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	return nil
 }
 
-func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsViewSpec) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -184,11 +184,11 @@ func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, w)
+		return WriteCSV(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, w)
+		return WriteXLSX(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(q.Result.Meta, q.Result.Data, w)
+		return WriteParquet(q.Result.Meta, q.Result.Data, w)
 	}
 
 	return nil
@@ -198,7 +198,7 @@ func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime
 // The rollup column name takes the format "{time dimension name}__{granularity}[optional number]".
 // The optional number is appended in case of collision with an existing column name.
 // It returns an empty string for cases where no time rollup should be calculated (such as when q.TimeGranularity is not set).
-func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int, mv *runtimev1.MetricsViewSpec) (string, error) {
+func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) (string, error) {
 	// Skip if no time info is available
 	if mv.TimeDimension == "" || q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		return "", nil

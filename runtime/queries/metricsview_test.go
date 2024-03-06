@@ -27,7 +27,7 @@ func Test_writeCSV_emptystring(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 	require.Equal(t, "col\n\n", buf.String())
 }
@@ -48,7 +48,7 @@ func Test_writeCSV_number(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 	require.Equal(t, "col\n2.5\n", buf.String())
 }
@@ -69,7 +69,7 @@ func Test_writeCSV_null(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 	require.Equal(t, "col\n\n", buf.String())
 }
@@ -90,7 +90,7 @@ func Test_writeCSV_bool(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 	require.Equal(t, "col\ntrue\n", buf.String())
 }
@@ -116,7 +116,7 @@ func Test_writeCSV_struct(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 	require.Equal(t, "col\n\"{\"\"a\"\":2.5}\"\n", buf.String())
 }
@@ -144,7 +144,7 @@ func Test_writeCSV_list(t *testing.T) {
 	)
 
 	var buf bytes.Buffer
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 	require.Equal(t, "col\n[2.5 true]\n", buf.String())
 }
@@ -170,7 +170,7 @@ func Test_writeCSV_quotes(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeCSV(meta, data, &buf)
+	err := WriteCSV(meta, data, &buf)
 	require.NoError(t, err)
 
 	expected := fmt.Sprintf(
@@ -198,7 +198,7 @@ func Test_writeXLSX_emptystring(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -232,7 +232,7 @@ func Test_writeXLSX_size(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -297,7 +297,7 @@ func Test_writeXLSX_number(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -324,7 +324,7 @@ func Test_writeXLSX_null(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -351,7 +351,7 @@ func Test_writeXLSX_bool(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -383,7 +383,7 @@ func Test_writeXLSX_struct(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -417,7 +417,7 @@ func Test_writeXLSX_list(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
@@ -444,7 +444,7 @@ func Test_writeXLSX_quotes(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := writeXLSX(meta, data, &buf)
+	err := WriteXLSX(meta, data, &buf)
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
