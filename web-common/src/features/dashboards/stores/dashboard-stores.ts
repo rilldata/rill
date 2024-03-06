@@ -234,6 +234,16 @@ const metricViewReducers = {
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
+      if (mode) {
+        metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
+      } else if (metricsExplorer.selectedDimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else if (metricsExplorer.expandedMeasureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 
