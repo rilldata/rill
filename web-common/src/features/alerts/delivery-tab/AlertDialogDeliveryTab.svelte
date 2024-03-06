@@ -18,11 +18,10 @@
   <FormSection
     description="Choose the interval at which the alert is evaluated since the prior data refresh."
     title="Evaluation interval"
-    tooltip
   >
     <Select
       bind:value={$form["evaluationInterval"]}
-      id="splitByTimeGrain"
+      id="evaluationInterval"
       label=""
       options={AlertIntervalOptions}
     />

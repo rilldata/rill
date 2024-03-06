@@ -16,7 +16,6 @@
     V1MetricsViewAggregationRequest,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
-    type V1MetricsViewSpec,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { ResourceKind } from "../entity-management/resource-selectors";
@@ -54,7 +53,7 @@
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
-      splitByTimeGrain: alertSpec.intervalsIsoDuration ?? "",
+      evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertFormValues(
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
@@ -71,7 +70,7 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.splitByTimeGrain,
+              intervalDuration: values.evaluationInterval,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),

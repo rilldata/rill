@@ -5,7 +5,6 @@
 
   export let title: string;
   export let description: string = "";
-  export let tooltip: boolean = false;
 </script>
 
 <div class="flex flex-col bg-white p-3 gap-y-3 rounded">

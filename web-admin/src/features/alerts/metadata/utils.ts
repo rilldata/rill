@@ -1,4 +1,5 @@
 import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/delivery-tab/intervals";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
 import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
@@ -10,6 +11,9 @@ export function humaniseAlertRunDuration(alert: V1AlertSpec | undefined) {
     (o) => o.value === alert.intervalsIsoDuration,
   );
   if (preset) return preset.label;
+  if (alert.intervalsIsoDuration in DEFAULT_TIME_RANGES) {
+    return DEFAULT_TIME_RANGES[alert.intervalsIsoDuration].label;
+  }
   return humaniseISODuration(alert.intervalsIsoDuration);
 }
 

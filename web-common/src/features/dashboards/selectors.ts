@@ -12,10 +12,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  CreateQueryOptions,
-  CreateQueryResult,
-} from "@tanstack/svelte-query";
+import type { CreateQueryOptions } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useDashboardNames(instanceId: string) {
