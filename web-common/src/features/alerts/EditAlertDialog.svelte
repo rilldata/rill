@@ -113,7 +113,6 @@
     for (const fk in formValues) {
       $form[fk] = formValues[fk];
     }
-    console.log(formValues);
   }
 </script>
 
