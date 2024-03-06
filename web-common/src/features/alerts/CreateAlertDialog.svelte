@@ -47,7 +47,7 @@
       name: "",
       measure: $dashboardStore.leaderboardMeasureName ?? "",
       splitByDimension: $dashboardStore.selectedDimensionName ?? "",
-      splitByTimeGrain: "",
+      evaluationInterval: "",
       criteria: [
         {
           field: $dashboardStore.leaderboardMeasureName ?? "",
@@ -80,7 +80,7 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.splitByTimeGrain,
+              intervalDuration: values.evaluationInterval,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),

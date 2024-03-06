@@ -15,13 +15,13 @@ export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
-  splitByTimeGrain: string;
   criteria: {
     field: string;
     operation: string;
     value: string;
   }[];
   criteriaOperation: V1Operation;
+  evaluationInterval: string;
   snooze: string;
   recipients: { email: string }[];
   // The following fields are not editable in the form, but they're state that's used throughout the form, so

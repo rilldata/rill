@@ -14,7 +14,7 @@
       class="flex flex-row items-center gap-1 text-base text-medium text-slate-900"
     >
       <div>{title}</div>
-      {#if tooltip}
+      {#if $$slots["tooltip-content"]}
         <Tooltip>
           <InfoCircle />
           <TooltipContent slot="tooltip-content" maxWidth="600px">

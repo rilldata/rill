@@ -21,11 +21,10 @@
     tooltip
   >
     <Select
-      bind:value={$form["splitByTimeGrain"]}
+      bind:value={$form["evaluationInterval"]}
       id="splitByTimeGrain"
       label=""
       options={AlertIntervalOptions}
-      placeholder="None / Hourly / Daily / Weekly"
     />
     <ul class="list-disc ml-4" slot="tooltip-content">
       <li>

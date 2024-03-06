@@ -3,6 +3,10 @@
   import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
   import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+  import {
+    useMetricsView,
+    useMetricsViewTimeRange,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -25,9 +29,7 @@
 
   export let open: boolean;
   export let alertSpec: V1AlertSpec;
-  // Since form state is not loaded async we need to make sure this is fetched before this component
-  // So it is easier to get it from the parent
-  export let metricsViewSpec: V1MetricsViewSpec;
+  export let metricsViewName: string;
 
   const editAlert = createAdminServiceEditAlert();
   const queryClient = useQueryClient();
@@ -40,13 +42,24 @@
     alertSpec.queryArgsJson as string,
   ) as V1MetricsViewAggregationRequest;
 
+  $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);
+  $: timeRange = useMetricsViewTimeRange(
+    $runtime?.instanceId,
+    metricsViewName,
+    { query: { queryClient } },
+  );
+
   const formState = createForm({
     initialValues: {
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
       splitByTimeGrain: alertSpec.intervalsIsoDuration ?? "",
-      ...extractAlertFormValues(queryArgsJson, metricsViewSpec),
+      ...extractAlertFormValues(
+        queryArgsJson,
+        $metricsViewSpec?.data ?? {},
+        $timeRange?.data ?? {},
+      ),
     },
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {
@@ -91,6 +104,18 @@
       }
     },
   });
+  const { form } = formState;
+  $: if ($metricsViewSpec?.data && $timeRange?.data) {
+    const formValues = extractAlertFormValues(
+      queryArgsJson,
+      $metricsViewSpec.data,
+      $timeRange.data,
+    );
+    for (const fk in formValues) {
+      $form[fk] = formValues[fk];
+    }
+    console.log(formValues);
+  }
 </script>
 
 <Dialog

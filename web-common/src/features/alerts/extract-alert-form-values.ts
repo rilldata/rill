@@ -6,6 +6,7 @@ import {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1Operation,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -24,12 +25,20 @@ export type AlertFormValuesSubset = Pick<
 export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
   metricsViewSpec: V1MetricsViewSpec,
+  allTimeRange: V1MetricsViewTimeRangeResponse,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
   const dimensions =
     queryArgs.dimensions as V1MetricsViewAggregationDimension[];
+
+  const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
+    isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
+  };
+  if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
+    timeRange.end = allTimeRange.timeRangeSummary?.max;
+  }
 
   return {
     measure: measures[0]?.name ?? "",
@@ -46,8 +55,6 @@ export function extractAlertFormValues(
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
-    timeRange: (queryArgs.timeRange as V1TimeRange) ?? {
-      isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
-    },
+    timeRange,
   };
 }

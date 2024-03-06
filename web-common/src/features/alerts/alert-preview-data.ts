@@ -76,6 +76,7 @@ function getAlertPreviewQueryRequest(
     having: sanitiseExpression(undefined, params.criteria),
     timeRange: {
       isoDuration: params.timeRange.isoDuration,
+      end: params.timeRange.end,
     },
     limit: "50", // arbitrary limit to make sure we do not pull too much of data
     sort,

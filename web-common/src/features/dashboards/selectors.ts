@@ -6,13 +6,17 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1Expression,
   V1MetricsViewSpec,
   createQueryServiceMetricsViewTimeRange,
+  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryOptions } from "@tanstack/svelte-query";
+import type {
+  CreateQueryOptions,
+  CreateQueryResult,
+} from "@tanstack/svelte-query";
+import { derived } from "svelte/store";
 
 export function useDashboardNames(instanceId: string) {
   return useFilteredResourceNames(instanceId, ResourceKind.MetricsView);
@@ -53,34 +57,30 @@ export const useModelHasTimeSeries = (
 ) =>
   useMetricsView(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
 
-export function useModelAllTimeRange(
+export function useMetricsViewTimeRange(
   instanceId: string,
   metricsViewName: string,
   options?: {
-    query?: CreateQueryOptions;
+    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
   },
-) {
+): ReturnType<typeof createQueryServiceMetricsViewTimeRange> {
   const { query: queryOptions } = options ?? {};
 
-  return createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-    {
-      query: {
-        select: (data) => {
-          if (!data.timeRangeSummary?.min || !data.timeRangeSummary?.max)
-            return undefined;
-          return {
-            name: TimeRangePreset.ALL_TIME,
-            start: new Date(data.timeRangeSummary.min),
-            end: new Date(data.timeRangeSummary.max),
-          };
+  return derived(
+    [useMetricsView(instanceId, metricsViewName)],
+    ([metricsView], set) =>
+      createQueryServiceMetricsViewTimeRange(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            ...queryOptions,
+            enabled: !!metricsView.data?.timeDimension && queryOptions?.enabled,
+          },
         },
-        ...queryOptions,
-      },
-    },
-  );
+      ).subscribe(set),
+  ) as ReturnType<typeof createQueryServiceMetricsViewTimeRange>;
 }
 
 export const useMetaMeasure = (
