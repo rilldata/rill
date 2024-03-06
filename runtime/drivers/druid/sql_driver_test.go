@@ -14,8 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestDruid2(t *testing.T) {
-
+func TestDruid_json_walker(t *testing.T) {
 	j := `[["a", "b"], ["c", "d"], ["e", 1], ["k", 2]]`
 	dec := json.NewDecoder(strings.NewReader(j))
 	jw := JSONWalker{
@@ -46,7 +45,7 @@ func TestDruid2(t *testing.T) {
 }
 
 func TestDriver_types(t *testing.T) {
-	driver := &driver2{}
+	driver := &driversDriver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -83,7 +82,7 @@ func TestDriver_types(t *testing.T) {
 }
 
 func TestDriver_array_type(t *testing.T) {
-	driver := &driver2{}
+	driver := &driversDriver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -109,7 +108,7 @@ func TestDriver_array_type(t *testing.T) {
 }
 
 func TestDriver_json_type(t *testing.T) {
-	driver := &driver2{}
+	driver := &driversDriver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -134,7 +133,7 @@ func TestDriver_json_type(t *testing.T) {
 }
 
 func TestDriver_error(t *testing.T) {
-	driver := &driver2{}
+	driver := &driversDriver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
