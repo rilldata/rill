@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -105,17 +104,11 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 		mvConnector = resource.GetMetricsView().Spec.Connector
 
 		// change from metric view to underlying table
-		fromQry, err := underlyingTableQuery(ctrl.Runtime, opts, resource.GetMetricsView(), resource.Meta.StateUpdatedOn.AsTime())
+		fromQry, measureToExprMap, err := underlyingTableQuery(ctrl.Runtime, opts, resource.GetMetricsView(), resource.Meta.StateUpdatedOn.AsTime())
 		if err != nil {
 			return "", nil, err
 		}
 		sql = strings.ReplaceAll(sql, match[0], fromQry)
-
-		measures := resource.GetMetricsView().Spec.Measures
-		nameToExprMap := make(map[string]string, len(measures))
-		for _, m := range measures {
-			nameToExprMap[m.Name] = m.Expression
-		}
 
 		// example query = select dim1, aggregate(mv."my measure") from mv
 		// captures AGGREGATE("mv name"."my measure"), my name, measure
@@ -126,9 +119,9 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 
 		aggMatches := aggRegex.FindAllStringSubmatch(sql, -1)
 		for _, aggMatch := range aggMatches {
-			expr, ok := nameToExprMap[unquote(aggMatch[2])]
+			expr, ok := measureToExprMap[unquote(aggMatch[2])]
 			if !ok {
-				return "", nil, fmt.Errorf("MetricsViewSQL: measure %v not found", aggMatch[2])
+				return "", nil, fmt.Errorf("MetricsViewSQL: measure %q not found", aggMatch[2])
 			}
 
 			// TODO handle case when two different tables have same column name in the measure expression
@@ -141,7 +134,7 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 		if len(matches) == 1 {
 			aggMatches = aggWithoutMVRegex.FindAllStringSubmatch(sql, -1)
 			for _, aggMatch := range aggMatches {
-				expr, ok := nameToExprMap[unquote(aggMatch[1])]
+				expr, ok := measureToExprMap[unquote(aggMatch[1])]
 				if !ok {
 					return "", nil, fmt.Errorf("MetricsViewSQL: measure %v not found", aggMatch[1])
 				}
@@ -165,8 +158,35 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 			return safeSQLName(ref.Name), nil
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
-			// TODO: Implement this, do we need to support this?
-			return compilerv1.TemplateResource{}, nil
+			res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: name.Kind.String(), Name: name.Name}, false)
+			if err != nil {
+				return compilerv1.TemplateResource{}, err
+			}
+
+			switch name.Kind {
+			case compilerv1.ResourceKindSource:
+				return compilerv1.TemplateResource{
+					Meta:  res.Meta,
+					Spec:  res.GetSource().Spec,
+					State: res.GetSource().State,
+				}, nil
+			case compilerv1.ResourceKindModel:
+				return compilerv1.TemplateResource{
+					Meta:  res.Meta,
+					Spec:  res.GetModel().Spec,
+					State: res.GetModel().State,
+				}, nil
+			case compilerv1.ResourceKindMetricsView:
+				return compilerv1.TemplateResource{
+					Meta:  res.Meta,
+					Spec:  res.GetMetricsView().Spec,
+					State: res.GetMetricsView().State,
+				}, nil
+			default:
+				// Todo : this limitation should not exist but need to add a switch case on all kinds
+				return compilerv1.TemplateResource{}, fmt.Errorf("can only lookup source, model or metrics_view")
+
+			}
 		},
 	})
 	if err != nil {
@@ -176,43 +196,56 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 	return sql, deps, nil
 }
 
-func underlyingTableQuery(rt *runtime.Runtime, opts *runtime.APIResolverOptions, mv *runtimev1.MetricsViewV2, lastUpdatedTime time.Time) (string, error) {
+func underlyingTableQuery(rt *runtime.Runtime, opts *runtime.APIResolverOptions, mv *runtimev1.MetricsViewV2, lastUpdatedTime time.Time) (string, map[string]string, error) {
 	security, err := rt.ResolveMetricsViewSecurity(opts.UserAttributes, opts.InstanceID, mv.Spec, lastUpdatedTime)
 	if err != nil {
-		return "", err
+		return "", nil, err
+	}
+
+	measures := make(map[string]string, len(mv.Spec.Measures))
+	for _, measure := range mv.Spec.Measures {
+		measures[measure.Name] = measure.Expression
 	}
 
 	if security == nil {
-		return fmt.Sprintf("FROM %s", safeSQLName(mv.Spec.Table)), nil
+		return fmt.Sprintf("FROM %s", safeSQLName(mv.Spec.Table)), measures, nil
 	}
 
 	if !security.Access || security.ExcludeAll {
-		return "", fmt.Errorf("access forbidden")
+		return "", nil, fmt.Errorf("access forbidden")
 	}
 
-	var sql string
-	if len(security.Include) > 0 {
-		var cols []string
-		for _, col := range security.Include {
-			cols = append(cols, safeSQLName(col))
-		}
-		sql = "SELECT " + strings.Join(cols, ", ") + " FROM " + safeSQLName(mv.Spec.Table)
-	} else if len(security.Exclude) > 0 {
-		var cols []string
-		for _, col := range mv.Spec.Dimensions {
-			if !slices.Contains(security.Exclude, col.Column) {
-				cols = append(cols, safeSQLName(col.Column))
-			}
-		}
-		sql = "SELECT " + strings.Join(cols, ", ") + " FROM " + safeSQLName(mv.Spec.Table)
+	dims := make(map[string]any, len(mv.Spec.Dimensions))
+	for _, dim := range mv.Spec.Dimensions {
+		dims[dim.Column] = nil
+	}
+
+	var finalMeasures map[string]string
+	if len(security.Include) == 0 {
+		finalMeasures = maps.Clone(measures)
 	} else {
-		sql = "SELECT * FROM " + safeSQLName(mv.Spec.Table)
+		finalMeasures = make(map[string]string)
 	}
 
+	for _, include := range security.Include {
+		if _, ok := dims[include]; ok {
+			return "", nil, fmt.Errorf("metrics SQL does not support metrics views with an include/exclude security policy that applies to dimensions")
+		}
+		finalMeasures[include] = measures[include]
+	}
+
+	for _, exclude := range security.Exclude {
+		if _, ok := dims[exclude]; ok {
+			return "", nil, fmt.Errorf("metrics SQL does not support metrics views with an include/exclude security policy that applies to dimensions")
+		}
+		finalMeasures[exclude] = "null"
+	}
+
+	sql := "SELECT * FROM " + safeSQLName(mv.Spec.Table)
 	if security.RowFilter != "" {
 		sql += " WHERE " + security.RowFilter
 	}
-	return fmt.Sprintf("FROM (%s)", sql), nil
+	return fmt.Sprintf("FROM (%s)", sql), finalMeasures, nil
 }
 
 func unquote(input string) string {

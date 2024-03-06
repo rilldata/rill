@@ -228,7 +228,7 @@ func TestPolicyMVSQLApi(t *testing.T) {
 		InstanceID:     instanceID,
 		API:            api,
 		Args:           nil,
-		UserAttributes: map[string]any{"domain": "yahoo.com"},
+		UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"},
 		Priority:       0,
 	})
 
@@ -237,7 +237,30 @@ func TestPolicyMVSQLApi(t *testing.T) {
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 1, len(rows))
+	require.Equal(t, nil, rows[0]["total_vol"])
 	require.Equal(t, 3.0, rows[0]["total_imp"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
 	require.Equal(t, "Yahoo", rows[0]["publisher"])
+
+	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
+	require.NoError(t, err)
+
+	res, err = runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
+		Runtime:        rt,
+		InstanceID:     instanceID,
+		API:            api,
+		Args:           nil,
+		UserAttributes: map[string]any{"domain": "msn.com", "email": "user@msn.com"},
+		Priority:       0,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	var resp []map[string]interface{}
+	require.NoError(t, json.Unmarshal(res, &resp))
+	require.Equal(t, 1, len(resp))
+	require.Equal(t, 11.0, resp[0]["total_vol"])
+	require.Equal(t, 3.0, resp[0]["total_imp"])
+	require.Equal(t, "msn.com", resp[0]["domain"])
+	require.Equal(t, nil, resp[0]["publisher"])
 }

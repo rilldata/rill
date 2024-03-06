@@ -30,4 +30,7 @@ measures:
 security:
   access: true
   row_filter: "domain = '{{ .user.domain }}'"  
-
+  exclude:
+    - if: "'{{ .user.domain }}' != 'msn.com'"
+      names: 
+        - total volume
