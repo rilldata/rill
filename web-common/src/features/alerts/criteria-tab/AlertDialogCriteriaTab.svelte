@@ -22,7 +22,6 @@
       measure={$form["measure"]}
       metricsViewName={$form["metricsViewName"]}
       splitByDimension={$form["splitByDimension"]}
-      splitByTimeGrain={$form["splitByTimeGrain"]}
       timeRange={$form["timeRange"]}
       whereFilter={$form["whereFilter"]}
     />
