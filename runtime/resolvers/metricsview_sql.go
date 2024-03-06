@@ -19,15 +19,19 @@ func init() {
 	runtime.RegisterAPIResolverInitializer("Metrics", newMetricsViewSQL)
 }
 
+// sqlIdenitifer is regex pattern to identify a SQL idenitifier. The idenitifier may be wrapped in double quotes.
+// Additionally if double quotes are present in idenitifer, it is escaped with additional double quotes.
+var sqlIdenitifer = `[a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*"`
+
 var (
-	aggWithoutMVRegex = regexp.MustCompile(`(?i)AGGREGATE\(([a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*")\)`)
-	fromMVRegex       = regexp.MustCompile(`(?i)FROM\s+([a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*")`)
+	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\((?:(%s)\.)?(%s)\)`, sqlIdenitifer, sqlIdenitifer))
+	fromMVRegex    = regexp.MustCompile(fmt.Sprintf(`(?i)FROM\s+(%s)`, sqlIdenitifer))
 )
 
 func newMetricsViewSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
 	sql := opts.API.Spec.ResolverProperties.Fields["sql"].GetStringValue()
 	if sql == "" {
-		return nil, errors.New("no sql query found for sql resolver")
+		return nil, errors.New("no sql query found for metrics sql resolver")
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
@@ -73,16 +77,16 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 		deps = append(deps, &runtimev1.ResourceName{Kind: ref.Kind.String(), Name: ref.Name})
 	}
 
-	// 2. Expand metricsview SQL
+	// 2. Expand from metrics_view
 	// if there is a match, it will be of the form `from (metrics_view)``
 	// first is full match second is `metrics_view`
 	matches := fromMVRegex.FindAllStringSubmatch(sql, -1)
 
-	seenMV := make(map[string]*runtimev1.ResourceName)
+	mvToMeasureExprMap := make(map[string]map[string]string)
 	var mvConnector string
 	for _, match := range matches {
 		metricView := unquote(match[1])
-		if _, ok := seenMV[metricView]; ok {
+		if _, ok := mvToMeasureExprMap[metricView]; ok {
 			continue
 		}
 
@@ -96,7 +100,7 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 		if resource.GetMetricsView() == nil { // resource is not a metrics view
 			continue
 		}
-		seenMV[metricView] = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricView}
+		deps = append(deps, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricView})
 
 		if mvConnector != "" && resource.GetMetricsView().Spec.Connector != mvConnector {
 			return "", nil, fmt.Errorf("all referenced metrics views must use the same connector")
@@ -108,44 +112,43 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 		if err != nil {
 			return "", nil, err
 		}
+		mvToMeasureExprMap[metricView] = measureToExprMap
 		sql = strings.ReplaceAll(sql, match[0], fromQry)
+	}
 
+	// 3. Expand aggregate expression
+	if len(mvToMeasureExprMap) > 0 {
 		// example query = select dim1, aggregate(mv."my measure") from mv
 		// captures AGGREGATE("mv name"."my measure"), my name, measure
-		aggRegex, err := regexp.Compile(fmt.Sprintf(`(?i)AGGREGATE\((%s|"%s").([a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*")\)`, metricView, metricView))
-		if err != nil {
-			return "", nil, err
-		}
-
-		aggMatches := aggRegex.FindAllStringSubmatch(sql, -1)
+		aggMatches := aggregateRegex.FindAllStringSubmatch(sql, -1)
 		for _, aggMatch := range aggMatches {
-			expr, ok := measureToExprMap[unquote(aggMatch[2])]
-			if !ok {
+			metricView := unquote(aggMatch[1])
+			var expr string
+			var found bool
+			if metricView == "" {
+				if len(mvToMeasureExprMap) > 1 {
+					return "", nil, fmt.Errorf("measure should be precedded with metric_view if api references more than one metric view")
+				}
+
+				expr, found = maps.Values(mvToMeasureExprMap)[0][unquote(aggMatch[2])]
+			} else {
+				measureToExprMap, ok := mvToMeasureExprMap[metricView]
+				if !ok {
+					return "", nil, fmt.Errorf("metric_view %q not found", metricView)
+				}
+				expr, found = measureToExprMap[unquote(aggMatch[2])]
+			}
+
+			if !found {
 				return "", nil, fmt.Errorf("MetricsViewSQL: measure %q not found", aggMatch[2])
 			}
 
 			// TODO handle case when two different tables have same column name in the measure expression
 			sql = strings.ReplaceAll(sql, aggMatch[0], expr)
 		}
-
-		// additionally also handle the case when only one `from mv` found
-		// in which case user can submit query without mv name appended to measure
-		// select dim1, aggregate("my measure") from mv
-		if len(matches) == 1 {
-			aggMatches = aggWithoutMVRegex.FindAllStringSubmatch(sql, -1)
-			for _, aggMatch := range aggMatches {
-				expr, ok := measureToExprMap[unquote(aggMatch[1])]
-				if !ok {
-					return "", nil, fmt.Errorf("MetricsViewSQL: measure %v not found", aggMatch[1])
-				}
-
-				sql = strings.ReplaceAll(sql, aggMatch[0], expr)
-			}
-		}
 	}
-	deps = append(deps, maps.Values(seenMV)...)
 
-	// 3. resolver all templates
+	// 4. resolve all templates
 	sql, err = compilerv1.ResolveTemplate(sql, compilerv1.TemplateData{
 		User:       opts.UserAttributes,
 		ExtraProps: opts.Args,
@@ -183,7 +186,6 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 					State: res.GetMetricsView().State,
 				}, nil
 			default:
-				// Todo : this limitation should not exist but need to add a switch case on all kinds
 				return compilerv1.TemplateResource{}, fmt.Errorf("can only lookup source, model or metrics_view")
 			}
 		},
