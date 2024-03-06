@@ -185,7 +185,6 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 			default:
 				// Todo : this limitation should not exist but need to add a switch case on all kinds
 				return compilerv1.TemplateResource{}, fmt.Errorf("can only lookup source, model or metrics_view")
-
 			}
 		},
 	})
