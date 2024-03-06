@@ -1,18 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import BookmarkFiltersFormSection from "@rilldata/web-admin/features/bookmarks/BookmarkFiltersFormSection.svelte";
-  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
+  import BaseBookmarkForm from "@rilldata/web-admin/features/bookmarks/BaseBookmarkForm.svelte";
+  import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import {
     createAdminServiceCreateBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import BookmarkTimeRangeSwitch from "@rilldata/web-admin/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import { useProjectId } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -30,16 +25,11 @@
   $: dashboardStore = useDashboardStore(metricsViewName);
 
   $: projectId = useProjectId($page.params.organization, $page.params.project);
-  $: projectPermissions = getProjectPermissions(
-    $page.params.organization,
-    $page.params.project,
-  );
-  $: manageProject = $projectPermissions.data?.manageProject;
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
 
   const formState = createForm({
-    initialValues: {
+    initialValues: <BookmarkFormValues>{
       displayName: "Default Name",
       description: "",
       shared: "false",
@@ -81,7 +71,7 @@
     },
   });
 
-  const { form, errors, handleSubmit, handleReset } = formState;
+  const { handleSubmit, handleReset } = formState;
 
   function handleClose() {
     open = false;
@@ -90,49 +80,14 @@
 
 <Dialog on:close={handleClose} {open} widthOverride="w-[602px]">
   <svelte:fragment slot="title">Bookmark current view</svelte:fragment>
-  <form
-    class="flex flex-col gap-4 z-50"
-    id="create-bookmark-dialog"
-    on:submit|preventDefault={() => {
-      /* Switch was triggering this causing clicking on them submitting the form */
-    }}
+  <BaseBookmarkForm
+    editForm={false}
+    {formState}
+    {metricsViewName}
     slot="body"
-  >
-    <InputV2
-      bind:value={$form["displayName"]}
-      error={$errors["displayName"]}
-      id="displayName"
-      label="Name"
-    />
-    <BookmarkFiltersFormSection {metricsViewName} />
-    <InputV2
-      bind:value={$form["description"]}
-      error={$errors["description"]}
-      id="description"
-      label="Description"
-      optional
-    />
-    {#if manageProject}
-      <Select
-        bind:value={$form["shared"]}
-        id="shared"
-        label="Category"
-        options={[
-          { value: "false", label: "Your bookmarks" },
-          { value: "true", label: "Default bookmarks" },
-        ]}
-      />
-    {/if}
-    <div class="flex items-center space-x-2">
-      <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
-      <Label for="filtersOnly">Save filters only</Label>
-    </div>
-    <BookmarkTimeRangeSwitch
-      bind:checked={$form["absoluteTimeRange"]}
-      {metricsViewName}
-    />
-  </form>
+  />
   <div class="flex flex-row mt-4 gap-2" slot="footer">
+    <div class="grow" />
     <Button on:click={handleClose} type="secondary">Cancel</Button>
     <Button on:click={handleSubmit} type="primary">Save</Button>
   </div>

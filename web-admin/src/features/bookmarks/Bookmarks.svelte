@@ -4,6 +4,7 @@
     createAdminServiceRemoveBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
+  import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -85,7 +86,13 @@
 
 <DropdownMenu bind:open>
   <DropdownMenuTrigger>
-    <BookmarkIcon class="inline-flex" fill={open ? "black" : "none"} />
+    <Button type="secondary">
+      <BookmarkIcon
+        class="inline-flex"
+        fill={open ? "black" : "none"}
+        size="16px"
+      />
+    </Button>
   </DropdownMenuTrigger>
   <BookmarksContent
     on:create={() => (createBookmark = true)}

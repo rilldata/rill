@@ -59,8 +59,8 @@
     {/if}
     {#if onDashboardPage}
       <LastRefreshedDate />
-      <ShareDashboardButton />
       <Bookmarks />
+      <ShareDashboardButton />
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

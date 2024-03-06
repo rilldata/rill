@@ -1,16 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import BookmarkFiltersFormSection from "@rilldata/web-admin/features/bookmarks/BookmarkFiltersFormSection.svelte";
+  import BaseBookmarkForm from "@rilldata/web-admin/features/bookmarks/BaseBookmarkForm.svelte";
+  import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import {
     createAdminServiceUpdateBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import BookmarkTimeRangeSwitch from "@rilldata/web-admin/features/bookmarks/BookmarkTimeRangeSwitch.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import {
     type BookmarkEntry,
@@ -36,9 +33,9 @@
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
   const formState = createForm({
-    initialValues: {
+    initialValues: <BookmarkFormValues>{
       displayName: bookmark.resource.displayName ?? "",
-      description: (bookmark.resource.description as string) ?? "",
+      description: bookmark.resource.description ?? "",
       filtersOnly: bookmark.filtersOnly,
       absoluteTimeRange: bookmark.absoluteTimeRange,
     },
@@ -73,7 +70,7 @@
     },
   });
 
-  const { form, errors, handleSubmit } = formState;
+  const { handleSubmit } = formState;
 
   function handleClose() {
     open = false;
@@ -82,38 +79,9 @@
 
 <Dialog on:close={handleClose} {open} widthOverride="w-[602px]">
   <svelte:fragment slot="title">Bookmark current view</svelte:fragment>
-  <form
-    class="flex flex-col gap-4 z-50"
-    id="create-bookmark-dialog"
-    on:submit|preventDefault={() => {
-      /* Switch was triggering this causing clicking on them submitting the form */
-    }}
-    slot="body"
-  >
-    <InputV2
-      bind:value={$form["displayName"]}
-      error={$errors["displayName"]}
-      id="displayName"
-      label="Name"
-    />
-    <BookmarkFiltersFormSection {metricsViewName} />
-    <InputV2
-      bind:value={$form["description"]}
-      error={$errors["description"]}
-      id="description"
-      label="Description"
-      optional
-    />
-    <div class="flex items-center space-x-2">
-      <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
-      <Label for="filtersOnly">Save filters only</Label>
-    </div>
-    <BookmarkTimeRangeSwitch
-      bind:checked={$form["absoluteTimeRange"]}
-      {metricsViewName}
-    />
-  </form>
+  <BaseBookmarkForm editForm {formState} {metricsViewName} slot="body" />
   <div class="flex flex-row mt-4 gap-2" slot="footer">
+    <div class="grow" />
     <Button on:click={handleClose} type="secondary">Cancel</Button>
     <Button on:click={handleSubmit} type="primary">Save</Button>
   </div>

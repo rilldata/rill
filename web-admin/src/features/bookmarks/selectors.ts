@@ -4,7 +4,10 @@ import {
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+import {
+  useMetricsView,
+  useMetricsViewTimeRange,
+} from "@rilldata/web-common/features/dashboards/selectors";
 import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -12,7 +15,6 @@ import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
-  createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewSpec,
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
@@ -81,8 +83,8 @@ export function getBookmarks(
               resp.bookmarks?.forEach((bookmarkResource) => {
                 const bookmark = parseBookmarkEntry(
                   bookmarkResource,
-                  metricsViewResp.data as V1MetricsViewSpec,
-                  schemaResp.data?.schema as V1StructType,
+                  metricsViewResp.data,
+                  schemaResp.data.schema,
                 );
                 if (bookmarkResource.default) {
                   bookmarks.home = bookmark;
@@ -109,21 +111,9 @@ export function getPrettySelectedTimeRange(
   return derived(
     [
       useMetricsView(instanceId, metricsViewName),
-      derived(
-        [useMetricsView(instanceId, metricsViewName)],
-        ([metricsView], set) =>
-          createQueryServiceMetricsViewTimeRange(
-            instanceId,
-            metricsViewName,
-            {},
-            {
-              query: {
-                queryClient: queryClient,
-                enabled: !!metricsView.data?.timeDimension,
-              },
-            },
-          ).subscribe(set),
-      ),
+      useMetricsViewTimeRange(instanceId, metricsViewName, {
+        query: { queryClient },
+      }),
       useDashboardStore(metricsViewName),
     ],
     ([metricViewSpec, timeRangeSummary, metricsExplorerEntity]) => {
@@ -157,6 +147,6 @@ function parseBookmarkEntry(
     resource: bookmarkResource,
     absoluteTimeRange:
       metricsEntity.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
-    filtersOnly: !metricsEntity.selectedTimeRange && !metricsEntity.pivot,
+    filtersOnly: !metricsEntity.pivot,
   };
 }
