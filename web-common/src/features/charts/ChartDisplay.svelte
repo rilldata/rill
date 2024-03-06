@@ -1,12 +1,10 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let chartName: string;
-  let error = "";
+  $: error = "";
 
   $: chart = useChart($runtime.instanceId, chartName);
 
@@ -14,17 +12,10 @@
   let parsedVegaSpec = undefined;
   $: try {
     parsedVegaSpec = vegaSpec ? JSON.parse(vegaSpec) : undefined;
+    error = "";
   } catch (e) {
     error = e;
   }
-
-  const queryClient = useQueryClient();
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    `/charts/${chartName}.yaml`,
-  );
-  $: console.log($allErrors);
 </script>
 
 <div class="m-2 w-1/2">
