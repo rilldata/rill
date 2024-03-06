@@ -8,7 +8,9 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
 
 ## Properties
 
-**`model`** — the model name powering the dashboard with no path _(required)_
+**`model`** — the **model** name powering the dashboard with no path specified; should only be used for [Rill models](../../build/models/models.md) _(either **model** or **table** is required)_
+
+**`table`** - the **table** name powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](../../build/connect/connect.md) and/or from [external OLAP tables](../../build/connect/external-tables.md) _(either **table** or **model** is required)_
 
 **`title`** — the display name for the dashboard _(required)_
 

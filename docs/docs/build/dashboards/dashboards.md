@@ -1,6 +1,6 @@
 ---
 title: Create Dashboards
-description: Create dashboards using source data and your defined time, dimensions, and measures
+description: Create dashboards using source data and models with time, dimensions, and measures
 sidebar_label: Create Dashboards
 sidebar_position: 00
 ---

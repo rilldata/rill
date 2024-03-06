@@ -9,11 +9,22 @@ The `rill.yaml` file contains metadata about your project.
 ## Properties
 
 **`title`** — the name of your project which will be displayed in the upper left hand corner
-**`compiler`** — the Rill project compiler version compatible with your project files (currently only supports: `rill-beta`)
+**`compiler`** — the Rill project compiler version compatible with your project files (currently defaults to: `rillv1`)
+**`olap_connector`** - the default OLAP engine to use in your project
 **`mock_users`** — a list of mock users to test against dashboard [security policies](../../develop/security). For each mock user, possible attributes include:
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
+
+## Configuring the default OLAP Engine
+
+Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`. This setting is configurable using the `olap_connector` property (and will otherwise revert to `duckdb` if not specified). 
+
+:::info Curious about OLAP Engines?
+
+Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
+
+:::
  
 ## Project-wide defaults
 

@@ -16,7 +16,7 @@ Snowflake is a cloud-based data platform designed to facilitate data warehousing
 ## Local credentials
 
 When using Rill Developer on your local machine (i.e. `rill start`), Rill will use the credentials passed via the Snowflake connection string in one of several ways:
-1. As defined in the [source YAML configuration](../../reference/project-files/sources.md#properties) directly via the `dsn property`
+1. As defined in the [source YAML configuration](../../reference/project-files/sources.md#properties) directly via the `dsn` property
 2. As defined in the optional _Snowflake Connection String_ field from within the UI source creation workflow (this is equivalent to setting the `dsn` property in the underlying source YAML file)
 3. As defined from the CLI when running `rill start --var connector.snowflake.dsn=...`
 
@@ -63,5 +63,136 @@ Note that you must first `cd` into the Git repository that your project was depl
 :::tip Did you know?
 
 If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](../../build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
+
+:::
+
+## Appendix
+
+### Using keypair authentication
+
+Rill supports using keypair authentication for enhanced authentication security to Snowflake as an alternative to basic authentication. Per the [Snowflake Go Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-JWT_authentication) specifications, this will imply the following changes to the `dsn` being used (note the `authenticator` and `privateKey` key-value pairs):
+
+```sql
+<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>
+```
+
+:::tip Best Practices
+
+If using keypair authentication, you may want to consider rotating your public key to ensure compliance with security and governance best practices. If rotating your key, you will need to following the described steps below again.
+
+:::
+
+#### Generate a private key
+
+You will first want to generate a 2048-bit PKCS#8 encoded RSA private key:
+
+```bash
+
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -pkeyopt rsa_keygen_pubexp:65537 | openssl pkcs8 -topk8 -outform der -nocrypt > rsa_key.p8
+
+```
+
+:::info
+
+This will create a private key called `rsa_key.p8` in your current working directory.
+
+:::
+
+#### Generate a public key
+
+You will next want to extract a 2048-bit PKI encoded RSA public key from the private key:
+
+```bash
+
+openssl pkey -pubout -inform der -outform der -in rsa_key.p8 -out rsa_key.pub
+
+```
+
+:::info
+
+This will create a public key called `rsa_key.pub` in your current working directory.
+
+:::
+
+
+#### Store the private and public keys securely
+
+It is recommended to copy the public and private key files to a local directory for storage (and record the path to these files). Please note that the private key is stored using the PKCS#8 (Public Key Crypotgraphy Standards) format. 
+
+:::note Securing your keys
+
+To ensure best practices, please make sure to secure these key files when they is not being used and to protect these files from unauthorized access by using the appropriate file permission mechanisms provided by your operating system.
+
+:::
+
+#### Generate a Base64 URL-safe encoded version of your public key
+
+Before assigning your public key to your user in Snowflake, we will need to generate a Base64 URL-safe encoded version of the public key using the following command:
+
+```bash
+
+cat rsa_key.pub | base64 | tr -d '\n'
+
+```
+
+:::info Check your OS version
+
+Depending on the OS version, the command to generate a Base64 URL-safe encoded version of your key may slightly differ. Please check your OS reference manual for the correct syntax.
+
+:::
+
+:::tip Check if the encoded output ends with %
+
+Before copying this output (for the next step), please make sure the resulting string does not end with a `%`. To double check, you can try writing the results to a text file and manually checking: `cat rsa_key.pub | base64 | tr -d '\n' > public_key.txt`.
+
+:::
+
+#### Assign the encoded public key to a Snowflake user
+
+Taking the output from the previous step, you can follow the steps described in Snowflake's documentation [**here**](https://docs.snowflake.com/user-guide/key-pair-auth#assign-the-public-key-to-a-snowflake-user) to assign the public key to an appropriate Snowflake user. 
+
+#### Verify the user's public key fingerprint
+
+Follow Snowflake's documentation [**here**](https://docs.snowflake.com/user-guide/key-pair-auth#verify-the-user-s-public-key-fingerprint) to verify the public key fingerprint and ensure the public key has been configured properly for the user.
+
+:::info
+
+You can use the same commands provided by Snowflake with minimal changes. You will only need to update the name of the user and public key (if different from `rsa_key.pub`)
+
+:::
+
+#### Generate a Base64 URL-safe encoded version of your private key
+
+Following similar steps, we will first need to generate a Base64 URL-safe encoded version of your private key:
+
+```bash
+
+cat rsa_key.p8 | base64 | tr '+/' '-_' | tr -d '\n'
+
+```
+
+:::info Check your OS version
+
+Depending on the OS version, the command to generate a Base64 URL-safe encoded version of your key may slightly differ. Please check your OS reference manual for the correct syntax.
+
+:::
+
+:::tip Check if the encoded output ends with %
+
+Before copying this output (for the next step), please make sure the resulting string does not end with a `%`. To double check, you can try writing the results to a text file and manually checking: `cat rsa_key.p8 | base64 | tr -d '\n' > private_key.txt`.
+
+:::
+
+#### Update Snowflake DSN with encoded private key in Rill
+
+Taking the output of the previous step, you will want to update the DSN accordingly in your source definition:
+
+```sql
+<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>
+```
+
+:::note
+
+The Base64 URL-safe encoded private key should be added to your `privateKey` parameter.
 
 :::

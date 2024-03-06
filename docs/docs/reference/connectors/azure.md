@@ -11,7 +11,7 @@ sidebar_position: 3
 [Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats for data such as CSV and parquet. Rill supports connecting to and reading from Azure Blob Storage using the following Resource URI syntax:
 
 ```bash
-azure://<BUCKET>/<GLOB PATTERN>
+azure://<BUCKET>/<GLOB_PATTERN>
 ```
 
 ![Connecting to ABS](/img/reference/connectors/azure/abs.png)

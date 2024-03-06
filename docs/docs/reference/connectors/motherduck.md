@@ -9,21 +9,45 @@ sidebar_position: 6
 
 ## Overview
 
-[DuckDB](https://duckdb.org/docs/) is an in-process SQL OLAP database management system designed for analytical workloads, aiming to be fast, reliable, and easy to integrate into data analysis applications. It supports standard SQL and operates directly on data in Pandas DataFrames, CSV files, and Parquet files, making it highly suitable for on-the-fly data analysis and machine learning projects. As DuckDB is an in-memory database that only runs locally, *Rill Developer* supports natively connecting to and reading from a persisted DuckDB database as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html).
+[DuckDB](https://duckdb.org/docs/) is an in-process SQL OLAP database management system designed for analytical workloads, aiming to be fast, reliable, and easy to integrate into data analysis applications. It supports standard SQL and operates directly on data in Pandas DataFrames, CSV files, and Parquet files, making it highly suitable for on-the-fly data analysis and machine learning projects. Rill supports natively connecting to and reading from a persisted DuckDB database that it has access to as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html).
 
-[MotherDuck](https://motherduck.com/docs/getting-started/), on the other hand, is a managed DuckDB-in-the-cloud service, providing enhanced features for scalability, security, and collaboration within larger organizations. It offers advanced management tools, security features like access control and encryption, and support for concurrent access, enabling teams to leverage DuckDB's analytical capabilities at scale while ensuring data governance and security. Similarly, Rill supports natively conecting to and reading from Motherduck as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html)
+[MotherDuck](https://motherduck.com/docs/getting-started/), on the other hand, is a managed DuckDB-in-the-cloud service, providing enhanced features for scalability, security, and collaboration within larger organizations. It offers advanced management tools, security features like access control and encryption, and support for concurrent access, enabling teams to leverage DuckDB's analytical capabilities at scale while ensuring data governance and security. Similarly, Rill supports natively connecting to and reading from Motherduck as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html)
 
 ![Connecting to DuckDB/MotherDuck](/img/reference/connectors/motherduck/motherduck.png)
 
 ## Connecting to DuckDB
 
-As noted above, if you wish to connect to a persistent DuckDB database so that you can use existing tables in Rill, <u>this has to be done from Rill Developer</u> and Rill Developer has to be run on the same instance / machine from where your DuckDB resides.
+As noted above, if you wish to connect to a persistent DuckDB database to read existing tables, Rill will first need to be able to access the underlying DuckDB database. As DuckDB is an _in-memory_ database that's primarily used for local use cases, credentials are not required (and you will typically use Rill Developer). However, if the database file is <u>included</u> in your Git repository, then Rill Cloud will also be able to serve your DuckDB sourced dashboards.
 
-![Connecting to local DuckDB](/img/reference/connectors/motherduck/duckdb.png)
+### Local credentials
 
-:::danger Rill Cloud
+If creating a new DuckDB source from the UI, you should pass in the appropriate path to the DuckDB database file under **DB** and use the appopriate [DuckDB select statement](https://duckdb.org/docs/sql/statements/select.html) to read in the table under **SQL**:
 
-Given the architectures of both technologies, it is **not** possible to connect to your local DuckDB database from a deployed project in Rill Cloud. Attempting to do so will lead to unexpected behavior for your defined source (and result in errors for associated models and dashboards).
+![Connecting to an existing DuckDB table](/img/reference/connectors/motherduck/duckdb_example.png)
+
+On the other hand, if you are creating the source YAML file directly, the definition should look something like:
+
+```yaml
+
+type: "duckdb"
+sql: "SELECT * from <duckdb_table>"
+db: "<path_to_duckdb_db_file>"
+
+```
+
+:::tip If deploying to Rill Cloud
+
+If you plan to deploy a project containing a DuckDB source to Rill Cloud, it is recommended that you move the DuckDB database file to a `data` folder in your Rill project home directory. You can then use the relative path of the db file in your source definition (e.g. `data/test_duckdb.db`).
+
+:::
+
+### Cloud deployment
+
+Once a project with a DuckDB source has been deployed using `rill deploy`, Rill Cloud will need to be able to have access to and retrieve the underlying persisted database file. In most cases, this means that the corresponding DuckDB database file should be included within a directory in your Git repository, which will allow you to specify a relative path in your source definition (from the project root).
+
+:::warning When Using An External DuckDB Database
+
+If the DuckDB database file is external to your Rill project directory, you will still be able to use the fully qualified path to read this SQLite database _locally_ using Rill Developer. However, when deployed to Rill Cloud, this source will throw an **error**.
 
 :::
 

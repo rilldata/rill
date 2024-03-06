@@ -1,8 +1,8 @@
 ---
-title: "Transform Data"
-description: Transform your data using Duck SQL
-sidebar_label: "Transform Data"
-sidebar_position: 10
+title: Create Models
+description: Create models from source data and apply SQL transformations
+sidebar_label: Create Models
+sidebar_position: 00
 ---
 
 Data models in Rill are composed of SQL `SELECT` statements that operate on source data. They allow you to join, transform, and clean data.
