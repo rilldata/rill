@@ -148,7 +148,7 @@
 
       <!-- Split by time grain -->
       <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Split by time grain</MetadataLabel>
+        <MetadataLabel>Evaluation interval</MetadataLabel>
         <MetadataValue>{runInterval}</MetadataValue>
       </div>
 
