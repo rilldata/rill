@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -75,38 +74,6 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 	}
 
 	return &adminv1.TriggerRefreshSourcesResponse{}, nil
-}
-
-func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Request) {
-	orgName := r.URL.Query().Get("organization")
-	projectName := r.URL.Query().Get("project")
-	if orgName == "" || projectName == "" {
-		http.Error(w, "organization or project not specified", http.StatusBadRequest)
-		return
-	}
-
-	proj, err := s.admin.DB.FindProjectByName(r.Context(), orgName, projectName)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if proj.ProdDeploymentID == nil {
-		http.Error(w, "project does not have a deployment", http.StatusBadRequest)
-		return
-	}
-
-	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.ProdDeploymentID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = s.admin.TriggerRefreshSources(r.Context(), depl, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 }
 
 func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
@@ -352,22 +319,29 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	s.admin.Used.Deployment(prodDepl.ID)
 
-	if req.Kind == "" {
-		req.Kind = runtime.ResourceKindMetricsView
-	}
-
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
-		"kind":         req.Kind,
-		"resource":     req.Resource,
-		"state":        req.State,
+	}
+	if req.Kind == "" {
+		iframeQuery["kind"] = runtime.ResourceKindMetricsView
+	} else {
+		iframeQuery["kind"] = req.Kind
+	}
+	if req.Resource != "" {
+		iframeQuery["resource"] = req.Resource
+	}
+	if req.Theme != "" {
+		iframeQuery["theme"] = req.Theme
+	}
+	if req.Navigation {
+		iframeQuery["navigation"] = "true"
+	}
+	if req.State != "" {
+		iframeQuery["state"] = req.State
 	}
 	for k, v := range req.Query {
-		if _, ok := iframeQuery[k]; ok {
-			return nil, status.Errorf(codes.InvalidArgument, "query parameter %q is reserved", k)
-		}
 		iframeQuery[k] = v
 	}
 

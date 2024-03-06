@@ -64,6 +64,7 @@ linters:
     - usestdlibvars
     - unused
     - whitespace
+    - unparam
 
 linters-settings:
   depguard:

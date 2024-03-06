@@ -1,0 +1,9 @@
+kind : api
+sql: |
+  SELECT id, timestamp, publisher, domain, bid_price
+  FROM ad_bids
+  WHERE
+    -- can access user attributes with templating
+    {{ if (ne .user.domain "") }} domain = '{{ .user.domain }}' {{ end }}
+    -- can use Sprig functions, e.g. to easily set defaults
+    {{ if (not .isExport) }} LIMIT {{ default 20 .pageSize }} {{ end }}

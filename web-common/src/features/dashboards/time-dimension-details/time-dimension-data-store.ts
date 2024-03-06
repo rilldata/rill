@@ -38,6 +38,7 @@ type MeasureValue = number | null | undefined;
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
+  isError?: boolean;
   comparing?: TDDComparison;
   data?: TableData;
 };
@@ -391,6 +392,7 @@ export function createTimeDimensionDataStore(
       timeSeries,
       tableDimensionData,
     ]) => {
+      if (timeSeries?.isError) return { isFetching: false, isError: true };
       if (
         !timeControls.ready ||
         timeControls?.isFetching ||

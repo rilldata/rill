@@ -10,7 +10,11 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
-export type AdminServiceListBookmarksParams = { projectId?: string };
+export type AdminServiceListBookmarksParams = {
+  projectId?: string;
+  resourceKind?: string;
+  resourceName?: string;
+};
 
 export type AdminServiceGetUserParams = { email?: string };
 
@@ -127,20 +131,42 @@ export type AdminServiceListProjectInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetIFrameBodyAttributes = { [key: string]: any };
-
+/**
+ * DEPRECATED: Additional parameters to set outright in the generated URL query.
+ */
 export type AdminServiceGetIFrameBodyQuery = { [key: string]: string };
 
+/**
+ * If set, will use the provided attributes outright.
+ */
+export type AdminServiceGetIFrameBodyAttributes = { [key: string]: any };
+
+/**
+ * GetIFrameRequest is the request payload for AdminService.GetIFrame.
+ */
 export type AdminServiceGetIFrameBody = {
+  /** Branch to embed. If not set, the production branch is used. */
   branch?: string;
-  kind?: string;
-  resource?: string;
+  /** TTL for the iframe's access token. If not set, defaults to 24 hours. */
   ttlSeconds?: number;
-  state?: string;
-  query?: AdminServiceGetIFrameBodyQuery;
+  /** If set, will use the attributes of the user with this ID. */
   userId?: string;
+  /** If set, will generate attributes corresponding to a user with this email. */
   userEmail?: string;
+  /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
+  /** Kind of resource to embed. If not set, defaults to "dashboard". */
+  kind?: string;
+  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart. */
+  resource?: string;
+  /** Theme to use for the embedded resource. */
+  theme?: string;
+  /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
+  navigation?: boolean;
+  /** Blob containing UI state for rendering the initial embed. Not currently supported. */
+  state?: string;
+  /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
+  query?: AdminServiceGetIFrameBodyQuery;
 };
 
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {
@@ -266,6 +292,19 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UpdateBookmarkResponse {
+  [key: string]: any;
+}
+
+export interface V1UpdateBookmarkRequest {
+  bookmarkId?: string;
+  displayName?: string;
+  description?: string;
+  data?: string;
+  default?: boolean;
+  shared?: boolean;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -777,9 +816,13 @@ export interface V1CreateBookmarkResponse {
 
 export interface V1CreateBookmarkRequest {
   displayName?: string;
+  description?: string;
   data?: string;
-  dashboardName?: string;
+  resourceKind?: string;
+  resourceName?: string;
   projectId?: string;
+  default?: boolean;
+  shared?: boolean;
 }
 
 export interface V1CreateAlertResponse {
@@ -802,10 +845,14 @@ export interface V1CompleteRequest {
 export interface V1Bookmark {
   id?: string;
   displayName?: string;
+  description?: string;
   data?: string;
-  dashboardName?: string;
+  resourceKind?: string;
+  resourceName?: string;
   projectId?: string;
   userId?: string;
+  default?: boolean;
+  shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }

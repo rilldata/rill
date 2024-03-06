@@ -75,7 +75,6 @@
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
-
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
@@ -183,7 +182,26 @@
   on:toggle-all-search-items={() => toggleAllSearchItems()}
 />
 
-{#if formattedData && comparisonCopy}
+{#if $timeDimensionDataStore?.isError}
+  <div
+    style:height="calc(100% - 200px)"
+    class="w-full flex items-center justify-center text-sm"
+  >
+    <div class="text-center">
+      <div class="text-red-600 mt-1 text-lg">
+        We encountered an error while loading the data. Please try refreshing
+        the page.
+      </div>
+      <div class="text-gray-600">
+        If the issue persists, please contact us on <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="http://bit.ly/3jg4IsF">Discord</a
+        >.
+      </div>
+    </div>
+  </div>
+{:else if formattedData && comparisonCopy}
   <TDDTable
     {excludeMode}
     {dimensionLabel}

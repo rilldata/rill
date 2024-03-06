@@ -345,10 +345,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 	if err != nil {
 		return err
 	}
-	sinkConfig, err := driversSink(sinkConn, tableName)
-	if err != nil {
-		return err
-	}
+	sinkConfig := driversSink(tableName)
 
 	// Set timeout on ctx
 	timeout := _defaultIngestTimeout
@@ -404,6 +401,6 @@ func (r *SourceReconciler) driversSource(ctx context.Context, self *runtimev1.Re
 	return resolveTemplatedProps(ctx, r.C, tself, propsPB.AsMap())
 }
 
-func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
-	return map[string]any{"table": tableName}, nil
+func driversSink(tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }

@@ -30,6 +30,8 @@ export async function fetchWrapper({
 
   headers ??= { "Content-Type": "application/json" };
 
+  url = encodeURI(url);
+
   if (params) {
     const paramParts = [];
     for (const p in params) {

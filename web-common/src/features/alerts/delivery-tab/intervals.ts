@@ -15,9 +15,4 @@ export const AlertIntervalOptions = [
     label: "Week",
     value: "P1W",
   },
-  {
-    label: "Month",
-    value: "P1M",
-    // TODO: add more
-  },
 ];

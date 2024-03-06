@@ -45,7 +45,7 @@ rill project status
 Projects can sometimes be in an error state for a variety of a reasons. A hard reset can often clear these issues.
 
 To execute a hard reset, use the following command from the CLI `rill project reconcile --reset` 
-:::info
+:::
 
 ## Updating the deployment
 
