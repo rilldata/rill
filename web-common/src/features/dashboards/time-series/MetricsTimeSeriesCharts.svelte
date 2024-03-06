@@ -16,7 +16,10 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
-  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import {
+    TimeSeriesDatum,
+    useTimeSeriesDataStore,
+  } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
@@ -31,14 +34,8 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
 
-  export let metricViewName;
+  export let metricViewName: string;
   export let workspaceWidth: number;
-
-  $: dashboardStore = useDashboardStore(metricViewName);
-  $: instanceId = $runtime.instanceId;
-
-  // query the `/meta` endpoint to get the measures and the default time grain
-  $: metricsView = useMetricsView(instanceId, metricViewName);
 
   const {
     selectors: {
@@ -47,13 +44,29 @@
     },
   } = getStateManagers();
 
+  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
+
+  let scrubStart;
+  let scrubEnd;
+
+  let mouseoverValue: DomainCoordinates | undefined = undefined;
+  let startValue: Date;
+  let endValue: Date;
+
+  let dataCopy: TimeSeriesDatum[];
+  let dimensionDataCopy: DimensionDataItem[] = [];
+
+  $: dashboardStore = useDashboardStore(metricViewName);
+  $: instanceId = $runtime.instanceId;
+
+  // query the `/meta` endpoint to get the measures and the default time grain
+  $: metricsView = useMetricsView(instanceId, metricViewName);
+
   $: showHideMeasures = createShowHideMeasuresStore(
     metricViewName,
     metricsView,
   );
-
-  const timeControlsStore = useTimeControlStore(getStateManagers());
-  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
 
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
@@ -80,21 +93,12 @@
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
 
-  let scrubStart;
-  let scrubEnd;
-
-  let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date;
-  let endValue: Date;
-
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
   // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
 
-  let dataCopy;
-  let dimensionDataCopy: DimensionDataItem[] = [];
   $: if ($timeSeriesDataStore?.timeSeriesData) {
     dataCopy = $timeSeriesDataStore.timeSeriesData;
   }
