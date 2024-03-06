@@ -46,7 +46,7 @@ func Test_parsedSQL(t *testing.T) {
 		},
 		{
 			"aggregate",
-			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(num_bids),AGGREGATE(avg_bid_price) FROM ad_bids_metrics GROUP BY ALL",
+			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(measure_0),AGGREGATE(measure_1) FROM ad_bids_metrics GROUP BY ALL",
 			result{
 				sql:  "SELECT pub,domain_parts,dom,tld,null_publisher,count(*),avg(bid_price) FROM \"ad_bids\" GROUP BY ALL",
 				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
@@ -54,7 +54,7 @@ func Test_parsedSQL(t *testing.T) {
 		},
 		{
 			"aggregate with mv appended",
-			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(ad_bids_metrics.num_bids),AGGREGATE(ad_bids_metrics.avg_bid_price) FROM ad_bids_metrics GROUP BY ALL",
+			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(ad_bids_metrics.measure_0),AGGREGATE(ad_bids_metrics.measure_1) FROM ad_bids_metrics GROUP BY ALL",
 			result{
 				sql:  "SELECT pub,domain_parts,dom,tld,null_publisher,count(*),avg(bid_price) FROM \"ad_bids\" GROUP BY ALL",
 				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
@@ -62,7 +62,7 @@ func Test_parsedSQL(t *testing.T) {
 		},
 		{
 			"aggregate with mv appended and quoted",
-			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(\"ad_bids_metrics\".\"num_bids\"),AGGREGATE(ad_bids_metrics.\"avg_bid_price\") FROM ad_bids_metrics GROUP BY ALL",
+			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(\"ad_bids_metrics\".\"measure_0\"),AGGREGATE(ad_bids_metrics.\"measure_1\") FROM ad_bids_metrics GROUP BY ALL",
 			result{
 				sql:  "SELECT pub,domain_parts,dom,tld,null_publisher,count(*),avg(bid_price) FROM \"ad_bids\" GROUP BY ALL",
 				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
@@ -91,7 +91,7 @@ func Test_parsedSQL(t *testing.T) {
 				b as (
 				select
 					publisher,
-					AGGREGATE(ad_bids_metrics."avg_bid_price") as avg_bids
+					AGGREGATE(ad_bids_metrics."measure_1") as avg_bids
 				from
 					ad_bids_metrics
 				group by
