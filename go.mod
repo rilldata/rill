@@ -307,6 +307,6 @@ require (
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
 
-replace github.com/marcboeker/go-duckdb v1.6.1 => github.com/esevastyanov/go-duckdb v0.0.0-20240304150144-9e04c8d3d68e
+replace github.com/marcboeker/go-duckdb v1.6.1 => github.com/marcboeker/go-duckdb v1.6.2-0.20240306201053-e8cb5bc6a136
 
 exclude modernc.org/sqlite v1.18.1
