@@ -117,7 +117,7 @@
         <PivotDisplay />
       {:else}
         <div
-          class="flex gap-x-1 gap-y-4 mt-3 size-full overflow-hidden"
+          class="flex gap-x-1 gap-y-4 pt-3 size-full overflow-hidden"
           class:flex-col={expandedMeasureName}
           class:flex-row={!expandedMeasureName}
           style:padding-left={leftSide}
