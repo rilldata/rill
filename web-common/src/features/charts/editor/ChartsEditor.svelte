@@ -52,12 +52,7 @@
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
-  $: mainError = [
-    ...lineBasedRuntimeErrors,
-    ...($chart.data?.meta?.reconcileError
-      ? [$chart.data?.meta?.reconcileError as any] // TODO: revisit error
-      : []),
-  ]?.at(0);
+  $: mainError = lineBasedRuntimeErrors?.at(0);
 
   async function updateChart(content: string) {
     try {
