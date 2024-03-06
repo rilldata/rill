@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -221,11 +222,13 @@ func underlyingTableQuery(rt *runtime.Runtime, opts *runtime.APIResolverOptions,
 		dims[dim.Column] = nil
 	}
 
-	var finalMeasures map[string]string
-	if len(security.Include) == 0 {
-		finalMeasures = maps.Clone(measures)
-	} else {
-		finalMeasures = make(map[string]string)
+	finalMeasures := maps.Clone(measures)
+	if len(security.Include) != 0 {
+		for measure := range finalMeasures {
+			if !slices.Contains(security.Include, measure) { // measures not part of include clause should not be accessible
+				finalMeasures[measure] = "null"
+			}
+		}
 	}
 
 	for _, include := range security.Include {
