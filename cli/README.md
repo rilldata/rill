@@ -11,8 +11,7 @@ make cli
 ./rill
 
 # To run start (ensure you have a dev-project directory at the same location as the rill binary):
-cd dev-project 
-../rill start 
+./rill start dev-project
 ```
 
 ## Running in development
@@ -26,8 +25,7 @@ make cli.prepare
 go run ./cli
 
 # To run start (ensure you have a dev-project directory at the same location as the rill binary):
-cd dev-project
-go run ../cli start
+go run ./cli start dev-project
 ```
 
 ## Generating CLI reference docs
