@@ -66,7 +66,7 @@
     </DialogTabs.List>
     <div class="p-3 bg-slate-100">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {formState} {isEditForm} />
+        <AlertDialogDataTab {formState} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
         <AlertDialogCriteriaTab {formState} />
