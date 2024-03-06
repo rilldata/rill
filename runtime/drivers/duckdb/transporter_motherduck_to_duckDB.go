@@ -41,9 +41,9 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
-	// we first ingest data in a temporary table in the main db
+	// we first ingest data in a temporary table in the primary db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
-	// whether table goes in main db or in separate table specific db
+	// whether table goes in primary db or in separate table specific db
 	tmpTable := fmt.Sprintf("__%s_tmp_motherduck", sinkCfg.Table)
 	defer func() {
 		// ensure temporary table is cleaned

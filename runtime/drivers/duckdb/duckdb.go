@@ -55,7 +55,7 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "DB",
 			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
-			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+			Placeholder: "/path/to/primary.db or md:primary.db(for motherduck)",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{

@@ -134,8 +134,8 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 		// duckdb considers everything before first . as db name
 		// alternative solution can be to query `show databases()` before and after to identify db name
 		dbName, _, _ := strings.Cut(filepath.Base(srcProps.Database), ".")
-		if dbName == "main" {
-			return fmt.Errorf("`main` is a reserved db name")
+		if dbName == "primary" {
+			return fmt.Errorf("`primary` is a reserved db name")
 		}
 
 		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeSQLName(dbName))}); err != nil {

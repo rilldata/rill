@@ -123,9 +123,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		s.logger.Debug("records to be ingested", zap.Uint64("rows", total))
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
-	// we first ingest data in a temporary table in the main db
+	// we first ingest data in a temporary table in the primary db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
-	// whether table goes in main db or in separate table specific db
+	// whether table goes in primary db or in separate table specific db
 	tmpTable := fmt.Sprintf("__%s_tmp_sqlstore", table)
 	// generate create table query
 	qry, err := CreateTableQuery(schema, tmpTable)

@@ -662,7 +662,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		return fmt.Errorf("table %q does not exist", table)
 	}
 
-	// scan main db and main schema
+	// scan primary db and main schema
 	res, err := c.Execute(ctx, &drivers.Statement{
 		Query:    "SELECT current_database(), current_schema()",
 		Priority: 100,
@@ -738,7 +738,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 			return err
 		}
 
-		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
+		// NOTE :: db name need to be appened in the view query else query fails when switching to primary db
 		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(mainDB), safeSQLName(mainSchema), safeSQLName(table), selectQry)}); err != nil {
 			c.detachAndRemoveFile(ctx, newDB, newDBFile)
 			return fmt.Errorf("failed to create view %q: %w", table, err)
