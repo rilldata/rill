@@ -1,16 +1,13 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
-  import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
   import { useMetricsView } from "../../dashboards/selectors";
-  import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
-  export let isEditForm: boolean;
 
   const { form, errors, handleChange } = formState;
 
@@ -32,8 +29,6 @@
       label: d.label?.length ? d.label : d.expression,
     })) ?? []),
   ];
-
-  $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -48,21 +43,15 @@
     />
   </FormSection>
   <FormSection
-    description={hasAtLeastOneFilter
-      ? "These are inherited from the underlying dashboard view."
-      : ""}
+    description="These are inherited from the underlying dashboard view."
     title="Filters"
   >
-    {#if hasAtLeastOneFilter}
-      <FilterChipsReadOnly
-        metricsViewName={$form["metricsViewName"]}
-        filters={$form["whereFilter"]}
-        dimensionThresholdFilters={[]}
-        timeRange={$form["timeRange"]}
-      />
-    {:else}
-      <NoFiltersSelected {isEditForm} />
-    {/if}
+    <FilterChipsReadOnly
+      dimensionThresholdFilters={[]}
+      filters={$form["whereFilter"]}
+      metricsViewName={$form["metricsViewName"]}
+      timeRange={$form["timeRange"]}
+    />
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."
@@ -83,21 +72,12 @@
       options={dimensionOptions}
       placeholder="Select a dimension"
     />
-    <Select
-      bind:value={$form["splitByTimeGrain"]}
-      id="splitByTimeGrain"
-      label="Split by time grain"
-      optional
-      options={AlertIntervalOptions}
-      placeholder="Select a time grain"
-    />
   </FormSection>
   <FormSection title="Data preview">
     <DataPreview
       measure={$form["measure"]}
       metricsViewName={$form["metricsViewName"]}
       splitByDimension={$form["splitByDimension"]}
-      splitByTimeGrain={$form["splitByTimeGrain"]}
       timeRange={$form["timeRange"]}
       whereFilter={$form["whereFilter"]}
     />

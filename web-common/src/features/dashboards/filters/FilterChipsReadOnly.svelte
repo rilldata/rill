@@ -2,7 +2,7 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
-  import ReadOnlyTimeRange from "@rilldata/web-common/features/dashboards/filters/ReadOnlyTimeRange.svelte";
+  import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
@@ -47,7 +47,7 @@ The main feature-set component for dashboard filters
 
 <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
   {#if timeRange}
-    <ReadOnlyTimeRange {timeRange} />
+    <TimeRangeReadOnly {timeRange} />
   {/if}
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as { name, label, selectedValues, isInclude } (name)}

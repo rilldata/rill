@@ -21,7 +21,7 @@
 
 <Chip {...colors} label={effectiveLabel} outline readOnly>
   <svelte:fragment slot="body">
-    <div class="flex gap-x-2 px-2">
+    <div class="flex gap-x-2 mx-2">
       <div
         class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
         style:max-width={labelMaxWidth}

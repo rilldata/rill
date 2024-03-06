@@ -20,13 +20,12 @@
   const dispatch = createEventDispatcher();
 
   let displayValue: string;
+  let hasNoValue = false;
   $: {
     const foundOption = options.find((option) => option.value === value);
     displayValue = foundOption?.label ?? value;
+    hasNoValue = !foundOption;
   }
-
-  // We should move to shadcn select soon. This is getting ugly.
-  $: hasNoValue = value === "" || value === null || value === undefined;
 </script>
 
 <div class="flex flex-col gap-y-2">

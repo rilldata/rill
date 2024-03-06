@@ -7,11 +7,11 @@ export function getFilePathFromPagePath(path: string): string {
 
   switch (entityType) {
     case "source":
-      return `/sources/${entityName}.yaml`;
+      return `sources/${entityName}.yaml`;
     case "model":
-      return `/models/${entityName}.sql`;
+      return `models/${entityName}.sql`;
     case "dashboard":
-      return `/dashboards/${entityName}.yaml`;
+      return `dashboards/${entityName}.yaml`;
     default:
       throw new Error("type must be either 'source', 'model', or 'dashboard'");
   }
@@ -23,11 +23,11 @@ export function getFilePathFromNameAndType(
 ): string {
   switch (type) {
     case EntityType.Table:
-      return `/sources/${name}.yaml`;
+      return `sources/${name}.yaml`;
     case EntityType.Model:
-      return `/models/${name}.sql`;
+      return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
-      return `/dashboards/${name}.yaml`;
+      return `dashboards/${name}.yaml`;
     default:
       throw new Error(
         "type must be either 'Table', 'Model', or 'MetricsDefinition'",
@@ -96,4 +96,9 @@ export function getLabel(entityType: EntityType) {
     default:
       throw new Error("Unrecognized EntityType");
   }
+}
+
+// Remove a leading slash, if it exists
+export function removeLeadingSlash(path: string): string {
+  return path.replace(/^\//, "");
 }
