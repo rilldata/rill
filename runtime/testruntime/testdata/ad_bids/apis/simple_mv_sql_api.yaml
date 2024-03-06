@@ -1,0 +1,4 @@
+kind : api
+
+metrics:
+  sql: select timestamp, publisher, domain from ad_bids_metrics LIMIT 5
