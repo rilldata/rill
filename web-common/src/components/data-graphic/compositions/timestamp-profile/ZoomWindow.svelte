@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dataGraphicContext } from "./TimestampDetail.svelte";
+  import { dataGraphicContext } from "./context";
 
   /** the starting value, in range space */
   export let start: number;

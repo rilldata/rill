@@ -1,19 +1,3 @@
-<script context="module" lang="ts">
-  import { createContext } from "@rilldata/web-common/lib/context";
-
-  export const dataGraphicContext = {
-    x: createContext<Writable<ScaleLinear<number, number>>>(
-      "rill:data-graphic:X",
-    ),
-    y: createContext<Writable<ScaleLinear<number, number>>>(
-      "rill:data-graphic:Y",
-    ),
-    plotConfig: createContext<Writable<PlotConfig>>(
-      "rill:data-graphic:plot-config",
-    ),
-  };
-</script>
-
 <script lang="ts">
   /**
    * TimestampDetail.svelte
@@ -55,6 +39,7 @@
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
+  import { dataGraphicContext } from "./context";
 
   const id = guidGenerator();
 

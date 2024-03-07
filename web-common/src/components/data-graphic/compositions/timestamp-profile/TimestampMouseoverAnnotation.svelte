@@ -7,7 +7,7 @@
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import { fly } from "svelte/transition";
   import { outline } from "../../actions/outline";
-  import { dataGraphicContext } from "./TimestampDetail.svelte";
+  import { dataGraphicContext } from "./context";
 
   const X = dataGraphicContext.x.get();
   const Y = dataGraphicContext.y.get();

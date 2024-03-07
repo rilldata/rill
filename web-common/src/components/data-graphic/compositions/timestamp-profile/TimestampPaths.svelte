@@ -3,7 +3,7 @@
    *
    */
 
-  import { dataGraphicContext } from "./TimestampDetail.svelte";
+  import { dataGraphicContext } from "./context";
   import { areaFactory, lineFactory } from "../../utils";
 
   export let xAccessor: string;
