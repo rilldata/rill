@@ -83,8 +83,8 @@ export function getBookmarks(
               resp.bookmarks?.forEach((bookmarkResource) => {
                 const bookmark = parseBookmarkEntry(
                   bookmarkResource,
-                  metricsViewResp.data,
-                  schemaResp.data.schema,
+                  metricsViewResp.data as V1MetricsViewSpec,
+                  schemaResp.data?.schema as V1StructType,
                 );
                 if (bookmarkResource.default) {
                   bookmarks.home = bookmark;
