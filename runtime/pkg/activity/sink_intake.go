@@ -78,6 +78,8 @@ func (s *intakeSink) runBackground() {
 			s.bufferMu.Lock()
 			s.flush()
 			s.bufferMu.Unlock()
+		case <-s.stop:
+			return
 		}
 	}
 }

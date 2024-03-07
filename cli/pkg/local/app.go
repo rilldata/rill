@@ -379,7 +379,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
 			mux.Handle("/local/version", a.versionHandler())
-			mux.Handle("/local/track", a.trackingHandler(inf))
+			mux.Handle("/local/track", a.trackingHandler())
 		})
 	})
 
@@ -498,7 +498,7 @@ type versionInfo struct {
 }
 
 // trackingHandler proxies events to intake.rilldata.io.
-func (a *App) trackingHandler(info *localInfo) http.Handler {
+func (a *App) trackingHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
 		body, err := io.ReadAll(r.Body)
