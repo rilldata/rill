@@ -34,6 +34,8 @@ export enum MetricsEventScreenName {
   Model = "model",
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
+  Chart = "chart",
+  CustomDashboard = "custom-dashboard",
   CLI = "cli",
   Splash = "splash",
   Home = "home",
@@ -43,6 +45,8 @@ export enum MetricsEventScreenName {
   ReportExport = "report-export",
   Alert = "alert",
   Unknown = "unknown",
+  Explore = "explore",
+  Pivot = "pivot",
 }
 
 export const ScreenToEntityMap = {

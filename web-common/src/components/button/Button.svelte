@@ -26,6 +26,7 @@
   export let noStroke = false;
   export let dashed = false;
   export let rounded = false;
+  export let href: string | null = null;
   export let builders: Builder[] = [];
 
   const dispatch = createEventDispatcher();
@@ -37,7 +38,11 @@
   };
 </script>
 
-<button
+<svelte:element
+  this={href ? "a" : "button"}
+  role="button"
+  tabindex={0}
+  {href}
   class="{$$props.class} {type}"
   {disabled}
   class:square
@@ -58,10 +63,11 @@
   on:click={handleClick}
 >
   <slot />
-</button>
+</svelte:element>
 
 <style lang="postcss">
-  button {
+  button,
+  a {
     @apply flex text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;

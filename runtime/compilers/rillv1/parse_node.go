@@ -1,13 +1,12 @@
 package rillv1
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/sqlparse"
 	"gopkg.in/yaml.v3"
 )
@@ -31,22 +30,28 @@ type Node struct {
 }
 
 // parseNode multiplexes to the appropriate parse function based on the node kind.
-func (p *Parser) parseNode(ctx context.Context, node *Node) error {
+func (p *Parser) parseNode(node *Node) error {
 	switch node.Kind {
 	case ResourceKindSource:
-		return p.parseSource(ctx, node)
+		return p.parseSource(node)
 	case ResourceKindModel:
-		return p.parseModel(ctx, node)
+		return p.parseModel(node)
 	case ResourceKindMetricsView:
-		return p.parseMetricsView(ctx, node)
+		return p.parseMetricsView(node)
 	case ResourceKindMigration:
-		return p.parseMigration(ctx, node)
+		return p.parseMigration(node)
 	case ResourceKindReport:
-		return p.parseReport(ctx, node)
+		return p.parseReport(node)
 	case ResourceKindAlert:
-		return p.parseAlert(ctx, node)
+		return p.parseAlert(node)
 	case ResourceKindTheme:
-		return p.parseTheme(ctx, node)
+		return p.parseTheme(node)
+	case ResourceKindChart:
+		return p.parseChart(node)
+	case ResourceKindDashboard:
+		return p.parseDashboard(node)
+	case ResourceKindAPI:
+		return p.parseAPI(node)
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
 	}
@@ -74,7 +79,7 @@ type commonYAML struct {
 
 // parseStem parses a pair of YAML and SQL files with the same path stem (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
 // Note that either of the YAML or SQL files may be empty (the paths arg will only contain non-nil paths).
-func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sqlPath, sql string) (*Node, error) {
+func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*Node, error) {
 	// The rest of the function builds a Node from YAML and SQL info
 	res := &Node{Paths: paths}
 
@@ -165,7 +170,7 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		}
 
 		// Expand dots in annotations. E.g. turn annotations["foo.bar"] into annotations["foo"]["bar"].
-		res.SQLAnnotations, err = expandAnnotations(res.SQLAnnotations, "")
+		res.SQLAnnotations, err = expandAnnotations(res.SQLAnnotations)
 		if err != nil {
 			if sqlPath != "" {
 				return nil, pathError{path: sqlPath, err: err}
@@ -214,9 +219,9 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 	// If name is not set in YAML or SQL, infer it from path
 	if res.Name == "" {
 		if ymlPath != "" {
-			res.Name = fileutil.Stem(ymlPath)
+			res.Name = filepath.Base(pathStem(ymlPath))
 		} else if sqlPath != "" {
-			res.Name = fileutil.Stem(sqlPath)
+			res.Name = filepath.Base(pathStem(sqlPath))
 		}
 	}
 
@@ -384,7 +389,7 @@ func mapstructureUnmarshal(annotations map[string]any, dst any) error {
 
 // expandAnnotations turns annotations with dots in their key into nested maps.
 // For example, annotations["foo.bar"] becomes annotations["foo"]["bar"].
-func expandAnnotations(annotations map[string]any, prefix string) (map[string]any, error) {
+func expandAnnotations(annotations map[string]any) (map[string]any, error) {
 	if len(annotations) == 0 {
 		return nil, nil
 	}

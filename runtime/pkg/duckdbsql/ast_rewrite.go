@@ -24,7 +24,7 @@ func (fn *fromNode) rewriteToReadTableFunction(name string, paths []string, prop
 	return nil
 }
 
-func (sn *selectNode) rewriteLimit(limit, offset int) error {
+func (sn *selectNode) rewriteLimit(limit int) error {
 	modifiersNode := toNodeArray(sn.ast, astKeyModifiers)
 	updated := false
 	for _, v := range modifiersNode {
@@ -62,8 +62,8 @@ func (sn *selectNode) rewriteLimit(limit, offset int) error {
 	return nil
 }
 
-func (fn *fromNode) rewriteToSqliteScanFunction(name string, params []string) error {
-	baseTable, err := createSqliteScanTableFunction(params, fn.ast)
+func (fn *fromNode) rewriteToSqliteScanFunction(params []string) error {
+	baseTable, err := createSqliteScanTableFunction(params)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func createFunctionCall(key, name, schema string) (astNode, error) {
 	return n, err
 }
 
-func createSqliteScanTableFunction(params []string, ast astNode) (astNode, error) {
+func createSqliteScanTableFunction(params []string) (astNode, error) {
 	var n astNode
 	err := json.Unmarshal([]byte(`{
   "type": "TABLE_FUNCTION",

@@ -199,7 +199,7 @@ export function createTimeSeriesDataStore(
 
           return {
             isFetching: !primary?.data && !primaryTotal?.data,
-            isError: false, // FIXME Handle errors
+            isError: primary?.isError || primaryTotal?.isError,
             timeSeriesData: preparedTimeSeriesData,
             total: primaryTotal?.data?.data?.[0],
             unfilteredTotal: unfilteredTotal?.data?.data?.[0],

@@ -122,12 +122,12 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL str
 
 func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
 	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "")
+	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
 	if err != nil {
 		return "", err
 	}
 
-	// fetch project names for github url
+	// Fetch project names matching the Github URL
 	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL)
 	if err != nil {
 		return "", err
@@ -136,6 +136,6 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	if len(names) == 1 {
 		return names[0], nil
 	}
-	// prompt for name from user
+
 	return SelectPrompt("Select project", names, ""), nil
 }

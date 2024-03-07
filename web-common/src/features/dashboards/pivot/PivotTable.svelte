@@ -135,7 +135,7 @@
                       {#if sortDirection}
                         <span
                           class="transition-transform -mr-1"
-                          class:-rotate-180={sortDirection === "desc"}
+                          class:-rotate-180={sortDirection === "asc"}
                         >
                           <ArrowDown />
                         </span>

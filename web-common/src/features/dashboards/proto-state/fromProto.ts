@@ -35,6 +35,7 @@ import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/
 import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
@@ -134,16 +135,6 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardMeasure) {
     entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
   }
-  if (dashboard.selectedDimension) {
-    entity.selectedDimensionName = dashboard.selectedDimension;
-  } else {
-    entity.selectedDimensionName = undefined;
-  }
-  if (dashboard.expandedMeasure) {
-    entity.expandedMeasureName = dashboard.expandedMeasure;
-  } else {
-    entity.expandedMeasureName = undefined;
-  }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
@@ -188,6 +179,8 @@ export function getDashboardStateFromProto(
   }
 
   entity.pivot = fromPivotProto(dashboard, metricsView);
+
+  Object.assign(entity, fromActivePageProto(dashboard));
 
   return entity;
 }
@@ -379,4 +372,56 @@ function correctComparisonTimeRange(
 
 function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
+}
+
+function fromActivePageProto(
+  dashboard: DashboardState,
+): Partial<
+  Pick<
+    MetricsExplorerEntity,
+    "activePage" | "selectedDimensionName" | "expandedMeasureName"
+  >
+> {
+  switch (dashboard.activePage) {
+    case DashboardState_ActivePage.UNSPECIFIED:
+      // backwards compatibility
+      if (dashboard.selectedDimension) {
+        return {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          expandedMeasureName: undefined,
+          selectedDimensionName: dashboard.selectedDimension,
+        };
+      } else if (dashboard.expandedMeasure) {
+        return {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          expandedMeasureName: dashboard.expandedMeasure,
+          selectedDimensionName: undefined,
+        };
+      }
+      // return empty so that nothing is overridden
+      // this is used to store partial data in the proto, like filters only, which should not override selected values
+      return {};
+
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.PIVOT:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: undefined,
+        selectedDimensionName: undefined,
+      };
+
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: undefined,
+        selectedDimensionName: dashboard.selectedDimension,
+      };
+
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: dashboard.expandedMeasure,
+        selectedDimensionName: undefined,
+      };
+  }
 }
