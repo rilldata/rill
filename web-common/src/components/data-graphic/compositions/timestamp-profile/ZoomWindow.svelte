@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
-  import type { PlotConfig } from "../../utils";
+  import { dataGraphicContext } from "./TimestampDetail.svelte";
 
   /** the starting value, in range space */
   export let start: number;
@@ -9,9 +7,7 @@
   export let stop: number;
   export let color: string;
 
-  const plotConfig: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config",
-  );
+  const plotConfig = dataGraphicContext.plotConfig.get();
 </script>
 
 <rect

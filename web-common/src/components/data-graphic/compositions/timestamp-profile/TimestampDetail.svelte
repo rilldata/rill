@@ -1,3 +1,19 @@
+<script context="module" lang="ts">
+  import { createContext } from "@rilldata/web-common/lib/context";
+
+  export const dataGraphicContext = {
+    x: createContext<Writable<ScaleLinear<number, number>>>(
+      "rill:data-graphic:X",
+    ),
+    y: createContext<Writable<ScaleLinear<number, number>>>(
+      "rill:data-graphic:Y",
+    ),
+    plotConfig: createContext<Writable<PlotConfig>>(
+      "rill:data-graphic:plot-config",
+    ),
+  };
+</script>
+
 <script lang="ts">
   /**
    * TimestampDetail.svelte
@@ -39,6 +55,7 @@
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
+  import da from "date-fns/locale/da";
 
   const id = guidGenerator();
 
@@ -82,8 +99,9 @@
   const X: Writable<ScaleLinear<number, number>> = writable(undefined);
   const Y: Writable<ScaleLinear<number, number>> = writable(undefined);
   /** make them available to the children. */
-  setContext("rill:data-graphic:X", X);
-  setContext("rill:data-graphic:Y", Y);
+
+  dataGraphicContext.x.set(X);
+  dataGraphicContext.y.set(Y);
 
   const coordinates = writable(DEFAULT_COORDINATES);
 
@@ -105,7 +123,7 @@
     id,
   });
 
-  setContext("rill:data-graphic:plot-config", plotConfig);
+  dataGraphicContext.plotConfig.set(plotConfig);
 
   $: $plotConfig.devicePixelRatio = devicePixelRatio;
   $: $plotConfig.width = width;

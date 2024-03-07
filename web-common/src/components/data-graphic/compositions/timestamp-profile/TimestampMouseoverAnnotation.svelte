@@ -4,27 +4,19 @@
     formatInteger,
     timePortion,
   } from "@rilldata/web-common/lib/formatters";
-  import type { ScaleLinear } from "d3-scale";
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
   import { fly } from "svelte/transition";
   import { outline } from "../../actions/outline";
-  import type { PlotConfig } from "../../utils";
+  import { dataGraphicContext } from "./TimestampDetail.svelte";
 
-  const X: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:X",
-  );
-  const Y: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:Y",
-  );
-  const config: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config",
-  );
+  const X = dataGraphicContext.x.get();
+  const Y = dataGraphicContext.y.get();
+  const config = dataGraphicContext.plotConfig.get();
 
   export let point;
   export let xAccessor: string;
   export let yAccessor: string;
+
   $: xLabel = removeLocalTimezoneOffset(point[xAccessor]);
 </script>
 

@@ -2,13 +2,9 @@
   /** the path elements used in the timestamp profiler.
    *
    */
-  import type { ScaleLinear } from "d3-scale";
 
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
-
+  import { dataGraphicContext } from "./TimestampDetail.svelte";
   import { areaFactory, lineFactory } from "../../utils";
-  import type { PlotConfig } from "../../utils";
 
   export let xAccessor: string;
   export let yAccessor: string;
@@ -16,16 +12,9 @@
   export let smooth = false;
   export let data;
 
-  const X: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:X",
-  );
-  const Y: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:Y",
-  );
-
-  const plotConfig: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config",
-  );
+  const X = dataGraphicContext.x.get();
+  const Y = dataGraphicContext.y.get();
+  const plotConfig = dataGraphicContext.plotConfig.get();
 
   $: lineFcn = lineFactory({
     xScale: $X,
