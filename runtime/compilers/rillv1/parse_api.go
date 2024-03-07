@@ -38,6 +38,10 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	// Handle metrics resolver
 	if tmp.Metrics != nil {
+		if !node.ConnectorInferred && node.Connector != "" {
+			return fmt.Errorf(`can't set "connector" for the metrics resolver (it will use the connector of the metrics view)`)
+		}
+
 		resolvers++
 		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
 		resolverProps["sql"] = tmp.Metrics.SQL

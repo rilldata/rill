@@ -6,6 +6,7 @@ import {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1Operation,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -17,7 +18,6 @@ export type AlertFormValuesSubset = Pick<
   | "timeRange"
   | "measure"
   | "splitByDimension"
-  | "splitByTimeGrain"
   | "criteria"
   | "criteriaOperation"
 >;
@@ -25,29 +25,24 @@ export type AlertFormValuesSubset = Pick<
 export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
   metricsViewSpec: V1MetricsViewSpec,
+  allTimeRange: V1MetricsViewTimeRangeResponse,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
+  const dimensions =
+    queryArgs.dimensions as V1MetricsViewAggregationDimension[];
 
-  const dimensions: string[] = [];
-  const timeDimension: V1MetricsViewAggregationDimension[] = [];
-  queryArgs.dimensions?.forEach((dim) => {
-    if (
-      (metricsViewSpec.dimensions?.findIndex(
-        (dimSpec) => dimSpec.name === dim.name,
-      ) ?? -1) >= 0
-    ) {
-      dimensions.push(dim.name as string);
-    } else if (dim.name === metricsViewSpec.timeDimension) {
-      timeDimension.push(dim);
-    }
-  });
+  const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
+    isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
+  };
+  if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
+    timeRange.end = allTimeRange.timeRangeSummary?.max;
+  }
 
   return {
-    measure: measures[0].name as string,
-    splitByDimension: dimensions[0] ?? "",
-    splitByTimeGrain: queryArgs.timeRange?.isoDuration ?? "",
+    measure: measures[0]?.name ?? "",
+    splitByDimension: dimensions[0]?.name ?? "",
 
     criteria:
       queryArgs.having?.cond?.exprs?.map((e) => ({
@@ -60,8 +55,6 @@ export function extractAlertFormValues(
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
-    timeRange: (queryArgs.timeRange as V1TimeRange) ?? {
-      isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
-    },
+    timeRange,
   };
 }

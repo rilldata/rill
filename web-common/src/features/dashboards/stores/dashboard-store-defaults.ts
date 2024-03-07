@@ -16,6 +16,7 @@ import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
@@ -148,6 +149,8 @@ export function getDefaultMetricsExplorerEntity(
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
     selectedTimezone: "UTC",
+
+    activePage: DashboardState_ActivePage.DEFAULT,
 
     showTimeComparison: false,
     dimensionSearchText: "",

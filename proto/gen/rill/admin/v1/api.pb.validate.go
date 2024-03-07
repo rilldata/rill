@@ -3151,11 +3151,15 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Branch
 
+	// no validation rules for TtlSeconds
+
 	// no validation rules for Kind
 
 	// no validation rules for Resource
 
-	// no validation rules for TtlSeconds
+	// no validation rules for Theme
+
+	// no validation rules for Navigation
 
 	// no validation rules for State
 

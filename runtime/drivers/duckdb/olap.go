@@ -346,29 +346,36 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
 	c.logger.Debug("drop table", zap.String("name", name), zap.Bool("view", view))
-	if view {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
-			Priority:    100,
-			LongRunning: true,
-		})
-	}
 	if !c.config.ExtTableStorage {
+		var typ string
+		if view {
+			typ = "VIEW"
+		} else {
+			typ = "TABLE"
+		}
 		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(name)),
+			Query:       fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(name)),
 			Priority:    100,
 			LongRunning: true,
 		})
 	}
-
+	// determine if it is a true view or view on externally stored table
 	version, exist, err := c.tableVersion(name)
 	if err != nil {
 		return err
 	}
 
 	if !exist {
-		return nil
+		if !view {
+			return nil
+		}
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
+			Priority:    100,
+			LongRunning: true,
+		})
 	}
+
 	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
 		// drop view
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name))})
@@ -440,16 +447,19 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: old and new name are same case insensitive strings")
 	}
-	if view || !c.config.ExtTableStorage {
+	if !c.config.ExtTableStorage {
 		return c.dropAndReplace(ctx, oldName, newName, view)
 	}
-
+	// determine if it is a true view or a view on externally stored table
 	oldVersion, exist, err := c.tableVersion(oldName)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		return fmt.Errorf("rename: table %q does not exist", oldName)
+		if !view {
+			return fmt.Errorf("rename: table %q does not exist", oldName)
+		}
+		return c.dropAndReplace(ctx, oldName, newName, view)
 	}
 
 	// reopen duckdb connections which should delete any temporary files built up during ingestion
