@@ -8,6 +8,7 @@ import type {
   DashboardTimeControls,
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
+import type { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export interface DimensionThresholdFilter {
@@ -112,6 +113,12 @@ export interface MetricsExplorerEntity {
 
   selectedComparisonTimeRange?: DashboardTimeControls;
   selectedComparisonDimension?: string;
+
+  /**
+   * Explicit active page setting.
+   * This avoids using presence of value in `selectedDimensionName` or `expandedMeasureName`.
+   */
+  activePage: DashboardState_ActivePage;
 
   /**
    * user selected timezone, should default to "UTC" if no other value is set

@@ -24,6 +24,7 @@ export enum BehaviourEventMedium {
   AssetName = "asset-name",
   Card = "card",
   Drag = "drag",
+  Tab = "tab",
 }
 
 export interface BehaviourEvent extends MetricsEvent, SourceEventFields {

@@ -14,5 +14,7 @@
 </script>
 
 <Chip {...colors} extraRounded={false} {label} outline readOnly>
-  <MeasureFilterBody {dimensionName} {expr} {label} readOnly slot="body" />
+  <div class="mx-2" slot="body">
+    <MeasureFilterBody {dimensionName} {expr} {label} readOnly />
+  </div>
 </Chip>

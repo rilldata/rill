@@ -5,7 +5,6 @@
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
@@ -47,9 +46,7 @@
   $: metricsView = useMetricsView(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-  $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
+  let metricsContainerHeight: number;
 
   let measuresWrapper;
   let measuresHeight: number[] = [];
@@ -171,7 +168,7 @@
   class="overflow-y-scroll"
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:width={containerWidths[numColumns]}
-  use:listenToNodeResize
+  bind:clientHeight={metricsContainerHeight}
 >
   <div
     bind:this={measuresWrapper}
