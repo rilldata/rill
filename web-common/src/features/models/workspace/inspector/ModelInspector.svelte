@@ -4,7 +4,6 @@
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { useModel, useModelFileIsEmpty } from "../../selectors";
@@ -15,12 +14,11 @@
 
   const queryClient = useQueryClient();
 
+  let containerWidth: number;
+
   $: path = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelQuery = useModel($runtime?.instanceId, modelName);
   $: modelHasError = getFileHasErrors(queryClient, $runtime?.instanceId, path);
-
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
 
   $: emptyModel = useModelFileIsEmpty($runtime?.instanceId, modelName);
 </script>
@@ -33,11 +31,8 @@
   {:else if !$modelHasError}
     <div>
       {#key modelName}
-        <div use:listenToNodeResize>
-          <ModelInspectorHeader
-            {modelName}
-            containerWidth={$observedNode?.clientWidth}
-          />
+        <div bind:clientWidth={containerWidth}>
+          <ModelInspectorHeader {modelName} {containerWidth} />
           <hr />
           <ModelInspectorModelProfile {modelName} />
         </div>

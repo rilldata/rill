@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
     useDashboard,
@@ -7,7 +6,6 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -30,7 +28,7 @@
 
   const { cloudDataViewer } = featureFlags;
 
-  let exploreContainerWidth;
+  let exploreContainerWidth: number;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
@@ -55,11 +53,6 @@
 
   const { readOnly } = featureFlags;
 
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-
-  $: exploreContainerWidth = getEltSize($observedNode, "x");
-
   $: leftSide = leftMargin
     ? leftMargin
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
@@ -74,7 +67,7 @@
 
 <section
   class="flex flex-col h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
-  use:listenToNodeResize
+  bind:clientWidth={exploreContainerWidth}
 >
   <div
     class="border-b w-full flex flex-col bg-slate-50"
