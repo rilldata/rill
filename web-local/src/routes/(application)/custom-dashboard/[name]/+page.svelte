@@ -98,7 +98,7 @@
             showGrid = !showGrid;
           }}
         >
-          {showGrid ? "Show grid" : "Hide grid"}
+          {showGrid ? "Hide grid" : "Show grid"}
         </Button>
       {/if}
       <Button
