@@ -29,7 +29,7 @@ export function useHomeBookmark(projectId: string, metricsViewName: string) {
     {
       query: {
         enabled: !!projectId && !!metricsViewName,
-        select: (data) => data.bookmarks.find((b) => b.default),
+        select: (data) => data.bookmarks?.find((b) => b.default),
       },
     },
   );
