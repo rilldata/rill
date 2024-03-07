@@ -29,7 +29,6 @@
   const { cloudDataViewer } = featureFlags;
 
   let exploreContainerWidth: number;
-  let exploreContainerWidth: number;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
@@ -64,7 +63,7 @@
 </script>
 
 <section
-  class="flex flex-col h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col h-screen w-full overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
 >
   <div
