@@ -62,7 +62,7 @@ After installing Rill and adding sources, your local project will now contain a 
 - Click Publish Branch on the top right - and that's it. Any future changes would follow the same two steps - add a comment, commit and publish
 
 :::warning Avoid Syncing Data Files
-During the commit process, uncheck files you do not wish to sync to your cloud repo. In particular, if you were working with local data files those will now be in the repo including ```tmp``` files and/or sources (e.g. parquet files). GitHub has a limit on cloud storage so instead add that data to a cloud location (s3, gcs, azure) to access via the internet
+During the commit process, uncheck files you do not wish to sync to your cloud repo. In particular, if you were working with local data files those will now be in the repo including ```tmp``` files and/or sources (e.g. parquet files). GitHub has a limit on cloud storage so instead add that data to a [cloud location (s3, gcs, azure)](../../reference/connectors/connectors.md) to access via the internet
 :::
 
 :::tip Make small changes directly in github
