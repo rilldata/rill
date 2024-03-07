@@ -1234,7 +1234,7 @@ colors:
 func TestChartsAndDashboard(t *testing.T) {
 	vegaLiteSpec := `
   {
-    '$schema': "https://vega.github.io/schema/vega-lite/v5.json",
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
     "mark": "bar",
     "encoding": {

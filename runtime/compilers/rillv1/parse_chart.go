@@ -59,6 +59,9 @@ func (p *Parser) parseChart(node *Node) error {
 	if tmp.VegaLite == "" {
 		return errors.New(`missing vega_lite configuration`)
 	}
+	if !json.Valid([]byte(tmp.VegaLite)) {
+		return errors.New(`failed to parse "vega_lite" as JSON`)
+	}
 
 	// Track chart
 	r, err := p.insertResource(ResourceKindChart, node.Name, node.Paths, node.Refs...)
