@@ -22,7 +22,7 @@ func init() {
 }
 
 // sqlIdentifier is regex pattern to identify a SQL identifier. The identifier may be wrapped in double quotes.
-// Additionally if double quotes are present in idenitifer, it is escaped with additional double quotes.
+// Additionally if double quotes are present in identifier, it is escaped with additional double quotes.
 var sqlIdentifier = `[a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*"`
 
 var (
@@ -46,7 +46,7 @@ func newMetricsViewSQL(ctx context.Context, opts *runtime.APIResolverOptions) (r
 	}
 
 	if metricsSQLProperties.SQL == "" {
-		return nil, errors.New("MetricsViewSQL: sql property not found")
+		return nil, errors.New("MetricsViewSQL: mandatory property \"SQL\" not set in resolver properties")
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)

@@ -16,7 +16,7 @@ import (
 
 func (s *Server) apiForName(w http.ResponseWriter, req *http.Request) error {
 	if !auth.GetClaims(req.Context()).CanInstance(req.PathValue("instance_id"), auth.ReadAPI) {
-		return httputil.Errorf(http.StatusForbidden, "does not have access to read APIs")
+		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
 	}
 
 	ctx := req.Context()
