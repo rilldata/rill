@@ -1,7 +1,7 @@
 ---
 title: "OLAP Engines"
 description: Configure the OLAP engine used by Rill
-sidebar_label: "OLAP Engines"
+sidebar_label: "Connect OLAP Engines"
 sidebar_position: 00
 ---
 
