@@ -1,9 +1,24 @@
 import { setContext } from "svelte";
 import { get, writable } from "svelte/store";
+import { createContext } from "../context";
+import type { Subscriber, Invalidator, Unsubscriber } from "svelte/store";
 
 interface CreateCommandClick {
   stopImmediatePropagation: boolean;
 }
+
+type Callbacks = {
+  subscribe: (
+    this: void,
+    run: Subscriber<never[]>,
+    invalidate?: Invalidator<never[]> | undefined,
+  ) => Unsubscriber;
+  addCallback(callback: unknown): void;
+};
+
+const commandClickContext = createContext<Callbacks>(
+  "rill:app:ui:command-click-action-callbacks",
+);
 
 export function createCommandClickAction(
   params: CreateCommandClick = { stopImmediatePropagation: true },
@@ -24,7 +39,7 @@ export function createCommandClickAction(
     },
   };
 
-  setContext("rill:app:ui:command-click-action-callbacks", callbacks);
+  commandClickContext.set(callbacks);
 
   return {
     // export the click switch callbacks added by children, in case that's needed.
