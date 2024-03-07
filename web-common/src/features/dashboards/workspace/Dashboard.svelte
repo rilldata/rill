@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
     useDashboard,
