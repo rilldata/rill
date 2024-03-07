@@ -74,14 +74,14 @@ type Server struct {
 	urls          *externalURLs
 	limiter       ratelimit.Limiter
 	// Activity specifically for events from UI
-	uiActivity activity.Client
+	uiActivity *activity.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 var _ adminv1.AIServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity activity.Client, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity *activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)

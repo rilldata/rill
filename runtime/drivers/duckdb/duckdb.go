@@ -79,7 +79,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("duckdb driver can't be shared")
 	}
@@ -265,7 +265,7 @@ type connection struct {
 	// config is parsed configs
 	config   *config
 	logger   *zap.Logger
-	activity activity.Client
+	activity *activity.Client
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
@@ -729,7 +729,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 		select {
 		case <-statTicker.C:
 			estimatedDBSize, _ := c.EstimateSize()
-			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
+			c.activity.EmitMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.
 			// Commenting the below code for now. Verify with next duckdb release

@@ -2,44 +2,35 @@ package activity
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 )
 
 func TestBufferedClientEmit(t *testing.T) {
-	sink := NewTestSink()
-	client := NewBufferedClient(BufferedClientOptions{
-		Sink:       sink,
-		SinkPeriod: time.Millisecond * 10,
-		BufferSize: 1,
-	})
+	sink := newMockSink()
+	client := NewClient(sink, zap.NewNop(), &ClientOptions{})
 
-	client.Emit(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
+	client.EmitMetric(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
 
-	require.Eventually(t, func() bool { return len(sink.GetEvents()) == 1 }, time.Second*2, time.Millisecond*10)
+	require.Equal(t, 1, len(sink.Events()))
 
-	event := sink.GetEvents()[0]
-	if event.Name != "test_event" {
-		t.Errorf("Expected 'test_event', but got '%s'", event.Name)
-	}
-}
-
-func TestNoopClientEmit(t *testing.T) {
-	client := NewNoopClient()
-
-	// This should not cause any errors
-	client.Emit(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
+	e := sink.Events()[0]
+	me, ok := e.(*MetricEvent)
+	require.True(t, ok)
+	require.Equal(t, "test_event", me.Name)
 }
 
 func TestEventMarshal(t *testing.T) {
-	event := &Event{
+	event := &MetricEvent{
 		Time:  time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		Name:  "test_event",
 		Value: 1.0,
-		Dims: []attribute.KeyValue{
+		Attrs: []attribute.KeyValue{
 			attribute.Bool("bool", true),
 			attribute.String("string", "value"),
 			attribute.Int("int", 0),
@@ -53,38 +44,34 @@ func TestEventMarshal(t *testing.T) {
 		},
 	}
 	data, err := event.Marshal()
-	if err != nil {
-		t.Fatalf("Expected no error, but got '%s'", err)
-	}
+	require.NoError(t, err)
 
 	expected := `{"bool":true,"bool_slice":[false,true],"float64":0,"float64_slice":[-1,0,1],"int":0,"int64":0,"int64_slice":[-1,0,1],"int_slice":[-1,0,1],"name":"test_event","string":"value","string_slice":["value1","value2"],"time":"2023-01-01T00:00:00Z","value":1}`
-	if string(data) != expected {
-		t.Errorf("Expected '%s', but got '%s'", expected, string(data))
-	}
+	require.Equal(t, expected, string(data))
 }
 
-type TestSink struct {
+type mockSink struct {
 	events   []Event
 	eventsMu sync.Mutex
 }
 
-func NewTestSink() *TestSink {
-	return &TestSink{}
+var _ Sink = (*mockSink)(nil)
+
+func newMockSink() *mockSink {
+	return &mockSink{}
 }
 
-func (n *TestSink) Sink(_ context.Context, events []Event) error {
+func (n *mockSink) Emit(e Event) error {
 	n.eventsMu.Lock()
 	defer n.eventsMu.Unlock()
-	n.events = append(n.events, events...)
+	n.events = append(n.events, e)
 	return nil
 }
 
-func (n *TestSink) GetEvents() []Event {
+func (n *mockSink) Events() []Event {
 	n.eventsMu.Lock()
 	defer n.eventsMu.Unlock()
 	return n.events
 }
 
-func (n *TestSink) Close() error {
-	return nil
-}
+func (n *mockSink) Close() {}

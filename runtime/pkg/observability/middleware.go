@@ -314,5 +314,5 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 	}
 
 	// Add attributes as activity dimensions
-	activity.WithDims(ctx, attrs...)
+	activity.SetAttributes(ctx, attrs...)
 }

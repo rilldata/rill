@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.StreamServerInterceptor {
+func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.StreamServerInterceptor {
 	return func(
 		srv interface{},
 		ss grpc.ServerStream,
@@ -23,7 +23,7 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 		ctx := ss.Context()
 		subject := auth.GetClaims(ctx).Subject()
 
-		ctx = activity.WithDims(ctx,
+		ctx = activity.SetAttributes(ctx,
 			attribute.String("user_id", subject),
 			attribute.String("request_method", info.FullMethod),
 		)
@@ -34,7 +34,7 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			activityClient.Emit(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
+			activityClient.EmitMetric(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
 		}()
 
 		err := handler(srv, wss)
@@ -43,7 +43,7 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 	}
 }
 
-func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnaryServerInterceptor {
+func ActivityUnaryServerInterceptor(activityClient *activity.Client) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -52,7 +52,7 @@ func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnarySe
 	) (interface{}, error) {
 		subject := auth.GetClaims(ctx).Subject()
 
-		ctx = activity.WithDims(ctx,
+		ctx = activity.SetAttributes(ctx,
 			attribute.String("user_id", subject),
 			attribute.String("request_method", info.FullMethod),
 		)
@@ -61,7 +61,7 @@ func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnarySe
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			activityClient.Emit(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
+			activityClient.EmitMetric(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
 		}()
 
 		res, err := handler(ctx, req)

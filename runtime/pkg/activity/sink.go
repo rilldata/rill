@@ -1,55 +1,49 @@
 package activity
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Sink is used by a bufferedClient to flush collected Event-s.
+// Sink is a destination for sending telemetry events.
 type Sink interface {
-	Sink(ctx context.Context, events []Event) error
-	Close() error
+	Emit(event Event) error
+	Close()
 }
 
-type NoopSink struct{}
+type noopSink struct{}
 
-func NewNoopSink() *NoopSink {
-	return &NoopSink{}
+// NewNoopSink returns a sink that drops all events.
+func NewNoopSink() Sink {
+	return &noopSink{}
 }
 
-func (n *NoopSink) Sink(_ context.Context, _ []Event) error {
+func (n *noopSink) Emit(_ Event) error {
 	return nil
 }
 
-func (n *NoopSink) Close() error {
-	return nil
-}
+func (n *noopSink) Close() {}
 
-type ConsoleSink struct {
+type loggerSink struct {
 	logger *zap.Logger
 	level  zapcore.Level
 }
 
-// NewConsoleSink might be used for a local run
-func NewConsoleSink(logger *zap.Logger, level zapcore.Level) *ConsoleSink {
-	return &ConsoleSink{logger: logger, level: level}
-}
-
-func (s *ConsoleSink) Sink(_ context.Context, events []Event) error {
-	if s.logger.Core().Enabled(s.level) {
-		for _, e := range events {
-			jsonEvent, err := e.Marshal()
-			if err != nil {
-				return err
-			}
-			s.logger.Log(s.level, string(jsonEvent))
-		}
+// NewLoggerSink returns a sink that logs events to the given logger.
+func NewLoggerSink(logger *zap.Logger, level zapcore.Level) Sink {
+	if logger.Core().Enabled(level) {
+		return &loggerSink{logger: logger, level: level}
 	}
+	return NewNoopSink()
+}
+
+func (s *loggerSink) Emit(event Event) error {
+	jsonEvent, err := event.Marshal()
+	if err != nil {
+		return err
+	}
+	s.logger.Log(s.level, string(jsonEvent))
 	return nil
 }
 
-func (s *ConsoleSink) Close() error {
-	return nil
-}
+func (s *loggerSink) Close() {}
