@@ -1,7 +1,7 @@
 ---
-title: "Dashboard 101"
+title: "Dashboard Basics"
 description: Dashboard Quickstart
-sidebar_label: "Dashboard 101"
+sidebar_label: "Dashboard Basics"
 sidebar_position: 00
 ---
 

@@ -1,25 +1,10 @@
 ---
-title: "Create Metrics"
-description: Tips & Tricks for Defining Metrics
-sidebar_label: "Create Metrics"
+title: "Common SQL Expressions"
+description: Tips & Tricks for Defining Metrics & Dimensions
+sidebar_label: "Common SQL Expressions"
 sidebar_position: 20
 ---
 
-XXXX
-
-:::tip XXX
-XXX
-:::
+## Overview
 
 
-
-## XX
-
-### XXX
-
-XXX
-
-```yaml
-type: local_file
-path: /path/to/data.csv
-```

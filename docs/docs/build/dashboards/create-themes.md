@@ -1,9 +1,13 @@
 ---
-title: "Customize Dashboards"
-description: Set up themes to alter look and feel
-sidebar_label: "Customize Dashboards"
+title: "Customization & Themes"
+description: Alter dashboard look and feel
+sidebar_label: "Customization & Themes"
 sidebar_position: 30
 ---
 
-XXXX
+## Overview
+
+## Common Customizations
+
+## Changing Themes & Colors
 
