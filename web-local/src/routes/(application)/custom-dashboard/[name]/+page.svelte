@@ -19,6 +19,7 @@
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
 
   let editing = true;
+  let showGrid = false;
 
   $: customDashboardName = $page.params.name;
 
@@ -90,24 +91,34 @@
     showInspectorToggle={false}
     {onChangeCallback}
   >
-    <Button
-      slot="workspace-controls"
-      on:click={async () => {
-        if (editing) {
-          await $query.refetch();
-        }
-        editing = !editing;
-      }}
-    >
-      {editing ? "Preview" : "Edit"}
-    </Button>
+    <div slot="workspace-controls" class="flex gap-x-4">
+      {#if !editing}
+        <Button
+          on:click={() => {
+            showGrid = !showGrid;
+          }}
+        >
+          {showGrid ? "Show grid" : "Hide grid"}
+        </Button>
+      {/if}
+      <Button
+        on:click={async () => {
+          if (editing) {
+            await $query.refetch();
+          }
+          editing = !editing;
+        }}
+      >
+        {editing ? "Preview" : "Edit"}
+      </Button>
+    </div>
   </WorkspaceHeader>
 
   <svelte:fragment slot="body">
     {#if editing}
       <CustomDashboardEditor {customDashboardName} />
     {:else}
-      <CustomDashboard {columns} {charts} {gap} />
+      <CustomDashboard {showGrid} {columns} {charts} {gap} />
     {/if}
   </svelte:fragment>
 </WorkspaceContainer>

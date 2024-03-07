@@ -4,6 +4,7 @@
   export let columns = 20;
   export let charts: V1DashboardComponent[];
   export let gap = 1;
+  export let showGrid = false;
 
   let canvasWidth = 0;
 
@@ -20,7 +21,37 @@
   $: gridCellSize = (canvasWidth - gapCount * gapSize) / columns;
 </script>
 
-<section class="w-full h-fit max-h-full overflow-y-scroll flex-none">
+<section
+  class="w-full h-fit max-h-full min-h-screen overflow-y-scroll flex-none relative"
+>
+  {#if showGrid}
+    <svg
+      width="100%"
+      height="100%"
+      xmlns="http://www.w3.org/2000/svg"
+      class="absolute"
+    >
+      <defs>
+        <pattern
+          id="grid"
+          width={gridCellSize + gapSize}
+          height={gridCellSize + gapSize}
+          patternUnits="userSpaceOnUse"
+        >
+          <rect width={gridCellSize} height={gridCellSize} fill="white" />
+          <path
+            d="M {gridCellSize + gapSize} 0 L 0 0 0 {gridCellSize + gapSize}"
+            fill="none"
+            stroke="none"
+            stroke-width="1"
+          />
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg>
+  {/if}
+
   <section
     class="grid w-full h-fit"
     style:gap="{gapSize}px"
@@ -31,7 +62,7 @@
     {#each charts as chart, i (i)}
       <div
         data-index={i}
-        class="flex items-center justify-center col-start-1 flex-grow-0 overflow-hidden rounded"
+        class="item flex items-center justify-center col-start-1 flex-grow-0 overflow-hidden rounded"
         style:grid-column-start={chart.x}
         style:grid-row-start={chart.y}
         style:grid-column-end="span {chart.width}"
@@ -44,7 +75,7 @@
 </section>
 
 <style lang="postcss">
-  div {
+  .item {
     @apply border bg-red-300 border-black;
   }
 </style>
