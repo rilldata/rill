@@ -1,30 +1,25 @@
 <script lang="ts">
-  import type { EmbedOptions, Mode } from "vega-embed";
-  import VegaEmbed from "./VegaEmbed.svelte";
-  import type { SignalListeners, View } from "./types";
+  import { VegaLite, View } from "svelte-vega";
 
-  export let spec; //VisualizationSpec
-  export let options: EmbedOptions = {};
   export let data: Record<string, unknown> = {};
-  export let signalListeners: SignalListeners = {};
-  export let view: View | undefined = undefined;
+  export let spec; // VisualizationSpec;
 
-  const mode = "vega-lite" as Mode;
-  $: vegaLiteOptions = { ...options, mode: mode };
+  let viewVL: View;
+  $: error = "";
 
-  let error = "";
+  const onError = (e) => {
+    e = e.detail.error.message;
+  };
 </script>
 
 {#if error}
   <p>{error}</p>
 {:else}
-  <VegaEmbed
-    {spec}
-    {data}
-    {signalListeners}
-    options={vegaLiteOptions}
-    bind:view
-    on:onNewView
-    on:onError={(e) => (error = e.detail)}
-  />
+  <VegaLite {data} {spec} bind:view={viewVL} on:onError={onError} />
 {/if}
+
+<style>
+  :global(.vega-embed) {
+    width: 100%;
+  }
+</style>
