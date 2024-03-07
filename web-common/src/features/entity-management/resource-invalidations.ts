@@ -83,8 +83,6 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  console.log(resource.meta?.name, resource.meta?.reconcileError);
-
   const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
   if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
