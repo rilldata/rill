@@ -131,20 +131,42 @@ export type AdminServiceListProjectInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetIFrameBodyAttributes = { [key: string]: any };
-
+/**
+ * DEPRECATED: Additional parameters to set outright in the generated URL query.
+ */
 export type AdminServiceGetIFrameBodyQuery = { [key: string]: string };
 
+/**
+ * If set, will use the provided attributes outright.
+ */
+export type AdminServiceGetIFrameBodyAttributes = { [key: string]: any };
+
+/**
+ * GetIFrameRequest is the request payload for AdminService.GetIFrame.
+ */
 export type AdminServiceGetIFrameBody = {
+  /** Branch to embed. If not set, the production branch is used. */
   branch?: string;
-  kind?: string;
-  resource?: string;
+  /** TTL for the iframe's access token. If not set, defaults to 24 hours. */
   ttlSeconds?: number;
-  state?: string;
-  query?: AdminServiceGetIFrameBodyQuery;
+  /** If set, will use the attributes of the user with this ID. */
   userId?: string;
+  /** If set, will generate attributes corresponding to a user with this email. */
   userEmail?: string;
+  /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
+  /** Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView". */
+  kind?: string;
+  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart. */
+  resource?: string;
+  /** Theme to use for the embedded resource. */
+  theme?: string;
+  /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
+  navigation?: boolean;
+  /** Blob containing UI state for rendering the initial embed. Not currently supported. */
+  state?: string;
+  /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
+  query?: AdminServiceGetIFrameBodyQuery;
 };
 
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {

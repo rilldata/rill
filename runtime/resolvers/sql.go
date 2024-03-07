@@ -79,6 +79,8 @@ func (r *SQLResolver) ResolveInteractive(ctx context.Context, priority int) (run
 	if err != nil {
 		return runtime.Result{}, err
 	}
+	defer res.Close()
+
 	var out []map[string]interface{}
 	for res.Rows.Next() {
 		row := make(map[string]interface{})

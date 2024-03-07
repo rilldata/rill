@@ -140,16 +140,16 @@
         </MetadataValue>
       </div>
 
-      <!-- Split by time grain -->
-      <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Split by time grain</MetadataLabel>
-        <MetadataValue>{runInterval}</MetadataValue>
-      </div>
-
       <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Schedule</MetadataLabel>
         <MetadataValue>Whenever your data refreshes</MetadataValue>
+      </div>
+
+      <!-- Split by time grain -->
+      <div class="flex flex-col gap-y-3">
+        <MetadataLabel>Evaluation interval</MetadataLabel>
+        <MetadataValue>{runInterval}</MetadataValue>
       </div>
 
       <!-- Snooze -->
@@ -182,7 +182,7 @@
   <EditAlertDialog
     open={showEditAlertDialog}
     alertSpec={$alertQuery.data.resource.alert.spec}
-    metricsViewSpec={$dashboard.data?.metricsView.spec}
     on:close={() => (showEditAlertDialog = false)}
+    metricsViewName={$dashboardName.data}
   />
 {/if}

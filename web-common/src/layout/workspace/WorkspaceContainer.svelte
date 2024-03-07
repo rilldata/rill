@@ -13,10 +13,9 @@
   import Inspector from "./Inspector.svelte";
   import type { LayoutElement } from "./types";
 
-  export let assetID;
+  export let assetID: string;
   export let inspector = true;
   export let bgClass = "bg-gray-100";
-  export let top = "var(--header-height)";
 
   const inspectorLayout = localStorageStore<LayoutElement>(assetID, {
     value: inspector ? DEFAULT_INSPECTOR_WIDTH : 0,
@@ -78,40 +77,40 @@
   setContext("rill:app:output-height-tween", outputHeight);
   setContext("rill:app:output-visibility-tween", outputVisibilityTween);
 
-  const navigationWidth = getContext(
+  const navigationWidth = getContext<Writable<number>>(
     "rill:app:navigation-width-tween",
-  ) as Writable<number>;
-  const navVisibilityTween = getContext(
+  );
+  const navVisibilityTween = getContext<Writable<number>>(
     "rill:app:navigation-visibility-tween",
-  ) as Writable<number>;
+  );
 
+  // Unclear on usage of this variable
+  // Holding off on removing it for now
   let hasNoError = 1;
-  // let hasInspector = true;
 </script>
 
 <div
-  class="fixed bg-white"
-  style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
-  style:right="0px"
->
-  <slot name="header" />
-</div>
-<div
-  class="box-border fixed {bgClass}"
-  style:height="100%"
-  style:top
+  class="flex flex-col h-screen overflow-hidden absolute"
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
   style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
-  style:padding-right="{(1 - $visibilityTween) *
-    SIDE_PAD *
-    hasNoError *
-    (inspector ? 1 : 0)}px"
-  style:right="{inspector && hasNoError
-    ? $inspectorWidth * $visibilityTween
-    : 0}px"
+  style:right="0px"
 >
-  <slot name="body" />
+  {#if $$slots.header}
+    <header class="bg-white w-full h-fit z-10">
+      <slot name="header" />
+    </header>
+  {/if}
+
+  <div
+    class="h-full {bgClass}"
+    style:padding-right="{inspector && hasNoError
+      ? $inspectorWidth * $visibilityTween
+      : 0}px"
+  >
+    <slot name="body" />
+  </div>
 </div>
+
 {#if inspector}
   <Inspector>
     <slot name="inspector" />

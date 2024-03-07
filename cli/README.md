@@ -10,8 +10,8 @@ make cli
 # To output usage:
 ./rill
 
-# To run start
-./rill start --project dev-project
+# To run start:
+./rill start dev-project
 ```
 
 ## Running in development
@@ -25,7 +25,7 @@ make cli.prepare
 go run ./cli
 
 # To run start:
-go run ./cli start --project dev-project
+go run ./cli start dev-project
 ```
 
 ## Generating CLI reference docs
