@@ -44,6 +44,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
 // Config describes runtime server config derived from environment variables.
