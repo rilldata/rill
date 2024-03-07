@@ -8,14 +8,28 @@ sidebar_position: 00
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 
-Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, download using HTTP(S), connect to databases like MotherDuck or BigQuery. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). 
+Rill supports several connectors for ingesting data from sources: local files, download from an S3 or GCS bucket, download using HTTP(S), connect to databases like MotherDuck or BigQuery. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see the _Using Code_ sections below).
 
-You can also push logic into source definition during important to filter the data for your source (see Using Code below).
+To provide a non-exhaustive list, Rill supports the following connectors:
+- [Google Cloud Storage](/reference/connectors/gcs.md)
+- [S3](/reference/connectors/s3.md)
+- [Azure Blob Storage](/reference/connectors/azure.md)
+- [BigQuery](/reference/connectors/bigquery.md)
+- [Athena](/reference/connectors/athena.md)
+- [DuckDB and MotherDuck](/reference/connectors/motherduck.md)
+- [PostgreSQL](/reference/connectors/postgres.md)
+- [MySQL](/reference/connectors/mysql.md)
+- [SQLite](/reference/connectors/sqlite.md)
+- [Snowflake](/reference/connectors/snowflake.md)
+- [Salesforce](/reference/connectors/salesforce.md)
+- [Google Sheets](/reference/connectors/googlesheets.md)
 
+:::info Full List Of Connectors
 
-:::note Full List of Connectors
-Rill is continually adding new sources and defined connectors. For a full list, visit our [Connectors](/reference/connectors) page
+Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](contact.md) either if there's a connector you'd like us to add!
+
 :::
+
 ## Adding a local file
 
 ### Using the UI
