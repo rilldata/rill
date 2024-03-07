@@ -42,6 +42,7 @@ If looking to track uniques, but with smaller datasets and significantly improve
 While joins can kill the performance of OLAP engines, Lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
 
 **Static Lookups** 
+
 Static Lookups are lookups that are ingested at processing time. When a record is being processed, if a match is found between the record and lookup's key, the lookup's corresponding value at that moment in time is extracted and carbon-copied into Druid for the records it processed.
 
 Static lookups are best suited for:
