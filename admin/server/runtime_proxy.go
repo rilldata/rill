@@ -76,6 +76,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 					runtimeauth.ReadMetrics,
 					runtimeauth.ReadProfiling,
 					runtimeauth.ReadRepo,
+					runtimeauth.ReadAPI,
 				},
 			},
 			Attributes: attr,

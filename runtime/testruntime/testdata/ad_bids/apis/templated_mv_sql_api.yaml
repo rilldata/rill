@@ -1,0 +1,4 @@
+kind : api
+
+metrics:
+  sql: select publisher, domain, AGGREGATE("measure_2") as total_imp from ad_bids_mini_metrics where domain = '{{ .domain }}' GROUP BY ALL
