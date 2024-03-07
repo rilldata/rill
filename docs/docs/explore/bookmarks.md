@@ -1,8 +1,8 @@
 ---
-title: "Bookmarks"
+title: "Bookmarks/Saved Views"
 description: Creating Saved Views in Rill
-sidebar_label: "Bookmarks"
-sidebar_position: 15
+sidebar_label: "Bookmarks/Saved Views"
+sidebar_position: 35
 ---
 
 ## Overview

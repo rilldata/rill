@@ -19,7 +19,7 @@ You can also expand each dimension table to see all metrics and full list of tho
 
 Any filter applied in the Leaderboard will also show up in the filter bar at next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
 
-![dimension-filter](../../static/img/explore/filters/filter.gif)
+![dimension-filter](../../../static/img/explore/filters/filter.gif)
 
 ## Filter by Metrics
 
@@ -34,7 +34,7 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 - Select your Threshold Type (e.g. Great Than)
 - Input your Threshold amount and Click Enter
 
-![metric-filter](../../static/img/explore/filters/image.png)
+![metric-filter](../../../static/img/explore/filters/image.png)
 
 :::tip
 Metric filters are a good way to "sort" by two different metrics. First, apply your metric threshold. Then, sort by your metrics within the Leaderboard to do multi-metric sorting. 
@@ -50,10 +50,10 @@ Time comparison is a key feature of Rill and recommended to find insights quicke
 After selecting that range, select Compare by Time - either defaulting to the same prior period or selecting a custom comparison period. 
 
 :::note
-Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](../reference/project-files/dashboards.md) for more details
+Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](../../reference/project-files/dashboards.md) for more details
 :::
 
-![time-picker](../../static/img/explore/filters/image-3.png)
+![time-picker](../../../static/img/explore/filters/image-3.png)
 
 :::tip
 Rill provides different options for time period comparison - by time period or by selected hours. 
@@ -71,7 +71,7 @@ In addition to time comparisons, you can select multiple dimension values to com
 
 De-select the comparison option or clear the filter bar to remove your comparisons.
 
-![comparisons](../../static/img/explore/filters/comparison.gif)
+![comparisons](../../../static/img/explore/filters/comparison.gif)
 
 :::note
 For more advanced time and dimension comparisons, visit the [Time Dimension Detail](tdd.md) page.
