@@ -4,6 +4,7 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import DashboardAdminStateProvider from "@rilldata/web-admin/features/dashboards/DashboardAdminStateProvider.svelte";
   import { getDashboardsForProject } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
@@ -13,7 +14,6 @@
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -102,13 +102,13 @@
   {:else}
     {#key dashboardName}
       <StateManagersProvider metricsViewName={dashboardName}>
-        <DashboardStateProvider metricViewName={dashboardName}>
+        <DashboardAdminStateProvider metricViewName={dashboardName}>
           <DashboardURLStateProvider metricViewName={dashboardName}>
             <DashboardThemeProvider>
               <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
             </DashboardThemeProvider>
           </DashboardURLStateProvider>
-        </DashboardStateProvider>
+        </DashboardAdminStateProvider>
       </StateManagersProvider>
     {/key}
   {/if}

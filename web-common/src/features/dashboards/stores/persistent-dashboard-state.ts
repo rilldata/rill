@@ -1,3 +1,4 @@
+import { browser } from "$app/environment";
 import type {
   SortDirection,
   SortType,
@@ -76,4 +77,9 @@ export function getPersistentDashboardStore() {
 export function getPersistentDashboardState(): PersistentDashboardState {
   if (!persistentDashboardStore) return {};
   return get(persistentDashboardStore);
+}
+
+export function hasPersistentDashboardData() {
+  if (!persistentDashboardStore) return false;
+  return Object.keys(get(persistentDashboardStore)).length > 0;
 }
