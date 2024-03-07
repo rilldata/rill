@@ -38,7 +38,7 @@
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
   import { scaleLinear } from "d3-scale";
-  import { onMount, setContext } from "svelte";
+  import { onMount } from "svelte";
   import { cubicOut as easing } from "svelte/easing";
   import { spring } from "svelte/motion";
   import type { Writable } from "svelte/store";
@@ -55,7 +55,6 @@
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
-  import da from "date-fns/locale/da";
 
   const id = guidGenerator();
 
