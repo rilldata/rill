@@ -11,7 +11,7 @@ module.exports = {
   plugins: ["@typescript-eslint"],
   parserOptions: {
     sourceType: "module",
-    ecmaVersion: 2020,
+    ecmaVersion: 2019,
     extraFileExtensions: [".svelte"],
     project: true,
     tsconfigRootDir: __dirname,
