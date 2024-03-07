@@ -7,8 +7,8 @@
   let viewVL: View;
   $: error = "";
 
-  const onError = (e) => {
-    e = e.detail.error.message;
+  const onError = (e: CustomEvent<{ error: Error }>) => {
+    error = e.detail.error.message;
   };
 </script>
 

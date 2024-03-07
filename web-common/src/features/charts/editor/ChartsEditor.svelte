@@ -44,7 +44,7 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    `/charts/${chartName}.yaml`,
+    getFilePathFromNameAndType(chartName, EntityType.Chart),
   );
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);

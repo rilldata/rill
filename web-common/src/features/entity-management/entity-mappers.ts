@@ -31,9 +31,7 @@ export function getFilePathFromNameAndType(
     case EntityType.Chart:
       return `charts/${name}.yaml`;
     default:
-      throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
-      );
+      throw new Error("Unrecognized EntityType");
   }
 }
 // Temporary solution for the issue with leading `/` for these files.
