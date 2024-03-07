@@ -10,8 +10,7 @@ import (
 type APIYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
 	Metrics    *struct {
-		Connector string `yaml:"connector"`
-		SQL       string `yaml:"sql"`
+		SQL string `yaml:"sql"`
 	} `yaml:"metrics"`
 }
 
@@ -39,14 +38,8 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	// Handle metrics resolver
 	if tmp.Metrics != nil {
-		connector := tmp.Metrics.Connector
-		if connector == "" { // Fall back to default connector
-			connector = node.Connector
-		}
-
 		resolvers++
 		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
-		resolverProps["connector"] = connector
 		resolverProps["sql"] = tmp.Metrics.SQL
 		// NOTE: May add support for outright dimensions:, measures:, etc. here
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -20,19 +21,32 @@ func init() {
 	runtime.RegisterAPIResolverInitializer("Metrics", newMetricsViewSQL)
 }
 
-// sqlIdenitifer is regex pattern to identify a SQL idenitifier. The idenitifier may be wrapped in double quotes.
+// sqlIdentifier is regex pattern to identify a SQL identifier. The identifier may be wrapped in double quotes.
 // Additionally if double quotes are present in idenitifer, it is escaped with additional double quotes.
-var sqlIdenitifer = `[a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*"`
+var sqlIdentifier = `[a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*"`
 
 var (
-	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\((?:(%s)\.)?(%s)\)`, sqlIdenitifer, sqlIdenitifer))
-	fromMVRegex    = regexp.MustCompile(fmt.Sprintf(`(?i)FROM\s+(%s)`, sqlIdenitifer))
+	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\((?:(%s)\.)?(%s)\)`, sqlIdentifier, sqlIdentifier))
+	fromMVRegex    = regexp.MustCompile(fmt.Sprintf(`(?i)FROM\s+(%s)`, sqlIdentifier))
 )
 
+type metricsSQLProperties struct {
+	SQL string `mapstructure:"sql"`
+}
+
 func newMetricsViewSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
-	sql := opts.API.Spec.ResolverProperties.Fields["sql"].GetStringValue()
-	if sql == "" {
-		return nil, errors.New("no sql query found for metrics sql resolver")
+	props := opts.API.Spec.ResolverProperties
+	if props == nil {
+		return nil, fmt.Errorf("MetricsViewSQL: resolver properties not found")
+	}
+
+	metricsSQLProperties := &metricsSQLProperties{}
+	if err := mapstructure.Decode(props.AsMap(), metricsSQLProperties); err != nil {
+		return nil, err
+	}
+
+	if metricsSQLProperties.SQL == "" {
+		return nil, errors.New("MetricsViewSQL: sql property not found")
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
@@ -40,7 +54,7 @@ func newMetricsViewSQL(ctx context.Context, opts *runtime.APIResolverOptions) (r
 		return nil, err
 	}
 
-	parsedSQL, deps, err := expandMetricsViewSQL(ctx, ctrl, opts, sql)
+	parsedSQL, deps, err := expandMetricsViewSQL(ctx, ctrl, opts, metricsSQLProperties.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +142,7 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 			var found bool
 			if metricView == "" {
 				if len(mvToMeasureExprMap) > 1 {
-					return "", nil, fmt.Errorf("measure should be precedded with metric_view if api references more than one metric view")
+					return "", nil, fmt.Errorf("ambiguous reference to measure %q: use a fully qualified name such as \"metrics_view.measure\"", unquote(aggMatch[2]))
 				}
 
 				expr, found = maps.Values(mvToMeasureExprMap)[0][unquote(aggMatch[2])]
@@ -214,7 +228,7 @@ func underlyingTableQuery(rt *runtime.Runtime, opts *runtime.APIResolverOptions,
 	}
 
 	if !security.Access || security.ExcludeAll {
-		return "", nil, fmt.Errorf("access forbidden")
+		return "", nil, fmt.Errorf("access to metrics_view is forbidden")
 	}
 
 	dims := make(map[string]any, len(mv.Spec.Dimensions))
