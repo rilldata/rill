@@ -11,30 +11,29 @@ export async function createChart(instanceId: string, newChartName: string) {
 data:
   name: MetricsViewAggregation
   args:
-    metrics_view: foo
+    metrics_view: Bids_Sample_Dash
+    measures:
+      - name: measure_2
+    dimensions:
+      - name: advertiser_name
+    timeRange:
+      start: '2023-03-07T00:30:00.000Z'
+      end: '2023-03-08T00:30:00.000Z'
+    sort:
+    - desc: true
+      name: measure_2
+    limit: '20'
+    offset: '0'
 
 vega_lite: |
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "data": {
-      "values": [
-        {"category":"A", "group": "x", "value":0.1},
-        {"category":"A", "group": "y", "value":0.6},
-        {"category":"A", "group": "z", "value":0.9},
-        {"category":"B", "group": "x", "value":0.7},
-        {"category":"B", "group": "y", "value":0.2},
-        {"category":"B", "group": "z", "value":1.1},
-        {"category":"C", "group": "x", "value":0.6},
-        {"category":"C", "group": "y", "value":0.1},
-        {"category":"C", "group": "z", "value":0.2}
-      ]
-    },
+    "data": {"name": "table"},
     "mark": "bar",
+    "width": "container",
     "encoding": {
-      "x": {"field": "category"},
-      "y": {"field": "value", "type": "quantitative"},
-      "xOffset": {"field": "group"},
-      "color": {"field": "group"}
+      "x": {"field": "advertiser_name", "type": "nominal"},
+      "y": {"field": "measure_2", "type": "quantitative"}
     }
   }`,
       createOnly: true,
