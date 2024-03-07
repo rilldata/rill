@@ -123,7 +123,7 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   const newUrl = getUrlForPath(url.pathname, ["features", "theme"]);
 
   if (newState !== defaultState) {
-    newStateInUrl = encodeURIComponent(newState);
+    newStateInUrl = newState;
     newUrl.searchParams.set("state", newStateInUrl);
   }
 
