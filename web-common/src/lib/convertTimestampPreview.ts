@@ -2,6 +2,7 @@ import {
   addZoneOffset,
   removeLocalTimezoneOffset as remove,
 } from "@rilldata/web-common/lib/time/timezone";
+import type { V1TimeSeriesValue } from "../runtime-client";
 export function convertTimestampPreviewFcn(
   ts,
   removeLocalTimezoneOffset = false,
@@ -10,11 +11,15 @@ export function convertTimestampPreviewFcn(
 }
 
 /** used to convert a timestamp preview from the server for a sparkline. */
-export function convertTimestampPreview(d, removeLocalTimezoneOffset = false) {
+export function convertTimestampPreview(
+  d: V1TimeSeriesValue[],
+  removeLocalTimezoneOffset = false,
+) {
   return d.map((di) => {
-    const pi = { ...di };
-    pi.ts = convertTimestampPreviewFcn(di.ts, removeLocalTimezoneOffset);
-    return pi;
+    return {
+      ...di,
+      ts: convertTimestampPreviewFcn(di.ts, removeLocalTimezoneOffset),
+    };
   });
 }
 

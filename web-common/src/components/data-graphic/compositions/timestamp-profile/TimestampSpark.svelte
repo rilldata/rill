@@ -18,6 +18,7 @@
   export let width = 360;
   export let height = 120;
   export let color = "hsl(217, 10%, 50%)";
+  $: console.log({ width });
 
   // the color of the zoom window
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";

@@ -7,27 +7,35 @@ measures the bounding rect of this element's child
   export let tag = "div";
 
   let element: HTMLElement | SVGElement;
-  let observer;
-  let rect;
-  let styles;
+  let observer: ResizeObserver;
+  let rect: DOMRect;
+  let styles: CSSStyleDeclaration | null;
+  let parentElement: HTMLElement | null;
 
-  function toNumber(px) {
+  function toNumber(px: string) {
     if (!px) return 0;
     return px?.includes("px") ? +px.split("px")[0] : 0;
   }
   onMount(() => {
-    observer = new ResizeObserver(() => {
-      rect = element.parentElement?.getBoundingClientRect();
+    parentElement = element.parentElement;
+
+    if (!parentElement) return;
+
+    observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+
+      rect = entry.contentRect;
       styles =
         element?.parentElement &&
         window.getComputedStyle(element?.parentElement);
     });
-    observer.observe(element.parentElement);
-    rect = element.parentElement?.getBoundingClientRect();
+
+    observer.observe(parentElement);
   });
 
   onDestroy(() => {
-    observer.unobserve(element.parentElement);
+    if (!parentElement) return;
+    observer.unobserve(parentElement);
   });
 </script>
 

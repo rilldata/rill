@@ -107,7 +107,7 @@ export function lineFactory(args: LineGeneratorArguments) {
  */
 export function areaFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
-    area()
+    area<Record<string, number | Date>>()
       .x((d) => args.xScale(d[args.xAccessor]))
       .y0(args.yScale(0))
       .y1((d) => args.yScale(d[yAccessor]))
