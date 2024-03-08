@@ -26,15 +26,19 @@ test.describe("dimension and measure selectors", () => {
     await page.getByRole("menuitem", { name: "Publisher" }).click();
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
 
-    await expect(page.getByText("Publisher")).not.toBeVisible();
-    await expect(page.getByText("Domain")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Publisher" }),
+    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Domain" })).toBeVisible();
 
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
     await page.getByRole("menuitem", { name: "Publisher" }).click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
 
-    await expect(page.getByText("Publisher")).toBeVisible();
-    await expect(page.getByText("Domain")).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Publisher" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Domain" }),
+    ).not.toBeVisible();
   });
 });
