@@ -14,6 +14,12 @@ type APIYAML struct {
 	} `yaml:"metrics"`
 }
 
+type DataYAML struct {
+	MetricsSQL string            `yaml:"metrics_sql"`
+	API        string            `yaml:"api"`
+	Args       map[string]string `yaml:"args"`
+}
+
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseAPI(node *Node) error {
 	// Parse YAML
@@ -72,4 +78,37 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.ResolverProperties = resolverPropsPB
 
 	return nil
+}
+
+func (p *Parser) parseDataYAML(raw *DataYAML) (string, map[string]any, error) {
+	// Parse the resolver and its properties
+	var resolver string
+	var resolvers int
+	resolverProps := make(map[string]any)
+
+	// TODO: Handle basic SQL resolver
+
+	// Handle metrics resolver
+	if raw.MetricsSQL != "" {
+		resolvers++
+		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
+		resolverProps["sql"] = raw.MetricsSQL
+		// NOTE: May add support for outright dimensions:, measures:, etc. here
+	}
+
+	if raw.API != "" {
+		resolvers++
+		resolver = "API" // TODO: Replace with a constant when the resolver abstractions are implemented
+		resolverProps["api"] = raw.API
+	}
+
+	// Validate there was exactly one resolver
+	if resolvers == 0 {
+		return "", nil, fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics:", ...)`)
+	}
+	if resolvers > 1 {
+		return "", nil, fmt.Errorf(`the API definition specifies more than one resolver`)
+	}
+
+	return resolver, resolverProps, nil
 }

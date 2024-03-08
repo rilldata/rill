@@ -1870,13 +1870,12 @@ export interface V1ChartState {
   [key: string]: any;
 }
 
-export type V1ChartSpecArgs = { [key: string]: string };
+export type V1ChartSpecResolverProperties = { [key: string]: any };
 
 export interface V1ChartSpec {
   title?: string;
-  metricsSql?: string;
-  api?: string;
-  args?: V1ChartSpecArgs;
+  resolver?: string;
+  resolverProperties?: V1ChartSpecResolverProperties;
   vegaLiteSpec?: string;
 }
 

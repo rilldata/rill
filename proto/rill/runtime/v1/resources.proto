@@ -396,10 +396,9 @@ message Chart {
 
 message ChartSpec {
   string title = 1;
-  string metrics_sql = 2;
-  string api = 3;
-  map<string, string> args = 4;
-  string vega_lite_spec = 5;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+  string vega_lite_spec = 4;
 }
 
 message ChartState {}

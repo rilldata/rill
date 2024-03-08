@@ -3067,14 +3067,10 @@ definitions:
     properties:
       title:
         type: string
-      metricsSql:
+      resolver:
         type: string
-      api:
-        type: string
-      args:
+      resolverProperties:
         type: object
-        additionalProperties:
-          type: string
       vegaLiteSpec:
         type: string
   v1ChartState:

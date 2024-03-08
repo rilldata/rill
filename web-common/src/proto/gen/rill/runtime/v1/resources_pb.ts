@@ -2867,22 +2867,17 @@ export class ChartSpec extends Message<ChartSpec> {
   title = "";
 
   /**
-   * @generated from field: string metrics_sql = 2;
+   * @generated from field: string resolver = 2;
    */
-  metricsSql = "";
+  resolver = "";
 
   /**
-   * @generated from field: string api = 3;
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
    */
-  api = "";
+  resolverProperties?: Struct;
 
   /**
-   * @generated from field: map<string, string> args = 4;
-   */
-  args: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: string vega_lite_spec = 5;
+   * @generated from field: string vega_lite_spec = 4;
    */
   vegaLiteSpec = "";
 
@@ -2895,10 +2890,9 @@ export class ChartSpec extends Message<ChartSpec> {
   static readonly typeName = "rill.runtime.v1.ChartSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "metrics_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "api", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "args", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 5, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 4, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ChartSpec {

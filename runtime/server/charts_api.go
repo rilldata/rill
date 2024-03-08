@@ -53,30 +53,12 @@ func (s *Server) GetChartData(w http.ResponseWriter, req *http.Request) error {
 		reqParams[k] = v[0]
 	}
 
-	var api *runtimev1.API
-	if ch.MetricsSql != "" {
-		resolverPropsPB, err := structpb.NewStruct(map[string]interface{}{
-			"sql": ch.MetricsSql,
-		})
-		if err != nil {
-			return httputil.Error(http.StatusInternalServerError, err)
+	api, err := resolveAPI(ctx, s.runtime, instanceID, ch.Resolver, ch.ResolverProperties.AsMap())
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return httputil.Errorf(http.StatusNotFound, "api does not exist")
 		}
-		// TODO: are other fields needed?
-		api = &runtimev1.API{
-			Spec: &runtimev1.APISpec{
-				Resolver:           "Metrics",
-				ResolverProperties: resolverPropsPB,
-			},
-		}
-	} else if ch.Api != "" {
-		api, err = s.runtime.APIForName(ctx, instanceID, ch.Api)
-		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				// shouldn't happen since validation would have happened in reconcile
-				return httputil.Errorf(http.StatusNotFound, "api with name %q does not exist", ch.Api)
-			}
-			return httputil.Error(http.StatusInternalServerError, err)
-		}
+		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
 	res, err := runtime.Resolve(ctx, &runtime.APIResolverOptions{
@@ -118,4 +100,41 @@ func resolveChart(ctx context.Context, rt *runtime.Runtime, instanceID, name str
 	}
 
 	return spec, nil
+}
+
+func resolveAPI(ctx context.Context, rt *runtime.Runtime, instanceID, resolver string, resolverProps map[string]interface{}) (*runtimev1.API, error) {
+	var api *runtimev1.API
+	var err error
+
+	switch resolver {
+	case "Metrics":
+		resolverPropsPB, err := structpb.NewStruct(map[string]interface{}{
+			"sql": resolverProps["sql"],
+		})
+		if err != nil {
+			return nil, err
+		}
+		// TODO: are other fields needed?
+		api = &runtimev1.API{
+			Spec: &runtimev1.APISpec{
+				Resolver:           "Metrics",
+				ResolverProperties: resolverPropsPB,
+			},
+		}
+
+	case "API":
+		apiName, ok := resolverProps["api"].(string)
+		if !ok {
+			return nil, errors.New("api name is missing")
+		}
+		api, err = rt.APIForName(ctx, instanceID, apiName)
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		return nil, errors.New("unknown resolver")
+	}
+
+	return api, nil
 }
