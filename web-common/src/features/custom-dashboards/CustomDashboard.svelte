@@ -20,7 +20,7 @@
 
   export let columns = 20;
   export let charts: V1DashboardComponent[];
-  export let gap = 1;
+  export let gap = 4;
   export let showGrid = false;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -36,7 +36,9 @@
   let initialResizeElementDimensions: Vector | null = null;
   let initialMoveElementPosition: Vector | null = null;
 
-  $: gapSize = contentRect.width * (gap / 500);
+  $: gapSize = contentRect.width * (gap / 200);
+
+  $: console.log({ gapSize, gap });
 
   $: gridCellSize = contentRect.width / columns;
 
