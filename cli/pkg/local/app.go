@@ -323,7 +323,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, certPath, keyPath string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -360,8 +360,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	opts := &runtimeserver.Options{
 		HTTPPort:        httpPort,
 		GRPCPort:        grpcPort,
-		CertPath:        certPath,
-		KeyPath:         keyPath,
+		TLSCertPath:     tlsCertPath,
+		TLSKeyPath:      tlsKeyPath,
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
@@ -394,7 +394,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// if keypath and certpath are provided
-	secure := certPath != "" && keyPath != ""
+	secure := tlsCertPath != "" && tlsKeyPath != ""
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)

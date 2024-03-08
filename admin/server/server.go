@@ -181,7 +181,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
 
-	return graceful.ServeHTTP(ctx, server, graceful.Options{
+	return graceful.ServeHTTP(ctx, server, graceful.ServeOptions{
 		Port: s.opts.HTTPPort,
 	})
 }
