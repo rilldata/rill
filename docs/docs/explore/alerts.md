@@ -23,7 +23,7 @@ To avoid getting over alerted, consider adding a metric filter to avoid long tai
 - filter to customers with less than 100 logins but filtered to more than 100 users to alert on active user drops in active accounts
 - filter to campaigns with > 20% decrease in spend but filtered to spend > $1000 to avoid large % change on small campaigns
 
-See [metric filters](../explore/filters.md#filter-by-metrics) for more info.
+See [metric filters](../explore/filters/filters.md#filter-by-metrics) for more info.
 :::
 
 ### Criteria

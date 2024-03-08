@@ -1,7 +1,7 @@
 ---
-title: "Common SQL Expressions"
+title: "Common Expressions"
 description: Tips & Tricks for Defining Metrics & Dimensions
-sidebar_label: "Common SQL Expressions"
+sidebar_label: "Common Expressions"
 sidebar_position: 20
 ---
 

@@ -30,6 +30,12 @@ Rill is continually adding new sources and connectors in our releases. For a com
 
 :::
 
+:::tip Avoid Pre-aggregated Metrics
+
+Rill works best for slicing and dicing data meaning keeping data closer to raw to retain that granularity for flexible analysis. When loading data - be careful with adding pre-aggregated metrics like averages as that could lead to unintended results like a sum of an average. Instead load the two raw metrics and calculate the derived metric in your model or dashboard.
+
+:::
+
 ## Adding a local file
 
 ### Using the UI
