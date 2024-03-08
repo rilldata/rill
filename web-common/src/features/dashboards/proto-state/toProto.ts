@@ -126,7 +126,9 @@ export function getProtoFromDashboardState(
     state.leaderboardSortType = metrics.dashboardSortType;
   }
 
-  Object.assign(state, toPivotProto(metrics.pivot));
+  if (metrics.pivot) {
+    Object.assign(state, toPivotProto(metrics.pivot));
+  }
 
   Object.assign(state, toActivePageProto(metrics));
 
@@ -250,6 +252,7 @@ function toPbValue(val: unknown) {
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
   if (!pivotState.active)
     return {
+      pivotIsActive: false,
       pivotExpanded: {},
       pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
     };

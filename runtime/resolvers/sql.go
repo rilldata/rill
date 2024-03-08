@@ -30,7 +30,7 @@ type SQLResolver struct {
 }
 
 func newSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
-	sql := opts.API.Spec.ResolverProperties.Fields["sql"].GetStringValue()
+	sql := opts.ResolverProperties.Fields["sql"].GetStringValue()
 	if sql == "" {
 		return nil, errors.New("no sql query found for sql resolver")
 	}
@@ -79,6 +79,8 @@ func (r *SQLResolver) ResolveInteractive(ctx context.Context, priority int) (run
 	if err != nil {
 		return runtime.Result{}, err
 	}
+	defer res.Close()
+
 	var out []map[string]interface{}
 	for res.Rows.Next() {
 		row := make(map[string]interface{})
@@ -200,11 +202,7 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
 		User:       opts.UserAttributes,
 		ExtraProps: opts.Args,
-		Self: compilerv1.TemplateResource{
-			Meta:  &runtimev1.ResourceMeta{}, // TODO: Fill in with actual metadata
-			Spec:  opts.API.Spec,
-			State: opts.API.State,
-		},
+		Self:       compilerv1.TemplateResource{}, // Not defined for resolvers
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
 			return safeSQLName(ref.Name), nil
 		},

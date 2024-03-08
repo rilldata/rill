@@ -7,17 +7,17 @@
   import type { LayoutElement } from "./types";
 
   /** the core inspector width element is stored in localStorage. */
-  const inspectorLayout = getContext(
+  const inspectorLayout = getContext<Writable<LayoutElement>>(
     "rill:app:inspector-layout",
-  ) as Writable<LayoutElement>;
+  );
 
-  const inspectorWidth = getContext(
+  const inspectorWidth = getContext<Writable<number>>(
     "rill:app:inspector-width-tween",
-  ) as Writable<number>;
+  );
 
-  const visibilityTween = getContext(
+  const visibilityTween = getContext<Writable<number>>(
     "rill:app:inspector-visibility-tween",
-  ) as Writable<number>;
+  );
 </script>
 
 <div
