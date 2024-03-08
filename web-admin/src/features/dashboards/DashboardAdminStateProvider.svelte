@@ -1,9 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    useHomeBookmark,
-    useProjectId,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { useQueryClient } from "@rilldata/svelte-query";
+  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
   import {
     createTimeRangeSummary,
     useMetricsView,
@@ -31,17 +29,23 @@
     metricViewName,
   );
 
-  $: projectId = useProjectId($page.params.organization, $page.params.project);
-  $: homeBookmark = useHomeBookmark($projectId?.data, metricViewName);
+  const queryClient = useQueryClient();
+  $: bookmarks = getBookmarks(
+    queryClient,
+    $runtime?.instanceId,
+    $page.params.organization,
+    $page.params.project,
+    metricViewName,
+  );
 
   function syncDashboardStateLocal() {
     let stateToLoad = $page.url.searchParams.get("state");
     if (
       !hasPersistentDashboardData() &&
       !stateToLoad &&
-      $homeBookmark.data?.data
+      $bookmarks.data?.home.resource.data
     ) {
-      stateToLoad = $homeBookmark.data?.data;
+      stateToLoad = $bookmarks.data?.home.resource.data;
     }
     syncDashboardState(
       metricViewName,
@@ -56,8 +60,7 @@
     $metricsView.data &&
     $metricsViewSchema.data &&
     ($timeRangeQuery.data || !$hasTimeSeries.data) &&
-    $projectId?.data &&
-    !$homeBookmark.isFetching
+    !$bookmarks.isFetching
   ) {
     syncDashboardStateLocal();
   }
