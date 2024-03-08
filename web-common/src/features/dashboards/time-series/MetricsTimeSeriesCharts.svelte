@@ -132,14 +132,13 @@
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-      const startPos = bisectData(
+      const [, startPos] = bisectData(
         start,
         "center",
         "ts_position",
         slicedData,
-        true,
       );
-      const endPos = bisectData(end, "center", "ts_position", slicedData, true);
+      const [, endPos] = bisectData(end, "center", "ts_position", slicedData);
 
       return {
         hover: isScrubbing ? undefined : state.hover,
@@ -177,14 +176,13 @@
         hover: undefined,
       }));
     } else {
-      const columnNum = bisectData(
+      const [, columnNum] = bisectData(
         mouseoverValue.x,
         "center",
         "ts_position",
         $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
           ? formattedData?.slice(1)
           : formattedData?.slice(1, -1),
-        true,
       );
 
       if ($chartInteractionColumn?.hover !== columnNum)

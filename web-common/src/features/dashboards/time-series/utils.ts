@@ -13,6 +13,9 @@ import { removeZoneOffset } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
+import type { GraphicScale } from "@rilldata/web-common/components/data-graphic/state/types";
+import type { TimeSeriesDatum } from "./timeseries-data-store";
+import type { DateTimeUnit } from "luxon";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -84,17 +87,22 @@ export function prepareTimeSeries(
 }
 
 export function getBisectedTimeFromCordinates(
-  value,
-  scaleStore,
-  accessor,
-  data,
-  grainLabel,
-) {
+  value: number,
+  scaleStore: GraphicScale,
+  accessor: string,
+  data: TimeSeriesDatum[],
+  grainLabel: DateTimeUnit,
+): Date | null {
   const roundedValue = roundToNearestTimeUnit(
-    scaleStore.invert(value),
+    new Date(scaleStore.invert(value)),
     grainLabel,
   );
-  return bisectData(roundedValue, "center", accessor, data)[accessor];
+  const [bisector] = bisectData(roundedValue, "center", accessor, data);
+  if (!bisector || typeof bisector === "number") return null;
+  const bisected = bisector[accessor];
+  if (!bisected) return null;
+
+  return new Date(bisected);
 }
 
 /**
