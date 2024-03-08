@@ -41,6 +41,7 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
+  import type { TimeSeriesDatum } from "./timeseries-data-store";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -55,7 +56,7 @@
   export let zone: string;
 
   export let showComparison = false;
-  export let data;
+  export let data: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor = "ts";
   export let labelAccessor = "label";

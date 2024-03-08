@@ -7,20 +7,22 @@ Useful for finding the nearest value to the current mouseover
 -->
 <script lang="ts">
   import { bisector } from "d3-array";
-  import type { NumericPlotPoint } from "./types";
+
+  type T = $$Generic;
+  type K = $$Generic;
   /** the dataset that will be used for bisection */
-  export let data: ArrayLike<any>;
+  export let data: T[];
   /** The callback function that returns the value for bisection */
-  export let callback: (arg0: any) => number | Date;
+  export let callback: (arg0: T) => K;
   /** The value that will be used for the bisection */
-  export let value: any;
+  export let value: K;
   /** The direction that will be used for the bisection */
   export let direction: "left" | "right" | "center" = "left";
 
   const bisect = bisector(callback)[direction];
 
   /** provide a bind site for the output */
-  export let point: NumericPlotPoint | undefined = undefined;
+  export let point: T | undefined = undefined;
 
   $: point = value !== undefined ? data[bisect(data, value)] : undefined;
 </script>

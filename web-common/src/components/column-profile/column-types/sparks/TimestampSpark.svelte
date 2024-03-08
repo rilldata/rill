@@ -14,10 +14,11 @@
     Line,
   } from "@rilldata/web-common/components/data-graphic/marks";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 
   export let width = undefined;
   export let height = undefined;
-  export let data: unknown[];
+  export let data: TimeSeriesDatum[];
 
   export let xAccessor: string | undefined = undefined;
   export let yAccessor: string | undefined = undefined;

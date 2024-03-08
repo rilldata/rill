@@ -105,9 +105,11 @@ export function lineFactory(args: LineGeneratorArguments) {
  * FIXME: rename to timeSeriesAreaFactory.
  * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
  */
-export function areaFactory(args: LineGeneratorArguments) {
+export function areaFactory<T extends Record<string, number | Date>>(
+  args: LineGeneratorArguments,
+) {
   return (yAccessor: string) =>
-    area<Record<string, number | Date>>()
+    area<T>()
       .x((d) => args.xScale(d[args.xAccessor]))
       .y0(args.yScale(0))
       .y1((d) => args.yScale(d[yAccessor]))
@@ -299,15 +301,15 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
 }
 
 // This is function equivalent of WithBisector
-export function bisectData(
+export function bisectData<T>(
   value: Date,
   direction: "left" | "right" | "center",
-  accessor: string,
-  data: ArrayLike<unknown>,
+  accessor: keyof T,
+  data: ArrayLike<T>,
   returnPos = false,
 ) {
   if (!data?.length) return;
-  const bisect = bisector((d) => d[accessor])[direction];
+  const bisect = bisector<T, unknown>((d) => d[accessor])[direction];
 
   if (returnPos) return value !== undefined ? bisect(data, value) : undefined;
   return value !== undefined ? data[bisect(data, value)] : undefined;

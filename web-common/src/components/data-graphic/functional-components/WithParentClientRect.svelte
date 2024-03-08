@@ -12,7 +12,7 @@ measures the bounding rect of this element's child
   let styles: CSSStyleDeclaration | null;
   let parentElement: HTMLElement | null;
 
-  function toNumber(px: string) {
+  function toNumber(px: string | undefined) {
     if (!px) return 0;
     return px?.includes("px") ? +px.split("px")[0] : 0;
   }

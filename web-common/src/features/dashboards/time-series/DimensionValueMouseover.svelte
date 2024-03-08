@@ -1,13 +1,18 @@
 <script lang="ts">
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
-  import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  export let point: NumericPlotPoint;
-  export let xAccessor: string;
-  export let yAccessor: string;
-  export let mouseoverFormat;
+  import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
+
+  export let point: TimeSeriesDatum;
+  export let xAccessor: keyof TimeSeriesDatum;
+  export let yAccessor: keyof TimeSeriesDatum;
+  export let mouseoverFormat: ReturnType<
+    typeof createMeasureValueFormatter<null | undefined>
+  >;
   export let dimensionData: DimensionDataItem[];
   export let dimensionValue: string | null | undefined;
   export let validPercTotal: number | null;
@@ -39,9 +44,23 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    const bisected = bisectData(x, "center", xAccessor, dimension?.data);
-    if (bisected === undefined)
+    if (!x) return { y: null, fillClass: undefined, name: "" };
+    const bisected = bisectData(
+      new Date(x),
+      "center",
+      xAccessor,
+      dimension?.data,
+    );
+    if (bisected === undefined || bisected === null)
       return { y: null, fillClass: undefined, name: "" };
+
+    if (typeof bisected === "number") {
+      return {
+        y: bisected,
+        fillClass: dimension?.fillClass,
+        name: dimension?.value,
+      };
+    }
     const y = bisected[yAccessor];
     return {
       y,
@@ -52,7 +71,7 @@
 
   $: points = yValues
     .map((dimension) => {
-      const y = dimension.y;
+      const y = Number(dimension.y);
       const currentPointIsNull = y === null;
       let value = mouseoverFormat(y);
       if (validPercTotal) {
@@ -60,10 +79,10 @@
         value =
           mouseoverFormat(y) + ",  " + (percOfTotal * 100).toFixed(2) + "%";
       }
-      return {
-        x,
+      const point: Point = {
+        x: Number(x),
         y,
-        value,
+        value: value ?? undefined,
         yOverride: currentPointIsNull,
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
@@ -75,6 +94,8 @@
         labelColorClass: "fill-gray-600",
         labelStyleClass: "font-semibold",
       };
+
+      return point;
     })
     .filter((d) => !d.yOverride);
 
@@ -90,7 +111,7 @@
       direction="left"
       flipAtEdge="body"
       formatValue={mouseoverFormat}
-      point={pointSet || []}
+      point={pointSet}
     />
   </WithGraphicContexts>
 {/if}

@@ -3,10 +3,11 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { fly } from "svelte/transition";
   import PointLabel from "./PointLabel.svelte";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   export let xAccessor: string;
   export let yAccessor: string;
   export let format: (d: number | Date) => string;
-  export let data;
+  export let data: TimeSeriesDatum[];
   export let mouseoverValue;
 
   let showRawValue = false;

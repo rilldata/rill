@@ -9,6 +9,7 @@
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { areaFactory } from "../utils";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 
   const markID = guidGenerator();
 
@@ -20,7 +21,7 @@
   const xScale = getContext<ScaleStore>("rill:data-graphic:x-scale");
   const yScale = getContext<ScaleStore>("rill:data-graphic:y-scale");
 
-  export let data: Record<string, number | Date>[];
+  export let data: TimeSeriesDatum[];
   export let curve = "curveLinear";
   export let xAccessor = "x";
   export let yAccessor = "y";
@@ -49,7 +50,7 @@
 
   $: areaFcn =
     $xScale &&
-    areaFactory({
+    areaFactory<TimeSeriesDatum>({
       xScale: $xScale,
       yScale: $yScale,
       curve,
