@@ -2,7 +2,7 @@
   import VegaLiteRenderer from "@rilldata/web-common/features/custom-dashboards/VegaLiteRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import type { VisualizationSpec } from "svelte-vega";
 
   export let chartName: string;
@@ -36,10 +36,6 @@
         clientWidth = width;
       }
     }).observe(container);
-  });
-
-  onDestroy(() => {
-    alert("ChartDisplay.svelte is being destroyed");
   });
 </script>
 
