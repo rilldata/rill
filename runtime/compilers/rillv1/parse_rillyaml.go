@@ -38,7 +38,7 @@ type rillYAML struct {
 	Title string `yaml:"title"`
 	// Description of the project
 	Description string `yaml:"description"`
-	// The project's default OLAP connector to use (can be overriden in the individual resources)
+	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
 	Connectors []struct {
