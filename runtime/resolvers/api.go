@@ -33,6 +33,8 @@ func newAPI(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIR
 		return nil, err
 	}
 
+	// TODO: Check for recursion. Maybe add depth to props?
+
 	initializer, ok := runtime.APIResolverInitializers[api.Spec.Resolver]
 	if !ok {
 		return nil, fmt.Errorf("no resolver found of type %q", api.Spec.Resolver)
