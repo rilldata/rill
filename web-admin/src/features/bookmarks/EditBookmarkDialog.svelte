@@ -10,7 +10,7 @@
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";

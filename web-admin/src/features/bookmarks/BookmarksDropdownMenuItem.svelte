@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import { PencilIcon, TrashIcon, BookmarkIcon } from "lucide-svelte";
+  import { BookmarkIcon } from "lucide-svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import { createEventDispatcher } from "svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
 
   export let bookmark: BookmarkEntry;
   export let readOnly = false;
@@ -29,7 +31,7 @@
   let hovered = false;
 </script>
 
-<DropdownMenuItem class="py-1">
+<DropdownMenuItem class="py-2">
   <div
     class="flex justify-between gap-x-2 w-full"
     on:click={selectBookmark}
@@ -37,7 +39,7 @@
     on:mouseenter={() => (hovered = true)}
     on:mouseleave={() => (hovered = false)}
     role="menuitem"
-    tabindex="0"
+    tabindex="-1"
   >
     <div class="flex flex-row gap-x-2">
       {#if bookmark.resource.default}
@@ -66,10 +68,10 @@
       <div class="flex flex-row justify-end gap-x-2 items-start w-20">
         {#if hovered}
           <button on:click={editBookmark}>
-            <PencilIcon size="16px" />
+            <EditIcon size="16px" className="text-gray-400" />
           </button>
           <button on:click={deleteBookmark}>
-            <TrashIcon size="16px" />
+            <Trash size="16px" className="text-gray-400" />
           </button>
         {/if}
       </div>

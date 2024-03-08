@@ -1,9 +1,11 @@
 <script lang="ts">
   export let size = "1em";
   export let color = "currentColor";
+  export let className = "";
 </script>
 
 <svg
+  class={className}
   fill="none"
   height={size}
   viewBox="0 0 24 24"
