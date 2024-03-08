@@ -7,7 +7,31 @@ sidebar_position: 20
 
 ## Overview
 
+## Dashboard and Model Performance
+
+### Consider which models to materialize
+
+## Local Development / Rill Developer
+
+### Work with a sample or subset of your source data for local development and modeling
+
+
 ## Query Optimization
+
+### Use appropriate data types and avoid casting when possible
+
+### Select the columns you need and avoid `SELECT *` when possible
+
+### Consider sorting your data by an appropriate timestamp column
+
+### Use joins efficiently
+
+### Apply filters early and use WHERE clauses wisely
+
+### Optimize your subqueries to leverage joins or CTEs when possible
+
+### Rather than UNION, consider using UNION ALL
+
 
 ## OLAP Engines
 

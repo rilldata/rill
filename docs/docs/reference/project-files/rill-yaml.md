@@ -31,7 +31,7 @@ Please see our reference documentation on [OLAP Engines](../olap-engines/olap-en
 
 In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](models.md), and [dashboards](dashboards.md)
 
-:::tip Use plurals when specifying project-wide defaults
+:::note Use plurals when specifying project-wide defaults
 
 In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `sources`, `models`, and `dashboards`.
 
@@ -64,5 +64,26 @@ As a general rule of thumb, properties that have been specified at a more _granu
 1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
 2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
+
+:::
+
+## Setting variables
+
+Primarily useful for [templating](/deploy/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+
+To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `vars` key:
+```yaml
+vars:
+  numeric_var: 10
+  string_var: "string_value"
+```
+
+:::tip Overriding variables locally
+
+Variables also follow an order of precedence and can be overriden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
+
+```bash
+rill start --var numeric_var=100 --var string_var="different_value"
+```
 
 :::

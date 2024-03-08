@@ -10,7 +10,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 ## Properties
 
 **`connector`**
- —  the type of connector you are using for the source _(required)_. A legacy alias is `type` (deprecated). Possible values include:
+ —  the type of connector you are using for the source _(required)_. Possible values include:
   - `https` — public files available on the web.
   - `s3` — a file available on amazon s3. 
     - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
@@ -22,6 +22,10 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
   - `sqlite` - data stored in SQLite
   - `snowflake` - data stored in Snowflake
   - `bigquery` - data stored in BigQuery
+  - `duckdb` - use the [embedded DuckDB](../olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
+
+**`type`**
+ —  deprecated but preserves a legacy alias to `connector`.
 
 **`uri`**
  —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.

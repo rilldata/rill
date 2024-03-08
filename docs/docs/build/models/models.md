@@ -5,7 +5,7 @@ sidebar_label: Create Models
 sidebar_position: 00
 ---
 
-Data models in Rill are composed of SQL `SELECT` statements that operate on source data. They allow you to join, transform, and clean data.
+[Data models](/reference/project-files/models.md) in Rill are composed of SQL `SELECT` statements that operate on source data. They allow you to join, transform, and clean data.
 
 ## SQL transformations
 

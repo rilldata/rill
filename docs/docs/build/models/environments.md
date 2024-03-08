@@ -13,9 +13,42 @@ There could be a few reasons to have separate logic for sources, models, and das
 1. As the size of data starts growing, the locally embedded OLAP engine (using DuckDB) may start to face scaling challenges, which can impact performance and the "snappiness" of models and dashboards. Furthermore, for model development, the full data is often not needed and working with a sample is sufficient. For production though, where analysts and business users are interacting with Rill dashboards to perform interactive, exploratory analysis or make decisions, it is important that these same models and dashboards are powered by the entire range of data available.
 2. For certain organizations, there might be a development and production version of source data. Therefore, you can develop your models and validate the results in Rill Developer against development. When deployed to Rill Cloud, these same models and dashboards can then be powered by your production source, reflecting the most correct and up-to-date version of your business data.
 
-## Default `dev` and `prod` environments
+## Default dev and prod environments
 
 Rill comes with a default `dev` and `prod` property defined, corresponding to Rill Developer and Rill Cloud respectively. Any environment specific YAML overrides or custom templated SQL logic can reference these environments without any additional configuration needed.
+
+:::tip Shortcut to specify dev and prod in YAML files
+
+For the built-in `dev` and `prod` environments **specifically**, Rill provides a shorthand where you can specify properties for these environments directly under `dev` / `prod` without first nesting it under a parent `env` key. For example, if you had the following `rill.yaml`:
+```yaml
+env:
+  dev:
+    path: s3://path/to/bucket/Y=2024/M=01/*.parquet
+  prod:
+    refresh:
+      cron: 0 * * * *
+    models:
+      materialize: true
+```
+
+This would be exactly equivalent to (within the same `rill.yaml`):
+```yaml
+dev:
+  path: s3://path/to/bucket/Y=2024/M=01/*.parquet
+prod:
+  refresh:
+    cron: 0 * * * *
+  models:
+    materialize: true
+```
+
+For other custom environments that you are defining manually, you will still need to pass them in using the standard environment YAML syntax:
+```yaml
+env:
+  custom_env:
+    property: value
+```
+:::
 
 ### Specifying a custom environment
 
@@ -82,6 +115,6 @@ SELECT * FROM {{ ref "<source_name>" }}
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. <u>Only</u> when you are leveraging [templating](/deploy/templating.md) within your `model.sql` file, you will need to `ref` table and model names so that the native Go templating engine used by Rill is able to resolve the SQL syntax correctly during runtime. Otherwise, you might find that the model builds incorrectly or runs into errors when you first start Rill!
+For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. <u>Only</u> when you are leveraging [templating](/deploy/templating.md) within your `model.sql` file, you may need to `ref` table and model names to ensure that the native Go templating engine used by Rill is able to resolve the SQL syntax correctly during runtime. Otherwise, you might find that the model builds incorrectly or runs into errors when you first start Rill!
 
 :::
