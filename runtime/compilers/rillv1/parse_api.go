@@ -14,12 +14,6 @@ type APIYAML struct {
 	} `yaml:"metrics"`
 }
 
-type DataYAML struct {
-	MetricsSQL string            `yaml:"metrics_sql"`
-	API        string            `yaml:"api"`
-	Args       map[string]string `yaml:"args"`
-}
-
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseAPI(node *Node) error {
 	// Parse YAML
@@ -31,12 +25,12 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	// Parse the resolver and its properties
 	var resolver string
-	var resolvers int
+	var count int
 	resolverProps := make(map[string]any)
 
 	// Handle basic SQL resolver
 	if node.SQL != "" {
-		resolvers++
+		count++
 		resolver = "SQL" // TODO: Replace with a constant when the resolver abstractions are implemented
 		resolverProps["connector"] = node.Connector
 		resolverProps["sql"] = node.SQL
@@ -48,17 +42,17 @@ func (p *Parser) parseAPI(node *Node) error {
 			return fmt.Errorf(`can't set "connector" for the metrics resolver (it will use the connector of the metrics view)`)
 		}
 
-		resolvers++
+		count++
 		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
 		resolverProps["sql"] = tmp.Metrics.SQL
 		// NOTE: May add support for outright dimensions:, measures:, etc. here
 	}
 
 	// Validate there was exactly one resolver
-	if resolvers == 0 {
+	if count == 0 {
 		return fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics:", ...)`)
 	}
-	if resolvers > 1 {
+	if count > 1 {
 		return fmt.Errorf(`the API definition specifies more than one resolver`)
 	}
 
@@ -80,35 +74,56 @@ func (p *Parser) parseAPI(node *Node) error {
 	return nil
 }
 
-func (p *Parser) parseDataYAML(raw *DataYAML) (string, map[string]any, error) {
+// DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
+// It is used across multiple resources, usually under "data:", but inlined for APIss.
+type DataYAML struct {
+	MetricsSQL string         `yaml:"metrics_sql"`
+	API        string         `yaml:"api"`
+	Args       map[string]any `yaml:"args"`
+}
+
+// parseDataYAML parses a data resolver and its properties from a DataYAML.
+// It returns the resolver name, its properties, and refs found in the resolver props.
+func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []ResourceName, error) {
 	// Parse the resolver and its properties
+	var count int
 	var resolver string
-	var resolvers int
+	var refs []ResourceName
 	resolverProps := make(map[string]any)
 
 	// TODO: Handle basic SQL resolver
 
 	// Handle metrics resolver
 	if raw.MetricsSQL != "" {
-		resolvers++
+		count++
 		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
 		resolverProps["sql"] = raw.MetricsSQL
-		// NOTE: May add support for outright dimensions:, measures:, etc. here
 	}
 
+	// Handle API resolver
 	if raw.API != "" {
-		resolvers++
+		count++
 		resolver = "API" // TODO: Replace with a constant when the resolver abstractions are implemented
 		resolverProps["api"] = raw.API
+		refs = append(refs, ResourceName{Kind: ResourceKindAPI, Name: raw.API})
+		if raw.Args != nil {
+			resolverProps["args"] = raw.Args
+		}
 	}
 
 	// Validate there was exactly one resolver
-	if resolvers == 0 {
-		return "", nil, fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics:", ...)`)
+	if count == 0 {
+		return "", nil, nil, fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics:", ...)`)
 	}
-	if resolvers > 1 {
-		return "", nil, fmt.Errorf(`the API definition specifies more than one resolver`)
+	if count > 1 {
+		return "", nil, nil, fmt.Errorf(`the API definition specifies more than one resolver`)
 	}
 
-	return resolver, resolverProps, nil
+	// Convert resolver properties to structpb.Struct
+	resolverPropsPB, err := structpb.NewStruct(resolverProps)
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("encountered invalid property type: %w", err)
+	}
+
+	return resolver, resolverPropsPB, refs, nil
 }

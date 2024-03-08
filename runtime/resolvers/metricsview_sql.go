@@ -35,7 +35,7 @@ type metricsSQLProperties struct {
 }
 
 func newMetricsViewSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
-	props := opts.API.Spec.ResolverProperties
+	props := opts.ResolverProperties
 	if props == nil {
 		return nil, fmt.Errorf("MetricsViewSQL: resolver properties not found")
 	}
@@ -167,11 +167,7 @@ func expandMetricsViewSQL(ctx context.Context, ctrl *runtime.Controller, opts *r
 	sql, err = compilerv1.ResolveTemplate(sql, compilerv1.TemplateData{
 		User:       opts.UserAttributes,
 		ExtraProps: opts.Args,
-		Self: compilerv1.TemplateResource{
-			Meta:  &runtimev1.ResourceMeta{}, // TODO: Fill in with actual metadata
-			Spec:  opts.API.Spec,
-			State: opts.API.State,
-		},
+		Self:       compilerv1.TemplateResource{}, // Not defined for resolvers
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
 			return safeSQLName(ref.Name), nil
 		},

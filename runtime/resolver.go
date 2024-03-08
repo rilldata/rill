@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type Result struct {
@@ -40,18 +41,19 @@ func RegisterAPIResolverInitializer(name string, resolverInitializer APIResolver
 type APIResolverInitializer func(ctx context.Context, opts *APIResolverOptions) (APIResolver, error)
 
 type APIResolverOptions struct {
-	Runtime        *Runtime
-	InstanceID     string
-	API            *runtimev1.API
-	Args           map[string]any
-	UserAttributes map[string]any
-	Priority       int
+	Runtime            *Runtime
+	InstanceID         string
+	Resolver           string
+	ResolverProperties *structpb.Struct
+	Args               map[string]any
+	UserAttributes     map[string]any
+	Priority           int
 }
 
 func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
-	resolverInitializer, ok := APIResolverInitializers[opts.API.Spec.Resolver]
+	resolverInitializer, ok := APIResolverInitializers[opts.Resolver]
 	if !ok {
-		return nil, fmt.Errorf("no resolver found of type %q", opts.API.Spec.Resolver)
+		return nil, fmt.Errorf("no resolver found of type %q", opts.Resolver)
 	}
 	resolver, err := resolverInitializer(ctx, opts)
 	if err != nil {

@@ -209,7 +209,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiForName))))
 
 	// custom Chart Data handler
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/charts/{chart_name}/data", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.GetChartData))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/charts/{name}/data", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.chartDataHandler))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type ChartYaml struct {
@@ -39,22 +37,13 @@ func (p *Parser) parseChart(node *Node) error {
 	}
 
 	if tmp.Data == nil {
-		return errors.New("data is mandatory")
+		return errors.New(`missing required property "data"`)
 	}
-	resolver, resolverProps, err := p.parseDataYAML(tmp.Data)
+	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(tmp.Data)
 	if err != nil {
 		return err
 	}
-
-	if tmp.Data.API != "" {
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindAPI, Name: tmp.Data.API})
-	}
-
-	// Convert resolver properties to structpb.Struct before inserting the resource (since we can't return errors after that point)
-	resolverPropsPB, err := structpb.NewStruct(resolverProps)
-	if err != nil {
-		return fmt.Errorf("encountered invalid property type: %w", err)
-	}
+	node.Refs = append(node.Refs, resolverRefs...)
 
 	// Track chart
 	r, err := p.insertResource(ResourceKindChart, node.Name, node.Paths, node.Refs...)
@@ -65,7 +54,7 @@ func (p *Parser) parseChart(node *Node) error {
 
 	r.ChartSpec.Title = tmp.Title
 	r.ChartSpec.Resolver = resolver
-	r.ChartSpec.ResolverProperties = resolverPropsPB
+	r.ChartSpec.ResolverProperties = resolverProps
 	r.ChartSpec.VegaLiteSpec = tmp.VegaLite
 
 	return nil
