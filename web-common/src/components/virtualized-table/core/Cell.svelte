@@ -37,6 +37,7 @@
   const isDimensionTable = config.table === "DimensionTable";
 
   let cellActive = false;
+  $: isTextColumn = type === "VARCHAR" || type === "CODE_STRING";
 
   const dispatch = createEventDispatcher();
 
@@ -146,8 +147,9 @@
       <button
         aria-label={label}
         class="
+          {isTextColumn ? 'text-left' : 'text-right'}
           {isDimensionTable ? '' : 'px-4'}
-          text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap
+          w-full text-ellipsis overflow-x-hidden whitespace-nowrap
           "
         on:shift-click={shiftClick}
         style:height="{row.size}px"

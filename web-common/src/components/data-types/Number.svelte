@@ -11,7 +11,7 @@
 
 <Base
   {isNull}
-  classes="ui-copy-number font-normal w-full {customStyle} {inTable &&
+  classes="ui-copy-number font-normal {customStyle} {inTable &&
     'block text-right'}"
   {dark}
 >
