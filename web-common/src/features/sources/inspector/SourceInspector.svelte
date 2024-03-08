@@ -32,22 +32,16 @@
 
   export let sourceName: string;
 
+  let source: V1SourceV2 | undefined;
+  let showColumns = true;
+  let summaries: Readable<Array<ColumnSummary>>;
+  let totalNulls: number | undefined = undefined;
+
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
-  let source: V1SourceV2 | undefined;
+
   $: source = $sourceQuery.data?.source;
-
-  let showColumns = true;
-
-  // get source table references.
-
-  // toggle state for inspector sections
-
-  /** source summary information */
-  let rowCount;
-  let columnCount;
-  let nullPercentage: number | undefined;
 
   $: connectorType = source && formatConnectorType(source);
   $: fileExtension = source && getFileExtension(source);
@@ -69,25 +63,18 @@
   $: profileColumnsCount = $profileColumns?.data?.profileColumns?.length ?? 0;
 
   /** get the current row count */
-  $: {
-    rowCount = `${formatInteger(cardinality)} row${
-      cardinality !== 1 ? "s" : ""
-    }`;
-  }
+  $: rowCount = `${formatInteger(cardinality)} row${
+    cardinality !== 1 ? "s" : ""
+  }`;
 
   /** get the current column count */
-  $: {
-    columnCount = `${formatInteger(profileColumnsCount)} columns`;
-  }
+  $: columnCount = `${formatInteger(profileColumnsCount)} columns`;
 
   /** total % null cells */
 
-  let summaries: Readable<Array<ColumnSummary>>;
   $: if ($profileColumns?.data?.profileColumns) {
     summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
   }
-
-  let totalNulls: number | undefined = undefined;
 
   $: if (summaries) {
     totalNulls = $summaries.reduce(
@@ -95,13 +82,12 @@
       0,
     );
   }
-  $: {
-    const totalCells = profileColumnsCount * cardinality;
-    nullPercentage =
-      totalNulls !== undefined
-        ? formatBigNumberPercentage(totalNulls / totalCells)
-        : undefined;
-  }
+  $: nullPercentage =
+    totalNulls !== undefined
+      ? formatBigNumberPercentage(
+          (totalNulls / profileColumnsCount) * cardinality,
+        )
+      : undefined;
 
   const sourceStore = useSourceStore(sourceName);
 
