@@ -70,8 +70,6 @@
   /** get the current column count */
   $: columnCount = `${formatInteger(profileColumnsCount)} columns`;
 
-  /** total % null cells */
-
   $: if ($profileColumns?.data?.profileColumns) {
     summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
   }
