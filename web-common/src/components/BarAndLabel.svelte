@@ -44,7 +44,7 @@
     class:pr-2={!compact}
     class:pr-1={compact}
     class:pl-1={compact}
-    class="text-right overflow-hidden pl-2 pr-2"
+    class="text-right overflow-hidden"
     style="position: relative;"
   >
     <slot />
