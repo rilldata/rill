@@ -5,12 +5,14 @@
    * used width for tooltips in the app.
    */
   export let maxWidth = "400px";
+
+  $: className = $$props["class"] ?? "";
 </script>
 
 <div
-  class="tooltip-content bg-gray-700 text-white rounded p-2 pt-1 pb-1"
-  style:max-width={maxWidth}
   aria-label="tooltip-content"
+  class="tooltip-content bg-gray-700 text-white rounded p-2 pt-1 pb-1 {className}"
+  style:max-width={maxWidth}
 >
   <slot />
 </div>
