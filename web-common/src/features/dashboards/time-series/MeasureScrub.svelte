@@ -15,8 +15,8 @@
   import type { TimeSeriesDatum } from "./timeseries-data-store";
   import type { DateTimeUnit } from "luxon";
 
-  export let start: Date | undefined;
-  export let stop: Date | undefined;
+  export let start: Date | null;
+  export let stop: Date | null;
   export let isScrubbing = false;
   export let showLabels = false;
   export let mouseoverTimeFormat: (d: unknown) => string;
@@ -222,10 +222,8 @@
   <WithGraphicContexts let:xScale>
     {@const numStart = Number(start)}
     {@const numStop = Number(stop)}
-    {@const max = Math.max(numStart, numStop)}
-    {@const min = Math.min(numStart, numStop)}
-    {@const xStart = xScale(min)}
-    {@const xEnd = xScale(max)}
+    {@const xStart = xScale(Math.min(numStart, numStop))}
+    {@const xEnd = xScale(Math.max(numStart, numStop))}
     <g>
       {#if showLabels}
         <text text-anchor="end" x={xStart - xLabelBuffer} y={y1 + yLabelBuffer}>

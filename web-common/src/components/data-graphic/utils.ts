@@ -105,9 +105,7 @@ export function lineFactory(args: LineGeneratorArguments) {
  * FIXME: rename to timeSeriesAreaFactory.
  * FIXME: once we've gotten the data generics in place and threaded into components, let's make sure to type this.
  */
-export function areaFactory<T extends Record<string, number | Date>>(
-  args: LineGeneratorArguments,
-) {
+export function areaFactory<T extends object>(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     area<T>()
       .x((d) => args.xScale(d[args.xAccessor]))
@@ -306,13 +304,11 @@ export function bisectData<T>(
   direction: "left" | "right" | "center",
   accessor: keyof T,
   data: ArrayLike<T>,
-  returnPos = false,
-) {
-  if (!data?.length) return;
+): [T, number] {
   const bisect = bisector<T, unknown>((d) => d[accessor])[direction];
 
-  if (returnPos) return value !== undefined ? bisect(data, value) : undefined;
-  return value !== undefined ? data[bisect(data, value)] : undefined;
+  const pos = bisect(data, value);
+  return [data[pos], pos];
 }
 
 /** For a scale domain returns a formatter for axis label and super label */

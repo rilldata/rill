@@ -66,22 +66,23 @@
 
   // control point for scrub functionality.
   export let isScrubbing = false;
-  export let scrubStart;
-  export let scrubEnd;
+  export let scrubStart: Date | null;
+  export let scrubEnd: Date | null;
 
-  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+  export let mouseoverTimeFormat: (
+    d: number | Date | string | undefined,
+  ) => string = (v) => v?.toString() || "";
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   let hovered: boolean = false;
-  let scrub;
-  let cursorClass;
-  let preventScrubReset;
+  let scrub: MeasureScrub;
+  let cursorClass: string;
+  let preventScrubReset: boolean;
 
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
@@ -89,9 +90,9 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
-  $: scrubStartCords = $xScale(scrubStart);
-  $: scrubEndCords = $xScale(scrubEnd);
-  $: mouseOverCords = $xScale(mouseoverValue?.x);
+  $: scrubStartCords = scrubStart && $xScale(scrubStart);
+  $: scrubEndCords = scrubEnd && $xScale(scrubEnd);
+  $: mouseOverCords = mouseoverValue?.x && $xScale(mouseoverValue?.x);
 
   let isOverStart = false;
   let isOverEnd = false;
@@ -116,12 +117,18 @@
    * when comparing dimensions
    */
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
-  $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
-  let comparisonExtents;
+  $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor] as number);
 
   /** if we are making a comparison, factor this into the extents calculation.*/
-  $: if (showComparison) {
-    comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
+  $: if (
+    showComparison &&
+    yExtentMax !== undefined &&
+    yExtentMin !== undefined
+  ) {
+    const comparisonExtents = extent(
+      data,
+      (d) => d[`comparison.${yAccessor}`] as number,
+    );
 
     yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
     yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
@@ -133,19 +140,27 @@
   // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum[yAccessor]),
+      extent(d?.data || [], (datum) => datum[yAccessor] as number),
     );
 
     yExtentMin = dimExtents
       .map((e) => e[0])
       .reduce(
-        (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
+        (min, curr) =>
+          Math.min(
+            min ?? Infinity,
+            curr === undefined || isNaN(curr) ? Infinity : curr,
+          ),
         Infinity,
       );
     yExtentMax = dimExtents
       .map((e) => e[1])
       .reduce(
-        (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
+        (max, curr) =>
+          Math.max(
+            max ?? -Infinity,
+            curr === undefined || isNaN(curr) ? -Infinity : curr,
+          ),
         -Infinity,
       );
 
@@ -154,8 +169,8 @@
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(
     [
-      yMin !== undefined ? yMin : yExtentMin,
-      yMax !== undefined ? yMax : yExtentMax,
+      yMin !== undefined ? yMin : yExtentMin ?? Infinity,
+      yMax !== undefined ? yMax : yExtentMax ?? -Infinity,
     ],
     6 / 5,
   );
@@ -163,7 +178,13 @@
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
 
-  function inBounds(min, max, value) {
+  function inBounds(
+    min: Date | number | undefined,
+    max: Date | number | undefined,
+    value: Date | number | undefined,
+  ) {
+    if (min === undefined || max === undefined || value === undefined)
+      return false;
     return value >= min && value <= max;
   }
 
@@ -172,7 +193,7 @@
   }
 
   function zoomScrub() {
-    if (isScrubbing) return;
+    if (isScrubbing || !scrubStart || !scrubEnd) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
@@ -185,7 +206,7 @@
     });
   }
 
-  function updateScrub(start, end, isScrubbing) {
+  function updateScrub(start: Date, end: Date, isScrubbing: boolean) {
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
@@ -223,6 +244,8 @@
     // skip if no scrub range selected
     if (!hasSubrangeSelected) return;
 
+    if (!scrubStart || !scrubEnd) return;
+
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
     if (
@@ -242,10 +265,10 @@
     left={0}
     let:config
     let:yScale
-    on:click={() => onMouseClick()}
-    on:scrub-end={() => scrub?.endScrub()}
-    on:scrub-move={(e) => scrub?.moveScrub(e)}
-    on:scrub-start={(e) => scrub?.startScrub(e)}
+    on:click={onMouseClick}
+    on:scrub-end={scrub?.endScrub}
+    on:scrub-move={scrub?.moveScrub}
+    on:scrub-start={scrub?.startScrub}
     overflowHidden={false}
     right={50}
     shareYScale={false}

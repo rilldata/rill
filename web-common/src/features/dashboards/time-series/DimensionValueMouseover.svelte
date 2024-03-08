@@ -10,9 +10,7 @@
   export let point: TimeSeriesDatum;
   export let xAccessor: keyof TimeSeriesDatum;
   export let yAccessor: keyof TimeSeriesDatum;
-  export let mouseoverFormat: ReturnType<
-    typeof createMeasureValueFormatter<null | undefined>
-  >;
+  export let mouseoverFormat: ReturnType<typeof createMeasureValueFormatter>;
   export let dimensionData: DimensionDataItem[];
   export let dimensionValue: string | null | undefined;
   export let validPercTotal: number | null;
@@ -45,7 +43,7 @@
   }
   $: yValues = pointsData.map((dimension) => {
     if (!x) return { y: null, fillClass: undefined, name: "" };
-    const bisected = bisectData(
+    const [bisected] = bisectData(
       new Date(x),
       "center",
       xAccessor,

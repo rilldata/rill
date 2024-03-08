@@ -21,7 +21,10 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import {
+    AvailableTimeGrain,
+    TimeRangePreset,
+  } from "@rilldata/web-common/lib/time/types";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -31,7 +34,7 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
 
-  export let metricViewName;
+  export let metricViewName: string;
   export let workspaceWidth: number;
 
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -80,8 +83,14 @@
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
 
-  let scrubStart;
-  let scrubEnd;
+  $: scrubStart = adjustOffsetForZone(
+    $dashboardStore?.selectedScrubRange?.start,
+    $dashboardStore.selectedTimezone,
+  );
+  $: scrubEnd = adjustOffsetForZone(
+    $dashboardStore?.selectedScrubRange?.end,
+    $dashboardStore.selectedTimezone,
+  );
 
   let mouseoverValue: DomainCoordinates | undefined = undefined;
   let startValue: Date;
@@ -93,11 +102,9 @@
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
 
-  let dataCopy;
+  $: dataCopy = $timeSeriesDataStore.timeSeriesData;
   let dimensionDataCopy: DimensionDataItem[] = [];
-  $: if ($timeSeriesDataStore?.timeSeriesData) {
-    dataCopy = $timeSeriesDataStore.timeSeriesData;
-  }
+
   $: formattedData = dataCopy;
 
   $: if (
@@ -112,52 +119,49 @@
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
     // adjust scrub values for Javascript's timezone changes
-    scrubStart = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore.selectedTimezone,
-    );
-    scrubEnd = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore.selectedTimezone,
-    );
 
     const slicedData =
       $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
         ? formattedData?.slice(1)
         : formattedData?.slice(1, -1);
-    chartInteractionColumn.update((state) => {
-      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-      const startPos = bisectData(
-        start,
-        "center",
-        "ts_position",
-        slicedData,
-        true,
+    if (slicedData) {
+      chartInteractionColumn.update((state) => {
+        if (!scrubStart || !scrubEnd) {
+          return state;
+        }
+        const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+
+        const [, startPos] = bisectData(
+          start,
+          "center",
+          "ts_position",
+          slicedData,
+        );
+        const [, endPos] = bisectData(end, "center", "ts_position", slicedData);
+
+        return {
+          hover: isScrubbing ? undefined : state.hover,
+          scrubStart: startPos,
+          scrubEnd: endPos,
+        };
+      });
+
+      const adjustedChartValue = getAdjustedChartTime(
+        $timeControlsStore.selectedTimeRange?.start,
+        $timeControlsStore.selectedTimeRange?.end,
+        $dashboardStore?.selectedTimezone,
+        interval,
+        $timeControlsStore.selectedTimeRange?.name,
+        $metricsView?.data?.defaultTimeRange,
       );
-      const endPos = bisectData(end, "center", "ts_position", slicedData, true);
 
-      return {
-        hover: isScrubbing ? undefined : state.hover,
-        scrubStart: startPos,
-        scrubEnd: endPos,
-      };
-    });
-
-    const adjustedChartValue = getAdjustedChartTime(
-      $timeControlsStore.selectedTimeRange?.start,
-      $timeControlsStore.selectedTimeRange?.end,
-      $dashboardStore?.selectedTimezone,
-      interval,
-      $timeControlsStore.selectedTimeRange?.name,
-      $metricsView?.data?.defaultTimeRange,
-    );
-
-    if (adjustedChartValue?.start) {
-      startValue = adjustedChartValue?.start;
-    }
-    if (adjustedChartValue?.end) {
-      endValue = adjustedChartValue?.end;
+      if (adjustedChartValue?.start) {
+        startValue = adjustedChartValue?.start;
+      }
+      if (adjustedChartValue?.end) {
+        endValue = adjustedChartValue?.end;
+      }
     }
   }
 
@@ -173,14 +177,13 @@
         hover: undefined,
       }));
     } else {
-      const columnNum = bisectData(
+      const [, columnNum] = bisectData(
         mouseoverValue.x,
         "center",
         "ts_position",
         $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
           ? formattedData?.slice(1)
           : formattedData?.slice(1, -1),
-        true,
       );
 
       if ($chartInteractionColumn?.hover !== columnNum)
@@ -191,7 +194,17 @@
     }
   }
 
-  const toggleMeasureVisibility = (e) => {
+  function mouseoverTimeFormat(value: string | number | Date | undefined) {
+    /** format the date according to the time grain */
+    if (!value) return "";
+    if (!interval) return value.toString();
+
+    const formatDate = TIME_GRAIN[interval as AvailableTimeGrain].formatDate;
+
+    return new Date(value)?.toLocaleDateString(undefined, formatDate);
+  }
+
+  const toggleMeasureVisibility = (e: CustomEvent<{ name: string }>) => {
     showHideMeasures.toggleVisibility(e.detail.name);
   };
   const setAllMeasuresNotVisible = () => {
@@ -296,16 +309,7 @@
             validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
               ? bigNum
               : null}
-            mouseoverTimeFormat={(value) => {
-              /** format the date according to the time grain */
-
-              return interval
-                ? new Date(value).toLocaleDateString(
-                    undefined,
-                    TIME_GRAIN[interval].formatDate,
-                  )
-                : value.toString();
-            }}
+            {mouseoverTimeFormat}
           />
         {:else}
           <div class="flex items-center justify-center w-24">
