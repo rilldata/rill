@@ -152,12 +152,108 @@ const config = {
       {
         redirects: [
           {
-            to: '/build/credentials/s3',
             from: '/reference/connectors/s3',
+            to: '/build/credentials/s3',
           },
           {
-            to: '/build/credentials/gcs',
             from: '/reference/connectors/gcs',
+            to: '/build/credentials/gcs',
+          },
+          {
+            from: '/install',
+            to: '/home/install',
+          },
+          {
+            from: '/get-started',
+            to: '/home/get-started',
+          },
+          {
+            from: '/develop/import-data',
+            to: '/build/connect'
+          },
+          {
+            from: '/develop/sql-models',
+            to: '/build/models'
+          },
+          {
+            from: '/develop/metrics-dashboard',
+            to: '/build/dashboards'
+          },
+          {
+            from: '/develop/security',
+            to: '/manage/security'
+          },
+          {
+            from: '/deploy/credentials/',
+            to: '/build/credentials'
+          },
+          {
+            from: '/deploy/credentials/s3',
+            to: '/reference/connectors/s3'
+          },
+          {
+            from: '/deploy/credentials/gcs',
+            to: '/reference/connectors/gcs'
+          },
+          {
+            from: '/deploy/credentials/azure',
+            to: '/reference/connectors/azure'
+          },
+          {
+            from: '/deploy/credentials/athena',
+            to: '/reference/connectors/athena'
+          },
+          {
+            from: '/deploy/credentials/bigquery',
+            to: '/reference/connectors/bigquery'
+          },
+          {
+            from: '/deploy/credentials/snowflake',
+            to: '/reference/connectors/snowflake'
+          },
+          {
+            from: '/deploy/credentials/postgres',
+            to: '/reference/connectors/postgres'
+          },
+          {
+            from: '/deploy/credentials/salesforce',
+            to: '/reference/connectors/salesforce'
+          },
+          {
+            from: '/deploy/credentials/motherduck',
+            to: '/reference/connectors/motherduck'
+          },
+          {
+            from: '/deploy/source-refresh',
+            to: '/build/connect/source-refresh'
+          },
+          {
+            from: '/reference/glob-patterns',
+            to: '/build/connect/glob-patterns'
+          },
+          {
+            from: '/reference/templating',
+            to: '/deploy/templating'
+          },
+          {
+            from: '/example-projects',
+            to: '/home/get-started#example-projects-repository'
+          },
+          {
+            from: '/integration/embedding',
+            to: '/integrate/embedding'
+          },
+          {
+            from: '/share/user-management',
+            to: '/manage/user-management'
+          },
+          {
+            from: '/share/roles-permissions',
+            to: '/manage/roles-permissions'
+          },
+          {
+            from: '/share/scheduled-reports',
+            to: '/explore/exports'
           },
         ],
       },
