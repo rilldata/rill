@@ -2,6 +2,7 @@
 title: Project files
 sidebar_label: Project files
 sidebar_position: 0
+hide_table_of_contents: true
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

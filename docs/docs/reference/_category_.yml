@@ -2,3 +2,4 @@ position: 200
 label: " "
 collapsible: true
 collapsed: true
+className: hidden

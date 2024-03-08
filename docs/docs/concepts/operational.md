@@ -2,6 +2,7 @@
 title: Operational BI vs. Traditional BI
 sidebar_label: What is Operational BI   
 sidebar_position: 11
+hide_table_of_contents: true
 ---
 
 import Tabs from '@theme/Tabs';

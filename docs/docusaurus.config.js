@@ -2,7 +2,7 @@
 // Note: type annotations allow type checking and IDEs autocompletion
 
 /* eslint @typescript-eslint/no-var-requires: "off" */
-const {themes} = require('prism-react-renderer');
+const { themes } = require('prism-react-renderer');
 const lightCodeTheme = themes.github;
 const darkCodeTheme = themes.dracula;
 
@@ -111,6 +111,11 @@ const config = {
             label: "Release Notes",
             to: "notes",
             position: "left",
+          },
+          {
+            to: "contact",
+            position: "left",
+            label: "Contact Us",
           },
           {
             href: "https://github.com/rilldata/rill",

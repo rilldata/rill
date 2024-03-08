@@ -2,6 +2,7 @@
 title: Source YAML
 sidebar_label: Source YAML
 sidebar_position: 10
+hide_table_of_contents: true
 ---
 
 In your Rill project directory, create a `<source_name>.yaml` file in the `sources` directory containing a `type` and location (`uri` or `path`). Rill will automatically detect and ingest the source next time you run `rill start`.

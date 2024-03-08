@@ -2,6 +2,7 @@
 title: Model SQL
 sidebar_label: Model SQL
 sidebar_position: 20
+hide_table_of_contents: true
 ---
 
 When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, by default, data models are created as views in DuckDB. Please check our [modeling](/build/models/models.md) page and [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for more details about how to construct and write your model SQL syntax.

@@ -2,6 +2,7 @@
 title: Project YAML
 sidebar_label: Project YAML
 sidebar_position: 40
+hide_table_of_contents: true
 ---
 
 The `rill.yaml` file contains metadata about your project.

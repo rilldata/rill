@@ -1,4 +1,4 @@
 position: 2
 label: OLAP Engines
-collapsible: true
+collapsible: false
 collapsed: false

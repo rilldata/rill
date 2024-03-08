@@ -1,7 +1,6 @@
 ---
+sidebar_class_name: hidden
 title: Contact us
-sidebar_label: Contact us
-sidebar_position: 100
 ---
 
 ## Github

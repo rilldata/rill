@@ -2,6 +2,7 @@
 title: Dashboard YAML
 sidebar_label: Dashboard YAML
 sidebar_position: 30
+hide_table_of_contents: true
 ---
 
 In your Rill project directory, create a `<dashboard_name>.yaml` file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
