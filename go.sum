@@ -765,6 +765,8 @@ github.com/aws/aws-sdk-go v1.44.314/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8
 github.com/aws/aws-sdk-go-v2 v1.20.0/go.mod h1:uWOr0m0jDsiWw8nnXiqZ+YG6LdvAlGYDLLf2NmHZoy4=
 github.com/aws/aws-sdk-go-v2 v1.21.0 h1:gMT0IW+03wtYJhRqTVYn0wLzwdnK9sRMcxmtfGzRdJc=
 github.com/aws/aws-sdk-go-v2 v1.21.0/go.mod h1:/RfNgGmRxI+iFOB1OeJUyxiU+9s88k3pfHvDagGEp0M=
+github.com/aws/aws-sdk-go-v2 v1.25.2 h1:/uiG1avJRgLGiQM9X3qJM8+Qa6KRGK5rRPuXE0HUM+w=
+github.com/aws/aws-sdk-go-v2 v1.25.2/go.mod h1:Evoc5AsmtveRt1komDwIsjHFyrP5tDuF1D1U+6z6pNo=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.11 h1:/MS8AzqYNAhhRNalOmxUvYs8VEbNGifTnzhPFdcRQkQ=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.11/go.mod h1:va22++AdXht4ccO3kH2SHkHHYvZ2G9Utz+CXKmm2CaU=
 github.com/aws/aws-sdk-go-v2/config v1.18.32 h1:tqEOvkbTxwEV7hToRcJ1xZRjcATqwDVsWbAscgRKyNI=
@@ -778,9 +780,13 @@ github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.76/go.mod h1:/AZCdswMSgwpB
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.37/go.mod h1:Pdn4j43v49Kk6+82spO3Tu5gSeQXRsxo56ePPQAvFiA=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 h1:22dGT7PneFMx4+b3pz7lMTRyN8ZKH7M2cW4GP9yUS2g=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41/go.mod h1:CrObHAuPneJBlfEJ5T3szXOUkLEThaGfvnhTf33buas=
+github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.2 h1:bNo4LagzUKbjdxE0tIcR9pMzLR2U/Tgie1Hq1HQ3iH8=
+github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.2/go.mod h1:wRQv0nN6v9wDXuWThpovGQjqF1HFdcgWjporw14lS8k=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.31/go.mod h1:fTJDMe8LOFYtqiFFFeHA+SVMAwqLhoq0kcInYoLa9Js=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 h1:SijA0mgjV8E+8G45ltVHs0fvKpTj8xmZJ3VwhGKtUSI=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35/go.mod h1:SJC1nEVVva1g3pHAIdCp7QsRIkMmLAgoDquQ9Rr8kYw=
+github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.2 h1:EtOU5jsPdIQNP+6Q2C5e3d65NKT1PeCiQk+9OdzO12Q=
+github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.2/go.mod h1:tyF5sKccmDz0Bv4NrstEr+/9YkSPJHrcO7UsUKf7pWM=
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.38 h1:+i1DOFrW3YZ3apE45tCal9+aDKK6kNEbW6Ib7e1nFxE=
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.38/go.mod h1:1/jLp0OgOaWIetycOmycW+vYTYgTZFPttJQRgsI1PoU=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.0 h1:U5yySdwt2HPo/pnQec04DImLzWORbeWML1fJiLkKruI=
@@ -795,6 +801,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.31 h1:auGDJ0aLZ
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.31/go.mod h1:3+lloe3sZuBQw1aBc5MyndvodzQlyqCZ7x1QPDHaWP4=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.0 h1:Wgjft9X4W5pMeuqgPCHIQtbZ87wsgom7S5F8obreg+c=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.0/go.mod h1:FWNzS4+zcWAP05IF7TDYTY1ysZAzIvogxWaDT9p8fsA=
+github.com/aws/aws-sdk-go-v2/service/redshiftdata v1.25.1 h1:cPo8YHy+37gfUHKUuBjJ6BMXTAsEtqZaBwoN4XkzrVQ=
+github.com/aws/aws-sdk-go-v2/service/redshiftdata v1.25.1/go.mod h1:sSak28TnnJT89dmJ8PbSIAPlG4bxbpQncRrFI9sz/7A=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.38.1 h1:mTgFVlfQT8gikc5+/HwD8UL9jnUro5MGv8n/VEYF12I=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.38.1/go.mod h1:6SOWLiobcZZshbmECRTADIRYliPL0etqFSigauQEeT0=
 github.com/aws/aws-sdk-go-v2/service/sso v1.13.1 h1:DSNpSbfEgFXRV+IfEcKE5kTbqxm+MeF5WgyeRlsLnHY=
@@ -806,6 +814,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.21.1/go.mod h1:G8SbvL0rFk4WOJroU8tKB
 github.com/aws/smithy-go v1.14.0/go.mod h1:Tg+OJXh4MB2R/uN61Ko2f6hTZwB/ZYGOtib8J3gBHzA=
 github.com/aws/smithy-go v1.14.2 h1:MJU9hqBGbvWZdApzpvoF2WAIJDbtjK2NDJSiJP7HblQ=
 github.com/aws/smithy-go v1.14.2/go.mod h1:Tg+OJXh4MB2R/uN61Ko2f6hTZwB/ZYGOtib8J3gBHzA=
+github.com/aws/smithy-go v1.20.1 h1:4SZlSlMr36UEqC7XOyRVb27XMeZubNcBNN+9IgEPIQw=
+github.com/aws/smithy-go v1.20.1/go.mod h1:krry+ya/rV9RDcV/Q16kpu6ypI4K2czasz0NC3qS14E=
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=

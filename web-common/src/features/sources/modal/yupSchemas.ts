@@ -112,6 +112,23 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         output_location: yup.string(),
         workgroup: yup.string(),
       });
+    case "redshift":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
+        database: yup.string().required("database is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+          )
+          .required("Source name is required"),
+        output_location: yup.string().required("S3 location for temporary files"),
+        workgroup: yup.string().optional(),
+        cluster_identifier: yup.string().optional(),
+        role_arn: yup.string().required("Role ARN associated with the Redshift cluster")
+      });
+
     case "mysql":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
