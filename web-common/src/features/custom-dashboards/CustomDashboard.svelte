@@ -63,8 +63,8 @@
 
     if (movingIndex !== null && dragPosition) {
       const cellPosition = getCell(dragPosition);
-      charts[movingIndex].x = String(cellPosition[0]);
-      charts[movingIndex].y = String(cellPosition[1]);
+      charts[movingIndex].x = cellPosition[0];
+      charts[movingIndex].y = cellPosition[1];
 
       dispatch("update", {
         index: movingIndex,
@@ -77,8 +77,8 @@
 
     if (resizingIndex !== null && resizeDimenions) {
       const dimensions = getCell(resizeDimenions);
-      charts[resizingIndex].width = String(dimensions[0]);
-      charts[resizingIndex].height = String(dimensions[1]);
+      charts[resizingIndex].width = dimensions[0];
+      charts[resizingIndex].height = dimensions[1];
 
       dispatch("update", {
         index: resizingIndex,

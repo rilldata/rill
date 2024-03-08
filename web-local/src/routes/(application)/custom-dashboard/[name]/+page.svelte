@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useCustomDashboard } from "@rilldata/web-common/features/custom-dashboards/selectors";
   import CustomDashboard from "@rilldata/web-common/features/custom-dashboards/CustomDashboard.svelte";
   import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
   import {
@@ -15,6 +16,7 @@
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -25,6 +27,7 @@
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
+  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
 
   const updateFile = createRuntimeServicePutFile();
 
@@ -45,16 +48,18 @@
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
-  // $: query = useCustomDashboard($runtime.instanceId, customDashboardName);
+  $: query = useCustomDashboard($runtime.instanceId, customDashboardName);
   $: allNamesQuery = useAllNames($runtime.instanceId);
 
   $: yaml = $fileQuery.data?.blob || "";
 
-  $: parsedYaml = parse(yaml);
+  $: parsedYaml = parse(yaml) as V1DashboardSpec;
 
-  $: columns = parsedYaml ? parsedYaml.grid.columns : 10;
-  $: gap = parsedYaml ? parsedYaml.grid.gap : 2;
-  $: charts = parsedYaml ? parsedYaml.components : [];
+  $: dashboard = $query.data?.dashboard?.spec;
+
+  $: columns = dashboard?.grid?.columns ?? 10;
+  $: gap = dashboard?.grid?.gap ?? 1;
+  $: charts = dashboard?.components ?? ([] as V1DashboardComponent[]);
 
   const onChangeCallback = async (
     e: Event & {
@@ -135,7 +140,7 @@
         },
       });
       yaml = content;
-      parsedYaml = parse(content);
+      dashboard = parse(content) as V1DashboardSpec;
     } catch (err) {
       console.error(err);
     }

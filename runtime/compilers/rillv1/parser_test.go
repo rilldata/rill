@@ -1306,8 +1306,7 @@ components:
 				{Kind: ResourceKindChart, Name: "c2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
-				GridColumns: 3,
-				GridRows:    4,
+				Grid: &runtimev1.Grid{Gap: 3, Columns: 4},
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
 					{Chart: "c2", Width: 1, Height: 2},

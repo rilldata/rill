@@ -3424,28 +3424,24 @@ definitions:
       chart:
         type: string
       x:
-        type: string
+        type: integer
         format: int64
       "y":
-        type: string
+        type: integer
         format: int64
       width:
-        type: string
+        type: integer
         format: int64
       height:
-        type: string
+        type: integer
         format: int64
   v1DashboardSpec:
     type: object
     properties:
       title:
         type: string
-      gridColumns:
-        type: string
-        format: int64
-      gridGap:
-        type: string
-        format: int64
+      grid:
+        $ref: '#/definitions/v1Grid'
       components:
         type: array
         items:
@@ -3620,6 +3616,15 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1Grid:
+    type: object
+    properties:
+      columns:
+        type: integer
+        format: int64
+      gap:
+        type: integer
+        format: int64
   v1HistogramMethod:
     type: string
     enum:

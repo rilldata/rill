@@ -62,6 +62,7 @@
     style:left="{position[0]}px"
     style:top="{position[1]}px"
     class="tool"
+    style:z-index={localZIndex + 1}
     data-index={i}
     on:mousedown={(e) => {
       localZIndex = get(zIndex);
@@ -75,6 +76,7 @@
     transition:fade={{ duration: 400, easing: quintOut }}
     style:left="{position[0] + dimensions[0]}px"
     style:top="{position[1] + dimensions[1]}px"
+    style:z-index={localZIndex + 1}
     class="tool -translate-x-full -translate-y-full"
     data-index={i}
     on:mousedown={(e) => {
@@ -90,7 +92,7 @@
 
 <style lang="postcss">
   .tool {
-    @apply absolute p-1 z-10 aspect-square;
+    @apply absolute p-1 aspect-square;
     @apply opacity-50 bg-gray-100 border shadow-md;
     @apply rounded-full;
   }

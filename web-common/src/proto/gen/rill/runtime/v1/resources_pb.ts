@@ -2996,14 +2996,9 @@ export class DashboardSpec extends Message<DashboardSpec> {
   title = "";
 
   /**
-   * @generated from field: int64 grid_columns = 2;
+   * @generated from field: rill.runtime.v1.Grid grid = 2;
    */
-  gridColumns = protoInt64.zero;
-
-  /**
-   * @generated from field: int64 grid_gap = 3;
-   */
-  gridGap = protoInt64.zero;
+  grid?: Grid;
 
   /**
    * @generated from field: repeated rill.runtime.v1.DashboardComponent components = 4;
@@ -3019,8 +3014,7 @@ export class DashboardSpec extends Message<DashboardSpec> {
   static readonly typeName = "rill.runtime.v1.DashboardSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "grid_columns", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 3, name: "grid_gap", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "grid", kind: "message", T: Grid },
     { no: 4, name: "components", kind: "message", T: DashboardComponent, repeated: true },
   ]);
 
@@ -3038,6 +3032,49 @@ export class DashboardSpec extends Message<DashboardSpec> {
 
   static equals(a: DashboardSpec | PlainMessage<DashboardSpec> | undefined, b: DashboardSpec | PlainMessage<DashboardSpec> | undefined): boolean {
     return proto3.util.equals(DashboardSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Grid
+ */
+export class Grid extends Message<Grid> {
+  /**
+   * @generated from field: uint32 columns = 1;
+   */
+  columns = 0;
+
+  /**
+   * @generated from field: uint32 gap = 2;
+   */
+  gap = 0;
+
+  constructor(data?: PartialMessage<Grid>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Grid";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Grid {
+    return new Grid().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Grid {
+    return new Grid().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Grid {
+    return new Grid().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Grid | PlainMessage<Grid> | undefined, b: Grid | PlainMessage<Grid> | undefined): boolean {
+    return proto3.util.equals(Grid, a, b);
   }
 }
 
@@ -3082,24 +3119,24 @@ export class DashboardComponent extends Message<DashboardComponent> {
   chart = "";
 
   /**
-   * @generated from field: int64 x = 2;
+   * @generated from field: uint32 x = 2;
    */
-  x = protoInt64.zero;
+  x = 0;
 
   /**
-   * @generated from field: int64 y = 3;
+   * @generated from field: uint32 y = 3;
    */
-  y = protoInt64.zero;
+  y = 0;
 
   /**
-   * @generated from field: int64 width = 4;
+   * @generated from field: uint32 width = 4;
    */
-  width = protoInt64.zero;
+  width = 0;
 
   /**
-   * @generated from field: int64 height = 5;
+   * @generated from field: uint32 height = 5;
    */
-  height = protoInt64.zero;
+  height = 0;
 
   constructor(data?: PartialMessage<DashboardComponent>) {
     super();
@@ -3110,10 +3147,10 @@ export class DashboardComponent extends Message<DashboardComponent> {
   static readonly typeName = "rill.runtime.v1.DashboardComponent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "chart", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "x", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 3, name: "y", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "width", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 5, name: "height", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardComponent {
