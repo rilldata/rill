@@ -113,7 +113,7 @@ Otherwise, the page will jump around as the data is fetched.
       <SimpleDataGraphic let:config let:xScale let:yScale let:mouseoverValue>
         <WithBisector
           data={data || []}
-          callback={(dt) => (dt?.high + dt?.low) / 2}
+          callback={(dt) => (dt.high + dt.low) / 2}
           value={mouseoverValue?.x}
           let:point
         >
