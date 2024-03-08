@@ -1,7 +1,8 @@
 ---
-title: Contact us
-sidebar_label: Contact us
-sidebar_position: 100
+title: Contact Rill
+sidebar_label: Contact Rill
+collapsible: false
+position: 120
 ---
 
 ## Github
