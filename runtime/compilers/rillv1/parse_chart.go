@@ -8,9 +8,9 @@ import (
 
 type ChartYaml struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string `yaml:"title"`
+	Title      string           `yaml:"title"`
 	Data       struct {
-		MetricsSql string            `yaml:"metrics_sql"`
+		MetricsSQL string            `yaml:"metrics_sql"`
 		API        string            `yaml:"api"`
 		Args       map[string]string `yaml:"args"`
 	} `yaml:"data"`
@@ -40,7 +40,7 @@ func (p *Parser) parseChart(node *Node) error {
 		return errors.New(`failed to parse "vega_lite" as JSON`)
 	}
 
-	if (tmp.Data.MetricsSql == "" && tmp.Data.API == "") || (tmp.Data.MetricsSql != "" && tmp.Data.API != "") {
+	if (tmp.Data.MetricsSQL == "" && tmp.Data.API == "") || (tmp.Data.MetricsSQL != "" && tmp.Data.API != "") {
 		return fmt.Errorf("exactly one of metrics_sql or api should be set")
 	}
 
@@ -56,7 +56,7 @@ func (p *Parser) parseChart(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ChartSpec.Title = tmp.Title
-	r.ChartSpec.MetricsSql = tmp.Data.MetricsSql
+	r.ChartSpec.MetricsSql = tmp.Data.MetricsSQL
 	r.ChartSpec.Api = tmp.Data.API
 	r.ChartSpec.Args = tmp.Data.Args
 	r.ChartSpec.VegaLiteSpec = tmp.VegaLite

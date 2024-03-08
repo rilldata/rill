@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -12,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/server/auth"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -21,16 +20,19 @@ func (s *Server) GetChartData(w http.ResponseWriter, req *http.Request) error {
 	// TODO: telemetry
 
 	ctx := req.Context()
-	instanceId := req.PathValue("instance_id")
+	instanceID := req.PathValue("instance_id")
 	chartName := req.PathValue("chart_name")
 	// TODO: is a separate auth needed?
-	if !auth.GetClaims(ctx).CanInstance(instanceId, auth.ReadMetrics) {
-		return ErrForbidden
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadMetrics) {
+		return httputil.Errorf(http.StatusForbidden, "does not have access to charts")
 	}
 
-	ch, err := resolveChart(ctx, s.runtime, instanceId, chartName)
+	ch, err := resolveChart(ctx, s.runtime, instanceID, chartName)
 	if err != nil {
-		return err
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return httputil.Errorf(http.StatusNotFound, "chart with name %s does not exist", chartName)
+		}
+		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
 	body, err := io.ReadAll(req.Body)
@@ -57,7 +59,7 @@ func (s *Server) GetChartData(w http.ResponseWriter, req *http.Request) error {
 			"sql": ch.MetricsSql,
 		})
 		if err != nil {
-			httputil.Error(http.StatusInternalServerError, err)
+			return httputil.Error(http.StatusInternalServerError, err)
 		}
 		// TODO: are other fields needed?
 		api = &runtimev1.API{
@@ -67,7 +69,7 @@ func (s *Server) GetChartData(w http.ResponseWriter, req *http.Request) error {
 			},
 		}
 	} else if ch.Api != "" {
-		api, err = s.runtime.APIForName(ctx, instanceId, ch.Api)
+		api, err = s.runtime.APIForName(ctx, instanceID, ch.Api)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
 				// shouldn't happen since validation would have happened in reconcile
@@ -79,12 +81,15 @@ func (s *Server) GetChartData(w http.ResponseWriter, req *http.Request) error {
 
 	res, err := runtime.Resolve(ctx, &runtime.APIResolverOptions{
 		Runtime:        s.runtime,
-		InstanceID:     instanceId,
+		InstanceID:     instanceID,
 		API:            api,
 		Args:           reqParams,
 		UserAttributes: auth.GetClaims(ctx).Attributes(),
 		Priority:       0,
 	})
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(res)
@@ -98,18 +103,18 @@ func (s *Server) GetChartData(w http.ResponseWriter, req *http.Request) error {
 func resolveChart(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.ChartSpec, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindChart, Name: name}, false)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	ch := res.GetChart()
 	spec := ch.Spec
 	if spec == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "chart %q is invalid", name)
+		return nil, fmt.Errorf("chart %q is invalid", name)
 	}
 
 	return spec, nil
