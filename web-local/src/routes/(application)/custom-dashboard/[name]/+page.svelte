@@ -128,7 +128,6 @@
 
   async function updateChart(e: CustomEvent<string>) {
     const content = e.detail;
-    console.log("UPDATING");
     if (!content) return;
     try {
       await $updateFile.mutateAsync({
