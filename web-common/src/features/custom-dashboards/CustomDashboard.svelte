@@ -1,81 +1,207 @@
-<script lang="ts">
+<script context="module" lang="ts">
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
+  import GridLines from "./GridLines.svelte";
+  import Element from "./Element.svelte";
+  import type { Vector } from "./types";
+  import { createEventDispatcher } from "svelte";
+
+  const vector = {
+    add: (a: Vector, b: Vector): Vector => {
+      return [a[0] + b[0], a[1] + b[1]];
+    },
+    subtract: (minuend: Vector, subtrahend: Vector): Vector => {
+      return [minuend[0] - subtrahend[0], minuend[1] - subtrahend[1]];
+    },
+  };
+</script>
+
+<script lang="ts">
+  const dispatch = createEventDispatcher();
 
   export let columns = 20;
   export let charts: V1DashboardComponent[];
   export let gap = 1;
   export let showGrid = false;
 
-  let canvasWidth = 0;
+  let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
+  let scrollOffset = 0;
 
-  $: maxRow = Math.max(
-    ...charts.map(
-      (chart) => (Number(chart?.y) ?? 0) + (Number(chart.height) ?? 0) - 1,
-    ),
-  );
+  let movingIndex: number | null = null;
+  let resizingIndex: number | null = null;
 
-  $: gapSize = canvasWidth * (gap / 100);
+  let startMouse: Vector | null = null;
+  let mousePosition: Vector | null = null;
 
-  $: gapCount = columns - 1;
+  let initialOffset: Vector | null = null;
+  let initialResizeElementDimensions: Vector | null = null;
+  let initialMoveElementPosition: Vector | null = null;
 
-  $: gridCellSize = (canvasWidth - gapCount * gapSize) / columns;
+  $: gapSize = contentRect.width * (gap / 500);
+
+  $: gridCellSize = contentRect.width / columns;
+
+  $: dragPosition =
+    movingIndex !== null && mousePosition && initialOffset
+      ? vector.add(mousePosition, initialOffset)
+      : null;
+
+  $: resizeOffset =
+    resizingIndex !== null && mousePosition && startMouse
+      ? vector.subtract(mousePosition, startMouse)
+      : null;
+
+  $: resizeDimenions =
+    resizingIndex !== null && resizeOffset && initialResizeElementDimensions
+      ? vector.add(resizeOffset, initialResizeElementDimensions)
+      : null;
+
+  function handleMouseUp() {
+    window.removeEventListener("mouseup", handleMouseUp);
+    window.removeEventListener("mousemove", handleMouseMove);
+
+    if (movingIndex !== null && dragPosition) {
+      const cellPosition = getCell(dragPosition);
+      charts[movingIndex].x = String(cellPosition[0]);
+      charts[movingIndex].y = String(cellPosition[1]);
+
+      dispatch("update", {
+        index: movingIndex,
+        change: "position",
+        vector: cellPosition,
+      });
+
+      movingIndex = null;
+    }
+
+    if (resizingIndex !== null && resizeDimenions) {
+      const dimensions = getCell(resizeDimenions);
+      charts[resizingIndex].width = String(dimensions[0]);
+      charts[resizingIndex].height = String(dimensions[1]);
+
+      dispatch("update", {
+        index: resizingIndex,
+        change: "dimension",
+        vector: dimensions,
+      });
+
+      resizingIndex = null;
+    }
+
+    mousePosition = null;
+    startMouse = null;
+    initialOffset = null;
+    initialMoveElementPosition = null;
+    initialResizeElementDimensions = null;
+    resizeDimenions = null;
+  }
+
+  function handleMouseDown(
+    e: CustomEvent<{
+      e: MouseEvent & { currentTarget: HTMLButtonElement };
+      position: Vector;
+    }>,
+  ) {
+    e.preventDefault();
+
+    const index = Number(e.detail.e.currentTarget.dataset.index);
+
+    initialMoveElementPosition = e.detail.position;
+
+    startMouse = [
+      e.detail.e.clientX - contentRect.left,
+      e.detail.e.clientY - contentRect.top - scrollOffset,
+    ];
+
+    initialOffset = vector.subtract(initialMoveElementPosition, startMouse);
+
+    movingIndex = index;
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function handleResizeStart(
+    e: CustomEvent<{
+      e: MouseEvent & { currentTarget: HTMLButtonElement };
+      dimensions: Vector;
+    }>,
+  ) {
+    e.preventDefault();
+
+    const index = Number(e.detail.e.currentTarget.dataset.index);
+
+    initialResizeElementDimensions = e.detail.dimensions;
+
+    startMouse = [
+      e.detail.e.clientX - contentRect.left,
+      e.detail.e.clientY - contentRect.top - scrollOffset,
+    ];
+
+    initialOffset = vector.subtract(startMouse, startMouse);
+
+    resizingIndex = index;
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    mousePosition = [
+      e.clientX - contentRect.left,
+      e.clientY - contentRect.top - scrollOffset,
+    ];
+  }
+
+  function handleScroll(e: Event) {
+    scrollOffset = (e.target as HTMLDivElement).scrollTop;
+  }
+
+  function getCell(vector: Vector): Vector {
+    return [
+      Math.round(vector[0] / gridCellSize),
+      Math.round(vector[1] / gridCellSize),
+    ];
+  }
 </script>
 
-<section
-  class="w-full h-fit max-h-full min-h-screen overflow-y-scroll flex-none relative"
->
-  {#if showGrid}
-    <svg
-      width="100%"
-      height="100%"
-      xmlns="http://www.w3.org/2000/svg"
-      class="absolute"
-    >
-      <defs>
-        <pattern
-          id="grid"
-          width={gridCellSize + gapSize}
-          height={gridCellSize + gapSize}
-          patternUnits="userSpaceOnUse"
-        >
-          <rect width={gridCellSize} height={gridCellSize} fill="white" />
-          <path
-            d="M {gridCellSize + gapSize} 0 L 0 0 0 {gridCellSize + gapSize}"
-            fill="none"
-            stroke="none"
-            stroke-width="1"
-          />
-        </pattern>
-      </defs>
-
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
+<div role="presentation" class="container" bind:contentRect>
+  {#if showGrid || movingIndex !== null || resizingIndex !== null}
+    <GridLines {gridCellSize} {scrollOffset} />
   {/if}
 
-  <section
-    class="grid w-full h-fit"
-    style:gap="{gapSize}px"
-    style:grid-template-columns="repeat({columns}, 1fr)"
-    style:grid-template-rows="repeat({maxRow + 1}, {gridCellSize}px)"
-    bind:clientWidth={canvasWidth}
-  >
+  <div class="dashboard" on:scroll={handleScroll}>
     {#each charts as chart, i (i)}
-      <div
-        data-index={i}
-        class="item flex items-center justify-center col-start-1 flex-grow-0 overflow-hidden rounded"
-        style:grid-column-start={chart.x}
-        style:grid-row-start={chart.y}
-        style:grid-column-end="span {chart.width}"
-        style:grid-row-end="span {chart.height}"
-      >
-        {chart.chart}
-      </div>
+      {@const isMoving = i === movingIndex}
+      {@const isResizing = i === resizingIndex}
+      {#if chart.chart}
+        <Element
+          {i}
+          {gapSize}
+          {isMoving}
+          chartName={chart.chart}
+          position={isMoving && dragPosition
+            ? dragPosition
+            : [Number(chart.x) * gridCellSize, Number(chart.y) * gridCellSize]}
+          dimensions={isResizing && resizeDimenions
+            ? resizeDimenions
+            : [
+                Number(chart.width) * gridCellSize,
+                Number(chart.height) * gridCellSize,
+              ]}
+          on:mousedown={handleMouseDown}
+          on:resizestart={handleResizeStart}
+        />
+      {/if}
     {/each}
-  </section>
-</section>
+  </div>
+</div>
 
 <style lang="postcss">
-  .item {
-    @apply border bg-red-300 border-black;
+  .dashboard {
+    @apply w-full h-full overflow-y-scroll overflow-x-hidden relative;
+  }
+
+  .container {
+    @apply w-full h-full overflow-y-scroll relative;
   }
 </style>
