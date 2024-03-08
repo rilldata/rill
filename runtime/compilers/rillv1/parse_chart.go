@@ -8,11 +8,11 @@ import (
 
 type ChartYaml struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
+	Title      string `yaml:"title"`
 	Data       struct {
-		Name     string         `yaml:"name"`
-		Args     map[string]any `yaml:"args"`
-		ArgsJSON string         `yaml:"args_json"`
+		MetricsSql string            `yaml:"metrics_sql"`
+		API        string            `yaml:"api"`
+		Args       map[string]string `yaml:"args"`
 	} `yaml:"data"`
 	VegaLite string `yaml:"vega_lite"`
 }
@@ -33,34 +33,19 @@ func (p *Parser) parseChart(node *Node) error {
 		return fmt.Errorf("charts cannot have a connector")
 	}
 
-	// Query name
-	if tmp.Data.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "data.name"`, tmp.Data.Name)
-	}
-
-	// Query args
-	if tmp.Data.ArgsJSON != "" {
-		// Validate JSON
-		if !json.Valid([]byte(tmp.Data.ArgsJSON)) {
-			return errors.New(`failed to parse "data.args_json" as JSON`)
-		}
-	} else {
-		// Fall back to Data.args if data.args_json is not set
-		data, err := json.Marshal(tmp.Data.Args)
-		if err != nil {
-			return fmt.Errorf(`failed to serialize "data.args" to JSON: %w`, err)
-		}
-		tmp.Data.ArgsJSON = string(data)
-	}
-	if tmp.Data.ArgsJSON == "" {
-		return errors.New(`missing query args (must set either "data.args" or "data.args_json")`)
-	}
-
 	if tmp.VegaLite == "" {
 		return errors.New(`missing vega_lite configuration`)
 	}
 	if !json.Valid([]byte(tmp.VegaLite)) {
 		return errors.New(`failed to parse "vega_lite" as JSON`)
+	}
+
+	if (tmp.Data.MetricsSql == "" && tmp.Data.API == "") || (tmp.Data.MetricsSql != "" && tmp.Data.API != "") {
+		return fmt.Errorf("exactly one of metrics_sql or api should be set")
+	}
+
+	if tmp.Data.API != "" {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindAPI, Name: tmp.Data.API})
 	}
 
 	// Track chart
@@ -71,8 +56,9 @@ func (p *Parser) parseChart(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ChartSpec.Title = tmp.Title
-	r.ChartSpec.QueryName = tmp.Data.Name
-	r.ChartSpec.QueryArgsJson = tmp.Data.ArgsJSON
+	r.ChartSpec.MetricsSql = tmp.Data.MetricsSql
+	r.ChartSpec.Api = tmp.Data.API
+	r.ChartSpec.Args = tmp.Data.Args
 	r.ChartSpec.VegaLiteSpec = tmp.VegaLite
 
 	return nil

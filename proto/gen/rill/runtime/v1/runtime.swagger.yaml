@@ -3067,10 +3067,14 @@ definitions:
     properties:
       title:
         type: string
-      queryName:
+      metricsSql:
         type: string
-      queryArgsJson:
+      api:
         type: string
+      args:
+        type: object
+        additionalProperties:
+          type: string
       vegaLiteSpec:
         type: string
   v1ChartState:

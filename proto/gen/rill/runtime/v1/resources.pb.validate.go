@@ -6913,9 +6913,11 @@ func (m *ChartSpec) validate(all bool) error {
 
 	// no validation rules for Title
 
-	// no validation rules for QueryName
+	// no validation rules for MetricsSql
 
-	// no validation rules for QueryArgsJson
+	// no validation rules for Api
+
+	// no validation rules for Args
 
 	// no validation rules for VegaLiteSpec
 

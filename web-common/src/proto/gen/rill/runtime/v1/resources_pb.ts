@@ -2867,17 +2867,22 @@ export class ChartSpec extends Message<ChartSpec> {
   title = "";
 
   /**
-   * @generated from field: string query_name = 2;
+   * @generated from field: string metrics_sql = 2;
    */
-  queryName = "";
+  metricsSql = "";
 
   /**
-   * @generated from field: string query_args_json = 3;
+   * @generated from field: string api = 3;
    */
-  queryArgsJson = "";
+  api = "";
 
   /**
-   * @generated from field: string vega_lite_spec = 4;
+   * @generated from field: map<string, string> args = 4;
+   */
+  args: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: string vega_lite_spec = 5;
    */
   vegaLiteSpec = "";
 
@@ -2890,9 +2895,10 @@ export class ChartSpec extends Message<ChartSpec> {
   static readonly typeName = "rill.runtime.v1.ChartSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "api", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "args", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ChartSpec {
