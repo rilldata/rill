@@ -8,8 +8,8 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 ## Properties
 
-**`type`**
- —  the type of connector you are using for the source _(required)_. Possible values include:
+**`connector`**
+ —  the type of connector you are using for the source _(required)_. A legacy alias is `type` (deprecated). Possible values include:
   - `https` — public files available on the web.
   - `s3` — a file available on amazon s3. 
     - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
@@ -96,4 +96,4 @@ duckdb:
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
 ```
 
-**`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake page](../../build/credentials/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.
+**`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.

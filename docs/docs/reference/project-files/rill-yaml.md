@@ -28,15 +28,24 @@ Please see our reference documentation on [OLAP Engines](../olap-engines/olap-en
  
 ## Project-wide defaults
 
-In `rill.yaml`, you can specify project-wide defaults that will be applied for all resources within a project.  
+In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](models.md), and [dashboards](dashboards.md)
 
-Individual resources will inherit any defaults that have been specified in `rill.yaml`. If the same property is set in both `rill.yaml` and a specific project file, the local setting in the project file takes precedence. See the documentation for each individual resources -- [sources](sources.md), [models](models.md), and [dashboards](dashboards.md) -- for available properties.
+:::tip Use plurals when specifying project-wide defaults
 
-The top level property is the resource type in plural, such as `sources`, `models`, and `dashboards`.
+In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `sources`, `models`, and `dashboards`.
 
-Example:
-```
-title: My project
+:::
+
+For example, the following YAML configuration below will set a project-wide default for:
+- **Sources** - Configure a [source refresh](/build/connect/source-refresh.md) 
+- **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified)
+- **Dashboards** - Set the [first day of the week](dashboards.md) for timeseries aggregations to be Sunday along with defining available timezones on a dashboard
+
+```yaml
+title: My Rill Project
+sources:
+  refresh:
+    cron: '0 * * * *'
 models:
   materialize: true
 dashboards:
@@ -47,3 +56,12 @@ dashboards:
     - Europe/London
     - Asia/Kolkata
 ```
+
+:::info Hierarchy of inheritance and property overrides
+
+As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
+1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
+2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
+
+:::
