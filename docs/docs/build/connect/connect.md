@@ -26,13 +26,7 @@ To provide a non-exhaustive list, Rill supports the following connectors:
 
 :::info Full List Of Connectors
 
-Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](contact.md)) either if there's a connector you'd like us to add!
-
-:::
-
-:::tip Avoid Pre-aggregated Metrics
-
-Rill works best for slicing and dicing data meaning keeping data closer to raw to retain that granularity for flexible analysis. When loading data - be careful with adding pre-aggregated metrics like averages as that could lead to unintended results like a sum of an average. Instead load the two raw metrics and calculate the derived metric in your model or dashboard.
+Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](contact.md) either if there's a connector you'd like us to add!
 
 :::
 
