@@ -57,7 +57,6 @@
   let startValue: Date;
   let endValue: Date;
 
-  let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
 
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -105,10 +104,6 @@
     $dashboardStore.selectedTimezone,
   );
 
-  let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date;
-  let endValue: Date;
-
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
   // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
@@ -116,7 +111,6 @@
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
 
   $: dataCopy = $timeSeriesDataStore.timeSeriesData;
-  let dimensionDataCopy: DimensionDataItem[] = [];
 
   $: formattedData = dataCopy;
 
