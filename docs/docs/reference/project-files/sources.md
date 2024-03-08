@@ -96,5 +96,4 @@ duckdb:
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
 ```
 
-**`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake page](../connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.
-**`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.
+**`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake connector page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.
