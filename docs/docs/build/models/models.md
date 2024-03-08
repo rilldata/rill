@@ -11,6 +11,9 @@ Data models in Rill are composed of SQL `SELECT` statements that operate on sour
 
 Data transformations in Rill Developer are powered by DuckDB and their dialect of SQL (DuckDB SQL). Please visit [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn about how to write your queries.
 
+For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](../dashboards/build-metrics.md).
+
+
 ## Adding a data model
 
 ### Using the UI
