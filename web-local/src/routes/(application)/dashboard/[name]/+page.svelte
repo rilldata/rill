@@ -91,7 +91,6 @@
 
 {#if ($fileQuery.data && $resourceStatusStore.status === ResourceStatus.Idle) || showErrorPage}
   <WorkspaceContainer
-    top="0px"
     assetID={metricViewName}
     bgClass="bg-white"
     inspector={false}
@@ -112,7 +111,6 @@
   </WorkspaceContainer>
 {:else if $resourceStatusStore.status === ResourceStatus.Busy}
   <WorkspaceContainer
-    top="0px"
     assetID={metricViewName}
     bgClass="bg-white"
     inspector={false}
