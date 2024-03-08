@@ -13,7 +13,7 @@ The main feature-set component for dashboard filters
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboard } from "../selectors";
   import { getDimensionFilters } from "../state-managers/selectors/dimension-filters";
-  import { getMeasureAllFilters } from "../state-managers/selectors/measure-filters";
+  import { getMeasureFilters } from "../state-managers/selectors/measure-filters";
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
 
@@ -39,7 +39,7 @@ The main feature-set component for dashboard filters
     measures,
     (measure) => measure.name as string,
   );
-  $: measureFilters = getMeasureAllFilters(
+  $: measureFilters = getMeasureFilters(
     measureIdMap,
     dimensionThresholdFilters,
   );

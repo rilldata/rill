@@ -3,10 +3,8 @@ import {
   createAdminServiceCreateBookmark,
   createAdminServiceUpdateBookmark,
 } from "@rilldata/web-admin/client";
-import {
-  getBookmarks,
-  useProjectId,
-} from "@rilldata/web-admin/features/bookmarks/selectors";
+import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
+import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";

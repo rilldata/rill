@@ -4,7 +4,6 @@ import { timeControlsState } from "@rilldata/web-common/features/dashboards/stat
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import {
-  createAndExpression,
   forEachExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -23,28 +22,16 @@ export const getMeasureFilterForDimensionIndex = (
     );
 };
 
-export const getMeasureFilterForDimension = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (_: string) => {
-    const andExpr = createAndExpression([]);
-    dashData.dashboard.dimensionThresholdFilters.forEach(({ filter }) => {
-      if (filter.cond?.exprs?.length) {
-        andExpr.cond?.exprs?.push(...filter.cond.exprs);
-      }
-    });
-    return andExpr;
-  };
-};
-
 export const additionalMeasures = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   const measures = new Set<string>([dashData.dashboard.leaderboardMeasureName]);
-  forEachExpression(getMeasureFilterForDimension(dashData)(""), (e) => {
-    if (e.ident) {
-      measures.add(e.ident);
-    }
+  dashData.dashboard.dimensionThresholdFilters.forEach(({ filter }) => {
+    forEachExpression(filter, (e) => {
+      if (e.ident) {
+        measures.add(e.ident);
+      }
+    });
   });
   return [...measures];
 };
@@ -82,14 +69,14 @@ export const getMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   return (measureIdMap: Map<string, MetricsViewSpecMeasureV2>) => {
-    return getMeasureAllFilters(
+    return getMeasureFilters(
       measureIdMap,
       dashData.dashboard.dimensionThresholdFilters,
     );
   };
 };
 
-export function getMeasureAllFilters(
+export function getMeasureFilters(
   measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {
@@ -98,14 +85,19 @@ export function getMeasureAllFilters(
 
   for (const dtf of dimensionThresholdFilters) {
     filteredMeasures.push(
-      ...getMeasureFilters(measureIdMap, dtf.filter, dtf.name, addedMeasure),
+      ...getMeasureFilterForDimension(
+        measureIdMap,
+        dtf.filter,
+        dtf.name,
+        addedMeasure,
+      ),
     );
   }
 
   return filteredMeasures;
 }
 
-export function getMeasureFilters(
+export function getMeasureFilterForDimension(
   measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
   filter: V1Expression | undefined,
   name = "",

@@ -4,21 +4,19 @@
     createAdminServiceRemoveBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
+  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
   import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
-  import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksContent.svelte";
+  import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
   import CreateBookmarkDialog from "@rilldata/web-admin/features/bookmarks/CreateBookmarkDialog.svelte";
   import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
   import EditBookmarkDialog from "@rilldata/web-admin/features/bookmarks/EditBookmarkDialog.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import {
-    type BookmarkEntry,
-    useProjectId,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -70,7 +68,7 @@
       bookmarkId: bookmark.resource.id,
     });
     notifications.send({
-      message: `Bookmark ${bookmark.resource.displayName} delete`,
+      message: `Bookmark ${bookmark.resource.displayName} deleted`,
     });
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({
@@ -85,8 +83,8 @@
 </script>
 
 <DropdownMenu bind:open>
-  <DropdownMenuTrigger>
-    <Button type="secondary">
+  <DropdownMenuTrigger asChild let:builder>
+    <Button builders={[builder]} compact type="secondary">
       <BookmarkIcon
         class="inline-flex"
         fill={open ? "black" : "none"}

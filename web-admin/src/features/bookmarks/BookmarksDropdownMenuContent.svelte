@@ -8,7 +8,7 @@
     DropdownMenuLabel,
     DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarkItem.svelte";
+  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -57,7 +57,7 @@
     {#if $bookmarks.data.personal?.length}
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="capitalize text-gray-500 text-sm">
+        <DropdownMenuLabel class="text-gray-500 text-[10px] h-6 uppercase">
           Your bookmarks
         </DropdownMenuLabel>
         {#each $bookmarks.data.personal as bookmark}
@@ -68,8 +68,8 @@
     {#if $bookmarks.data.shared?.length || $bookmarks.data.home}
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="capitalize text-gray-500 ">
-          <div class="text-sm capitalize font-semibold">Default bookmarks</div>
+        <DropdownMenuLabel class="text-gray-500">
+          <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
           <div class="text-[11px] font-normal">Created by project admin</div>
         </DropdownMenuLabel>
         {#if $bookmarks.data.home}
@@ -78,7 +78,7 @@
             on:edit
             on:select
             on:delete
-            readonly={!manageProject}
+            readOnly={!manageProject}
           />
         {/if}
         {#each $bookmarks.data.shared as bookmark}
@@ -87,7 +87,7 @@
             on:edit
             on:select
             on:delete
-            readonly={!manageProject}
+            readOnly={!manageProject}
           />
         {/each}
       </DropdownMenuGroup>

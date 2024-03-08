@@ -7,7 +7,7 @@
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
 
   export let bookmark: BookmarkEntry;
-  export let readonly = false;
+  export let readOnly = false;
 
   const dispatch = createEventDispatcher();
 
@@ -29,7 +29,7 @@
   let hovered = false;
 </script>
 
-<DropdownMenuItem>
+<DropdownMenuItem class="py-1">
   <div
     class="flex justify-between gap-x-2 w-full"
     on:click={selectBookmark}
@@ -47,22 +47,22 @@
       {:else}
         <BookmarkIcon size="16px" />
       {/if}
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-y-0.5">
         <div
-          class="text-xs font-medium text-gray-700 h-5 text-ellipsis overflow-hidden"
+          class="text-xs font-medium text-gray-700 h-4 text-ellipsis overflow-hidden"
         >
           {bookmark.resource.displayName}
         </div>
         {#if bookmark.resource.description}
           <div
-            class="text-[11px] font-normal text-gray-500 h-5 text-ellipsis overflow-hidden"
+            class="text-[11px] font-normal text-gray-500 h-4 text-ellipsis overflow-hidden"
           >
             {bookmark.resource.description}
           </div>
         {/if}
       </div>
     </div>
-    {#if !readonly}
+    {#if !readOnly}
       <div class="flex flex-row justify-end gap-x-2 items-start w-20">
         {#if hovered}
           <button on:click={editBookmark}>

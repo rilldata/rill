@@ -1,8 +1,8 @@
 import {
-  createAdminServiceGetProject,
   createAdminServiceListBookmarks,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
+import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   useMetricsView,
@@ -21,20 +21,6 @@ import {
 import type { QueryClient } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-
-export function useProjectId(orgName: string, projectName: string) {
-  return createAdminServiceGetProject(
-    orgName,
-    projectName,
-    {},
-    {
-      query: {
-        enabled: !!orgName && !!projectName,
-        select: (resp) => resp.project?.id,
-      },
-    },
-  );
-}
 
 export type BookmarkEntry = {
   resource: V1Bookmark;

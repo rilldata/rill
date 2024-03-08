@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import BaseBookmarkForm from "@rilldata/web-admin/features/bookmarks/BaseBookmarkForm.svelte";
   import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
+  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import {
     createAdminServiceUpdateBookmark,
@@ -9,10 +10,7 @@
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import {
-    type BookmarkEntry,
-    useProjectId,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -32,10 +30,11 @@
 
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
-  const formState = createForm({
-    initialValues: <BookmarkFormValues>{
+  const formState = createForm<BookmarkFormValues>({
+    initialValues: {
       displayName: bookmark.resource.displayName ?? "",
       description: bookmark.resource.description ?? "",
+      shared: bookmark.resource.shared ? "true" : "false",
       filtersOnly: bookmark.filtersOnly,
       absoluteTimeRange: bookmark.absoluteTimeRange,
     },
@@ -49,6 +48,7 @@
           bookmarkId: bookmark.resource.id,
           displayName: values.displayName,
           description: values.description,
+          shared: values.shared === "true",
           data: getBookmarkDataForDashboard(
             $dashboardStore,
             values.filtersOnly,
@@ -77,9 +77,9 @@
   }
 </script>
 
-<Dialog on:close={handleClose} {open} widthOverride="w-[602px]">
-  <svelte:fragment slot="title">Bookmark current view</svelte:fragment>
-  <BaseBookmarkForm editForm {formState} {metricsViewName} slot="body" />
+<Dialog on:close={handleClose} {open}>
+  <svelte:fragment slot="title">Edit bookmark</svelte:fragment>
+  <BaseBookmarkForm {formState} {metricsViewName} slot="body" />
   <div class="flex flex-row mt-4 gap-2" slot="footer">
     <div class="grow" />
     <Button on:click={handleClose} type="secondary">Cancel</Button>

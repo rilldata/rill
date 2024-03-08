@@ -22,11 +22,6 @@ export function createBookmarkApplier(
       !metricsViewSpecResp.data ||
       !metricsSchemaResp.data?.schema
     ) {
-      console.log(
-        bookmark,
-        !metricsViewSpecResp.data,
-        !metricsSchemaResp.data?.schema,
-      );
       return;
     }
     metricsExplorerStore.syncFromUrl(

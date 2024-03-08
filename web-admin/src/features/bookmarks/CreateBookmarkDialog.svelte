@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import BaseBookmarkForm from "@rilldata/web-admin/features/bookmarks/BaseBookmarkForm.svelte";
   import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
+  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import {
     createAdminServiceCreateBookmark,
@@ -9,7 +10,6 @@
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import { useProjectId } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -28,8 +28,8 @@
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
 
-  const formState = createForm({
-    initialValues: <BookmarkFormValues>{
+  const formState = createForm<BookmarkFormValues>({
+    initialValues: {
       displayName: "Default Name",
       description: "",
       shared: "false",
@@ -78,14 +78,9 @@
   }
 </script>
 
-<Dialog on:close={handleClose} {open} widthOverride="w-[602px]">
+<Dialog on:close={handleClose} {open}>
   <svelte:fragment slot="title">Bookmark current view</svelte:fragment>
-  <BaseBookmarkForm
-    editForm={false}
-    {formState}
-    {metricsViewName}
-    slot="body"
-  />
+  <BaseBookmarkForm {formState} {metricsViewName} slot="body" />
   <div class="flex flex-row mt-4 gap-2" slot="footer">
     <div class="grow" />
     <Button on:click={handleClose} type="secondary">Cancel</Button>
