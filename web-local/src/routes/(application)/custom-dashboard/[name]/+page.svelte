@@ -29,6 +29,8 @@
   import { parse, stringify } from "yaml";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
 
+  import Toggle from "@rilldata/web-common/features/custom-dashboards/Toggle.svelte";
+
   const updateFile = createRuntimeServicePutFile();
 
   let editing = true;
@@ -182,32 +184,14 @@
   >
     <div slot="workspace-controls" class="flex gap-x-4">
       {#if !singlePanel || !editing}
-        <Button
-          on:click={() => {
-            showGrid = !showGrid;
-          }}
-        >
-          {showGrid ? "Hide grid" : "Show grid"}
-        </Button>
+        <Toggle bind:bool={showGrid} text={["Hide grid", "Show grid"]} />
       {/if}
 
       {#if singlePanel}
-        <Button
-          on:click={() => {
-            editing = !editing;
-          }}
-        >
-          {editing ? "Preview" : "Edit"}
-        </Button>
+        <Toggle bind:bool={editing} text={["Preview", "Edit"]} />
       {/if}
 
-      <Button
-        on:click={() => {
-          singlePanel = !singlePanel;
-        }}
-      >
-        {singlePanel ? "Two panel" : "One panel"}
-      </Button>
+      <Toggle bind:bool={singlePanel} text={["Two panel", "One panel"]} />
     </div>
   </WorkspaceHeader>
 

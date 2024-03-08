@@ -38,8 +38,6 @@
 
   $: gapSize = contentRect.width * (gap / 200);
 
-  $: console.log({ gapSize, gap });
-
   $: gridCellSize = contentRect.width / columns;
 
   $: dragPosition =

@@ -6,6 +6,7 @@
   import { quintOut } from "svelte/easing";
   import { get, writable } from "svelte/store";
   import { fade } from "svelte/transition";
+
   const zIndex = writable(0);
 </script>
 
@@ -21,7 +22,6 @@
 
   let hover = false;
   let timeout: ReturnType<typeof setTimeout> | null = null;
-
   let localZIndex = 0;
 
   onMount(() => {
