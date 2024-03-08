@@ -8,8 +8,12 @@ Useful for finding the nearest value to the current mouseover
 <script lang="ts">
   import { bisector } from "d3-array";
 
+  // Remove once svelte-eslint-parser supports generics
+  // eslint-disable-next-line no-undef
   type T = $$Generic;
+  // eslint-disable-next-line no-undef
   type K = $$Generic;
+
   /** the dataset that will be used for bisection */
   export let data: T[];
   /** The callback function that returns the value for bisection */
