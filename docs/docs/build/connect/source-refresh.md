@@ -27,13 +27,13 @@ refresh:
 
 :::tip Source settings
 
-For more details about available source configurations and properties, check our [Source YAML](https://docs.rilldata.com/reference/project-files/sources) reference page.
+For more details about available source configurations and properties, check our [Source YAML](../../reference/project-files/sources) reference page.
 
 :::
 
 ## Configuring a project-wide default
 
-You can also specify a project-wide refresh schedule that will apply to all sources by default. This can be done through the `rill.yaml` file. More details can be found [here](https://docs.rilldata.com/reference/project-files/rill-yaml#project-wide-defaults).
+You can also specify a project-wide refresh schedule that will apply to all sources by default. This can be done through the `rill.yaml` file. More details can be found [here](../../reference/project-files/rill-yaml#project-wide-defaults).
 
 Using the same example as above, the following sets a project-wide default of refreshing sources every 24 hours:
 ```yaml
