@@ -29,10 +29,14 @@ class WorkspaceLayoutStore {
 
     if (history) {
       const parsed = JSON.parse(history) as WorkspaceLayout;
-      this.inspectorVisible.set(parsed.inspector.visible);
-      this.inspectorWidth.set(parsed.inspector.width);
-      this.tableHeight.set(parsed.table.height);
-      this.tableVisible.set(parsed.table.visible);
+      this.inspectorVisible.set(parsed?.inspector?.visible ?? true);
+      this.inspectorWidth.set(
+        parsed?.inspector?.width ?? DEFAULT_INSPECTOR_WIDTH,
+      );
+      this.tableHeight.set(
+        parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
+      );
+      this.tableVisible.set(parsed?.table?.visible ?? true);
     }
 
     const debouncer = debounce(

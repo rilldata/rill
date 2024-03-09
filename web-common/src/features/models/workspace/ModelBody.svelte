@@ -1,4 +1,6 @@
 <script lang="ts">
+  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import type { SelectionRange } from "@codemirror/state";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
@@ -19,16 +21,13 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { quintOut } from "svelte/easing";
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -78,7 +77,6 @@
 
   $: workspaceLayout = $workspaces;
 
-  $: tableHeight = workspaceLayout.table.height;
   $: tableVisible = workspaceLayout.table.visible;
 
   $: selections = $queryHighlight?.map((selection) => ({
@@ -130,10 +128,7 @@
 
 <div class="editor-pane h-full overflow-hidden w-full flex flex-col">
   {#if hasModelSql}
-    <div
-      class="p-5 size-full flex-shrink-1 overflow-hidden"
-      style:min-height="150px"
-    >
+    <WorkspaceEditorContainer>
       {#key modelName}
         <Editor
           content={modelSql}
@@ -142,53 +137,31 @@
           on:write={debounceUpdateModelContent}
         />
       {/key}
-    </div>
+    </WorkspaceEditorContainer>
   {/if}
 
   {#if $tableVisible}
-    <div
-      class="p-5 w-full relative flex flex-none flex-col gap-2"
-      style:height="{$tableHeight}px"
-      style:max-height="75%"
-      transition:slide={{ duration: 300, easing: quintOut }}
-    >
-      <Resizer
-        max={600}
-        direction="NS"
-        side="top"
-        bind:dimension={$tableHeight}
-      >
-        <HorizontalSplitter />
-      </Resizer>
-      <div
-        class="table-wrapper"
-        class:brightness-90={modelError || runtimeError}
-      >
-        {#if !$modelEmpty?.data}
-          <ConnectedPreviewTable
-            objectName={$modelQuery?.data?.model?.state?.table}
-            loading={resourceIsLoading($modelQuery?.data)}
-            {limit}
-          />
-        {/if}
-      </div>
-      {#if errors.length > 0}
-        <div
-          transition:slide={{ duration: 200 }}
-          class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
-        >
-          {#each errors as error}
-            <div>{error}</div>
-          {/each}
-        </div>
+    <WorkspaceTableContainer fade={Boolean(modelError || runtimeError)}>
+      {#if !$modelEmpty?.data}
+        <ConnectedPreviewTable
+          objectName={$modelQuery?.data?.model?.state?.table}
+          loading={resourceIsLoading($modelQuery?.data)}
+          {limit}
+        />
       {/if}
-    </div>
+
+      <svelte:fragment slot="error">
+        {#if errors.length > 0}
+          <div
+            transition:slide={{ duration: 200 }}
+            class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+          >
+            {#each errors as error}
+              <div>{error}</div>
+            {/each}
+          </div>
+        {/if}
+      </svelte:fragment>
+    </WorkspaceTableContainer>
   {/if}
 </div>
-
-<style lang="postcss">
-  .table-wrapper {
-    transition: filter 200ms;
-    @apply relative rounded w-full overflow-hidden border-gray-200 border-2 h-full;
-  }
-</style>
