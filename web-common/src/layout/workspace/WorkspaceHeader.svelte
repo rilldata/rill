@@ -15,7 +15,7 @@
     e: Event & {
       currentTarget: EventTarget & HTMLInputElement;
     },
-  ) => void;
+  ) => void = () => {};
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
