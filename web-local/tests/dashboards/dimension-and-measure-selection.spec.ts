@@ -27,29 +27,16 @@ test.describe("dimension and measure selectors", () => {
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
 
     await expect(
-<<<<<<< Updated upstream
-      page.getByRole("button", { name: "Publisher" }),
-    ).not.toBeVisible();
-    await expect(page.getByRole("button", { name: "Domain" })).toBeVisible();
-=======
       page.getByText("Publisher", { exact: true }),
     ).not.toBeVisible();
     await expect(page.getByText("Domain", { exact: true })).toBeVisible();
->>>>>>> Stashed changes
 
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
     await page.getByRole("menuitem", { name: "Publisher" }).click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
 
-<<<<<<< Updated upstream
-    await expect(page.getByRole("button", { name: "Publisher" })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Domain" }),
-    ).not.toBeVisible();
-=======
     await expect(page.getByText("Publisher", { exact: true })).toBeVisible();
     await expect(page.getByText("Domain", { exact: true })).not.toBeVisible();
->>>>>>> Stashed changes
   });
 });
