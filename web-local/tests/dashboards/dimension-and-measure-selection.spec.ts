@@ -7,7 +7,7 @@ test.describe("dimension and measure selectors", () => {
   useDashboardFlowTestSetup();
 
   test("dimension and measure selectors flow", async ({ page }) => {
-    await page.getByRole("button", { name: "All Measures" }).click();
+    await page.getByLabel("Measures").click();
     await page.getByRole("menuitem", { name: "Total records" }).click();
     await page.getByRole("button", { name: "1 of 2 Measures" }).click();
 
@@ -22,7 +22,7 @@ test.describe("dimension and measure selectors", () => {
     await expect(page.getByText("Sum of Bid Price 300.6k")).not.toBeVisible();
     await expect(page.getByText("Total records 100.0k")).toBeVisible();
 
-    await page.getByRole("button", { name: "All Dimensions" }).click();
+    await page.getByLabel("Dimensions").click();
     await page.getByRole("menuitem", { name: "Publisher" }).click();
     await page.getByRole("button", { name: "1 of 2 Dimensions" }).click();
 
