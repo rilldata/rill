@@ -25,7 +25,7 @@ To create the correct value, you can utilize DuckDB's unnest functionality. In t
 
 Note: the syntax for fixed metrics is specific to DuckDB as an OLAP engine.
 
-## Dimensions Expressions
+## Dimension Expressions
 
 To utilize an expression, replace the `column` property with `expression` and apply a non-aggregate sql expression. Common use cases would be editing fields such as `string_split(domain, '.')` or combining values `concat(domain, child_url)`.
 
