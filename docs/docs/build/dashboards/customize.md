@@ -5,8 +5,6 @@ sidebar_label: "Customization & Themes"
 sidebar_position: 30
 ---
 
-## Overview
-
 ## Common Customizations
 
 ### Changing Available Filters

@@ -11,7 +11,7 @@ On this page, we've gathered a running list of recommendations and general guide
 
 :::info Working with very large data from the get go?
 
-Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 40-50GB in size_. Beyond that though, given current architectural limitations of DuckDB, performance may start to become less optimal. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](contact.md) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
+Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](contact.md) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
 
 :::
 
