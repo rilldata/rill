@@ -19,9 +19,7 @@ To create the correct value, you can utilize DuckDB's unnest functionality. In t
 (select sum(a.val) as value from (select unnest(list(distinct {key: concat(campaign_id), val: daily_budget })) a ))
 ```
 
-:::warning Fixed metrics are DuckDB specific
-The syntax for fixed metrics is specific to DuckDB as an OLAP engine.
-:::
+Not: the syntax for fixed metrics is specific to DuckDB as an OLAP engine.
 
 ## Dimensions Expressions
 
