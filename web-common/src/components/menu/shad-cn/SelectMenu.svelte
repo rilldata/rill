@@ -22,7 +22,7 @@
 
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger asChild let:builder>
-    <Button builders={[builder]} type="text" aria-label={ariaLabel} on:click>
+    <Button builders={[builder]} type="text" label={ariaLabel} on:click>
       {fixedText}
       <span class="font-bold truncate">{firstSelection?.main}</span>
       <span

@@ -80,6 +80,7 @@
                   : DropdownMenu.Item}
                 {...allowMultiSelect ? { checked: selected } : {}}
                 class="text-xs cursor-pointer"
+                role="menuitem"
                 bind:checked={selected}
                 on:click={() => {
                   if (singleSelection && selected) return;

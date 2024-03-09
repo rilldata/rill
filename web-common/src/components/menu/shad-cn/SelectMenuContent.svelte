@@ -22,6 +22,7 @@
   {#each options as option, i (option.key)}
     {@const selected = selections.includes(option.key)}
     <DropdownMenu.CheckboxItem
+      role="menuitem"
       disabled={option.disabled}
       class="text-xs cursor-pointer rounded-none"
       checked={selected}
