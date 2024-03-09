@@ -11,9 +11,36 @@ Within the dashboard yaml, you can apply aggregate sql expressions to create der
 
 We continually get questions about common metric definitions and other tricks so will update this page frequently. [Please let us know](../../contact.md) if you have questions or are stuck on an expression so we can add more examples.
 
+Reminder: Rill's modeling layer provide open-ended sql compatibility for complex sql queries. More details in our [modeling section](../models/models.md).
+
 ## Measure Expressions
 
-Measure expressions can take any sql aggregate function to create derived metrics. Reminder on basic expressions are available in the [create dashboard definition](/dashboards.md).
+Measure expressions can take any sql numeric function, a set of aggregates and apply filters to create derived metrics. Reminder on basic expressions are available in the [create dashboard definition](dashboards.md).
+
+### Case Statements
+
+One of the most common advanced measure expressions are `case` statements used to filter or apply logic to part of the result set. Use cases for case statements include filtered sums (e.g. only sum if a flag is true) and bucketing data (e.g. if between threshold x and y the apply an aggregate). 
+
+An example case statement to only sum cost when a record has an impression would look like:
+```yaml
+  - label: TOTAL COST
+    expression: SUM(CASE WHEN imp_cnt = 1 THEN cost ELSE 0 END)
+    name: total_cost
+    description: Total Cost
+    format_preset: currency_usd
+    valid_percent_of_total: true
+```
+
+### Quantiles
+
+In addition to common aggregates, you may wish to look at the value of a metric within a certain band or quantile. In the example below, we can measure the P95 query time as a benchmark.
+
+```yaml
+  - label: "P95 Query time"
+    expression: QUANTILE_CONT(query_time, 0.95)
+    format_preset: interval_ms
+    description: "P95 time (in sec) of query time"
+```
 
 ### Fixed Metrics / "Sum of Max"
 
@@ -30,6 +57,7 @@ Note: the syntax for fixed metrics is specific to DuckDB as an OLAP engine.
 ## Dimension Expressions
 
 To utilize an expression, replace the `column` property with `expression` and apply a non-aggregate sql expression. Common use cases would be editing fields such as `string_split(domain, '.')` or combining values `concat(domain, child_url)`.
+
 
 ### Druid Lookups
 
