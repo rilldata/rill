@@ -22,9 +22,9 @@ Check [here](https://www.rilldata.com/case-studies) to see examples of use cases
 ## Available OLAP Engines
 
 Rill supports the use of several different OLAP engines to power your dashboards in Rill, including:
-- DuckDB
-- Druid
-- ClickHouse
+- [DuckDB](/reference/olap-engines/duckdb.md)
+- [Druid](/reference/olap-engines/druid.md)
+- [ClickHouse](/reference/olap-engines/clickhouse.md)
 
 :::note Additional OLAP Engines
 
