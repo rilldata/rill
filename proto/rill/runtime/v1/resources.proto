@@ -396,8 +396,8 @@ message Chart {
 
 message ChartSpec {
   string title = 1;
-  string query_name = 2;
-  string query_args_json = 3;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
   string vega_lite_spec = 4;
 }
 

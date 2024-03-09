@@ -53,3 +53,17 @@ export function useProjectMembersEmails(organization: string, project: string) {
     },
   );
 }
+
+export function useProjectId(orgName: string, projectName: string) {
+  return createAdminServiceGetProject(
+    orgName,
+    projectName,
+    {},
+    {
+      query: {
+        enabled: !!orgName && !!projectName,
+        select: (resp) => resp.project?.id,
+      },
+    },
+  );
+}

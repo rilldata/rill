@@ -58,12 +58,13 @@ func (s *Server) apiForName(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	res, err := runtime.Resolve(ctx, &runtime.APIResolverOptions{
-		Runtime:        s.runtime,
-		InstanceID:     req.PathValue("instance_id"),
-		API:            api,
-		Args:           reqParams,
-		UserAttributes: auth.GetClaims(ctx).Attributes(),
-		Priority:       0,
+		Runtime:            s.runtime,
+		InstanceID:         req.PathValue("instance_id"),
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               reqParams,
+		UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		Priority:           0,
 	})
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)

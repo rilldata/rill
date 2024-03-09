@@ -3067,10 +3067,10 @@ definitions:
     properties:
       title:
         type: string
-      queryName:
+      resolver:
         type: string
-      queryArgsJson:
-        type: string
+      resolverProperties:
+        type: object
       vegaLiteSpec:
         type: string
   v1ChartState:

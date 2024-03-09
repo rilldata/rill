@@ -1248,23 +1248,18 @@ func TestChartsAndDashboard(t *testing.T) {
 		`charts/c1.yaml`: fmt.Sprintf(`
 kind: chart
 data:
-  name: MetricsViewAggregation
+  api: MetricsViewAggregation
   args:
     metrics_view: foo
-
-vega_lite: |-
-%s
-
+vega_lite: |%s
 `, vegaLiteSpec),
 		`charts/c2.yaml`: fmt.Sprintf(`
 kind: chart
 data:
-  name: MetricsViewAggregation
+  api: MetricsViewAggregation
   args:
     metrics_view: bar
-
 vega_lite: |%s
-
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
@@ -1283,19 +1278,21 @@ components:
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c1"},
 			Paths: []string{"/charts/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:     "MetricsViewAggregation",
-				QueryArgsJson: `{"metrics_view":"foo"}`,
-				VegaLiteSpec:  vegaLiteSpec,
+				Resolver:           "API",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
+				VegaLiteSpec:       vegaLiteSpec,
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c2"},
 			Paths: []string{"/charts/c2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:     "MetricsViewAggregation",
-				QueryArgsJson: `{"metrics_view":"bar"}`,
-				VegaLiteSpec:  vegaLiteSpec,
+				Resolver:           "API",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
+				VegaLiteSpec:       vegaLiteSpec,
 			},
 		},
 		{
