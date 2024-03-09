@@ -11,7 +11,9 @@ Within the dashboard yaml, you can apply aggregate sql expressions to create der
 
 We continually get questions about common metric definitions and other tricks so will update this page frequently. [Please let us know](../../contact.md) if you have questions or are stuck on an expression so we can add more examples.
 
-## Metric Expressions
+## Measure Expressions
+
+Measure expressions can take any sql aggregate function to create derived metrics. Reminder on basic expressions are available in the [create dashboard definition](/dashboards.md).
 
 ### Fixed Metrics / "Sum of Max"
 
