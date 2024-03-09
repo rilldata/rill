@@ -24,7 +24,8 @@ type metricsSQLProps struct {
 }
 
 // newMetricsSQL creates a resolver for evaluating metrics SQL.
-// It wraps the regular SQL resolver, but compiles the metrics SQL to a regular SQL query first.
+// It wraps the regular SQL resolver and compiles the metrics SQL to a regular SQL query first.
+// The compiler preserves templating in the SQL, allowing the regular SQL resolver to handle SQL templating rules.
 func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &metricsSQLProps{}
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
