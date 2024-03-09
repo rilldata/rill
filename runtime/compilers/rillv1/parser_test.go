@@ -1332,8 +1332,7 @@ sql: select * from m1
 		// api a2
 		`apis/a2.yaml`: `
 kind: api
-metrics:
-  sql: select * from m1
+metrics_sql: select * from m1
 `,
 	})
 
