@@ -1,6 +1,6 @@
 ---
-title: Share Projects 
-sidebar_label: Share Projects 
+title: Share Dashboards 
+sidebar_label: Share Dashboards 
 sidebar_position: 00
 ---
 
