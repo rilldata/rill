@@ -45,7 +45,7 @@
       suppress={active}
     >
       <Button builders={[builder]} type="text" label={ariaLabel} on:click>
-        <strong>{numShownString} {ariaLabel}</strong>
+        <strong>{`${numShownString} ${ariaLabel}`}</strong>
         <span
           class="transition-transform"
           class:hidden={disabled}

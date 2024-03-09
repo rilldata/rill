@@ -136,8 +136,9 @@
         tooltipText="Choose dimensions to display"
       />
 
+      <div class="whitespace-nowrap">showing</div>
+
       <SelectMenu
-        fixedText="showing"
         {options}
         selections={[selection.key]}
         on:select={handleMeasureUpdate}
