@@ -75,9 +75,6 @@
     </BlockingOverlayContainer>
   {/if}
 
-  {#if $duplicateSourceName !== null}
-    <DuplicateSource />
-  {/if}
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
