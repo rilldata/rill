@@ -40,7 +40,6 @@
         delta = event.clientX - start;
       }
     } else {
-      console.log("yeah");
       if (side === "top") {
         delta = start - event.clientY;
       } else {
