@@ -13,7 +13,13 @@ We continually get questions about common metric definitions and other tricks so
 
 ## Measure Expressions
 
-Measure expressions can take any sql aggregate function to create derived metrics. Reminder on basic expressions are available in the [create dashboard definition](/dashboards.md).
+Measure expressions can take any sql aggregate function to create derived metrics. We'll walk through some more advanced expressions below.
+
+:::info Basic expressions 101
+
+For a primer on basic or standard dashboard expressions, please check the [Measures](dashboards.md#measures) section of our [Create Dashboards](dashboards.md) page.
+
+:::
 
 ### Fixed Metrics / "Sum of Max"
 
@@ -33,4 +39,11 @@ To utilize an expression, replace the `column` property with `expression` and ap
 
 ### Druid Lookups
 
-For those looking to add id to name mappings with Druid as an OLAP engine, you can utilize expressions in your Dimension settings. Simply use the lookup function and provide the name of the lookup and the id like - `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
+For those looking to add id to name mappings with the [Druid OLAP engine](/reference/olap-engines/druid.md), you can utilize expressions in your Dimension settings. Simply use the lookup function and provide the name of the lookup and the id like - `lookup(city_id, 'cities')`. 
+
+
+:::tip
+
+Be sure to include the lookup table name in single quotes.
+
+:::
