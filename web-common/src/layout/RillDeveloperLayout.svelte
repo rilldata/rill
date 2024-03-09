@@ -2,13 +2,9 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import DuplicateSource from "@rilldata/web-common/features/sources/modal/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
-  import {
-    duplicateSourceName,
-    sourceImportedName,
-  } from "@rilldata/web-common/features/sources/sources-store";
+  import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
