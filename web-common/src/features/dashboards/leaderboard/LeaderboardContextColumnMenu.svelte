@@ -2,7 +2,7 @@
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
+  import SelectMenu from "@rilldata/web-common/components/menu/shad-cn/SelectMenu.svelte";
   import type { SelectMenuItem } from "@rilldata/web-common/components/menu/types";
 
   export let validPercentOfTotal: boolean;
@@ -18,13 +18,11 @@
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  const handleContextValueButtonGroupClick = (evt) => {
-    const value: SelectMenuItem = evt.detail;
-    // CAST SAFETY: the value.key passed up from the evt must
-    // be a LeaderboardContextColumn
-    const key = value.key as LeaderboardContextColumn;
-    setContextColumn(key);
-  };
+  function handleContextValueButtonGroupClick(
+    e: CustomEvent<SelectMenuItem & { key: LeaderboardContextColumn }>,
+  ) {
+    setContextColumn(e.detail.key);
+  }
 
   let options: SelectMenuItem[];
   $: options = [
@@ -48,20 +46,12 @@
       key: LeaderboardContextColumn.HIDDEN,
     },
   ];
-
-  // CAST SAFETY: the selection will always be one of the options
-  $: selection = options.find(
-    (option) => option.key === $contextColumn,
-  ) as SelectMenuItem;
 </script>
 
 <SelectMenu
-  alignment="end"
-  ariaLabel="Select a context column"
   fixedText="with"
-  on:select={handleContextValueButtonGroupClick}
+  ariaLabel="Select a context column"
   {options}
-  paddingBottom={2}
-  paddingTop={2}
-  {selection}
+  selections={[$contextColumn]}
+  on:select={handleContextValueButtonGroupClick}
 />

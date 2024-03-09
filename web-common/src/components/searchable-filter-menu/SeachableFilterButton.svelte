@@ -23,13 +23,7 @@ props as needed.
 -->
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-  import { fly } from "svelte/transition";
-  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-
-  import SelectButton from "../menu/triggers/SelectButton.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
+  import SearchableMenu from "../menu/shad-cn/SearchableMenu.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
@@ -47,15 +41,27 @@ props as needed.
       );
     }
   }
-  let active = false;
-  $: numAvailable = selectableItems?.length ?? 0;
-  $: numShown = selectedItems?.filter((x) => x).length ?? 0;
+  // let active = false;
+  // $: numAvailable = selectableItems?.length ?? 0;
+  // $: numShown = selectedItems?.filter((x) => x).length ?? 0;
 
-  $: numShownString =
-    numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
+  // $: numShownString =
+  //   numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
 </script>
 
-<WithTogglableFloatingElement
+<SearchableMenu
+  on:apply
+  on:deselect-all
+  on:item-clicked
+  on:search
+  on:select-all
+  ariaLabel={label}
+  bind:selectedItems
+  {selectableItems}
+  {tooltipText}
+/>
+
+<!-- <WithTogglableFloatingElement
   alignment="start"
   bind:active
   distance={8}
@@ -90,4 +96,4 @@ props as needed.
     selectedItems={[selectedItems]}
     slot="floating-element"
   />
-</WithTogglableFloatingElement>
+</WithTogglableFloatingElement> -->

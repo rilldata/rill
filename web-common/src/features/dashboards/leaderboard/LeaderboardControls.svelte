@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import SelectMenu from "@rilldata/web-common/components/menu/shad-cn/SelectMenu.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
@@ -136,14 +136,10 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <div class="whitespace-nowrap">showing</div>
-
       <SelectMenu
-        paddingTop={2}
-        paddingBottom={2}
+        fixedText="showing"
         {options}
-        {selection}
-        alignment="end"
+        selections={[selection.key]}
         on:select={handleMeasureUpdate}
       />
 
