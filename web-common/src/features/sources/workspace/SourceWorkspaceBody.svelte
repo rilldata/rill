@@ -3,8 +3,6 @@
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -14,12 +12,17 @@
   import ErrorPane from "../errors/ErrorPane.svelte";
   import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { slide } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
 
   export let sourceName: string;
-  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
   const sourceStore = useSourceStore(sourceName);
+
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
@@ -38,15 +41,9 @@
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
-  // Layout state
-  const outputPosition = getContext(
-    "rill:app:output-height-tween",
-  ) as Writable<number>;
-  const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween",
-  ) as Writable<number>;
-  // track innerHeight to calculate the size of the editor element.
-  let innerHeight: number;
+  $: workspaceLayout = $workspaces;
+
+  $: tableHeight = workspaceLayout.table.height;
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
@@ -56,22 +53,24 @@
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
-<svelte:window bind:innerHeight />
-
-<div class="h-full pb-3">
+<div class="editor-pane h-full overflow-hidden w-full flex flex-col">
   <div
-    class="p-5"
-    style:height="calc({innerHeight}px - {$outputPosition *
-      $outputVisibilityTween}px - var(--header-height))"
+    class="p-5 size-full flex-shrink-1 overflow-hidden"
+    style:min-height="150px"
   >
     <SourceEditor {sourceName} {yaml} />
   </div>
-  <HorizontalSplitter className="px-5" />
-  <div class="p-5" style:height="{$outputPosition}px">
-    <div
-      class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
-        'brightness-90'} transition duration-200"
-    >
+
+  <div
+    class="p-5 w-full relative flex flex-none flex-col gap-2"
+    style:height="{$tableHeight}px"
+    style:max-height="75%"
+    transition:slide={{ duration: 300, easing: quintOut }}
+  >
+    <Resizer max={600} direction="NS" side="top" bind:dimension={$tableHeight}>
+      <HorizontalSplitter />
+    </Resizer>
+    <div class="table-wrapper" class:brightness-90={isSourceUnsaved}>
       {#if !$allErrors?.length}
         {#key sourceName}
           <ConnectedPreviewTable
@@ -85,3 +84,10 @@
     </div>
   </div>
 </div>
+
+<style lang="postcss">
+  .table-wrapper {
+    transition: filter 200ms;
+    @apply rounded w-full overflow-hidden border-gray-200 border-2 h-full;
+  }
+</style>

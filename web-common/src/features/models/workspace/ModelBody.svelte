@@ -20,13 +20,15 @@
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
-  import type { LayoutElement } from "../../../layout/workspace/types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { quintOut } from "svelte/easing";
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -39,16 +41,12 @@
     "rill:app:query-highlight",
   );
 
-  $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = createRuntimeServicePutFile();
-
   const limit = 150;
 
-  // track innerHeight to calculate the size of the editor element.
-  let innerHeight: number;
+  let errors: string[] = [];
 
-  let showPreview = true;
-  let modelPath: string;
+  $: runtimeInstanceId = $runtime.instanceId;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
@@ -59,7 +57,6 @@
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
 
-  let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
   $: allErrors = getAllErrorsForFile(
@@ -79,17 +76,27 @@
 
   $: runtimeError = $tableQuery.error?.response.data;
 
-  const outputLayout = getContext(
-    "rill:app:output-layout",
-  ) as Writable<LayoutElement>;
-  const outputPosition = getContext(
-    "rill:app:output-height-tween",
-  ) as Writable<number>;
-  const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween",
-  ) as Writable<number>;
+  $: workspaceLayout = $workspaces;
 
-  async function updateModelContent(content: string) {
+  $: tableHeight = workspaceLayout.table.height;
+  $: tableVisible = workspaceLayout.table.visible;
+
+  $: selections = $queryHighlight?.map((selection) => ({
+    from: selection?.referenceIndex,
+    to: selection?.referenceIndex + selection?.reference?.length,
+  })) as SelectionRange[];
+
+  $: {
+    errors = [];
+    // only add error if sql is present
+    if (modelSql !== "") {
+      if (modelError) errors.push(modelError);
+      if (runtimeError) errors.push(runtimeError.message);
+    }
+  }
+
+  async function updateModelContent(e: CustomEvent<{ content: string }>) {
+    const { content } = e.detail;
     const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
 
     try {
@@ -115,83 +122,60 @@
     }
   }
 
-  $: selections = $queryHighlight?.map((selection) => ({
-    from: selection?.referenceIndex,
-    to: selection?.referenceIndex + selection?.reference?.length,
-  })) as SelectionRange[];
-
-  let errors: string[] = [];
-  $: {
-    errors = [];
-    // only add error if sql is present
-    if (modelSql !== "") {
-      if (modelError) errors.push(modelError);
-      if (runtimeError) errors.push(runtimeError.message);
-    }
-  }
-
   const debounceUpdateModelContent = debounce(
     updateModelContent,
     QUERY_DEBOUNCE_TIME,
   );
 </script>
 
-<svelte:window bind:innerHeight />
-
-<div class="editor-pane h-full pb-3">
-  <div
-    class="p-5"
-    style:height="calc({innerHeight}px - {$outputPosition *
-      $outputVisibilityTween}px - var(--header-height))"
-  >
-    {#if hasModelSql}
-      <div class="h-full grid overflow-auto">
-        {#key modelName}
-          <Editor
-            content={modelSql}
-            {selections}
-            focusOnMount={focusEditorOnMount}
-            on:write={(evt) => debounceUpdateModelContent(evt.detail.content)}
-          />
-        {/key}
-      </div>
-    {/if}
-  </div>
-  {#if $outputLayout.visible}
-    <HorizontalSplitter className="px-5" />
-  {/if}
+<div class="editor-pane h-full overflow-hidden w-full flex flex-col">
   {#if hasModelSql}
-    <div class="p-5 flex flex-col gap-6" style:height="{$outputPosition}px">
-      <div
-        class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
-          'hidden'}"
+    <div
+      class="p-5 size-full flex-shrink-1 overflow-hidden"
+      style:min-height="150px"
+    >
+      {#key modelName}
+        <Editor
+          content={modelSql}
+          {selections}
+          focusOnMount={focusEditorOnMount}
+          on:write={debounceUpdateModelContent}
+        />
+      {/key}
+    </div>
+  {/if}
+
+  {#if $tableVisible}
+    <div
+      class="p-5 w-full relative flex flex-none flex-col gap-2"
+      style:height="{$tableHeight}px"
+      style:max-height="75%"
+      transition:slide={{ duration: 300, easing: quintOut }}
+    >
+      <Resizer
+        max={600}
+        direction="NS"
+        side="top"
+        bind:dimension={$tableHeight}
       >
-        <div
-          style="{modelError || runtimeError ? 'filter: brightness(.9);' : ''}
-            transition: filter 200ms;
-          "
-          class="relative h-full"
-        >
-          {#if !$modelEmpty?.data}
-            <ConnectedPreviewTable
-              objectName={$modelQuery?.data?.model?.state?.table}
-              loading={resourceIsLoading($modelQuery?.data)}
-              {limit}
-            />
-          {/if}
-        </div>
-        <!--TODO {:else}-->
-        <!--  <div-->
-        <!--    class="grid items-center justify-center pt-3 text-gray-600"-->
-        <!--  >-->
-        <!--    no columns selected-->
-        <!--  </div>-->
-        <!--{/if}-->
+        <HorizontalSplitter />
+      </Resizer>
+      <div
+        class="table-wrapper"
+        class:brightness-90={modelError || runtimeError}
+      >
+        {#if !$modelEmpty?.data}
+          <ConnectedPreviewTable
+            objectName={$modelQuery?.data?.model?.state?.table}
+            loading={resourceIsLoading($modelQuery?.data)}
+            {limit}
+          />
+        {/if}
       </div>
       {#if errors.length > 0}
         <div
           transition:slide={{ duration: 200 }}
-          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+          class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
         >
           {#each errors as error}
             <div>{error}</div>
@@ -201,3 +185,10 @@
     </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  .table-wrapper {
+    transition: filter 200ms;
+    @apply relative rounded w-full overflow-hidden border-gray-200 border-2 h-full;
+  }
+</style>
