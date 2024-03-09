@@ -47,7 +47,7 @@ Rill will automatically select several time zones that should be pinned to the t
 
 **`default_dimensions`**
 
-For dashboards with wide tables, setting default dimensions is a good way to make sure that users can focus on the primary analyses and ensure a positive first experience. Each dimension listed under the `default_dimensions` setting would appear on the screen, while the remainder of the dimensions would be hidden (and still available for selection under filters). Common use cases for setting default fields would be to simplify dashboards on initial load, to narrow the dashboard to the most used fields, and to avoid high cardinality fields (that may take longer to load, but are used less often so improve performance). An example addition to the dashboard yaml file is below.
+For dashboards with wide tables, setting default dimensions is a good way to make sure that users can focus on the primary analyses and ensure a positive first experience. Each dimension listed under the `default_dimensions` setting would appear on the screen, while the remainder of the dimensions would be hidden (and still available for selection under filters). Common use cases for setting default fields would be to simplify dashboards on initial load, to narrow the dashboard to the most used fields, and to avoid high cardinality fields (that may take longer to load, but are used less often so improve performance). An example addition to the `dashboard.yaml` file is below.
 
 ```yaml
 default_dimensions:
@@ -76,7 +76,7 @@ colors:
   secondary: lime 
 ```
 
-Once you have created that file, update the dashboard yaml with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
+Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
 
 `default_theme: <name of theme yaml file>` 
 

@@ -16,7 +16,7 @@ Users can add or hide dimensions and metrics to a subset of fields they wish to 
 ![hidedims](../../../static/img/explore/filters/hide.png)
 
 :::tip hiding metrics and dimensions by default
-You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](../../build/dashboards/create-themes.md#setting-default-views-for-dashboards).
+You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](../../build/dashboards/customize.md#setting-default-views-for-dashboards).
 :::
 
 ## Filter by Dimensions
