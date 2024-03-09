@@ -7,6 +7,10 @@ sidebar_position: 20
 
 ## Overview
 
+Within the dashboard yaml, you can apply aggregate sql expressions to create derived metrics or non-aggregate expressions to adjust dimension settings. SQL expressions are specific to the underlying OLAP engine so keep that in mind when editing directly in the yaml. 
+
+We continually get questions about common metric definitions and other tricks so will update this page frequently. [Please let us know](../../contact.md) if you have questions or are stuck on an expression so we can add more examples.
+
 ## Metric Expressions
 
 ### Fixed Metrics / "Sum of Max"
