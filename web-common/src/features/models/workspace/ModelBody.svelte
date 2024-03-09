@@ -129,14 +129,12 @@
 <div class="editor-pane h-full overflow-hidden w-full flex flex-col">
   {#if hasModelSql}
     <WorkspaceEditorContainer>
-      {#key modelName}
-        <Editor
-          content={modelSql}
-          {selections}
-          focusOnMount={focusEditorOnMount}
-          on:write={debounceUpdateModelContent}
-        />
-      {/key}
+      <Editor
+        content={modelSql}
+        {selections}
+        focusOnMount={focusEditorOnMount}
+        on:write={debounceUpdateModelContent}
+      />
     </WorkspaceEditorContainer>
   {/if}
 

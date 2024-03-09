@@ -53,12 +53,10 @@
 
   <WorkspaceTableContainer fade={isSourceUnsaved}>
     {#if !$allErrors?.length}
-      {#key sourceName}
-        <ConnectedPreviewTable
-          objectName={$sourceQuery?.data?.source?.state?.table}
-          loading={resourceIsLoading($sourceQuery?.data)}
-        />
-      {/key}
+      <ConnectedPreviewTable
+        objectName={$sourceQuery?.data?.source?.state?.table}
+        loading={resourceIsLoading($sourceQuery?.data)}
+      />
     {:else if $allErrors[0].message}
       <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
     {/if}

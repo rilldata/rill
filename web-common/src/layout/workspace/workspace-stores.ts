@@ -21,8 +21,8 @@ type WorkspaceLayout = {
 class WorkspaceLayoutStore {
   private inspectorVisible = writable<boolean>(true);
   private inspectorWidth = writable<number>(DEFAULT_INSPECTOR_WIDTH);
-  private tableHeight = writable<number>(DEFAULT_PREVIEW_TABLE_HEIGHT);
   private tableVisible = writable<boolean>(true);
+  private tableHeight = writable<number>(DEFAULT_PREVIEW_TABLE_HEIGHT);
 
   constructor(key: string) {
     const history = localStorage.getItem(key);
@@ -44,9 +44,7 @@ class WorkspaceLayoutStore {
       750,
     );
 
-    this.subscribe((v) => {
-      debouncer(v);
-    });
+    this.subscribe((v) => debouncer(v));
   }
 
   subscribe = derived(
@@ -93,24 +91,22 @@ class WorkspaceLayoutStore {
 }
 
 class Workspaces {
-  private workspaces = writable(new Map<string, WorkspaceLayoutStore>());
+  private workspaces = new Map<string, WorkspaceLayoutStore>();
 
-  subscribe = derived([page, this.workspaces], ([$page, $inspectors]) => {
+  subscribe = derived([page], ([$page]) => {
     const context = $page.route.id ?? crypto.randomUUID();
     const assetId = $page.params.name;
 
     const key = `${context}:${assetId}`;
 
-    let store = $inspectors.get(key);
+    let store = this.workspaces.get(key);
+
     if (!store) {
       store = new WorkspaceLayoutStore(key);
-      $inspectors.set(key, store);
+      this.workspaces.set(key, store);
     }
     return store;
   }).subscribe;
-
-  set = this.workspaces.set;
-  update = this.workspaces.update;
 }
 
 export const workspaces = new Workspaces();

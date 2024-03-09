@@ -15,7 +15,7 @@
   class="p-5 w-full relative flex flex-none flex-col gap-2"
   style:height="{$tableHeight}px"
   style:max-height="75%"
-  transition:slide={{ duration: 300, easing: quintOut }}
+  out:slide={{ duration: 300, easing: quintOut }}
 >
   <Resizer max={600} direction="NS" side="top" bind:dimension={$tableHeight}>
     <HorizontalSplitter />
