@@ -30,6 +30,8 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import { duplicateSourceName } from "../sources-store";
+  import DuplicateSource from "./DuplicateSource.svelte";
 
   export let open: boolean;
 
@@ -137,7 +139,9 @@
     {:else if step === 2}
       <h2 class="flex gap-x-1 items-center">
         <span>
-          {#if selectedConnector}
+          {#if $duplicateSourceName !== null}
+            Duplicate source
+          {:else if selectedConnector}
             {selectedConnector?.displayName}
           {/if}
 
@@ -174,7 +178,12 @@
       </div>
     {:else if step === 2}
       {#if selectedConnector}
-        {#if selectedConnector.name === "local_file"}
+        {#if $duplicateSourceName !== null}
+          <DuplicateSource
+            on:cancel={onCompleteDialog}
+            on:complete={onCompleteDialog}
+          />
+        {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
         {:else if selectedConnector.name === "clickhouse"}
           <ClickHouseInstructions on:back={resetModal} />
