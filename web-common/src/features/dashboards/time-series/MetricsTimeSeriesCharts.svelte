@@ -132,13 +132,18 @@
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-      const [, startPos] = bisectData(
+      const { position: startPos } = bisectData(
         start,
         "center",
         "ts_position",
         slicedData,
       );
-      const [, endPos] = bisectData(end, "center", "ts_position", slicedData);
+      const { position: endPos } = bisectData(
+        end,
+        "center",
+        "ts_position",
+        slicedData,
+      );
 
       return {
         hover: isScrubbing ? undefined : state.hover,
@@ -176,7 +181,7 @@
         hover: undefined,
       }));
     } else {
-      const [, columnNum] = bisectData(
+      const { position: columnNum } = bisectData(
         mouseoverValue.x,
         "center",
         "ts_position",

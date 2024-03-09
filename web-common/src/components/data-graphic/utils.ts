@@ -304,11 +304,14 @@ export function bisectData<T>(
   direction: "left" | "right" | "center",
   accessor: keyof T,
   data: ArrayLike<T>,
-): [T, number] {
+): { position: number; entry: T } {
   const bisect = bisector<T, unknown>((d) => d[accessor])[direction];
 
-  const pos = bisect(data, value);
-  return [data[pos], pos];
+  const position = bisect(data, value);
+  return {
+    position,
+    entry: data[position],
+  };
 }
 
 /** For a scale domain returns a formatter for axis label and super label */

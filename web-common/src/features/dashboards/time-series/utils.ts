@@ -97,7 +97,12 @@ export function getBisectedTimeFromCordinates(
     new Date(scaleStore.invert(value)),
     grainLabel,
   );
-  const [bisector] = bisectData(roundedValue, "center", accessor, data);
+  const { entry: bisector } = bisectData(
+    roundedValue,
+    "center",
+    accessor,
+    data,
+  );
   if (!bisector || typeof bisector === "number") return null;
   const bisected = bisector[accessor];
   if (!bisected) return null;
