@@ -1,6 +1,6 @@
 ---
-title: Share Dashboards 
-sidebar_label: Share Dashboards 
+title: Deploy Dashboards 
+sidebar_label: Deploy Dashboards 
 sidebar_position: 00
 ---
 
