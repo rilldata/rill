@@ -133,10 +133,13 @@ test.describe("leaderboard and dimension table sorting", () => {
      * DIMENSION TABLE
      */
     // click publisher leaderboard header to enter dimension table for that dim
-    await page.locator("#svelte").getByText("Publisher").click();
+    await page
+      .locator("#svelte")
+      .getByText("Publisher", { exact: true })
+      .click();
 
     // click publisher column header to sort by publisher
-    await page.getByRole("button", { name: "Publisher" }).click();
+    await page.getByRole("button", { name: "Publisher", exact: true }).click();
     await assertAAboveB(
       page
         .locator("div")
