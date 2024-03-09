@@ -1,2 +1,2 @@
 kind : api
-sql: select id, timestamp, publisher, domain, bid_price from ad_bids where domain = '{{ .domain }}' LIMIT 5
+sql: select id, timestamp, publisher, domain, bid_price from ad_bids where domain = '{{ .args.domain }}' LIMIT 5

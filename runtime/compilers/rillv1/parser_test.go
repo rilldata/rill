@@ -1359,7 +1359,7 @@ metrics:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
 			Paths: []string{"/apis/a2.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Resolver:           "Metrics",
+				Resolver:           "MetricsSQL",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},

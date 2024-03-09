@@ -43,7 +43,7 @@ func (p *Parser) parseAPI(node *Node) error {
 		}
 
 		count++
-		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
+		resolver = "MetricsSQL" // TODO: Replace with a constant when the resolver abstractions are implemented
 		resolverProps["sql"] = tmp.Metrics.SQL
 		// NOTE: May add support for outright dimensions:, measures:, etc. here
 	}
@@ -96,14 +96,14 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 	// Handle metrics resolver
 	if raw.MetricsSQL != "" {
 		count++
-		resolver = "Metrics" // TODO: Replace with a constant when the resolver abstractions are implemented
+		resolver = "MetricsSQL"
 		resolverProps["sql"] = raw.MetricsSQL
 	}
 
 	// Handle API resolver
 	if raw.API != "" {
 		count++
-		resolver = "API" // TODO: Replace with a constant when the resolver abstractions are implemented
+		resolver = "API"
 		resolverProps["api"] = raw.API
 		refs = append(refs, ResourceName{Kind: ResourceKindAPI, Name: raw.API})
 		if raw.Args != nil {

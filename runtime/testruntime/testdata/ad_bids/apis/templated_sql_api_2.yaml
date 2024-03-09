@@ -6,4 +6,4 @@ sql: |
     -- can access user attributes with templating
     {{ if (ne .user.domain "") }} domain = '{{ .user.domain }}' {{ end }}
     -- can use Sprig functions, e.g. to easily set defaults
-    {{ if (not .isExport) }} LIMIT {{ default 20 .pageSize }} {{ end }}
+    {{ if (not .export) }} LIMIT {{ default 20 .args.pageSize }} {{ end }}

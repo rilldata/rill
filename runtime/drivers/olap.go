@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -96,6 +98,11 @@ type Table struct {
 	Schema         *runtimev1.StructType
 }
 
+// IngestionSummary is details about ingestion
+type IngestionSummary struct {
+	BytesIngested int64
+}
+
 // Dialect enumerates OLAP query languages.
 type Dialect int
 
@@ -121,7 +128,10 @@ func (d Dialect) String() string {
 	}
 }
 
-// IngestionSummary is details about ingestion
-type IngestionSummary struct {
-	BytesIngested int64
+// EscapeIdentifier returns an escaped SQL identifier in the dialect.
+func (d Dialect) EscapeIdentifier(ident string) string {
+	if ident == "" {
+		return ident
+	}
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
 }

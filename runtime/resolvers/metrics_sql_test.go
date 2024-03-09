@@ -9,9 +9,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Test_parsedSQL(t *testing.T) {
@@ -141,14 +141,14 @@ func Test_parsedSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			props, err := structpb.NewStruct(map[string]any{"sql": tt.sql})
-			require.NoError(t, err)
+			c := &metricsSQLCompiler{
+				instanceID: instanceID,
+				ctrl:       ctrl,
+				sql:        tt.sql,
+				dialect:    drivers.DialectDuckDB,
+			}
 
-			got, deps, err := expandMetricsViewSQL(context.Background(), ctrl, &runtime.APIResolverOptions{
-				InstanceID:         instanceID,
-				Resolver:           "MetricsSQL",
-				ResolverProperties: props,
-			}, tt.sql)
+			got, _, deps, err := c.compile(context.Background())
 			require.NoError(t, err)
 
 			require.Subset(t, deps, tt.want.deps)
@@ -169,14 +169,12 @@ func TestSimpleMVSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "simple_mv_sql_api")
 	require.NoError(t, err)
 
-	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:            rt,
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
 		UserAttributes:     nil,
-		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -196,14 +194,12 @@ func TestTemplateMVSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api")
 	require.NoError(t, err)
 
-	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:            rt,
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "yahoo.com"},
 		UserAttributes:     nil,
-		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -222,14 +218,12 @@ func TestPolicyMVSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
-	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:            rt,
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
 		UserAttributes:     map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"},
-		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -245,14 +239,12 @@ func TestPolicyMVSQLApi(t *testing.T) {
 	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
-	res, err = runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:            rt,
+	res, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
 		UserAttributes:     map[string]any{"domain": "msn.com", "email": "user@msn.com"},
-		Priority:           0,
 	})
 
 	require.NoError(t, err)
