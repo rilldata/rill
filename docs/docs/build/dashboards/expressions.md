@@ -1,7 +1,7 @@
 ---
-title: "Common Expressions"
+title: "Advanced Expressions"
 description: Tips & Tricks for Defining Metrics & Dimensions
-sidebar_label: "Common Expressions"
+sidebar_label: "Advanced Expressions"
 sidebar_position: 20
 ---
 
@@ -27,7 +27,7 @@ Note: the syntax for fixed metrics is specific to DuckDB as an OLAP engine.
 
 ## Dimensions Expressions
 
-For those looking to add id to name mappings, you can utilize expressions in your Dimension settings.  To utilize an expression, replace the `column` property with `expression` and apply a non-aggregate sql expression. Common use cases would be editing fields such as `string_split(domain, '.')` or combining values `concat(domain, child_url)`.
+To utilize an expression, replace the `column` property with `expression` and apply a non-aggregate sql expression. Common use cases would be editing fields such as `string_split(domain, '.')` or combining values `concat(domain, child_url)`.
 
 ### Druid Lookups
 
