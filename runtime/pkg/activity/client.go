@@ -112,7 +112,12 @@ func (c *Client) RecordMetric(ctx context.Context, name string, value float64, a
 		EventTime: time.Now(),
 		EventType: EventTypeMetric,
 		EventName: name,
-		Data:      c.resolveAttrs(ctx, attrs, attribute.Float64("value", value)),
+		Data: c.resolveAttrs(ctx, attrs,
+			attribute.Float64("value", value),
+			// Backwards compatibility with a previous format (before event_name and event_time)
+			attribute.String("name", name),
+			attribute.String("time", time.Now().Format(time.RFC3339)),
+		),
 	})
 }
 
