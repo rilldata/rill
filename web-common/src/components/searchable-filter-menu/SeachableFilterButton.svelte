@@ -41,12 +41,6 @@ props as needed.
       );
     }
   }
-  // let active = false;
-  // $: numAvailable = selectableItems?.length ?? 0;
-  // $: numShown = selectedItems?.filter((x) => x).length ?? 0;
-
-  // $: numShownString =
-  //   numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
 </script>
 
 <SearchableMenu
@@ -61,40 +55,3 @@ props as needed.
   {selectableItems}
   {tooltipText}
 />
-
-<!-- <WithTogglableFloatingElement
-  alignment="start"
-  bind:active
-  distance={8}
-  let:toggleFloatingElement
->
-  <Tooltip
-    activeDelay={60}
-    alignment="start"
-    distance={8}
-    location="bottom"
-    suppress={active}
-  >
-    <SelectButton {active} on:click={toggleFloatingElement}
-      ><strong>{numShownString} {label}</strong></SelectButton
-    >
-    <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
-      <TooltipContent maxWidth="400px">
-        {tooltipText}
-      </TooltipContent>
-    </div>
-  </Tooltip>
-  <SearchableFilterDropdown
-    let:toggleFloatingElement
-    on:apply
-    on:click-outside={toggleFloatingElement}
-    on:deselect-all
-    on:escape={toggleFloatingElement}
-    on:item-clicked
-    on:search
-    on:select-all
-    selectableGroups={[{ name: "", items: selectableItems }]}
-    selectedItems={[selectedItems]}
-    slot="floating-element"
-  />
-</WithTogglableFloatingElement> -->
