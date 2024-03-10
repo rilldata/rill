@@ -12,6 +12,7 @@
   export let selectedItems: boolean[];
   export let tooltipText: string;
   export let ariaLabel: string;
+  export let category: string;
   export let disabled = false;
 
   let active = false;
@@ -45,7 +46,7 @@
       suppress={active}
     >
       <Button builders={[builder]} type="text" label={ariaLabel} on:click>
-        <strong>{`${numShownString} ${ariaLabel}`}</strong>
+        <strong>{`${numShownString} ${category}`}</strong>
         <span
           class="transition-transform"
           class:hidden={disabled}

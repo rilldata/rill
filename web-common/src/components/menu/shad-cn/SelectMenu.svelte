@@ -11,7 +11,7 @@
   export let fixedText = "";
   export let disabled = false;
   export let active = false;
-  export let ariaLabel: string | null = null;
+  export let ariaLabel: string;
 
   $: firstSelectedKey = selections?.[0] ?? null;
 

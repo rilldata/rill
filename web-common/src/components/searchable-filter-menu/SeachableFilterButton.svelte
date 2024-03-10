@@ -55,7 +55,8 @@ props as needed.
   on:item-clicked
   on:search
   on:select-all
-  ariaLabel={label}
+  ariaLabel={tooltipText}
+  category={label}
   bind:selectedItems
   {selectableItems}
   {tooltipText}
