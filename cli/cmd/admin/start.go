@@ -156,6 +156,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			case "", "noop":
 				activityClient = activity.NewNoopClient()
 			case "kafka":
+				// NOTE: ActivityUISinkKafkaTopic specifically denotes a topic for UI events.
+				// This is acceptable since the UI is presently the only source that records events on the admin server's telemetry.
+				// However, if other events are emitted from the admin server in the future, we should refactor to emit all events of any kind to a single topic.
+				// (And handle multiplexing of different event types downstream.)
 				sink, err := activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivityUISinkKafkaTopic, logger)
 				if err != nil {
 					logger.Fatal("error creating kafka sink", zap.Error(err))

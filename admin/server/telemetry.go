@@ -7,8 +7,8 @@ import (
 )
 
 func (s *Server) RecordEvents(ctx context.Context, req *adminv1.RecordEventsRequest) (*adminv1.RecordEventsResponse, error) {
-	for _, je := range req.JsonEvents {
-		err := s.uiActivity.RecordRawJSON([]byte(je))
+	for _, e := range req.Events {
+		err := s.activity.RecordRaw(e.AsMap())
 		if err != nil {
 			return nil, err
 		}

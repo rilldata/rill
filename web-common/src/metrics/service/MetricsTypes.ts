@@ -17,11 +17,13 @@ export interface CommonUserFields {
 }
 
 export interface MetricsEvent extends CommonFields, CommonUserFields {
+  // Base fields required by the telemetry service. For details, see rill/runtime/pkg/activity/README.md.
   event_id: string;
   event_time: string;
-  event_datetime: number;
   event_type: string;
   event_name: string;
+  // Legacy:
+  event_datetime: number;
 }
 
 export enum MetricsEventSpace {

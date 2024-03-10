@@ -764,34 +764,34 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Record(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
 			// }
 
 			// walSize, err := humanReadableSizeToBytes(stat.WalSize)
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Record(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
 			// }
 
 			// memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Record(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
 			// }
 
 			// memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Record(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
 			// }
 
-			// c.activity.Record(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
-			// c.activity.Record(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
-			// c.activity.Record(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
-			// c.activity.Record(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
 
 		case <-c.ctx.Done():
 			statTicker.Stop()

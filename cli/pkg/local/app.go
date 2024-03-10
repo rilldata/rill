@@ -508,8 +508,17 @@ func (a *App) trackingHandler() http.Handler {
 			return
 		}
 
+		// Parse the body as JSON
+		var event map[string]any
+		err = json.Unmarshal(body, &event)
+		if err != nil {
+			a.BaseLogger.Info("failed to parse telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		// Pass as raw event to the telemetry client
-		err = a.activity.RecordRawJSON(body)
+		err = a.activity.RecordRaw(event)
 		if err != nil {
 			a.BaseLogger.Info("failed to proxy telemetry event from UI", zap.Error(err))
 		}

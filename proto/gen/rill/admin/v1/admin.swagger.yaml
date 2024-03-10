@@ -2822,10 +2822,10 @@ definitions:
   v1RecordEventsRequest:
     type: object
     properties:
-      jsonEvents:
+      events:
         type: array
         items:
-          type: string
+          type: object
   v1RecordEventsResponse:
     type: object
   v1RemoveBookmarkResponse:

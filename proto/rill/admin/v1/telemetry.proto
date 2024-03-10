@@ -2,6 +2,7 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 
 service TelemetryService {
   // RecordEvents sends a batch of telemetry events.
@@ -15,7 +16,7 @@ service TelemetryService {
 }
 
 message RecordEventsRequest {
-  repeated string json_events = 1;
+  repeated google.protobuf.Struct events = 1;
 }
 
 message RecordEventsResponse {}

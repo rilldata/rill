@@ -2,7 +2,6 @@ package activity
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -196,16 +195,11 @@ func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.Key
 	})
 }
 
-// RecordRawJSON proxies a raw JSON-encoded event to the client's sink.
+// RecordRaw proxies a raw event represented as a map to the client's sink.
 // It does not enrich the provided event with any of the client's contextual attributes.
 // It returns an error if the event does not contain the required fields (see the Event type for required fields).
-func (c *Client) RecordRawJSON(jsonData []byte) error {
-	// Parse raw event to a map
-	var data map[string]any
-	err := json.Unmarshal(jsonData, &data)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal raw event: %w", err)
-	}
+func (c *Client) RecordRaw(data map[string]any) error {
+	// Ensure the event is not nil
 	if data == nil {
 		return fmt.Errorf("empty event")
 	}

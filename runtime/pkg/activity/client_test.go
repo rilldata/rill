@@ -48,10 +48,11 @@ func TestEventMarshal(t *testing.T) {
 	e := sink.Events()[0]
 	e.EventID = "8cb858a4-2d5a-4a80-ae9b-fb5b905f18a2"
 	e.EventTime = time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	e.Data["time"] = e.EventTime
 	data, err := e.MarshalJSON()
 	require.NoError(t, err)
 
-	expected := `{"bool":true,"bool_slice":[false,true],"event_id":"8cb858a4-2d5a-4a80-ae9b-fb5b905f18a2","event_name":"test_event","event_time":"2023-01-01T00:00:00Z","event_type":"metric","float64":0,"float64_slice":[-1,0,1],"int":0,"int64":0,"int64_slice":[-1,0,1],"int_slice":[-1,0,1],"string":"value","string_slice":["value1","value2"],"value":1}`
+	expected := `{"bool":true,"bool_slice":[false,true],"event_id":"8cb858a4-2d5a-4a80-ae9b-fb5b905f18a2","event_name":"test_event","event_time":"2023-01-01T00:00:00Z","event_type":"metric","float64":0,"float64_slice":[-1,0,1],"int":0,"int64":0,"int64_slice":[-1,0,1],"int_slice":[-1,0,1],"name":"test_event","string":"value","string_slice":["value1","value2"],"time":"2023-01-01T00:00:00Z","value":1}`
 	require.Equal(t, expected, string(data))
 }
 

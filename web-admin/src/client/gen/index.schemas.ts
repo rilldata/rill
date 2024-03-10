@@ -468,8 +468,10 @@ export interface V1RecordEventsResponse {
   [key: string]: any;
 }
 
+export type V1RecordEventsRequestEventsItem = { [key: string]: any };
+
 export interface V1RecordEventsRequest {
-  jsonEvents?: string[];
+  events?: V1RecordEventsRequestEventsItem[];
 }
 
 export interface V1PullVirtualRepoResponse {

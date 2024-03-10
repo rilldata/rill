@@ -4,16 +4,16 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, Struct } from "@bufbuild/protobuf";
 
 /**
  * @generated from message rill.admin.v1.RecordEventsRequest
  */
 export class RecordEventsRequest extends Message<RecordEventsRequest> {
   /**
-   * @generated from field: repeated string json_events = 1;
+   * @generated from field: repeated google.protobuf.Struct events = 1;
    */
-  jsonEvents: string[] = [];
+  events: Struct[] = [];
 
   constructor(data?: PartialMessage<RecordEventsRequest>) {
     super();
@@ -23,7 +23,7 @@ export class RecordEventsRequest extends Message<RecordEventsRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.RecordEventsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "json_events", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "events", kind: "message", T: Struct, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RecordEventsRequest {

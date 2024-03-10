@@ -5,7 +5,8 @@ import (
 	"time"
 )
 
-// Event is a telemetry event. It consists of a few required common fields and a payload of event-specific data.
+// Event is a telemetry event. It consists of a few required fields that are common to all events and a payload of type-specific data.
+// All the common fields are prefixed with "event_" to avoid conflicts with the payload data.
 type Event struct {
 	EventID   string
 	EventTime time.Time
@@ -23,6 +24,8 @@ func (e Event) MarshalJSON() ([]byte, error) {
 	e.Data["event_time"] = e.EventTime.UTC().Format(time.RFC3339Nano)
 	e.Data["event_type"] = e.EventType
 	e.Data["event_name"] = e.EventName
+
+	// Then serialize it.
 	return json.Marshal(e.Data)
 }
 
