@@ -125,10 +125,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		}
 
 		if c.activity != nil {
-			c.activity.EmitMetric(ctx, "clickhouse_queue_latency_ms", float64(queueLatency), attrs...)
-			c.activity.EmitMetric(ctx, "clickhouse_total_latency_ms", float64(totalLatency), attrs...)
+			c.activity.RecordMetric(ctx, "clickhouse_queue_latency_ms", float64(queueLatency), attrs...)
+			c.activity.RecordMetric(ctx, "clickhouse_total_latency_ms", float64(totalLatency), attrs...)
 			if acquired {
-				c.activity.EmitMetric(ctx, "clickhouse_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
+				c.activity.RecordMetric(ctx, "clickhouse_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
 			}
 		}
 	}()

@@ -382,7 +382,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 		}
-		r.C.Activity.EmitMetric(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		r.C.Activity.RecordMetric(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
 
 		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
 	}()

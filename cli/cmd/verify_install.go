@@ -12,7 +12,7 @@ func verifyInstallCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short:  "Verify installation (called by install script)",
 		Hidden: !ch.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ch.Telemetry(cmd.Context()).EmitUserAction(activity.UserActionInstallSuccess)
+			ch.Telemetry(cmd.Context()).RecordBehavioralLegacy(activity.BehavioralEventInstallSuccess)
 			return nil
 		},
 	}

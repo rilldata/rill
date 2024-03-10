@@ -81,7 +81,7 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (Sink, error) {
 }
 
 func (s *kafkaSink) Emit(event Event) error {
-	message, err := event.Marshal()
+	message, err := event.MarshalJSON()
 	if err != nil {
 		return err
 	}

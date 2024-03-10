@@ -65,6 +65,7 @@ type Options struct {
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	adminv1.UnsafeAIServiceServer
+	adminv1.UnsafeTelemetryServiceServer
 	logger        *zap.Logger
 	admin         *admin.Service
 	opts          *Options
@@ -80,6 +81,8 @@ type Server struct {
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 var _ adminv1.AIServiceServer = (*Server)(nil)
+
+var _ adminv1.TelemetryServiceServer = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity *activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)

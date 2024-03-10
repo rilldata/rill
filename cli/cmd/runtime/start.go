@@ -176,12 +176,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating kafka sink", zap.Error(err))
 				}
-				activityClient = activity.NewClient(sink, logger, &activity.ClientOptions{
-					ServiceName:   "runtime-server",
-					Version:       ch.Version.Number,
-					VersionCommit: ch.Version.Commit,
-					VersionDev:    ch.Version.IsDev(),
-				})
+				activityClient = activity.NewClient(sink, logger).WithServiceName("runtime-server").WithServiceVersion(ch.Version.Number, ch.Version.Commit)
+				if ch.Version.IsDev() {
+					activityClient = activityClient.WithIsDev()
+				}
 			default:
 				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
 			}

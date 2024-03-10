@@ -17,8 +17,11 @@ export interface CommonUserFields {
 }
 
 export interface MetricsEvent extends CommonFields, CommonUserFields {
+  event_id: string;
+  event_time: string;
   event_datetime: number;
   event_type: string;
+  event_name: string;
 }
 
 export enum MetricsEventSpace {

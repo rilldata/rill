@@ -142,8 +142,8 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 			return h.activityClient
 		}
 
-		// Create a real telemetry client that sends events to the intake server.
-		sink := activity.NewIntakeSink(zap.NewNop(), activity.IntakeSinkOptions{
+		// Create a sink that sends events to the intake server.
+		intakeSink := activity.NewIntakeSink(zap.NewNop(), activity.IntakeSinkOptions{
 			IntakeURL:      telemetryIntakeURL,
 			IntakeUser:     telemetryIntakeUser,
 			IntakePassword: telemetryIntakePassword,
@@ -151,22 +151,31 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 			SinkInterval:   time.Second,
 		})
 
-		h.activityClient = activity.NewClient(sink, zap.NewNop(), &activity.ClientOptions{
-			ServiceName:   telemetryServiceName,
-			Version:       h.Version.Number,
-			VersionCommit: h.Version.Commit,
-			VersionDev:    h.Version.IsDev(),
+		// Wrap the intake sink in a filter sink that only sends behavioral events.
+		// (Remember, this telemetry client will only be used on local.)
+		sink := activity.NewFilterSink(intakeSink, func(e activity.Event) bool {
+			if e.EventType == activity.EventTypeBehavioral {
+				return true
+			}
+			return false
 		})
+
+		// Create the telemetry client with metadata about the current environment.
+		h.activityClient = activity.NewClient(sink, zap.NewNop())
+		h.activityClient = h.activityClient.WithServiceName(telemetryServiceName).WithServiceVersion(h.Version.Number, h.Version.Commit)
+		if h.Version.IsDev() {
+			h.activityClient = h.activityClient.WithIsDev()
+		}
+		h.activityClient = h.activityClient.WithInstallID(installID)
 	}
 
-	// Fetch the current user ID to set on the client.
+	// Fetch the current user ID and set it on the telemetry client.
+	// We do this outside of the client creation block to reset the user ID if the hash changes.
 	var userID string
 	if h.AdminToken() != "" {
 		userID, _ = h.CurrentUserID(ctx)
 	}
-
-	// Set the install ID and user ID on the client.
-	h.activityClient = h.activityClient.WithIdentity(installID, userID)
+	h.activityClient = h.activityClient.WithUserID(userID)
 
 	return h.activityClient
 }

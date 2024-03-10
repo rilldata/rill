@@ -326,7 +326,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		_ = browser.Open(res.Project.FrontendUrl)
 	}
 
-	ch.Telemetry(ctx).EmitUserAction(activity.UserActionDeploySuccess)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
 
 	return nil
 }
@@ -335,7 +335,7 @@ func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
 	time.Sleep(2 * time.Second)
 
-	ch.Telemetry(ctx).EmitUserAction(activity.UserActionLoginStart)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
 
 	if err := auth.Login(ctx, ch, redirectURL); err != nil {
 		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
@@ -350,7 +350,7 @@ func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 	}
 
 	// The cmdutil.Helper automatically detects the login and will add the user's ID to the telemetry.
-	ch.Telemetry(ctx).EmitUserAction(activity.UserActionLoginSuccess)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
 
 	return nil
 }
@@ -373,7 +373,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 	// If the user has not already granted access, open browser and poll for access
 	if !res.HasAccess {
 		// Emit start telemetry
-		ch.Telemetry(ctx).EmitUserAction(activity.UserActionGithubConnectedStart)
+		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
 
 		// Print instructions to grant access
 		if !silent {
@@ -411,7 +411,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 
 			if pollRes.HasAccess {
 				// Emit success telemetry
-				ch.Telemetry(ctx).EmitUserAction(activity.UserActionGithubConnectedSuccess)
+				ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
 
 				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
 				ch.PrintfSuccess("You have connected to the %q project in Github.\n", ghRepo)

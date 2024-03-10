@@ -110,7 +110,7 @@ func (s *intakeSink) flush() {
 func (s *intakeSink) send(events []Event) error {
 	body := make([]byte, 0)
 	for _, event := range events {
-		data, err := event.Marshal()
+		data, err := event.MarshalJSON()
 		if err != nil {
 			return fmt.Errorf("could not marshal event: %w", err)
 		}

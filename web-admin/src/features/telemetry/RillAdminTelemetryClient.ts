@@ -5,12 +5,17 @@ import type { TelemetryClient } from "@rilldata/web-common/metrics/service/RillI
 export class RillAdminTelemetryClient implements TelemetryClient {
   public async fireEvent(event: MetricsEvent) {
     try {
-      const resp = await fetch(`${ADMIN_URL}/v1/telemetry`, {
+      const resp = await fetch(`${ADMIN_URL}/v1/telemetry/record`, {
         method: "POST",
         body: JSON.stringify({
-          name: event.app_name + "-ui-telemetry",
-          value: 1,
-          event,
+          jsonEvents: [
+            JSON.stringify({
+              ...event,
+              // For backwards compatibility with previous telemetry format
+              name: event.app_name + "-ui-telemetry",
+              value: 1,
+            }),
+          ],
         }),
         credentials: "include",
       });

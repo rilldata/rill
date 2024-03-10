@@ -117,8 +117,6 @@ import type {
   V1SudoUpdateUserQuotasRequest,
   V1SudoGetResourceResponse,
   AdminServiceSudoGetResourceParams,
-  V1TelemetryResponse,
-  V1TelemetryRequest,
   V1RevokeCurrentAuthTokenResponse,
   V1IssueRepresentativeAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
@@ -4011,55 +4009,6 @@ export const createAdminServiceSudoGetResource = <
   return query;
 };
 
-/**
- * @summary Telemetry sends telemetry data to the server
- */
-export const adminServiceTelemetry = (
-  v1TelemetryRequest: V1TelemetryRequest,
-) => {
-  return httpClient<V1TelemetryResponse>({
-    url: `/v1/telemetry`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: v1TelemetryRequest,
-  });
-};
-
-export type AdminServiceTelemetryMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceTelemetry>>
->;
-export type AdminServiceTelemetryMutationBody = V1TelemetryRequest;
-export type AdminServiceTelemetryMutationError = RpcStatus;
-
-export const createAdminServiceTelemetry = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTelemetry>>,
-    TError,
-    { data: V1TelemetryRequest },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceTelemetry>>,
-    { data: V1TelemetryRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminServiceTelemetry(data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceTelemetry>>,
-    TError,
-    { data: V1TelemetryRequest },
-    TContext
-  >(mutationFn, mutationOptions);
-};
 /**
  * @summary RevokeCurrentAuthToken revoke the current auth token
  */

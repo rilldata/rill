@@ -3,78 +3,56 @@ package activity
 import (
 	"encoding/json"
 	"time"
-
-	"go.opentelemetry.io/otel/attribute"
 )
 
-// Event is a telemetry event.
-type Event interface {
-	Marshal() ([]byte, error)
+// Event is a telemetry event. It consists of a few required common fields and a payload of event-specific data.
+type Event struct {
+	EventID   string
+	EventTime time.Time
+	EventType string
+	EventName string
+	Data      map[string]any
 }
 
-// MetricEvent is a telemetry event representing a system metric.
-type MetricEvent struct {
-	Time  time.Time
-	Name  string
-	Value float64
-	Attrs []attribute.KeyValue
-}
-
-var _ Event = (*MetricEvent)(nil)
-
-func (e *MetricEvent) Marshal() ([]byte, error) {
-	// Create a map to hold the flattened event structure.
-	flattened := make(map[string]interface{})
-
-	// Iterate over the dims slice and add each dim to the map.
-	for _, dim := range e.Attrs {
-		key := string(dim.Key)
-		flattened[key] = dim.Value.AsInterface()
+func (e Event) MarshalJSON() ([]byte, error) {
+	// Add the common fields to the map.
+	if e.Data == nil {
+		e.Data = make(map[string]any)
 	}
-
-	// Add the non-dim fields.
-	flattened["time"] = e.Time.UTC().Format(time.RFC3339)
-	flattened["name"] = e.Name
-	flattened["value"] = e.Value
-
-	return json.Marshal(flattened)
+	e.Data["event_id"] = e.EventID
+	e.Data["event_time"] = e.EventTime.UTC().Format(time.RFC3339Nano)
+	e.Data["event_type"] = e.EventType
+	e.Data["event_name"] = e.EventName
+	return json.Marshal(e.Data)
 }
 
-// Constants for UserEvent.Action.
-// Note: This is not an enum because the list is not exhaustive. Proxied events may contain other actions.
+// Constants for common event types.
 const (
-	UserActionInstallSuccess         = "install-success"
-	UserActionDeployStart            = "deploy-start"
-	UserActionDeploySuccess          = "deploy-success"
-	UserActionGithubConnectedStart   = "ghconnected-start"
-	UserActionGithubConnectedSuccess = "ghconnected-success"
-	UserActionDataAccessStart        = "dataaccess-start"
-	UserActionDataAccessSuccess      = "dataaccess-success"
-	UserActionLoginStart             = "login-start"
-	UserActionLoginSuccess           = "login-success"
-	UserActionAppStart               = "app-start"
+	EventTypeMetric     = "metric"
+	EventTypeBehavioral = "behavioral"
 )
 
-// UserEvent is a telemetry event representing a user action.
-type UserEvent struct {
-	AppName       string         `json:"app_name"`
-	InstallID     string         `json:"install_id"`
-	BuildID       string         `json:"build_id"`
-	Version       string         `json:"version"`
-	UserID        string         `json:"user_id"`
-	IsDev         bool           `json:"is_dev"`
-	Mode          string         `json:"mode"`
-	Action        string         `json:"action"`
-	Medium        string         `json:"medium"`
-	Space         string         `json:"space"`
-	ScreenName    string         `json:"screen_name"`
-	EventDatetime int64          `json:"event_datetime"`
-	EventType     string         `json:"event_type"`
-	Payload       map[string]any `json:"payload"`
-}
+// Constants for common event attribute keys.
+const (
+	AttrKeyServiceName    = "service_name"
+	AttrKeyServiceVersion = "service_version"
+	AttrKeyServiceCommit  = "service_commit"
+	AttrKeyIsDev          = "is_dev"
+	AttrKeyInstallID      = "install_id"
+	AttrKeyUserID         = "user_id"
+)
 
-var _ Event = (*UserEvent)(nil)
-
-func (e *UserEvent) Marshal() ([]byte, error) {
-	return json.Marshal(e)
-}
+// Constants for event names of type EventTypeBehavioral.
+// Note: This list is not exhaustive. Proxied events may contain other names.
+const (
+	BehavioralEventInstallSuccess         = "install-success"
+	BehavioralEventAppStart               = "app-start"
+	BehavioralEventLoginStart             = "login-start"
+	BehavioralEventLoginSuccess           = "login-success"
+	BehavioralEventDeployStart            = "deploy-start"
+	BehavioralEventDeploySuccess          = "deploy-success"
+	BehavioralEventGithubConnectedStart   = "ghconnected-start"
+	BehavioralEventGithubConnectedSuccess = "ghconnected-success"
+	BehavioralEventDataAccessStart        = "dataaccess-start"
+	BehavioralEventDataAccessSuccess      = "dataaccess-success"
+)

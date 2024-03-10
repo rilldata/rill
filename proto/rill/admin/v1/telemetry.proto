@@ -1,0 +1,21 @@
+syntax = "proto3";
+package rill.admin.v1;
+
+import "google/api/annotations.proto";
+
+service TelemetryService {
+  // RecordEvents sends a batch of telemetry events.
+  // The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
+  rpc RecordEvents(RecordEventsRequest) returns (RecordEventsResponse) {
+    option (google.api.http) = {
+      post: "/v1/telemetry/record",
+      body: "*"
+    };
+  }
+}
+
+message RecordEventsRequest {
+  repeated string json_events = 1;
+}
+
+message RecordEventsResponse {}

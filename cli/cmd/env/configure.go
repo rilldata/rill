@@ -159,7 +159,7 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	}
 
 	// Emit start telemetry
-	ch.Telemetry(ctx).EmitUserAction(activity.UserActionDataAccessStart)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDataAccessStart)
 
 	// Start the flow
 	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill requires credentials for the following connectors:\n\n")
@@ -230,7 +230,7 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	}
 
 	// Emit end telemetry
-	ch.Telemetry(ctx).EmitUserAction(activity.UserActionDataAccessSuccess)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDataAccessSuccess)
 
 	// Continue with the flow
 	fmt.Println("")

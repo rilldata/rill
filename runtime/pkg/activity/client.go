@@ -6,53 +6,35 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
 // Client constructs telemetry events and sends them to a sink.
 type Client struct {
-	logger     *zap.Logger
-	sink       Sink
-	withOpts   *ClientOptions
-	withAttrs  []attribute.KeyValue
-	withAnonID string
-	withUserID string
-}
-
-// ClientOptions provides options for creating a client.
-type ClientOptions struct {
-	ServiceName   string
-	Version       string
-	VersionCommit string
-	VersionDev    bool
+	logger    *zap.Logger
+	sink      Sink
+	withAttrs []attribute.KeyValue
 }
 
 // NewClient creates a base telemetry client that sends events to the provided sink.
 // The client will close the sink when Close is called.
-func NewClient(sink Sink, logger *zap.Logger, opts *ClientOptions) *Client {
+func NewClient(sink Sink, logger *zap.Logger) *Client {
 	client := &Client{
-		logger:   logger,
-		sink:     sink,
-		withOpts: opts,
+		logger: logger,
+		sink:   sink,
 	}
 
-	var attrs []attribute.KeyValue
-	if opts.ServiceName != "" {
-		attrs = append(attrs, attribute.String("service_name", opts.ServiceName))
-	}
-	if opts.Version != "" {
-		attrs = append(attrs, attribute.String("service_version", opts.Version))
-	}
-
-	return client.With(attrs...)
+	return client
 }
 
 // NewNoopClient creates a client that discards all events.
 func NewNoopClient() *Client {
-	return NewClient(NewNoopSink(), zap.NewNop(), &ClientOptions{})
+	return NewClient(NewNoopSink(), zap.NewNop())
 }
 
+// Close the client. Also closes the sink passed to NewClient.
 func (c *Client) Close(ctx context.Context) error {
 	// Close the sink in the background.
 	done := make(chan struct{})
@@ -70,101 +52,241 @@ func (c *Client) Close(ctx context.Context) error {
 	}
 }
 
+// With returns a copy of the client that will set the provided attributes on all events.
 func (c *Client) With(attrs ...attribute.KeyValue) *Client {
 	if len(attrs) == 0 {
 		return c
 	}
 
+	res := make([]attribute.KeyValue, len(c.withAttrs)+len(attrs))
+	copy(res, c.withAttrs)
+	copy(res[len(c.withAttrs):], attrs)
+
 	return &Client{
-		logger:     c.logger,
-		sink:       c.sink,
-		withOpts:   c.withOpts,
-		withAttrs:  append(attrs, c.withAttrs...),
-		withAnonID: c.withAnonID,
-		withUserID: c.withUserID,
+		logger:    c.logger,
+		sink:      c.sink,
+		withAttrs: res,
 	}
 }
 
-func (c *Client) WithIdentity(anonymousID, userID string) *Client {
-	return &Client{
-		logger:     c.logger,
-		sink:       c.sink,
-		withOpts:   c.withOpts,
-		withAttrs:  c.withAttrs,
-		withAnonID: anonymousID,
-		withUserID: userID,
-	}
+// WithServiceName returns a copy of the client with an attribute set for AttrKeyServiceName.
+func (c *Client) WithServiceName(serviceName string) *Client {
+	return c.With(attribute.String(AttrKeyServiceName, serviceName))
 }
 
-func (c *Client) EmitMetric(ctx context.Context, name string, value float64, attrs ...attribute.KeyValue) {
-	attrsFromCtx := attrsFromContext(ctx)
-	if attrsFromCtx == nil {
-		attrsFromCtx = &[]attribute.KeyValue{}
-	}
+// WithServiceVersion returns a copy of the client with attributes set for AttrKeyServiceVersion and AttrKeyServiceCommit.
+func (c *Client) WithServiceVersion(number, commit string) *Client {
+	return c.With(attribute.String(AttrKeyServiceVersion, number), attribute.String(AttrKeyServiceCommit, commit))
+}
 
-	if attrs == nil {
-		attrs = []attribute.KeyValue{}
-	}
-	attrs = append(*attrsFromCtx, attrs...)
+// WithIsDev returns a copy of the client with an attribute set for AttrKeyIsDev.
+func (c *Client) WithIsDev() *Client {
+	return c.With(attribute.Bool(AttrKeyIsDev, true))
+}
 
-	c.emitRaw(&MetricEvent{
-		Time:  time.Now(),
-		Name:  name,
-		Value: value,
-		Attrs: attrs,
+// WithInstallID returns a copy of the client with an attribute set for AttrKeyInstallID.
+func (c *Client) WithInstallID(installID string) *Client {
+	return c.With(attribute.String(AttrKeyInstallID, installID))
+}
+
+// WithUserID returns a copy of the client with an attribute set for AttrKeyUserID.
+func (c *Client) WithUserID(userID string) *Client {
+	return c.With(attribute.String(AttrKeyUserID, userID))
+}
+
+// Record sends a generic telemetry event with the provided event type and name.
+func (c *Client) Record(ctx context.Context, typ, name string, extraAttrs ...attribute.KeyValue) {
+	c.emitRaw(Event{
+		EventID:   uuid.New().String(),
+		EventTime: time.Now(),
+		EventType: typ,
+		EventName: name,
+		Data:      c.resolveAttrs(ctx, extraAttrs),
 	})
 }
 
-func (c *Client) EmitUserAction(action string, attrs ...attribute.KeyValue) {
-	// Note: Not adding attrs to c.withAttrs because these user events are so broken.
-	var payload map[string]any
-	if len(attrs) != 0 {
-		payload = make(map[string]any, len(attrs))
-		for _, attr := range attrs {
-			payload[string(attr.Key)] = attr.Value.AsInterface()
-		}
-	}
-
-	e := &UserEvent{
-		AppName:       c.withOpts.ServiceName,
-		InstallID:     c.withAnonID,
-		BuildID:       c.withOpts.VersionCommit,
-		Version:       c.withOpts.Version,
-		UserID:        c.withUserID,
-		IsDev:         c.withOpts.VersionDev,
-		Mode:          "edit",
-		Action:        action,
-		Medium:        "cli",
-		Space:         "terminal",
-		ScreenName:    "terminal",
-		EventDatetime: time.Now().Unix() * 1000,
-		EventType:     "behavioral",
-		Payload:       payload,
-	}
-
-	c.emitRaw(e)
+// RecordMetric sends a telemetry event of type "metric" with the provided name and value.
+func (c *Client) RecordMetric(ctx context.Context, name string, value float64, attrs ...attribute.KeyValue) {
+	c.emitRaw(Event{
+		EventID:   uuid.New().String(),
+		EventTime: time.Now(),
+		EventType: EventTypeMetric,
+		EventName: name,
+		Data:      c.resolveAttrs(ctx, attrs, attribute.Float64("value", value)),
+	})
 }
 
-func (c *Client) EmitUserActionRaw(jsonData []byte) error {
-	var e *UserEvent
-	err := json.Unmarshal(jsonData, &e)
+// EmitBehavioral sends a telemetry event of type "behavioral" with the provided name and attributes.
+// The event additionally has all the attributes associated with out legacy behavioral events.
+// It will panic if all of WithServiceName, WithServiceVersion, WithInstallID and WithUserID have not been called on the client.
+func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.KeyValue) {
+	// For compatibility with the legacy behavioral events, we need to ensure the output has at least these properties:
+	//     app_name       string
+	//     install_id     string
+	//     build_id       string
+	//     version        string
+	//     user_id        string
+	//     is_dev         bool
+	//     mode           string
+	//     action         string
+	//     medium         string
+	//     space          string
+	//     screen_name    string
+	//     event_datetime int64
+	//     event_type     string
+	//     payload        map[string]any
+
+	data := c.resolveAttrs(context.Background(), extraAttrs)
+
+	if _, ok := data["install_id"]; !ok {
+		panic("install_id is required for a legacy behavioral event")
+	}
+
+	if _, ok := data["user_id"]; !ok {
+		panic("user_id is required for a legacy behavioral event")
+	}
+
+	val, ok := data[AttrKeyServiceName]
+	if !ok {
+		panic("service_name is required for a legacy behavioral event")
+	}
+	data["app_name"] = val
+
+	val, ok = data[AttrKeyServiceCommit]
+	if !ok {
+		panic("service_commit is required for a legacy behavioral event")
+	}
+	data["build_id"] = val
+
+	val, ok = data[AttrKeyServiceVersion]
+	if !ok {
+		panic("service_version is required for a legacy behavioral event")
+	}
+	data["version"] = val
+
+	if val, ok := data["olap_connector"]; ok {
+		payload := make(map[string]any)
+		payload["olap_connector"] = val
+		if conns, ok := data["connectors"]; ok {
+			payload["connectors"] = conns
+		}
+		data["payload"] = payload
+	}
+
+	data["mode"] = "edit"
+	data["action"] = name
+	data["medium"] = "cli"
+	data["space"] = "terminal"
+	data["screen_name"] = "terminal"
+
+	t := time.Now()
+	data["event_datetime"] = t.Unix() * 1000
+
+	c.emitRaw(Event{
+		EventID:   uuid.New().String(),
+		EventTime: t,
+		EventType: EventTypeBehavioral,
+		EventName: name,
+		Data:      data,
+	})
+}
+
+// RecordRawJSON proxies a raw JSON-encoded event to the client's sink.
+// It does not enrich the provided event with any of the client's contextual attributes.
+// It returns an error if the event does not contain the required fields (see the Event type for required fields).
+func (c *Client) RecordRawJSON(jsonData []byte) error {
+	// Parse raw event to a map
+	var data map[string]any
+	err := json.Unmarshal(jsonData, &data)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal user event: %w", err)
+		return fmt.Errorf("failed to unmarshal raw event: %w", err)
+	}
+	if data == nil {
+		return fmt.Errorf("empty event")
 	}
 
-	if e == nil {
-		return fmt.Errorf("empty user event")
+	// Pop event_id
+	id, ok := data["event_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_id")
 	}
+	delete(data, "event_id")
 
-	// TODO: More validation?
+	// Pop event_time
+	tStr, ok := data["event_time"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_time")
+	}
+	t, err := time.Parse(time.RFC3339Nano, tStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse event_time: %w", err)
+	}
+	delete(data, "event_time")
 
-	c.emitRaw(e)
+	// Pop event_type
+	typ, ok := data["event_type"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_type")
+	}
+	delete(data, "event_type")
+
+	// Pop event_name
+	name, ok := data["event_name"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_name")
+	}
+	delete(data, "event_name")
+
+	// Emit the event
+	c.emitRaw(Event{
+		EventID:   id,
+		EventTime: t,
+		EventType: typ,
+		EventName: name,
+		Data:      data,
+	})
 	return nil
 }
 
+// emitRaw sends an event to the sink.
 func (c *Client) emitRaw(e Event) {
 	err := c.sink.Emit(e)
 	if err != nil {
 		c.logger.Error("Failed to emit event", zap.Error(err))
 	}
+}
+
+// resolveAttrs combines the attributes from the client, context, and args into a map.
+func (c *Client) resolveAttrs(ctx context.Context, extraAttrs []attribute.KeyValue, extraExtraAttrs ...attribute.KeyValue) map[string]any {
+	n := len(c.withAttrs) + len(extraAttrs) + len(extraExtraAttrs)
+	attrsFromCtx := attrsFromContext(ctx)
+	if attrsFromCtx != nil {
+		n += len(*attrsFromCtx)
+	}
+
+	if n == 0 {
+		return nil
+	}
+
+	data := make(map[string]any, n+4) // +4 to leave room for the common fields without reallocation.
+
+	for _, a := range c.withAttrs {
+		data[string(a.Key)] = a.Value.AsInterface()
+	}
+
+	if attrsFromCtx != nil {
+		for _, a := range *attrsFromCtx {
+			data[string(a.Key)] = a.Value.AsInterface()
+		}
+	}
+
+	for _, a := range extraAttrs {
+		data[string(a.Key)] = a.Value.AsInterface()
+	}
+
+	for _, a := range extraExtraAttrs {
+		data[string(a.Key)] = a.Value.AsInterface()
+	}
+
+	return data
 }

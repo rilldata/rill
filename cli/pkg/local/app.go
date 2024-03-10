@@ -509,7 +509,7 @@ func (a *App) trackingHandler() http.Handler {
 		}
 
 		// Pass as raw event to the telemetry client
-		err = a.activity.EmitUserActionRaw(body)
+		err = a.activity.RecordRawJSON(body)
 		if err != nil {
 			a.BaseLogger.Info("failed to proxy telemetry event from UI", zap.Error(err))
 		}
@@ -540,7 +540,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		connectorNames = append(connectorNames, connector.Name)
 	}
 
-	a.activity.EmitUserAction(activity.UserActionAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
+	a.activity.RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
 	return nil
 }

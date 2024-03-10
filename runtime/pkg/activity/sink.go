@@ -38,7 +38,7 @@ func NewLoggerSink(logger *zap.Logger, level zapcore.Level) Sink {
 }
 
 func (s *loggerSink) Emit(event Event) error {
-	jsonEvent, err := event.Marshal()
+	jsonEvent, err := event.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -47,3 +47,25 @@ func (s *loggerSink) Emit(event Event) error {
 }
 
 func (s *loggerSink) Close() {}
+
+type filterSink struct {
+	sink Sink
+	fn   func(Event) bool
+}
+
+// NewFilterSink returns a sink that filters events based on the provided filter function.
+// Only events for which the filter function returns true will be emitted to the wrapped sink.
+func NewFilterSink(sink Sink, fn func(Event) bool) Sink {
+	return &filterSink{sink: sink, fn: fn}
+}
+
+func (s *filterSink) Emit(event Event) error {
+	if s.fn(event) {
+		return s.sink.Emit(event)
+	}
+	return nil
+}
+
+func (s *filterSink) Close() {
+	s.sink.Close()
+}
