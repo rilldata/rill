@@ -87,11 +87,11 @@ type ResolveOptions struct {
 // Resolve resolves a query using the given options.
 func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, error) {
 	// Initialize the resolver
-	initalizer, ok := ResolverInitializers[opts.Resolver]
+	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
 		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
-	resolver, err := initalizer(ctx, &ResolverOptions{
+	resolver, err := initializer(ctx, &ResolverOptions{
 		Runtime:        r,
 		InstanceID:     opts.InstanceID,
 		Properties:     opts.ResolverProperties,

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_parsedSQL(t *testing.T) {
+func TestCompiler(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -163,7 +163,7 @@ func Test_parsedSQL(t *testing.T) {
 	}
 }
 
-func TestSimpleMVSQLApi(t *testing.T) {
+func TestSimpleMetricsSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	api, err := rt.APIForName(context.Background(), instanceID, "simple_mv_sql_api")
@@ -188,8 +188,10 @@ func TestSimpleMVSQLApi(t *testing.T) {
 	require.Equal(t, "2022-03-05T14:49:50.459Z", rows[0]["timestamp"])
 }
 
-func TestTemplateMVSQLApi(t *testing.T) {
+func TestTemplateMetricsSQLAPI(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	testruntime.RequireParseErrors(t, rt, instanceID, nil)
 
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api")
 	require.NoError(t, err)
@@ -212,7 +214,7 @@ func TestTemplateMVSQLApi(t *testing.T) {
 	require.Equal(t, "Yahoo", rows[0]["publisher"])
 }
 
-func TestPolicyMVSQLApi(t *testing.T) {
+func TestPolicyMetricsSQLAPI(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
