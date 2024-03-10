@@ -20,10 +20,12 @@ func (p *Parser) parseAPI(node *Node) error {
 		return err
 	}
 
-	// Map node.SQL and node.Connector to DataYAML
+	// Map common node properties to DataYAML
+	if !node.ConnectorInferred && node.Connector != "" {
+		tmp.DataYAML.Connector = node.Connector
+	}
 	if node.SQL != "" {
 		tmp.DataYAML.SQL = node.SQL
-		tmp.DataYAML.Connector = node.Connector
 	}
 
 	// Parse the resolver and its properties from the DataYAML
