@@ -2,7 +2,7 @@
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import SelectMenu from "@rilldata/web-common/components/menu/shad-cn/SelectMenu.svelte";
+  import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
   import type { SelectMenuItem } from "@rilldata/web-common/components/menu/types";
 
   export let validPercentOfTotal: boolean;

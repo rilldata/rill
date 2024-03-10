@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SelectMenu from "@rilldata/web-common/components/menu/shad-cn/SelectMenu.svelte";
+  import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";

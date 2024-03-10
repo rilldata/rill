@@ -23,7 +23,7 @@ props as needed.
 -->
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-  import SearchableMenu from "../menu/shad-cn/SearchableMenu.svelte";
+  import SearchableMenu from "../menu/shadcn/SearchableMenu.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
