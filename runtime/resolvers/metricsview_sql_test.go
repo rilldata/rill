@@ -145,12 +145,9 @@ func Test_parsedSQL(t *testing.T) {
 			require.NoError(t, err)
 
 			got, deps, err := expandMetricsViewSQL(context.Background(), ctrl, &runtime.APIResolverOptions{
-				InstanceID: instanceID,
-				API: &runtimev1.API{
-					Spec: &runtimev1.APISpec{
-						ResolverProperties: props,
-					},
-				},
+				InstanceID:         instanceID,
+				Resolver:           "MetricsSQL",
+				ResolverProperties: props,
 			}, tt.sql)
 			require.NoError(t, err)
 
@@ -173,12 +170,13 @@ func TestSimpleMVSQLApi(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           nil,
-		UserAttributes: nil,
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               nil,
+		UserAttributes:     nil,
+		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -199,12 +197,13 @@ func TestTemplateMVSQLApi(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           map[string]any{"domain": "yahoo.com"},
-		UserAttributes: nil,
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               map[string]any{"domain": "yahoo.com"},
+		UserAttributes:     nil,
+		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -224,12 +223,13 @@ func TestPolicyMVSQLApi(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           nil,
-		UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"},
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               nil,
+		UserAttributes:     map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"},
+		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -246,12 +246,13 @@ func TestPolicyMVSQLApi(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err = runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           nil,
-		UserAttributes: map[string]any{"domain": "msn.com", "email": "user@msn.com"},
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               nil,
+		UserAttributes:     map[string]any{"domain": "msn.com", "email": "user@msn.com"},
+		Priority:           0,
 	})
 
 	require.NoError(t, err)

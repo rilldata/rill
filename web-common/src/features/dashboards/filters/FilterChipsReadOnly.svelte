@@ -3,6 +3,7 @@ The main feature-set component for dashboard filters
  -->
 <script lang="ts">
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
+  import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     V1Expression,
@@ -18,6 +19,7 @@ The main feature-set component for dashboard filters
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
+  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let timeRange: V1TimeRange | undefined;
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
@@ -37,7 +39,10 @@ The main feature-set component for dashboard filters
     measures,
     (measure) => measure.name as string,
   );
-  $: measureFilters = getMeasureFilters(measureIdMap, filters);
+  $: measureFilters = getMeasureFilters(
+    measureIdMap,
+    dimensionThresholdFilters,
+  );
 </script>
 
 <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">

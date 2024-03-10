@@ -3,10 +3,11 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestSimpleSQLApi(t *testing.T) {
@@ -16,12 +17,13 @@ func TestSimpleSQLApi(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           nil,
-		UserAttributes: nil,
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               nil,
+		UserAttributes:     nil,
+		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -44,12 +46,13 @@ func TestTemplateSQLApi(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           map[string]any{"domain": "sports.yahoo.com"},
-		UserAttributes: nil,
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               map[string]any{"domain": "sports.yahoo.com"},
+		UserAttributes:     nil,
+		Priority:           0,
 	})
 
 	require.NoError(t, err)
@@ -75,12 +78,13 @@ func TestTemplateSQLApi2(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           map[string]any{"isExport": false, "pageSize": 5},
-		UserAttributes: map[string]any{"domain": "msn.com"},
-		Priority:       0,
+		Runtime:            rt,
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties,
+		Args:               map[string]any{"isExport": false, "pageSize": 5},
+		UserAttributes:     map[string]any{"domain": "msn.com"},
+		Priority:           0,
 	})
 
 	require.NoError(t, err)

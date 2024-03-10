@@ -16,9 +16,9 @@
       checked:bg-gray-700 dark:checked:bg-gray-400
       cursor-pointer
     "
+    {id}
     role="switch"
     type="checkbox"
-    {id}
   />
   <slot />
 </button>
