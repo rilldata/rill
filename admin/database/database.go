@@ -682,6 +682,7 @@ type UpdateBookmarkOptions struct {
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	Data        []byte `json:"data"`
+	Shared      bool   `json:"shared"`
 }
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)

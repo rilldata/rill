@@ -175,6 +175,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 		DisplayName: req.DisplayName,
 		Description: req.Description,
 		Data:        req.Data,
+		Shared:      req.Shared,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
