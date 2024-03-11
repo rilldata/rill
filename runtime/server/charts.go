@@ -25,10 +25,10 @@ func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) erro
 
 	// Add observability attributes
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.PathValue("instance_id")),
-		attribute.String("args.name", req.PathValue("name")),
+		attribute.String("args.instance_id", instanceID),
+		attribute.String("args.name", chart),
 	)
-	s.addInstanceRequestAttributes(ctx, req.PathValue("instance_id"))
+	s.addInstanceRequestAttributes(ctx, instanceID)
 
 	// Check if user has access to query for chart data (we use the ReadAPI permission for this for now)
 	if !auth.GetClaims(req.Context()).CanInstance(instanceID, auth.ReadAPI) {
@@ -36,7 +36,7 @@ func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) erro
 	}
 
 	// Parse args from the request body and URL query
-	args := make(map[string]interface{})
+	args := make(map[string]any)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return httputil.Errorf(http.StatusBadRequest, "failed to read request body: %w", err)
@@ -55,24 +55,24 @@ func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) erro
 	chartSpec, err := s.getChart(ctx, instanceID, chart)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return httputil.Errorf(http.StatusNotFound, "chart with name %q does not exist", chart)
+			return httputil.Errorf(http.StatusNotFound, "chart with name %q not found", chart)
 		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
 	// Call the chart's data resolver
-	res, err := runtime.Resolve(ctx, &runtime.APIResolverOptions{
-		Runtime:            s.runtime,
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           chartSpec.Resolver,
-		ResolverProperties: chartSpec.ResolverProperties,
+		ResolverProperties: chartSpec.ResolverProperties.AsMap(),
 		Args:               args,
 		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
 	if err != nil {
-		return httputil.Error(http.StatusInternalServerError, err)
+		return httputil.Error(http.StatusBadRequest, err)
 	}
 
+	// Write the response
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(res)
 	if err != nil {
