@@ -114,10 +114,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		}
 
 		if c.activity != nil {
-			c.activity.Emit(ctx, "duckdb_queue_latency_ms", float64(queueLatency), attrs...)
-			c.activity.Emit(ctx, "duckdb_total_latency_ms", float64(totalLatency), attrs...)
+			c.activity.RecordMetric(ctx, "duckdb_queue_latency_ms", float64(queueLatency), attrs...)
+			c.activity.RecordMetric(ctx, "duckdb_total_latency_ms", float64(totalLatency), attrs...)
 			if acquired {
-				c.activity.Emit(ctx, "duckdb_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
+				c.activity.RecordMetric(ctx, "duckdb_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
 			}
 		}
 	}()

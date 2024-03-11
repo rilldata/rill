@@ -1,55 +1,71 @@
 package activity
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Sink is used by a bufferedClient to flush collected Event-s.
+// Sink is a destination for sending telemetry events.
 type Sink interface {
-	Sink(ctx context.Context, events []Event) error
-	Close() error
+	Emit(event Event) error
+	Close()
 }
 
-type NoopSink struct{}
+type noopSink struct{}
 
-func NewNoopSink() *NoopSink {
-	return &NoopSink{}
+// NewNoopSink returns a sink that drops all events.
+func NewNoopSink() Sink {
+	return &noopSink{}
 }
 
-func (n *NoopSink) Sink(_ context.Context, _ []Event) error {
+func (n *noopSink) Emit(_ Event) error {
 	return nil
 }
 
-func (n *NoopSink) Close() error {
-	return nil
-}
+func (n *noopSink) Close() {}
 
-type ConsoleSink struct {
+type loggerSink struct {
 	logger *zap.Logger
 	level  zapcore.Level
 }
 
-// NewConsoleSink might be used for a local run
-func NewConsoleSink(logger *zap.Logger, level zapcore.Level) *ConsoleSink {
-	return &ConsoleSink{logger: logger, level: level}
+// NewLoggerSink returns a sink that logs events to the given logger.
+func NewLoggerSink(logger *zap.Logger, level zapcore.Level) Sink {
+	if logger.Core().Enabled(level) {
+		return &loggerSink{logger: logger, level: level}
+	}
+	return NewNoopSink()
 }
 
-func (s *ConsoleSink) Sink(_ context.Context, events []Event) error {
-	if s.logger.Core().Enabled(s.level) {
-		for _, e := range events {
-			jsonEvent, err := e.Marshal()
-			if err != nil {
-				return err
-			}
-			s.logger.Log(s.level, string(jsonEvent))
-		}
+func (s *loggerSink) Emit(event Event) error {
+	jsonEvent, err := event.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	s.logger.Log(s.level, string(jsonEvent))
+	return nil
+}
+
+func (s *loggerSink) Close() {}
+
+type filterSink struct {
+	sink Sink
+	fn   func(Event) bool
+}
+
+// NewFilterSink returns a sink that filters events based on the provided filter function.
+// Only events for which the filter function returns true will be emitted to the wrapped sink.
+func NewFilterSink(sink Sink, fn func(Event) bool) Sink {
+	return &filterSink{sink: sink, fn: fn}
+}
+
+func (s *filterSink) Emit(event Event) error {
+	if s.fn(event) {
+		return s.sink.Emit(event)
 	}
 	return nil
 }
 
-func (s *ConsoleSink) Close() error {
-	return nil
+func (s *filterSink) Close() {
+	s.sink.Close()
 }

@@ -337,18 +337,6 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
-export interface V1TelemetryResponse {
-  [key: string]: any;
-}
-
-export type V1TelemetryRequestEvent = { [key: string]: any };
-
-export interface V1TelemetryRequest {
-  name?: string;
-  value?: number;
-  event?: V1TelemetryRequestEvent;
-}
-
 export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
@@ -474,6 +462,16 @@ export interface V1RemoveOrganizationMemberResponse {
 
 export interface V1RemoveBookmarkResponse {
   [key: string]: any;
+}
+
+export interface V1RecordEventsResponse {
+  [key: string]: any;
+}
+
+export type V1RecordEventsRequestEventsItem = { [key: string]: any };
+
+export interface V1RecordEventsRequest {
+  events?: V1RecordEventsRequestEventsItem[];
 }
 
 export interface V1PullVirtualRepoResponse {

@@ -83,10 +83,6 @@ type Config struct {
 	AllowHostAccess bool `default:"false" split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
-	// Sink period of a buffered activity client in millis
-	ActivitySinkPeriodMs int `default:"1000" split_words:"true"`
-	// Max queue size of a buffered activity client
-	ActivityMaxBufferSize int `default:"1000" split_words:"true"`
 	// Kafka brokers of an activity client's sink
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
@@ -150,7 +146,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				keyPairs[idx] = key
 			}
 
-			// Init telemetry
+			// Init observability
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
@@ -158,28 +154,42 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
-				logger.Fatal("error starting telemetry", zap.Error(err))
+				logger.Fatal("error starting observability", zap.Error(err))
 			}
 			defer func() {
-				// Allow 10 seconds to gracefully shutdown telemetry
+				// Allow 10 seconds to gracefully shutdown observability
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				err := shutdown(ctx)
 				if err != nil {
-					logger.Error("telemetry shutdown failed", zap.Error(err))
+					logger.Error("observability shutdown failed", zap.Error(err))
 				}
 			}()
 
-			activityClient := activity.NewClientFromConf(
-				conf.ActivitySinkType,
-				conf.ActivitySinkPeriodMs,
-				conf.ActivityMaxBufferSize,
-				conf.ActivitySinkKafkaBrokers,
-				conf.ActivitySinkKafkaTopic,
-				logger,
-				"runtime-server",
-				ch.Version.String(),
-			)
+			// Init activity client
+			var activityClient *activity.Client
+			switch conf.ActivitySinkType {
+			case "", "noop":
+				activityClient = activity.NewNoopClient()
+			case "kafka":
+				sink, err := activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic, logger)
+				if err != nil {
+					logger.Fatal("error creating kafka sink", zap.Error(err))
+				}
+				activityClient = activity.NewClient(sink, logger)
+			default:
+				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
+			}
+			defer activityClient.Close(context.Background())
+
+			// Add service info to the activity client
+			activityClient = activityClient.WithServiceName("runtime-server")
+			if ch.Version.Number != "" || ch.Version.Commit != "" {
+				activityClient = activityClient.WithServiceVersion(ch.Version.Number, ch.Version.Commit)
+			}
+			if ch.Version.IsDev() {
+				activityClient = activityClient.WithIsDev()
+			}
 
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
