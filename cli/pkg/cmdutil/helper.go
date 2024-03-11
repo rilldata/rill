@@ -25,14 +25,6 @@ const (
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
 
-var (
-	// By default, we don't upload any telemetry events of type "metric" because they are quite chatty and potentially sensitive.
-	// Use this list for specific metric event *names* to upload.
-	metricEventAllowList = []string{
-		"generated_metrics_view",
-	}
-)
-
 type Helper struct {
 	*printer.Printer
 	Version            Version
@@ -162,15 +154,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 		// Wrap the intake sink in a filter sink that omits all metrics events except those on the allow list (see metricEventAllowList for details).
 		// (Remember, this telemetry client will only be used on local.)
 		sink := activity.NewFilterSink(intakeSink, func(e activity.Event) bool {
-			if e.EventType != activity.EventTypeMetric {
-				return true
-			}
-			for _, allowed := range metricEventAllowList {
-				if e.EventName == allowed {
-					return true
-				}
-			}
-			return false
+			return e.EventType != activity.EventTypeMetric
 		})
 
 		// Create the telemetry client with metadata about the current environment.
