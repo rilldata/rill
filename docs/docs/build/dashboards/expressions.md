@@ -11,7 +11,11 @@ Within the dashboard yaml, you can apply aggregate sql expressions to create der
 
 We continually get questions about common metric definitions and other tricks so will update this page frequently. [Please let us know](../../contact.md) if you have questions or are stuck on an expression so we can add more examples.
 
-Reminder: Rill's modeling layer provide open-ended sql compatibility for complex sql queries. More details in our [modeling section](../models/models.md).
+:::tip
+
+Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](../models/models.md).
+
+:::
 
 ## Measure Expressions
 
@@ -52,7 +56,11 @@ To create the correct value, you can utilize DuckDB's unnest functionality. In t
 (select sum(a.val) as value from (select unnest(list(distinct {key: concat(campaign_id), val: daily_budget })) a ))
 ```
 
-Note: the syntax for fixed metrics is specific to DuckDB as an OLAP engine.
+:::note 
+
+The syntax for fixed metrics is specific to DuckDB as an OLAP engine.
+
+:::
 
 ## Dimension Expressions
 
@@ -61,4 +69,4 @@ To utilize an expression, replace the `column` property with `expression` and ap
 
 ### Druid Lookups
 
-For those looking to add id to name mappings with Druid as an OLAP engine, you can utilize expressions in your Dimension settings. Simply use the lookup function and provide the name of the lookup and the id like - `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
+For those looking to add id to name mappings with Druid (as an OLAP engine), you can utilize expressions in your **Dimension** settings. Simply use the lookup function and provide the name of the lookup and id, i.e. `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
