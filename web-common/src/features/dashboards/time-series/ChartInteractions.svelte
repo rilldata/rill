@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-  export let metricViewName;
+  export let metricViewName: string;
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
 
@@ -23,7 +23,11 @@
     },
   } = StateManagers;
 
-  function onKeyDown(e) {
+  function onKeyDown(e: KeyboardEvent) {
+    const targetTagName = (e.target as HTMLElement).tagName;
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTagName)) {
+      return;
+    }
     if (e.key === "ArrowLeft") {
       if ($canPanLeft) {
         const panRange = $getNewPanRange("left");
