@@ -4,7 +4,7 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
@@ -219,7 +219,7 @@
     {#if expandedMeasureName}
       <BackToOverview {metricViewName} />
     {:else}
-      <SeachableFilterButton
+      <SearchableFilterButton
         label="Measures"
         on:deselect-all={setAllMeasuresNotVisible}
         on:item-clicked={toggleMeasureVisibility}
