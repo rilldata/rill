@@ -103,4 +103,4 @@ Rill will build your project from data sources to dashboard and then launch in a
 
 ## We want to hear from you
 
-You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://bit.ly/3unvA05).
+You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://discord.gg/DJ5qcsxE2m). If you want to contact Rill Support, please see our [Contact](contact.md#contacting-support) page for additional options.

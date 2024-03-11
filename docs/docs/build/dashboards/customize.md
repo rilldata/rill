@@ -7,11 +7,15 @@ sidebar_position: 30
 
 ## Common Customizations
 
-### Changing Available Filters
+You will find below some common customizations and dashboard configurations that are available for end users. 
 
-:::note Full Dashboard File Details
-For full details, visit the [dashbaord reference](../../reference/project-files/dashboards.md)
+:::info Dashboard properties
+
+For a full list of available dashboard properties and configurations, please see our [Dashboard YAML](/reference/project-files/dashboards.md) reference page.
+
 :::
+
+### Changing Available Filters
 
 **`default_time_range`**
 
@@ -53,7 +57,7 @@ default_dimensions:
   - column2
 ```
 
-:::info Column vs. Name Usage
+:::warning Column vs. Name Usage
 The `column` property is used by default from the column name in your underlying source. If you decide to use the `name` property, you'd replace the column above with the field name.
 :::
 
@@ -78,4 +82,33 @@ Once you have created that file, update the `dashboard.yaml` with the following 
 
 `default_theme: <name of theme yaml file>` 
 
-For full details on themes, go to the [theme reference page](../../reference/project-files/themes.md).
+:::info Theme properties
+
+For more details about configuring themes, you can refer to our [Theme YAML](/reference/project-files/themes.md) reference page.
+
+:::
+
+## Changing dashboard measure formatting
+
+Formatting for individual measures on a dashboard can be controlled through the `format_preset` and `format_d3` properties.
+
+### Euro currency
+
+Instead of displaying a numeric measure in USD currency, the euro currency can be used instead through `format_preset`. In the following example `dashboard.yaml`, the `Total Revenue` measure will be displayed using euros in the resulting dashboard.
+
+```yaml
+title: example_dashboard
+mode: example_model
+measures:
+  - label: "Total Revenue"
+    expression: SUM(revenue)
+    name: total_revenue
+    description: "This measure calculates the total sum of revenue"
+    format_preset: currency_eur
+```
+
+:::info Measure formatting options
+
+For a full list of available measure formatting options, please see our [Dashboard YAML](/reference/project-files/dashboards.md) reference page.
+
+:::

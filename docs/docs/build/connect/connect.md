@@ -8,7 +8,7 @@ sidebar_position: 00
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 
-Rill supports several connectors for ingesting data from sources: local files, download from an S3 or GCS bucket, download using HTTP(S), connect to databases like MotherDuck or BigQuery. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see the _Using Code_ sections below).
+Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
 
 To provide a non-exhaustive list, Rill supports the following connectors:
 - [Google Cloud Storage](/reference/connectors/gcs.md)
@@ -48,8 +48,8 @@ When you add a source using the UI, a code definition will automatically be crea
 In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following content:
 
 ```yaml
-type: local_file
-path: /path/to/data.csv
+connector: local_file
+path: /path/to/local/data.csv
 ```
 
 Rill will ingest the data next time you run `rill start`.
@@ -76,12 +76,19 @@ After import, you can reimport your data whenever you want by clicking the "refr
 ### Using code
 When you add a source using the UI or CLI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory.
 
-To create a remote http(s) source, create a `source_name.yaml` file in the `sources` directory with the following contents:
+For example, to create a remote http(s) source, create a `source_name.yaml` file in the `sources` directory with the following contents:
 
 ```yaml
-type: https
+connector: https
 uri: https://data.example.org/path/to/file.parquet
 ```
+
+:::info
+
+For a full list of connector types available, please see our [Connectors](/reference/connectors/connectors.md) and [Source YAML](/reference/project-files/sources.md#properties) reference pages.
+
+:::
+
 You can also push filters to your source definition using inline editing. Common use cases for inline editing:
 
 - Filter data to only use part of source files
@@ -100,13 +107,30 @@ For more details about available configurations and properties, check our [Sourc
 
 ## Authenticating remote sources
 
-Rill requires credentials to connect to remote data sources such as private buckets in S3, GCS or Azure.
+Rill requires an appropriate set of <u>credentials</u> to connect to remote data sources, whether those are buckets (e.g. S3 or GCS) or data warehouses (e.g. Snowflake). When running Rill locally, Rill Developer attempts to find existing credentials that have been configured on your machine. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
 
-When running Rill locally, Rill attempts to find existing credentials configured on your computer. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
+:::note Setting up credentials
 
-For more details on configuring sources, continue to [Source Credentials](../credentials/credentials).
+Please see our [Configuring Credentials](../credentials/credentials.md) and [Deployment Credentials](../../deploy/deploy-credentials.md) for more information about setting up and using credentials in Rill.
 
-## Live connections 
-A live connection enables users to discover existing tables and perform OLAP queries directly on the engine without transfering data to another OLAP engine.
-OLAP driver can be configured by passing additional `--db-driver` config in `rill start` CLI command. 
-The default OLAP engine is DuckDB. 
+:::
+
+## External OLAP tables
+
+Rill also has the ability to set up a "live connection" with an [OLAP engine](../olap/olap.md) to discover existing tables and execute OLAP queries directly on the engine without having to transfer data to another OLAP engine. By default, the embedded OLAP engine that comes with Rill is [DuckDB](/reference/olap-engines/duckdb.md).
+
+:::note Configuring the OLAP engine
+
+For more details about configuring and/or changing the OLAP engine used by Rill, please see our [OLAP Engines](/reference/olap-engines/olap-engines.md) reference documentation.
+
+:::
+
+## Rill Developer vs Rill Cloud
+
+_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models.md) and [dashboard](../dashboards/dashboards.md) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/existing-project/existing-project.md) against the full range of data and dashboards can be [explored](../../explore/dashboard-101.md) by other end users.
+
+:::info Have questions?
+
+We are one Slack, email, or chat message away. Please feel free to [contact us](contact.md) - we'd love to help!
+
+:::
