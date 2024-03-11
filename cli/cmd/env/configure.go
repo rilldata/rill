@@ -8,10 +8,10 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +67,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, projectPath, nil)
+			variables, err := VariablesFlow(ctx, ch, projectPath)
 			if err != nil {
 				return fmt.Errorf("failed to get variables: %w", err)
 			}
@@ -124,7 +124,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	return configureCommand
 }
 
-func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
+func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) (map[string]string, error) {
 	// Parse the project's connectors
 	repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
 	if err != nil {
@@ -158,8 +158,10 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		return nil, nil
 	}
 
+	// Emit start telemetry
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDataAccessStart)
+
 	// Start the flow
-	tel.Emit(telemetry.ActionDataAccessStart)
 	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill requires credentials for the following connectors:\n\n")
 	for _, c := range connectors {
 		if c.AnonymousAccess {
@@ -227,8 +229,10 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		}
 	}
 
+	// Emit end telemetry
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDataAccessSuccess)
+
 	// Continue with the flow
-	tel.Emit(telemetry.ActionDataAccessSuccess)
 	fmt.Println("")
 
 	return variables, nil

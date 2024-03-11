@@ -98,7 +98,7 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(cfgMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("s3 driver can't be shared")
 	}

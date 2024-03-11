@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +33,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var logFormat string
 	var env []string
 	var vars []string
+	var tlsCertPath string
+	var tlsKeyPath string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -116,7 +117,19 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			client := activity.NewNoopClient()
+			// If keypath or certpath provided, but not the other, display error
+			// If keypath and certpath provided, check if the file exists
+			if (tlsCertPath != "" && tlsKeyPath == "") || (tlsCertPath == "" && tlsKeyPath != "") {
+				return fmt.Errorf("both --tls-cert and --tls-key must be provided")
+			} else if tlsCertPath != "" && tlsKeyPath != "" {
+				// Check to ensure the paths are valid
+				if _, err := os.Stat(tlsCertPath); os.IsNotExist(err) {
+					return fmt.Errorf("certificate not found: %s", tlsCertPath)
+				}
+				if _, err := os.Stat(tlsKeyPath); os.IsNotExist(err) {
+					return fmt.Errorf("key not found: %s", tlsKeyPath)
+				}
+			}
 
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Version:     ch.Version,
@@ -129,7 +142,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProjectPath: projectPath,
 				LogFormat:   parsedLogFormat,
 				Variables:   varsMap,
-				Activity:    client,
+				Activity:    ch.Telemetry(cmd.Context()),
 				AdminURL:    ch.AdminURL,
 				AdminToken:  ch.AdminToken(),
 			})
@@ -138,15 +151,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer app.Close()
 
-			userID := ""
-			if ch.IsAuthenticated() {
-				user, _ := ch.CurrentUser(cmd.Context())
-				if user != nil {
-					userID = user.Id
-				}
-			}
+			userID, _ := ch.CurrentUserID(cmd.Context())
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID)
+			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -165,6 +172,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
+	startCmd.Flags().StringVar(&tlsCertPath, "tls-cert", "", "Path to TLS certificate")
+	startCmd.Flags().StringVar(&tlsKeyPath, "tls-key", "", "Path to TLS key file")
 
 	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
 	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
