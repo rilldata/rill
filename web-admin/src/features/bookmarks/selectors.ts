@@ -95,13 +95,11 @@ export function searchBookmarks(
 ): Bookmarks {
   if (!searchText || !bookmarks) return bookmarks;
   searchText = searchText.toLowerCase();
-  const matchName = (bookmark: BookmarkEntry) =>
+  const matchName = (bookmark: BookmarkEntry | undefined) =>
+    bookmark?.resource.displayName &&
     bookmark.resource.displayName.toLowerCase().includes(searchText);
   return {
-    home:
-      bookmarks.home?.resource && matchName(bookmarks.home)
-        ? bookmarks.home
-        : undefined,
+    home: matchName(bookmarks.home) ? bookmarks.home : undefined,
     personal: bookmarks?.personal.filter(matchName) ?? [],
     shared: bookmarks?.shared.filter(matchName) ?? [],
   };
