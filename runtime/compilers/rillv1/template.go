@@ -189,6 +189,11 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Add func to lookup another resource
 	funcMap["lookup"] = func(parts ...string) (map[string]any, error) {
+		// Support is optional
+		if data.Lookup == nil {
+			return nil, fmt.Errorf(`function "lookup" is not supported in this context`)
+		}
+
 		// Parse the resource name
 		name, err := resourceNameFromArgs(parts...)
 		if err != nil {

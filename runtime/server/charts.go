@@ -1,11 +1,14 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -14,22 +17,22 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
+func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) error {
 	// Parse path parameters
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
-	apiName := req.PathValue("name")
+	chart := req.PathValue("name")
 
 	// Add observability attributes
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
-		attribute.String("args.name", apiName),
+		attribute.String("args.name", chart),
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
-	// Check if user has access to query for API data
-	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
-		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
+	// Check if user has access to query for chart data (we use the ReadAPI permission for this for now)
+	if !auth.GetClaims(req.Context()).CanInstance(instanceID, auth.ReadAPI) {
+		return httputil.Errorf(http.StatusForbidden, "does not have access to chart data")
 	}
 
 	// Parse args from the request body and URL query
@@ -48,20 +51,20 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		args[k] = v[0]
 	}
 
-	// Find the API resource
-	api, err := s.runtime.APIForName(ctx, instanceID, apiName)
+	// Find the chart resource
+	chartSpec, err := s.getChart(ctx, instanceID, chart)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return httputil.Errorf(http.StatusNotFound, "api with name %q not found", apiName)
+			return httputil.Errorf(http.StatusNotFound, "chart with name %q not found", chart)
 		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// Resolve the API to JSON data
+	// Call the chart's data resolver
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
-		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Resolver:           chartSpec.Resolver,
+		ResolverProperties: chartSpec.ResolverProperties.AsMap(),
 		Args:               args,
 		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
@@ -77,4 +80,24 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	return nil
+}
+
+func (s *Server) getChart(ctx context.Context, instanceID, name string) (*runtimev1.ChartSpec, error) {
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindChart, Name: name}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := res.GetChart()
+	spec := ch.Spec
+	if spec == nil {
+		return nil, fmt.Errorf("chart %q is invalid", name)
+	}
+
+	return spec, nil
 }
