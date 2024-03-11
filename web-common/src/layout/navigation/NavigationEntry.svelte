@@ -155,7 +155,11 @@
             id="more-actions-{name}"
             tooltipText="More actions"
             suppressTooltip={contextMenuOpen}
-            on:click={toggleFloatingElement}
+            on:click={(event) => {
+              /** prevent the link click from registering */
+              event.stopPropagation();
+              toggleFloatingElement();
+            }}
             bind:isHovered={contextMenuHovered}
             width={24}
             height={24}
