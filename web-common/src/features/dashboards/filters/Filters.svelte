@@ -37,7 +37,7 @@
   $: dimensions = $metricsView.data?.dimensions ?? [];
   $: dimensionIdMap = getMapFromArray(
     dimensions,
-    (dimension) => dimension.name as string,
+    (dimension) => (dimension.name || dimension.column) as string,
   );
 
   $: measures = $metricsView.data?.measures ?? [];
@@ -96,14 +96,17 @@
       </div>
     {:else}
       {#each allDimensionFilters as { name, label, selectedValues } (name)}
-        {@const dimension = dimensions.find((d) => d.name === name)}
+        {@const dimension = dimensions.find(
+          (d) => d.name === name || d.column === name,
+        )}
+        {@const dimensionName = dimension?.name || dimension?.column}
         <div animate:flip={{ duration: 200 }}>
-          {#if dimension?.column}
+          {#if dimensionName}
             <DimensionFilter
               {name}
               {label}
               {selectedValues}
-              column={dimension.column}
+              column={dimensionName}
               on:remove={() => removeDimensionFilter(name)}
               on:apply={(event) =>
                 toggleDimensionValueSelection(name, event.detail, true)}

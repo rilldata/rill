@@ -1,14 +1,14 @@
 <script lang="ts">
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Divider from "@rilldata/web-common/components/menu/core/Divider.svelte";
-  import { getMenuGroups } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { getMenuGroups } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { createEventDispatcher } from "svelte";
+  import Button from "../button/Button.svelte";
   import Check from "../icons/Check.svelte";
   import { Menu, MenuItem } from "../menu";
   import { Search } from "../search";
   import Footer from "./Footer.svelte";
-  import Button from "../button/Button.svelte";
-  import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -21,6 +21,7 @@
 
   $: menuGroups = getMenuGroups(selectableGroups, selectedItems, searchText);
 
+  $: console.log("menuGroups", menuGroups);
   $: numSelected = selectedItems.reduce(
     (sel, items) => sel + items.filter((i) => i).length,
     0,
