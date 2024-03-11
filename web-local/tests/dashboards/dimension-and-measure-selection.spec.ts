@@ -46,10 +46,8 @@ test.describe("dimension and measure selectors", () => {
     await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
     await escape();
 
-    await expect(
-      page.getByText("Publisher", { exact: true }),
-    ).not.toBeVisible();
-    await expect(page.getByText("Domain", { exact: true })).toBeVisible();
+    await expect(page.getByText("Publisher")).not.toBeVisible();
+    await expect(page.getByText("Domain")).toBeVisible();
 
     await dimensionsButton.click();
     await clickMenuItem("Publisher");
@@ -57,7 +55,7 @@ test.describe("dimension and measure selectors", () => {
     await expect(dimensionsButton).toHaveText("1 of 2 Dimensions");
     await escape();
 
-    await expect(page.getByText("Publisher", { exact: true })).toBeVisible();
-    await expect(page.getByText("Domain", { exact: true })).not.toBeVisible();
+    await expect(page.getByText("Publisher")).toBeVisible();
+    await expect(page.getByText("Domain")).not.toBeVisible();
   });
 });
