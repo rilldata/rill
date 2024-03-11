@@ -60,9 +60,13 @@
     </DropdownMenuItem>
   {/if}
   <DropdownMenuSeparator />
-  <DropdownMenuItem on:click={(e) => e.preventDefault()}>
-    <Search bind:value={searchText} showBorderOnFocus={false} />
-  </DropdownMenuItem>
+  <div class="p-2">
+    <Search
+      autofocus={false}
+      bind:value={searchText}
+      showBorderOnFocus={false}
+    />
+  </div>
   {#if filteredBookmarks}
     <DropdownMenuSeparator />
     <DropdownMenuGroup>

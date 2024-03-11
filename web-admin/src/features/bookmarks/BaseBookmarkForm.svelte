@@ -4,7 +4,6 @@
   import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import { getPrettySelectedTimeRange } from "@rilldata/web-admin/features/bookmarks/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
-  import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -64,18 +63,18 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     label="Description"
     optional
   />
-  <FormSection
-    description={"Inherited from underlying dashboard view."}
-    padding=""
-    title="Filters"
-  >
+  <div class="flex flex-col gap-y-2">
+    <Label class="flex flex-col gap-y-1 text-sm">
+      <div class="text-gray-800 font-medium">Filters</div>
+      <div class="text-gray-500">Inherited from underlying dashboard view.</div>
+    </Label>
     <FilterChipsReadOnly
       dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
       filters={$dashboardStore.whereFilter}
       {metricsViewName}
       {timeRange}
     />
-  </FormSection>
+  </div>
   <ProjectAccessControls
     organization={$page.params.organization}
     project={$page.params.project}
