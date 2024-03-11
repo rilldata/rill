@@ -130,7 +130,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
 	logger        *zap.Logger
-	activity      activity.Client
+	activity      *activity.Client
 	rt            *Runtime
 	store         drivers.RegistryStore
 	mu            sync.RWMutex
@@ -158,7 +158,7 @@ type instanceWithController struct {
 	reopen    bool
 }
 
-func newRegistryCache(rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac activity.Client) *registryCache {
+func newRegistryCache(rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac *activity.Client) *registryCache {
 	baseCtx, baseCtxCancel := context.WithCancel(context.Background())
 
 	r := &registryCache{

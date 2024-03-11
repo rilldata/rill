@@ -95,7 +95,6 @@ const (
 	AdminService_DeleteAlert_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName            = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertYAML"
-	AdminService_Telemetry_FullMethodName                    = "/rill.admin.v1.AdminService/Telemetry"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -255,8 +254,6 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
-	// Telemetry sends telemetry data to the server
-	Telemetry(ctx context.Context, in *TelemetryRequest, opts ...grpc.CallOption) (*TelemetryResponse, error)
 }
 
 type adminServiceClient struct {
@@ -951,15 +948,6 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
-func (c *adminServiceClient) Telemetry(ctx context.Context, in *TelemetryRequest, opts ...grpc.CallOption) (*TelemetryResponse, error) {
-	out := new(TelemetryResponse)
-	err := c.cc.Invoke(ctx, AdminService_Telemetry_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -1117,8 +1105,6 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
-	// Telemetry sends telemetry data to the server
-	Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1353,9 +1339,6 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 }
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
-}
-func (UnimplementedAdminServiceServer) Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Telemetry not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -2738,24 +2721,6 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_Telemetry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TelemetryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).Telemetry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_Telemetry_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).Telemetry(ctx, req.(*TelemetryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -3066,10 +3031,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlertYAML",
 			Handler:    _AdminService_GetAlertYAML_Handler,
-		},
-		{
-			MethodName: "Telemetry",
-			Handler:    _AdminService_Telemetry_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

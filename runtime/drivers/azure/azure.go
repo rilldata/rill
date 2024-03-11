@@ -83,7 +83,7 @@ type configProperties struct {
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("azure driver does not support shared connections")
 	}

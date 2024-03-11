@@ -62,7 +62,7 @@ type Server struct {
 	aud      *auth.Audience
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
-	activity activity.Client
+	activity *activity.Client
 }
 
 var (
@@ -73,7 +73,7 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient activity.Client) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client) (*Server, error) {
 	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
 	// If no session key pairs are provided, we generate a random one for the duration of the process.
 	var codec *securetoken.Codec
@@ -111,9 +111,7 @@ func (s *Server) Close() error {
 		s.aud.Close()
 	}
 
-	err := s.activity.Close()
-
-	return err
+	return nil
 }
 
 // Ping implements RuntimeService

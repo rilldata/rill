@@ -14,25 +14,28 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Kafka producer config
 const (
-	// Kafka producer props
 	lingerMs         = 200
 	compressionCodec = "lz4"
-	// Retry props
+)
+
+// Retry config
+const (
 	retryN                       = 3
 	retryWait                    = lingerMs * time.Millisecond
 	metadataTimeout              = 5 * time.Second
 	deliveryFailuresReportPeriod = 5 * time.Minute
 )
 
+// OTel metrics for Kafka delivery
 var (
 	meter                  = otel.Meter("github.com/rilldata/rill/runtime/pkg/activity")
 	deliverySuccessCounter = must(meter.Int64Counter("kafka_delivery_success"))
 	deliveryFailureCounter = must(meter.Int64Counter("kafka_delivery_failure"))
 )
 
-// KafkaSink sinks events to a Kafka cluster.
-type KafkaSink struct {
+type kafkaSink struct {
 	producer *kafka.Producer
 	topic    string
 	logger   *zap.Logger
@@ -40,16 +43,15 @@ type KafkaSink struct {
 	closedCh chan struct{}
 }
 
-func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
+// NewKafkaSink returns a sink that sends events to a Kafka topic.
+func NewKafkaSink(brokers, topic string, logger *zap.Logger) (Sink, error) {
 	logChan := make(chan kafka.LogEvent, 100)
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers":      brokers,
 		"go.logs.channel.enable": true,
 		"go.logs.channel":        logChan,
-		// Configure waiting time before sending out a batch of messages
-		"linger.ms": lingerMs,
-		// Specify the compression type to be used for messages
-		"compression.codec": compressionCodec,
+		"linger.ms":              lingerMs,         // Configure waiting time before sending out a batch of messages
+		"compression.codec":      compressionCodec, // Specify the compression type to be used for messages
 	})
 	if err != nil {
 		return nil, err
@@ -65,7 +67,7 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		return nil, err
 	}
 
-	sink := KafkaSink{
+	sink := &kafkaSink{
 		producer: producer,
 		topic:    topic,
 		logger:   logger,
@@ -73,12 +75,46 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		closedCh: make(chan struct{}),
 	}
 
-	go sink.processProducerEvents(producer, logger)
+	go sink.processProducerEvents()
 
-	return &sink, nil
+	return sink, nil
 }
 
-func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
+func (s *kafkaSink) Emit(event Event) error {
+	message, err := event.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	sendMessageFn := func() error {
+		return s.producer.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &s.topic, Partition: kafka.PartitionAny},
+			Value:          message,
+		}, nil)
+	}
+
+	retryOnErrFn := func(err error) bool {
+		kafkaErr := kafka.Error{}
+		// Producer queue is full, wait for messages to be delivered then try again.
+		return errors.As(err, &kafkaErr) && kafkaErr.Code() == kafka.ErrQueueFull
+	}
+
+	err = retry(retryN, retryWait, sendMessageFn, retryOnErrFn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *kafkaSink) Close() {
+	s.producer.Flush(10000)
+	s.producer.Close()
+	close(s.closedCh)
+	close(s.logChan)
+}
+
+func (s *kafkaSink) processProducerEvents() {
 	var deliveryFailureCount int
 	var lastDeliveryError error
 
@@ -87,7 +123,7 @@ func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.
 
 	for {
 		select {
-		case e, ok := <-producer.Events():
+		case e, ok := <-s.producer.Events():
 			if !ok {
 				return
 			}
@@ -104,14 +140,14 @@ func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.
 			case kafka.Error:
 				// This error might be a duplicate of what is logged by forwardKafkaLogEventToLogger
 				// Use warn level to focus on non-delivered events only as broker disconnects might be false-positive
-				logger.Warn("Kafka sink: producer error", zap.String("error", ev.Error()))
+				s.logger.Warn("Kafka sink: producer error", zap.String("error", ev.Error()))
 			default:
 				// Ignore any other events
 			}
 
 		case <-ticker.C:
 			if deliveryFailureCount > 0 {
-				logger.Error(
+				s.logger.Error(
 					fmt.Sprintf("Kafka sink: delivery failures in the last observed period: %d. "+
 						"Check preceding log events to investigate the issue", deliveryFailureCount),
 					zap.Error(lastDeliveryError))
@@ -123,43 +159,6 @@ func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.
 			return
 		}
 	}
-}
-
-// Sink doesn't wait till all events are delivered to Kafka
-func (s *KafkaSink) Sink(_ context.Context, events []Event) error {
-	for _, event := range events {
-		message, err := event.Marshal()
-		if err != nil {
-			return err
-		}
-
-		sendMessageFn := func() error {
-			return s.producer.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &s.topic, Partition: kafka.PartitionAny},
-				Value:          message,
-			}, nil)
-		}
-
-		retryOnErrFn := func(err error) bool {
-			kafkaErr := kafka.Error{}
-			// Producer queue is full, wait for messages to be delivered then try again.
-			return errors.As(err, &kafkaErr) && kafkaErr.Code() == kafka.ErrQueueFull
-		}
-
-		err = retry(retryN, retryWait, sendMessageFn, retryOnErrFn)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *KafkaSink) Close() error {
-	s.producer.Flush(100)
-	s.producer.Close()
-	close(s.closedCh)
-	close(s.logChan)
-	return nil
 }
 
 func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger *zap.Logger) {
@@ -175,8 +174,8 @@ func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger *zap.Logge
 	}
 }
 
-// Log syslog level, lower is more critical
-// https://en.wikipedia.org/wiki/Syslog#Severity_level
+// Log syslog level, lower is more critical.
+// See: https://en.wikipedia.org/wiki/Syslog#Severity_level
 func kafkaLogLevelToZapLevel(level int) zapcore.Level {
 	switch level {
 	case 0, 1, 2:

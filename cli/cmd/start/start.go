@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
@@ -132,8 +131,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			client := activity.NewNoopClient()
-
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Version:     ch.Version,
 				Verbose:     verbose,
@@ -145,7 +142,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProjectPath: projectPath,
 				LogFormat:   parsedLogFormat,
 				Variables:   varsMap,
-				Activity:    client,
+				Activity:    ch.Telemetry(cmd.Context()),
 				AdminURL:    ch.AdminURL,
 				AdminToken:  ch.AdminToken(),
 			})
@@ -154,13 +151,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer app.Close()
 
-			userID := ""
-			if ch.IsAuthenticated() {
-				user, _ := ch.CurrentUser(cmd.Context())
-				if user != nil {
-					userID = user.Id
-				}
-			}
+			userID, _ := ch.CurrentUserID(cmd.Context())
 
 			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
 			if err != nil {

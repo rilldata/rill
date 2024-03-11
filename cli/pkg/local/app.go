@@ -1,7 +1,6 @@
 package local
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -19,7 +18,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -33,6 +31,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
@@ -72,7 +71,7 @@ type App struct {
 	ProjectPath           string
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
-	activity              activity.Client
+	activity              *activity.Client
 }
 
 type AppOptions struct {
@@ -86,7 +85,7 @@ type AppOptions struct {
 	ProjectPath string
 	LogFormat   LogFormat
 	Variables   map[string]string
-	Activity    activity.Client
+	Activity    *activity.Client
 	AdminURL    string
 	AdminToken  string
 }
@@ -292,13 +291,11 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		activity:              opts.Activity,
 	}
 
-	// Collect and emit information about registered source types
-	go func() {
-		err := app.emitStartEvent(ctx)
-		if err != nil {
-			logger.Debug("failed to emit start event", zap.Error(err))
-		}
-	}()
+	// Collect and emit information about connectors at start time
+	err = app.emitStartEvent(ctx)
+	if err != nil {
+		logger.Debug("failed to emit start event", zap.Error(err))
+	}
 
 	return app, nil
 }
@@ -384,7 +381,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
 			mux.Handle("/local/version", a.versionHandler())
-			mux.Handle("/local/track", a.trackingHandler(inf))
+			mux.Handle("/local/track", a.trackingHandler())
 		})
 	})
 
@@ -512,13 +509,8 @@ type versionInfo struct {
 }
 
 // trackingHandler proxies events to intake.rilldata.io.
-func (a *App) trackingHandler(info *localInfo) http.Handler {
+func (a *App) trackingHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !info.AnalyticsEnabled {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
 		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -527,37 +519,26 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 
-		// Proxy request to rill intake
-		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", bytes.NewReader(body))
+		// Parse the body as JSON
+		var event map[string]any
+		err = json.Unmarshal(body, &event)
 		if err != nil {
-			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
+			a.BaseLogger.Info("failed to parse telemetry request", zap.Error(err))
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		// Copy the auth header
-		proxyReq.Header = http.Header{
-			"Authorization": r.Header["Authorization"],
+		// Pass as raw event to the telemetry client
+		err = a.activity.RecordRaw(event)
+		if err != nil {
+			a.BaseLogger.Info("failed to proxy telemetry event from UI", zap.Error(err))
 		}
-
-		// Send event in the background to avoid blocking the frontend.
-		// NOTE: If we stay with this telemetry approach, we should refactor and use ./cli/pkg/telemetry for batching and flushing events.
-		go func() {
-			// Send proxied request
-			resp, err := http.DefaultClient.Do(proxyReq)
-			if err != nil {
-				a.BaseLogger.Debug("failed to send telemetry", zap.Error(err))
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-			resp.Body.Close()
-		}()
-
-		// Done
 		w.WriteHeader(http.StatusOK)
 	})
 }
 
+// emitStartEvent sends a telemetry event with information about the project' state.
+// It is not a blocking operation (events are flushed in the background).
 func (a *App) emitStartEvent(ctx context.Context) error {
 	repo, instanceID, err := cmdutil.RepoForProjectPath(a.ProjectPath)
 	if err != nil {
@@ -574,16 +555,14 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	var sourceDrivers []string
+	var connectorNames []string
 	for _, connector := range connectors {
-		sourceDrivers = append(sourceDrivers, connector.Name)
+		connectorNames = append(connectorNames, connector.Name)
 	}
 
-	tel := telemetry.New(a.Version)
-	tel.EmitStartEvent(sourceDrivers, a.Instance.OLAPConnector)
+	a.activity.RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
-	err = tel.Flush(ctx)
-	return err
+	return nil
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.
