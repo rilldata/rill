@@ -123,7 +123,7 @@ dimensions:
     await page.getByRole("button", { name: "Select a context column" }).click();
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "USD" }).click();
-    await expect(measuresButton).toHaveText("showing USD");
+    await expect(measuresButton).toHaveText("Showing USD");
     // turn on a context column to check the formatting there
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
@@ -134,7 +134,7 @@ dimensions:
 
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
-    await expect(measuresButton).toHaveText("showing percentage");
+    await expect(measuresButton).toHaveText("Showing percentage");
 
     await expect(
       page.getByRole("button", { name: "null 9.9M% 33%" }),
@@ -143,7 +143,7 @@ dimensions:
     // try interval_ms...
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "interval_ms" }).click();
-    await expect(measuresButton).toHaveText("showing interval_ms");
+    await expect(measuresButton).toHaveText("Showing interval_ms");
     // ...and add a time comparison to check absolute change
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
@@ -159,7 +159,7 @@ dimensions:
     // try No Format...
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "No Format" }).click();
-    await expect(measuresButton).toHaveText("showing No Format");
+    await expect(measuresButton).toHaveText("Showing No Format");
     // ...with percent change context column
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
