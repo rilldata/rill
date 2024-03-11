@@ -96,9 +96,9 @@ func (s *intakeSink) flush() {
 	s.buffer = make([]Event, 0, s.opts.BufferSize)
 
 	s.wg.Add(1)
-	defer s.wg.Done()
 
 	go func() {
+		defer s.wg.Done()
 		err := s.send(events)
 		if err != nil {
 			s.logger.Error("could not flush activity events", zap.Error(err))

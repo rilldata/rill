@@ -143,24 +143,24 @@ func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.Key
 	data := c.resolveAttrs(context.Background(), extraAttrs)
 
 	if _, ok := data["install_id"]; !ok {
-		panic("install_id is required for a legacy behavioral event")
+		data["install_id"] = ""
 	}
 
 	if _, ok := data["user_id"]; !ok {
-		panic("user_id is required for a legacy behavioral event")
+		data["user_id"] = ""
 	}
 
-	val, ok := data[AttrKeyServiceCommit]
+	_, ok := data[AttrKeyServiceCommit]
 	if !ok {
-		panic("service_commit is required for a legacy behavioral event")
+		data[AttrKeyServiceCommit] = ""
 	}
-	data["build_id"] = val
+	data["build_id"] = data[AttrKeyServiceCommit]
 
-	val, ok = data[AttrKeyServiceVersion]
+	_, ok = data[AttrKeyServiceVersion]
 	if !ok {
-		panic("service_version is required for a legacy behavioral event")
+		data[AttrKeyServiceVersion] = ""
 	}
-	data["version"] = val
+	data["version"] = data[AttrKeyServiceVersion]
 
 	if val, ok := data["olap_connector"]; ok {
 		payload := make(map[string]any)
