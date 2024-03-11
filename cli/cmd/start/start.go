@@ -121,7 +121,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// If keypath or certpath provided, but not the other, display error
 			// If keypath and certpath provided, check if the file exists
 			if (tlsCertPath != "" && tlsKeyPath == "") || (tlsCertPath == "" && tlsKeyPath != "") {
-				return fmt.Errorf("both --cert and --key must be provided")
+				return fmt.Errorf("both --tls-cert and --tls-key must be provided")
 			} else if tlsCertPath != "" && tlsKeyPath != "" {
 				// Check to ensure the paths are valid
 				if _, err := os.Stat(tlsCertPath); os.IsNotExist(err) {
