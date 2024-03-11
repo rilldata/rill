@@ -21,7 +21,6 @@
 
   $: menuGroups = getMenuGroups(selectableGroups, selectedItems, searchText);
 
-  $: console.log("menuGroups", menuGroups);
   $: numSelected = selectedItems.reduce(
     (sel, items) => sel + items.filter((i) => i).length,
     0,
