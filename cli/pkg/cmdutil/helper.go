@@ -151,7 +151,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 			SinkInterval:   time.Second,
 		})
 
-		// Wrap the intake sink in a filter sink that omits all metrics events except those on the allow list (see metricEventAllowList for details).
+		// Wrap the intake sink in a filter sink that omits metrics events (since they are quite chatty and potentially sensitive).
 		// (Remember, this telemetry client will only be used on local.)
 		sink := activity.NewFilterSink(intakeSink, func(e activity.Event) bool {
 			return e.EventType != activity.EventTypeMetric
