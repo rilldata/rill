@@ -23,15 +23,18 @@
 <DropdownMenu.Root bind:open={active}>
   <DropdownMenu.Trigger asChild let:builder>
     <Button builders={[builder]} type="text" label={ariaLabel} on:click>
-      {fixedText}
-      <span class="font-bold truncate">{firstSelection?.main}</span>
-      <span
-        class="transition-transform"
-        class:hidden={disabled}
-        class:-rotate-180={active}
+      <div
+        class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
       >
-        <CaretDownIcon />
-      </span>
+        <p class="truncate">{fixedText} <b>{firstSelection?.main}</b></p>
+        <span
+          class="transition-transform"
+          class:hidden={disabled}
+          class:-rotate-180={active}
+        >
+          <CaretDownIcon />
+        </span>
+      </div>
     </Button>
   </DropdownMenu.Trigger>
 

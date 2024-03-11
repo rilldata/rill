@@ -120,9 +120,7 @@
 <div>
   {#if measures && options.length && selection}
     <div
-      class="flex flex-row items-center ui-copy-muted"
-      style:padding-left="22px"
-      style:grid-column-gap=".4rem"
+      class="flex flex-row items-center ui-copy-muted gap-x-0.5"
       in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
@@ -137,7 +135,7 @@
       />
 
       <SelectMenu
-        fixedText="showing"
+        fixedText="Showing"
         {options}
         selections={[selection.key]}
         on:select={handleMeasureUpdate}
