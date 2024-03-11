@@ -9,21 +9,11 @@ export async function createChart(instanceId: string, newChartName: string) {
     {
       blob: `kind: chart
 data:
-  name: MetricsViewAggregation
-  args:
-    metrics_view: Bids_Sample_Dash
-    measures:
-      - name: measure_2
-    dimensions:
-      - name: advertiser_name
-    timeRange:
-      start: '2023-03-07T00:30:00.000Z'
-      end: '2023-03-08T00:30:00.000Z'
-    sort:
-    - desc: true
-      name: measure_2
-    limit: '20'
-    offset: '0'
+  metrics_sql: |
+    SELECT advertiser_name, AGGREGATE(measure_2) as measure_2
+    FROM Bids_Sample_Dash
+    GROUP BY advertiser_name
+    LIMIT 20
 
 vega_lite: |
   {

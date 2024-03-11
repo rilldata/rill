@@ -2,34 +2,32 @@
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { getQueryFromDataSpec } from "./data/queryMapper";
-
-  const queryClient = useQueryClient();
+  import { createQuery } from "@tanstack/svelte-query";
 
   export let chartName: string;
   $: error = "";
   $: chart = useChart($runtime.instanceId, chartName);
-
+  $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
   $: vegaSpec = $chart?.data?.chart?.spec?.vegaLiteSpec;
-  $: queryName = $chart?.data?.chart?.spec?.queryName;
-  $: queryArgs = $chart?.data?.chart?.spec?.queryArgsJson;
-
-  let dataStore;
-
-  $: if (queryName && queryArgs) {
-    dataStore = getQueryFromDataSpec(
-      $runtime.instanceId,
-      queryClient,
-      queryName,
-      queryArgs,
-    );
-  }
-
   $: data = {};
 
-  $: if ($dataStore?.data?.data) {
-    data = { table: $dataStore?.data?.data };
+  async function fetchChartData(chartName: string) {
+    const api_url = `http://localhost:9009/v1/instances/default/charts/${chartName}/data`;
+    const response = await fetch(api_url);
+    if (!response.ok) {
+      error = `HTTP error! status: ${response.status}`;
+      console.warn(response);
+    }
+    return response.json();
+  }
+
+  $: chartDataQuery = createQuery({
+    queryKey: [`chart-data`, chartName, metricsQuery],
+    queryFn: () => fetchChartData(chartName),
+  });
+
+  $: if (!$chartDataQuery.isFetching && $chartDataQuery?.data) {
+    data = { table: $chartDataQuery?.data };
   }
 
   let parsedVegaSpec = undefined;
