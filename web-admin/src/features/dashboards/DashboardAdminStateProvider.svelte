@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { useQueryClient } from "@rilldata/svelte-query";
+  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
   import {
     createTimeRangeSummary,
     useMetricsView,
@@ -7,12 +9,13 @@
   } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { hasPersistentDashboardData } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import { syncDashboardState } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import Spinner from "../../entity-management/Spinner.svelte";
-  import { EntityStatus } from "../../entity-management/types";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   export let metricViewName: string;
 
@@ -26,20 +29,38 @@
     metricViewName,
   );
 
+  const queryClient = useQueryClient();
+  $: bookmarks = getBookmarks(
+    queryClient,
+    $runtime?.instanceId,
+    $page.params.organization,
+    $page.params.project,
+    metricViewName,
+  );
+
   function syncDashboardStateLocal() {
+    let stateToLoad = $page.url.searchParams.get("state");
+    if (
+      !hasPersistentDashboardData() &&
+      !stateToLoad &&
+      $bookmarks.data?.home.resource.data
+    ) {
+      stateToLoad = $bookmarks.data?.home.resource.data;
+    }
     syncDashboardState(
       metricViewName,
       $metricsView.data,
       $metricsViewSchema.data?.schema,
       $timeRangeQuery.data,
-      $page.url.searchParams.get("state"),
+      stateToLoad,
     );
   }
 
   $: if (
     $metricsView.data &&
     $metricsViewSchema.data &&
-    ($timeRangeQuery.data || !$hasTimeSeries.data)
+    ($timeRangeQuery.data || !$hasTimeSeries.data) &&
+    !$bookmarks.isFetching
   ) {
     syncDashboardStateLocal();
   }
