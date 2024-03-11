@@ -89,6 +89,24 @@ export function getBookmarks(
   );
 }
 
+export function searchBookmarks(
+  bookmarks: Bookmarks,
+  searchText: string,
+): Bookmarks {
+  if (!searchText || !bookmarks) return bookmarks;
+  searchText = searchText.toLowerCase();
+  const matchName = (bookmark: BookmarkEntry) =>
+    bookmark.resource.displayName.toLowerCase().includes(searchText);
+  return {
+    home:
+      bookmarks.home?.resource && matchName(bookmarks.home)
+        ? bookmarks.home
+        : undefined,
+    personal: bookmarks?.personal.filter(matchName) ?? [],
+    shared: bookmarks?.shared.filter(matchName) ?? [],
+  };
+}
+
 export function getPrettySelectedTimeRange(
   queryClient: QueryClient,
   instanceId: string,

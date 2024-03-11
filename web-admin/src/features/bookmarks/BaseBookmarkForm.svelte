@@ -96,7 +96,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
     <Label class="font-normal flex gap-x-1 items-center" for="filtersOnly">
       <span>Save filters only</span>
-      <Tooltip>
+      <Tooltip distance={8}>
         <InfoCircle />
         <TooltipContent
           class="whitespace-pre-line"
@@ -114,7 +114,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <Label class="flex flex-col font-normal" for="absoluteTimeRange">
       <div class="text-left text-sm flex gap-x-1 items-center">
         <span>Absolute time range</span>
-        <Tooltip>
+        <Tooltip distance={8}>
           <InfoCircle />
           <TooltipContent
             class="whitespace-pre-line"
