@@ -24,9 +24,10 @@ For the most part, templating should be used in [SQL models](../build/models/mod
 
 Templating can be used in conjunction with variables to apply more advanced logic to your sources and models. 
 
-Variables can be set in Rill through one of two methods:
+Variables can be set in Rill through one of the following methods:
 1. Defining the corresponding key-value pair under the top-level `vars` key in `rill.yaml`
 2. Manually passing in the variable when starting Rill (i.e. `rill start --var <var_name>=<value>`)
+3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](../build/credentials/credentials.md#variables))
 
 For more information, please check our [reference documentation](/reference/project-files/rill-yaml.md#setting-variables).
 

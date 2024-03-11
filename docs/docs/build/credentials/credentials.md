@@ -72,5 +72,26 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 :::
 
+### variables
+
+Project variables work exactly the same way as credentials and can be pushed to Cloud / pulled locally using the same `rill env push` and `rill env pull` commands specifically. To do this, if you're in Rill Developer and want to set a variable through your `<RILL_PROJECT_HOME>/.env` file (and save):
+
+```bash
+variable=xyz
+```
+
+This variable should then be usable and referenceable for [templating](../../deploy/templating.md) purposes in the local instance of your project. Then, if you want to push these variable definitions to your deployed Cloud project, you can use `rill env push`. Similarly, if these variables had already been set in Rill Cloud for your project, you can use `rill env pull` to clone these variables locally (in your `.env` file).
+
+:::info Fun Fact
+
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively).
+
+:::
+
+:::tip Avoid committing sensitive information to Git
+
+It's never a good idea to commit sensitive information to Git and goes against security best practices. Similar to credentials, if there are sensitive variables that you don't want to commit publicly to your `rill.yaml` configuration file (and thus potentially accessible by others), it's recommended to set them in your `.env` file directly and/or use `rill env set` via the CLI (and then optionally push / pull them as necessary).
+
+:::
 
 

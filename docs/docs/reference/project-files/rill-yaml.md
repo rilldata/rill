@@ -78,12 +78,23 @@ vars:
   string_var: "string_value"
 ```
 
-:::tip Overriding variables locally
+:::info Overriding variables locally
 
 Variables also follow an order of precedence and can be overriden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 
 ```bash
 rill start --var numeric_var=100 --var string_var="different_value"
 ```
+
+:::
+
+:::tip Setting variables through `.env`
+
+Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file (or using the `rill env set` CLI command), such as:
+```bash
+variable=xyz
+```
+
+Similar to how [connector credentials can be pushed / pulled](../../build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
