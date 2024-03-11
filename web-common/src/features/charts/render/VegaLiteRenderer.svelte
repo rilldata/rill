@@ -4,7 +4,12 @@
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
 
-  let options = {
+  // EmbedOptions type missing from svelte-vega
+  interface Options {
+    theme: undefined | "vox" | "ggplot2";
+  }
+
+  let options: Options = {
     theme: "vox",
   };
 

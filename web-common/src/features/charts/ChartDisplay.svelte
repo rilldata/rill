@@ -12,6 +12,7 @@
   $: data = {};
 
   async function fetchChartData(chartName: string) {
+    // TODO: replace with prod API call
     const api_url = `http://localhost:9009/v1/instances/default/charts/${chartName}/data`;
     const response = await fetch(api_url);
     if (!response.ok) {
