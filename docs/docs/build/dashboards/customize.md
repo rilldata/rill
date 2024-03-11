@@ -88,7 +88,7 @@ For more details about configuring themes, you can refer to our [Theme YAML](/re
 
 :::
 
-## Changing dashboard measure formatting
+## Dashboard Measure Formatting
 
 Formatting for individual measures on a dashboard can be controlled through the `format_preset` and `format_d3` properties.
 
@@ -109,6 +109,6 @@ measures:
 
 :::info Measure formatting options
 
-For a full list of available measure formatting options, please see our [Dashboard YAML](/reference/project-files/dashboards.md) reference page.
+For a full list of available dashboard measure formatting options, please see our [Dashboard YAML](/reference/project-files/dashboards.md) reference page.
 
 :::
