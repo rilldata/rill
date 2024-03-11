@@ -70,7 +70,7 @@
 
 <style lang="postcss">
   button {
-    @apply absolute z-[1000];
+    @apply absolute z-10;
     /* @apply bg-red-400; */
   }
 
