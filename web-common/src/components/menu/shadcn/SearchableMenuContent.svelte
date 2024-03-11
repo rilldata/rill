@@ -81,10 +81,11 @@
                 {...allowMultiSelect ? { checked: selected } : {}}
                 class="text-xs cursor-pointer"
                 role="menuitem"
-                bind:checked={selected}
                 disabled={singleSelection && selected}
+                aria-disabled={singleSelection && selected}
                 on:click={() => {
                   if (singleSelection && selected) return;
+
                   dispatch("item-clicked", { index, name });
                 }}
               >
