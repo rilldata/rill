@@ -34,13 +34,13 @@ var spec = drivers.Spec{
 			Description: "Output location in S3.",
 			Placeholder: "s3://bucket-name/path/",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 		},
 		{
 			Key:         "workgroup",
 			DisplayName: "AWS Redshift workgroup",
 			Description: "AWS Redshift workgroup",
-			Placeholder: "primary",
+			Placeholder: "default-workgroup",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
@@ -56,25 +56,25 @@ var spec = drivers.Spec{
 			Key:         "database",
 			DisplayName: "Redshift database",
 			Description: "Redshift database",
-			Placeholder: "us-east-1",
+			Placeholder: "dev",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 		},
 		{
 			Key:         "cluster_identifier",
 			DisplayName: "Redshift cluster identifier",
 			Description: "Redshift cluster identifier",
-			Placeholder: "us-east-1",
+			Placeholder: "redshift-cluster-1",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 		{
-			Key:         "role",
+			Key:         "role_arn",
 			DisplayName: "Redshift role ARN",
 			Description: "Redshift role ARN",
-			Placeholder: "us-east-1",
+			Placeholder: "arn:aws:iam::03214372:role/service-role/AmazonRedshift-CommandsAccessRole-20240307T203902",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
@@ -200,6 +200,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
+}
+
+// AsAI implements drivers.Handle.
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+	return nil, false
 }
 
 type configProperties struct {

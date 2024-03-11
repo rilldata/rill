@@ -42,10 +42,6 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 	}
 
 	client := redshiftdata.NewFromConfig(awsConfig)
-	// outputLocation, err := resolveOutputLocation(ctx, client, conf)
-	// if err != nil {
-	// return nil, err
-	// }
 
 	outputURL, err := url.Parse(conf.OutputLocation)
 	if err != nil {
@@ -115,7 +111,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 
 	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,
 	// Else fallback to the SDK's default credential chain (environment, instance, etc) unless AllowHostAccess is false
-	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" || c.config.SessionToken != "" {
+	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" {
 		p := credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)
 		loadOptions = append(loadOptions, config.WithCredentialsProvider(p))
 	} else if !c.config.AllowHostAccess {
@@ -126,7 +122,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, conf *sourceProperties, unloadLocation string) error {
-	finalSQL := fmt.Sprintf("UNLOAD ('%s') TO '%s' FORMAT AS PARQUET", conf.SQL, unloadLocation)
+	finalSQL := fmt.Sprintf("UNLOAD ('%s') TO '%s/' IAM_ROLE '%s' FORMAT AS PARQUET", conf.SQL, unloadLocation, conf.RoleARN)
 
 	executeParams := &redshiftdata.ExecuteStatementInput{
 		Sql:      &finalSQL,
@@ -227,7 +223,7 @@ func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, pref
 			}
 		}
 
-		if out.IsTruncated && out.NextContinuationToken != nil {
+		if *out.IsTruncated && out.NextContinuationToken != nil {
 			continuationToken = out.NextContinuationToken
 		} else {
 			break
@@ -242,8 +238,8 @@ type sourceProperties struct {
 	OutputLocation    string `mapstructure:"output_location"`
 	Workgroup         string `mapstructure:"workgroup"`
 	Database          string `mapstructure:"database"`
-	ClusterIdentifier string `mapstructure:"cluster_identifier"`
-	RoleARN           string `mapstructure:"role_arn"`
+	ClusterIdentifier string `mapstructure:"cluster.identifier"`
+	RoleARN           string `mapstructure:"role.arn"`
 	AWSRegion         string `mapstructure:"region"`
 }
 

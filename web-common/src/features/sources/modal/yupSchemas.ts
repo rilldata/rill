@@ -114,8 +114,8 @@ export function getYupSchema(connector: V1ConnectorSpec) {
       });
     case "redshift":
       return yup.object().shape({
-        sql: yup.string().required("sql is required"),
-        database: yup.string().required("database is required"),
+        sql: yup.string().required("SQL is required"),
+        database: yup.string().required("database name is required"),
         sourceName: yup
           .string()
           .matches(
@@ -126,7 +126,8 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         output_location: yup.string().required("S3 location for temporary files"),
         workgroup: yup.string().optional(),
         cluster_identifier: yup.string().optional(),
-        role_arn: yup.string().required("Role ARN associated with the Redshift cluster")
+        role_arn: yup.string().required("Role ARN associated with the Redshift cluster"),
+        region: yup.string().optional()
       });
 
     case "mysql":
