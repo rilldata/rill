@@ -205,7 +205,7 @@ func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (st
 	}
 
 	if !security.Access || security.ExcludeAll {
-		return "", nil, fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name)
+		return "", nil, fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
 	}
 
 	dims := make(map[string]any, len(spec.Dimensions))
