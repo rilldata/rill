@@ -6,19 +6,19 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type usageDimsContextKey struct{}
-
-func WithDims(ctx context.Context, dims ...attribute.KeyValue) context.Context {
-	ctxDims := GetDimsFromContext(ctx)
-	if ctxDims == nil {
-		return context.WithValue(ctx, usageDimsContextKey{}, &dims)
+func SetAttributes(ctx context.Context, attrs ...attribute.KeyValue) context.Context {
+	ctxAttrs := attrsFromContext(ctx)
+	if ctxAttrs == nil {
+		return context.WithValue(ctx, attrsContextKey{}, &attrs)
 	}
-	*ctxDims = append(*ctxDims, dims...)
+	*ctxAttrs = append(*ctxAttrs, attrs...)
 	return ctx
 }
 
-func GetDimsFromContext(ctx context.Context) *[]attribute.KeyValue {
-	v, ok := ctx.Value(usageDimsContextKey{}).(*[]attribute.KeyValue)
+type attrsContextKey struct{}
+
+func attrsFromContext(ctx context.Context) *[]attribute.KeyValue {
+	v, ok := ctx.Value(attrsContextKey{}).(*[]attribute.KeyValue)
 	if !ok {
 		return nil
 	}

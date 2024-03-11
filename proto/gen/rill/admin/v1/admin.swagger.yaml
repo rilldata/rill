@@ -5,6 +5,7 @@ info:
 tags:
   - name: AIService
   - name: AdminService
+  - name: TelemetryService
 consumes:
   - application/json
 produces:
@@ -1915,15 +1916,17 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/telemetry:
+  /v1/telemetry/events:
     post:
-      summary: Telemetry sends telemetry data to the server
-      operationId: AdminService_Telemetry
+      summary: |-
+        RecordEvents sends a batch of telemetry events.
+        The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
+      operationId: TelemetryService_RecordEvents
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TelemetryResponse'
+            $ref: '#/definitions/v1RecordEventsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1933,9 +1936,9 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1TelemetryRequest'
+            $ref: '#/definitions/v1RecordEventsRequest'
       tags:
-        - AdminService
+        - TelemetryService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -2816,6 +2819,15 @@ definitions:
           $ref: '#/definitions/v1VirtualFile'
       nextPageToken:
         type: string
+  v1RecordEventsRequest:
+    type: object
+    properties:
+      events:
+        type: array
+        items:
+          type: object
+  v1RecordEventsResponse:
+    type: object
   v1RemoveBookmarkResponse:
     type: object
   v1RemoveOrganizationMemberResponse:
@@ -2992,21 +3004,6 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
-  v1TelemetryRequest:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Name passed to activity module's name arg
-      value:
-        type: number
-        format: float
-        title: Value passed to activity module's value arg
-      event:
-        type: object
-        title: Free form struct of the actual event
-  v1TelemetryResponse:
-    type: object
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:

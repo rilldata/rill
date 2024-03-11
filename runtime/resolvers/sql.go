@@ -3,12 +3,11 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -19,121 +18,153 @@ import (
 )
 
 func init() {
-	runtime.RegisterAPIResolverInitializer("SQL", newSQL)
+	runtime.RegisterResolverInitializer("SQL", newSQL)
 }
 
-type SQLResolver struct {
-	resolvedSQL string
-	deps        []*runtimev1.ResourceName
+type sqlResolver struct {
+	sql         string
+	refs        []*runtimev1.ResourceName
 	olap        drivers.OLAPStore
-	releaseFunc func()
+	olapRelease func()
+	priority    int
 }
 
-func newSQL(ctx context.Context, opts *runtime.APIResolverOptions) (runtime.APIResolver, error) {
-	sql := opts.ResolverProperties.Fields["sql"].GetStringValue()
-	if sql == "" {
-		return nil, errors.New("no sql query found for sql resolver")
-	}
-	resolvedSQL, deps, err := resolveSQLAndDeps(ctx, sql, opts)
-	if err != nil {
+type sqlProps struct {
+	Connector string `mapstructure:"connectors"`
+	SQL       string `mapstructure:"sql"`
+}
+
+type sqlArgs struct {
+	Priority int `mapstructure:"priority"`
+	// NOTE: Not exhaustive. Any other args are passed to the "args" property when resolving the SQL template.
+}
+
+// newSQL creates a resolver that executes a SQL query.
+// It supports the use of templating in the SQL string to inject user attributes and args into the SQL query.
+func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+	return newSQLWithRefs(ctx, opts, nil)
+}
+
+// newSQLWithRefs is similar to newSQL, but allows providing extra refs.
+// This capability is required by the metrics SQL resolver to wrap this regular SQL resolver.
+func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRefs []*runtimev1.ResourceName) (runtime.Resolver, error) {
+	props := &sqlProps{}
+	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
 	}
+
+	args := &sqlArgs{}
+	if err := mapstructure.Decode(opts.Args, args); err != nil {
+		return nil, err
+	}
+
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SQLResolver{
-		resolvedSQL: resolvedSQL,
-		deps:        deps,
+	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, opts.UserAttributes, opts.ForExport)
+	if err != nil {
+		return nil, err
+	}
+
+	if extraRefs != nil {
+		refs = append(refs, extraRefs...)
+		refs = normalizeRefs(refs)
+	}
+
+	return &sqlResolver{
+		sql:         resolvedSQL,
+		refs:        refs,
 		olap:        olap,
-		releaseFunc: release,
+		olapRelease: release,
+		priority:    args.Priority,
 	}, nil
 }
 
-// Key that can be used for caching
-func (r *SQLResolver) Key() string {
-	return r.resolvedSQL
+func (r *sqlResolver) Close() error {
+	r.olapRelease()
+	return nil
 }
 
-// Deps referenced by the query
-func (r *SQLResolver) Deps() []*runtimev1.ResourceName {
-	return r.deps
+func (r *sqlResolver) Key() string {
+	return r.sql
 }
 
-// Validate the query without running any "expensive" operations
-func (r *SQLResolver) Validate(ctx context.Context) error {
+func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
+	return r.refs
+}
+
+func (r *sqlResolver) Validate(ctx context.Context) error {
 	_, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:  r.resolvedSQL,
+		Query:  r.sql,
 		DryRun: true,
 	})
 	return err
 }
 
-// ResolveInteractive Resolve for interactive use (e.g. API requests or alerts)
-func (r *SQLResolver) ResolveInteractive(ctx context.Context, priority int) (runtime.Result, error) {
+func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.resolvedSQL,
-		Priority: priority,
+		Query:    r.sql,
+		Priority: r.priority,
 	})
 	if err != nil {
-		return runtime.Result{}, err
+		return nil, err
 	}
 	defer res.Close()
 
-	var out []map[string]interface{}
+	var out []map[string]any
 	for res.Rows.Next() {
-		row := make(map[string]interface{})
+		row := make(map[string]any)
 		err = res.Rows.MapScan(row)
 		if err != nil {
-			return runtime.Result{}, err
+			return nil, err
 		}
 		out = append(out, row)
 	}
 
-	b, err := json.Marshal(out)
+	data, err := json.Marshal(out)
 	if err != nil {
-		return runtime.Result{}, err
+		return nil, err
 	}
 
-	return runtime.Result{
-		Data:  b,
-		Cache: r.olap.Dialect() == drivers.DialectDuckDB,
+	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
+	var cache bool
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		cache = len(r.refs) != 0
+	}
+
+	return &runtime.ResolverResult{
+		Data:  data,
+		Cache: cache,
 	}, nil
 }
 
-// ResolveExport Resolve for export to a file (e.g. downloads or reports)
-func (r *SQLResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ExportOptions) error {
+func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
+	exportOpts := &runtime.ExportOptions{
+		Format:       opts.Format,
+		Priority:     r.priority,
+		PreWriteHook: opts.PreWriteHook,
+	}
+
+	filename := "api_export_" + time.Now().Format("2006-01-02T15-04-05.000Z")
+
 	switch r.olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
-			filename := r.generateFilename()
-			if err := queries.DuckDBCopyExport(ctx, w, opts, r.resolvedSQL, nil, filename, r.olap, opts.Format); err != nil {
-				return err
-			}
-		} else {
-			if err := r.generalExport(ctx, w, opts); err != nil {
-				return err
-			}
+			return queries.DuckDBCopyExport(ctx, w, exportOpts, r.sql, nil, filename, r.olap, opts.Format)
 		}
-	case drivers.DialectDruid:
-		if err := r.generalExport(ctx, w, opts); err != nil {
-			return err
-		}
-	case drivers.DialectClickHouse:
-		if err := r.generalExport(ctx, w, opts); err != nil {
-			return err
-		}
+		return r.generalExport(ctx, w, filename, exportOpts)
+	case drivers.DialectDruid, drivers.DialectClickHouse:
+		return r.generalExport(ctx, w, filename, exportOpts)
 	default:
-		return fmt.Errorf("not available for dialect '%s'", r.olap.Dialect())
+		return fmt.Errorf("export not available for dialect %q", r.olap.Dialect().String())
 	}
-
-	return nil
 }
 
-func (r *SQLResolver) generalExport(ctx context.Context, w io.Writer, opts *runtime.ExportOptions) error {
+func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.resolvedSQL,
+		Query:    r.sql,
 		Priority: opts.Priority,
 	})
 	if err != nil {
@@ -150,7 +181,7 @@ func (r *SQLResolver) generalExport(ctx context.Context, w io.Writer, opts *runt
 
 	var data []*structpb.Struct
 	for res.Rows.Next() {
-		row := make(map[string]interface{})
+		row := make(map[string]any)
 		err = res.Rows.MapScan(row)
 		if err != nil {
 			return err
@@ -163,7 +194,7 @@ func (r *SQLResolver) generalExport(ctx context.Context, w io.Writer, opts *runt
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(r.generateFilename())
+		err = opts.PreWriteHook(filename)
 		if err != nil {
 			return err
 		}
@@ -183,38 +214,37 @@ func (r *SQLResolver) generalExport(ctx context.Context, w io.Writer, opts *runt
 	return nil
 }
 
-func (r *SQLResolver) Close() error {
-	r.releaseFunc()
-	return nil
-}
-
-func (r *SQLResolver) generateFilename() string {
-	return "api_export_" + time.Now().Format("2006-01-02T15-04-05.000Z")
-}
-
-func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.APIResolverOptions) (string, []*runtimev1.ResourceName, error) {
-	dialect, err := getDialect(ctx, opts.Runtime, opts.InstanceID)
-	if err != nil {
-		return "", nil, err
-	}
-	var deps []*runtimev1.ResourceName
-
+// buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.
+func buildSQL(sqlTemplate string, dialect drivers.Dialect, args, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
+	// Resolve the SQL template
+	var refs []*runtimev1.ResourceName
 	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
-		User:       opts.UserAttributes,
-		ExtraProps: opts.Args,
-		Self:       compilerv1.TemplateResource{}, // Not defined for resolvers
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return safeSQLName(ref.Name), nil
+		User: userAttributes,
+		ExtraProps: map[string]any{
+			"args":   args,
+			"export": forExport,
 		},
-		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
-			// TODO: Implement this, do we need to support this?
-			return compilerv1.TemplateResource{}, nil
+		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+			// Add to the list of potential refs
+			if ref.Kind == compilerv1.ResourceKindUnspecified {
+				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
+				refs = append(refs,
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: ref.Name},
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
+				)
+			} else {
+				refs = append(refs, runtime.ResourceNameFromCompiler(ref))
+			}
+
+			// Return the escaped identifier
+			return dialect.EscapeIdentifier(ref.Name), nil
 		},
 	})
 	if err != nil {
 		return "", nil, err
 	}
 
+	// For DuckDB, we can do ref inference using the SQL AST (similar to the rillv1 compiler).
 	if dialect == drivers.DialectDuckDB {
 		ast, err := duckdbsql.Parse(sql)
 		if err != nil {
@@ -222,48 +252,14 @@ func resolveSQLAndDeps(ctx context.Context, sqlTemplate string, opts *runtime.AP
 		}
 		for _, t := range ast.GetTableRefs() {
 			if !t.LocalAlias && t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
-				deps = append(deps, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: t.Name})
+				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
+				refs = append(refs,
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: t.Name},
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: t.Name},
+				)
 			}
 		}
-	} else {
-		meta, err := compilerv1.AnalyzeTemplate(sqlTemplate)
-		if err != nil {
-			return "", nil, err
-		}
-		for _, ref := range meta.Refs {
-			deps = append(deps, &runtimev1.ResourceName{Kind: ref.Kind.String(), Name: ref.Name})
-		}
 	}
 
-	return sql, deps, nil
-}
-
-func getDialect(ctx context.Context, r *runtime.Runtime, instanceID string) (drivers.Dialect, error) {
-	i, err := r.Instance(ctx, instanceID)
-	if err != nil {
-		return drivers.DialectUnspecified, err
-	}
-	dialect := connectorToDialect(i.ResolveOLAPConnector())
-	return dialect, nil
-}
-
-func connectorToDialect(connector string) drivers.Dialect {
-	switch connector {
-	case "duckdb":
-		return drivers.DialectDuckDB
-	case "druid":
-		return drivers.DialectDruid
-	case "clickhouse":
-		return drivers.DialectClickHouse
-	default:
-		return drivers.DialectUnspecified
-	}
-}
-
-// safeSQLName returns a quoted SQL identifier.
-func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+	return sql, normalizeRefs(refs), nil
 }

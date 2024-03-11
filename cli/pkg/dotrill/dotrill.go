@@ -28,8 +28,10 @@ const (
 	InstallIDStateKey              = "install_id"
 	RepresentingUserCredentialsKey = "representing_user"
 	BackupTokenCredentialsKey      = "backup_token"
-	VersionKey                     = "latest_version"
-	VersionUpdatedAtKey            = "latest_version_checked_at"
+	LatestVersionStateKey          = "latest_version"
+	LatestVersionCheckedAtStateKey = "latest_version_checked_at"
+	UserIDStateKey                 = "user_id"
+	UserCheckHashStateKey          = "user_check_hash"
 )
 
 // homeDir is the user's home directory. We keep this as a global to override in unit tests.
@@ -152,19 +154,19 @@ func SetRepresentingUser(email string) error {
 }
 
 func SetVersion(version string) error {
-	return Set(StateFilename, VersionKey, version)
+	return Set(StateFilename, LatestVersionStateKey, version)
 }
 
 func GetVersion() (string, error) {
-	return Get(StateFilename, VersionKey)
+	return Get(StateFilename, LatestVersionStateKey)
 }
 
 func SetVersionUpdatedAt(updatedAt string) error {
-	return Set(StateFilename, VersionUpdatedAtKey, updatedAt)
+	return Set(StateFilename, LatestVersionCheckedAtStateKey, updatedAt)
 }
 
 func GetVersionUpdatedAt() (string, error) {
-	return Get(StateFilename, VersionUpdatedAtKey)
+	return Get(StateFilename, LatestVersionCheckedAtStateKey)
 }
 
 // SetEnvToken backup the token for given env
@@ -177,6 +179,26 @@ func SetEnvToken(env, token string) error {
 func GetEnvToken(env string) (string, error) {
 	key := fmt.Sprintf("tokens.%s", env)
 	return Get(CredentialsFilename, key)
+}
+
+// GetCurrentUserID gets the current user ID
+func GetUserID() (string, error) {
+	return Get(StateFilename, UserIDStateKey)
+}
+
+// SetCurrentUserID saves the current user ID
+func SetUserID(userID string) error {
+	return Set(StateFilename, UserIDStateKey, userID)
+}
+
+// GetUserCheckHash gets the hash used to determine whether to re-fetch the user ID.
+func GetUserCheckHash() (string, error) {
+	return Get(StateFilename, UserCheckHashStateKey)
+}
+
+// SetUserCheckHash sets the hash used to determine whether to re-fetch the user ID.
+func SetUserCheckHash(hash string) error {
+	return Set(StateFilename, UserCheckHashStateKey, hash)
 }
 
 // AnalyticsInfo returns analytics info.

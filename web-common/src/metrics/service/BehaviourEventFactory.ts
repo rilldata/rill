@@ -24,6 +24,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      BehaviourEventAction.Navigate,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -46,6 +47,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      action,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -69,6 +71,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      BehaviourEventAction.SourceSuccess,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -92,6 +95,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      action,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -108,6 +112,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      BehaviourEventAction.DeployIntent,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
