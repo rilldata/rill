@@ -48,6 +48,8 @@ type Options struct {
 	AuthIssuerURL    string
 	AuthAudienceURL  string
 	DownloadRowLimit *int64
+	TLSCertPath      string
+	TLSKeyPath       string
 }
 
 type Server struct {
@@ -163,7 +165,12 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
-	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
+	options := graceful.ServeOptions{
+		Port:     s.opts.HTTPPort,
+		CertPath: s.opts.TLSCertPath,
+		KeyPath:  s.opts.TLSKeyPath,
+	}
+	return graceful.ServeHTTP(ctx, server, options)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
@@ -205,10 +212,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
 
-	// custom API handler
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiForName))))
+	// Add handler for dynamic APIs, i.e. APIs backed by resolvers (such as custom APIs defined in YAML).
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiHandler))))
 
-	// custom Chart Data handler
+	// Add handler for resolving chart data
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/charts/{name}/data", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.chartDataHandler))))
 
 	// Add Prometheus

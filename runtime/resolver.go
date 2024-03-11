@@ -2,109 +2,160 @@ package runtime
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
-	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type Result struct {
-	Data  []byte // marshalled array of Jsons
+// Resolver represents logic, such as a SQL query, that produces output data.
+// Resolvers are used to evaluate API requests, alerts, reports, etc.
+//
+// A resolver has two levels of configuration: static properties and dynamic arguments.
+// For example, a SQL resolver has a static property for the SQL query and dynamic arguments for the query parameters.
+// The static properties are usually declared in advance, such as in the YAML for a custom API, whereas the dynamic arguments are provided just prior to execution, such as in an API request.
+type Resolver interface {
+	// Close is called when done with the resolver.
+	// Note that the Resolve method may not have been called when Close is called (in case of cache hits or validation failures).
+	Close() error
+	// Key that can be used for caching. It can be a large string since the value will be hashed.
+	// The key should include all the properties and args that affect the output.
+	// It does not need to include the instance ID or resolver name, as those are added separately to the cache key.
+	Key() string
+	// Refs access by the resolver. The output may be approximate, i.e. some of the refs may not exist.
+	// The output should avoid duplicates and be stable between invocations.
+	Refs() []*runtimev1.ResourceName
+	// Validate the properties and args without running any expensive operations.
+	Validate(ctx context.Context) error
+	// ResolveInteractive resolves data for interactive use (e.g. API requests or alerts).
+	ResolveInteractive(ctx context.Context) (*ResolverResult, error)
+	// ResolveExport resolve data for export (e.g. downloads or reports).
+	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
+}
+
+// ResolverResult is the result of a resolver's execution.
+type ResolverResult struct {
+	// Data is a JSON encoded array of objects.
+	Data []byte
+	// Cache indicates whether the result can be cached.
 	Cache bool
 }
 
-type APIResolver interface {
-	// Key that can be used for caching
-	Key() string
-	// Deps referenced by the query
-	Deps() []*runtimev1.ResourceName
-	// Validate the query without running any "expensive" operations
-	Validate(ctx context.Context) error
-	// ResolveInteractive Resolve for interactive use (e.g. API requests or alerts)
-	ResolveInteractive(ctx context.Context, priority int) (Result, error)
-	// ResolveExport Resolve for export to a file (e.g. downloads or reports)
-	ResolveExport(ctx context.Context, w io.Writer, opts *ExportOptions) error
-	// Close any resources that needs to be released
-	Close() error
+// ResolverExportOptions are the options passed to a resolver's ResolveExport method.
+type ResolverExportOptions struct {
+	// Format is the format to export the result in.
+	Format runtimev1.ExportFormat
+	// PreWriteHook is a function that is called after the export has been prepared, but before the first bytes are output to the io.Writer.
+	PreWriteHook func(filename string) error
 }
 
-// APIResolverInitializers Resolvers should register themselves in this map from their package's init() function
-var APIResolverInitializers = make(map[string]APIResolverInitializer)
-
-func RegisterAPIResolverInitializer(name string, resolverInitializer APIResolverInitializer) {
-	APIResolverInitializers[name] = resolverInitializer
+// ResolverOptions are the options passed to a resolver initializer.
+type ResolverOptions struct {
+	Runtime        *Runtime
+	InstanceID     string
+	Properties     map[string]any
+	Args           map[string]any
+	UserAttributes map[string]any
+	ForExport      bool
 }
 
-type APIResolverInitializer func(ctx context.Context, opts *APIResolverOptions) (APIResolver, error)
+// ResolverInitializer is a function that initializes a resolver.
+type ResolverInitializer func(ctx context.Context, opts *ResolverOptions) (Resolver, error)
 
-type APIResolverOptions struct {
-	Runtime            *Runtime
+// ResolverInitializers tracks resolver initializers by name.
+var ResolverInitializers = make(map[string]ResolverInitializer)
+
+// RegisterResolverInitializer registers a resolver initializer by name.
+func RegisterResolverInitializer(name string, initializer ResolverInitializer) {
+	if ResolverInitializers[name] != nil {
+		panic(fmt.Errorf("resolver already registered for name %q", name))
+	}
+	ResolverInitializers[name] = initializer
+}
+
+// ResolveOptions are the options passed to the runtime's Resolve method.
+type ResolveOptions struct {
 	InstanceID         string
 	Resolver           string
-	ResolverProperties *structpb.Struct
+	ResolverProperties map[string]any
 	Args               map[string]any
 	UserAttributes     map[string]any
-	Priority           int
 }
 
-func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
-	resolverInitializer, ok := APIResolverInitializers[opts.Resolver]
+// Resolve resolves a query using the given options.
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, error) {
+	// Initialize the resolver
+	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
-		return nil, fmt.Errorf("no resolver found of type %q", opts.Resolver)
+		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
-	resolver, err := resolverInitializer(ctx, opts)
+	resolver, err := initializer(ctx, &ResolverOptions{
+		Runtime:        r,
+		InstanceID:     opts.InstanceID,
+		Properties:     opts.ResolverProperties,
+		Args:           opts.Args,
+		UserAttributes: opts.UserAttributes,
+		ForExport:      false,
+	})
 	if err != nil {
 		return nil, err
 	}
 	defer resolver.Close()
 
-	// Get dependency cache keys
-	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
+	// Build cache key based on the resolver's key and refs
+	ctrl, err := r.Controller(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, err
 	}
-	depKeys := make([]string, 0, len(resolver.Deps()))
-	for _, dep := range resolver.Deps() {
-		res, err := ctrl.Get(ctx, dep, false)
+	hash := md5.New()
+	if _, err := hash.Write([]byte(resolver.Key())); err != nil {
+		return nil, err
+	}
+	for _, ref := range resolver.Refs() {
+		res, err := ctrl.Get(ctx, ref, false)
 		if err != nil {
-			// Deps are approximate, not exact (see docstring for Deps()), so they may not all exist
+			// Refs are approximate, not exact (see docstring for Refs()), so they may not all exist
 			continue
 		}
-		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
-		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
-		depKeys = append(depKeys, key)
+
+		if _, err := hash.Write([]byte(res.Meta.Name.Kind)); err != nil {
+			return nil, err
+		}
+		if _, err := hash.Write([]byte(res.Meta.Name.Name)); err != nil {
+			return nil, err
+		}
+		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Seconds); err != nil {
+			return nil, err
+		}
+		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Nanos); err != nil {
+			return nil, err
+		}
 	}
-
-	depKey := strings.Join(depKeys, ";")
-
-	key := queryCacheKey{
-		instanceID:    opts.InstanceID,
-		queryKey:      resolver.Key(),
-		dependencyKey: depKey,
-	}.String()
+	sum := hex.EncodeToString(hash.Sum(nil))
+	key := fmt.Sprintf("inst:%s:resolver:%s:hash:%s", opts.InstanceID, opts.Resolver, sum)
 
 	// Try to get from cache
-	if val, ok := opts.Runtime.queryCache.cache.Get(key); ok {
+	if val, ok := r.queryCache.cache.Get(key); ok {
 		return val.([]byte), nil
 	}
 
 	// Load with singleflight
-	val, err := opts.Runtime.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
+	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
-		if val, ok := opts.Runtime.queryCache.cache.Get(key); ok {
+		if val, ok := r.queryCache.cache.Get(key); ok {
 			return val, nil
 		}
 
-		res, err := resolver.ResolveInteractive(ctx, opts.Priority)
+		res, err := resolver.ResolveInteractive(ctx)
 		if err != nil {
 			return nil, err
 		}
 
 		if res.Cache {
-			opts.Runtime.queryCache.cache.Set(key, res.Data, int64(len(res.Data)))
+			r.queryCache.cache.Set(key, res.Data, int64(len(res.Data)))
 		}
 		return res.Data, nil
 	})
@@ -113,5 +164,3 @@ func Resolve(ctx context.Context, opts *APIResolverOptions) ([]byte, error) {
 	}
 	return val.([]byte), nil
 }
-
-// TODO: Add a function for exporting the result to a file
