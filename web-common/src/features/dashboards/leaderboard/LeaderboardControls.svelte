@@ -1,6 +1,6 @@
 <script lang="ts">
   import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -124,7 +124,7 @@
       in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <SeachableFilterButton
+      <SearchableFilterButton
         selectableItems={$showHideDimensions.selectableItems}
         selectedItems={$showHideDimensions.selectedItems}
         on:item-clicked={toggleDimensionVisibility}
