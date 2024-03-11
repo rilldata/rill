@@ -56,7 +56,7 @@ export function prepareTimeSeries(
   comparison: V1TimeSeriesValue[] | undefined,
   timeGrainDuration: string,
   zone: string,
-) {
+): TimeSeriesDatum[] {
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
 

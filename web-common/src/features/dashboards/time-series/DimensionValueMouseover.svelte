@@ -62,9 +62,14 @@
 
   $: points = yValues
     .map((dimension) => {
+      const currentPointIsNull = dimension.y === null;
       const y = Number(dimension.y);
-      const currentPointIsNull = y === null;
-      let value = mouseoverFormat(y);
+      let value = mouseoverFormat(
+        dimension.y === null || typeof dimension.y === "string"
+          ? dimension.y
+          : y,
+      );
+
       if (validPercTotal) {
         const percOfTotal = y / validPercTotal;
         value =
