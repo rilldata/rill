@@ -23,7 +23,7 @@ Event telemetry propagate in various ways depending on the source service and en
 
 ## Required event format
 
-We do not enforce strict schemas for differen event types, but we do require all events to have the following format:
+We do not enforce strict schemas for different event types, but we do require all events to have the following format:
 
 ```json
 {

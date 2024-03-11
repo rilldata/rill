@@ -111,9 +111,7 @@ func (s *Server) Close() error {
 		s.aud.Close()
 	}
 
-	err := s.activity.Close(context.Background())
-
-	return err
+	return nil
 }
 
 // Ping implements RuntimeService

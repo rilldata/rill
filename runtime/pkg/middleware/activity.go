@@ -24,7 +24,7 @@ func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.Strea
 		subject := auth.GetClaims(ctx).Subject()
 
 		ctx = activity.SetAttributes(ctx,
-			attribute.String("user_id", subject),
+			attribute.String(activity.AttrKeyUserID, subject),
 			attribute.String("request_method", info.FullMethod),
 		)
 		wss := grpc_middleware.WrapServerStream(ss)
@@ -53,7 +53,7 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client) grpc.UnaryS
 		subject := auth.GetClaims(ctx).Subject()
 
 		ctx = activity.SetAttributes(ctx,
-			attribute.String("user_id", subject),
+			attribute.String(activity.AttrKeyUserID, subject),
 			attribute.String("request_method", info.FullMethod),
 		)
 

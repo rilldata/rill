@@ -168,6 +168,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			default:
 				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
 			}
+			defer activityClient.Close(context.Background())
 
 			// Add service info to activity client
 			activityClient = activityClient.WithServiceName("admin-server")
