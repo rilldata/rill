@@ -150,13 +150,7 @@ func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.Key
 		panic("user_id is required for a legacy behavioral event")
 	}
 
-	val, ok := data[AttrKeyServiceName]
-	if !ok {
-		panic("service_name is required for a legacy behavioral event")
-	}
-	data["app_name"] = val
-
-	val, ok = data[AttrKeyServiceCommit]
+	val, ok := data[AttrKeyServiceCommit]
 	if !ok {
 		panic("service_commit is required for a legacy behavioral event")
 	}
@@ -177,6 +171,7 @@ func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.Key
 		data["payload"] = payload
 	}
 
+	data["app_name"] = "rill-developer"
 	data["mode"] = "edit"
 	data["action"] = name
 	data["medium"] = "cli"

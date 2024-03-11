@@ -164,12 +164,18 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating kafka sink", zap.Error(err))
 				}
-				activityClient = activity.NewClient(sink, logger).WithServiceName("admin-server").WithServiceVersion(ch.Version.Number, ch.Version.Commit)
-				if ch.Version.IsDev() {
-					activityClient = activityClient.WithIsDev()
-				}
+				activityClient = activity.NewClient(sink, logger)
 			default:
 				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
+			}
+
+			// Add service info to activity client
+			activityClient = activityClient.WithServiceName("admin-server")
+			if ch.Version.Number != "" || ch.Version.Commit != "" {
+				activityClient = activityClient.WithServiceVersion(ch.Version.Number, ch.Version.Commit)
+			}
+			if ch.Version.IsDev() {
+				activityClient = activityClient.WithIsDev()
 			}
 
 			// Init runtime JWT issuer

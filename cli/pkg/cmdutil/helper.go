@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	telemetryServiceName    = "rill-developer"
+	telemetryServiceName    = "cli"
 	telemetryIntakeURL      = "https://intake.rilldata.io/events/data-modeler-metrics"
 	telemetryIntakeUser     = "data-modeler"
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
@@ -159,7 +159,10 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 
 		// Create the telemetry client with metadata about the current environment.
 		h.activityClient = activity.NewClient(sink, zap.NewNop())
-		h.activityClient = h.activityClient.WithServiceName(telemetryServiceName).WithServiceVersion(h.Version.Number, h.Version.Commit)
+		h.activityClient = h.activityClient.WithServiceName(telemetryServiceName)
+		if h.Version.Number != "" || h.Version.Commit != "" {
+			h.activityClient = h.activityClient.WithServiceVersion(h.Version.Number, h.Version.Commit)
+		}
 		if h.Version.IsDev() {
 			h.activityClient = h.activityClient.WithIsDev()
 		}
