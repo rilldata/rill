@@ -1,6 +1,12 @@
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
-export const MeasureFilterOptions = [
+export type MeasureFilterOption = {
+  value: V1Operation;
+  label: string;
+  shortLabel: string;
+};
+
+export const MeasureFilterOptions: MeasureFilterOption[] = [
   {
     value: V1Operation.OPERATION_LT,
     label: "Less Than",
@@ -22,12 +28,12 @@ export const MeasureFilterOptions = [
     shortLabel: ">=",
   },
   {
-    value: "b",
+    value: V1Operation.OPERATION_AND,
     label: "Between",
     shortLabel: "",
   },
   {
-    value: "nb",
+    value: V1Operation.OPERATION_OR,
     label: "Not Between",
     shortLabel: "",
   },

@@ -33,7 +33,7 @@ Current projects include:
 You can install `rill` using our installation script:
 
 ```
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 ```
 
 To run an example (in this case our Programmatic/OpenRTB dataset):

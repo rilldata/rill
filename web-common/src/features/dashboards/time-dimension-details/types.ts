@@ -1,22 +1,29 @@
+export interface HeaderData<T> {
+  value: T | null | undefined;
+  spark?: string;
+}
+
+export type TDDCellData = string | number | null | undefined;
+
 export interface TableData {
   rowCount: number;
   fixedColCount: number;
-  rowHeaderData: Array<Array<{ value: string }>>;
+  rowHeaderData: HeaderData<string>[][];
   columnCount: number;
-  columnHeaderData: Array<Array<{ value: string }>>;
-  body: Array<Array<string | number | null>>;
-  selectedValues: string[];
+  columnHeaderData: HeaderData<Date>[][];
+  body: TDDCellData[][];
+  selectedValues: (string | null)[];
 }
 
 export interface HighlightedCell {
-  dimensionValue: string | undefined;
+  dimensionValue: string | undefined | null;
   time: Date | undefined;
 }
 
 export interface ChartInteractionColumns {
-  hover: number;
-  scrubStart: number;
-  scrubEnd: number;
+  hover: number | undefined;
+  scrubStart: number | undefined;
+  scrubEnd: number | undefined;
 }
 
 export type TDDComparison = "time" | "none" | "dimension";

@@ -9,27 +9,17 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
-
-type PermissionDeniedError struct {
-	msg string
-}
-
-func NewPermissionDeniedError(msg string) error {
-	return &PermissionDeniedError{msg: msg}
-}
-
-func (e *PermissionDeniedError) Error() string {
-	return e.msg
-}
-
 // ErrNotFound indicates the resource wasn't found.
 var ErrNotFound = errors.New("driver: not found")
 
-// ErrDropNotSupported indicates the driver doesn't support dropping its underlying store.
+// ErrDropNotSupported indicates the driver doesn't support dropping its state.
 var ErrDropNotSupported = errors.New("driver: drop not supported")
 
+// ErrNotImplemented indicates the driver doesn't support the requested operation.
 var ErrNotImplemented = errors.New("driver: not implemented")
+
+// ErrStorageLimitExceeded indicates the driver's storage limit was exceeded.
+var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
 
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
@@ -67,75 +57,94 @@ func Drop(driver string, config map[string]any, logger *zap.Logger) error {
 	return d.Drop(config, logger)
 }
 
-// Driver represents an underlying DB.
+// Driver represents an external service that Rill can connect to.
 type Driver interface {
+	// Spec returns metadata about the driver, such as which configuration properties it supports.
 	Spec() Spec
 
-	// Open opens a new connection to an underlying store.
+	// Open opens a new handle.
 	Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error)
 
-	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
+	// Drop removes all state in a handle. Drivers that do not support it should return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error
 
-	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
-	HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error)
+	// HasAnonymousSourceAccess returns true if the driver can access the data identified by srcProps without any additional configuration.
+	HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error)
 
-	// TertiarySourceConnectors returns a list of connectors required to resolve a source, excluding the source and sink connectors.
-	TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error)
+	// TertiarySourceConnectors returns a list of drivers required to access the data identified by srcProps, excluding the driver itself.
+	TertiarySourceConnectors(ctx context.Context, srcProps map[string]any, logger *zap.Logger) ([]string, error)
 }
 
-// Handle represents a connection to an underlying DB.
-// It should implement one or more of RegistryStore, CatalogStore, RepoStore, and OLAPStore.
+// Handle represents a connection to an external service, such as a database, object store, etc.
+// It should implement one or more of the As...() functions.
 type Handle interface {
-	// Driver type (like "duckdb")
+	// Driver name used to open the handle.
 	Driver() string
 
-	// Config used to open the Connection
+	// Config used to open the handle.
 	Config() map[string]any
 
-	// Migrate prepares the connection for use. It will be called before the connection is first used.
-	// (Not to be confused with migrating artifacts, which is handled by the runtime and tracked in the catalog.)
+	// Migrate prepares the handle for use. It will always be called before any of the As...() functions.
 	Migrate(ctx context.Context) error
 
-	// MigrationStatus returns the connection's current and desired migration version (if applicable)
+	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
 
-	// Close closes the connection
+	// Close closes the handle.
 	Close() error
 
-	// AsRegistry returns a Registry if the driver can serve as such, otherwise returns false.
-	// The registry is responsible for tracking instances and repos.
+	// AsRegistry returns a RegistryStore if the handle can serve as such, otherwise returns false.
+	// A registry is responsible for tracking runtime metadata, namely instances and their configuration.
 	AsRegistry() (RegistryStore, bool)
 
-	// AsCatalogStore returns a CatalogStore if the driver can serve as such, otherwise returns false.
-	// A catalog is used to store state about migrated/deployed objects (such as sources and metrics views).
+	// AsCatalogStore returns a CatalogStore if the handle can serve as such, otherwise returns false.
+	// A catalog stores the state of an instance's resources (such as sources, models, metrics views, alerts, etc.)
 	AsCatalogStore(instanceID string) (CatalogStore, bool)
 
-	// AsRepoStore returns a RepoStore if the driver can serve as such, otherwise returns false.
-	// A repo stores file artifacts (either in a folder or virtualized in a database).
+	// AsRepoStore returns a RepoStore if the handle can serve as such, otherwise returns false.
+	// A repo stores an instance's file artifacts (mostly YAML and SQL files).
 	AsRepoStore(instanceID string) (RepoStore, bool)
 
-	// AsAdmin returns an AdminService if the driver can serve as such, otherwise returns false.
-	// An admin store enables an instance to request contextual information from the admin service that deployed it.
+	// AsAdmin returns an AdminService if the handle can serve as such, otherwise returns false.
+	// An admin service enables the runtime to interact with the control plane that deployed it.
 	AsAdmin(instanceID string) (AdminService, bool)
 
-	// AsOLAP returns an OLAP if the driver can serve as such, otherwise returns false.
-	// OLAP stores are where we actually store, transform, and query users' data.
+	// AsAI returns an AIService if the driver can serve as such, otherwise returns false.
+	// An AI service enables an instance to request prompt-based text inference.
+	AsAI(instanceID string) (AIService, bool)
+
+	// AsSQLStore returns a SQLStore if the driver can serve as such, otherwise returns false.
+	// A SQL store represents a service that can execute SQL statements and return the resulting rows.
+	AsSQLStore() (SQLStore, bool)
+
+	// AsOLAP returns an OLAPStore if the driver can serve as such, otherwise returns false.
+	// An OLAP store is used to serve interactive, low-latency, analytical queries.
+	// NOTE: We should consider merging the OLAPStore and SQLStore interfaces.
 	AsOLAP(instanceID string) (OLAPStore, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
+	// An object store can store, list and retrieve files on a remote server.
 	AsObjectStore() (ObjectStore, bool)
 
-	// AsFileStore returns a Filetore if the driver can serve as such, otherwise returns false.
+	// AsFileStore returns a FileStore if the driver can serve as such, otherwise returns false.
+	// A file store can store, list and retrieve local files.
+	// NOTE: The file store can probably be merged with the ObjectStore interface.
 	AsFileStore() (FileStore, bool)
 
-	// AsTransporter optionally returns an implementation for moving data between two connectors.
-	// One of the input connections may be the Connection itself.
-	// Examples:
-	// a) myDuckDB.AsTransporter(myGCS, myDuckDB)
-	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
+	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.
+	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).
 	AsTransporter(from Handle, to Handle) (Transporter, bool)
+}
 
-	// AsSQLStore returns a SQLStore if the driver can serve as such, otherwise returns false.
-	AsSQLStore() (SQLStore, bool)
+// PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.
+type PermissionDeniedError struct {
+	msg string
+}
+
+func NewPermissionDeniedError(msg string) error {
+	return &PermissionDeniedError{msg: msg}
+}
+
+func (e *PermissionDeniedError) Error() string {
+	return e.msg
 }

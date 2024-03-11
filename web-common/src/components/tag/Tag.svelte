@@ -1,5 +1,5 @@
-<script lang="ts">
-  type Color =
+<script context="module" lang="ts">
+  export type Color =
     | "gray"
     | "magenta"
     | "green"
@@ -9,8 +9,11 @@
     | "amber"
     | "blue"
     | "purple";
+</script>
 
+<script lang="ts">
   export let color: Color = "gray";
+  export let height = 21;
 
   function getColorClass(color: string) {
     switch (color) {
@@ -39,7 +42,8 @@
 </script>
 
 <div
-  class="px-2 h-[21px] border rounded-[20px] items-center justify-center inline-flex shrink-0 {getColorClass(
+  style:height="{height}px"
+  class="px-2 border rounded-[20px] items-center justify-center inline-flex shrink-0 {getColorClass(
     color,
   )}"
 >

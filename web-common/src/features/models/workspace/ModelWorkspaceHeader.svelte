@@ -20,7 +20,11 @@
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
-  import { isDuplicateName } from "../../entity-management/name-utils";
+  import {
+    INVALID_NAME_MESSAGE,
+    VALID_NAME_PATTERN,
+    isDuplicateName,
+  } from "../../entity-management/name-utils";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
@@ -49,14 +53,13 @@
   );
 
   function formatModelName(str) {
-    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
+    return str.replace(/\.sql/, "");
   }
 
   const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+    if (!e.target.value.match(VALID_NAME_PATTERN)) {
       notifications.send({
-        message:
-          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
+        message: INVALID_NAME_MESSAGE,
       });
       e.target.value = modelName; // resets the input
       return;

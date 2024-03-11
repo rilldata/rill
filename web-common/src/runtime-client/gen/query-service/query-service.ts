@@ -29,6 +29,8 @@ import type {
   QueryServiceMetricsViewComparisonBody,
   V1MetricsViewRowsResponse,
   QueryServiceMetricsViewRowsBody,
+  V1MetricsViewSchemaResponse,
+  QueryServiceMetricsViewSchemaParams,
   V1MetricsViewTimeRangeResponse,
   QueryServiceMetricsViewTimeRangeBody,
   V1MetricsViewTimeSeriesResponse,
@@ -153,11 +155,13 @@ export const queryServiceTableColumns = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceTableColumnsParams,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1TableColumnsResponse>({
     url: `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
     method: "post",
     params,
+    signal,
   });
 };
 
@@ -200,7 +204,8 @@ export const createQueryServiceTableColumns = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceTableColumns>>
-  > = () => queryServiceTableColumns(instanceId, tableName, params);
+  > = ({ signal }) =>
+    queryServiceTableColumns(instanceId, tableName, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceTableColumns>>,
@@ -367,7 +372,7 @@ export const createQueryServiceExport = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+ * @summary MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
  */
 export const queryServiceMetricsViewAggregation = (
   instanceId: string,
@@ -453,6 +458,23 @@ export const createQueryServiceMetricsViewAggregation = <
   return query;
 };
 
+/**
+ * ie. comparsion toplist:
+| measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+|---------------|---------------------|---------------------|--------------------|-----------|
+| 2             | 2                   | 0                   | 0                  | Safari    |
+| 1             | 0                   | 1                   | N/A                | Chrome    |
+| 0             | 4                   | -4                  | -1.0               | Firefox   |
+
+ie. toplist:
+| measure1 | measure2 | dimension |
+|----------|----------|-----------|
+| 2        | 45       | Safari    |
+| 1        | 350      | Chrome    |
+| 0        | 25       | Firefox   |
+ * @summary MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+Returns a toplist without comparison data if comparison time range is omitted.
+ */
 export const queryServiceMetricsViewComparison = (
   instanceId: string,
   metricsViewName: string,
@@ -538,6 +560,19 @@ export const createQueryServiceMetricsViewComparison = <
 };
 
 /**
+ * ie. without granularity
+| column1 | column2 | dimension |
+|---------|---------|-----------|
+| 2       | 2       | Safari    |
+| 1       | 0       | Chrome    |
+| 0       | 4       | Firefox   |
+
+ie. with granularity
+| timestamp__day0      | column1 | column2 | dimension |
+|----------------------|---------|---------|-----------|
+| 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+| 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+| 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
  * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
  */
 export const queryServiceMetricsViewRows = (
@@ -608,6 +643,87 @@ export const createQueryServiceMetricsViewRows = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary MetricsViewSchema Get the data types of measures and dimensions
+ */
+export const queryServiceMetricsViewSchema = (
+  instanceId: string,
+  metricsViewName: string,
+  params?: QueryServiceMetricsViewSchemaParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1MetricsViewSchemaResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/schema`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getQueryServiceMetricsViewSchemaQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  params?: QueryServiceMetricsViewSchemaParams,
+) => [
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/schema`,
+  ...(params ? [params] : []),
+];
+
+export type QueryServiceMetricsViewSchemaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>
+>;
+export type QueryServiceMetricsViewSchemaQueryError = ErrorType<RpcStatus>;
+
+export const createQueryServiceMetricsViewSchema = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  metricsViewName: string,
+  params?: QueryServiceMetricsViewSchemaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewSchemaQueryKey(
+      instanceId,
+      metricsViewName,
+      params,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>
+  > = ({ signal }) =>
+    queryServiceMetricsViewSchema(instanceId, metricsViewName, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
     TError,
     TData
   >({
@@ -800,7 +916,8 @@ export const createQueryServiceMetricsViewTimeSeries = <
 };
 
 /**
- * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+ * @summary Deprecated - use MetricsViewComparison instead.
+MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 It's a convenience API for querying a metrics view.
  */
 export const queryServiceMetricsViewToplist = (
@@ -1140,12 +1257,14 @@ export const queryServiceColumnRollupInterval = (
   instanceId: string,
   tableName: string,
   queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnRollupIntervalResponse>({
     url: `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceColumnRollupIntervalBody,
+    signal,
   });
 };
 
@@ -1192,11 +1311,12 @@ export const createQueryServiceColumnRollupInterval = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceColumnRollupInterval(
       instanceId,
       tableName,
       queryServiceColumnRollupIntervalBody,
+      signal,
     );
 
   const query = createQuery<
@@ -1609,12 +1729,14 @@ export const queryServiceColumnTimeSeries = (
   instanceId: string,
   tableName: string,
   queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceColumnTimeSeriesBody,
+    signal,
   });
 };
 
@@ -1661,11 +1783,12 @@ export const createQueryServiceColumnTimeSeries = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceColumnTimeSeries(
       instanceId,
       tableName,
       queryServiceColumnTimeSeriesBody,
+      signal,
     );
 
   const query = createQuery<
@@ -1694,12 +1817,14 @@ export const queryServiceColumnTopK = (
   instanceId: string,
   tableName: string,
   queryServiceColumnTopKBody: QueryServiceColumnTopKBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnTopKResponse>({
     url: `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceColumnTopKBody,
+    signal,
   });
 };
 
@@ -1746,8 +1871,13 @@ export const createQueryServiceColumnTopK = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTopK>>
-  > = () =>
-    queryServiceColumnTopK(instanceId, tableName, queryServiceColumnTopKBody);
+  > = ({ signal }) =>
+    queryServiceColumnTopK(
+      instanceId,
+      tableName,
+      queryServiceColumnTopKBody,
+      signal,
+    );
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceColumnTopK>>,

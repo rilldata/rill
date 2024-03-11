@@ -46,49 +46,45 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, err
 	}
 
-	// Build instance config
+	// Prepare instance config
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	olapDriver := opts.ProdOLAPDriver
-	olapConfig := map[string]string{}
-	var embedCatalog bool
-	switch olapDriver {
-	case "duckdb":
-		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
-		}
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
-		}
-
-		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
-		olapConfig["cpu"] = strconv.Itoa(alloc.CPU)
-		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
-		embedCatalog = false
-	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
-		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-ext-storage'")
-		}
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-ext-storage'")
-		}
-
-		olapDriver = "duckdb"
-		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main"))
-		olapConfig["cpu"] = strconv.Itoa(alloc.CPU)
-		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
-		olapConfig["external_table_storage"] = strconv.FormatBool(true)
-		embedCatalog = false
-	default:
-		olapConfig["dsn"] = opts.ProdOLAPDSN
-		embedCatalog = false
-		olapConfig["storage_limit_bytes"] = "0"
-	}
-
+	var connectors []*runtimev1.Connector
 	modelDefaultMaterialize, err := defaultModelMaterialize(opts.ProdVariables)
 	if err != nil {
 		return nil, err
+	}
+
+	// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
+	connectors = append(connectors, &runtimev1.Connector{
+		Name: "duckdb",
+		Type: "duckdb",
+		Config: map[string]string{
+			"dsn":                    fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main")),
+			"cpu":                    strconv.Itoa(alloc.CPU),
+			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
+			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
+			"external_table_storage": strconv.FormatBool(true),
+		},
+	})
+
+	// Determine the default OLAP connector
+	var olapConnector string
+	switch opts.ProdOLAPDriver {
+	case "duckdb", "duckdb-ext-storage":
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for OLAP driver 'duckdb'")
+		}
+		olapConnector = "duckdb"
+		// Already configured DuckDB above
+	default:
+		olapConnector = opts.ProdOLAPDriver
+		connectors = append(connectors, &runtimev1.Connector{
+			Name: opts.ProdOLAPDriver,
+			Type: opts.ProdOLAPDriver,
+			Config: map[string]string{
+				"dsn": opts.ProdOLAPDSN,
+			},
+		})
 	}
 
 	// Open a runtime client
@@ -120,33 +116,31 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 	adminAuthToken := dat.Token().String()
 
+	// Add the admin connector
+	connectors = append(connectors, &runtimev1.Connector{
+		Name: "admin",
+		Type: "admin",
+		Config: map[string]string{
+			"admin_url":    s.opts.ExternalURL,
+			"access_token": adminAuthToken,
+			"project_id":   opts.ProjectID,
+			"branch":       opts.ProdBranch,
+			"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
+		},
+	})
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:     instanceID,
-		OlapConnector:  olapDriver,
-		RepoConnector:  "admin",
-		AdminConnector: "admin",
-		Connectors: []*runtimev1.Connector{
-			{
-				Name:   olapDriver,
-				Type:   olapDriver,
-				Config: olapConfig,
-			},
-			{
-				Name: "admin",
-				Type: "admin",
-				Config: map[string]string{
-					"admin_url":    s.opts.ExternalURL,
-					"access_token": adminAuthToken,
-					"project_id":   opts.ProjectID,
-					"branch":       opts.ProdBranch,
-					"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
-				},
-			},
-		},
+		InstanceId:              instanceID,
+		Environment:             "prod",
+		OlapConnector:           olapConnector,
+		RepoConnector:           "admin",
+		AdminConnector:          "admin",
+		AiConnector:             "admin",
+		Connectors:              connectors,
 		Variables:               opts.ProdVariables,
 		Annotations:             opts.Annotations.toMap(),
-		EmbedCatalog:            embedCatalog,
+		EmbedCatalog:            false,
 		StageChanges:            true,
 		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
@@ -259,7 +253,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 
 		s.Logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
 
-		err = s.teardownDeployment(ctx, proj, depl)
+		err = s.teardownDeployment(ctx, depl)
 		if err != nil {
 			s.Logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
@@ -290,7 +284,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
+func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Connect to the deployment's runtime
 	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
@@ -305,10 +299,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	}
 
 	// Delete the instance
-	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     strings.Contains(proj.ProdOLAPDriver, "duckdb"), // Only drop DB if it's DuckDB
-	})
+	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{InstanceId: depl.RuntimeInstanceID})
 	if err != nil {
 		return err
 	}
@@ -368,17 +359,19 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 	return res
 }
 
+// defaultModelMaterialize determines whether to materialize models by default for deployed projects.
+// It defaults to true, but can be overridden with the __materialize_default variable.
 func defaultModelMaterialize(vars map[string]string) (bool, error) {
 	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
 	// Remove when we have a way to conditionally configure it using code files.
 
 	if vars == nil {
-		return false, nil
+		return true, nil
 	}
 
 	s, ok := vars["__materialize_default"]
 	if !ok {
-		return false, nil
+		return true, nil
 	}
 
 	val, err := strconv.ParseBool(s)

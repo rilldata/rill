@@ -1,14 +1,36 @@
 swagger: "2.0"
 info:
-  title: rill/admin/v1/api.proto
+  title: rill/admin/v1/ai.proto
   version: version not set
 tags:
+  - name: AIService
   - name: AdminService
 consumes:
   - application/json
 produces:
   - application/json
 paths:
+  /v1/ai/complete:
+    post:
+      summary: Complete sends the messages of a chat to the AI and asks it to generate a new message.
+      operationId: AIService_Complete
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CompleteResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1CompleteRequest'
+      tags:
+        - AIService
   /v1/deployments/{deploymentId}/reconcile:
     post:
       summary: TriggerReconcile triggers reconcile for the project's prod deployment
@@ -365,6 +387,194 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/alerts:
+    post:
+      summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+      operationId: AdminService_CreateAlert
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateAlertResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                $ref: '#/definitions/v1AlertOptions'
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/alerts/-/yaml:
+    post:
+      summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+      operationId: AdminService_GenerateAlertYAML
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateAlertYAMLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                $ref: '#/definitions/v1AlertOptions'
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/alerts/{name}:
+    delete:
+      summary: DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+      operationId: AdminService_DeleteAlert
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteAlertResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+      operationId: AdminService_EditAlert
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditAlertResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                $ref: '#/definitions/v1AlertOptions'
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/alerts/{name}/unsubscribe:
+    post:
+      summary: UnsubscribeAlert removes the calling user from a alert's recipients list
+      operationId: AdminService_UnsubscribeAlert
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnsubscribeAlertResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml:
+    get:
+      summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+      operationId: AdminService_GetAlertYAML
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAlertYAMLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
       summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -445,10 +655,12 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: organization
+          description: Organization that owns the project to embed.
           in: path
           required: true
           type: string
         - name: project
+          description: Project that has the resource(s) to embed.
           in: path
           required: true
           type: string
@@ -460,25 +672,41 @@ paths:
             properties:
               branch:
                 type: string
-              kind:
-                type: string
-              resource:
-                type: string
+                description: Branch to embed. If not set, the production branch is used.
               ttlSeconds:
                 type: integer
                 format: int64
+                description: TTL for the iframe's access token. If not set, defaults to 24 hours.
+              userId:
+                type: string
+                description: If set, will use the attributes of the user with this ID.
+              userEmail:
+                type: string
+                description: If set, will generate attributes corresponding to a user with this email.
+              attributes:
+                type: object
+                description: If set, will use the provided attributes outright.
+              kind:
+                type: string
+                description: Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+              resource:
+                type: string
+                description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+              theme:
+                type: string
+                description: Theme to use for the embedded resource.
+              navigation:
+                type: boolean
+                description: Navigation denotes whether navigation between different resources should be enabled in the embed.
               state:
                 type: string
+                description: Blob containing UI state for rendering the initial embed. Not currently supported.
               query:
                 type: object
                 additionalProperties:
                   type: string
-              userId:
-                type: string
-              userEmail:
-                type: string
-              attributes:
-                type: object
+                description: 'DEPRECATED: Additional parameters to set outright in the generated URL query.'
+            description: GetIFrameRequest is the request payload for AdminService.GetIFrame.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/invites:
@@ -1047,6 +1275,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: accessTokenTtlSeconds
+          in: query
+          required: false
+          type: integer
+          format: int64
       tags:
         - AdminService
     delete:
@@ -1362,6 +1595,44 @@ paths:
             $ref: '#/definitions/v1TriggerRedeployRequest'
       tags:
         - AdminService
+  /v1/projects/{projectId}/alerts/meta:
+    post:
+      summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+      operationId: AdminService_GetAlertMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAlertMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              alert:
+                type: string
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
+              queryForUserId:
+                type: string
+              queryForUserEmail:
+                type: string
+      tags:
+        - AdminService
   /v1/projects/{projectId}/repo/meta:
     get:
       summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -1420,7 +1691,7 @@ paths:
       tags:
         - AdminService
   /v1/projects/{projectId}/reports/meta:
-    get:
+    post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
       operationId: AdminService_GetReportMeta
       responses:
@@ -1437,19 +1708,23 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
-        - name: report
-          in: query
-          required: false
-          type: string
-        - name: annotations
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              report:
+                type: string
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
+              executionTime:
+                type: string
+                format: date-time
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -1642,6 +1917,7 @@ paths:
         - AdminService
   /v1/telemetry:
     post:
+      summary: Telemetry sends telemetry data to the server
       operationId: AdminService_Telemetry
       responses:
         "200":
@@ -1718,7 +1994,7 @@ paths:
         - AdminService
   /v1/users/bookmarks:
     get:
-      summary: ListBookmarks lists all the bookmarks for the user
+      summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
       operationId: AdminService_ListBookmarks
       responses:
         "200":
@@ -1734,10 +2010,18 @@ paths:
           in: query
           required: false
           type: string
+        - name: resourceKind
+          in: query
+          required: false
+          type: string
+        - name: resourceName
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
     post:
-      summary: CreateBookmark creates a bookmark for the given user for the given project
+      summary: CreateBookmark creates a bookmark for the given user or for all users for the dashboard
       operationId: AdminService_CreateBookmark
       responses:
         "200":
@@ -1754,6 +2038,26 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateBookmarkRequest'
+      tags:
+        - AdminService
+    put:
+      summary: UpdateBookmark updates a bookmark for the given user for the given project
+      operationId: AdminService_UpdateBookmark
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateBookmarkResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UpdateBookmarkRequest'
       tags:
         - AdminService
   /v1/users/bookmarks/{bookmarkId}:
@@ -1777,7 +2081,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: RemoveBookmark removes the bookmark for the given user for the given project
+      summary: RemoveBookmark removes the bookmark for the given user or all users
       operationId: AdminService_RemoveBookmark
       responses:
         "200":
@@ -1902,6 +2206,28 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
+  v1AlertOptions:
+    type: object
+    properties:
+      title:
+        type: string
+      intervalDuration:
+        type: string
+      queryName:
+        type: string
+      queryArgsJson:
+        type: string
+      metricsViewName:
+        type: string
+      recipients:
+        type: array
+        items:
+          type: string
+      emailRenotify:
+        type: boolean
+      emailRenotifyAfterSeconds:
+        type: integer
+        format: int64
   v1Bookmark:
     type: object
     properties:
@@ -1909,33 +2235,74 @@ definitions:
         type: string
       displayName:
         type: string
+      description:
+        type: string
       data:
         type: string
         format: byte
-      dashboardName:
+      resourceKind:
+        type: string
+      resourceName:
         type: string
       projectId:
         type: string
       userId:
         type: string
+      default:
+        type: boolean
+      shared:
+        type: boolean
       createdOn:
         type: string
         format: date-time
       updatedOn:
         type: string
         format: date-time
+  v1CompleteRequest:
+    type: object
+    properties:
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CompletionMessage'
+  v1CompleteResponse:
+    type: object
+    properties:
+      message:
+        $ref: '#/definitions/v1CompletionMessage'
+  v1CompletionMessage:
+    type: object
+    properties:
+      role:
+        type: string
+      data:
+        type: string
+  v1CreateAlertResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1CreateBookmarkRequest:
     type: object
     properties:
       displayName:
         type: string
+      description:
+        type: string
       data:
         type: string
         format: byte
-      dashboardName:
+      resourceKind:
+        type: string
+      resourceName:
         type: string
       projectId:
         type: string
+      default:
+        type: boolean
+      shared:
+        type: boolean
   v1CreateBookmarkResponse:
     type: object
     properties:
@@ -1969,6 +2336,8 @@ definitions:
       service:
         $ref: '#/definitions/v1Service'
   v1CreateWhitelistedDomainResponse:
+    type: object
+  v1DeleteAlertResponse:
     type: object
   v1DeleteOrganizationResponse:
     type: object
@@ -2015,6 +2384,8 @@ definitions:
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1EditAlertResponse:
+    type: object
   v1EditReportResponse:
     type: object
   v1ExportFormat:
@@ -2025,7 +2396,26 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
+  v1GenerateAlertYAMLResponse:
+    type: object
+    properties:
+      yaml:
+        type: string
   v1GenerateReportYAMLResponse:
+    type: object
+    properties:
+      yaml:
+        type: string
+  v1GetAlertMetaResponse:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      editUrl:
+        type: string
+      queryForAttributes:
+        type: object
+  v1GetAlertYAMLResponse:
     type: object
     properties:
       yaml:
@@ -2412,6 +2802,10 @@ definitions:
         type: boolean
       manageReports:
         type: boolean
+      createAlerts:
+        type: boolean
+      manageAlerts:
+        type: boolean
   v1PullVirtualRepoResponse:
     type: object
     properties:
@@ -2633,7 +3027,27 @@ definitions:
     type: object
   v1TriggerReportResponse:
     type: object
+  v1UnsubscribeAlertResponse:
+    type: object
   v1UnsubscribeReportResponse:
+    type: object
+  v1UpdateBookmarkRequest:
+    type: object
+    properties:
+      bookmarkId:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      data:
+        type: string
+        format: byte
+      default:
+        type: boolean
+      shared:
+        type: boolean
+  v1UpdateBookmarkResponse:
     type: object
   v1UpdateOrganizationResponse:
     type: object

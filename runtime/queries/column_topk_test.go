@@ -2,13 +2,48 @@ package queries_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+func TestColumnTopKAgainstClickHouse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.RunContainer(ctx,
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Run("TestColumnTopK", func(t *testing.T) { TestColumnTopK(t) })
+	t.Run("TestColumnTopKList", func(t *testing.T) { TestColumnTopKList(t) })
+	t.Run("TestColumnTopKStruct", func(t *testing.T) { TestColumnTopKStruct(t) })
+}
 
 func TestColumnTopK(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
@@ -20,7 +55,7 @@ func TestColumnTopK(t *testing.T) {
 		UNION ALL 
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
 		UNION ALL 
-		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
+		SELECT '12' AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 	`)
 
 	q := &queries.ColumnTopK{
@@ -93,7 +128,13 @@ func TestColumnTopKList(t *testing.T) {
 }
 
 func TestColumnTopKStruct(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT {'x': 10, 'y': null} AS col, 1 AS val`)
+	var rt *runtime.Runtime
+	var instanceID string
+	if os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER") == "clickhouse" {
+		rt, instanceID = testruntime.NewInstanceWithModel(t, "test", `SELECT CAST((['x', 'y'], [10, null]), 'Map(String,Nullable(UInt8))') AS col, 1 AS val`)
+	} else {
+		rt, instanceID = testruntime.NewInstanceWithModel(t, "test", `SELECT {'x': 10, 'y': null} AS col, 1 AS val`)
+	}
 	q := &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",

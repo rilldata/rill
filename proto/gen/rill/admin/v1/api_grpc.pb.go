@@ -77,16 +77,24 @@ const (
 	AdminService_ListBookmarks_FullMethodName                = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
 	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
+	AdminService_UpdateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/UpdateBookmark"
 	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
 	AdminService_GetReportMeta_FullMethodName                = "/rill.admin.v1.AdminService/GetReportMeta"
+	AdminService_GetAlertMeta_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertMeta"
 	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
 	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
 	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
 	AdminService_DeleteReport_FullMethodName                 = "/rill.admin.v1.AdminService/DeleteReport"
 	AdminService_TriggerReport_FullMethodName                = "/rill.admin.v1.AdminService/TriggerReport"
 	AdminService_GenerateReportYAML_FullMethodName           = "/rill.admin.v1.AdminService/GenerateReportYAML"
+	AdminService_CreateAlert_FullMethodName                  = "/rill.admin.v1.AdminService/CreateAlert"
+	AdminService_EditAlert_FullMethodName                    = "/rill.admin.v1.AdminService/EditAlert"
+	AdminService_UnsubscribeAlert_FullMethodName             = "/rill.admin.v1.AdminService/UnsubscribeAlert"
+	AdminService_DeleteAlert_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteAlert"
+	AdminService_GenerateAlertYAML_FullMethodName            = "/rill.admin.v1.AdminService/GenerateAlertYAML"
+	AdminService_GetAlertYAML_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertYAML"
 	AdminService_Telemetry_FullMethodName                    = "/rill.admin.v1.AdminService/Telemetry"
 )
 
@@ -205,13 +213,15 @@ type AdminServiceClient interface {
 	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
 	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
-	// CreateBookmark creates a bookmark for the given user for the given project
+	// CreateBookmark creates a bookmark for the given user or for all users for the dashboard
 	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
-	// RemoveBookmark removes the bookmark for the given user for the given project
+	// UpdateBookmark updates a bookmark for the given user for the given project
+	UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
@@ -219,6 +229,8 @@ type AdminServiceClient interface {
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -231,6 +243,19 @@ type AdminServiceClient interface {
 	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error)
+	// CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+	CreateAlert(ctx context.Context, in *CreateAlertRequest, opts ...grpc.CallOption) (*CreateAlertResponse, error)
+	// EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+	EditAlert(ctx context.Context, in *EditAlertRequest, opts ...grpc.CallOption) (*EditAlertResponse, error)
+	// UnsubscribeAlert removes the calling user from a alert's recipients list
+	UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error)
+	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+	DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
+	// Telemetry sends telemetry data to the server
 	Telemetry(ctx context.Context, in *TelemetryRequest, opts ...grpc.CallOption) (*TelemetryResponse, error)
 }
 
@@ -764,6 +789,15 @@ func (c *adminServiceClient) CreateBookmark(ctx context.Context, in *CreateBookm
 	return out, nil
 }
 
+func (c *adminServiceClient) UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error) {
+	out := new(UpdateBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error) {
 	out := new(RemoveBookmarkResponse)
 	err := c.cc.Invoke(ctx, AdminService_RemoveBookmark_FullMethodName, in, out, opts...)
@@ -794,6 +828,15 @@ func (c *adminServiceClient) PullVirtualRepo(ctx context.Context, in *PullVirtua
 func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error) {
 	out := new(GetReportMetaResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetReportMeta_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error) {
+	out := new(GetAlertMetaResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertMeta_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -848,6 +891,60 @@ func (c *adminServiceClient) TriggerReport(ctx context.Context, in *TriggerRepor
 func (c *adminServiceClient) GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error) {
 	out := new(GenerateReportYAMLResponse)
 	err := c.cc.Invoke(ctx, AdminService_GenerateReportYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateAlert(ctx context.Context, in *CreateAlertRequest, opts ...grpc.CallOption) (*CreateAlertResponse, error) {
+	out := new(CreateAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) EditAlert(ctx context.Context, in *EditAlertRequest, opts ...grpc.CallOption) (*EditAlertResponse, error) {
+	out := new(EditAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_EditAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error) {
+	out := new(UnsubscribeAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_UnsubscribeAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error) {
+	out := new(DeleteAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error) {
+	out := new(GenerateAlertYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GenerateAlertYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error) {
+	out := new(GetAlertYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertYAML_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -978,13 +1075,15 @@ type AdminServiceServer interface {
 	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
 	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)
-	// CreateBookmark creates a bookmark for the given user for the given project
+	// CreateBookmark creates a bookmark for the given user or for all users for the dashboard
 	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
-	// RemoveBookmark removes the bookmark for the given user for the given project
+	// UpdateBookmark updates a bookmark for the given user for the given project
+	UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
@@ -992,6 +1091,8 @@ type AdminServiceServer interface {
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -1004,6 +1105,19 @@ type AdminServiceServer interface {
 	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error)
+	// CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+	CreateAlert(context.Context, *CreateAlertRequest) (*CreateAlertResponse, error)
+	// EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+	EditAlert(context.Context, *EditAlertRequest) (*EditAlertResponse, error)
+	// UnsubscribeAlert removes the calling user from a alert's recipients list
+	UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error)
+	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+	DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
+	// Telemetry sends telemetry data to the server
 	Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
@@ -1186,6 +1300,9 @@ func (UnimplementedAdminServiceServer) GetBookmark(context.Context, *GetBookmark
 func (UnimplementedAdminServiceServer) CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBookmark not implemented")
 }
+func (UnimplementedAdminServiceServer) UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBookmark not implemented")
+}
 func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
 }
@@ -1197,6 +1314,9 @@ func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVir
 }
 func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
+}
+func (UnimplementedAdminServiceServer) GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertMeta not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
@@ -1215,6 +1335,24 @@ func (UnimplementedAdminServiceServer) TriggerReport(context.Context, *TriggerRe
 }
 func (UnimplementedAdminServiceServer) GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateReportYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateAlert(context.Context, *CreateAlertRequest) (*CreateAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) EditAlert(context.Context, *EditAlertRequest) (*EditAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnsubscribeAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateAlertYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
 }
 func (UnimplementedAdminServiceServer) Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Telemetry not implemented")
@@ -2276,6 +2414,24 @@ func _AdminService_CreateBookmark_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_UpdateBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, req.(*UpdateBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveBookmarkRequest)
 	if err := dec(in); err != nil {
@@ -2344,6 +2500,24 @@ func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetReportMeta(ctx, req.(*GetReportMetaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetAlertMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertMetaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertMeta_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, req.(*GetAlertMetaRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2452,6 +2626,114 @@ func _AdminService_GenerateReportYAML_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GenerateReportYAML(ctx, req.(*GenerateReportYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateAlert(ctx, req.(*CreateAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_EditAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).EditAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_EditAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).EditAlert(ctx, req.(*EditAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UnsubscribeAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnsubscribeAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UnsubscribeAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UnsubscribeAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UnsubscribeAlert(ctx, req.(*UnsubscribeAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteAlert(ctx, req.(*DeleteAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GenerateAlertYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateAlertYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GenerateAlertYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GenerateAlertYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GenerateAlertYAML(ctx, req.(*GenerateAlertYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertYAML(ctx, req.(*GetAlertYAMLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2714,6 +2996,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_CreateBookmark_Handler,
 		},
 		{
+			MethodName: "UpdateBookmark",
+			Handler:    _AdminService_UpdateBookmark_Handler,
+		},
+		{
 			MethodName: "RemoveBookmark",
 			Handler:    _AdminService_RemoveBookmark_Handler,
 		},
@@ -2728,6 +3014,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReportMeta",
 			Handler:    _AdminService_GetReportMeta_Handler,
+		},
+		{
+			MethodName: "GetAlertMeta",
+			Handler:    _AdminService_GetAlertMeta_Handler,
 		},
 		{
 			MethodName: "CreateReport",
@@ -2752,6 +3042,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateReportYAML",
 			Handler:    _AdminService_GenerateReportYAML_Handler,
+		},
+		{
+			MethodName: "CreateAlert",
+			Handler:    _AdminService_CreateAlert_Handler,
+		},
+		{
+			MethodName: "EditAlert",
+			Handler:    _AdminService_EditAlert_Handler,
+		},
+		{
+			MethodName: "UnsubscribeAlert",
+			Handler:    _AdminService_UnsubscribeAlert_Handler,
+		},
+		{
+			MethodName: "DeleteAlert",
+			Handler:    _AdminService_DeleteAlert_Handler,
+		},
+		{
+			MethodName: "GenerateAlertYAML",
+			Handler:    _AdminService_GenerateAlertYAML_Handler,
+		},
+		{
+			MethodName: "GetAlertYAML",
+			Handler:    _AdminService_GetAlertYAML_Handler,
 		},
 		{
 			MethodName: "Telemetry",

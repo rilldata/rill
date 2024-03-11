@@ -1,4 +1,12 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  contextColWidthDefaults,
+  type ContextColWidths,
+  type MetricsExplorerEntity,
+} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  getPersistentDashboardStore,
+  initPersistentDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import {
   V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
@@ -46,6 +54,13 @@ export type StateManagers = {
    * A collection of functions that update the dashboard data model.
    */
   actions: StateManagerActions;
+  /**
+   * Store to track the width of the context columns in leaderboards.
+   * FIXME: this was implemented as a low-risk fix for in advance of
+   * the new branding release 2024-01-31, but should be revisted since
+   * it's a one-off solution that introduces another new pattern.
+   */
+  contextColumnWidths: Writable<ContextColWidths>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -57,9 +72,11 @@ export function getStateManagers(): StateManagers {
 export function createStateManagers({
   queryClient,
   metricsViewName,
+  extraKeyPrefix,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
+  extraKeyPrefix?: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
@@ -109,6 +126,14 @@ export function createStateManagers({
     updateMetricsExplorerByName(name, callback);
   };
 
+  const contextColumnWidths = writable<ContextColWidths>(
+    contextColWidthDefaults,
+  );
+
+  // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
+  initPersistentDashboardStore((extraKeyPrefix || "") + metricsViewName);
+  const persistentDashboardStore = getPersistentDashboardStore();
+
   return {
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
@@ -134,9 +159,8 @@ export function createStateManagers({
      */
     actions: createStateManagerActions({
       updateDashboard,
-      cancelQueries: () => {
-        queryClient.cancelQueries();
-      },
+      persistentDashboardStore,
     }),
+    contextColumnWidths,
   };
 }

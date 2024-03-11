@@ -6,6 +6,7 @@ import {
   runtimeServicePutFile,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
+import { removeLeadingSlash } from "../../entity-management/entity-mappers";
 
 export async function saveFile(
   queryClient: QueryClient,
@@ -20,7 +21,7 @@ export async function saveFile(
 
   // Invalidate `GetFile` query
   queryClient.invalidateQueries(
-    getRuntimeServiceGetFileQueryKey(instanceId, path),
+    getRuntimeServiceGetFileQueryKey(instanceId, removeLeadingSlash(path)),
   );
 
   // If it's a rill.yaml file, invalidate the dev JWT queries

@@ -67,10 +67,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 		return nil, fmt.Errorf("metastore must be a valid registry")
 	}
 
-	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger, ac)
-	if err != nil {
-		return nil, err
-	}
+	rt.registryCache = newRegistryCache(rt, reg, logger, ac)
 	err = rt.registryCache.init(ctx)
 	if err != nil {
 		return nil, err
@@ -86,14 +83,18 @@ func (r *Runtime) AllowHostAccess() bool {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	err1 := r.registryCache.close(ctx)
-	err2 := r.queryCache.close()
-	err3 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
-	return errors.Join(err1, err2, err3)
+	r.registryCache.close(ctx)
+	err1 := r.queryCache.close()
+	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
+	return errors.Join(err1, err2)
 }
 
 func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
-	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
+	inst, err := r.Instance(context.Background(), instanceID)
+	if err != nil {
+		return nil, err
+	}
+	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, mv, lastUpdatedOn, attributes)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes

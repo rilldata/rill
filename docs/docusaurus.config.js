@@ -2,8 +2,9 @@
 // Note: type annotations allow type checking and IDEs autocompletion
 
 /* eslint @typescript-eslint/no-var-requires: "off" */
-const lightCodeTheme = require("prism-react-renderer/themes/github");
-const darkCodeTheme = require("prism-react-renderer/themes/dracula");
+const {themes} = require('prism-react-renderer');
+const lightCodeTheme = themes.github;
+const darkCodeTheme = themes.dracula;
 
 const def = require("redocusaurus");
 def;
@@ -72,11 +73,17 @@ const config = {
       },
       metadata: [
         {
-          property: 'og:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          property: 'og:title', content: "Rill | Fast operational dashboards you'll actually use"
         },
         {
-          name: 'twitter:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          property: 'og:image', content: 'https://assets-global.website-files.com/659ddac460dbacbdc813b204/65bad0233db92db596c29c34_social1.jpg'
         },
+        {
+          name: 'twitter:image', content: 'https://assets-global.website-files.com/659ddac460dbacbdc813b204/65bad0233db92db596c29c34_social1.jpg'
+        },
+        {
+          name: 'description', content: "Rill is an operational BI tool that helps data teams build fewer, more flexible dashboards, and helps business users make faster decisions with fewer ad hoc requests."
+        }
       ],
       navbar: {
         logo: {
@@ -149,6 +156,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+        additionalLanguages: ['bash', 'diff', 'json'],
       },
     }),
 

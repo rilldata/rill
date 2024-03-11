@@ -6,12 +6,14 @@ import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-clie
  */
 export function useMainEntityFiles(
   instanceId: string,
-  prefix: "sources" | "models" | "dashboards",
+  prefix: "sources" | "models" | "dashboards" | "charts" | "custom-dashboards",
 ) {
   let extension: string;
   switch (prefix) {
     case "sources":
     case "dashboards":
+    case "charts":
+    case "custom-dashboards":
       extension = ".yaml";
       break;
 
@@ -23,20 +25,33 @@ export function useMainEntityFiles(
     instanceId,
     {
       // We still use opinionated folder names. So we still need this filter
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
+      glob: "{sources,models,dashboards,charts,custom-dashboards}/*.{yaml,sql}",
     },
     {
       query: {
-        select: (data) =>
-          data.paths
-            ?.filter((path) => path.includes(`${prefix}/`))
-            .map((path) =>
-              path.replace(`/${prefix}/`, "").replace(extension, ""),
-            )
-            // sort alphabetically case-insensitive
-            .sort((a, b) =>
-              a.localeCompare(b, undefined, { sensitivity: "base" }),
-            ) ?? [],
+        select: (data) => {
+          // Filter the list of file paths to include only those that match the given prefix and extension
+          const filteredPaths = data.paths
+            ?.filter((filePath) => {
+              // Match the filePath against a pattern to extract the directory name
+              const regexMatch = filePath.match(/\/([^/]+)\/[^/]+$/);
+              // Check if the directory name exactly matches the prefix
+              return regexMatch && regexMatch[1] === prefix;
+            })
+            .map((filePath) => {
+              // Remove the directory and extension from the filePath to get the file name
+              return filePath.replace(`/${prefix}/`, "").replace(extension, "");
+            })
+            // Sort the file names alphabetically in a case-insensitive manner
+            .sort((fileNameA, fileNameB) =>
+              fileNameA.localeCompare(fileNameB, undefined, {
+                sensitivity: "base",
+              }),
+            );
+
+          // Return the sorted list of file names or an empty array if there were no paths
+          return filteredPaths ?? [];
+        },
       },
     },
   );

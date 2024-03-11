@@ -1,4 +1,3 @@
-import { test } from "@playwright/test";
 import {
   TestEntityType,
   deleteEntity,
@@ -14,15 +13,11 @@ import {
   modelHasError,
 } from "./utils/modelHelpers";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
+import { test } from "./utils/test";
 
 test.describe("models", () => {
-  startRuntimeForEachTest();
-
   test("Create and edit model", async ({ page }) => {
-    await page.goto("/");
-
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
     await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
 
@@ -48,8 +43,6 @@ test.describe("models", () => {
   });
 
   test("Rename and delete model", async ({ page }) => {
-    await page.goto("/");
-
     // make sure AdBids_rename_delete is present
     await createModel(page, "AdBids_rename_delete");
 
@@ -74,8 +67,6 @@ test.describe("models", () => {
   });
 
   test("Create model from source", async ({ page }) => {
-    await page.goto("/");
-
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
     await Promise.all([

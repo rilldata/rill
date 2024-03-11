@@ -135,16 +135,9 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
 	}
 
-	// Find DuckDB connectors
-	var duckdbConnectors []string
-	for _, connector := range inst.Connectors {
-		if connector.Type == "duckdb" {
-			duckdbConnectors = append(duckdbConnectors, connector.Name)
-		}
-	}
-
 	// Parse the project
-	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
+	// NOTE: Explicitly passing inst.OLAPConnector instead of inst.ResolveOLAPConnector() since the parser expects the base name to use if not overridden in rill.yaml.
+	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
@@ -316,6 +309,8 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 	// Shallow clone for editing
 	tmp := *inst
 	inst = &tmp
+
+	inst.ProjectOLAPConnector = parser.RillYAML.OLAPConnector
 
 	conns := make([]*runtimev1.Connector, 0, len(parser.RillYAML.Connectors))
 	for _, c := range parser.RillYAML.Connectors {
@@ -532,9 +527,25 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalReportSpec(existing.GetReport().Spec, def.ReportSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Report{Report: &runtimev1.Report{Spec: def.ReportSpec}}}
 		}
+	case compilerv1.ResourceKindAlert:
+		if existing == nil || !equalAlertSpec(existing.GetAlert().Spec, def.AlertSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Alert{Alert: &runtimev1.Alert{Spec: def.AlertSpec}}}
+		}
 	case compilerv1.ResourceKindTheme:
 		if existing == nil || !equalThemeSpec(existing.GetTheme().Spec, def.ThemeSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
+		}
+	case compilerv1.ResourceKindChart:
+		if existing == nil || !equalChartSpec(existing.GetChart().Spec, def.ChartSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Chart{Chart: &runtimev1.Chart{Spec: def.ChartSpec}}}
+		}
+	case compilerv1.ResourceKindDashboard:
+		if existing == nil || !equalDashboardSpec(existing.GetDashboard().Spec, def.DashboardSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Dashboard{Dashboard: &runtimev1.Dashboard{Spec: def.DashboardSpec}}}
+		}
+	case compilerv1.ResourceKindAPI:
+		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
 		}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", def.Name.Kind))
@@ -669,8 +680,16 @@ func resourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindMigration, Name: name.Name}
 	case compilerv1.ResourceKindReport:
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: name.Name}
+	case compilerv1.ResourceKindAlert:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: name.Name}
 	case compilerv1.ResourceKindTheme:
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: name.Name}
+	case compilerv1.ResourceKindChart:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindChart, Name: name.Name}
+	case compilerv1.ResourceKindDashboard:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindDashboard, Name: name.Name}
+	case compilerv1.ResourceKindAPI:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindAPI, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -688,8 +707,16 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMigration, Name: name.Name}
 	case runtime.ResourceKindReport:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindReport, Name: name.Name}
+	case runtime.ResourceKindAlert:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindAlert, Name: name.Name}
 	case runtime.ResourceKindTheme:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindTheme, Name: name.Name}
+	case runtime.ResourceKindChart:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindChart, Name: name.Name}
+	case runtime.ResourceKindDashboard:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindDashboard, Name: name.Name}
+	case runtime.ResourceKindAPI:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindAPI, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -731,6 +758,22 @@ func equalReportSpec(a, b *runtimev1.ReportSpec) bool {
 	return proto.Equal(a, b)
 }
 
+func equalAlertSpec(a, b *runtimev1.AlertSpec) bool {
+	return proto.Equal(a, b)
+}
+
 func equalThemeSpec(a, b *runtimev1.ThemeSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalChartSpec(a, b *runtimev1.ChartSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalDashboardSpec(a, b *runtimev1.DashboardSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalAPISpec(a, b *runtimev1.APISpec) bool {
 	return proto.Equal(a, b)
 }

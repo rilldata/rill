@@ -5,7 +5,6 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
@@ -23,8 +22,7 @@
 
   let tooltipActive;
 
-  const { listenToNodeResize, observedNode } =
-    createResizeListenerActionFactory();
+  let width: number;
 
   const inspectorLayout = getContext(
     "rill:app:inspector-layout",
@@ -40,8 +38,6 @@
     }
   }
 
-  $: width = $observedNode?.getBoundingClientRect()?.width;
-
   function onInput() {
     if (editable) {
       editingTitle = true;
@@ -54,7 +50,7 @@
   class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
   style:grid-template-columns="[title] minmax(0, 1fr) [controls] auto"
   style:height="var(--header-height)"
-  use:listenToNodeResize
+  bind:clientWidth={width}
 >
   <div style:padding-left="{$navigationVisibilityTween * 24}px">
     {#if titleInput !== undefined && titleInput !== null}

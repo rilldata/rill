@@ -25,6 +25,10 @@ import {
   createMetricsMetaQueryMock,
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+import {
+  getPersistentDashboardStore,
+  initPersistentDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -33,9 +37,11 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 describe("Show/Hide Selectors", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_NAME);
+    initPersistentDashboardStore(AD_BIDS_NAME);
   });
 
   beforeEach(() => {
+    getPersistentDashboardStore().reset();
     resetDashboardStore();
   });
 
@@ -67,15 +73,15 @@ describe("Show/Hide Selectors", () => {
       );
       expect(get(showHideMeasure).selectedItems).toEqual([true, false]);
 
-      // toggle visibility
-      showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
-      // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
-      expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
+      // toggle visibility (hiding all is not supported from UI)
+      // showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
+      // // assert visibility is persisted in AdBids and after mirroring using the url proto state
+      // assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
+      // expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
 
       // toggle back visibility
       showHideMeasure.toggleVisibility(AD_BIDS_BID_PRICE_MEASURE);
-      showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
+      // showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
       assertVisiblePartsWithMirroring(
         get(mock).data,
@@ -220,15 +226,17 @@ describe("Show/Hide Selectors", () => {
       ]);
       expect(get(showHideDimensions).selectedItems).toEqual([false, true]);
 
-      // toggle visibility
-      showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
-      // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(get(mock).data, undefined, []);
-      expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
+      // toggle visibility (hiding all is not supported from UI)
+      // showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
+      // // assert visibility is persisted in AdBids and after mirroring using the url proto state
+      // assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+      //   AD_BIDS_DOMAIN_DIMENSION,
+      // ]);
+      // expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
 
       // toggle back visibility
       showHideDimensions.toggleVisibility(AD_BIDS_PUBLISHER_DIMENSION);
-      showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
+      // showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
       assertVisiblePartsWithMirroring(get(mock).data, undefined, [
         AD_BIDS_PUBLISHER_DIMENSION,

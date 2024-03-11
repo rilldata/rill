@@ -21,6 +21,9 @@ dimensions:
   - label: TLD
     name: tld
     expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
+  - label: Null Publisher
+    name: null_publisher
+    expression: case when publisher is null then true else false end
 
 measures:
   - label: "Number of bids"

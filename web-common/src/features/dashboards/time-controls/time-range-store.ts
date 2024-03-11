@@ -4,7 +4,10 @@ import {
   getComparisonRange,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
-import type { TimeRangeMetaSet } from "@rilldata/web-common/lib/time/config";
+import {
+  PREVIOUS_COMPLETE_DATE_RANGES,
+  type TimeRangeMetaSet,
+} from "@rilldata/web-common/lib/time/config";
 import {
   DEFAULT_TIME_RANGES,
   LATEST_WINDOW_TIME_RANGES,
@@ -32,6 +35,7 @@ import type { QueryObserverResult } from "@tanstack/svelte-query";
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
   periodToDateRanges: Array<TimeRangeOption>;
+  previousCompleteDateRanges: Array<TimeRangeOption>;
   showDefaultItem: boolean;
 };
 
@@ -48,6 +52,7 @@ export function timeRangeSelectionsSelector([
     return {
       latestWindowTimeRanges: [],
       periodToDateRanges: [],
+      previousCompleteDateRanges: [],
       showDefaultItem: false,
     };
 
@@ -62,6 +67,7 @@ export function timeRangeSelectionsSelector([
 
   let latestWindowTimeRanges: TimeRangeMetaSet = {};
   let periodToDateRanges: TimeRangeMetaSet = {};
+  let previousCompleteDateRanges: TimeRangeMetaSet = {};
   let hasDefaultInRanges = false;
 
   if (metricsView.data.availableTimeRanges?.length) {
@@ -79,6 +85,9 @@ export function timeRangeSelectionsSelector([
       } else if (availableTimeRange.range in PERIOD_TO_DATE_RANGES) {
         periodToDateRanges[availableTimeRange.range] =
           PERIOD_TO_DATE_RANGES[availableTimeRange.range];
+      } else if (availableTimeRange.range in PREVIOUS_COMPLETE_DATE_RANGES) {
+        previousCompleteDateRanges[availableTimeRange.range] =
+          PREVIOUS_COMPLETE_DATE_RANGES[availableTimeRange.range];
       } else {
         latestWindowTimeRanges[availableTimeRange.range] =
           isoDurationToTimeRangeMeta(
@@ -91,6 +100,12 @@ export function timeRangeSelectionsSelector([
   } else {
     latestWindowTimeRanges = LATEST_WINDOW_TIME_RANGES;
     periodToDateRanges = PERIOD_TO_DATE_RANGES;
+    previousCompleteDateRanges = PREVIOUS_COMPLETE_DATE_RANGES;
+    hasDefaultInRanges =
+      !!metricsView.data.defaultTimeRange &&
+      (metricsView.data.defaultTimeRange in LATEST_WINDOW_TIME_RANGES ||
+        metricsView.data.defaultTimeRange in PERIOD_TO_DATE_RANGES ||
+        metricsView.data.defaultTimeRange in PREVIOUS_COMPLETE_DATE_RANGES);
   }
 
   return {
@@ -105,6 +120,13 @@ export function timeRangeSelectionsSelector([
       allTimeRange.start,
       allTimeRange.end,
       periodToDateRanges,
+      minTimeGrain,
+      explorer.selectedTimezone,
+    ),
+    previousCompleteDateRanges: getChildTimeRanges(
+      allTimeRange.start,
+      allTimeRange.end,
+      previousCompleteDateRanges,
       minTimeGrain,
       explorer.selectedTimezone,
     ),
@@ -154,6 +176,12 @@ export function timeComparisonOptionsSelector([
         ) ?? [];
       allOptions.push(TimeComparisonOption.CUSTOM);
     }
+  } else if (
+    explorer.selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
+  ) {
+    // Previous complete ranges should only have previous period.
+    // Other options dont make sense with our current wording of the comparison ranges.
+    allOptions = [TimeComparisonOption.CONTIGUOUS, TimeComparisonOption.CUSTOM];
   }
 
   const timeComparisonOptions = getAvailableComparisonsForTimeRange(

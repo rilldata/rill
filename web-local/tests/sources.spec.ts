@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   TestEntityType,
   deleteEntity,
@@ -14,15 +14,11 @@ import {
   createOrReplaceSource,
   uploadFile,
 } from "./utils/sourceHelpers";
-import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
+import { test } from "./utils/test";
 
 test.describe("sources", () => {
-  startRuntimeForEachTest();
-
   test("Import sources", async ({ page }) => {
-    await page.goto("/");
-
     await Promise.all([
       waitForAdBids(page, "AdBids"),
       uploadFile(page, "AdBids.csv"),
@@ -46,8 +42,6 @@ test.describe("sources", () => {
   });
 
   test("Rename and delete sources", async ({ page }) => {
-    await page.goto("/");
-
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
     // rename
@@ -62,8 +56,6 @@ test.describe("sources", () => {
   });
 
   test("Edit source", async ({ page }) => {
-    await page.goto("/");
-
     // Upload data & create two sources
     await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");

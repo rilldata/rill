@@ -1,8 +1,28 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  FromProtoOperationMap,
+  FromProtoPivotRowJoinTypeMap,
+  FromProtoTimeGrainMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
+import {
+  createAndExpression,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+import {
+  BOOLEANS,
+  INTEGERS,
+  isFloat,
+} from "@rilldata/web-common/lib/duckdb-data-types";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -12,16 +32,21 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
+import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
+import type {
+  MetricsViewSpecDimensionV2,
+  StructTypeField,
   V1Expression,
   V1MetricsView,
-  V1TimeGrain,
+  V1MetricsViewSpec,
+  V1StructType,
 } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
@@ -44,22 +69,34 @@ const LeaderboardContextColumnReverseMap: Record<
 export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsView,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
     base64ToProto(decodeURIComponent(urlState)),
     metricsView,
+    schema,
   );
 }
 
 export function getDashboardStateFromProto(
   binary: Uint8Array,
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {};
 
   if (dashboard.filters) {
+    // backwards compatibility for our older filter format
     entity.whereFilter = convertFilterToExpression(dashboard.filters);
+    // older values could be strings for non-string values,
+    // so we correct them using metrics view schema
+    entity.whereFilter =
+      correctFilterValues(
+        entity.whereFilter,
+        metricsView.dimensions ?? [],
+        schema,
+      ) ?? createAndExpression([]);
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
@@ -76,13 +113,16 @@ export function getDashboardStateFromProto(
     // backwards compatibility
     correctComparisonTimeRange(entity.selectedComparisonTimeRange);
   }
-  entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
+  if (dashboard.showTimeComparison !== undefined) {
+    entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
+  }
 
-  entity.selectedTimeRange = dashboard.timeRange
-    ? fromTimeRangeProto(dashboard.timeRange)
-    : undefined;
-  if (dashboard.timeGrain && entity.selectedTimeRange) {
-    entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
+  if (dashboard.timeRange) {
+    entity.selectedTimeRange = fromTimeRangeProto(dashboard.timeRange);
+    if (dashboard.timeGrain) {
+      entity.selectedTimeRange.interval =
+        FromProtoTimeGrainMap[dashboard.timeGrain];
+    }
   }
 
   if (dashboard.scrubRange) {
@@ -97,16 +137,6 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardMeasure) {
     entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
   }
-  if (dashboard.selectedDimension) {
-    entity.selectedDimensionName = dashboard.selectedDimension;
-  } else {
-    entity.selectedDimensionName = undefined;
-  }
-  if (dashboard.expandedMeasure) {
-    entity.expandedMeasureName = dashboard.expandedMeasure;
-  } else {
-    entity.expandedMeasureName = undefined;
-  }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
@@ -115,16 +145,15 @@ export function getDashboardStateFromProto(
   if (dashboard.pinIndex !== undefined) {
     entity.pinIndex = dashboard.pinIndex;
   }
-  if (dashboard.selectedTimezone) {
-    entity.selectedTimezone = dashboard.selectedTimezone;
-  }
+
+  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
       metricsView.measures?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
-  } else if (dashboard.visibleMeasures) {
+  } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
   }
@@ -134,7 +163,7 @@ export function getDashboardStateFromProto(
     entity.visibleDimensionKeys = new Set(
       metricsView.dimensions?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
-  } else if (dashboard.visibleDimensions) {
+  } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
   }
@@ -150,6 +179,12 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
+
+  if (dashboard.pivotIsActive !== undefined) {
+    entity.pivot = fromPivotProto(dashboard, metricsView);
+  }
+
+  Object.assign(entity, fromActivePageProto(dashboard));
 
   return entity;
 }
@@ -185,6 +220,61 @@ function fromExpressionProto(expression: Expression): V1Expression | undefined {
   }
 }
 
+function correctFilterValues(
+  filter: V1Expression,
+  dimensions: MetricsViewSpecDimensionV2[],
+  schema: V1StructType,
+) {
+  return filterIdentifiers(filter, (e, ident) => {
+    const dim = dimensions?.find((d) => d.name === ident);
+    // ignore if dimension is not present anymore
+    if (!dim) return false;
+    const field = schema.fields?.find((f) => f.name === ident);
+    // ignore if field is not found
+    if (!field) return false;
+
+    if (e.cond?.exprs) {
+      e.cond.exprs =
+        e.cond.exprs.map((e, i) => {
+          if (i === 0) return e; // 1st expr is always the identifier
+          return correctFilterValue(e, field);
+        }) ?? [];
+    }
+    return true;
+  });
+}
+
+function correctFilterValue(
+  valueExpr: V1Expression,
+  field: StructTypeField,
+): V1Expression {
+  if (valueExpr.val === null) {
+    return valueExpr;
+  }
+  if (typeof valueExpr.val === "string") {
+    // older filters were storing everything as strings
+    return {
+      val: correctStringFilterValue(valueExpr.val, field),
+    };
+  }
+  return valueExpr;
+}
+
+function correctStringFilterValue(val: string, field: StructTypeField) {
+  if (!field.type?.code) return val;
+
+  if (INTEGERS.has(field.type?.code)) {
+    return Number.parseInt(val);
+  } else if (isFloat(field.type?.code)) {
+    return Number.parseFloat(val);
+  } else if (BOOLEANS.has(field.type?.code)) {
+    return val === "true";
+  } else {
+    // TODO: other types
+    return val;
+  }
+}
+
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   const selectedTimeRange: DashboardTimeControls = {
     name: timeRange.name,
@@ -202,6 +292,61 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   }
 
   return selectedTimeRange;
+}
+
+function fromPivotProto(
+  dashboard: DashboardState,
+  metricsView: V1MetricsViewSpec,
+): PivotState {
+  const dimensionsMap = getMapFromArray(
+    metricsView.dimensions ?? [],
+    (d) => d.name,
+  );
+  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: dimensionsMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Dimension,
+  });
+  const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
+    grain: TimeGrain,
+  ) => ({
+    id: FromProtoTimeGrainMap[grain],
+    title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+    type: PivotChipType.Time,
+  });
+  const measuresMap = getMapFromArray(
+    metricsView.measures ?? [],
+    (m) => m.name,
+  );
+  const mapMeasure: (name: string) => PivotChipData = (name: string) => ({
+    id: name,
+    title: measuresMap.get(name)?.label || "Unknown",
+    type: PivotChipType.Measure,
+  });
+
+  return {
+    active: dashboard.pivotIsActive ?? false,
+    rows: {
+      dimension: [
+        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+        ...dashboard.pivotRowDimensions.map(mapDimension),
+      ],
+    },
+    columns: {
+      dimension: [
+        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
+        ...dashboard.pivotColumnDimensions.map(mapDimension),
+      ],
+      measure: dashboard.pivotColumnMeasures.map(mapMeasure),
+    },
+    expanded: dashboard.pivotExpanded,
+    sorting: dashboard.pivotSort ?? [],
+    columnPage: dashboard.pivotColumnPage ?? 1,
+    rowJoinType:
+      FromProtoPivotRowJoinTypeMap[
+        dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
+      ],
+  };
 }
 
 function correctComparisonTimeRange(
@@ -233,28 +378,54 @@ function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
 }
 
-function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
-  switch (timeGrain) {
-    case TimeGrain.UNSPECIFIED:
-    default:
-      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-    case TimeGrain.MILLISECOND:
-      return V1TimeGrain.TIME_GRAIN_MILLISECOND;
-    case TimeGrain.SECOND:
-      return V1TimeGrain.TIME_GRAIN_SECOND;
-    case TimeGrain.MINUTE:
-      return V1TimeGrain.TIME_GRAIN_MINUTE;
-    case TimeGrain.HOUR:
-      return V1TimeGrain.TIME_GRAIN_HOUR;
-    case TimeGrain.DAY:
-      return V1TimeGrain.TIME_GRAIN_DAY;
-    case TimeGrain.WEEK:
-      return V1TimeGrain.TIME_GRAIN_WEEK;
-    case TimeGrain.MONTH:
-      return V1TimeGrain.TIME_GRAIN_MONTH;
-    case TimeGrain.QUARTER:
-      return V1TimeGrain.TIME_GRAIN_QUARTER;
-    case TimeGrain.YEAR:
-      return V1TimeGrain.TIME_GRAIN_YEAR;
+function fromActivePageProto(
+  dashboard: DashboardState,
+): Partial<
+  Pick<
+    MetricsExplorerEntity,
+    "activePage" | "selectedDimensionName" | "expandedMeasureName"
+  >
+> {
+  switch (dashboard.activePage) {
+    case DashboardState_ActivePage.UNSPECIFIED:
+      // backwards compatibility
+      if (dashboard.selectedDimension) {
+        return {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          expandedMeasureName: undefined,
+          selectedDimensionName: dashboard.selectedDimension,
+        };
+      } else if (dashboard.expandedMeasure) {
+        return {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          expandedMeasureName: dashboard.expandedMeasure,
+          selectedDimensionName: undefined,
+        };
+      }
+      // return empty so that nothing is overridden
+      // this is used to store partial data in the proto, like filters only, which should not override selected values
+      return {};
+
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.PIVOT:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: undefined,
+        selectedDimensionName: undefined,
+      };
+
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: undefined,
+        selectedDimensionName: dashboard.selectedDimension,
+      };
+
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: dashboard.expandedMeasure,
+        selectedDimensionName: undefined,
+      };
   }
 }

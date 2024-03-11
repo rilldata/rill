@@ -16,10 +16,12 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/pkg/securetoken"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -201,7 +203,13 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	httpMux.Handle("/v1/", gwMux)
 
 	// Add HTTP handler for query export downloads
-	httpMux.Handle("/v1/download", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler)))
+	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
+
+	// custom API handler
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiForName))))
+
+	// custom Chart Data handler
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/charts/{name}/data", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.chartDataHandler))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -306,6 +314,9 @@ func mapGRPCError(err error) error {
 	}
 	if errors.Is(err, context.Canceled) {
 		return status.Error(codes.Canceled, err.Error())
+	}
+	if errors.Is(err, queries.ErrForbidden) {
+		return ErrForbidden
 	}
 	return err
 }

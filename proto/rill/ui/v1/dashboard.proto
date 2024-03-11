@@ -53,6 +53,20 @@ message DashboardState {
     LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
   }
 
+  enum PivotRowJoinType {
+    PIVOT_ROW_JOIN_TYPE_UNSPECIFIED = 0;
+    PIVOT_ROW_JOIN_TYPE_FLAT = 1;
+    PIVOT_ROW_JOIN_TYPE_NEST = 2;
+  }
+
+  enum ActivePage {
+    ACTIVE_PAGE_UNSPECIFIED = 0;
+    ACTIVE_PAGE_DEFAULT = 1;
+    ACTIVE_PAGE_DIMENSION_TABLE = 2;
+    ACTIVE_PAGE_TIME_DIMENSIONAL_DETAIL = 3;
+    ACTIVE_PAGE_PIVOT = 4;
+  }
+
   // Selected time range
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
@@ -65,6 +79,9 @@ message DashboardState {
   rill.runtime.v1.TimeGrain time_grain = 3;
 
   DashboardTimeRange compare_time_range = 4;
+
+  // Determines the active page. This is cleaner than using setting `selected_dimension` or `expanded_measure`
+  ActivePage active_page = 32;
 
   // Selected measure for the leaderboard
   optional string leaderboard_measure = 5;
@@ -96,6 +113,28 @@ message DashboardState {
   optional string expanded_measure = 18;
 
   optional int32 pin_index = 19;
+
+  /**
+   * Pivot related fields
+   */
+  optional bool pivot_is_active = 22;
+  // List of time dimensions selected for rows
+  repeated rill.runtime.v1.TimeGrain pivot_row_time_dimensions = 23;
+  // List of dimensions selected for rows
+  repeated string pivot_row_dimensions = 24;
+  // List of time dimensions selected for columns
+  repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 25;
+  // List of time dimensions selected for columns
+  repeated string pivot_column_dimensions = 26;
+  // List of time measures selected for columns
+  repeated string pivot_column_measures = 27;
+  // Map of dimensions that are expanded
+  map<string, bool> pivot_expanded = 28;
+  // Sort settings
+  repeated PivotColumnSort pivot_sort = 29;
+  // Pagination data
+  optional int32 pivot_column_page = 30;
+  optional PivotRowJoinType pivot_row_join_type = 31;
 }
 
 message DashboardTimeRange {
@@ -107,4 +146,9 @@ message DashboardTimeRange {
 message DashboardDimensionFilter {
   string name = 1;
   rill.runtime.v1.Expression filter = 2;
+}
+
+message PivotColumnSort {
+  bool desc = 1;
+  string id = 2;
 }

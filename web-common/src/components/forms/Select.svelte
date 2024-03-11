@@ -1,4 +1,7 @@
 <script lang="ts">
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import Menu from "../menu-v2/Menu.svelte";
@@ -11,6 +14,8 @@
   export let label: string;
   export let options: { value: string; label?: string }[];
   export let placeholder: string = "";
+  export let optional: boolean = false;
+  export let tooltip: string = "";
 
   // temporary till we figure out the menus
   export let detach = false;
@@ -19,17 +24,37 @@
   const dispatch = createEventDispatcher();
 
   let displayValue: string;
+  let hasNoValue = false;
   $: {
     const foundOption = options.find((option) => option.value === value);
     displayValue = foundOption?.label ?? value;
+    hasNoValue = !foundOption;
   }
-
-  // We should move to shadcn select soon. This is getting ugly.
-  $: hasNoValue = value === "" || value === null || value === undefined;
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <label class="text-gray-800 text-sm font-medium" for={id}>{label}</label>
+  {#if label?.length}
+    <label for={id} class="text-sm flex items-center gap-x-1">
+      <span class="text-gray-800 font-medium">
+        {label}
+      </span>
+      {#if optional}
+        <span class="text-gray-500">(optional)</span>
+      {/if}
+      {#if tooltip}
+        <Tooltip>
+          <InfoCircle />
+          <TooltipContent
+            slot="tooltip-content"
+            maxWidth="600px"
+            class="whitespace-pre-line"
+          >
+            {tooltip}
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+    </label>
+  {/if}
   <Menu {detach}>
     <MenuButton
       className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center {hasNoValue

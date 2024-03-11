@@ -42,7 +42,7 @@ This component needs to do the following:
   export let zone: string;
 
   export let showComparison = true;
-  export let selectedComparison: DashboardTimeControls;
+  export let selectedComparison: DashboardTimeControls | undefined;
 
   $: comparisonOption = selectedComparison?.name;
 

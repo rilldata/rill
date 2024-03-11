@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"gopkg.in/yaml.v3"
 )
 
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
@@ -35,16 +33,12 @@ type ReportYAML struct {
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseReport(ctx context.Context, node *Node) error {
+func (p *Parser) parseReport(node *Node) error {
 	// Parse YAML
 	tmp := &ReportYAML{}
-	if node.YAMLRaw != "" {
-		// Can't use node.YAML because we want to set KnownFields for reports
-		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
-		dec.KnownFields(true)
-		if err := dec.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
-		}
+	err := p.decodeNodeYAML(node, true, tmp)
+	if err != nil {
+		return err
 	}
 
 	// Validate SQL or connector isn't set
@@ -125,7 +119,7 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		r.ReportSpec.RefreshSchedule = schedule
 	}
 	if timeout != 0 {
-		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
+		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 	r.ReportSpec.QueryName = tmp.Query.Name
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON

@@ -1,11 +1,20 @@
 import {
   NullValue,
   PartialMessage,
+  protoBase64,
   Timestamp,
   Value,
-  protoBase64,
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import {
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  ToProtoOperationMap,
+  ToProtoPivotRowJoinTypeMap,
+  ToProtoTimeGrainMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
@@ -20,18 +29,15 @@ import {
   Expression,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import {
-  TimeGrain,
-  TimeGrain as TimeGrainProto,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
-import {
   DashboardDimensionFilter,
   DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { ToProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnMap: Record<
@@ -69,7 +75,9 @@ export function getProtoFromDashboardState(
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {
-      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
+      state.timeGrain =
+        ToProtoTimeGrainMap[metrics.selectedTimeRange.interval] ??
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
     }
   }
   if (metrics.selectedComparisonTimeRange) {
@@ -84,20 +92,14 @@ export function getProtoFromDashboardState(
   if (metrics.selectedComparisonDimension) {
     state.comparisonDimension = metrics.selectedComparisonDimension;
   }
-  if (metrics.selectedTimezone) {
-    state.selectedTimezone = metrics.selectedTimezone;
-  }
+
+  state.selectedTimezone = metrics.selectedTimezone;
+
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
-  if (metrics.expandedMeasureName) {
-    state.expandedMeasure = metrics.expandedMeasureName;
-  }
   if (metrics.pinIndex !== undefined) {
     state.pinIndex = metrics.pinIndex;
-  }
-  if (metrics.selectedDimensionName) {
-    state.selectedDimension = metrics.selectedDimensionName;
   }
 
   if (metrics.allMeasuresVisible) {
@@ -123,6 +125,12 @@ export function getProtoFromDashboardState(
   if (metrics.dashboardSortType) {
     state.leaderboardSortType = metrics.dashboardSortType;
   }
+
+  if (metrics.pivot) {
+    Object.assign(state, toPivotProto(metrics.pivot));
+  }
+
+  Object.assign(state, toActivePageProto(metrics));
 
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
@@ -160,32 +168,6 @@ function toTimeProto(date: Date) {
   return new Timestamp({
     seconds: BigInt(date.getTime()),
   });
-}
-
-function toTimeGrainProto(timeGrain: V1TimeGrain) {
-  switch (timeGrain) {
-    case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
-    default:
-      return TimeGrain.UNSPECIFIED;
-    case V1TimeGrain.TIME_GRAIN_MILLISECOND:
-      return TimeGrain.MILLISECOND;
-    case V1TimeGrain.TIME_GRAIN_SECOND:
-      return TimeGrain.SECOND;
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return TimeGrainProto.MINUTE;
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return TimeGrainProto.HOUR;
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return TimeGrainProto.DAY;
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return TimeGrainProto.WEEK;
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return TimeGrainProto.MONTH;
-    case V1TimeGrain.TIME_GRAIN_QUARTER:
-      return TimeGrainProto.QUARTER;
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return TimeGrainProto.YEAR;
-  }
 }
 
 function toExpressionProto(
@@ -265,4 +247,62 @@ function toPbValue(val: unknown) {
         },
       });
   }
+}
+
+function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
+  if (!pivotState.active)
+    return {
+      pivotIsActive: false,
+      pivotExpanded: {},
+      pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
+    };
+  return {
+    pivotIsActive: true,
+
+    pivotRowTimeDimensions: pivotState.rows.dimension
+      .filter((d) => d.type === PivotChipType.Time)
+      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
+    pivotRowDimensions: pivotState.rows.dimension
+      .filter((d) => d.type === PivotChipType.Dimension)
+      .map((d) => d.id),
+
+    pivotColumnTimeDimensions: pivotState.columns.dimension
+      .filter((d) => d.type === PivotChipType.Time)
+      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
+    pivotColumnDimensions: pivotState.columns.dimension
+      .filter((d) => d.type === PivotChipType.Dimension)
+      .map((d) => d.id),
+    pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
+
+    // pivotExpanded: pivotState.expanded,
+    pivotSort: pivotState.sorting,
+    pivotColumnPage: pivotState.columnPage,
+    pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
+  };
+}
+
+function toActivePageProto(
+  metrics: MetricsExplorerEntity,
+): PartialMessage<DashboardState> {
+  switch (metrics.activePage) {
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.PIVOT:
+      return {
+        activePage: metrics.activePage,
+      };
+
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      return {
+        activePage: metrics.activePage,
+        selectedDimension: metrics.selectedDimensionName,
+      };
+
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      return {
+        activePage: metrics.activePage,
+        expandedMeasure: metrics.expandedMeasureName,
+      };
+  }
+
+  return {};
 }

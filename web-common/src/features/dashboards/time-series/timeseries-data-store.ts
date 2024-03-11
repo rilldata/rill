@@ -20,12 +20,20 @@ import {
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
 
+export interface TimeSeriesDatum {
+  ts?: Date;
+  bin?: number;
+  ts_comparison?: Date;
+  ts_position?: Date;
+  [key: string]: Date | string | number | undefined;
+}
+
 export type TimeSeriesDataState = {
   isFetching: boolean;
   isError?: boolean;
 
   // Computed prepared data for charts and table
-  timeSeriesData?: unknown[];
+  timeSeriesData?: TimeSeriesDatum[];
   total?: V1MetricsViewAggregationResponseDataItem;
   unfilteredTotal?: V1MetricsViewAggregationResponseDataItem;
   comparisonTotal?: V1MetricsViewAggregationResponseDataItem;
@@ -75,7 +83,7 @@ function createMetricsViewTimeSeries(
           timeGranularity:
             timeControls.selectedTimeRange?.interval ??
             timeControls.minTimeGrain,
-          timeZone: dashboardStore?.selectedTimezone,
+          timeZone: dashboardStore.selectedTimezone,
         },
         {
           query: {
@@ -93,7 +101,9 @@ function createMetricsViewTimeSeries(
   );
 }
 
-export function createTimeSeriesDataStore(ctx: StateManagers) {
+export function createTimeSeriesDataStore(
+  ctx: StateManagers,
+): TimeSeriesDataStore {
   return derived(
     [useMetricsView(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
     ([metricsView, timeControls, dashboardStore], set) => {
@@ -175,20 +185,22 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           comparisonTotal,
           dimensionChart,
         ]) => {
-          let timeSeriesData = primary?.data?.data;
+          let preparedTimeSeriesData: TimeSeriesDatum[] = [];
 
           if (!primary.isFetching && interval) {
-            timeSeriesData = prepareTimeSeries(
-              primary?.data?.data,
-              comparison?.data?.data,
-              TIME_GRAIN[interval]?.duration,
-              dashboardStore.selectedTimezone || "Etc/UTC",
+            const intervalDuration = TIME_GRAIN[interval]?.duration;
+            preparedTimeSeriesData = prepareTimeSeries(
+              primary?.data?.data || [],
+              comparison?.data?.data || [],
+              intervalDuration,
+              dashboardStore.selectedTimezone,
             );
           }
+
           return {
             isFetching: !primary?.data && !primaryTotal?.data,
-            isError: false, // FIXME Handle errors
-            timeSeriesData,
+            isError: primary?.isError || primaryTotal?.isError,
+            timeSeriesData: preparedTimeSeriesData,
             total: primaryTotal?.data?.data?.[0],
             unfilteredTotal: unfilteredTotal?.data?.data?.[0],
             comparisonTotal: comparisonTotal?.data?.data?.[0],
@@ -197,7 +209,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         },
       ).subscribe(set);
     },
-  ) as TimeSeriesDataStore;
+  );
 }
 
 /**

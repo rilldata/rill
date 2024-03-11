@@ -34,6 +34,12 @@
 
   .ui-copy-muted {
     @apply text-gray-600 dark:text-gray-200;
+   
+  }
+
+  .ui-header-primary {
+    @apply text-slate-600 dark:text-slate-100;
+    @apply hover:text-primary-700 group-hover:text-primary-700;
   }
 
   .ui-copy-strong {

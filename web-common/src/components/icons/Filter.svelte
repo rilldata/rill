@@ -1,6 +1,7 @@
 <script lang="ts">
   export let size = "1em";
   export let color = "currentColor";
+  export let className = "";
 </script>
 
 <svg
@@ -8,6 +9,7 @@
   viewBox="0 0 24 24"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
+  class={className}
 >
   <path
     d="M9.18756 13.1251L5.37982 8.625H18.6204L14.8126 13.1251V19.8751C14.8126 20.4731 14.3462 20.9621 13.7573 20.998L9.18756 17.6556V13.1251Z"

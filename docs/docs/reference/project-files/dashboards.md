@@ -26,8 +26,16 @@ _**`available_time_zones`**_ — time zones that should be pinned to the top of 
 
 _**`default_theme`**_ — default theme to apply to the dashboard _(optional)_. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes.
 
+_**`default_comparison`**_ - defines which should be the default comparison mode. Default: none _(optional)_
+  - _**`mode`**_ - comparison mode
+    - _`none`_ - no comparison
+    - _`time`_ - time, will pick the comparison period depending on `default_time_range`
+    - _`dimension`_ - dimension comparison mode
+  - _**`dimension`**_ - for dimension mode, specify the comparison dimension by name
+
 _**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
+  - _**`expression`**_ a non-aggregate expression such as `string_split(domain, '.')`. One of `column` and `expression` is required but cannot have both at the same time _(required)_
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_
@@ -70,6 +78,10 @@ _**`available_time_ranges`**_ — Override the list of default time range select
     - rill-TD // Today
     - rill-WTD // Week-To-date
     ```
+
+_**`default_dimensions`**_ - A list of dimensions that should be visible by default.
+
+_**`default_measures`**_ - A list of measures that should be visible by default.
 
 _**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_

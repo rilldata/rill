@@ -1,3 +1,4 @@
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type {
   SortDirection,
@@ -7,6 +8,7 @@ import type {
   DashboardTimeControls,
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
+import type { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export interface DimensionThresholdFilter {
@@ -113,9 +115,15 @@ export interface MetricsExplorerEntity {
   selectedComparisonDimension?: string;
 
   /**
-   * user selected timezone
+   * Explicit active page setting.
+   * This avoids using presence of value in `selectedDimensionName` or `expandedMeasureName`.
    */
-  selectedTimezone?: string;
+  activePage: DashboardState_ActivePage;
+
+  /**
+   * user selected timezone, should default to "UTC" if no other value is set
+   */
+  selectedTimezone: string;
 
   /**
    * Search text state for dimension tables. This search text state
@@ -151,6 +159,8 @@ export interface MetricsExplorerEntity {
    * is not shown.
    */
   selectedDimensionName?: string;
+
+  pivot: PivotState;
 
   proto?: string;
 }

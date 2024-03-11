@@ -179,14 +179,17 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
-	FindBookmarks(ctx context.Context, projectID, userID string) ([]*Bookmark, error)
+	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
+	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
+	UpdateBookmark(ctx context.Context, opts *UpdateBookmarkOptions) error
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -555,6 +558,8 @@ type ProjectRole struct {
 	ManageProjectMembers bool `db:"manage_project_members"`
 	CreateReports        bool `db:"create_reports"`
 	ManageReports        bool `db:"manage_reports"`
+	CreateAlerts         bool `db:"create_alerts"`
+	ManageAlerts         bool `db:"manage_alerts"`
 }
 
 // Member is a convenience type used for display-friendly representation of an org or project member.
@@ -644,23 +649,39 @@ type InsertProjectInviteOptions struct {
 }
 
 type Bookmark struct {
-	ID            string
-	DisplayName   string    `db:"display_name"`
-	Data          []byte    `db:"data"`
-	DashboardName string    `db:"dashboard_name"`
-	ProjectID     string    `db:"project_id"`
-	UserID        string    `db:"user_id"`
-	CreatedOn     time.Time `db:"created_on"`
-	UpdatedOn     time.Time `db:"updated_on"`
+	ID           string
+	DisplayName  string    `db:"display_name"`
+	Description  string    `db:"description"`
+	Data         []byte    `db:"data"`
+	ResourceKind string    `db:"resource_kind"`
+	ResourceName string    `db:"resource_name"`
+	ProjectID    string    `db:"project_id"`
+	UserID       string    `db:"user_id"`
+	Default      bool      `db:"default"`
+	Shared       bool      `db:"shared"`
+	CreatedOn    time.Time `db:"created_on"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
-// InsertBookmarksOptions defines options for inserting a new bookmark
+// InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName   string `json:"display_name"`
-	Data          []byte `json:"data"`
-	DashboardName string `json:"dashboard_name"`
-	ProjectID     string `json:"project_id"`
-	UserID        string `json:"user_id"`
+	DisplayName  string `json:"display_name"`
+	Data         []byte `json:"data"`
+	ResourceKind string `json:"resource_kind"`
+	ResourceName string `json:"resource_name"`
+	Description  string `json:"description"`
+	ProjectID    string `json:"project_id"`
+	UserID       string `json:"user_id"`
+	Default      bool   `json:"default"`
+	Shared       bool   `json:"shared"`
+}
+
+// UpdateBookmarkOptions defines options for updating an existing bookmark
+type UpdateBookmarkOptions struct {
+	BookmarkID  string `json:"bookmark_id"`
+	DisplayName string `json:"display_name"`
+	Description string `json:"description"`
+	Data        []byte `json:"data"`
 }
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)

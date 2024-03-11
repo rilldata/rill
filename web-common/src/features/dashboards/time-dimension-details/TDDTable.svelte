@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
-  import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
+  import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
@@ -26,8 +26,8 @@
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
-  export let highlightedCol: number;
-  export let scrubPos: { start: number; end: number };
+  export let highlightedCol: number | undefined;
+  export let scrubPos: { start?: number; end?: number };
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
@@ -83,6 +83,7 @@
 
     const isScrubbed =
       scrubPos?.start !== undefined &&
+      scrubPos?.end !== undefined &&
       data.x >= scrubPos.start &&
       data.x <= scrubPos.end - 1;
 
@@ -360,7 +361,7 @@
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative"
+  class="w-full relative h-full"
 >
   <Pivot
     bind:this={pivot}

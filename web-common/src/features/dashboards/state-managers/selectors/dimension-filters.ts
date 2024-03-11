@@ -6,9 +6,11 @@ import {
   getValuesInExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type {
+  MetricsViewSpecDimensionV2,
+  V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
@@ -92,32 +94,40 @@ export type DimensionFilterItem = {
   name: string;
   label: string;
   selectedValues: string[];
+  isInclude: boolean;
 };
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
   return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
-    if (!dashData.dashboard.whereFilter) return [];
-
-    const filteredDimensions: DimensionFilterItem[] = [];
-    const addedDimension = new Set<string>();
-    forEachIdentifier(dashData.dashboard.whereFilter, (e, ident) => {
-      if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
-      const dim = dimensionIdMap.get(ident);
-      if (!dim) {
-        return;
-      }
-      addedDimension.add(ident);
-      filteredDimensions.push({
-        name: ident,
-        label: getDimensionDisplayName(dim),
-        selectedValues: getValuesInExpression(e),
-      });
-    });
-
-    // sort based on name to make sure toggling include/exclude is not jarring
-    return filteredDimensions.sort(filterItemsSortFunction);
+    return getDimensionFilters(dimensionIdMap, dashData.dashboard.whereFilter);
   };
+}
+
+export function getDimensionFilters(
+  dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
+  filter: V1Expression | undefined,
+) {
+  if (!filter) return [];
+  const filteredDimensions: DimensionFilterItem[] = [];
+  const addedDimension = new Set<string>();
+  forEachIdentifier(filter, (e, ident) => {
+    if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
+    const dim = dimensionIdMap.get(ident);
+    if (!dim) {
+      return;
+    }
+    addedDimension.add(ident);
+    filteredDimensions.push({
+      name: ident,
+      label: getDimensionDisplayName(dim),
+      selectedValues: getValuesInExpression(e),
+      isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+    });
+  });
+
+  // sort based on name to make sure toggling include/exclude is not jarring
+  return filteredDimensions.sort(filterItemsSortFunction);
 }
 
 export const getAllDimensionFilterItems = (
@@ -140,6 +150,7 @@ export const getAllDimensionFilterItems = (
           dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
         selectedValues: [],
+        isInclude: true,
       });
     }
 
@@ -174,6 +185,13 @@ export const includedDimensionValues = (
 
     return getValuesInExpression(expr);
   };
+};
+
+export const hasAtLeastOneDimensionFilter = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  const whereFilter = dashData.dashboard.whereFilter;
+  return whereFilter.cond?.exprs?.length && whereFilter.cond.exprs.length > 0;
 };
 
 export const dimensionFilterSelectors = {
@@ -219,4 +237,5 @@ export const dimensionFilterSelectors = {
 
   unselectedDimensionValues,
   includedDimensionValues,
+  hasAtLeastOneDimensionFilter,
 };

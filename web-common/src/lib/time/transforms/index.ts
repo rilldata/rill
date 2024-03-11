@@ -9,14 +9,16 @@
  * in a configuration file.
  */
 import { PeriodToUnitsMap } from "@rilldata/web-common/lib/time/config";
+import { DateTime, Duration } from "luxon";
 import {
+  Period,
   ReferencePoint,
   RelativePointInTime,
   RelativeTimeTransformation,
+  TimeOffsetType,
   TimeTruncationType,
+  TimeUnit,
 } from "../types";
-import { DateTime, Duration } from "luxon";
-import { Period, TimeOffsetType, TimeUnit } from "../types";
 
 /** Returns the current time */
 export function getPresentTime() {
@@ -27,8 +29,8 @@ export function getPresentTime() {
 export function getStartOfPeriod(
   referenceTime: Date,
   period: Period,
-  zone = "Etc/UTC",
-) {
+  zone = "UTC",
+): Date {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.startOf(TimeUnit[period]).toJSDate();
 }
@@ -37,8 +39,8 @@ export function getStartOfPeriod(
 export function getEndOfPeriod(
   referenceTime: Date,
   period: Period,
-  zone = "Etc/UTC",
-) {
+  zone = "UTC",
+): Date {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.endOf(TimeUnit[period]).toJSDate();
 }
@@ -48,8 +50,8 @@ export function getOffset(
   referenceTime: Date,
   duration: string,
   direction: TimeOffsetType,
-  zone = "Etc/UTC",
-) {
+  zone = "UTC",
+): Date {
   const durationObj = Duration.fromISO(duration);
   return DateTime.fromJSDate(referenceTime, { zone })
     [direction === TimeOffsetType.ADD ? "plus" : "minus"](durationObj)
@@ -69,7 +71,7 @@ export function getTimeWidth(start: Date, end: Date) {
 export function transformDate(
   referenceTime: Date,
   transformations: RelativeTimeTransformation[],
-  zone = "Etc/UTC",
+  zone = "UTC",
 ) {
   let absoluteTime = referenceTime;
   for (const transformation of transformations) {
@@ -79,6 +81,7 @@ export function transformDate(
         absoluteTime,
         transformation.duration,
         transformation.operationType,
+        zone,
       );
     } else if (
       transformation.truncationType === TimeTruncationType.START_OF_PERIOD
@@ -139,13 +142,14 @@ export function relativePointInTimeToAbsolute(
 }
 
 /** Returns the ISO Duration as a multiple of given duration  */
-export function getDurationMultiple(duration: string, multiple: number) {
+export function getDurationMultiple(
+  duration: string,
+  multiple: number,
+): string {
   const durationObj = Duration.fromISO(duration);
   const totalDuration = durationObj.as("milliseconds");
   const newDuration = totalDuration * multiple;
-  return Duration.fromMillis(newDuration)
-    .shiftTo("days", "hours", "minutes", "seconds")
-    .toISO();
+  return getDurationFromMS(newDuration);
 }
 
 export function subtractFromPeriod(
@@ -155,4 +159,10 @@ export function subtractFromPeriod(
   const period_duration = PeriodToUnitsMap[period];
   if (!period_duration) return duration;
   return duration.minus({ [period_duration]: 1 });
+}
+
+export function getDurationFromMS(ms: number): string {
+  return Duration.fromMillis(ms)
+    .shiftTo("days", "hours", "minutes", "seconds")
+    .toISO();
 }

@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	minGoVersion   = "1.21"
+	minGoVersion   = "1.22"
 	minNodeVersion = "18"
 	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"
@@ -78,7 +78,7 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 		checkGoVersion(),
 		checkNodeVersion(ctx),
 		checkDocker(ctx),
-		checkRillRepo(ctx),
+		checkRillRepo(),
 	)
 	if err != nil {
 		return err
@@ -147,13 +147,13 @@ func checkDocker(ctx context.Context) error {
 	return nil
 }
 
-func checkRillRepo(ctx context.Context) error {
+func checkRillRepo() error {
 	_, err := os.Stat(".git")
 	if err != nil {
 		return fmt.Errorf("you must run `rill devtool` from the root of the rill repository")
 	}
 
-	_, githubURL, err := gitutil.ExtractGitRemote("", "")
+	_, githubURL, err := gitutil.ExtractGitRemote("", "", false)
 	if err != nil {
 		return fmt.Errorf("error extracting git remote: %w", err)
 	}
