@@ -45,9 +45,9 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	return newSQLWithRefs(ctx, opts, nil)
 }
 
-// newSQLWithRefs is similar to newSQL, but allows overriding the resolver's refs.
+// newSQLWithRefs is similar to newSQL, but allows providing extra refs.
 // This capability is required by the metrics SQL resolver to wrap this regular SQL resolver.
-func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, refsOverride []*runtimev1.ResourceName) (runtime.Resolver, error) {
+func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRefs []*runtimev1.ResourceName) (runtime.Resolver, error) {
 	props := &sqlProps{}
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
@@ -68,8 +68,9 @@ func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, refsOver
 		return nil, err
 	}
 
-	if refsOverride != nil {
-		refs = refsOverride
+	if extraRefs != nil {
+		refs = append(refs, extraRefs...)
+		refs = normalizeRefs(refs)
 	}
 
 	return &sqlResolver{

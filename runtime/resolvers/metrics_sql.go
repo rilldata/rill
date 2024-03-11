@@ -111,6 +111,9 @@ type metricsSQLCompiler struct {
 	userAttributes map[string]any
 }
 
+// compile compiles the metrics SQL to a regular SQL query. It maintains template tags in the SQL.
+// It returns the compiled SQL, the connector to use, and the refs to metrics views.
+// It does not return other refs (like sources or models). The regular SQL resolver will handle those.
 func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*runtimev1.ResourceName, error) {
 	// Expand "FROM metrics_view".
 	// For each match, match[1] will contain the metrics_view identifier.
