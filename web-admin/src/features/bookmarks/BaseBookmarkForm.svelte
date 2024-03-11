@@ -57,6 +57,13 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     id="displayName"
     label="Name"
   />
+  <InputV2
+    bind:value={$form["description"]}
+    error={$errors["description"]}
+    id="description"
+    label="Description"
+    optional
+  />
   <FormSection
     description={"Inherited from underlying dashboard view."}
     padding=""
@@ -69,13 +76,6 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       {timeRange}
     />
   </FormSection>
-  <InputV2
-    bind:value={$form["description"]}
-    error={$errors["description"]}
-    id="description"
-    label="Description"
-    optional
-  />
   <ProjectAccessControls
     organization={$page.params.organization}
     project={$page.params.project}
