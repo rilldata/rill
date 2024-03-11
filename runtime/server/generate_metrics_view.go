@@ -13,6 +13,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -92,15 +93,30 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// Try to generate the YAML with AI
 	var data string
-	var aiResult *generateMetricsViewYAMLWithAIResult
-	var aiErr error
+	var aiSucceeded bool
 	if req.UseAi {
-		aiResult, aiErr = s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
-		if aiErr != nil {
-			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(aiErr))
+		// Generate
+		start := time.Now()
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		if err != nil {
+			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
-			data = aiResult.data
+			data = res.data
+			aiSucceeded = true
 		}
+
+		// Emit event
+		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(tbl.Schema.Fields))}
+		attrs = append(attrs, attribute.Bool("succeeded", aiSucceeded))
+		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
+		if res != nil {
+			attrs = append(attrs, attribute.Int("valid_measures_count", res.validMeasures))
+			attrs = append(attrs, attribute.Int("invalid_measures_count", res.invalidMeasures))
+		}
+		if err != nil {
+			attrs = append(attrs, attribute.String("error", err.Error()))
+		}
+		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_metrics_view_yaml", attrs...)
 	}
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
@@ -122,28 +138,11 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		return nil, err
 	}
 
-	// Emit event
-	attrs := []attribute.KeyValue{
-		attribute.Int("table_column_count", len(tbl.Schema.Fields)),
-		attribute.Bool("ai_used", req.UseAi),
-	}
-	if req.UseAi {
-		attrs = append(attrs, attribute.Bool("ai_succeeded", aiResult != nil))
-		if aiErr != nil {
-			attrs = append(attrs, attribute.String("ai_error", aiErr.Error()))
-		}
-		if aiResult != nil {
-			attrs = append(attrs, attribute.Int("ai_measures_valid", aiResult.validMeasures))
-			attrs = append(attrs, attribute.Int("ai_measures_invalid", aiResult.invalidMeasures))
-		}
-	}
-	s.activity.RecordMetric(ctx, "generated_metrics_view", 1, attrs...)
-
-	return &runtimev1.GenerateMetricsViewFileResponse{AiSucceeded: aiResult != nil}, nil
+	return &runtimev1.GenerateMetricsViewFileResponse{AiSucceeded: aiSucceeded}, nil
 }
 
-// generateMetricsViewYAMLWithAIResult is a struct for the result of generateMetricsViewYAMLWithAI.
-type generateMetricsViewYAMLWithAIResult struct {
+// generateMetricsViewYAMLWithres is a struct for the result of generateMetricsViewYAMLWithAI.
+type generateMetricsViewYAMLWithres struct {
 	data            string
 	validMeasures   int
 	invalidMeasures int
@@ -151,7 +150,7 @@ type generateMetricsViewYAMLWithAIResult struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithAIResult, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
@@ -243,7 +242,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return nil, err
 	}
 
-	return &generateMetricsViewYAMLWithAIResult{
+	return &generateMetricsViewYAMLWithres{
 		data:            out,
 		validMeasures:   valid,
 		invalidMeasures: invalid,

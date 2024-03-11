@@ -31,6 +31,7 @@ func (e Event) MarshalJSON() ([]byte, error) {
 
 // Constants for common event types.
 const (
+	EventTypeLog        = "log"
 	EventTypeMetric     = "metric"
 	EventTypeBehavioral = "behavioral"
 )
