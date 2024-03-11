@@ -1916,7 +1916,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/telemetry/record:
+  /v1/telemetry/events:
     post:
       summary: |-
         RecordEvents sends a batch of telemetry events.

@@ -9,7 +9,7 @@ service TelemetryService {
   // The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
   rpc RecordEvents(RecordEventsRequest) returns (RecordEventsResponse) {
     option (google.api.http) = {
-      post: "/v1/telemetry/record",
+      post: "/v1/telemetry/events",
       body: "*"
     };
   }

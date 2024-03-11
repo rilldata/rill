@@ -28,7 +28,7 @@ export const telemetryServiceRecordEvents = (
   v1RecordEventsRequest: V1RecordEventsRequest,
 ) => {
   return httpClient<V1RecordEventsResponse>({
-    url: `/v1/telemetry/record`,
+    url: `/v1/telemetry/events`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: v1RecordEventsRequest,
