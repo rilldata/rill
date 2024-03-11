@@ -26,6 +26,7 @@ type Resolver interface {
 	// It does not need to include the instance ID or resolver name, as those are added separately to the cache key.
 	Key() string
 	// Refs access by the resolver. The output may be approximate, i.e. some of the refs may not exist.
+	// The output should avoid duplicates and be stable between invocations.
 	Refs() []*runtimev1.ResourceName
 	// Validate the properties and args without running any expensive operations.
 	Validate(ctx context.Context) error

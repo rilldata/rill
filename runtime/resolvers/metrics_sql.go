@@ -99,7 +99,7 @@ var (
 // 1. Expanding AGGREGATE(measure) into actual aggregate expressions from the metrics view definition.
 // 2. Converting "FROM metrics_view" clauses to nested SELECTs on the underlying table with filters based on the metrics view's security policy.
 //
-// Example transformation:
+// TODO: This implementation does not resolve dimension names to underlying columns/expressions. Here is an example of the desired transformation:
 // - Input: SELECT dim1, AGGREGATE(measure1) FROM metrics_view GROUP BY dim1
 // - Output: SELECT col1 AS dim1, SUM(col2) AS measure1 FROM underlying_model GROUP BY dim1
 type metricsSQLCompiler struct {
@@ -152,7 +152,7 @@ func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*ru
 	// Expand AGGREGATE expressions
 	if len(mvToMeasureExprMap) > 0 {
 		// Example: SELECT dim1, AGGREGATE(mv."my measure") FROM mv
-		// The regex captures [AGGREGATE("mv name"."my measure"), my name, measure]
+		// The regex captures [AGGREGATE("mv name"."my measure"), mv name, measure]
 		aggMatches := aggregateRegex.FindAllStringSubmatch(sql, -1)
 		for _, aggMatch := range aggMatches {
 			metricView := unquote(aggMatch[1])
@@ -181,7 +181,7 @@ func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*ru
 		}
 	}
 
-	return sql, mvConnector, refs, nil
+	return sql, mvConnector, normalizeRefs(refs), nil
 }
 
 func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (string, map[string]string, error) {

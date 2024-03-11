@@ -127,9 +127,15 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 		return nil, err
 	}
 
+	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
+	var cache bool
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		cache = len(r.refs) != 0
+	}
+
 	return &runtime.ResolverResult{
 		Data:  data,
-		Cache: r.olap.Dialect() == drivers.DialectDuckDB,
+		Cache: cache,
 	}, nil
 }
 
@@ -209,27 +215,36 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 
 // buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.
 func buildSQL(sqlTemplate string, dialect drivers.Dialect, args, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
-	// Extract refs from the resolved SQL
+	// Resolve the SQL template
 	var refs []*runtimev1.ResourceName
-	meta, err := compilerv1.AnalyzeTemplate(sqlTemplate)
+	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
+		User: userAttributes,
+		ExtraProps: map[string]any{
+			"args":   args,
+			"export": forExport,
+		},
+		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+			// Add to the list of potential refs
+			if ref.Kind == compilerv1.ResourceKindUnspecified {
+				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
+				refs = append(refs,
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: ref.Name},
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
+				)
+			} else {
+				refs = append(refs, runtime.ResourceNameFromCompiler(ref))
+			}
+
+			// Return the escaped identifier
+			return dialect.EscapeIdentifier(ref.Name), nil
+		},
+	})
 	if err != nil {
 		return "", nil, err
 	}
-	for _, ref := range meta.Refs {
-		if ref.Kind == compilerv1.ResourceKindUnspecified {
-			// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
-			refs = append(refs,
-				&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: ref.Name},
-				&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
-			)
-			continue
-		}
-
-		refs = append(refs, runtime.ResourceNameFromCompiler(ref))
-	}
 
 	// For DuckDB, we can do ref inference using the SQL AST (similar to the rillv1 compiler).
-	if dialect == drivers.DialectDuckDB && !meta.UsesTemplating {
+	if dialect == drivers.DialectDuckDB {
 		ast, err := duckdbsql.Parse(sqlTemplate)
 		if err != nil {
 			return "", nil, err
@@ -245,20 +260,5 @@ func buildSQL(sqlTemplate string, dialect drivers.Dialect, args, userAttributes 
 		}
 	}
 
-	// Resolve the SQL template
-	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
-		User: userAttributes,
-		ExtraProps: map[string]any{
-			"args":   args,
-			"export": forExport,
-		},
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return dialect.EscapeIdentifier(ref.Name), nil
-		},
-	})
-	if err != nil {
-		return "", nil, err
-	}
-
-	return sql, refs, nil
+	return sql, normalizeRefs(refs), nil
 }
