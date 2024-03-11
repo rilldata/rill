@@ -136,15 +136,15 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <div class="whitespace-nowrap">showing</div>
-
       <SelectMenu
+        fixedText="showing"
         paddingTop={2}
         paddingBottom={2}
         {options}
         {selection}
         alignment="end"
         on:select={handleMeasureUpdate}
+        ariaLabel="Select a measure to filter by"
       />
 
       <LeaderboardContextColumnMenu {validPercentOfTotal} />

@@ -334,7 +334,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 	// If the Git path is local, we can parse the project and check if credentials are available for the connectors used by the project.
 	if isLocalGitPath {
-		variablesFlow(ctx, ch, localProjectPath, opts.Name)
+		variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
 	}
 
 	// Open browser
@@ -566,7 +566,7 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 	return res, err
 }
 
-func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName string) {
+func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, projectName string) {
 	// Parse the project's connectors
 	repo, instanceID, err := cmdutil.RepoForProjectPath(gitPath)
 	if err != nil {
@@ -613,7 +613,11 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		}
 		fmt.Print("\n")
 	}
-	ch.PrintfWarn("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
+	if subPath == "" {
+		ch.PrintfWarn("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
+	} else {
+		ch.PrintfWarn("\nRun `rill env configure --project %s` from directory `%s` to provide credentials.\n\n", projectName, gitPath)
+	}
 	time.Sleep(2 * time.Second)
 }
 

@@ -76,7 +76,7 @@
   }
 </script>
 
-<WorkspaceContainer top="0px" assetID="onboarding" inspector={false}>
+<WorkspaceContainer assetID="onboarding" inspector={false}>
   <div class="pt-20 px-8 flex flex-col gap-y-6 items-center" slot="body">
     <div class="text-center">
       <div class="font-bold">Getting started</div>

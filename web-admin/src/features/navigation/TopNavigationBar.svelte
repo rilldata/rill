@@ -14,6 +14,7 @@
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
+  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -32,15 +33,15 @@
 >
   <Tooltip distance={2}>
     <a
-      href="/"
       class="inline-flex items-center hover:bg-gray-200 grid place-items-center rounded"
+      href="/"
+      style:height="36px"
+      style:margin-bottom="4px"
       style:margin-left="8px"
       style:margin-top="4px"
-      style:margin-bottom="4px"
-      style:height="36px"
       style:width="36px"
     >
-      <Home size="20px" color="black" />
+      <Home color="black" size="20px" />
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
@@ -58,6 +59,7 @@
     {/if}
     {#if onDashboardPage}
       <LastRefreshedDate />
+      <Bookmarks />
       <ShareDashboardButton />
     {/if}
     {#if $user.isSuccess}

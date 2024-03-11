@@ -45,6 +45,8 @@ export enum MetricsEventScreenName {
   ReportExport = "report-export",
   Alert = "alert",
   Unknown = "unknown",
+  Explore = "explore",
+  Pivot = "pivot",
 }
 
 export const ScreenToEntityMap = {

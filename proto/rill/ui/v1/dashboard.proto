@@ -59,6 +59,14 @@ message DashboardState {
     PIVOT_ROW_JOIN_TYPE_NEST = 2;
   }
 
+  enum ActivePage {
+    ACTIVE_PAGE_UNSPECIFIED = 0;
+    ACTIVE_PAGE_DEFAULT = 1;
+    ACTIVE_PAGE_DIMENSION_TABLE = 2;
+    ACTIVE_PAGE_TIME_DIMENSIONAL_DETAIL = 3;
+    ACTIVE_PAGE_PIVOT = 4;
+  }
+
   // Selected time range
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
@@ -71,6 +79,9 @@ message DashboardState {
   rill.runtime.v1.TimeGrain time_grain = 3;
 
   DashboardTimeRange compare_time_range = 4;
+
+  // Determines the active page. This is cleaner than using setting `selected_dimension` or `expanded_measure`
+  ActivePage active_page = 32;
 
   // Selected measure for the leaderboard
   optional string leaderboard_measure = 5;

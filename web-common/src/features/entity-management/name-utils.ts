@@ -1,3 +1,8 @@
+export const VALID_NAME_PATTERN = /^[^<>:"/\\|?*]+$/;
+
+export const INVALID_NAME_MESSAGE =
+  'Filename cannot contain special characters like /, <, >, :, ", \\, |, ?, or *. Please choose a different name.';
+
 // sourced from https://www.steveruiz.me/posts/incrementing-name
 
 // Will return "1" from "table_name_1"

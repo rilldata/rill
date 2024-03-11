@@ -13,9 +13,9 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   createQueryServiceMetricsViewTimeRange,
-  V1TimeRange,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
   type V1MetricsViewRowsRequest,
@@ -23,6 +23,7 @@ import {
   type V1MetricsViewTimeSeriesRequest,
   type V1MetricsViewToplistRequest,
   type V1Resource,
+  V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -280,6 +281,7 @@ function getDashboardFromComparisonRequest({
   }
 
   dashboard.selectedDimensionName = req.dimension.name;
+  dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
 
   return dashboard;
 }
