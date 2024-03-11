@@ -118,29 +118,27 @@
       {name}
     </h2>
     <div
-      class="ui-copy-muted relative w-full h-full overflow-hidden"
+      class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
     >
       {#if value !== null && status === EntityStatus.Idle}
-        <div class="w-full overflow-hidden text-ellipsis">
-          <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-            {measureValueFormatter(output)}
-          </WithTween>
-        </div>
+        <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+          {measureValueFormatter(output)}
+        </WithTween>
         {#if showComparison && comparisonOption && comparisonValue}
-          <div class="flex items-baseline gap-x-3">
+          <div class="flex items-baseline gap-x-3 text-sm">
             {#if comparisonValue != null}
               <div
                 role="complementary"
+                class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
+                class:font-semibold={isComparisonPositive}
                 on:mouseenter={() =>
                   (hoveredValue =
                     measureValueFormatterUnabridged(diff) ?? "no data")}
                 on:mouseleave={() =>
                   (hoveredValue =
                     measureValueFormatterUnabridged(value) ?? "no data")}
-                class="w-max text-sm ui-copy-inactive"
-                class:font-semibold={isComparisonPositive}
               >
                 {#if !noChange}
                   {formattedDiff}
@@ -164,8 +162,8 @@
                 on:mouseleave={() =>
                   (hoveredValue =
                     measureValueFormatterUnabridged(value) ?? "no data")}
-                class="w-max text-sm
-              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
+                class="w-fit ui-copy-inactive"
+                class:text-red-500={!isComparisonPositive}
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -201,7 +199,7 @@
 
 <style lang="postcss">
   .big-number {
-    @apply h-fit w-32 m-0.5 rounded p-2;
+    @apply h-fit w-[138px] m-0.5 rounded p-2;
     min-height: 85px;
     @apply items-start flex flex-col text-left;
   }
