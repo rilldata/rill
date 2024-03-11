@@ -82,7 +82,7 @@
   let open = false;
 </script>
 
-<DropdownMenu bind:open>
+<DropdownMenu bind:open typeahead={false}>
   <DropdownMenuTrigger asChild let:builder>
     <Button builders={[builder]} compact type="secondary">
       <BookmarkIcon

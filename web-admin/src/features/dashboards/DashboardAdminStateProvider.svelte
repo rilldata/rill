@@ -43,9 +43,9 @@
     if (
       !hasPersistentDashboardData() &&
       !stateToLoad &&
-      $bookmarks.data?.home.resource.data
+      $bookmarks.data?.home?.resource.data
     ) {
-      stateToLoad = $bookmarks.data?.home.resource.data;
+      stateToLoad = $bookmarks.data?.home?.resource.data;
     }
     syncDashboardState(
       metricViewName,

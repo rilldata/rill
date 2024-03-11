@@ -42,7 +42,7 @@
         <span class="text-gray-500">(optional)</span>
       {/if}
       {#if tooltip}
-        <Tooltip>
+        <Tooltip distance={8}>
           <InfoCircle />
           <TooltipContent
             slot="tooltip-content"

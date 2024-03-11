@@ -9,7 +9,11 @@
     DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
-  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import {
+    getBookmarks,
+    searchBookmarks,
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { Search } from "@rilldata/web-common/components/search";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
@@ -22,6 +26,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  let searchText: string;
   let bookmarks: ReturnType<typeof getBookmarks>;
   $: bookmarks = getBookmarks(
     queryClient,
@@ -30,6 +35,7 @@
     project,
     $page.params.dashboard,
   );
+  $: filteredBookmarks = searchBookmarks($bookmarks.data, searchText);
 
   $: projectPermissions = getProjectPermissions(organization, project);
   $: manageProject = $projectPermissions.data?.manageProject;
@@ -53,44 +59,66 @@
       </div>
     </DropdownMenuItem>
   {/if}
-  {#if $bookmarks.data}
-    {#if $bookmarks.data.personal?.length}
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-gray-500 text-[10px] h-6 uppercase">
-          Your bookmarks
-        </DropdownMenuLabel>
-        {#each $bookmarks.data.personal as bookmark}
-          <BookmarkItem {bookmark} on:edit on:select on:delete />
+  <DropdownMenuSeparator />
+  <div class="p-2">
+    <Search
+      autofocus={false}
+      bind:value={searchText}
+      showBorderOnFocus={false}
+    />
+  </div>
+  {#if filteredBookmarks}
+    <DropdownMenuSeparator />
+    <DropdownMenuGroup>
+      <DropdownMenuLabel class="text-gray-500 text-[10px] h-6 uppercase">
+        Your bookmarks
+      </DropdownMenuLabel>
+      {#if filteredBookmarks.personal?.length}
+        {#each filteredBookmarks.personal as bookmark}
+          {#key bookmark.resource.id}
+            <BookmarkItem {bookmark} on:edit on:select on:delete />
+          {/key}
         {/each}
-      </DropdownMenuGroup>
-    {/if}
-    {#if $bookmarks.data.shared?.length || $bookmarks.data.home}
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-gray-500">
-          <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
-          <div class="text-[11px] font-normal">Created by project admin</div>
-        </DropdownMenuLabel>
-        {#if $bookmarks.data.home}
-          <BookmarkItem
-            bookmark={$bookmarks.data.home}
-            on:edit
-            on:select
-            on:delete
-            readOnly={!manageProject}
-          />
+      {:else}
+        <div class="my-2 ui-copy-disabled text-center">
+          You have no bookmarks for this dashboard
+        </div>
+      {/if}
+    </DropdownMenuGroup>
+    <DropdownMenuSeparator />
+    <DropdownMenuGroup>
+      <DropdownMenuLabel class="text-gray-500">
+        <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
+        <div class="text-[11px] font-normal">Created by project admin</div>
+      </DropdownMenuLabel>
+      {#if filteredBookmarks.shared?.length || filteredBookmarks.home}
+        {#if filteredBookmarks.home}
+          {#key filteredBookmarks.home.resource.id}
+            <BookmarkItem
+              bookmark={filteredBookmarks.home}
+              on:edit
+              on:select
+              on:delete
+              readOnly={!manageProject}
+            />
+          {/key}
         {/if}
-        {#each $bookmarks.data.shared as bookmark}
-          <BookmarkItem
-            {bookmark}
-            on:edit
-            on:select
-            on:delete
-            readOnly={!manageProject}
-          />
+        {#each filteredBookmarks.shared as bookmark}
+          {#key bookmark.resource.id}
+            <BookmarkItem
+              {bookmark}
+              on:edit
+              on:select
+              on:delete
+              readOnly={!manageProject}
+            />
+          {/key}
         {/each}
-      </DropdownMenuGroup>
-    {/if}
+      {:else}
+        <div class="my-2 ui-copy-disabled text-center">
+          There are no shared bookmarks for this dashboard.
+        </div>
+      {/if}
+    </DropdownMenuGroup>
   {/if}
 </DropdownMenuContent>
