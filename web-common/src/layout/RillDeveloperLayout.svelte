@@ -15,6 +15,9 @@
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
   import BasicLayout from "./BasicLayout.svelte";
   import { importOverlayVisible, overlay } from "./overlay-store";
+  import AddSourceModal from "../features/sources/modal/AddSourceModal.svelte";
+  import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
+  import { addSourceModal } from "../features/sources/modal/add-source-visibility";
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
@@ -71,6 +74,9 @@
     </BlockingOverlayContainer>
   {/if}
 
+  {#if $addSourceModal || $duplicateSourceName}
+    <AddSourceModal />
+  {/if}
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div

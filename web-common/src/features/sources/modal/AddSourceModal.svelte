@@ -32,11 +32,11 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import { duplicateSourceName } from "../sources-store";
   import DuplicateSource from "./DuplicateSource.svelte";
+  import { addSourceModal } from "./add-source-visibility";
 
-  export let open: boolean;
+  export let step = 1;
+  export let selectedConnector: null | V1ConnectorSpec = null;
 
-  let step = 1;
-  let selectedConnector: undefined | V1ConnectorSpec;
   let requestConnector = false;
 
   const TAB_ORDER = [
@@ -108,8 +108,9 @@
   }
   function resetModal() {
     requestConnector = false;
-    selectedConnector = undefined;
+    selectedConnector = null;
     step = 1;
+    addSourceModal.close();
   }
 
   const dispatch = createEventDispatcher();
@@ -119,8 +120,8 @@
     dispatch("close");
   }
 
-  function onCancelDialog() {
-    behaviourEvent?.fireSourceTriggerEvent(
+  async function onCancelDialog() {
+    await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
       $appScreen,
@@ -132,7 +133,7 @@
 </script>
 
 <!-- This precise width fits exactly 3 connectors per line  -->
-<Dialog {open} on:close={onCancelDialog} widthOverride="w-[560px]">
+<Dialog open on:close={onCancelDialog} widthOverride="w-[560px]">
   <div slot="title">
     {#if step === 1}
       Add a source
@@ -153,7 +154,12 @@
     {/if}
   </div>
   <div slot="body" class="flex flex-col gap-y-4">
-    {#if step === 1}
+    {#if $duplicateSourceName}
+      <DuplicateSource
+        on:cancel={onCompleteDialog}
+        on:complete={onCompleteDialog}
+      />
+    {:else if step === 1}
       {#if $connectors.data}
         <div class="grid grid-cols-3 gap-4">
           {#each $connectors?.data?.connectors ?? [] as connector}
@@ -178,12 +184,7 @@
       </div>
     {:else if step === 2}
       {#if selectedConnector}
-        {#if $duplicateSourceName !== null}
-          <DuplicateSource
-            on:cancel={onCompleteDialog}
-            on:complete={onCompleteDialog}
-          />
-        {:else if selectedConnector.name === "local_file"}
+        {#if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
         {:else if selectedConnector.name === "clickhouse"}
           <ClickHouseInstructions on:back={resetModal} />
