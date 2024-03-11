@@ -175,7 +175,7 @@ dimensions:
      * just smoke testing, so we'll just check one value
      * per column.
      ******************/
-    await page.locator("#svelte").getByText("Publisher").click();
+    await page.getByText("Publisher").click();
 
     // humanized default
     await expect(
