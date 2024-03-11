@@ -323,7 +323,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -360,6 +360,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	opts := &runtimeserver.Options{
 		HTTPPort:        httpPort,
 		GRPCPort:        grpcPort,
+		TLSCertPath:     tlsCertPath,
+		TLSKeyPath:      tlsKeyPath,
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
@@ -391,8 +393,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
 	}
 
+	// if keypath and certpath are provided
+	secure := tlsCertPath != "" && tlsKeyPath != ""
+
 	// Open the browser when health check succeeds
-	go a.pollServer(ctx, httpPort, enableUI && openBrowser)
+	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
 
 	// Run the server
 	err = group.Wait()
@@ -403,9 +408,15 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	return nil
 }
 
-func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) {
-	// Basic health check
-	uri := fmt.Sprintf("http://localhost:%d", httpPort)
+func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
+	scheme := "http"
+
+	if secure {
+		scheme = "https"
+	}
+
+	uri := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
+
 	client := http.Client{Timeout: time.Second}
 	for {
 		// Check for cancellation
