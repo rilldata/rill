@@ -4,6 +4,10 @@
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
 
+  let options = {
+    theme: "vox",
+  };
+
   let viewVL: View;
   $: error = "";
 
@@ -15,7 +19,7 @@
 {#if error}
   <p>{error}</p>
 {:else}
-  <VegaLite {data} {spec} bind:view={viewVL} on:onError={onError} />
+  <VegaLite {data} {spec} {options} bind:view={viewVL} on:onError={onError} />
 {/if}
 
 <style>
