@@ -65,5 +65,7 @@ func (r *ChartReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
-	return runtime.ReconcileResult{}
+	err = checkRefs(ctx, r.C, self.Meta.Refs)
+
+	return runtime.ReconcileResult{Err: err}
 }

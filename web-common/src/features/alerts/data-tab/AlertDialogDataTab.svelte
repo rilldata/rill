@@ -47,6 +47,7 @@
     title="Filters"
   >
     <FilterChipsReadOnly
+      dimensionThresholdFilters={[]}
       filters={$form["whereFilter"]}
       metricsViewName={$form["metricsViewName"]}
       timeRange={$form["timeRange"]}

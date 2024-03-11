@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
     useDashboard,
@@ -7,7 +6,6 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -30,7 +28,7 @@
 
   const { cloudDataViewer } = featureFlags;
 
-  let exploreContainerWidth;
+  let exploreContainerWidth: number;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
@@ -43,9 +41,6 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  // flex-row flex-col
-  $: dashboardAlignment = expandedMeasureName ? "col" : "row";
-
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
@@ -54,11 +49,6 @@
   );
 
   const { readOnly } = featureFlags;
-
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-
-  $: exploreContainerWidth = getEltSize($observedNode, "x");
 
   $: leftSide = leftMargin
     ? leftMargin
@@ -73,12 +63,12 @@
 </script>
 
 <section
-  class="flex flex-col h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
-  use:listenToNodeResize
+  class="flex flex-col h-screen w-full overflow-y-hidden dashboard-theme-boundary"
+  bind:clientWidth={exploreContainerWidth}
 >
   <div
-    class="border-b w-full flex flex-col bg-slate-50"
     id="header"
+    class="border-b w-full flex flex-col bg-slate-50"
     style:padding-left={leftSide}
   >
     {#if isRillDeveloper}
@@ -115,43 +105,34 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div class="flex h-full overflow-hidden">
+    <div class="size-full overflow-hidden">
       {#if showPivot}
-        <div class="overflow-y-hidden flex-1">
-          <PivotDisplay />
-        </div>
+        <PivotDisplay />
       {:else}
         <div
+          class="flex gap-x-1 gap-y-4 pt-3 size-full overflow-hidden"
+          class:flex-col={expandedMeasureName}
+          class:flex-row={!expandedMeasureName}
           style:padding-left={leftSide}
-          class="flex gap-x-1 mt-3 w-full h-full overflow-hidden flex-{dashboardAlignment}"
         >
-          <div
-            class:fixed-metric-height={expandedMeasureName}
-            class="overflow-y-scroll pb-8 flex-none"
-          >
-            {#key metricViewName}
-              {#if hasTimeSeries}
-                <MetricsTimeSeriesCharts
-                  {metricViewName}
-                  workspaceWidth={exploreContainerWidth}
-                />
-              {:else}
-                <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-              {/if}
-            {/key}
-          </div>
-
-          <div
-            class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}"
-          >
-            {#if expandedMeasureName}
-              <TimeDimensionDisplay {metricViewName} />
-            {:else if selectedDimensionName}
-              <DimensionDisplay />
+          {#key metricViewName}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {metricViewName}
+                workspaceWidth={exploreContainerWidth}
+              />
             {:else}
-              <LeaderboardDisplay />
+              <MeasuresContainer {exploreContainerWidth} {metricViewName} />
             {/if}
-          </div>
+          {/key}
+
+          {#if expandedMeasureName}
+            <TimeDimensionDisplay {metricViewName} />
+          {:else if selectedDimensionName}
+            <DimensionDisplay />
+          {:else}
+            <LeaderboardDisplay />
+          {/if}
         </div>
       {/if}
     </div>
@@ -161,9 +142,3 @@
     {/if}
   {/if}
 </section>
-
-<style>
-  .fixed-metric-height {
-    height: 280px;
-  }
-</style>

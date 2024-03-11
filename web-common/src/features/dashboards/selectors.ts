@@ -12,7 +12,10 @@ import {
   createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryOptions } from "@tanstack/svelte-query";
+import type {
+  CreateQueryOptions,
+  CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useDashboardNames(instanceId: string) {
@@ -60,7 +63,7 @@ export function useMetricsViewTimeRange(
   options?: {
     query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
   },
-): ReturnType<typeof createQueryServiceMetricsViewTimeRange> {
+): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   const { query: queryOptions } = options ?? {};
 
   return derived(
@@ -77,7 +80,7 @@ export function useMetricsViewTimeRange(
           },
         },
       ).subscribe(set),
-  ) as ReturnType<typeof createQueryServiceMetricsViewTimeRange>;
+  );
 }
 
 export const useMetaMeasure = (

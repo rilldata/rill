@@ -2867,14 +2867,14 @@ export class ChartSpec extends Message<ChartSpec> {
   title = "";
 
   /**
-   * @generated from field: string query_name = 2;
+   * @generated from field: string resolver = 2;
    */
-  queryName = "";
+  resolver = "";
 
   /**
-   * @generated from field: string query_args_json = 3;
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
    */
-  queryArgsJson = "";
+  resolverProperties?: Struct;
 
   /**
    * @generated from field: string vega_lite_spec = 4;
@@ -2890,8 +2890,8 @@ export class ChartSpec extends Message<ChartSpec> {
   static readonly typeName = "rill.runtime.v1.ChartSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

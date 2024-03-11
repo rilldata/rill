@@ -68,7 +68,7 @@ props as needed.
     location="bottom"
     suppress={active}
   >
-    <SelectButton {active} on:click={toggleFloatingElement}
+    <SelectButton label={tooltipText} {active} on:click={toggleFloatingElement}
       ><strong>{numShownString} {label}</strong></SelectButton
     >
     <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
