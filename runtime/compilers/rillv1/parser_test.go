@@ -1332,8 +1332,7 @@ sql: select * from m1
 		// api a2
 		`apis/a2.yaml`: `
 kind: api
-metrics:
-  sql: select * from m1
+metrics_sql: select * from m1
 `,
 	})
 
@@ -1359,7 +1358,7 @@ metrics:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
 			Paths: []string{"/apis/a2.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Resolver:           "Metrics",
+				Resolver:           "MetricsSQL",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},

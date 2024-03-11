@@ -502,14 +502,6 @@ service AdminService {
       get: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml",
     };
   }
-
-  // Telemetry sends telemetry data to the server
-  rpc Telemetry(TelemetryRequest) returns (TelemetryResponse) {
-    option (google.api.http) = {
-      post: "/v1/telemetry",
-      body: "*"
-    };
-  }
 }
 
 message PingRequest {}

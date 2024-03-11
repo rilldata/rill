@@ -37,7 +37,7 @@
 </svelte:head>
 
 {#if $fileQuery.data && yaml !== undefined}
-  <WorkspaceContainer inspector={false} assetID={`${chartName}`}>
+  <WorkspaceContainer inspector={false}>
     <ChartsHeader slot="header" {chartName} />
     <Charts slot="body" {chartName} />
   </WorkspaceContainer>

@@ -90,11 +90,7 @@
 </svelte:head>
 
 {#if ($fileQuery.data && $resourceStatusStore.status === ResourceStatus.Idle) || showErrorPage}
-  <WorkspaceContainer
-    assetID={metricViewName}
-    bgClass="bg-white"
-    inspector={false}
-  >
+  <WorkspaceContainer bgClass="bg-white" inspector={false}>
     <svelte:fragment slot="body">
       {#key metricViewName}
         <StateManagersProvider metricsViewName={metricViewName}>
@@ -110,11 +106,7 @@
     </svelte:fragment>
   </WorkspaceContainer>
 {:else if $resourceStatusStore.status === ResourceStatus.Busy}
-  <WorkspaceContainer
-    assetID={metricViewName}
-    bgClass="bg-white"
-    inspector={false}
-  >
+  <WorkspaceContainer bgClass="bg-white" inspector={false}>
     <div class="grid h-screen place-content-center" slot="body">
       <ReconcilingSpinner />
     </div>
