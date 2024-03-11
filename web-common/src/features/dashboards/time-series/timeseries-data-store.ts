@@ -25,7 +25,7 @@ export interface TimeSeriesDatum {
   bin?: number;
   ts_comparison?: Date;
   ts_position?: Date;
-  [key: string]: Date | string | number | undefined;
+  [key: string]: Date | number | undefined;
 }
 
 export type TimeSeriesDataState = {
@@ -189,6 +189,7 @@ export function createTimeSeriesDataStore(
 
           if (!primary.isFetching && interval) {
             const intervalDuration = TIME_GRAIN[interval]?.duration;
+
             preparedTimeSeriesData = prepareTimeSeries(
               primary?.data?.data || [],
               comparison?.data?.data || [],

@@ -80,6 +80,8 @@ export function getDimensionValuesForComparison(
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
 
+      if (!dimensionName) return;
+
       // Values to be compared
       let comparisonValues: string[] = [];
       if (surface === "chart") {
@@ -271,9 +273,9 @@ export function getDimensionValueTimeSeries(
                 );
               }
 
-              let total;
+              let total: number | undefined = undefined;
               if (surface === "table") {
-                total = dimensionValues?.totals[i];
+                total = dimensionValues?.totals?.[i];
               }
               return {
                 value,

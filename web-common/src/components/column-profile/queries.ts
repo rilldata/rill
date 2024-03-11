@@ -243,7 +243,7 @@ export function getTimeSeriesAndSpark(
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
           $query?.data?.rollup?.results?.map((di) => {
-            const next = { ...di, count: di?.records?.count };
+            const next = { ...di, count: Number(di?.records?.count) };
             if (next.count == null || !isFinite(next.count)) {
               next.count = 0;
             }
@@ -252,7 +252,7 @@ export function getTimeSeriesAndSpark(
         ),
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark?.map((di) => {
-            const next = { ...di, count: di?.records?.count };
+            const next = { ...di, count: Number(di?.records?.count) };
             if (next.count == null || !isFinite(next.count)) {
               next.count = 0;
             }

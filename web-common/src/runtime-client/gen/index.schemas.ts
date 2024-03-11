@@ -2107,12 +2107,12 @@ export interface NumericOutliersOutlier {
   count?: number;
 }
 
-export interface NumericHistogramBinsBin {
-  bucket?: number;
-  low?: number;
+export type NumericHistogramBinsBin = {
+  bucket: number;
+  low: number;
+  high: number;
+  count: number;
   midpoint?: number;
-  high?: number;
-  count?: number;
 }
 
 export type ModelDialect = (typeof ModelDialect)[keyof typeof ModelDialect];

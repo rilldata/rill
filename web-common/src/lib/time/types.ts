@@ -1,4 +1,5 @@
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { DateTimeUnit } from "luxon";
 
 // Used for luxon's time units
 export enum TimeUnit {
@@ -163,7 +164,7 @@ export interface TimeGrain {
   /** the grain defined by the runtime */
   grain: V1TimeGrain;
   /** a human-readable name, e.g. minute, second, etc. */
-  label: string;
+  label: DateTimeUnit;
   /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
   /** the d3 time format string that outputs a human-readable

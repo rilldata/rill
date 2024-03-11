@@ -9,10 +9,19 @@
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { areaFactory } from "../utils";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 
   const markID = guidGenerator();
 
-  export let data;
+  const xMinStore = getContext<ExtremumResolutionStore>(contexts.min("x"));
+  const xMaxStore = getContext<ExtremumResolutionStore>(contexts.max("x"));
+  const yMinStore = getContext<ExtremumResolutionStore>(contexts.min("y"));
+  const yMaxStore = getContext<ExtremumResolutionStore>(contexts.max("y"));
+
+  const xScale = getContext<ScaleStore>("rill:data-graphic:x-scale");
+  const yScale = getContext<ScaleStore>("rill:data-graphic:y-scale");
+
+  export let data: TimeSeriesDatum[];
   export let curve = "curveLinear";
   export let xAccessor = "x";
   export let yAccessor = "y";
@@ -21,29 +30,32 @@
   export let alpha = 1;
   export let stopOpacity = 0.3;
 
-  export let xMin = undefined;
-  export let xMax = undefined;
-  export let yMin = undefined;
-  export let yMax = undefined;
+  export let xMin: number | Date | undefined = undefined;
+  export let xMax: number | Date | undefined = undefined;
+  export let yMin: number | Date | undefined = undefined;
+  export let yMax: number | Date | undefined = undefined;
 
-  const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
-  const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
-  const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
-  const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
-
-  // get extents
   $: [xMinValue, xMaxValue] = extent(data, (d) => d[xAccessor]);
   $: [yMinValue, yMaxValue] = extent(data, (d) => d[yAccessor]);
-  // set your extrema here
-  $: xMinStore.setWithKey(markID, xMin || xMinValue);
-  $: xMaxStore.setWithKey(markID, xMax || xMaxValue);
 
-  $: yMinStore.setWithKey(markID, yMin || yMinValue);
-  $: yMaxStore.setWithKey(markID, yMax || yMaxValue);
-  // we should set the extrema here.
+  $: finalXMin = xMin || xMinValue;
+  $: finalXMax = xMax || xMaxValue;
+  $: finalYMin = yMin || yMinValue;
+  $: finalYMax = yMax || yMaxValue;
 
-  const xScale = getContext("rill:data-graphic:x-scale") as ScaleStore;
-  const yScale = getContext("rill:data-graphic:y-scale") as ScaleStore;
+  $: if (finalXMin) xMinStore.setWithKey(markID, finalXMin);
+  $: if (finalXMax) xMaxStore.setWithKey(markID, finalXMax);
+  $: if (finalYMin) yMinStore.setWithKey(markID, finalYMin);
+  $: if (finalYMax) yMaxStore.setWithKey(markID, finalYMax);
+
+  $: areaFcn =
+    $xScale &&
+    areaFactory<TimeSeriesDatum>({
+      xScale: $xScale,
+      yScale: $yScale,
+      curve,
+      xAccessor,
+    });
 
   onDestroy(() => {
     xMinStore.removeKey(markID);
@@ -51,16 +63,6 @@
     yMinStore.removeKey(markID);
     yMaxStore.removeKey(markID);
   });
-
-  let areaFcn;
-  $: if ($xScale) {
-    areaFcn = areaFactory({
-      xScale: $xScale,
-      yScale: $yScale,
-      curve,
-      xAccessor,
-    });
-  }
 </script>
 
 {#if areaFcn}
