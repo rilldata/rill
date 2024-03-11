@@ -23,7 +23,7 @@
   <title>Rill Developer | {fullyQualifiedTableName}</title>
 </svelte:head>
 
-<WorkspaceContainer assetID={fullyQualifiedTableName} inspector={false}>
+<WorkspaceContainer inspector={false}>
   <TableWorkspaceHeader {fullyQualifiedTableName} slot="header" />
   <ConnectedPreviewTable objectName={table} loading={false} slot="body" />
 </WorkspaceContainer>
