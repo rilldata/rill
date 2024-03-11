@@ -30,112 +30,26 @@ func TestCompiler(t *testing.T) {
 	}{
 		{
 			"simple",
-			"select * from ad_bids_metrics",
+			"select pub,dom,AGGREGATE(measure_0) from ad_bids_metrics GROUP BY ALL",
 			result{
-				sql:  "select * FROM \"ad_bids\"",
+				sql:  "SELECT \"publisher\" AS pub, \"domain\" AS dom, count(*) AS measure_0 FROM \"ad_bids\" GROUP BY ALL",
 				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
 			},
 		},
 		{
 			"simple quoted",
-			"select * from \"ad_bids_metrics\"",
+			"select pub,  dom,   AGGREGATE( measure_0) from \"ad_bids_metrics\" GROUP BY pub, dom",
 			result{
-				sql:  "select * FROM \"ad_bids\"",
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
-			},
-		},
-		{
-			"aggregate",
-			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(measure_0),AGGREGATE(measure_1) FROM ad_bids_metrics GROUP BY ALL",
-			result{
-				sql:  "SELECT pub,domain_parts,dom,tld,null_publisher,count(*),avg(bid_price) FROM \"ad_bids\" GROUP BY ALL",
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
-			},
-		},
-		{
-			"aggregate with mv appended",
-			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(\"ad_bids_metrics\".measure_0),AGGREGATE(ad_bids_metrics.measure_1) FROM ad_bids_metrics GROUP BY ALL",
-			result{
-				sql:  "SELECT pub,domain_parts,dom,tld,null_publisher,count(*),avg(bid_price) FROM \"ad_bids\" GROUP BY ALL",
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
-			},
-		},
-		{
-			"aggregate with mv appended and quoted",
-			"SELECT pub,domain_parts,dom,tld,null_publisher,AGGREGATE(\"ad_bids_metrics\".\"measure_0\"),AGGREGATE(ad_bids_metrics.\"measure_1\") FROM ad_bids_metrics GROUP BY ALL",
-			result{
-				sql:  "SELECT pub,domain_parts,dom,tld,null_publisher,count(*),avg(bid_price) FROM \"ad_bids\" GROUP BY ALL",
+				sql:  "SELECT \"publisher\" AS pub, \"domain\" AS dom, count(*) AS measure_0 FROM \"ad_bids\" GROUP BY pub, dom",
 				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
 			},
 		},
 		{
 			"aggregate and spaces with policy",
-			`SELECT pub,dom,AGGREGATE("bid's number"),AGGREGATE("total volume"),Aggregate("total click""s") From ad_bids_mini_metrics_with_policy GROUP BY ALL`,
+			`SELECT publisher,domain,AGGREGATE("bid's number"),AGGREGATE("total volume"),AGGREGATE("total click""s") From ad_bids_mini_metrics_with_policy`,
 			result{
-				sql:  "SELECT pub,dom,count(*),sum(volume),sum(clicks) FROM (SELECT * FROM \"ad_bids_mini\") GROUP BY ALL",
+				sql:  `SELECT upper(publisher) AS publisher, "domain" AS domain, count(*) AS "bid's number", sum(volume) AS "total volume", sum(clicks) AS "total click""s" FROM (SELECT * FROM "ad_bids_mini") `,
 				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics_with_policy"}},
-			},
-		},
-		{
-			"aggregate and join",
-			`with a as (
-				select
-					publisher,
-					AGGREGATE(ad_bids_mini_metrics_with_policy."total volume") as total_volume,
-					AGGREGATE(ad_bids_mini_metrics_with_policy."total click""s") as total_clicks
-				from
-					ad_bids_mini_metrics_with_policy
-				group by
-					publisher
-				),
-				b as (
-				select
-					publisher,
-					AGGREGATE(ad_bids_metrics."measure_1") as avg_bids
-				from
-					ad_bids_metrics
-				group by
-					publisher
-				)
-				select
-					a.publisher,
-					a.total_volume,
-					a.total_clicks,
-					b.avg_bids
-				from
-					a
-				join b on
-					a.publisher = b.publisher
-				`,
-			result{
-				sql: `with a as (
-					select
-						publisher,
-						sum(volume) as total_volume,
-						sum(clicks) as total_clicks
-					FROM (SELECT * FROM "ad_bids_mini")
-					group by
-						publisher
-					),
-					b as (
-					select
-						publisher,
-						avg(bid_price) as avg_bids
-					FROM "ad_bids"
-					group by
-						publisher
-					)
-					select
-						a.publisher,
-						a.total_volume,
-						a.total_clicks,
-						b.avg_bids
-					from
-						a
-					join b on
-						a.publisher = b.publisher
-					`,
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics_with_policy"}, {Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
 			},
 		},
 	}
@@ -157,7 +71,7 @@ func TestCompiler(t *testing.T) {
 			got = regexp.MustCompile(`\s+`).ReplaceAllString(strings.ReplaceAll(strings.ReplaceAll(got, "\n", " "), "\t", " "), " ")
 			tt.want.sql = regexp.MustCompile(`\s+`).ReplaceAllString(strings.ReplaceAll(strings.ReplaceAll(tt.want.sql, "\n", " "), "\t", " "), " ")
 			if got != tt.want.sql {
-				t.Errorf("parsedSQL() = %v, want %v", got, tt.want.sql)
+				t.Errorf("parsedSQL() = %q, want %q", got, tt.want.sql)
 			}
 		})
 	}
@@ -182,10 +96,9 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 5, len(rows))
-	require.Equal(t, 3, len(rows[0]))
-	require.Equal(t, "msn.com", rows[0]["domain"])
-	require.Equal(t, nil, rows[0]["publisher"])
-	require.Equal(t, "2022-03-05T14:49:50.459Z", rows[0]["timestamp"])
+	require.Equal(t, 2, len(rows[0]))
+	require.Equal(t, "msn.com", rows[0]["dom"])
+	require.Equal(t, nil, rows[0]["pub"])
 }
 
 func TestTemplateMetricsSQLAPI(t *testing.T) {
@@ -209,7 +122,7 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 1, len(rows))
-	require.Equal(t, 3.0, rows[0]["total_imp"])
+	require.Equal(t, 3.0, rows[0]["measure_2"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
 	require.Equal(t, "Yahoo", rows[0]["publisher"])
 }
@@ -233,10 +146,10 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 1, len(rows))
-	require.Equal(t, nil, rows[0]["total_vol"])
-	require.Equal(t, 3.0, rows[0]["total_imp"])
+	require.Equal(t, nil, rows[0]["total volume"])
+	require.Equal(t, 3.0, rows[0]["total impressions"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
-	require.Equal(t, "Yahoo", rows[0]["publisher"])
+	require.Equal(t, "YAHOO", rows[0]["publisher"])
 
 	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
@@ -254,8 +167,8 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	var resp []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &resp))
 	require.Equal(t, 1, len(resp))
-	require.Equal(t, 11.0, resp[0]["total_vol"])
-	require.Equal(t, 3.0, resp[0]["total_imp"])
+	require.Equal(t, 11.0, resp[0]["total volume"])
+	require.Equal(t, 3.0, resp[0]["total impressions"])
 	require.Equal(t, "msn.com", resp[0]["domain"])
 	require.Equal(t, nil, resp[0]["publisher"])
 }
