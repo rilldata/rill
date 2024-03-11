@@ -107,11 +107,15 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 		// Emit event
 		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(tbl.Schema.Fields))}
-		attrs = append(attrs, attribute.Bool("succeeded", aiSucceeded))
-		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
+		attrs = append(attrs,
+			attribute.Bool("succeeded", aiSucceeded),
+			attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()),
+		)
 		if res != nil {
-			attrs = append(attrs, attribute.Int("valid_measures_count", res.validMeasures))
-			attrs = append(attrs, attribute.Int("invalid_measures_count", res.invalidMeasures))
+			attrs = append(attrs,
+				attribute.Int("valid_measures_count", res.validMeasures),
+				attribute.Int("invalid_measures_count", res.invalidMeasures),
+			)
 		}
 		if err != nil {
 			attrs = append(attrs, attribute.String("error", err.Error()))
