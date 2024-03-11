@@ -246,7 +246,7 @@ func buildSQL(sqlTemplate string, dialect drivers.Dialect, args, userAttributes 
 
 	// For DuckDB, we can do ref inference using the SQL AST (similar to the rillv1 compiler).
 	if dialect == drivers.DialectDuckDB {
-		ast, err := duckdbsql.Parse(sqlTemplate)
+		ast, err := duckdbsql.Parse(sql)
 		if err != nil {
 			return "", nil, err
 		}

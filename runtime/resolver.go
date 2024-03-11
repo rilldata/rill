@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -139,8 +140,10 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
+		log.Printf("CACHE HIT")
 		return val.([]byte), nil
 	}
+	log.Printf("CACHE MISS")
 
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
