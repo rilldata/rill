@@ -8,6 +8,7 @@ export function roundToNearestTimeUnit(date: Date, unit: DateTimeUnit): Date {
 
   const unitMap: Record<DateTimeUnit, keyof DateTime> = {
     year: "month",
+    quarter: "month",
     month: "day",
     week: "weekday",
     day: "hour",
@@ -15,7 +16,6 @@ export function roundToNearestTimeUnit(date: Date, unit: DateTimeUnit): Date {
     minute: "second",
     second: "millisecond",
     millisecond: "millisecond",
-    quarter: "month",
   };
   // get smallest unit
   const smallerUnit = unitMap[unit];
