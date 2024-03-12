@@ -56,29 +56,26 @@
   >
     {#each modelNames as modelName (modelName)}
       <NavigationEntry
+        expandable
         name={modelName}
         href={`/model/${modelName}`}
         open={$page.url.pathname === `/model/${modelName}`}
       >
-        <svelte:fragment slot="more">
-          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-            <ColumnProfile indentLevel={1} objectName={modelName} />
-          </div>
-        </svelte:fragment>
+        <div transition:slide={{ duration: LIST_SLIDE_DURATION }} slot="more">
+          <ColumnProfile indentLevel={1} objectName={modelName} />
+        </div>
 
         <svelte:fragment slot="tooltip-content">
           <ModelTooltip {modelName} />
         </svelte:fragment>
 
-        <svelte:fragment slot="menu-items" let:toggleMenu>
-          <ModelMenuItems
-            {modelName}
-            {toggleMenu}
-            on:rename-asset={() => {
-              openRenameModelModal(modelName);
-            }}
-          />
-        </svelte:fragment>
+        <ModelMenuItems
+          slot="menu-items"
+          {modelName}
+          on:rename-asset={() => {
+            openRenameModelModal(modelName);
+          }}
+        />
       </NavigationEntry>
     {/each}
 

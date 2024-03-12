@@ -52,11 +52,8 @@
             href={`/custom-dashboard/${customDashboardName}`}
             open={$page.url.pathname ===
               `/custom-dashboard/${customDashboardName}`}
-            expandable={false}
           >
-            <svelte:fragment slot="menu-items">
-              <CustomDashboardMenuItems {customDashboardName} />
-            </svelte:fragment>
+            <CustomDashboardMenuItems slot="menu-items" {customDashboardName} />
           </NavigationEntry>
         </div>
       {/each}

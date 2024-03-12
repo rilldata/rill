@@ -20,7 +20,6 @@
       name={"rill.yaml"}
       href={`/rill.yaml`}
       open={$page.url.pathname === `/rill.yaml`}
-      expandable={false}
     />
   </div>
 {/if}

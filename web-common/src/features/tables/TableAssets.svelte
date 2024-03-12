@@ -92,11 +92,8 @@
               name={fullyQualifiedTableName}
               href={`/table/${fullyQualifiedTableName}`}
               open={$page.url.pathname === `/table/${fullyQualifiedTableName}`}
-              expandable={false}
             >
-              <svelte:fragment slot="menu-items" let:toggleMenu>
-                <TableMenuItems {fullyQualifiedTableName} {toggleMenu} />
-              </svelte:fragment>
+              <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
             </NavigationEntry>
           </div>
         {/each}

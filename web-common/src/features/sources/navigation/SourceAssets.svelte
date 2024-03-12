@@ -31,10 +31,10 @@
 
   let showAddSourceModal = false;
 
-  const openShowAddSourceModal = () => {
+  const openShowAddSourceModal = async () => {
     showAddSourceModal = true;
 
-    behaviourEvent?.fireSourceTriggerEvent(
+    await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
       $appScreen,
@@ -62,9 +62,9 @@
   $: hasNoAssets = $sourceNames.data?.length === 0;
 </script>
 
-<NavigationHeader bind:show={showTables} toggleText="sources"
-  >Sources</NavigationHeader
->
+<NavigationHeader bind:show={showTables} toggleText="sources">
+  Sources
+</NavigationHeader>
 
 {#if showTables}
   <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
@@ -75,31 +75,28 @@
           out:slide|global={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
+            expandable
             name={sourceName}
             href={`/source/${sourceName}`}
             open={$page.url.pathname === `/source/${sourceName}`}
-            immediatelyNavigate={false}
             on:command-click={() => queryHandler(sourceName)}
           >
-            <svelte:fragment slot="more">
-              <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-                <ColumnProfile indentLevel={1} objectName={sourceName} />
-              </div>
-            </svelte:fragment>
+            <div
+              slot="more"
+              transition:slide={{ duration: LIST_SLIDE_DURATION }}
+            >
+              <ColumnProfile indentLevel={1} objectName={sourceName} />
+            </div>
 
-            <svelte:fragment slot="tooltip-content">
-              <SourceTooltip {sourceName} connector="" />
-            </svelte:fragment>
+            <SourceTooltip slot="tooltip-content" {sourceName} connector="" />
 
-            <svelte:fragment slot="menu-items" let:toggleMenu>
-              <SourceMenuItems
-                {sourceName}
-                {toggleMenu}
-                on:rename-asset={() => {
-                  openRenameTableModal(sourceName);
-                }}
-              />
-            </svelte:fragment>
+            <SourceMenuItems
+              slot="menu-items"
+              {sourceName}
+              on:rename-asset={() => {
+                openRenameTableModal(sourceName);
+              }}
+            />
           </NavigationEntry>
         </div>
       {/each}

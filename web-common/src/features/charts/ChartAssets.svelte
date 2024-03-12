@@ -43,11 +43,8 @@
             name={chartName}
             href={`/chart/${chartName}`}
             open={$page.url.pathname === `/chart/${chartName}`}
-            expandable={false}
           >
-            <svelte:fragment slot="menu-items">
-              <ChartMenuItems {chartName} />
-            </svelte:fragment>
+            <ChartMenuItems slot="menu-items" {chartName} />
           </NavigationEntry>
         </div>
       {/each}

@@ -5,7 +5,6 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
@@ -42,6 +41,8 @@
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
   import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   $: instanceId = $runtime.instanceId;
 
@@ -102,7 +103,7 @@
       },
     });
 
-    goto(`/dashboard/${newDashboardName}`);
+    await goto(`/dashboard/${newDashboardName}`);
   };
 
   const editModel = async (dashboardName: string) => {
@@ -115,8 +116,8 @@
     const sourceModelName = dashboardData.jsonRepresentation?.model as string;
 
     const previousActiveEntity = $appScreen?.type;
-    goto(`/model/${sourceModelName}`);
-    behaviourEvent.fireNavigationEvent(
+    await goto(`/model/${sourceModelName}`);
+    await behaviourEvent.fireNavigationEvent(
       sourceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
@@ -125,11 +126,11 @@
     );
   };
 
-  const editMetrics = (dashboardName: string) => {
-    goto(`/dashboard/${dashboardName}/edit`);
+  const editMetrics = async (dashboardName: string) => {
+    await goto(`/dashboard/${dashboardName}/edit`);
 
     const previousActiveEntity = $appScreen?.type;
-    behaviourEvent.fireNavigationEvent(
+    await behaviourEvent.fireNavigationEvent(
       dashboardName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
@@ -156,9 +157,9 @@
     const sourceModelName = dashboardData?.jsonRepresentation?.model as string;
     if ($appScreen?.name === dashboardName) {
       if (sourceModelName) {
-        goto(`/model/${sourceModelName}`);
+        await goto(`/model/${sourceModelName}`);
 
-        behaviourEvent.fireNavigationEvent(
+        await behaviourEvent.fireNavigationEvent(
           sourceModelName,
           BehaviourEventMedium.Menu,
           MetricsEventSpace.LeftPanel,
@@ -166,7 +167,7 @@
           MetricsEventScreenName.Model,
         );
       } else {
-        goto("/");
+        await goto("/");
       }
     }
   };
@@ -197,7 +198,7 @@
 >
 
 {#if showMetricsDefs && $dashboardNames.data}
-  <div
+  <ul
     class="pb-3 justify-self-end"
     transition:slide|global={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
@@ -209,7 +210,6 @@
       )}
       <NavigationEntry
         showContextMenu={!$readOnly}
-        expandable={false}
         name={dashboardName}
         href={`/dashboard/${dashboardName}`}
         open={$page.url.pathname === `/dashboard/${dashboardName}` ||
@@ -222,10 +222,9 @@
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
             selectionError !== ""}
-          <MenuItem
-            icon
+          <NavigationMenuItem
             disabled={hasSourceError}
-            on:select={() => editModel(dashboardName)}
+            on:click={() => editModel(dashboardName)}
           >
             <Model slot="icon" />
             Edit model
@@ -234,27 +233,25 @@
                 {selectionError}
               {/if}
             </svelte:fragment>
-          </MenuItem>
-          <MenuItem
-            icon
+          </NavigationMenuItem>
+          <NavigationMenuItem
             disabled={hasSourceError}
-            on:select={() => editMetrics(dashboardName)}
+            on:click={() => editMetrics(dashboardName)}
           >
             <MetricsIcon slot="icon" />
             Edit metrics
-          </MenuItem>
-          <Divider />
-          <MenuItem
-            icon
-            on:select={() => openRenameMetricsDefModal(dashboardName)}
+          </NavigationMenuItem>
+          <NavigationMenuSeparator />
+          <NavigationMenuItem
+            on:click={() => openRenameMetricsDefModal(dashboardName)}
           >
             <EditIcon slot="icon" />
-            Rename...</MenuItem
-          >
-          <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
+            Rename...
+          </NavigationMenuItem>
+          <NavigationMenuItem on:click={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
-            Delete</MenuItem
-          >
+            Delete
+          </NavigationMenuItem>
         </svelte:fragment>
       </NavigationEntry>
     {/each}
@@ -266,7 +263,7 @@
         on:click={() => dispatchAddEmptyMetricsDef()}
       />
     {/if}
-  </div>
+  </ul>
   {#if showRenameMetricsDefinitionModal && renameMetricsDefName}
     <RenameAssetModal
       entityType={EntityType.MetricsDefinition}

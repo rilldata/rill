@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
   import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -18,9 +17,9 @@
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
-  import { drag } from "../drag";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
+  import Resizer from "../Resizer.svelte";
 
   const { customDashboards } = featureFlags;
 
@@ -85,32 +84,19 @@
   h-screen
   bg-white
 "
+    style:will-change="width"
     class:hidden={$navVisibilityTween === 1}
     class:pointer-events-none={!$navigationLayout?.visible}
     style:top="0px"
     style:width="{$navigationWidth}px"
   >
-    <!-- draw handler -->
-    {#if $navigationLayout?.visible}
-      <Portal>
-        <div
-          role="separator"
-          on:dblclick={() => {
-            navigationLayout.update((state) => {
-              state.value = DEFAULT_NAV_WIDTH;
-              return state;
-            });
-          }}
-          class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
-          style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
-          use:drag={{
-            minSize: DEFAULT_NAV_WIDTH,
-            maxSize: 440,
-            store: navigationLayout,
-          }}
-        />
-      </Portal>
-    {/if}
+    <Resizer
+      min={DEFAULT_NAV_WIDTH}
+      basis={DEFAULT_NAV_WIDTH}
+      max={440}
+      bind:dimension={$navigationLayout.value}
+      side="right"
+    />
 
     <div class="w-full flex flex-col h-full">
       <div class="grow">
