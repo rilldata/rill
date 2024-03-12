@@ -17,7 +17,7 @@ type RillYAML struct {
 	Connectors    []*ConnectorDef
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
-	Features	  []string
+	Features      []string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
