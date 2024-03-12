@@ -34,6 +34,7 @@
     if (localStorage.getItem("customDashboards") === "true") {
       featureFlags.set(true, "customDashboards");
     }
+    // featureFlags
 
     appBuildMetaStore.set({
       version: config.version,
@@ -80,7 +81,6 @@
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
-    role="application"
     class="index-body absolute w-screen h-screen"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation
@@ -89,6 +89,7 @@
     }}
     on:drag|preventDefault|stopPropagation
     on:drop|preventDefault|stopPropagation
+    role="application"
   >
     <WelcomePageRedirect>
       <BasicLayout>
