@@ -51,9 +51,12 @@ rill env configure
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
 
 ### Redshift/S3 permissions
+Associate a IAM role (that has S3 access) with the Redshift Serverless namespace (https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-iam.html).
 Redshift connector does the following AWS queries while ingesting data from Redshift:
-1. Athena:[`GetWorkGroup`](https://docs.aws.amazon.com/athena/latest/APIReference/API_GetWorkGroup.html) to determine an output location if not specified explicitly.
-2. S3:[`ListObjects`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html) to identify files unloaded by Athena
-3. S3:[`GetObject`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html) to ingest files unloaded by Athena.
+1. Redshift Serverless:[`GetCredentials`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html). 
+1. Reshift:[`GetClusterCredentialsWithIAM`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html). 
+1. Reshift Data API:[`DescribeStatement`, `ExecuteStatement`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) to unload data to S3.
+1. S3:[`ListObjects`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html) to identify files unloaded by Redshift
+1. S3:[`GetObject`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html) to ingest files unloaded by Redshift.
 
 Make sure your account or a service account have corresponding permissions to perform these requests. 
