@@ -82,22 +82,23 @@ var (
 	sqlIdentifier = `[a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*"`
 
 	// aggregateRegex is regex pattern to identify an AGGREGATE function in SQL.
-	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\(\s*(%s)\s*\)`, sqlIdentifier))
+	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\(\s*(%s)\s*\)$`, sqlIdentifier))
 
+	// sqlRegex identifies a SQL query of the form: "SELECT... FROM table...".
 	sqlRegex = regexp.MustCompile(fmt.Sprintf(`(?i)SELECT\s+((?:.|\n)*)\s+FROM\s+(%s)((?:.|\n)*)`, sqlIdentifier))
 )
 
 // metricsSQLCompiler parses a metrics SQL query and compiles it to a regular SQL query.
 // Metrics SQL is a superset of SQL that supports querying Rill's metrics views.
+// The syntax is inspired by Calcite's measure columns: https://issues.apache.org/jira/browse/CALCITE-4496.
 //
 // This is a simple implementation that uses regular expressions. It does not support all SQL features.
 // It works by:
 //
-// 1. Expanding measure into actual aggregate expressions from the metrics view definition.
+// 1. Expanding AGGREGATE(measure) into actual aggregate expressions from the metrics view definition.
 // 2. Expanding dimension into dimension expression or underlying column name.
 // 3. Converting "FROM metrics_view" clauses to nested SELECTs on the underlying table with filters based on the metrics view's security policy.
 //
-// TODO: This implementation does not resolve dimension names to underlying columns/expressions. Here is an example of the desired transformation:
 // - Input: SELECT dim1, AGGREGATE(measure1) FROM metrics_view GROUP BY dim1
 // - Output: SELECT col1 AS dim1, SUM(col2) AS measure1 FROM underlying_model GROUP BY dim1
 type metricsSQLCompiler struct {
@@ -116,6 +117,7 @@ func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*ru
 	sql := strings.TrimSpace(c.sql)
 	matches := sqlRegex.FindAllStringSubmatch(sql, -1)
 	if len(matches) != 1 {
+		// TODO Add a doc link for the supported syntax
 		return "", "", nil, fmt.Errorf("invalid metrics_sql: %q", sql)
 	}
 
@@ -123,7 +125,7 @@ func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*ru
 	resource, err := c.ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricView}, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return "", "", nil, fmt.Errorf("metrics_view %q not found. Metric SQL can only target metrics_view, use SQL for other user cases", metricView)
+			return "", "", nil, fmt.Errorf("metrics_view %q not found. Metric_sql can only target metrics_view, use sql for other user cases", metricView)
 		}
 		return "", "", nil, fmt.Errorf("error fetching resource %v: %w", metricView, err)
 	}
@@ -203,8 +205,11 @@ func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (st
 	}
 
 	for _, exclude := range security.Exclude {
-		dimensions[exclude] = "null"
-		measures[exclude] = "null"
+		if _, ok := dimensions[exclude]; ok {
+			dimensions[exclude] = "null"
+		} else {
+			measures[exclude] = "null"
+		}
 	}
 
 	sql := "SELECT * FROM " + c.dialect.EscapeIdentifier(spec.Table)
