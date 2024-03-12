@@ -301,6 +301,56 @@ func createGenericValue(key string, val any) (astNode, error) {
 	return n, err
 }
 
+func createStandaloneValue(val any) (astNode, error) {
+	var t string
+	switch vt := val.(type) {
+	// these are not supported for standalone value
+	// case map[string]any:
+	// case []any:
+	case bool:
+		t = "BOOLEAN"
+	case int, int32:
+		t = "INTEGER"
+	case int64:
+		t = "BIGINT"
+	case uint, uint32:
+		t = "UINTEGER"
+	case uint64:
+		t = "UBIGINT"
+	case float32:
+		t = "FLOAT"
+		// Temporary fix since duckdb is not converting to sql properly
+		if math.Floor(float64(vt)) == float64(vt) {
+			val = forceConvertToNum[int32](vt)
+			t = "INTEGER"
+		}
+	case float64:
+		t = "DOUBLE"
+		// Temporary fix since duckdb is not converting to sql properly
+		if math.Floor(vt) == vt {
+			val = forceConvertToNum[int64](vt)
+			t = "BIGINT"
+		}
+	case string:
+		t = "VARCHAR"
+		val = fmt.Sprintf(`"%s"`, vt)
+	// TODO: others
+	default:
+		return nil, nil
+	}
+
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
+	"type": {
+		"id": "%s",
+		"type_info": null
+	},
+	"is_null": false,
+	"value": %v
+}`, t, val)), &n)
+	return n, err
+}
+
 func createStructValue(key string, val map[string]any) (astNode, error) {
 	n, err := createFunctionCall(key, "struct_pack", "main")
 	if err != nil {
