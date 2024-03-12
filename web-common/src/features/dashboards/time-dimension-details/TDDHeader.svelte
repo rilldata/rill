@@ -41,6 +41,7 @@
   export let isRowsEmpty = false;
 
   const dispatch = createEventDispatcher();
+  const { adminServer } = featureFlags;
 
   const {
     actions: {
@@ -244,10 +245,7 @@
         </TooltipContent>
       </Tooltip>
 
-      <TDDExportButton
-        {metricViewName}
-        includeScheduledReport={$featureFlags.adminServer}
-      />
+      <TDDExportButton {metricViewName} includeScheduledReport={$adminServer} />
 
       <Button
         compact
