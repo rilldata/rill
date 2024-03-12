@@ -16,6 +16,7 @@ For instructions on how to create a service account and set credentials in Rill 
 - [Postgres](./postgres.md)
 - [MotherDuck](./motherduck.md)
 - [Amazon Athena](./athena.md)
+- [Amazon Redshift](./redshift.md)
 - [BigQuery](./bigquery.md)
 - [Snowflake](./snowflake.md)
 - [Salesforce](./salesforce.md)
