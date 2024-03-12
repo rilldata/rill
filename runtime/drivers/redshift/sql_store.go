@@ -14,8 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
 	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 
-	// "github.com/aws/aws-sdk-go-v2/service/athena"
-	// types2 "github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
