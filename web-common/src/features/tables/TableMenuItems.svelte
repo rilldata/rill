@@ -1,7 +1,6 @@
 <script lang="ts">
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { MenuItem } from "@rilldata/web-common/components/menu";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";

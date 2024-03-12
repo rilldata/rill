@@ -5,7 +5,6 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
