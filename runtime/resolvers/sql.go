@@ -17,6 +17,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const sqlResolverInteractiveRowLimit = 10000
+
 func init() {
 	runtime.RegisterResolverInitializer("SQL", newSQL)
 }
@@ -115,6 +117,10 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 
 	var out []map[string]any
 	for res.Rows.Next() {
+		if len(out) >= sqlResolverInteractiveRowLimit {
+			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", sqlResolverInteractiveRowLimit)
+		}
+
 		row := make(map[string]any)
 		err = res.Rows.MapScan(row)
 		if err != nil {
