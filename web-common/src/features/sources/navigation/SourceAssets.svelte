@@ -20,14 +20,13 @@
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { EntityType } from "../../entity-management/types";
   import { createModelFromSource } from "../createModel";
-  import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
+  import { addSourceModal } from "../modal/add-source-visibility";
 
   let showTables = true;
   let showRenameTableModal = false;
   let renameTableName: null | string = null;
-  let showAddSourceModal = false;
 
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
@@ -35,7 +34,7 @@
   $: hasNoAssets = $sourceNames.data?.length === 0;
 
   async function openShowAddSourceModal() {
-    showAddSourceModal = true;
+    addSourceModal.open();
 
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
@@ -107,10 +106,6 @@
   </ol>
 {/if}
 
-<AddSourceModal
-  on:close={() => (showAddSourceModal = false)}
-  open={showAddSourceModal}
-/>
 {#if showRenameTableModal && renameTableName !== null}
   <RenameAssetModal
     entityType={EntityType.Table}
