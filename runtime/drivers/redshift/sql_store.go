@@ -139,14 +139,18 @@ func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, co
 		return err
 	}
 
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			_, err = client.CancelStatement(ctx, &redshiftdata.CancelStatementInput{
+			cancelCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			_, err = client.CancelStatement(cancelCtx, &redshiftdata.CancelStatementInput{
 				Id: queryExecutionOutput.Id,
 			})
+			cancel()
 			return errors.Join(ctx.Err(), err)
-		default:
+		case <-ticker.C:
 			status, err := client.DescribeStatement(ctx, &redshiftdata.DescribeStatementInput{
 				Id: queryExecutionOutput.Id,
 			})
@@ -164,7 +168,6 @@ func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, co
 				return nil
 			}
 		}
-		time.Sleep(time.Second)
 	}
 }
 

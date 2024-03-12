@@ -31,7 +31,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "output_location",
 			DisplayName: "S3 output location",
-			Description: "Output location in S3.",
+			Description: "Output location in S3 for temporary data.",
 			Placeholder: "s3://bucket-name/path/",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
