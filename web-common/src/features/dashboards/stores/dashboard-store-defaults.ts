@@ -18,6 +18,8 @@ import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
+  MetricsViewSpecDimensionV2,
+  MetricsViewSpecMeasureV2,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -59,8 +61,10 @@ function setDefaultComparison(
   switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
-        metricsView.defaultComparisonDimension ||
-        metricsView.dimensions?.[0]?.name;
+        normaliseName(
+          metricsView.defaultComparisonDimension,
+          metricsView.dimensions ?? [],
+        ) || metricsView.dimensions?.[0]?.name;
       break;
 
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_TIME:
@@ -129,13 +133,21 @@ export function getDefaultMetricsExplorerEntity(
   const metricsExplorer: MetricsExplorerEntity = {
     name,
     visibleMeasureKeys: metricsView.defaultMeasures?.length
-      ? new Set(metricsView.defaultMeasures)
+      ? new Set(
+          metricsView.defaultMeasures
+            .map((dm) => normaliseName(dm, metricsView.measures ?? []))
+            .filter((dm) => !!dm) as string[],
+        )
       : new Set(defaultMeasureNames),
     allMeasuresVisible:
       !metricsView.defaultMeasures?.length ||
       metricsView.defaultMeasures?.length === defaultMeasureNames.length,
     visibleDimensionKeys: metricsView.defaultDimensions?.length
-      ? new Set(metricsView.defaultDimensions)
+      ? new Set(
+          metricsView.defaultDimensions
+            .map((dd) => normaliseName(dd, metricsView.dimensions ?? []))
+            .filter((dd) => !!dd) as string[],
+        )
       : new Set(defaultDimNames),
     allDimensionsVisible:
       !metricsView.defaultDimensions?.length ||
@@ -209,4 +221,12 @@ export function restorePersistedDashboardState(
     metricsExplorer.sortDirection = persistedState.sortDirection;
   }
   return metricsExplorer;
+}
+
+function normaliseName(
+  name: string | undefined,
+  entities: MetricsViewSpecMeasureV2[] | MetricsViewSpecDimensionV2[],
+): string | undefined {
+  return entities.find((e) => e.name?.toLowerCase() === name?.toLowerCase())
+    ?.name;
 }
