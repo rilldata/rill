@@ -184,7 +184,12 @@
       </div>
     {:else if step === 2}
       {#if selectedConnector}
-        {#if selectedConnector.name === "local_file"}
+        {#if $duplicateSourceName !== null}
+          <DuplicateSource
+            on:cancel={onCompleteDialog}
+            on:complete={onCompleteDialog}
+          />
+        {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
         {:else if selectedConnector.name === "clickhouse"}
           <ClickHouseInstructions on:back={resetModal} />
