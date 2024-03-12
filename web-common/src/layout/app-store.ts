@@ -24,7 +24,6 @@ interface AppStore {
 
 export const appScreen = derived(page, ($page) => {
   let activeEntity;
-
   switch ($page.route.id) {
     case "/(application)":
       activeEntity = {
