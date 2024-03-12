@@ -19,8 +19,7 @@
   import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let modelName: string;
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
-  // export let toggleMenu: () => void;
+
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
 
   const queryClient = useQueryClient();
