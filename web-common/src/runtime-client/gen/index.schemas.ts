@@ -331,6 +331,12 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   useAi?: boolean;
 };
 
+export type RuntimeServiceGenerateChartFileBody = {
+  chart?: string;
+  table?: string;
+  prompt?: string;
+};
+
 export type RuntimeServicePutFileBody = {
   blob?: string;
   create?: boolean;
@@ -517,6 +523,22 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1TimeGrain = {
+  TIME_GRAIN_UNSPECIFIED: "TIME_GRAIN_UNSPECIFIED",
+  TIME_GRAIN_MILLISECOND: "TIME_GRAIN_MILLISECOND",
+  TIME_GRAIN_SECOND: "TIME_GRAIN_SECOND",
+  TIME_GRAIN_MINUTE: "TIME_GRAIN_MINUTE",
+  TIME_GRAIN_HOUR: "TIME_GRAIN_HOUR",
+  TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
+  TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
+  TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
+  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
+  TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
+} as const;
+
 export interface V1TimeSeriesTimeRange {
   start?: string;
   end?: string;
@@ -534,22 +556,6 @@ export interface V1TimeRangeSummary {
   max?: string;
   interval?: TimeRangeSummaryInterval;
 }
-
-export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1TimeGrain = {
-  TIME_GRAIN_UNSPECIFIED: "TIME_GRAIN_UNSPECIFIED",
-  TIME_GRAIN_MILLISECOND: "TIME_GRAIN_MILLISECOND",
-  TIME_GRAIN_SECOND: "TIME_GRAIN_SECOND",
-  TIME_GRAIN_MINUTE: "TIME_GRAIN_MINUTE",
-  TIME_GRAIN_HOUR: "TIME_GRAIN_HOUR",
-  TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
-  TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
-  TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
-  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
-  TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
-} as const;
 
 export interface V1TimeRange {
   start?: string;
@@ -742,24 +748,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  chart?: V1Chart;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -793,6 +781,24 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export interface V1RenameFileResponse {
@@ -1129,6 +1135,14 @@ export interface V1ModelSpec {
 export interface V1ModelV2 {
   spec?: V1ModelSpec;
   state?: V1ModelState;
+}
+
+export interface V1Model {
+  name?: string;
+  sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+  materialize?: boolean;
 }
 
 export interface V1MigrationState {
@@ -1562,6 +1576,10 @@ export interface V1GetCatalogEntryResponse {
 }
 
 export interface V1GenerateMetricsViewFileResponse {
+  aiSucceeded?: boolean;
+}
+
+export interface V1GenerateChartFileResponse {
   aiSucceeded?: boolean;
 }
 
@@ -2122,14 +2140,6 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
-
-export interface V1Model {
-  name?: string;
-  sql?: string;
-  dialect?: ModelDialect;
-  schema?: V1StructType;
-  materialize?: boolean;
-}
 
 export interface MetricsViewSpecSecurityV2 {
   access?: string;

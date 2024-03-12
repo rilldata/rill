@@ -40,6 +40,8 @@ import type {
   V1DeleteFileResponse,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
+  V1GenerateChartFileResponse,
+  RuntimeServiceGenerateChartFileBody,
   V1GenerateMetricsViewFileResponse,
   RuntimeServiceGenerateMetricsViewFileBody,
   V1RenameFileResponse,
@@ -971,6 +973,54 @@ export const createRuntimeServicePutFile = <
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
     TError,
     { instanceId: string; path: string; data: RuntimeServicePutFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const runtimeServiceGenerateChartFile = (
+  instanceId: string,
+  runtimeServiceGenerateChartFileBody: RuntimeServiceGenerateChartFileBody,
+) => {
+  return httpClient<V1GenerateChartFileResponse>({
+    url: `/v1/instances/${instanceId}/files/generate-chart`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateChartFileBody,
+  });
+};
+
+export type RuntimeServiceGenerateChartFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>
+>;
+export type RuntimeServiceGenerateChartFileMutationBody =
+  RuntimeServiceGenerateChartFileBody;
+export type RuntimeServiceGenerateChartFileMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGenerateChartFile = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateChartFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>,
+    { instanceId: string; data: RuntimeServiceGenerateChartFileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateChartFile(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateChartFileBody },
     TContext
   >(mutationFn, mutationOptions);
 };

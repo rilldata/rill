@@ -685,6 +685,37 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-chart:
+    post:
+      operationId: RuntimeService_GenerateChartFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateChartFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              chart:
+                type: string
+              table:
+                type: string
+              prompt:
+                type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -3573,6 +3604,11 @@ definitions:
         type: string
         format: int64
       isDir:
+        type: boolean
+  v1GenerateChartFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
         type: boolean
   v1GenerateMetricsViewFileResponse:
     type: object

@@ -1878,6 +1878,98 @@ export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsView
 }
 
 /**
+ * @generated from message rill.runtime.v1.GenerateChartFileRequest
+ */
+export class GenerateChartFileRequest extends Message<GenerateChartFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string chart = 2;
+   */
+  chart = "";
+
+  /**
+   * @generated from field: string table = 3;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string prompt = 4;
+   */
+  prompt = "";
+
+  constructor(data?: PartialMessage<GenerateChartFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateChartFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "chart", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartFileRequest {
+    return new GenerateChartFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateChartFileRequest {
+    return new GenerateChartFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateChartFileRequest {
+    return new GenerateChartFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateChartFileRequest | PlainMessage<GenerateChartFileRequest> | undefined, b: GenerateChartFileRequest | PlainMessage<GenerateChartFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateChartFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GenerateChartFileResponse
+ */
+export class GenerateChartFileResponse extends Message<GenerateChartFileResponse> {
+  /**
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
+  constructor(data?: PartialMessage<GenerateChartFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateChartFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartFileResponse {
+    return new GenerateChartFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateChartFileResponse {
+    return new GenerateChartFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateChartFileResponse {
+    return new GenerateChartFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateChartFileResponse | PlainMessage<GenerateChartFileResponse> | undefined, b: GenerateChartFileResponse | PlainMessage<GenerateChartFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateChartFileResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.Log
  */
 export class Log extends Message<Log> {

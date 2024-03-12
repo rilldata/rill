@@ -119,6 +119,13 @@ service RuntimeService {
     };
   }
 
+  rpc GenerateChartFile(GenerateChartFileRequest) returns (GenerateChartFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/generate-chart",
+      body: "*"
+    };
+  }
+
   // Controller
   
   // GetLogs returns recent logs from a controller
@@ -494,6 +501,17 @@ message GenerateMetricsViewFileRequest {
 
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
+  bool ai_succeeded = 1;
+}
+
+message GenerateChartFileRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string chart = 2;
+  string table = 3;
+  string prompt = 4;
+}
+
+message GenerateChartFileResponse {
   bool ai_succeeded = 1;
 }
 

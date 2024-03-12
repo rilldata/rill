@@ -34,6 +34,8 @@ type Resolver interface {
 	ResolveInteractive(ctx context.Context) (*ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
+	// ResolveSchema returns just the schema for the query
+	ResolveSchema(ctx context.Context) (*runtimev1.StructType, error)
 }
 
 // ResolverResult is the result of a resolver's execution.
@@ -163,4 +165,26 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 		return nil, err
 	}
 	return val.([]byte), nil
+}
+
+func (r *Runtime) ResolveSchema(ctx context.Context, opts *ResolveOptions) (*runtimev1.StructType, error) {
+	// Initialize the resolver
+	initializer, ok := ResolverInitializers[opts.Resolver]
+	if !ok {
+		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
+	}
+	resolver, err := initializer(ctx, &ResolverOptions{
+		Runtime:        r,
+		InstanceID:     opts.InstanceID,
+		Properties:     opts.ResolverProperties,
+		Args:           opts.Args,
+		UserAttributes: opts.UserAttributes,
+		ForExport:      false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer resolver.Close()
+
+	return resolver.ResolveSchema(ctx)
 }
