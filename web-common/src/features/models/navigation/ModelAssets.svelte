@@ -6,7 +6,8 @@
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import { flip } from "svelte/animate";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -44,39 +45,43 @@
     modelNames.length === 0;
 </script>
 
-<NavigationHeader bind:show={showModels} toggleText="models"
-  >Models</NavigationHeader
->
+<NavigationHeader bind:show={showModels} toggleText="models">
+  Models
+</NavigationHeader>
 
 {#if showModels}
-  <div
+  <ol
     class="pb-3 justify-self-end"
-    transition:slide|global={{ duration: LIST_SLIDE_DURATION }}
+    transition:slide|global={{ duration }}
     id="assets-model-list"
   >
     {#each modelNames as modelName (modelName)}
-      <NavigationEntry
-        expandable
-        name={modelName}
-        href={`/model/${modelName}`}
-        open={$page.url.pathname === `/model/${modelName}`}
+      <li
+        animate:flip={{ duration }}
+        out:slide|global={{ duration }}
+        aria-label={modelName}
       >
-        <div transition:slide={{ duration: LIST_SLIDE_DURATION }} slot="more">
-          <ColumnProfile indentLevel={1} objectName={modelName} />
-        </div>
+        <NavigationEntry
+          expandable
+          name={modelName}
+          href={`/model/${modelName}`}
+          open={$page.url.pathname === `/model/${modelName}`}
+        >
+          <div transition:slide={{ duration }} slot="more">
+            <ColumnProfile indentLevel={1} objectName={modelName} />
+          </div>
 
-        <svelte:fragment slot="tooltip-content">
-          <ModelTooltip {modelName} />
-        </svelte:fragment>
+          <ModelTooltip slot="tooltip-content" {modelName} />
 
-        <ModelMenuItems
-          slot="menu-items"
-          {modelName}
-          on:rename-asset={() => {
-            openRenameModelModal(modelName);
-          }}
-        />
-      </NavigationEntry>
+          <ModelMenuItems
+            slot="menu-items"
+            {modelName}
+            on:rename-asset={() => {
+              openRenameModelModal(modelName);
+            }}
+          />
+        </NavigationEntry>
+      </li>
     {/each}
 
     <AddAssetButton
@@ -85,7 +90,7 @@
       bold={hasSourceButNoModels}
       on:click={handleAddModel}
     />
-  </div>
+  </ol>
 {/if}
 
 {#if showRenameModelModal && renameModelName !== null}

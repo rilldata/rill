@@ -12,34 +12,29 @@
   location="top"
   alignment="start"
   distance={8}
-  activeDelay={0}
   pad={8}
   suppress={suppressTooltip}
 >
-  <div class="py-1 h-full">
-    <button
-      on:click|preventDefault|stopPropagation
-      style:grid-column="left-control"
-      class:-rotate-90={!rotated}
-      class="
-    
-    h-full
-    flex items-center justify-center
-    flex-none
-    aspect-square
-    focus:outline-none
-    focus:bg-gray-300
-    hover:bg-gray-300
-    transition-tranform
-    text-gray-400
-    duration-100
-    rounded
-    "
-    >
+  <span class="py-1 h-full">
+    <button on:click|preventDefault|stopPropagation class:-rotate-90={!rotated}>
       <CaretDownIcon size="14px" />
     </button>
-  </div>
+  </span>
   <TooltipContent slot="tooltip-content">
     <SlidingWords active={rotated}>columns</SlidingWords>
   </TooltipContent>
 </Tooltip>
+
+<style lang="postcss">
+  button {
+    @apply h-full aspect-square rounded;
+    @apply grid place-content-center;
+    @apply text-gray-400;
+    @apply transition-transform duration-100;
+  }
+
+  button:hover,
+  button:focus {
+    @apply outline-none bg-gray-300;
+  }
+</style>

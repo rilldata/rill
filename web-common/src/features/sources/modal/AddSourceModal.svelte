@@ -117,11 +117,11 @@
     dispatch("close");
   }
 
-  function onCancelDialog() {
-    behaviourEvent?.fireSourceTriggerEvent(
+  async function onCancelDialog() {
+    await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
-      $appScreen,
+      $appScreen.type,
       MetricsEventSpace.Modal,
     );
     resetModal();

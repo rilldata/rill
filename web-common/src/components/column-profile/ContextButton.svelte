@@ -4,48 +4,23 @@
   import type { Builder } from "bits-ui";
   import { getAttrs, builderActions } from "bits-ui";
 
-  export let rotated = false;
-  export let suppressTooltip = false;
-  export let tooltipText: string;
-  export let location = "right";
   // utilize the ID for easier UI testing.
   export let id: string;
-
-  export let rounded = false;
+  export let suppressTooltip = false;
+  export let tooltipText: string;
   export let label: string | undefined = undefined;
   export let builders: Builder[] = [];
 </script>
 
-<Tooltip
-  {location}
-  alignment="middle"
-  distance={16}
-  suppress={suppressTooltip || tooltipText === undefined}
->
+<Tooltip location="right" distance={16} suppress={suppressTooltip}>
   <button
-    use:builderActions={{ builders }}
+    {id}
+    class="group-hover:opacity-100"
+    class:!opacity-100={suppressTooltip}
+    aria-label={label}
     {...getAttrs(builders)}
     on:click|preventDefault
-    {id}
-    class:rounded
-    class:-rotate-90={rotated}
-    class:opacity-100={suppressTooltip}
-    class="
-    group-hover:opacity-100
-    opacity-0
-    grid
-
-    h-full aspect-square
-        focus:outline-none
-        focus:bg-gray-300
-        hover:bg-gray-300
-        text-gray-500
-      
-        items-center
-        justify-center
-        border-transparent
-        hover:border-gray-400"
-    aria-label={label}
+    use:builderActions={{ builders }}
   >
     <slot />
   </button>
@@ -53,3 +28,17 @@
     {tooltipText}
   </TooltipContent>
 </Tooltip>
+
+<style lang="postcss">
+  button {
+    @apply h-full aspect-square;
+    @apply grid place-content-center;
+    @apply text-gray-500 opacity-0;
+    @apply transition-transform duration-100;
+  }
+
+  button:hover,
+  button:focus {
+    @apply outline-none bg-gray-300;
+  }
+</style>

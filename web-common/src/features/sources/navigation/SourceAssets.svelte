@@ -1,13 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { flip } from "svelte/animate";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
-  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { appScreen } from "../../../layout/app-store";
-  import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
@@ -24,25 +24,28 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
+  let showTables = true;
+  let showRenameTableModal = false;
+  let renameTableName: null | string = null;
+  let showAddSourceModal = false;
+
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
-  let showTables = true;
+  $: hasNoAssets = $sourceNames.data?.length === 0;
 
-  let showAddSourceModal = false;
-
-  const openShowAddSourceModal = async () => {
+  async function openShowAddSourceModal() {
     showAddSourceModal = true;
 
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      $appScreen,
+      $appScreen.type,
       MetricsEventSpace.LeftPanel,
     );
-  };
+  }
 
-  const queryHandler = async (tableName: string) => {
+  async function queryHandler(tableName: string) {
     await createModelFromSource(
       $runtime.instanceId,
       $modelNames?.data ?? [],
@@ -50,16 +53,12 @@
       tableName,
     );
     // TODO: fire telemetry
-  };
+  }
 
-  let showRenameTableModal = false;
-  let renameTableName: null | string = null;
-  const openRenameTableModal = (tableName: string) => {
+  function openRenameTableModal(tableName: string) {
     showRenameTableModal = true;
     renameTableName = tableName;
-  };
-
-  $: hasNoAssets = $sourceNames.data?.length === 0;
+  }
 </script>
 
 <NavigationHeader bind:show={showTables} toggleText="sources">
@@ -67,12 +66,13 @@
 </NavigationHeader>
 
 {#if showTables}
-  <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+  <ol class="pb-3" transition:slide={{ duration }}>
     {#if $sourceNames?.data}
       {#each $sourceNames.data as sourceName (sourceName)}
-        <div
+        <li
           animate:flip={{ duration: 200 }}
-          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
+          out:slide|global={{ duration }}
+          aria-label={sourceName}
         >
           <NavigationEntry
             expandable
@@ -81,10 +81,7 @@
             open={$page.url.pathname === `/source/${sourceName}`}
             on:command-click={() => queryHandler(sourceName)}
           >
-            <div
-              slot="more"
-              transition:slide={{ duration: LIST_SLIDE_DURATION }}
-            >
+            <div slot="more" transition:slide={{ duration }}>
               <ColumnProfile indentLevel={1} objectName={sourceName} />
             </div>
 
@@ -98,7 +95,7 @@
               }}
             />
           </NavigationEntry>
-        </div>
+        </li>
       {/each}
     {/if}
     <AddAssetButton
@@ -107,7 +104,7 @@
       bold={hasNoAssets}
       on:click={openShowAddSourceModal}
     />
-  </div>
+  </ol>
 {/if}
 
 <AddSourceModal

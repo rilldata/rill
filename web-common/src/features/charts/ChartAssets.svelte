@@ -1,9 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -12,10 +11,11 @@
   import ChartMenuItems from "./ChartMenuItems.svelte";
   import { createChart } from "./createChart";
   import { useChartFileNames } from "./selectors";
-
-  $: chartFileNames = useChartFileNames($runtime.instanceId);
+  import { flip } from "svelte/animate";
 
   let showCharts = true;
+
+  $: chartFileNames = useChartFileNames($runtime.instanceId);
 
   async function handleAddChart() {
     const newChartName = getName("chart", $chartFileNames.data ?? []);
@@ -29,15 +29,13 @@
 </NavigationHeader>
 
 {#if showCharts}
-  <div
-    class="pb-3 max-h-96 overflow-auto"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
-  >
+  <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
     {#if $chartFileNames?.data}
       {#each $chartFileNames.data as chartName (chartName)}
-        <div
-          animate:flip={{ duration: 200 }}
-          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
+        <li
+          animate:flip={{ duration }}
+          out:slide|global={{ duration }}
+          aria-label={chartName}
         >
           <NavigationEntry
             name={chartName}
@@ -46,7 +44,7 @@
           >
             <ChartMenuItems slot="menu-items" {chartName} />
           </NavigationEntry>
-        </div>
+        </li>
       {/each}
     {/if}
     <AddAssetButton
@@ -55,5 +53,5 @@
       bold={false}
       on:click={handleAddChart}
     />
-  </div>
+  </ol>
 {/if}

@@ -69,60 +69,47 @@
 
 <svelte:window on:resize={handleResize} />
 
-<div
+<nav
   aria-hidden={!$navigationLayout?.visible}
-  class="box-border assets fixed"
+  class="sidebar"
+  class:hidden={$navVisibilityTween === 1}
+  class:pointer-events-none={!$navigationLayout?.visible}
   style:left="{-$navVisibilityTween * $navigationWidth}px"
+  style:width="{$navigationWidth}px"
 >
-  <div
-    class="
-  border-r
-  fixed
-  overflow-auto
-  border-gray-200
-  transition-colors
-  h-screen
-  bg-white
-"
-    style:will-change="width"
-    class:hidden={$navVisibilityTween === 1}
-    class:pointer-events-none={!$navigationLayout?.visible}
-    style:top="0px"
-    style:width="{$navigationWidth}px"
-  >
-    <Resizer
-      min={DEFAULT_NAV_WIDTH}
-      basis={DEFAULT_NAV_WIDTH}
-      max={440}
-      bind:dimension={$navigationLayout.value}
-      side="right"
-    />
+  <Resizer
+    min={DEFAULT_NAV_WIDTH}
+    basis={DEFAULT_NAV_WIDTH}
+    max={440}
+    bind:dimension={$navigationLayout.value}
+    side="right"
+  />
+  <ProjectTitle />
 
-    <div class="w-full flex flex-col h-full">
-      <div class="grow">
-        <ProjectTitle />
-        {#if isModelerEnabled}
-          <TableAssets />
-          {#if olapConnector === "duckdb"}
-            <SourceAssets />
-          {/if}
-          {#if $isModelingSupportedForCurrentOlapDriver.data}
-            <ModelAssets />
-          {/if}
+  <div class="scroll-container">
+    <div class="nav-wrapper">
+      {#if isModelerEnabled}
+        <TableAssets />
+        {#if olapConnector === "duckdb"}
+          <SourceAssets />
         {/if}
-        <DashboardAssets />
-        {#if $customDashboards}
-          <ChartAssets />
-          <CustomDashboardAssets />
+        {#if $isModelingSupportedForCurrentOlapDriver.data}
+          <ModelAssets />
         {/if}
-        {#if isModelerEnabled}
-          <OtherFiles />
-        {/if}
-      </div>
-      <Footer />
+      {/if}
+      <DashboardAssets />
+      {#if $customDashboards}
+        <ChartAssets />
+        <CustomDashboardAssets />
+      {/if}
+      {#if isModelerEnabled}
+        <OtherFiles />
+      {/if}
     </div>
   </div>
-</div>
+
+  <Footer />
+</nav>
 
 <SurfaceControlButton
   left="{($navigationWidth - 12 - 20) * (1 - $navVisibilityTween) +
@@ -150,5 +137,16 @@
   </svelte:fragment>
 </SurfaceControlButton>
 
-<style>
+<style lang="postcss">
+  .sidebar {
+    will-change: width;
+    @apply fixed flex flex-col h-screen border-r border-gray-200 overflow-hidden;
+  }
+
+  .scroll-container {
+    @apply overflow-y-scroll flex grow flex-col overflow-x-hidden transition-colors top-0 h-fit bg-white pb-8;
+  }
+  .nav-wrapper {
+    @apply flex flex-col h-fit w-full;
+  }
 </style>

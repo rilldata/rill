@@ -40,13 +40,15 @@
     }
     window.addEventListener("mouseup", handleMouseUp);
   }
+
+  function handleClick() {
+    if (!open) return emitNavigationTelemetry(href, name);
+
+    if (expandable) onShowDetails();
+  }
 </script>
 
-<li
-  aria-label={name}
-  class="entry group w-full flex gap-x-2"
-  class:open={open || mousedown}
->
+<div class="entry group w-full flex gap-x-2" class:open={open || mousedown}>
   {#if expandable}
     <ExpanderButton rotated={showDetails} on:click={onShowDetails} />
   {/if}
@@ -65,44 +67,34 @@
       on:command-click
       on:mousedown={handleMouseDown}
       on:shift-click={shiftClickHandler}
-      on:click={() => {
-        if (!open) {
-          emitNavigationTelemetry(href);
-          return;
-        }
-        if (expandable) onShowDetails();
-      }}
+      on:click={handleClick}
     >
       {#if $$slots["icon"]}
-        <div class="text-gray-400" style:width="1em" style:height="1em">
+        <span class="text-gray-400" style:width="1em" style:height="1em">
           <slot name="icon" />
-        </div>
+        </span>
       {/if}
-      <div class:truncate={!$$slots["name"]} class="w-full">
-        {#if $$slots["name"]}
-          <slot name="name" />
-        {:else}
-          {name}
-        {/if}
+      <div class="w-full truncate">
+        {name}
       </div>
     </svelte:element>
-    <!-- if tooltip content is present in a slot, render the tooltip -->
-    <div slot="tooltip-content" class:hidden={!$$slots["tooltip-content"]}>
+
+    <svelte:fragment slot="tooltip-content">
       {#if $$slots["tooltip-content"]}
         <TooltipContent><slot name="tooltip-content" /></TooltipContent>
       {/if}
-    </div>
+    </svelte:fragment>
   </Tooltip>
 
   {#if showContextMenu}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
-          builders={[builder]}
           id="more-actions-{name}"
           tooltipText="More actions"
-          suppressTooltip={contextMenuOpen}
           label="{name} actions menu trigger"
+          builders={[builder]}
+          suppressTooltip={contextMenuOpen}
         >
           <MoreHorizontal />
         </ContextButton>
@@ -117,7 +109,7 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   {/if}
-</li>
+</div>
 
 {#if showDetails}
   <slot name="more" />
@@ -144,7 +136,7 @@
 
   .clickable-text {
     @apply text-left size-full overflow-hidden pl-6 flex items-center;
-    @apply ui-copy gap-x-1 text-ellipsis;
+    @apply ui-copy gap-x-1;
   }
 
   .expandable {

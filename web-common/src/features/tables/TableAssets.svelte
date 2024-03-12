@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import { flip } from "svelte/animate";
+  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import {
@@ -78,15 +78,13 @@
   </NavigationHeader>
 
   {#if showTables}
-    <div
-      class="pb-3 max-h-96 overflow-auto"
-      transition:slide={{ duration: LIST_SLIDE_DURATION }}
-    >
+    <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
       {#if $tableNames?.data}
         {#each $tableNames.data as fullyQualifiedTableName (fullyQualifiedTableName)}
-          <div
-            animate:flip={{ duration: 200 }}
-            out:slide|global={{ duration: LIST_SLIDE_DURATION }}
+          <li
+            animate:flip={{ duration }}
+            out:slide|global={{ duration }}
+            aria-label={fullyQualifiedTableName}
           >
             <NavigationEntry
               name={fullyQualifiedTableName}
@@ -95,9 +93,9 @@
             >
               <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
             </NavigationEntry>
-          </div>
+          </li>
         {/each}
       {/if}
-    </div>
+    </ol>
   {/if}
 {/if}
