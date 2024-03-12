@@ -1937,9 +1937,14 @@ export class GenerateChartFileRequest extends Message<GenerateChartFileRequest> 
  */
 export class GenerateChartFileResponse extends Message<GenerateChartFileResponse> {
   /**
-   * @generated from field: bool ai_succeeded = 1;
+   * @generated from field: string sql = 1;
    */
-  aiSucceeded = false;
+  sql = "";
+
+  /**
+   * @generated from field: string vega_lite_spec = 2;
+   */
+  vegaLiteSpec = "";
 
   constructor(data?: PartialMessage<GenerateChartFileResponse>) {
     super();
@@ -1949,7 +1954,8 @@ export class GenerateChartFileResponse extends Message<GenerateChartFileResponse
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GenerateChartFileResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartFileResponse {

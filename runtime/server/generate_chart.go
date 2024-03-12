@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -35,15 +36,17 @@ func (s *Server) GenerateChartFile(ctx context.Context, req *runtimev1.GenerateC
 		return nil, err
 	}
 
-	err = s.generateChartYAMLWithAI(ctx, req.InstanceId, req.Table, req.Prompt, schema)
+	vegaConfig, err := s.generateChartYAMLWithAI(ctx, req.InstanceId, req.Table, req.Prompt, schema)
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.GenerateChartFileResponse{}, nil
+	return &runtimev1.GenerateChartFileResponse{
+		VegaLiteSpec: vegaConfig,
+	}, nil
 }
 
-func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblName, userPrompt string, schema *runtimev1.StructType) error {
+func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblName, userPrompt string, schema *runtimev1.StructType) (string, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: chartYAMLSystemPrompt()},
@@ -53,7 +56,7 @@ func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblNam
 	// Connect to the AI service configured for the instance
 	ai, release, err := s.runtime.AI(ctx, instanceID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer release()
 
@@ -64,18 +67,27 @@ func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblNam
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Println(res.Data)
+	// The AI may produce Markdown output. Remove the code tags around the YAML.
+	res.Data = strings.TrimPrefix(res.Data, "```json")
+	res.Data = strings.TrimPrefix(res.Data, "```")
+	res.Data = strings.TrimSuffix(res.Data, "```")
 
-	return nil
+	return res.Data, nil
 }
 
 // chartYAMLSystemPrompt returns the static system prompt for the chart generation AI.
 func chartYAMLSystemPrompt() string {
 	prompt := fmt.Sprintf(`
 You are an agent whose only task is to suggest relevant chart based on a table schema.
+Replace the data field with,
+
+{
+  "name": "table"
+}
+
 Your output should only consist of valid JSON in the format below:
 
 https://vega.github.io/schema/vega-lite/v5.json

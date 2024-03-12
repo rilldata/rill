@@ -1580,7 +1580,8 @@ export interface V1GenerateMetricsViewFileResponse {
 }
 
 export interface V1GenerateChartFileResponse {
-  aiSucceeded?: boolean;
+  sql?: string;
+  vegaLiteSpec?: string;
 }
 
 export interface V1GCSObject {

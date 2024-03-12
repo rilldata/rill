@@ -4535,7 +4535,9 @@ func (m *GenerateChartFileResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for AiSucceeded
+	// no validation rules for Sql
+
+	// no validation rules for VegaLiteSpec
 
 	if len(errors) > 0 {
 		return GenerateChartFileResponseMultiError(errors)

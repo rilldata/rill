@@ -512,7 +512,8 @@ message GenerateChartFileRequest {
 }
 
 message GenerateChartFileResponse {
-  bool ai_succeeded = 1;
+  string sql = 1;
+  string vega_lite_spec = 2;
 }
 
 // **********

@@ -3608,8 +3608,10 @@ definitions:
   v1GenerateChartFileResponse:
     type: object
     properties:
-      aiSucceeded:
-        type: boolean
+      sql:
+        type: string
+      vegaLiteSpec:
+        type: string
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
