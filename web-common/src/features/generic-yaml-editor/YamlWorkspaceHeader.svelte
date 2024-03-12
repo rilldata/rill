@@ -7,7 +7,6 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     titleInput={fileName}
-    onChangeCallback={undefined}
     editable={false}
     showInspectorToggle={false}
   />

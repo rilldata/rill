@@ -4,7 +4,6 @@
   import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import { getPrettySelectedTimeRange } from "@rilldata/web-admin/features/bookmarks/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
-  import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -57,18 +56,6 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     id="displayName"
     label="Name"
   />
-  <FormSection
-    description={"Inherited from underlying dashboard view."}
-    padding=""
-    title="Filters"
-  >
-    <FilterChipsReadOnly
-      dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-      filters={$dashboardStore.whereFilter}
-      {metricsViewName}
-      {timeRange}
-    />
-  </FormSection>
   <InputV2
     bind:value={$form["description"]}
     error={$errors["description"]}
@@ -76,6 +63,18 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     label="Description"
     optional
   />
+  <div class="flex flex-col gap-y-2">
+    <Label class="flex flex-col gap-y-1 text-sm">
+      <div class="text-gray-800 font-medium">Filters</div>
+      <div class="text-gray-500">Inherited from underlying dashboard view.</div>
+    </Label>
+    <FilterChipsReadOnly
+      dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
+      filters={$dashboardStore.whereFilter}
+      {metricsViewName}
+      {timeRange}
+    />
+  </div>
   <ProjectAccessControls
     organization={$page.params.organization}
     project={$page.params.project}
@@ -96,7 +95,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <Switch bind:checked={$form["filtersOnly"]} id="filtersOnly" />
     <Label class="font-normal flex gap-x-1 items-center" for="filtersOnly">
       <span>Save filters only</span>
-      <Tooltip>
+      <Tooltip distance={8}>
         <InfoCircle />
         <TooltipContent
           class="whitespace-pre-line"
@@ -114,7 +113,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <Label class="flex flex-col font-normal" for="absoluteTimeRange">
       <div class="text-left text-sm flex gap-x-1 items-center">
         <span>Absolute time range</span>
-        <Tooltip>
+        <Tooltip distance={8}>
           <InfoCircle />
           <TooltipContent
             class="whitespace-pre-line"

@@ -185,7 +185,7 @@ func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (st
 	}
 
 	if !security.Access || security.ExcludeAll {
-		return "", nil, nil, fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name)
+		return "", nil, nil, fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
 	}
 
 	if len(security.Include) != 0 {

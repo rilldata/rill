@@ -17,7 +17,7 @@
   export let compact = false;
   export let submitForm = false;
   export let form = "";
-  export let label: string | undefined = undefined;
+  export let label: string | undefined | null = null;
   export let square = false;
   export let circle = false;
   export let selected = false;

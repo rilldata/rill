@@ -77,3 +77,8 @@ export function getPersistentDashboardState(): PersistentDashboardState {
   if (!persistentDashboardStore) return {};
   return get(persistentDashboardStore);
 }
+
+export function hasPersistentDashboardData() {
+  if (!persistentDashboardStore) return false;
+  return Object.keys(get(persistentDashboardStore)).length > 0;
+}
