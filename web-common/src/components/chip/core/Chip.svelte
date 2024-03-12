@@ -15,8 +15,6 @@
   export let readOnly = false;
   export let grab = false;
   export let slideDuration = 150;
-  export let grab = false;
-  export let slideDuration = 150;
 
   /** chip style props */
   export let extraRounded = true;
