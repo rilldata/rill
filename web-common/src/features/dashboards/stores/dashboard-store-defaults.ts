@@ -63,7 +63,7 @@ function setDefaultComparison(
       metricsExplorer.selectedComparisonDimension =
         normaliseName(
           metricsView.defaultComparisonDimension,
-          metricsView.dimensions ?? [],
+          metricsView.dimensions,
         ) || metricsView.dimensions?.[0]?.name;
       break;
 
@@ -135,7 +135,7 @@ export function getDefaultMetricsExplorerEntity(
     visibleMeasureKeys: metricsView.defaultMeasures?.length
       ? new Set(
           metricsView.defaultMeasures
-            .map((dm) => normaliseName(dm, metricsView.measures ?? []))
+            .map((dm) => normaliseName(dm, metricsView.measures))
             .filter((dm) => !!dm) as string[],
         )
       : new Set(defaultMeasureNames),
@@ -145,7 +145,7 @@ export function getDefaultMetricsExplorerEntity(
     visibleDimensionKeys: metricsView.defaultDimensions?.length
       ? new Set(
           metricsView.defaultDimensions
-            .map((dd) => normaliseName(dd, metricsView.dimensions ?? []))
+            .map((dd) => normaliseName(dd, metricsView.dimensions))
             .filter((dd) => !!dd) as string[],
         )
       : new Set(defaultDimNames),
@@ -225,8 +225,11 @@ export function restorePersistedDashboardState(
 
 function normaliseName(
   name: string | undefined,
-  entities: MetricsViewSpecMeasureV2[] | MetricsViewSpecDimensionV2[],
+  entities:
+    | MetricsViewSpecMeasureV2[]
+    | MetricsViewSpecDimensionV2[]
+    | undefined,
 ): string | undefined {
-  return entities.find((e) => e.name?.toLowerCase() === name?.toLowerCase())
+  return entities?.find((e) => e.name?.toLowerCase() === name?.toLowerCase())
     ?.name;
 }
