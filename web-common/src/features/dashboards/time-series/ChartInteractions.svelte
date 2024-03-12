@@ -28,12 +28,12 @@
     if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTagName)) {
       return;
     }
-    if (e.key === "ArrowLeft") {
+    if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
         const panRange = $getNewPanRange("left");
         if (panRange) updatePanRange(panRange.start, panRange.end);
       }
-    } else if (e.key === "ArrowRight") {
+    } else if (e.key === "ArrowRight" && !e.metaKey && !e.altKey) {
       if ($canPanRight) {
         const panRange = $getNewPanRange("right");
         if (panRange) updatePanRange(panRange.start, panRange.end);
