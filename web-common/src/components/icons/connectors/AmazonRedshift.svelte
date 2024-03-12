@@ -10,7 +10,7 @@
   xml:space="preserve"
 >
   <style type="text/css">
-    .st0 {
+    .st4 {
       fill: #2e73b8;
     }
     .st1 {
@@ -31,7 +31,7 @@
             id="Rectangle"
             x="31.9"
             y="32"
-            class="st0"
+            class="st4"
             width="8.2"
             height="41"
           />
