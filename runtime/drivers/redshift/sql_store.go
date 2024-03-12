@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
 	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
-
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
@@ -127,7 +126,7 @@ func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, co
 		Database: &conf.Database,
 	}
 
-	if conf.ClusterIdentifier != "" { // ClusterIdentifier and Workgroup are interchangable
+	if conf.ClusterIdentifier != "" { // ClusterIdentifier and Workgroup are interchangeable
 		executeParams.ClusterIdentifier = aws.String(conf.ClusterIdentifier)
 	}
 
