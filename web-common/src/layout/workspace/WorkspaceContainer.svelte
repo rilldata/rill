@@ -22,7 +22,7 @@
   style:right="0px"
 >
   {#if $$slots.header}
-    <header class="bg-white w-full h-fit z-10">
+    <header class="bg-white w-full h-fit">
       <slot name="header" />
     </header>
   {/if}
