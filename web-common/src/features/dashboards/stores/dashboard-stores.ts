@@ -43,10 +43,6 @@ const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
 
-function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
-  metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
-}
-
 export const updateMetricsExplorerByName = (
   name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
@@ -57,8 +53,6 @@ export const updateMetricsExplorerByName = (
     }
 
     callback(state.entities[name]);
-    // every change triggers a proto update
-    updateMetricsExplorerProto(state.entities[name]);
     return state;
   });
 };
@@ -187,8 +181,6 @@ const metricViewReducers = {
       state.entities[name] = restorePersistedDashboardState(
         state.entities[name],
       );
-
-      updateMetricsExplorerProto(state.entities[name]);
 
       return state;
     });
