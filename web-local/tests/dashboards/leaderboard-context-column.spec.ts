@@ -214,7 +214,7 @@ test.describe("leaderboard context column", () => {
     await measuresButton.click();
     await clickMenuItem("Total Bid Price", false);
     await escape();
-    await expect(measuresButton).toHaveText("showing Total Bid Price");
+    await expect(measuresButton).toHaveText("Showing Total Bid Price");
 
     await openContextMenu();
     // Check that the "percent of total" menuitem is enabled
@@ -297,7 +297,7 @@ test.describe("leaderboard context column", () => {
     // Switch to measure "total rows" (no valid_percent_of_total)
     await measuresButton.click();
     await clickMenuItem("Total Rows");
-    await expect(measuresButton).toHaveText("showing Total rows");
+    await expect(measuresButton).toHaveText("Showing Total rows");
     // check that the context column is hidden
     await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
 

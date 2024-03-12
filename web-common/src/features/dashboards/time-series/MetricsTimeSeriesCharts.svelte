@@ -4,7 +4,7 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
@@ -132,14 +132,18 @@
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-      const startPos = bisectData(
+      const { position: startPos } = bisectData(
         start,
         "center",
         "ts_position",
         slicedData,
-        true,
       );
-      const endPos = bisectData(end, "center", "ts_position", slicedData, true);
+      const { position: endPos } = bisectData(
+        end,
+        "center",
+        "ts_position",
+        slicedData,
+      );
 
       return {
         hover: isScrubbing ? undefined : state.hover,
@@ -177,14 +181,13 @@
         hover: undefined,
       }));
     } else {
-      const columnNum = bisectData(
+      const { position: columnNum } = bisectData(
         mouseoverValue.x,
         "center",
         "ts_position",
         $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
           ? formattedData?.slice(1)
           : formattedData?.slice(1, -1),
-        true,
       );
 
       if ($chartInteractionColumn?.hover !== columnNum)
@@ -216,7 +219,7 @@
     {#if expandedMeasureName}
       <BackToOverview {metricViewName} />
     {:else}
-      <SeachableFilterButton
+      <SearchableFilterButton
         label="Measures"
         on:deselect-all={setAllMeasuresNotVisible}
         on:item-clicked={toggleMeasureVisibility}

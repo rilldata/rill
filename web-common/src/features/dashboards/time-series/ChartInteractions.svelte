@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-  export let metricViewName;
+  export let metricViewName: string;
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
 
@@ -23,13 +23,17 @@
     },
   } = StateManagers;
 
-  function onKeyDown(e) {
-    if (e.key === "ArrowLeft") {
+  function onKeyDown(e: KeyboardEvent) {
+    const targetTagName = (e.target as HTMLElement).tagName;
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTagName)) {
+      return;
+    }
+    if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
         const panRange = $getNewPanRange("left");
         if (panRange) updatePanRange(panRange.start, panRange.end);
       }
-    } else if (e.key === "ArrowRight") {
+    } else if (e.key === "ArrowRight" && !e.metaKey && !e.altKey) {
       if ($canPanRight) {
         const panRange = $getNewPanRange("right");
         if (panRange) updatePanRange(panRange.start, panRange.end);
