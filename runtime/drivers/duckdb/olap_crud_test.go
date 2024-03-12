@@ -525,6 +525,6 @@ func verifyCount(t *testing.T, c *connection, table string, expected int) {
 	require.True(t, res.Next())
 	var count int
 	require.NoError(t, res.Scan(&count))
-	require.Equal(t, 1, count)
+	require.Equal(t, expected, count)
 	require.NoError(t, res.Close())
 }

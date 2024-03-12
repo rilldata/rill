@@ -46,6 +46,8 @@ type config struct {
 	DBFilePath string `mapstructure:"-"`
 	// ExtStoragePath is the path where the database files are stored in case external_table_storage is true. It is inferred from the DSN (can't be provided by user).
 	ExtStoragePath string `mapstructure:"-"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
