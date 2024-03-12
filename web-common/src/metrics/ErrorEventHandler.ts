@@ -1,9 +1,16 @@
+import { page } from "$app/stores";
+import type { RpcStatus } from "@rilldata/web-admin/client";
+import { getScreenNameFromPage } from "@rilldata/web-common/features/navigation/nav-utils";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
+import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import type { Query } from "@tanstack/query-core";
+import type { AxiosError } from "axios";
+import { get } from "svelte/store";
 import type {
   SourceConnectionType,
   SourceErrorCodes,
@@ -14,8 +21,69 @@ export class ErrorEventHandler {
   public constructor(
     private readonly metricsService: MetricsService,
     private readonly commonUserMetrics: CommonUserFields,
+    private readonly localConfig: V1RuntimeGetConfig,
   ) {
     this.commonUserMetrics = commonUserMetrics;
+  }
+
+  public handleSvelteQueryError(error: AxiosError, query: Query) {
+    const screenName = getScreenNameFromPage(get(page));
+    if (!error.response) {
+      this.fireHTTPErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        "",
+        "unknown error",
+        screenName,
+      );
+      return;
+    } else {
+      this.fireHTTPErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        error.response?.status + "" ?? error.status,
+        (error.response?.data as RpcStatus)?.message ?? error.message,
+        screenName,
+      );
+    }
+  }
+
+  public addJavascriptErrorListeners() {
+    const errorHandler = (errorEvt: ErrorEvent) => {
+      this.fireJavascriptErrorBoundaryEvent(
+        errorEvt.error?.stack ?? "",
+        errorEvt.message,
+        getScreenNameFromPage(get(page)),
+      );
+    };
+    const unhandledRejectionHandler = (
+      rejectionEvent: PromiseRejectionEvent,
+    ) => {
+      let stack = "";
+      let message = "";
+      if (typeof rejectionEvent.reason === "string") {
+        message = rejectionEvent.reason;
+      } else if (rejectionEvent.reason instanceof Error) {
+        stack = rejectionEvent.reason.stack ?? "";
+        message = rejectionEvent.reason.message;
+      } else {
+        message = String.toString.apply(rejectionEvent.reason);
+      }
+      this.fireJavascriptErrorBoundaryEvent(
+        stack,
+        message,
+        getScreenNameFromPage(get(page)),
+      );
+    };
+
+    window.addEventListener("error", errorHandler);
+    window.addEventListener("unhandledrejection", unhandledRejectionHandler);
+    // return unsubscriber
+    return () => {
+      window.removeEventListener("error", errorHandler);
+      window.removeEventListener(
+        "unhandledrejection",
+        unhandledRejectionHandler,
+      );
+    };
   }
 
   public fireSourceErrorEvent(
@@ -37,12 +105,16 @@ export class ErrorEventHandler {
     ]);
   }
 
-  public fireHTTPErrorBoundaryEvent(
+  private fireHTTPErrorBoundaryEvent(
     api: string,
     status: string,
     message: string,
     screenName: MetricsEventScreenName,
   ) {
+    if (this.localConfig.is_dev) {
+      console.log("httpErrorEvent", screenName, api, status, message);
+      return;
+    }
     return this.metricsService.dispatch("httpErrorEvent", [
       this.commonUserMetrics,
       screenName,
@@ -52,11 +124,15 @@ export class ErrorEventHandler {
     ]);
   }
 
-  public fireJavascriptErrorBoundaryEvent(
+  private fireJavascriptErrorBoundaryEvent(
     stack: string,
     message: string,
     screenName: MetricsEventScreenName,
   ) {
+    if (this.localConfig.is_dev) {
+      console.log("javascriptErrorEvent", screenName, stack, message);
+      return;
+    }
     return this.metricsService.dispatch("javascriptErrorEvent", [
       this.commonUserMetrics,
       screenName,

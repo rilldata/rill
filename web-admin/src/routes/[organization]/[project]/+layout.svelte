@@ -5,7 +5,7 @@
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { isProjectPage } from "../../../features/navigation/nav-utils";
+  import { isProjectPage } from "@rilldata/web-common/features/navigation/nav-utils";
   import ProjectTabs from "../../../features/projects/ProjectTabs.svelte";
   import { useProjectRuntime } from "../../../features/projects/selectors";
   import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
