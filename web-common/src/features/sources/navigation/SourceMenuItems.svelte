@@ -40,7 +40,6 @@
   import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let sourceName: string;
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
