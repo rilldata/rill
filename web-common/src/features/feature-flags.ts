@@ -30,7 +30,7 @@ class FeatureFlags {
   readOnly = new FeatureFlag("system");
   pivot = new FeatureFlag();
   ai = new FeatureFlag();
-  dataViewer = new FeatureFlag();
+  cloudDataViewer = new FeatureFlag();
   customDashboards = new FeatureFlag();
 
   constructor() {
