@@ -43,7 +43,13 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
 	if srcCfg.Database != "" { // query to be run against an external DB
-		return t.transferFromExternalDB(ctx, srcCfg, sinkCfg, opts)
+		if !strings.HasPrefix(srcCfg.Database, "md:") {
+			srcCfg.Database, err = fileutil.ResolveLocalPath(srcCfg.Database, opts.RepoRoot, opts.AllowHostAccess)
+			if err != nil {
+				return err
+			}
+		}
+		return t.transferFromExternalDB(ctx, srcCfg, sinkCfg)
 	}
 
 	// We can't just pass the SQL statement to DuckDB outright.
@@ -109,7 +115,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL)
 }
 
-func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties, opts *drivers.TransferOptions) error {
+func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
 	return t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
 		if err != nil {

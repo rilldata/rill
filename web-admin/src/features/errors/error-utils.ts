@@ -68,7 +68,10 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       // Let the Dashboard page handle errors for runtime queries.
       // Individual components (e.g. a specific line chart or leaderboard) should display a localised error message.
       // NOTE: let's start with 400 errors, but we may want to include 500-level errors too.
-      if (isRuntimeQuery(query) && error.response?.status === 400) {
+      if (
+        isRuntimeQuery(query) &&
+        (error.response?.status === 400 || error.response?.status === 429)
+      ) {
         return;
       }
 

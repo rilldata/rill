@@ -15,13 +15,13 @@ export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
-  splitByTimeGrain: string;
   criteria: {
     field: string;
     operation: string;
     value: string;
   }[];
   criteriaOperation: V1Operation;
+  evaluationInterval: string;
   snooze: string;
   recipients: { email: string }[];
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
@@ -53,13 +53,9 @@ export function getAlertQueryArgsFromFormValues(
         ),
       ),
     ),
-    ...(formValues.splitByTimeGrain
-      ? {
-          timeRange: {
-            isoDuration: formValues.splitByTimeGrain,
-          },
-        }
-      : {}),
+    timeRange: {
+      isoDuration: formValues.timeRange.isoDuration,
+    },
   };
 }
 
@@ -81,6 +77,11 @@ export const alertFormValidationSchema = yup.object({
     }),
   ),
 });
+export const FieldsByTab: (keyof AlertFormValues)[][] = [
+  ["name", "measure"],
+  ["criteria", "criteriaOperation"],
+  ["snooze", "recipients"],
+];
 
 export function checkIsTabValid(
   tabIndex: number,
@@ -104,16 +105,7 @@ export function checkIsTabValid(
         hasRequiredFields = false;
       }
     });
-    hasErrors = false;
-    (errors.criteria as unknown as any[]).forEach((criteriaError) => {
-      if (
-        criteriaError.field ||
-        criteriaError.operation ||
-        criteriaError.value
-      ) {
-        hasErrors = true;
-      }
-    });
+    hasErrors = !!errors.criteria;
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =

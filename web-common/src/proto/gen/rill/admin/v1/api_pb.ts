@@ -1128,71 +1128,111 @@ export class GetDeploymentCredentialsResponse extends Message<GetDeploymentCrede
 }
 
 /**
+ * GetIFrameRequest is the request payload for AdminService.GetIFrame.
+ *
  * @generated from message rill.admin.v1.GetIFrameRequest
  */
 export class GetIFrameRequest extends Message<GetIFrameRequest> {
   /**
+   * Organization that owns the project to embed.
+   *
    * @generated from field: string organization = 1;
    */
   organization = "";
 
   /**
+   * Project that has the resource(s) to embed.
+   *
    * @generated from field: string project = 2;
    */
   project = "";
 
   /**
+   * Branch to embed. If not set, the production branch is used.
+   *
    * @generated from field: string branch = 3;
    */
   branch = "";
 
   /**
-   * @generated from field: string kind = 4;
-   */
-  kind = "";
-
-  /**
-   * @generated from field: string resource = 5;
-   */
-  resource = "";
-
-  /**
+   * TTL for the iframe's access token. If not set, defaults to 24 hours.
+   *
    * @generated from field: uint32 ttl_seconds = 6;
    */
   ttlSeconds = 0;
 
   /**
-   * @generated from field: string state = 7;
-   */
-  state = "";
-
-  /**
-   * @generated from field: map<string, string> query = 8;
-   */
-  query: { [key: string]: string } = {};
-
-  /**
+   * User attributes to use for security policy evaluation.
+   *
    * @generated from oneof rill.admin.v1.GetIFrameRequest.for
    */
   for: {
     /**
+     * If set, will use the attributes of the user with this ID.
+     *
      * @generated from field: string user_id = 9;
      */
     value: string;
     case: "userId";
   } | {
     /**
+     * If set, will generate attributes corresponding to a user with this email.
+     *
      * @generated from field: string user_email = 10;
      */
     value: string;
     case: "userEmail";
   } | {
     /**
+     * If set, will use the provided attributes outright.
+     *
      * @generated from field: google.protobuf.Struct attributes = 11;
      */
     value: Struct;
     case: "attributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+   *
+   * @generated from field: string kind = 4;
+   */
+  kind = "";
+
+  /**
+   * Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+   *
+   * @generated from field: string resource = 5;
+   */
+  resource = "";
+
+  /**
+   * Theme to use for the embedded resource.
+   *
+   * @generated from field: string theme = 12;
+   */
+  theme = "";
+
+  /**
+   * Navigation denotes whether navigation between different resources should be enabled in the embed.
+   *
+   * @generated from field: bool navigation = 13;
+   */
+  navigation = false;
+
+  /**
+   * Blob containing UI state for rendering the initial embed. Not currently supported.
+   *
+   * @generated from field: string state = 7;
+   */
+  state = "";
+
+  /**
+   * DEPRECATED: Additional parameters to set outright in the generated URL query.
+   *
+   * @generated from field: map<string, string> query = 8;
+   */
+  query: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<GetIFrameRequest>) {
     super();
@@ -1205,14 +1245,16 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 10, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
     { no: 11, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+    { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIFrameRequest {

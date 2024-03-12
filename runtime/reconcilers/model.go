@@ -423,6 +423,12 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
 	state := self.Resource.(*runtimev1.Resource_Model).Model.State
 
+	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	var sql string
 	if spec.UsesTemplating {
 		sql, err = compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
@@ -435,13 +441,13 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 				State: state,
 			},
 			Resolve: func(ref compilerv1.ResourceName) (string, error) {
-				return safeSQLName(ref.Name), nil
+				return olap.Dialect().EscapeIdentifier(ref.Name), nil
 			},
 			Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 				if name.Kind == compilerv1.ResourceKindUnspecified {
 					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
 				}
-				res, err := r.C.Get(ctx, resourceNameFromCompiler(name), false)
+				res, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
 				if err != nil {
 					return compilerv1.TemplateResource{}, err
 				}
@@ -458,12 +464,6 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	} else {
 		sql = spec.Sql
 	}
-
-	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
 
 	// If materializing, set timeout on ctx
 	if !view {

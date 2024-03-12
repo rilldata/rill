@@ -2,7 +2,7 @@ import { tick } from "svelte";
 
 type Target = HTMLElement | string;
 
-export function portal(node: HTMLElement, target: Target = "body") {
+export function portal(node: HTMLElement, target: Target = "#rill-portal") {
   let targetElement: HTMLElement;
 
   async function update(newTarget: Target) {
@@ -14,9 +14,8 @@ export function portal(node: HTMLElement, target: Target = "body") {
         await tick();
         possibleTarget = document.querySelector(newTarget);
       }
-
       if (possibleTarget === null) {
-        throw new Error(`Target ${newTarget} not found`);
+        possibleTarget = document.body;
       }
       targetElement = possibleTarget;
     } else {

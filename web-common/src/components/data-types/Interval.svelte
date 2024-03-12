@@ -9,7 +9,7 @@
 
 <Base
   {isNull}
-  classes="font-semibold truncate {inTable && 'block text-right'}"
+  classes="font-semibold truncate w-full {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">

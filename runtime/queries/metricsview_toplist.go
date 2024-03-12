@@ -128,21 +128,21 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 				return err
 			}
 
-			filename := q.generateFilename(q.MetricsView)
-			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+			filename := q.generateFilename()
+			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
 	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
 	default:
@@ -152,14 +152,14 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	return nil
 }
 
-func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(mv))
+		err = opts.PreWriteHook(q.generateFilename())
 		if err != nil {
 			return err
 		}
@@ -169,17 +169,17 @@ func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runt
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, w)
+		return WriteCSV(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, w)
+		return WriteXLSX(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(q.Result.Meta, q.Result.Data, w)
+		return WriteParquet(q.Result.Meta, q.Result.Data, w)
 	}
 
 	return nil
 }
 
-func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+func (q *MetricsViewToplist) generateFilename() string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	filename += "_" + q.DimensionName
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {

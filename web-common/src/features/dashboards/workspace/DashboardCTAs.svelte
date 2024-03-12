@@ -45,6 +45,11 @@
   }
 
   let showDeployDashboardModal = false;
+
+  function showDeployModal() {
+    behaviourEvent?.fireDeployIntentEvent();
+    showDeployDashboardModal = true;
+  }
 </script>
 
 <div class="flex gap-2 flex-shrink-0">
@@ -69,9 +74,7 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={() => (showDeployDashboardModal = true)} type="primary">
-        Deploy
-      </Button>
+      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

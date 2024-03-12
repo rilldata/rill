@@ -146,15 +146,11 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		return nil, err
 	}
 
-	variables, err := extractVariablesFromTemplate(t.Tree)
-	if err != nil {
-		return nil, err
-	}
-
 	// Check if there is any templating
 	noTemplating := len(t.Root.Nodes) == 0 || len(t.Root.Nodes) == 1 && t.Root.Nodes[0].Type() == parse.NodeText
 
 	// Done
+	variables := extractVariablesFromTemplate(t.Tree)
 	return &TemplateMetadata{
 		Refs:                     maps.Keys(refs),
 		Config:                   config,
@@ -193,6 +189,11 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Add func to lookup another resource
 	funcMap["lookup"] = func(parts ...string) (map[string]any, error) {
+		// Support is optional
+		if data.Lookup == nil {
+			return nil, fmt.Errorf(`function "lookup" is not supported in this context`)
+		}
+
 		// Parse the resource name
 		name, err := resourceNameFromArgs(parts...)
 		if err != nil {
@@ -293,7 +294,7 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 	return result, nil
 }
 
-func extractVariablesFromTemplate(tree *parse.Tree) ([]string, error) {
+func extractVariablesFromTemplate(tree *parse.Tree) []string {
 	variablesMap := make(map[string]bool)
 	walkNodes(tree.Root, func(n parse.Node) {
 		if vn, ok := n.(*parse.FieldNode); ok {
@@ -302,7 +303,7 @@ func extractVariablesFromTemplate(tree *parse.Tree) ([]string, error) {
 		}
 	})
 
-	return maps.Keys(variablesMap), nil
+	return maps.Keys(variablesMap)
 }
 
 func walkNodes(node parse.Node, fn func(n parse.Node)) {

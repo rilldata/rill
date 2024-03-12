@@ -5,6 +5,7 @@ info:
 tags:
   - name: AIService
   - name: AdminService
+  - name: TelemetryService
 consumes:
   - application/json
 produces:
@@ -655,10 +656,12 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: organization
+          description: Organization that owns the project to embed.
           in: path
           required: true
           type: string
         - name: project
+          description: Project that has the resource(s) to embed.
           in: path
           required: true
           type: string
@@ -670,25 +673,41 @@ paths:
             properties:
               branch:
                 type: string
-              kind:
-                type: string
-              resource:
-                type: string
+                description: Branch to embed. If not set, the production branch is used.
               ttlSeconds:
                 type: integer
                 format: int64
+                description: TTL for the iframe's access token. If not set, defaults to 24 hours.
+              userId:
+                type: string
+                description: If set, will use the attributes of the user with this ID.
+              userEmail:
+                type: string
+                description: If set, will generate attributes corresponding to a user with this email.
+              attributes:
+                type: object
+                description: If set, will use the provided attributes outright.
+              kind:
+                type: string
+                description: Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+              resource:
+                type: string
+                description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+              theme:
+                type: string
+                description: Theme to use for the embedded resource.
+              navigation:
+                type: boolean
+                description: Navigation denotes whether navigation between different resources should be enabled in the embed.
               state:
                 type: string
+                description: Blob containing UI state for rendering the initial embed. Not currently supported.
               query:
                 type: object
                 additionalProperties:
                   type: string
-              userId:
-                type: string
-              userEmail:
-                type: string
-              attributes:
-                type: object
+                description: 'DEPRECATED: Additional parameters to set outright in the generated URL query.'
+            description: GetIFrameRequest is the request payload for AdminService.GetIFrame.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/invites:
@@ -1897,15 +1916,17 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/telemetry:
+  /v1/telemetry/events:
     post:
-      summary: Telemetry sends telemetry data to the server
-      operationId: AdminService_Telemetry
+      summary: |-
+        RecordEvents sends a batch of telemetry events.
+        The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
+      operationId: TelemetryService_RecordEvents
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TelemetryResponse'
+            $ref: '#/definitions/v1RecordEventsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1915,9 +1936,9 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1TelemetryRequest'
+            $ref: '#/definitions/v1RecordEventsRequest'
       tags:
-        - AdminService
+        - TelemetryService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -2798,6 +2819,15 @@ definitions:
           $ref: '#/definitions/v1VirtualFile'
       nextPageToken:
         type: string
+  v1RecordEventsRequest:
+    type: object
+    properties:
+      events:
+        type: array
+        items:
+          type: object
+  v1RecordEventsResponse:
+    type: object
   v1RemoveBookmarkResponse:
     type: object
   v1RemoveOrganizationMemberResponse:
@@ -2974,21 +3004,6 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
-  v1TelemetryRequest:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Name passed to activity module's name arg
-      value:
-        type: number
-        format: float
-        title: Value passed to activity module's value arg
-      event:
-        type: object
-        title: Free form struct of the actual event
-  v1TelemetryResponse:
-    type: object
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:

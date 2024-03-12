@@ -1,54 +1,13 @@
-<script lang="ts">
-  import { getContext, onMount } from "svelte";
-  import type { Writable } from "svelte/store";
-  import type { LayoutElement } from "./types";
-
-  const outputLayout = getContext(
-    "rill:app:output-layout",
-  ) as Writable<LayoutElement>;
-
-  export let className = "";
-
-  onMount(() => {
-    parentElement = splitter.parentElement;
-  });
-
-  let parentElement: HTMLElement | null = null;
-  let splitter: HTMLButtonElement;
-
-  let parentHeight = 0;
-
-  function onMouseMove(e: MouseEvent) {
-    $outputLayout.value = Math.min(
-      parentHeight - 200,
-      Math.max(200, parentHeight - e.clientY),
-    );
-  }
-
-  function onMouseUp() {
-    window.removeEventListener("mousemove", onMouseMove);
-  }
-
-  function startDrag() {
-    if (!parentElement) return;
-
-    parentHeight = parentElement.clientHeight;
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }
-</script>
-
-<button class={className} bind:this={splitter} on:mousedown={startDrag}>
+<div class="wrapper">
   <div class="line" />
   <span class="handle" />
-</button>
+</div>
 
 <style lang="postcss">
-  button {
-    @apply cursor-move;
+  .wrapper {
     @apply flex items-center justify-center;
-    @apply w-full h-2;
+    @apply w-full h-2 pr-2;
+    /* @apply border-2 border-red-400; */
   }
 
   .handle {

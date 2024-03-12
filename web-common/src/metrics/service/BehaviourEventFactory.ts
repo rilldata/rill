@@ -1,5 +1,8 @@
-import type { BehaviourEventMedium } from "./BehaviourEventTypes";
-import { BehaviourEvent, BehaviourEventAction } from "./BehaviourEventTypes";
+import {
+  BehaviourEvent,
+  BehaviourEventAction,
+  BehaviourEventMedium,
+} from "./BehaviourEventTypes";
 import { MetricsEventFactory } from "./MetricsEventFactory";
 import {
   CommonFields,
@@ -21,36 +24,11 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      BehaviourEventAction.Navigate,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
     event.action = BehaviourEventAction.Navigate;
-    event.entity_id = entity_id;
-    event.medium = medium;
-    event.space = space;
-    event.screen_name = screen_name;
-    event.source_screen = source_screen;
-    return event;
-  }
-
-  public publishEvent(
-    commonFields: CommonFields,
-    commonUserFields: CommonUserFields,
-    entity_id: string,
-    medium: BehaviourEventMedium,
-    space: MetricsEventSpace,
-    source_screen: MetricsEventScreenName,
-    screen_name: MetricsEventScreenName,
-    isStart: boolean,
-  ): BehaviourEvent {
-    const event = this.getBaseMetricsEvent(
-      "behavioral",
-      commonFields,
-      commonUserFields,
-    ) as BehaviourEvent;
-    event.action = isStart
-      ? BehaviourEventAction.PublishStart
-      : BehaviourEventAction.PublishSuccess;
     event.entity_id = entity_id;
     event.medium = medium;
     event.space = space;
@@ -69,6 +47,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      action,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -92,6 +71,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      BehaviourEventAction.SourceSuccess,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -115,6 +95,7 @@ export class BehaviourEventFactory extends MetricsEventFactory {
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
+      action,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -122,6 +103,23 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.medium = medium;
     event.screen_name = screen_name;
     event.space = space;
+    return event;
+  }
+
+  public deployIntent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+  ): BehaviourEvent {
+    const event = this.getBaseMetricsEvent(
+      "behavioral",
+      BehaviourEventAction.DeployIntent,
+      commonFields,
+      commonUserFields,
+    ) as BehaviourEvent;
+    event.action = BehaviourEventAction.DeployIntent;
+    event.medium = BehaviourEventMedium.Button;
+    event.space = MetricsEventSpace.Workspace;
+    event.screen_name = MetricsEventScreenName.Dashboard;
     return event;
   }
 }

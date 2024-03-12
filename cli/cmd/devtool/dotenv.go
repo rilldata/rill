@@ -33,7 +33,7 @@ func DotenvRefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
-			err := checkRillRepo(cmd.Context())
+			err := checkRillRepo()
 			if err != nil {
 				return err
 			}
@@ -61,7 +61,7 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
-			err := checkRillRepo(cmd.Context())
+			err := checkRillRepo()
 			if err != nil {
 				return err
 			}

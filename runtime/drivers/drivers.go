@@ -33,7 +33,7 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver string, config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error) {
+func Open(driver string, config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
@@ -63,7 +63,7 @@ type Driver interface {
 	Spec() Spec
 
 	// Open opens a new handle.
-	Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error)
+	Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (Handle, error)
 
 	// Drop removes all state in a handle. Drivers that do not support it should return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error

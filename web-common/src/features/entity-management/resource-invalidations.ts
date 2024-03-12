@@ -27,6 +27,7 @@ export const MainResourceKinds: {
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
+  [ResourceKind.Chart]: true,
 };
 const UsedResourceKinds: {
   [kind in ResourceKind]?: true;

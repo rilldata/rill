@@ -227,7 +227,7 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 	case *runtimev1.Resource_MetricsView:
 		return s.applySecurityPolicyMetricsView(ctx, instID, r)
 	case *runtimev1.Resource_Report:
-		return s.applySecurityPolicyReport(ctx, instID, r)
+		return s.applySecurityPolicyReport(ctx, r)
 	default:
 		return r, true, nil
 	}
@@ -369,7 +369,7 @@ func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1
 
 // applySecurityPolicyReport applies security policies to a report.
 // TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
-func (s *Server) applySecurityPolicyReport(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
 	report := r.GetReport()
 	claims := auth.GetClaims(ctx)
 
