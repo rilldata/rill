@@ -162,6 +162,9 @@ func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*ru
 
 func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (string, map[string]string, map[string]string, error) {
 	spec := mv.GetMetricsView().State.ValidSpec
+	if spec == nil {
+		return "", nil, nil, fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
+	}
 
 	security, err := c.ctrl.Runtime.ResolveMetricsViewSecurity(c.userAttributes, c.instanceID, spec, mv.Meta.StateUpdatedOn.AsTime())
 	if err != nil {
