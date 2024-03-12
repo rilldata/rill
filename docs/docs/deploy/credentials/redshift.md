@@ -51,10 +51,10 @@ rill env configure
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
 
 ### Redshift/S3 permissions
-Associate a IAM role (that has S3 access) with the Redshift Serverless namespace (https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-iam.html).
+Associate a IAM role (that has S3 access) with the Redshift Serverless namespace or the Redshift cluster(https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-iam.html).
 Redshift connector does the following AWS queries while ingesting data from Redshift:
-1. Redshift Serverless:[`GetCredentials`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html). 
-1. Reshift:[`GetClusterCredentialsWithIAM`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html). 
+1. Redshift Serverless:[`GetCredentials`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) if you use Workgroup name to connect. 
+1. Reshift:[`GetClusterCredentialsWithIAM`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) if you use Cluster Identifier to connect. 
 1. Reshift Data API:[`DescribeStatement`, `ExecuteStatement`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) to unload data to S3.
 1. S3:[`ListObjects`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html) to identify files unloaded by Redshift
 1. S3:[`GetObject`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html) to ingest files unloaded by Redshift.
