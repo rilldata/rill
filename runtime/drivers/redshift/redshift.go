@@ -91,7 +91,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, _ activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, _ *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("redshift driver can't be shared")
 	}
