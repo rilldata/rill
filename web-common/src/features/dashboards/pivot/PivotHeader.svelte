@@ -31,7 +31,7 @@
   <div class="header-row">
     <span class="row-label"> <Row size="16px" />Rows</span>
     <DragList
-      type="rows"
+      zone="rows"
       placeholder="Drag dimensions here"
       on:update={updateRows}
       items={$rows.dimension}
@@ -40,7 +40,7 @@
   <div class="header-row">
     <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
-      type="columns"
+      zone="columns"
       items={$columns.dimension.concat($columns.measure)}
       placeholder="Drag dimensions or measures here"
       on:update={updateColumn}

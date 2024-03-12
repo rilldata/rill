@@ -63,7 +63,6 @@
     "regular-table": "^0.5.9",
     "storybook": "^7.0.18",
     "svelte": "^4.0.0",
-    "svelte-dnd-action": "^0.9.33",
     "svelte-forms-lib": "^2.0.1",
     "svelte-headless-table": "^0.18.1",
     "svelte-preprocess": "^5.0.4",
