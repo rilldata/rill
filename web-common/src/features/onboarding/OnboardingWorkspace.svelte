@@ -1,11 +1,11 @@
 <script lang="ts">
-  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
   import { IconSpaceFixer } from "../../components/button";
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
   import { WorkspaceContainer } from "../../layout/workspace";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { addSourceModal } from "../sources/modal/add-source-visibility";
 
   let steps: OnboardingStep[];
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
@@ -69,11 +69,6 @@
         "Interactively explore line charts and leaderboards to uncover insights.",
     },
   ];
-
-  let showAddSourceModal = false;
-  function openAddSourceModal() {
-    showAddSourceModal = true;
-  }
 </script>
 
 <WorkspaceContainer inspector={false}>
@@ -95,7 +90,7 @@
                 <p>{step.description}</p>
               </div>
               {#if step.id === "source"}
-                <Button type="secondary" on:click={openAddSourceModal}>
+                <Button type="secondary" on:click={addSourceModal.open}>
                   <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
                   <span>Add data</span>
                 </Button>
@@ -105,9 +100,5 @@
         {/each}
       {/if}
     </ol>
-    <AddSourceModal
-      open={showAddSourceModal}
-      on:close={() => (showAddSourceModal = false)}
-    />
   </div>
 </WorkspaceContainer>
