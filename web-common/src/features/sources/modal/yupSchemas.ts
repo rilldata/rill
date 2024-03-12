@@ -123,11 +123,15 @@ export function getYupSchema(connector: V1ConnectorSpec) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
           )
           .required("Source name is required"),
-        output_location: yup.string().required("S3 location for temporary files"),
+        output_location: yup
+          .string()
+          .required("S3 location for temporary files"),
         workgroup: yup.string().optional(),
         cluster_identifier: yup.string().optional(),
-        role_arn: yup.string().required("Role ARN associated with the Redshift cluster"),
-        region: yup.string().optional()
+        role_arn: yup
+          .string()
+          .required("Role ARN associated with the Redshift cluster"),
+        region: yup.string().optional(),
       });
 
     case "mysql":
