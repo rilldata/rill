@@ -313,6 +313,6 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 		}
 	}
 
-	// Add attributes as activity dimensions
-	activity.WithDims(ctx, attrs...)
+	// Add attributes for emitted events
+	activity.SetAttributes(ctx, attrs...)
 }

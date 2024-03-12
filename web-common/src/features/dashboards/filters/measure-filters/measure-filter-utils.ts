@@ -95,11 +95,11 @@ export function prepareMeasureFilterResolutions(
       // This makes sure dashboard.dimensionThresholdFilters and toplist is in sync
       if (
         toplists.length !== dashboard.dimensionThresholdFilters.length ||
-        toplists.every(
+        toplists.some(
           (t, i) =>
             (t.data?.meta?.findIndex(
               (c) => c.name === dashboard.dimensionThresholdFilters[i].name,
-            ) ?? -1) >= 0,
+            ) ?? -1) === -1,
         )
       ) {
         return {

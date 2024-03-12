@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { SelectMenu } from "@rilldata/web-common/components/menu";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -120,13 +120,11 @@
 <div>
   {#if measures && options.length && selection}
     <div
-      class="flex flex-row items-center ui-copy-muted"
-      style:padding-left="22px"
-      style:grid-column-gap=".4rem"
+      class="flex flex-row items-center ui-copy-muted gap-x-0.5"
       in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <SeachableFilterButton
+      <SearchableFilterButton
         selectableItems={$showHideDimensions.selectableItems}
         selectedItems={$showHideDimensions.selectedItems}
         on:item-clicked={toggleDimensionVisibility}
@@ -136,15 +134,12 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <div class="whitespace-nowrap">showing</div>
-
       <SelectMenu
-        paddingTop={2}
-        paddingBottom={2}
+        fixedText="Showing"
         {options}
-        {selection}
-        alignment="end"
+        selections={[selection.key]}
         on:select={handleMeasureUpdate}
+        ariaLabel="Select a measure to filter by"
       />
 
       <LeaderboardContextColumnMenu {validPercentOfTotal} />

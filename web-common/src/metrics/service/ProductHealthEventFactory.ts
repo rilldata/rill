@@ -14,6 +14,7 @@ export class ProductHealthEventFactory extends MetricsEventFactory {
   ): ActiveEvent {
     const event = this.getBaseMetricsEvent(
       "active",
+      "active",
       commonFields,
       commonUserFields,
     ) as ActiveEvent;

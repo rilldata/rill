@@ -59,7 +59,7 @@ type configProperties struct {
 	Branch      string `mapstructure:"branch"`
 }
 
-func (d driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("admin driver can't be shared")
 	}
