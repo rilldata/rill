@@ -55,7 +55,7 @@
     >
       <div class="flex flex-row gap-x-2 items-center">
         <HomeBookmarkPlus size="16px" />
-        <div class="text-xs">Bookmark current view as Home</div>
+        <div class="text-xs">Bookmark current view as Home.</div>
       </div>
     </DropdownMenuItem>
   {/if}
@@ -81,7 +81,7 @@
         {/each}
       {:else}
         <div class="my-2 ui-copy-disabled text-center">
-          You have no bookmarks for this dashboard
+          You have no bookmarks for this dashboard.
         </div>
       {/if}
     </DropdownMenuGroup>
