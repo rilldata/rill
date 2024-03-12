@@ -36,11 +36,12 @@
     will-change: width;
     @apply h-full flex-none relative;
     @apply border-l border-gray-200 bg-white;
+    @apply overflow-y-scroll overflow-x-hidden;
   }
 
   .inner {
     will-change: width;
-    @apply h-full;
+    @apply h-fit;
   }
 
   .inspector-wrapper:not(.resizing) {
