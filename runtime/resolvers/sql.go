@@ -17,6 +17,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const sqlResolverInteractiveRowLimit = 10000
+
 func init() {
 	runtime.RegisterResolverInitializer("sql", newSQL)
 }
@@ -104,8 +106,12 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
+	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
+	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
+	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, sqlResolverInteractiveRowLimit+1)
+
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.sql,
+		Query:    sql,
 		Priority: r.priority,
 	})
 	if err != nil {
@@ -115,6 +121,10 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 
 	var out []map[string]any
 	for res.Rows.Next() {
+		if len(out) >= sqlResolverInteractiveRowLimit {
+			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", sqlResolverInteractiveRowLimit)
+		}
+
 		row := make(map[string]any)
 		err = res.Rows.MapScan(row)
 		if err != nil {
