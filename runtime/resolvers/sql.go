@@ -106,8 +106,12 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
+	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
+	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
+	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, sqlResolverInteractiveRowLimit+1)
+
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.sql,
+		Query:    sql,
 		Priority: r.priority,
 	})
 	if err != nil {
