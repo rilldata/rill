@@ -1,4 +1,4 @@
 position: 1
 label: Connectors
-collapsible: false
-collapsed: true
+collapsible: true
+collapsed: false

@@ -34,7 +34,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName:        "Azure Blob Storage",
 	Description:        "Connect to Azure Blob Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/azure",
+	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/azure",
 	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "path",

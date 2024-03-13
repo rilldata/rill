@@ -18,7 +18,7 @@ azure://<BUCKET>/<GLOB_PATTERN>
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e. `rill start`), Rill uses by default the credentials configured in your local environment using the Azure CLI (`az`). Follow these steps to configure it:
+When using Rill Developer on your local machine (i.e. `rill start`), Rill uses by default the credentials configured in your local environment using the Azure CLI (`az`). Assuming you have the Azure CLI installed, follow the steps below to configure it:
 
 1. Open a terminal window and run the following command to log in to your Azure account:
 
@@ -28,7 +28,17 @@ When using Rill Developer on your local machine (i.e. `rill start`), Rill uses b
 
     Follow the on-screen instructions to complete the login process. This will authenticate you with your Azure account.
 
-    > If you don't have the Azure CLI installed, you can [install it from here](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
+    :::info
+
+    To check if you already have the Azure CLI installed and are authenticated, you can open a terminal window and run the following command:
+
+    ```bash
+    az account show
+    ```
+
+    If it does not display any information about your Azure account, you can [install the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) if it is not already installed on your system.
+
+    :::
 
 2. Once you are logged in, Rill will automatically use the credentials obtained from `az login` to authenticate with Azure Blob Storage when you interact with Azure Blob Storage sources.
 

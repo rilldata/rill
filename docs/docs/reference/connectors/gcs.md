@@ -20,6 +20,15 @@ When using Rill Developer on your local machine (i.e. `rill start`), Rill uses t
 
 2. If it did not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
 
+:::tip
+
+Once you have `gcloud` installed, run this command to set your default credentials via the CLI:
+```bash
+gcloud auth application-default login
+```
+
+:::
+
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
 
 :::info
