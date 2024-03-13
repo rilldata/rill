@@ -53,9 +53,16 @@
       on:click={() => dispatch("create-home")}
       slot="manage-project"
     >
-      <div class="flex flex-row gap-x-2 items-center">
+      <div class="flex flex-row gap-x-2">
         <HomeBookmarkPlus size="16px" />
-        <div class="text-xs">Bookmark current view as Home.</div>
+        <div>
+          <div class="text-xs font-medium text-gray-700 h-4">
+            Bookmark current view as Home.
+          </div>
+          <div class="text-[11px] font-normal text-gray-500 h-4">
+            This will be everyone’s main view for this dashboard.
+          </div>
+        </div>
       </div>
     </DropdownMenuItem>
   {/if}

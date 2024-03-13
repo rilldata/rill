@@ -67,11 +67,17 @@
     {#if !readOnly}
       <div class="flex flex-row justify-end gap-x-2 items-start w-20">
         {#if hovered}
-          <button on:click={editBookmark}>
-            <EditIcon size="16px" className="text-gray-400" />
+          <button
+            on:click={editBookmark}
+            class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
+          >
+            <EditIcon size="16px" />
           </button>
-          <button on:click={deleteBookmark}>
-            <Trash size="16px" className="text-gray-400" />
+          <button
+            on:click={deleteBookmark}
+            class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
+          >
+            <Trash size="16px" />
           </button>
         {/if}
       </div>

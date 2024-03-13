@@ -365,13 +365,15 @@ func defaultModelMaterialize(vars map[string]string) (bool, error) {
 	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
 	// Remove when we have a way to conditionally configure it using code files.
 
+	systemDefault := false
+
 	if vars == nil {
-		return true, nil
+		return systemDefault, nil
 	}
 
 	s, ok := vars["__materialize_default"]
 	if !ok {
-		return true, nil
+		return systemDefault, nil
 	}
 
 	val, err := strconv.ParseBool(s)
