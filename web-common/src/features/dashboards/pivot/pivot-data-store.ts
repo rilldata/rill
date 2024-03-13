@@ -337,7 +337,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           }
         }
 
-        const rowOffset = (config.pivot.rowPage - 1) * NUM_ROWS_PER_PAGE;
+        const rowPage = config.pivot.rowPage;
+        const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
@@ -424,6 +425,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               sortAccessor,
               rowDimensionValues,
               timeRange,
+              NUM_ROWS_PER_PAGE.toString(),
+              rowOffset.toString(),
             );
 
             let initialTableCellQuery:
@@ -483,6 +486,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   rowOtherMeasuresAxesQuery?.totals?.[anchorDimension] || [],
                 );
 
+                let pivotSkeleton = mergedRowTotals;
+                if (rowPage > 1) {
+                  pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
+                }
+
                 let pivotData: PivotDataRow[] = [];
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
                 if (getPivotConfigKey(config) in expandedTableMap) {
@@ -490,12 +498,12 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   console.log("pivotData", pivotData);
                 } else {
                   if (initialTableCellData === null) {
-                    cellData = mergedRowTotals;
+                    cellData = pivotSkeleton;
                   } else {
                     if (initialTableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
-                        data: mergedRowTotals,
+                        data: pivotSkeleton,
                         columnDef,
                         assembled: false,
                         totalColumns,
@@ -508,7 +516,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     anchorDimension,
                     rowDimensionValues || [],
                     columnDimensionAxes?.data || {},
-                    mergedRowTotals,
+                    pivotSkeleton,
                     cellData,
                   );
                   pivotData = structuredClone(tableDataWithCells);

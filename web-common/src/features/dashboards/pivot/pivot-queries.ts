@@ -180,6 +180,8 @@ export function getAxisQueryForOtherMeasures(
   sortAccessor: string | undefined,
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
+  limit: string,
+  offset: string,
 ) {
   let rowAxesQueryForOtherMeasures: Readable<PivotAxesData | null> =
     readable(null);
@@ -202,6 +204,8 @@ export function getAxisQueryForOtherMeasures(
       sortedRowFilters,
       [],
       timeRange,
+      limit,
+      offset,
     );
   }
 

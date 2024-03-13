@@ -68,7 +68,7 @@
   $: rows = $table.getRowModel().rows;
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 
-  $: console.log(rowPage);
+  $: console.log("rowPage", rowPage);
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
