@@ -29,8 +29,6 @@ export interface DimensionDataItem {
   dimension: string;
   value: string | null;
   total?: number;
-  // strokeClass: string;
-  // fillClass: string;
   data: TimeSeriesDatum[];
   isFetching: boolean;
 }
