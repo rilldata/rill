@@ -1,4 +1,4 @@
-package resolvers
+package resolvers_test
 
 import (
 	"context"
