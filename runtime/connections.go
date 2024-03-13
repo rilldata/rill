@@ -111,13 +111,19 @@ func (r *Runtime) AI(ctx context.Context, instanceID string) (drivers.AIService,
 	return ai, release, nil
 }
 
-func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, func(), error) {
+// OLAP returns a handle for an OLAP data store.
+// The connector argument is optional. If not provided, the instance's default OLAP connector is used.
+func (r *Runtime) OLAP(ctx context.Context, instanceID string, connector string) (drivers.OLAPStore, func(), error) {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.ResolveOLAPConnector())
+	if connector == "" {
+		connector = inst.ResolveOLAPConnector()
+	}
+
+	conn, release, err := r.AcquireHandle(ctx, instanceID, connector)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -125,7 +131,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
 		release()
-		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", inst.ResolveOLAPConnector())
+		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", connector)
 	}
 
 	return olap, release, nil

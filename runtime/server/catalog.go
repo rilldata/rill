@@ -409,7 +409,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 		RefreshedOn: r.Meta.StateUpdatedOn,
 	}
 
-	olap, release, err := s.runtime.OLAP(ctx, instanceID)
+	olap, release, err := s.runtime.OLAP(ctx, instanceID, "")
 	if err != nil {
 		return nil, err
 	}

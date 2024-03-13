@@ -13,6 +13,7 @@ import (
 )
 
 type TableColumns struct {
+	Connector string
 	TableName string
 	Result    []*runtimev1.ProfileColumn
 }
@@ -52,7 +53,7 @@ func (q *TableColumns) UnmarshalResult(v any) error {
 }
 
 func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

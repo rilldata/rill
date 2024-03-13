@@ -11,7 +11,7 @@ import (
 )
 
 func RequireOLAPTable(t testing.TB, rt *runtime.Runtime, id, name string) {
-	olap, release, err := rt.OLAP(context.Background(), id)
+	olap, release, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	defer release()
 
@@ -20,7 +20,7 @@ func RequireOLAPTable(t testing.TB, rt *runtime.Runtime, id, name string) {
 }
 
 func RequireNoOLAPTable(t testing.TB, rt *runtime.Runtime, id, name string) {
-	olap, release, err := rt.OLAP(context.Background(), id)
+	olap, release, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	defer release()
 
@@ -29,7 +29,7 @@ func RequireNoOLAPTable(t testing.TB, rt *runtime.Runtime, id, name string) {
 }
 
 func RequireOLAPTableCount(t testing.TB, rt *runtime.Runtime, id, name string, count int) {
-	olap, release, err := rt.OLAP(context.Background(), id)
+	olap, release, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	defer release()
 
