@@ -113,7 +113,7 @@ func (r *Runtime) AI(ctx context.Context, instanceID string) (drivers.AIService,
 
 // OLAP returns a handle for an OLAP data store.
 // The connector argument is optional. If not provided, the instance's default OLAP connector is used.
-func (r *Runtime) OLAP(ctx context.Context, instanceID string, connector string) (drivers.OLAPStore, func(), error) {
+func (r *Runtime) OLAP(ctx context.Context, instanceID, connector string) (drivers.OLAPStore, func(), error) {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
