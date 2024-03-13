@@ -51,8 +51,11 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		return nil, err
 	}
 
-	// Determine if we're using the default OLAP connector
-	isDefaultConnector := req.Connector == "" || req.Connector == inst.ResolveOLAPConnector()
+	// If a connector is not provided, default to the instance's OLAP connector
+	if req.Connector == "" {
+		req.Connector = inst.ResolveOLAPConnector()
+	}
+	isDefaultConnector := req.Connector == inst.ResolveOLAPConnector()
 
 	// Connect to connector and check it's an OLAP db
 	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
