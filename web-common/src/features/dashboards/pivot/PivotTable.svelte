@@ -121,7 +121,6 @@
         clientWidth,
       } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
-      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
 
       // Fetch more data when scrolling near the bottom end
       if (
