@@ -68,7 +68,6 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	// nolint:bodyclose // closed by the caller
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -79,15 +78,18 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	var obj any
 	err = dec.Decode(&obj)
 	if err != nil {
+		resp.Body.Close()
 		return nil, err
 	}
 	switch v := obj.(type) {
 	case map[string]any:
+		resp.Body.Close()
 		return nil, fmt.Errorf("%v", obj)
 	case []any:
 		columns := toStringArray(v)
 		err = dec.Decode(&obj)
 		if err != nil {
+			resp.Body.Close()
 			return nil, err
 		}
 
@@ -102,6 +104,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 					if err != nil {
 						return nil, err
 					}
+
 					return t, nil
 				}
 			} else if c == "ARRAY" {
@@ -126,15 +129,15 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		}
 
 		druidRows := &druidRows{
-			closer: resp.Body,
-			dec:    dec,
-			// jw:           jw,
+			closer:       resp.Body,
+			dec:          dec,
 			columns:      columns,
 			types:        types,
 			transformers: transformers,
 		}
 		return druidRows, nil
 	default:
+		resp.Body.Close()
 		return nil, fmt.Errorf("unexpected response: %v", obj)
 	}
 }
@@ -153,9 +156,8 @@ func toType(v any) string {
 }
 
 type druidRows struct {
-	closer io.ReadCloser
-	dec    *json.Decoder
-	// jw           *JSONWalker
+	closer       io.ReadCloser
+	dec          *json.Decoder
 	columns      []string
 	types        []string
 	transformers []func(any) (any, error)
