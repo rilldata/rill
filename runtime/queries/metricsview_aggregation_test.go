@@ -253,6 +253,59 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 	require.Equal(t, "Yahoo", fieldsToString(rows[i], "pub"))
 }
 
+func TestMetricsViewsAggregation_pivot_labels(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+		PivotOn: []string{
+			"timestamp",
+		},
+		Limit: &limit,
+	}
+	q.Exporting = true
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	require.Equal(t, 4, len(q.Result.Schema.Fields))
+	require.Equal(t, "pub", q.Result.Schema.Fields[0].Name)
+	require.Equal(t, "2022-01-01_Average bid price", q.Result.Schema.Fields[1].Name)
+	require.Equal(t, "2022-02-01_Average bid price", q.Result.Schema.Fields[2].Name)
+	require.Equal(t, "2022-03-01_Average bid price", q.Result.Schema.Fields[3].Name)
+
+	i := 0
+	require.Equal(t, "Facebook", fieldsToString(rows[i], "pub"))
+	i++
+	require.Equal(t, "Google", fieldsToString(rows[i], "pub"))
+	i++
+	require.Equal(t, "Microsoft", fieldsToString(rows[i], "pub"))
+	i++
+	require.Equal(t, "Yahoo", fieldsToString(rows[i], "pub"))
+}
+
 func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
@@ -308,6 +361,66 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 
 	require.Equal(t, q.Result.Schema.Fields[5].Name, "2022-03-01_measure_1")
 	require.Equal(t, q.Result.Schema.Fields[6].Name, "2022-03-01_measure_0")
+
+	i := 0
+	require.Equal(t, "Facebook", fieldsToString(rows[i], "pub"))
+	i++
+	require.Equal(t, "Google", fieldsToString(rows[i], "pub"))
+	i++
+	require.Equal(t, "Microsoft", fieldsToString(rows[i], "pub"))
+	i++
+	require.Equal(t, "Yahoo", fieldsToString(rows[i], "pub"))
+}
+
+func TestMetricsViewsAggregation_pivot_2_measures_with_labels(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "measure_0",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+		PivotOn: []string{
+			"timestamp",
+		},
+		Limit: &limit,
+	}
+	q.Exporting = true
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	require.Equal(t, q.Result.Schema.Fields[0].Name, "pub")
+	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-01-01_Number of bids")
+
+	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-02-01_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[4].Name, "2022-02-01_Number of bids")
+
+	require.Equal(t, q.Result.Schema.Fields[5].Name, "2022-03-01_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[6].Name, "2022-03-01_Number of bids")
 
 	i := 0
 	require.Equal(t, "Facebook", fieldsToString(rows[i], "pub"))
