@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("SQL", newSQL)
+	runtime.RegisterResolverInitializer("sql", newSQL)
 }
 
 type sqlResolver struct {

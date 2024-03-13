@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("MetricsSQL", newMetricsSQL)
+	runtime.RegisterResolverInitializer("metrics_sql", newMetricsSQL)
 }
 
 type metricsSQLProps struct {
