@@ -408,6 +408,17 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
             const rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
+
+            if (rowDimensionValues.length === 0 && rowPage > 1) {
+              return axesSet({
+                isFetching: false,
+                data: lastPivotData,
+                columnDef: lastPivotColumnDef,
+                assembled: true,
+                totalColumns: lastTotalColumns,
+                reachedEndForRowData: true,
+              });
+            }
             const rowTotals = rowDimensionAxes?.totals?.[anchorDimension] || [];
             const totalsRow = getTotalsRow(
               config,
@@ -495,7 +506,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
                 if (getPivotConfigKey(config) in expandedTableMap) {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
-                  console.log("pivotData", pivotData);
                 } else {
                   if (initialTableCellData === null) {
                     cellData = pivotSkeleton;

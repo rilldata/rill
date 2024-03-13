@@ -19,6 +19,7 @@ export interface PivotDataState {
   columnDef: ColumnDef<PivotDataRow>[];
   assembled: boolean;
   totalColumns: number; // total columns excluding row and group totals columns
+  reachedEndForRowData?: boolean;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;

@@ -249,6 +249,8 @@ const metricViewReducers = {
 
   setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
       const dimensions: PivotChipData[] = [];
 
       value.forEach((val) => {
@@ -273,6 +275,8 @@ const metricViewReducers = {
 
   setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
       const dimensions: PivotChipData[] = [];
       const measures: PivotChipData[] = [];
 
@@ -301,6 +305,7 @@ const metricViewReducers = {
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
       if (value.type === PivotChipType.Measure) {
         metricsExplorer.pivot.columns.measure.push(value);
       } else {

@@ -1,6 +1,5 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -26,7 +25,6 @@
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
 
-  const totalRowCount = 500;
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
 
@@ -58,6 +56,7 @@
   let containerRefElement: HTMLDivElement;
   let stickyRows = [0];
 
+  $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
@@ -128,7 +127,7 @@
       if (
         bottomEndDistance < ROW_THRESHOLD &&
         !$pivotDataStore.isFetching &&
-        rowPage * NUM_ROWS_PER_PAGE < totalRowCount
+        !reachedEndForRows
       ) {
         metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
       }
