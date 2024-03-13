@@ -12,6 +12,7 @@
   import type { VirtualizedTableColumns } from "../../../components/virtualized-table/types";
   import type { DimensionTableRow } from "./dimension-table-types";
   import type { VirtualItem } from "@tanstack/svelte-virtual";
+  import { page } from "$app/stores";
 
   export let totalHeight: number;
   export let virtualRowItems: VirtualItem[];
@@ -53,7 +54,11 @@
       <div class="py-0.5 grid place-items-center">
         {#if isSelected && !excludeMode && isBeingCompared}
           <CheckCircle
-            className="fill-{$colorGetter.get(dimensionName, dimensionValue)}"
+            className="fill-{colorGetter.get(
+              $page.params.name,
+              dimensionName,
+              dimensionValue,
+            )}"
             size="18px"
           />
         {:else if isSelected && !excludeMode}

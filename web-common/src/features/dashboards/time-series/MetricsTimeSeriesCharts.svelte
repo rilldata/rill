@@ -34,6 +34,7 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { colorGetter } from "../filters/colorGetter";
+  import { page } from "$app/stores";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -210,7 +211,7 @@
   };
 
   $: colors = dimensionData.map((d) => {
-    return $colorGetter.get(d.dimension, d.value ?? "");
+    return colorGetter.get($page.params.name, d.dimension, d.value ?? "");
   });
 </script>
 

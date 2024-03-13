@@ -21,6 +21,7 @@
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import { colorGetter } from "../filters/colorGetter";
+  import { page } from "$app/stores";
 
   export let dimensionName: string;
   export let itemData: LeaderboardItemData;
@@ -44,7 +45,7 @@
   } = getStateManagers();
 
   $: checkColor = selected
-    ? $colorGetter.get(dimensionName, label)
+    ? colorGetter.get($page.params.name, dimensionName, label)
     : "gray-300";
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);
