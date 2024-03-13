@@ -6,7 +6,7 @@
   export let fileName: string;
 </script>
 
-<WorkspaceContainer assetID={fileName} inspector={false}>
+<WorkspaceContainer inspector={false}>
   <YamlWorkspaceHeader slot="header" {fileName} />
   <YamlWorkspaceBody slot="body" {fileName} />
 </WorkspaceContainer>

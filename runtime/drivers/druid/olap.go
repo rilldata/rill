@@ -137,14 +137,9 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
 		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
-			Type: t,
+			Type: databaseTypeToPB(ct.DatabaseTypeName(), nullable),
 		}
 	}
 
@@ -258,16 +253,10 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 			res = append(res, t)
 		}
 
-		// parse column type
-		colType, err := databaseTypeToPB(columnType, nullable)
-		if err != nil {
-			return nil, err
-		}
-
 		// append column
 		t.Schema.Fields = append(t.Schema.Fields, &runtimev1.StructType_Field{
 			Name: columnName,
-			Type: colType,
+			Type: databaseTypeToPB(columnType, nullable),
 		})
 	}
 
@@ -278,7 +267,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "BOOLEAN":
@@ -311,7 +300,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	}
 
-	return t, nil
+	return t
 }
 
 // retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable

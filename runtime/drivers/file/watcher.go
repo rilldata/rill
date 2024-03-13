@@ -34,6 +34,8 @@ type watcher struct {
 	buffer           map[string]drivers.WatchEvent
 }
 
+// newWatcher creates a new watcher for the given root directory.
+// The root directory must be an absolute path.
 func newWatcher(root string) (*watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -149,6 +151,12 @@ func (w *watcher) runInner() error {
 		case e, ok := <-w.watcher.Events:
 			if !ok {
 				return nil
+			}
+
+			if e.Name == "" {
+				// Honestly not sure how this happens, but it does.
+				// e.Name is supposed to be relative to the input path, and we only add absolute paths to the watcher.
+				continue
 			}
 
 			we := drivers.WatchEvent{}

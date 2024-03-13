@@ -77,6 +77,7 @@ const (
 	AdminService_ListBookmarks_FullMethodName                = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
 	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
+	AdminService_UpdateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/UpdateBookmark"
 	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
@@ -94,7 +95,6 @@ const (
 	AdminService_DeleteAlert_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName            = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertYAML"
-	AdminService_Telemetry_FullMethodName                    = "/rill.admin.v1.AdminService/Telemetry"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -212,13 +212,15 @@ type AdminServiceClient interface {
 	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
 	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
-	// CreateBookmark creates a bookmark for the given user for the given project
+	// CreateBookmark creates a bookmark for the given user or for all users for the dashboard
 	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
-	// RemoveBookmark removes the bookmark for the given user for the given project
+	// UpdateBookmark updates a bookmark for the given user for the given project
+	UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
@@ -252,8 +254,6 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
-	// Telemetry sends telemetry data to the server
-	Telemetry(ctx context.Context, in *TelemetryRequest, opts ...grpc.CallOption) (*TelemetryResponse, error)
 }
 
 type adminServiceClient struct {
@@ -786,6 +786,15 @@ func (c *adminServiceClient) CreateBookmark(ctx context.Context, in *CreateBookm
 	return out, nil
 }
 
+func (c *adminServiceClient) UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error) {
+	out := new(UpdateBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error) {
 	out := new(RemoveBookmarkResponse)
 	err := c.cc.Invoke(ctx, AdminService_RemoveBookmark_FullMethodName, in, out, opts...)
@@ -939,15 +948,6 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
-func (c *adminServiceClient) Telemetry(ctx context.Context, in *TelemetryRequest, opts ...grpc.CallOption) (*TelemetryResponse, error) {
-	out := new(TelemetryResponse)
-	err := c.cc.Invoke(ctx, AdminService_Telemetry_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -1063,13 +1063,15 @@ type AdminServiceServer interface {
 	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
 	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)
-	// CreateBookmark creates a bookmark for the given user for the given project
+	// CreateBookmark creates a bookmark for the given user or for all users for the dashboard
 	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
-	// RemoveBookmark removes the bookmark for the given user for the given project
+	// UpdateBookmark updates a bookmark for the given user for the given project
+	UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
@@ -1103,8 +1105,6 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
-	// Telemetry sends telemetry data to the server
-	Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1286,6 +1286,9 @@ func (UnimplementedAdminServiceServer) GetBookmark(context.Context, *GetBookmark
 func (UnimplementedAdminServiceServer) CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBookmark not implemented")
 }
+func (UnimplementedAdminServiceServer) UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBookmark not implemented")
+}
 func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
 }
@@ -1336,9 +1339,6 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 }
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
-}
-func (UnimplementedAdminServiceServer) Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Telemetry not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -2397,6 +2397,24 @@ func _AdminService_CreateBookmark_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_UpdateBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, req.(*UpdateBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveBookmarkRequest)
 	if err := dec(in); err != nil {
@@ -2703,24 +2721,6 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_Telemetry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TelemetryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).Telemetry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_Telemetry_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).Telemetry(ctx, req.(*TelemetryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2961,6 +2961,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_CreateBookmark_Handler,
 		},
 		{
+			MethodName: "UpdateBookmark",
+			Handler:    _AdminService_UpdateBookmark_Handler,
+		},
+		{
 			MethodName: "RemoveBookmark",
 			Handler:    _AdminService_RemoveBookmark_Handler,
 		},
@@ -3027,10 +3031,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlertYAML",
 			Handler:    _AdminService_GetAlertYAML_Handler,
-		},
-		{
-			MethodName: "Telemetry",
-			Handler:    _AdminService_Telemetry_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

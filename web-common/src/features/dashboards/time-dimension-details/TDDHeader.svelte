@@ -160,7 +160,7 @@
 </script>
 
 <div
-  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11"
+  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11 w-full"
 >
   <div class="flex gap-x-3 items-center font-normal text-gray-500">
     <div class="flex items-center gap-x-2">

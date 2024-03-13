@@ -138,7 +138,7 @@ test.describe("dashboard", () => {
     );
 
     // Check that the total records are 272 and have comparisons
-    await expect(page.getByText("272 -23 -7%")).toBeVisible();
+    await expect(page.getByText("272 -23 -8%")).toBeVisible();
 
     // Check the row viewer accordion is updated
     await expect(page.getByText("Model Data 272 of 100k rows")).toBeVisible();
@@ -462,7 +462,9 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Select a measure to filter by" })
+      .click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     // Check domain and sample value in leaderboard

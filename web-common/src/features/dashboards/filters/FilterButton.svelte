@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { getStateManagers } from "../state-managers/state-managers";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
-  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import { getStateManagers } from "../state-managers/state-managers";
   import { getMeasureDisplayName } from "./getDisplayName";
 
   const {
@@ -37,7 +37,7 @@
       items:
         $allDimensions
           ?.map((d) => ({
-            name: d.name as string,
+            name: (d.name || d.column) as string,
             label: getDimensionDisplayName(d),
           }))
           .filter((d) => !$dimensionHasFilter(d.name)) ?? [],

@@ -14,9 +14,9 @@ const flags = {
   adminServer: false,
   readOnly: false,
   pivot: features?.includes("pivot") || false,
-  alerts: features?.includes("alerts") || false,
   ai: true,
   cloudDataViewer: features?.includes("data-viewer") || false,
+  customDashboards: features?.includes("custom-dashboards") || false,
 };
 
 export type FeatureFlags = typeof flags;

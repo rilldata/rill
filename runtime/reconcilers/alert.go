@@ -105,7 +105,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Unlike other resources, alerts have different hashes for the spec and the refs' state.
 	// This enables differentiating behavior between changes to the spec and changes to the refs.
 	// When the spec changes, we clear all alert state. When the refs change, we just use it to trigger the alert ()
-	specHash, err := r.executionSpecHash(ctx, a.Spec, self.Meta.Refs)
+	specHash, err := r.executionSpecHash(a.Spec, self.Meta.Refs)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -197,7 +197,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 // executionSpecHash computes a hash of the alert properties that impact execution.
 // NOTE: Unlike other resources, we don't include the refs' state version in the hash since it's managed separately using refsStateHash.
-func (r *AlertReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.AlertSpec, refs []*runtimev1.ResourceName) (string, error) {
+func (r *AlertReconciler) executionSpecHash(spec *runtimev1.AlertSpec, refs []*runtimev1.ResourceName) (string, error) {
 	hash := md5.New()
 
 	for _, ref := range refs { // Refs are always sorted
@@ -452,7 +452,7 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	}
 
 	// Evaluate intervals
-	ts, err := calculateExecutionTimes(self, a, watermark, previousWatermark)
+	ts, err := calculateExecutionTimes(a, watermark, previousWatermark)
 	if err != nil {
 		// This should not usually error
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
@@ -742,7 +742,7 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 
 // calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
 // If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
-func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
+func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
 	// If the alert is not configured to run on intervals, check it just for the current watermark.
 	if a.Spec.IntervalsIsoDuration == "" {
 		return []time.Time{watermark}, nil

@@ -357,7 +357,7 @@ service AdminService {
     };
   }
 
-  // ListBookmarks lists all the bookmarks for the user
+  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
@@ -367,15 +367,23 @@ service AdminService {
     option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
   }
 
-  // CreateBookmark creates a bookmark for the given user for the given project
+  // CreateBookmark creates a bookmark for the given user or for all users for the dashboard
   rpc CreateBookmark(CreateBookmarkRequest) returns (CreateBookmarkResponse) {
     option (google.api.http) = {
       post: "/v1/users/bookmarks",
       body: "*"
     };
   }
+
+  // UpdateBookmark updates a bookmark for the given user for the given project
+  rpc UpdateBookmark(UpdateBookmarkRequest) returns (UpdateBookmarkResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/bookmarks",
+      body: "*"
+    };
+  }
   
-  // RemoveBookmark removes the bookmark for the given user for the given project
+  // RemoveBookmark removes the bookmark for the given user or all users
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
   }
@@ -492,14 +500,6 @@ service AdminService {
   rpc GetAlertYAML(GetAlertYAMLRequest) returns (GetAlertYAMLResponse) {
     option (google.api.http) = {
       get: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml",
-    };
-  }
-
-  // Telemetry sends telemetry data to the server
-  rpc Telemetry(TelemetryRequest) returns (TelemetryResponse) {
-    option (google.api.http) = {
-      post: "/v1/telemetry",
-      body: "*"
     };
   }
 }
@@ -632,20 +632,37 @@ message GetDeploymentCredentialsResponse {
   uint32 ttl_seconds = 4;
 }
 
+// GetIFrameRequest is the request payload for AdminService.GetIFrame.
 message GetIFrameRequest {
+  // Organization that owns the project to embed.
   string organization = 1;
+  // Project that has the resource(s) to embed.
   string project = 2;
+  // Branch to embed. If not set, the production branch is used.
   string branch = 3;
-  string kind = 4;
-  string resource = 5;
+  // TTL for the iframe's access token. If not set, defaults to 24 hours.
   uint32 ttl_seconds = 6;
-  string state = 7;
-  map<string, string> query = 8;
+  // User attributes to use for security policy evaluation.
   oneof for {
+    // If set, will use the attributes of the user with this ID.
     string user_id = 9;
+    // If set, will generate attributes corresponding to a user with this email.
     string user_email = 10 [(validate.rules).string.email = true];
+    // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 11;
   }
+  // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+  string kind = 4;
+  // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+  string resource = 5;
+  // Theme to use for the embedded resource.
+  string theme = 12;
+  // Navigation denotes whether navigation between different resources should be enabled in the embed.
+  bool navigation = 13;
+  // Blob containing UI state for rendering the initial embed. Not currently supported.
+  string state = 7;
+  // DEPRECATED: Additional parameters to set outright in the generated URL query.
+  map<string, string> query = 8;
 }
 
 message GetIFrameResponse {
@@ -959,42 +976,59 @@ message UserPreferences {
 }
 
 message UpdateUserPreferencesRequest {
-    UserPreferences preferences = 1;
+  UserPreferences preferences = 1;
 }
 
 message UpdateUserPreferencesResponse {
-    UserPreferences preferences = 1;
+  UserPreferences preferences = 1;
 }
 
 message ListBookmarksRequest {
-    string project_id = 1;
+  string project_id = 1;
+  string resource_kind = 2;
+  string resource_name = 3;
 }
 
 message ListBookmarksResponse {
-    repeated Bookmark bookmarks = 1;
+  repeated Bookmark bookmarks = 1;
 }
 
 message GetBookmarkRequest {
-    string bookmark_id = 1;
+  string bookmark_id = 1;
 }
 
 message GetBookmarkResponse {
-    Bookmark bookmark = 1;
+  Bookmark bookmark = 1;
 }
 
 message CreateBookmarkRequest {
   string display_name = 1;
-  bytes data = 2;
-  string dashboard_name = 3;
-  string project_id = 4;
+  string description = 2;
+  bytes data = 3;
+  string resource_kind = 4;
+  string resource_name = 5;
+  string project_id = 6;
+  bool default = 7;
+  bool shared = 8;
 }
 
 message CreateBookmarkResponse {
   Bookmark bookmark = 1;
 }
 
+message UpdateBookmarkRequest {
+  string bookmark_id = 1;
+  string display_name = 2;
+  string description = 4;
+  bytes data = 3;
+  bool default = 5;
+  bool shared = 6;
+}
+
+message UpdateBookmarkResponse {}
+
 message RemoveBookmarkRequest {
-    string bookmark_id = 1;
+  string bookmark_id = 1;
 }
 
 message RemoveBookmarkResponse {}
@@ -1404,10 +1438,14 @@ message WhitelistedDomain {
 message Bookmark {
   string id = 1;
   string display_name = 2;
+  string description = 9;
   bytes data = 3;
-  string dashboard_name = 4;
+  string resource_kind = 10;
+  string resource_name = 4;
   string project_id = 5;
   string user_id = 6;
+  bool default = 11;
+  bool shared = 12;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }

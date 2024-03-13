@@ -101,13 +101,13 @@ props as needed.
   </Tooltip>
   <SearchableFilterDropdown
     allowMultiSelect={false}
-    let:toggleFloatingElement
+    let:handleClose
     on:apply
-    on:click-outside={toggleFloatingElement}
+    on:click-outside={handleClose}
     on:deselect-all
-    on:escape={toggleFloatingElement}
+    on:escape={handleClose}
     on:item-clicked={(e) => {
-      toggleFloatingElement();
+      handleClose();
       dispatch("item-clicked", e.detail.name);
     }}
     on:search

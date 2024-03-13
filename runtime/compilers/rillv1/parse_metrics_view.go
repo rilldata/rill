@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -168,7 +167,7 @@ const (
 )
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
+func (p *Parser) parseMetricsView(node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)

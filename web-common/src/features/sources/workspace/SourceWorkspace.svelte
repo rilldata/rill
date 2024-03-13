@@ -10,7 +10,7 @@
 
 {#key sourceName}
   <BeforeLeavingUnsavedSource {sourceName}>
-    <WorkspaceContainer assetID={sourceName}>
+    <WorkspaceContainer>
       <SourceWorkspaceHeader {sourceName} slot="header" />
       <SourceWorkspaceBody {sourceName} slot="body" />
       <SourceInspector {sourceName} slot="inspector" />

@@ -1,8 +1,6 @@
 package rillv1
 
 import (
-	"context"
-
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -17,7 +15,7 @@ type ThemeYAML struct {
 }
 
 // parseTheme parses a theme definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseTheme(ctx context.Context, node *Node) error {
+func (p *Parser) parseTheme(node *Node) error {
 	tmp := &ThemeYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
 	if err != nil {

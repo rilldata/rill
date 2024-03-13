@@ -149,25 +149,17 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	return olap.RenameTable(ctx, fromName, toName, fromIsView)
 }
 
-// safeSQLName returns a quoted SQL identifier.
-func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
-}
-
 func logTableNameAndType(ctx context.Context, c *runtime.Controller, connector, name string) {
 	olap, release, err := c.AcquireOLAP(ctx, connector)
 	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed to acquire OLAP", zap.Error(err))
+		c.Logger.Warn("LogTableNameAndType: failed to acquire OLAP", zap.Error(err))
 		return
 	}
 	defer release()
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name=? ORDER BY column_name ASC", Args: []any{name}})
 	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed information_schema.columns", zap.Error(err))
+		c.Logger.Warn("LogTableNameAndType: failed information_schema.columns", zap.Error(err))
 		return
 	}
 	defer res.Close()
@@ -177,7 +169,7 @@ func logTableNameAndType(ctx context.Context, c *runtime.Controller, connector, 
 	for res.Next() {
 		err = res.Scan(&col, &typ)
 		if err != nil {
-			c.Logger.Error("LogTableNameAndType: failed scan", zap.Error(err))
+			c.Logger.Warn("LogTableNameAndType: failed scan", zap.Error(err))
 			return
 		}
 		colTyp = append(colTyp, fmt.Sprintf("%s:%s", col, typ))
@@ -197,16 +189,19 @@ func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self comp
 		Environment: inst.Environment,
 		User:        map[string]interface{}{},
 		Variables:   vars,
-		ExtraProps:  map[string]interface{}{},
+		ExtraProps:  nil,
 		Self:        self,
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return safeSQLName(ref.Name), nil
+			// We don't actually know if this "ref" is from a "sql:" property or something else.
+			// If it's a SQL property, we also don't know what the SQL dialect in question is. (Do we even want to support "ref" outside of SQL?)
+			// Using the DuckDB dialect escaping is going to work correctly in basically all cases, but it's a bit hacky.
+			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 			if name.Kind == compilerv1.ResourceKindUnspecified {
 				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
 			}
-			res, err := c.Get(ctx, resourceNameFromCompiler(name), false)
+			res, err := c.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
 			if err != nil {
 				return compilerv1.TemplateResource{}, err
 			}

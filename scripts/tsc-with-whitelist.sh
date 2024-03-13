@@ -40,7 +40,6 @@ web-common/src/components/editor/line-status/state.ts: error TS2322
 web-common/src/components/notifications/notificationStore.ts: error TS2322
 web-common/src/features/dashboards/dashboard-utils.ts: error TS18048
 web-common/src/features/dashboards/dashboard-utils.ts: error TS2322
-web-common/src/features/dashboards/dimension-table/dimension-table-utils.ts: error TS2322
 web-common/src/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate.ts: error TS18047
 web-common/src/features/dashboards/granular-access-policies/updateDevJWT.ts: error TS2322
 web-common/src/features/dashboards/granular-access-policies/useDashboardPolicyCheck.ts: error TS2345
@@ -76,7 +75,6 @@ web-common/src/features/dashboards/time-controls/time-control-store.ts: error TS
 web-common/src/features/dashboards/time-controls/time-control-store.ts: error TS2769
 web-common/src/features/dashboards/time-controls/time-range-store.ts: error TS18048
 web-common/src/features/dashboards/time-controls/time-range-utils.ts: error TS2322
-web-common/src/features/dashboards/time-dimension-details/time-dimension-data-store.ts: error TS2345
 web-common/src/features/dashboards/time-series/multiple-dimension-queries.ts: error TS18048
 web-common/src/features/dashboards/time-series/multiple-dimension-queries.ts: error TS2345
 web-common/src/features/entity-management/file-artifacts-store.ts: error TS18048
@@ -125,8 +123,6 @@ web-common/src/lib/actions/shift-click-action.ts: error TS2345
 web-common/src/lib/actions/truncate-middle-text.ts: error TS18047
 web-common/src/lib/actions/truncate-middle-text.ts: error TS2345
 web-common/src/lib/formatters.ts: error TS18046
-web-common/src/lib/number-formatting/percentage-formatter.ts: error TS2322
-web-common/src/lib/number-formatting/proper-fraction-formatter.ts: error TS2322
 web-common/src/lib/number-formatting/utils/format-with-order-of-magnitude.spec.ts: error TS2345
 web-common/src/lib/store-utils/local-storage.ts: error TS2345
 web-common/src/lib/time/comparisons/index.ts: error TS2322

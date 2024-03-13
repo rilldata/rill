@@ -159,13 +159,13 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	data, err := rowsToData(rows)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, err
 	}
 
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
@@ -179,13 +179,13 @@ func olapQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql st
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 	defer rows.Close()
 
 	data, err := rowsToData(rows)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, err
 	}
 
 	return rows.Schema, data, nil
@@ -228,7 +228,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string, dialect drivers.Dialect) (string, bool) {
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string) (string, bool) {
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
 		if dim.Name == name {
@@ -309,7 +309,7 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident, dialect)
+		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident)
 		if !isIdent {
 			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
@@ -400,7 +400,7 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 
 func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) <= 1 {
-		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
+		return "", nil, fmt.Errorf("in/not in expression should have at least 2 sub expressions")
 	}
 
 	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
@@ -473,7 +473,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 
 func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
 	if len(cond.Exprs) == 0 {
-		return "", nil, fmt.Errorf("or/and expression should have atleast 1 sub expressions")
+		return "", nil, fmt.Errorf("or/and expression should have at least 1 sub expression")
 	}
 
 	clauses := make([]string, 0)
@@ -651,7 +651,7 @@ func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName str
 	return "", fmt.Errorf("measure %s not found", measureName)
 }
 
-func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+func WriteCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
 	w := csv.NewWriter(writer)
 
 	record := make([]string, 0, len(meta))
@@ -686,7 +686,7 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 	return nil
 }
 
-func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+func WriteXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
 	f := excelize.NewFile()
 	defer func() {
 		_ = f.Close()
@@ -739,7 +739,7 @@ func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, wri
 	return err
 }
 
-func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, ioWriter io.Writer) error {
+func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, ioWriter io.Writer) error {
 	fields := make([]arrow.Field, 0, len(meta))
 	for _, f := range meta {
 		arrowField := arrow.Field{}
@@ -847,7 +847,7 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	return err
 }
 
-func duckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, exportFormat runtimev1.ExportFormat) error {
+func DuckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, exportFormat runtimev1.ExportFormat) error {
 	var extension string
 	switch exportFormat {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:

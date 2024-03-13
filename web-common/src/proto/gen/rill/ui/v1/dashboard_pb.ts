@@ -56,6 +56,13 @@ export class DashboardState extends Message<DashboardState> {
   compareTimeRange?: DashboardTimeRange;
 
   /**
+   * Determines the active page. This is cleaner than using setting `selected_dimension` or `expanded_measure`
+   *
+   * @generated from field: rill.ui.v1.DashboardState.ActivePage active_page = 32;
+   */
+  activePage = DashboardState_ActivePage.UNSPECIFIED;
+
+  /**
    * Selected measure for the leaderboard
    *
    * @generated from field: optional string leaderboard_measure = 5;
@@ -225,6 +232,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 21, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
+    { no: 32, name: "active_page", kind: "enum", T: proto3.getEnumType(DashboardState_ActivePage) },
     { no: 5, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "selected_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "show_time_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
@@ -423,6 +431,44 @@ proto3.util.setEnumType(DashboardState_PivotRowJoinType, "rill.ui.v1.DashboardSt
   { no: 0, name: "PIVOT_ROW_JOIN_TYPE_UNSPECIFIED" },
   { no: 1, name: "PIVOT_ROW_JOIN_TYPE_FLAT" },
   { no: 2, name: "PIVOT_ROW_JOIN_TYPE_NEST" },
+]);
+
+/**
+ * @generated from enum rill.ui.v1.DashboardState.ActivePage
+ */
+export enum DashboardState_ActivePage {
+  /**
+   * @generated from enum value: ACTIVE_PAGE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ACTIVE_PAGE_DEFAULT = 1;
+   */
+  DEFAULT = 1,
+
+  /**
+   * @generated from enum value: ACTIVE_PAGE_DIMENSION_TABLE = 2;
+   */
+  DIMENSION_TABLE = 2,
+
+  /**
+   * @generated from enum value: ACTIVE_PAGE_TIME_DIMENSIONAL_DETAIL = 3;
+   */
+  TIME_DIMENSIONAL_DETAIL = 3,
+
+  /**
+   * @generated from enum value: ACTIVE_PAGE_PIVOT = 4;
+   */
+  PIVOT = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_ActivePage)
+proto3.util.setEnumType(DashboardState_ActivePage, "rill.ui.v1.DashboardState.ActivePage", [
+  { no: 0, name: "ACTIVE_PAGE_UNSPECIFIED" },
+  { no: 1, name: "ACTIVE_PAGE_DEFAULT" },
+  { no: 2, name: "ACTIVE_PAGE_DIMENSION_TABLE" },
+  { no: 3, name: "ACTIVE_PAGE_TIME_DIMENSIONAL_DETAIL" },
+  { no: 4, name: "ACTIVE_PAGE_PIVOT" },
 ]);
 
 /**

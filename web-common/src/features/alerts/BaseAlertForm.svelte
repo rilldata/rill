@@ -6,7 +6,7 @@
   import AlertDialogCriteriaTab from "./criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "./delivery-tab/AlertDialogDeliveryTab.svelte";
-  import { checkIsTabValid } from "./form-utils";
+  import { checkIsTabValid, FieldsByTab } from "./form-utils";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let isEditForm: boolean;
@@ -16,7 +16,7 @@
   const formId = isEditForm ? "edit-alert-form" : "create-alert-form";
   const dialogTitle = isEditForm ? "Edit Alert" : "Create Alert";
 
-  const { form, errors, handleSubmit, isSubmitting } = formState;
+  const { form, errors, handleSubmit, validateField, isSubmitting } = formState;
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -39,6 +39,10 @@
   }
 
   function handleNextTab() {
+    if (!isTabValid) {
+      FieldsByTab[currentTabIndex]?.forEach((field) => validateField(field));
+      return;
+    }
     currentTabIndex += 1;
   }
 </script>
@@ -62,7 +66,7 @@
     </DialogTabs.List>
     <div class="p-3 bg-slate-100">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {formState} {isEditForm} />
+        <AlertDialogDataTab {formState} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
         <AlertDialogCriteriaTab {formState} />
@@ -80,16 +84,9 @@
       <Button on:click={handleBack} type="secondary">Back</Button>
     {/if}
     {#if currentTabIndex !== 2}
-      <Button type="primary" disabled={!isTabValid} on:click={handleNextTab}>
-        Next
-      </Button>
+      <Button type="primary" on:click={handleNextTab}>Next</Button>
     {:else}
-      <Button
-        type="primary"
-        disabled={!isTabValid || $isSubmitting}
-        form={formId}
-        submitForm
-      >
+      <Button type="primary" disabled={$isSubmitting} form={formId} submitForm>
         Create
       </Button>
     {/if}
