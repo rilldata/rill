@@ -9,7 +9,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -59,7 +58,6 @@ func TestCompiler(t *testing.T) {
 				instanceID: instanceID,
 				ctrl:       ctrl,
 				sql:        tt.sql,
-				dialect:    drivers.DialectDuckDB,
 			}
 
 			got, _, deps, err := c.compile(context.Background())
