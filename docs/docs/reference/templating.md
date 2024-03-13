@@ -11,7 +11,6 @@ Rill uses the Go programming language's native templating engine, known as `text
 If you use templating in SQL models, you must replace references to tables created by other sources or models with `ref` tags. See the "Referencing other tables in SQL when using templating" section below for details.
 :::
 
-
 ## Example
 
 Access an environment variable provided using `rill start --var key=value`:
