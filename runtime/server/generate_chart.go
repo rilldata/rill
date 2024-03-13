@@ -83,15 +83,21 @@ func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateC
 		return nil, err
 	}
 
+	// Convert the vega lite spec json to string
+	spec, err := json.Marshal(resp.VegaLiteSpec)
+	if err != nil {
+		return nil, err
+	}
+
 	return &runtimev1.GenerateChartSpecResponse{
-		VegaLiteSpec: resp.VegaLiteSpec,
+		VegaLiteSpec: string(spec),
 		Sql:          resp.SQL,
 	}, nil
 }
 
 type chartAIResponse struct {
-	VegaLiteSpec string `json:"vega_lite_spec"`
-	SQL          string `json:"sql"`
+	VegaLiteSpec map[string]interface{} `json:"vega_lite_spec"`
+	SQL          string                 `json:"sql"`
 }
 
 // generateChartWithAI attempts to generate a vega lite chart spec and a SQL used to display the chart.
