@@ -68,6 +68,7 @@ require (
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.9.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/sashabaranov/go-openai v1.19.3
 	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/spf13/cobra v1.8.0
