@@ -8,7 +8,6 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
@@ -16,6 +15,7 @@
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { createForm } from "svelte-forms-lib";
+  import { InfoIcon } from "lucide-svelte";
 
   export let metricsViewName: string;
   export let formState: ReturnType<typeof createForm<BookmarkFormValues>>;
@@ -96,7 +96,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     <Label class="font-normal flex gap-x-1 items-center" for="filtersOnly">
       <span>Save filters only</span>
       <Tooltip distance={8}>
-        <InfoCircle />
+        <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
         <TooltipContent
           class="whitespace-pre-line"
           maxWidth="600px"
@@ -114,7 +114,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       <div class="text-left text-sm flex gap-x-1 items-center">
         <span>Absolute time range</span>
         <Tooltip distance={8}>
-          <InfoCircle />
+          <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
           <TooltipContent
             class="whitespace-pre-line"
             maxWidth="600px"
