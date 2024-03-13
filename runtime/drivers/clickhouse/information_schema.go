@@ -119,6 +119,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				Database:       database,
 				DatabaseSchema: schema,
 				Name:           name,
+				View:           tableType == "VIEW",
 				Schema:         &runtimev1.StructType{},
 			}
 			res = append(res, t)
