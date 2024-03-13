@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,9 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gopkg.in/yaml.v3"
 )
 
 func (s *Server) GenerateChartFile(ctx context.Context, req *runtimev1.GenerateChartFileRequest) (*runtimev1.GenerateChartFileResponse, error) {
@@ -19,34 +23,79 @@ func (s *Server) GenerateChartFile(ctx context.Context, req *runtimev1.GenerateC
 		return nil, ErrForbidden
 	}
 
-	// Get chart
-	chartSpec, err := s.getChart(ctx, req.InstanceId, req.Chart)
-	if err != nil {
-		return nil, err
+	var schema *runtimev1.StructType
+	var table string
+	var err error
+
+	if req.Chart != "" {
+		// Get chart
+		chartSpec, err := s.getChart(ctx, req.InstanceId, req.Chart)
+		if err != nil {
+			return nil, err
+		}
+
+		// Resolve schema of the chart
+		schema, err = s.runtime.ResolveSchema(ctx, &runtime.ResolveOptions{
+			InstanceID:         req.InstanceId,
+			Resolver:           chartSpec.Resolver,
+			ResolverProperties: chartSpec.ResolverProperties.AsMap(),
+			Args:               nil,
+			UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		table = req.Chart // not needed but better not to leave it empty
+	} else if req.Table != "" {
+		// Get instance
+		inst, err := s.runtime.Instance(ctx, req.InstanceId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Connect to connector and check it's an OLAP db
+		handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, inst.ResolveOLAPConnector())
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+		olap, ok := handle.AsOLAP(req.InstanceId)
+		if !ok {
+			return nil, status.Error(codes.InvalidArgument, "connector is not an OLAP connector")
+		}
+
+		// Get table info
+		tbl, err := olap.InformationSchema().Lookup(ctx, req.Table)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "table not found")
+		}
+
+		schema = tbl.Schema
+		table = req.Table
+	} else if req.MetricsView != "" {
+		// TODO
+	} else {
+		return nil, errors.New("at lest one of chart or table must be specified")
 	}
 
-	schema, err := s.runtime.ResolveSchema(ctx, &runtime.ResolveOptions{
-		InstanceID:         req.InstanceId,
-		Resolver:           chartSpec.Resolver,
-		ResolverProperties: chartSpec.ResolverProperties.AsMap(),
-		Args:               nil,
-		UserAttributes:     auth.GetClaims(ctx).Attributes(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	vegaConfig, err := s.generateChartYAMLWithAI(ctx, req.InstanceId, req.Table, req.Prompt, schema)
+	resp, err := s.generateChartWithAI(ctx, req.InstanceId, table, req.Prompt, schema)
 	if err != nil {
 		return nil, err
 	}
 
 	return &runtimev1.GenerateChartFileResponse{
-		VegaLiteSpec: vegaConfig,
+		VegaLiteSpec: resp.VegaLiteSpec,
+		Sql:          resp.SQL,
 	}, nil
 }
 
-func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblName, userPrompt string, schema *runtimev1.StructType) (string, error) {
+type chartAIResponse struct {
+	VegaLiteSpec string `yaml:"vega_lite_spec"`
+	SQL          string `yaml:"sql"`
+}
+
+func (s *Server) generateChartWithAI(ctx context.Context, instanceID, tblName, userPrompt string, schema *runtimev1.StructType) (*chartAIResponse, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: chartYAMLSystemPrompt()},
@@ -56,7 +105,7 @@ func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblNam
 	// Connect to the AI service configured for the instance
 	ai, release, err := s.runtime.AI(ctx, instanceID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer release()
 
@@ -67,30 +116,47 @@ func (s *Server) generateChartYAMLWithAI(ctx context.Context, instanceID, tblNam
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// The AI may produce Markdown output. Remove the code tags around the YAML.
+	res.Data = strings.TrimPrefix(res.Data, "```yaml")
+	res.Data = strings.TrimPrefix(res.Data, "```")
+	res.Data = strings.TrimSuffix(res.Data, "```")
+
 	res.Data = strings.TrimPrefix(res.Data, "```json")
 	res.Data = strings.TrimPrefix(res.Data, "```")
 	res.Data = strings.TrimSuffix(res.Data, "```")
 
-	return res.Data, nil
+	res.Data = strings.TrimPrefix(res.Data, "```sql")
+	res.Data = strings.TrimPrefix(res.Data, "```")
+	res.Data = strings.TrimSuffix(res.Data, "```")
+
+	resp := &chartAIResponse{}
+	err = yaml.Unmarshal([]byte(res.Data), resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // chartYAMLSystemPrompt returns the static system prompt for the chart generation AI.
 func chartYAMLSystemPrompt() string {
 	prompt := fmt.Sprintf(`
 You are an agent whose only task is to suggest relevant chart based on a table schema.
-Replace the data field with,
-
+You should suggest the vega config for the chart based on the data.
+Replace the data field in vega lite json with,
 {
   "name": "table"
 }
 
-Your output should only consist of valid JSON in the format below:
+Your output should consist of valid YAML in the format below:
 
-https://vega.github.io/schema/vega-lite/v5.json
+vega_lite_spec: |
+<vega lite json in the format: https://vega.github.io/schema/vega-lite/v5.json . add 2 spaces at the begining of each line>
+
+sql: |
+<the sql query used to fetch the data for the above chart. add 2 spaces at the begining of each line>
 `)
 
 	return prompt

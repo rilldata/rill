@@ -2,6 +2,7 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -54,6 +55,8 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  let generateOpen = false;
 </script>
 
 {#if $isModelingSupportedForCurrentOlapDriver.data}
@@ -77,3 +80,19 @@
     <WandIcon class="w-3 h-3" />
   </div>
 </MenuItem>
+<MenuItem
+  icon
+  on:select={() => {
+    generateOpen = true;
+    toggleMenu();
+  }}
+  propogateSelect={false}
+>
+  <Explore slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate chart with AI
+    <WandIcon class="w-3 h-3" />
+  </div>
+</MenuItem>
+
+<GenerateChartYAMLPrompt bind:open={generateOpen} table={tableName} />

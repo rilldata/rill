@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { useChart } from "@rilldata/web-common/features/charts/selectors";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -11,12 +12,11 @@ export function createChartGenerator(instanceId: string, chart: string) {
   const generateVegaConfig = createRuntimeServiceGenerateChartFile();
   const chartQuery = useChart(instanceId, chart);
 
-  return async (table: string, prompt: string) => {
+  return async (prompt: string) => {
     const resp = await get(generateVegaConfig).mutateAsync({
       instanceId,
       data: {
         prompt,
-        table,
         chart,
       },
     });
@@ -33,10 +33,35 @@ export function createChartGenerator(instanceId: string, chart: string) {
   };
 }
 
-function getChartYaml(sql: string, vegaLite: string) {
+export function createFullChartGenerator(instanceId: string) {
+  const generateVegaConfig = createRuntimeServiceGenerateChartFile();
+
+  return async (table: string, prompt: string, newChartName: string) => {
+    const resp = await get(generateVegaConfig).mutateAsync({
+      instanceId,
+      data: {
+        table,
+        prompt,
+      },
+    });
+    await runtimeServicePutFile(
+      instanceId,
+      getFileAPIPathFromNameAndType(newChartName, EntityType.Chart),
+      {
+        blob: getChartYaml(resp.sql ?? "", resp.vegaLiteSpec ?? "", "sql"),
+      },
+    );
+  };
+}
+
+function getChartYaml(
+  sql: string,
+  vegaLite: string,
+  sqlField: "metrics_sql" | "sql" = "metrics_sql",
+) {
   return `kind: chart
 data:
-  metrics_sql: |
+  ${sqlField}: |
 ${sql.replace(/^/gm, "    ")}
 
 vega_lite: |

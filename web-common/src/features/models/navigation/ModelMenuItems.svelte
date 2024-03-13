@@ -79,6 +79,28 @@
     {/if}
   </svelte:fragment>
 </MenuItem>
+<MenuItem
+  disabled={disableCreateDashboard}
+  icon
+  on:select={() => {
+    dispatch("generate-chart", $modelQuery.data?.model?.state?.table ?? "");
+    toggleMenu();
+  }}
+  propogateSelect={false}
+>
+  <Explore slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate chart with AI
+    <WandIcon class="w-3 h-3" />
+  </div>
+  <svelte:fragment slot="description">
+    {#if $modelHasError}
+      Model has errors
+    {:else if !modelIsIdle}
+      Dependencies are being reconciled.
+    {/if}
+  </svelte:fragment>
+</MenuItem>
 <Divider />
 <MenuItem
   icon

@@ -334,6 +334,7 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
 export type RuntimeServiceGenerateChartFileBody = {
   chart?: string;
   table?: string;
+  metricsView?: string;
   prompt?: string;
 };
 

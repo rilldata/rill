@@ -508,7 +508,8 @@ message GenerateChartFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string chart = 2;
   string table = 3;
-  string prompt = 4;
+  string metrics_view = 4;
+  string prompt = 5;
 }
 
 message GenerateChartFileResponse {

@@ -9,12 +9,11 @@
   export let chart: string;
 
   let prompt: string;
-  let table: string;
 
   $: generateVegaConfig = createChartGenerator($runtime.instanceId, chart);
 
   async function createVegaConfig() {
-    await generateVegaConfig(table, prompt);
+    await generateVegaConfig(prompt);
     open = false;
   }
 </script>
@@ -23,9 +22,8 @@
   <svelte:fragment slot="title">Generate vega config using AI</svelte:fragment>
   <svelte:fragment slot="body">
     <InputV2 bind:value={prompt} error="" label="Prompt" />
-    <InputV2 bind:value={table} error="" label="Table" />
   </svelte:fragment>
   <div class="pt-2" slot="footer">
-    <Button on:click={createVegaConfig}>Create</Button>
+    <Button on:click={createVegaConfig}>Generate</Button>
   </div>
 </Dialog>

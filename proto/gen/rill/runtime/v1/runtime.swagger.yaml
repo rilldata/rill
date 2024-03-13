@@ -712,6 +712,8 @@ paths:
                 type: string
               table:
                 type: string
+              metricsView:
+                type: string
               prompt:
                 type: string
       tags:

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
@@ -57,6 +58,13 @@
     renameTableName = tableName;
   };
 
+  let showGenerateChartModal = false;
+  let generateChartTable = "";
+  function openGenerateChartModal(tableName: string) {
+    showGenerateChartModal = true;
+    generateChartTable = tableName;
+  }
+
   $: hasNoAssets = $sourceNames.data?.length === 0;
 </script>
 
@@ -96,6 +104,9 @@
                 on:rename-asset={() => {
                   openRenameTableModal(sourceName);
                 }}
+                on:generate-chart={({ detail }) => {
+                  openGenerateChartModal(detail);
+                }}
               />
             </svelte:fragment>
           </NavigationEntry>
@@ -116,5 +127,12 @@
     entityType={EntityType.Table}
     closeModal={() => (showRenameTableModal = false)}
     currentAssetName={renameTableName}
+  />
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    table={generateChartTable}
   />
 {/if}

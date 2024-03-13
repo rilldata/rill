@@ -1897,7 +1897,12 @@ export class GenerateChartFileRequest extends Message<GenerateChartFileRequest> 
   table = "";
 
   /**
-   * @generated from field: string prompt = 4;
+   * @generated from field: string metrics_view = 4;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: string prompt = 5;
    */
   prompt = "";
 
@@ -1912,7 +1917,8 @@ export class GenerateChartFileRequest extends Message<GenerateChartFileRequest> 
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "chart", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartFileRequest {

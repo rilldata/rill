@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
-  import ChartsAIPrompt from "@rilldata/web-common/features/charts/prompt/ChartsAIPrompt.svelte";
+  import GenerateVegaSpecPrompt from "@rilldata/web-common/features/charts/prompt/GenerateVegaSpecPrompt.svelte";
   import { WorkspaceHeader } from "@rilldata/web-common/layout/workspace";
 
   export let chartName: string;
@@ -22,4 +22,4 @@
   </svelte:fragment>
 </WorkspaceHeader>
 
-<ChartsAIPrompt bind:open={generateOpen} chart={chartName} />
+<GenerateVegaSpecPrompt bind:open={generateOpen} chart={chartName} />

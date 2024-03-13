@@ -4429,6 +4429,8 @@ func (m *GenerateChartFileRequest) validate(all bool) error {
 
 	// no validation rules for Table
 
+	// no validation rules for MetricsView
+
 	// no validation rules for Prompt
 
 	if len(errors) > 0 {
