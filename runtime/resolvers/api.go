@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("API", newAPI)
+	runtime.RegisterResolverInitializer("api", newAPI)
 }
 
 type apiProps struct {

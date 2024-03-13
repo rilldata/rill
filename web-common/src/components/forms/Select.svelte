@@ -1,7 +1,7 @@
 <script lang="ts">
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import Menu from "../menu-v2/Menu.svelte";
@@ -43,7 +43,7 @@
       {/if}
       {#if tooltip}
         <Tooltip distance={8}>
-          <InfoCircle />
+          <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
           <TooltipContent
             slot="tooltip-content"
             maxWidth="600px"

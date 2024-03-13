@@ -12,11 +12,10 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"golang.org/x/exp/maps"
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("MetricsSQL", newMetricsSQL)
+	runtime.RegisterResolverInitializer("metrics_sql", newMetricsSQL)
 }
 
 type metricsSQLProps struct {
@@ -83,10 +82,10 @@ var (
 	sqlIdentifier = `[a-zA-z_][a-zA-Z0-9_]*|"(?:[^"]|"")*"`
 
 	// aggregateRegex is regex pattern to identify an AGGREGATE function in SQL.
-	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\((?:(%s)\.)?(%s)\)`, sqlIdentifier, sqlIdentifier))
+	aggregateRegex = regexp.MustCompile(fmt.Sprintf(`(?i)AGGREGATE\(\s*(%s)\s*\)$`, sqlIdentifier))
 
-	// fromRegex is regex pattern to identify a FROM clause in SQL.
-	fromRegex = regexp.MustCompile(fmt.Sprintf(`(?i)FROM\s+(%s)`, sqlIdentifier))
+	// sqlRegex identifies a SQL query of the form: "SELECT... FROM table...".
+	sqlRegex = regexp.MustCompile(fmt.Sprintf(`(?i)SELECT\s+((?:.|\n)*)\s+FROM\s+(%s)((?:.|\n)*)`, sqlIdentifier))
 )
 
 // metricsSQLCompiler parses a metrics SQL query and compiles it to a regular SQL query.
@@ -97,9 +96,9 @@ var (
 // It works by:
 //
 // 1. Expanding AGGREGATE(measure) into actual aggregate expressions from the metrics view definition.
-// 2. Converting "FROM metrics_view" clauses to nested SELECTs on the underlying table with filters based on the metrics view's security policy.
+// 2. Expanding dimension into dimension expression or underlying column name.
+// 3. Converting "FROM metrics_view" clauses to nested SELECTs on the underlying table with filters based on the metrics view's security policy.
 //
-// TODO: This implementation does not resolve dimension names to underlying columns/expressions. Here is an example of the desired transformation:
 // - Input: SELECT dim1, AGGREGATE(measure1) FROM metrics_view GROUP BY dim1
 // - Output: SELECT col1 AS dim1, SUM(col2) AS measure1 FROM underlying_model GROUP BY dim1
 type metricsSQLCompiler struct {
@@ -115,84 +114,61 @@ type metricsSQLCompiler struct {
 // It returns the compiled SQL, the connector to use, and the refs to metrics views.
 // It does not return other refs (like sources or models). The regular SQL resolver will handle those.
 func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*runtimev1.ResourceName, error) {
-	// Expand "FROM metrics_view".
-	// For each match, match[1] will contain the metrics_view identifier.
-	sql := c.sql
-	matches := fromRegex.FindAllStringSubmatch(sql, -1)
-	mvToMeasureExprMap := make(map[string]map[string]string)
-	var mvConnector string
-	var refs []*runtimev1.ResourceName
-	for _, match := range matches {
-		metricView := unquote(match[1])
-		if _, ok := mvToMeasureExprMap[metricView]; ok {
-			continue
-		}
-
-		resource, err := c.ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricView}, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				continue
-			}
-			return "", "", nil, fmt.Errorf("error fetching resource %v: %w", metricView, err)
-		}
-
-		refs = append(refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricView})
-
-		if mvConnector != "" && resource.GetMetricsView().Spec.Connector != mvConnector {
-			return "", "", nil, fmt.Errorf("all referenced metrics views must use the same connector")
-		}
-		mvConnector = resource.GetMetricsView().Spec.Connector
-
-		// Replace "FROM metric_view" with a query to the underlying table
-		fromQry, measureToExprMap, err := c.fromQueryForMetricsView(resource)
-		if err != nil {
-			return "", "", nil, err
-		}
-		mvToMeasureExprMap[metricView] = measureToExprMap
-		sql = strings.ReplaceAll(sql, match[0], fromQry)
+	sql := strings.TrimSpace(c.sql)
+	matches := sqlRegex.FindAllStringSubmatch(sql, -1)
+	if len(matches) != 1 {
+		// TODO Add a doc link for the supported syntax
+		return "", "", nil, fmt.Errorf("invalid metrics_sql: %q", sql)
 	}
 
-	// Expand AGGREGATE expressions
-	if len(mvToMeasureExprMap) > 0 {
-		// Example: SELECT dim1, AGGREGATE(mv."my measure") FROM mv
-		// The regex captures [AGGREGATE("mv name"."my measure"), mv name, measure]
-		aggMatches := aggregateRegex.FindAllStringSubmatch(sql, -1)
-		for _, aggMatch := range aggMatches {
-			metricView := unquote(aggMatch[1])
-			var expr string
-			var found bool
-			if metricView == "" {
-				if len(mvToMeasureExprMap) > 1 {
-					return "", "", nil, fmt.Errorf("ambiguous reference to measure %q: use a fully qualified name such as \"metrics_view.measure\"", unquote(aggMatch[2]))
-				}
+	metricView := unquote(strings.TrimSpace(matches[0][2]))
+	resource, err := c.ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricView}, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return "", "", nil, fmt.Errorf("metrics_view %q not found. Metric_sql can only target metrics_view, use sql for other user cases", metricView)
+		}
+		return "", "", nil, fmt.Errorf("error fetching resource %v: %w", metricView, err)
+	}
 
-				expr, found = maps.Values(mvToMeasureExprMap)[0][unquote(aggMatch[2])]
-			} else {
-				measureToExprMap, ok := mvToMeasureExprMap[metricView]
-				if !ok {
-					return "", "", nil, fmt.Errorf("metric_view %q not found", metricView)
-				}
-				expr, found = measureToExprMap[unquote(aggMatch[2])]
+	fromSQL, dimensions, measures, err := c.fromQueryForMetricsView(resource)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	selectList := strings.Split(matches[0][1], ",")
+	resolvedSelectList := make([]string, len(selectList))
+	for i, col := range selectList {
+		col = strings.Trim(strings.TrimSpace(col), "\n\t")
+		aggMatch := aggregateRegex.FindAllStringSubmatch(col, -1)
+		if len(aggMatch) > 0 {
+			col = strings.TrimSpace(aggMatch[0][1])
+			expr, ok := measures[unquote(col)]
+			if !ok {
+				return "", "", nil, fmt.Errorf("aggregate column %q must be a measure in metrics_view %q", col, metricView)
 			}
-
-			if !found {
-				return "", "", nil, fmt.Errorf("MetricsViewSQL: measure %q not found", aggMatch[2])
+			resolvedSelectList[i] = fmt.Sprintf("%s AS %s", expr, col)
+		} else {
+			expr, ok := dimensions[unquote(col)]
+			if !ok {
+				return "", "", nil, fmt.Errorf("non aggregate column %q must be a dimension in metrics_view %q", col, metricView)
 			}
-
-			// TODO handle case when two different tables have same column name in the measure expression
-			sql = strings.ReplaceAll(sql, aggMatch[0], expr)
+			resolvedSelectList[i] = fmt.Sprintf("%s AS %s", expr, col)
 		}
 	}
 
-	return sql, mvConnector, normalizeRefs(refs), nil
+	sql = fmt.Sprintf("SELECT %s FROM %s %s", strings.Join(resolvedSelectList, ", "), fromSQL, matches[0][3])
+	return sql, resource.GetMetricsView().State.ValidSpec.Connector, []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: metricView}}, nil
 }
 
-func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (string, map[string]string, error) {
+func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (string, map[string]string, map[string]string, error) {
 	spec := mv.GetMetricsView().State.ValidSpec
+	if spec == nil {
+		return "", nil, nil, fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
+	}
 
 	security, err := c.ctrl.Runtime.ResolveMetricsViewSecurity(c.userAttributes, c.instanceID, spec, mv.Meta.StateUpdatedOn.AsTime())
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 
 	measures := make(map[string]string, len(spec.Measures))
@@ -200,47 +176,50 @@ func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (st
 		measures[measure.Name] = measure.Expression
 	}
 
+	dimensions := make(map[string]string, len(spec.Dimensions))
+	for _, dim := range spec.Dimensions {
+		if dim.Expression != "" {
+			dimensions[dim.Name] = dim.Expression
+		} else {
+			dimensions[dim.Name] = c.dialect.EscapeIdentifier(dim.Column)
+		}
+	}
+
 	if security == nil {
-		return fmt.Sprintf("FROM %s", c.dialect.EscapeIdentifier(spec.Table)), measures, nil
+		return c.dialect.EscapeIdentifier(spec.Table), dimensions, measures, nil
 	}
 
 	if !security.Access || security.ExcludeAll {
-		return "", nil, fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
+		return "", nil, nil, fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
 	}
 
-	dims := make(map[string]any, len(spec.Dimensions))
-	for _, dim := range spec.Dimensions {
-		dims[dim.Column] = nil
-	}
-
-	finalMeasures := maps.Clone(measures)
 	if len(security.Include) != 0 {
-		for measure := range finalMeasures {
+		for measure := range measures {
 			if !slices.Contains(security.Include, measure) { // measures not part of include clause should not be accessible
-				finalMeasures[measure] = "null"
+				measures[measure] = "null"
+			}
+		}
+
+		for dimension := range dimensions {
+			if !slices.Contains(security.Include, dimension) { // dimensions not part of include clause should not be accessible
+				dimensions[dimension] = "null"
 			}
 		}
 	}
 
-	for _, include := range security.Include {
-		if _, ok := dims[include]; ok {
-			return "", nil, fmt.Errorf("metrics SQL does not support metrics views with an include/exclude security policy that applies to dimensions")
-		}
-		finalMeasures[include] = measures[include]
-	}
-
 	for _, exclude := range security.Exclude {
-		if _, ok := dims[exclude]; ok {
-			return "", nil, fmt.Errorf("metrics SQL does not support metrics views with an include/exclude security policy that applies to dimensions")
+		if _, ok := dimensions[exclude]; ok {
+			dimensions[exclude] = "null"
+		} else {
+			measures[exclude] = "null"
 		}
-		finalMeasures[exclude] = "null"
 	}
 
 	sql := "SELECT * FROM " + c.dialect.EscapeIdentifier(spec.Table)
 	if security.RowFilter != "" {
 		sql += " WHERE " + security.RowFilter
 	}
-	return fmt.Sprintf("FROM (%s)", sql), finalMeasures, nil
+	return fmt.Sprintf("(%s)", sql), dimensions, measures, nil
 }
 
 func unquote(input string) string {
