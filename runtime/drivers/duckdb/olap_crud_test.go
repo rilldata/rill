@@ -154,7 +154,8 @@ func Test_connection_DropTable(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-drop", false, "select 1")
 	require.NoError(t, err)
 
-	err = c.DropTable(context.Background(), "test-drop", false)
+	// Note: true since at lot of places we look at information_schema lookup on main db to determine whether tbl is a view or table
+	err = c.DropTable(context.Background(), "test-drop", true)
 	require.NoError(t, err)
 
 	_, err = os.ReadDir(filepath.Join(temp, "test-drop"))

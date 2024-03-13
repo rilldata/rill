@@ -98,7 +98,7 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(cfgMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("s3 driver can't be shared")
 	}
@@ -192,6 +192,11 @@ func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

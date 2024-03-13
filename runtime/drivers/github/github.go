@@ -47,7 +47,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("github driver can't be shared")
 	}
@@ -151,6 +151,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

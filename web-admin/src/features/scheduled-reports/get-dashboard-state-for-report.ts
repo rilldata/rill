@@ -1,4 +1,5 @@
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
@@ -12,9 +13,9 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   createQueryServiceMetricsViewTimeRange,
-  V1TimeRange,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
   type V1MetricsViewRowsRequest,
@@ -22,6 +23,7 @@ import {
   type V1MetricsViewTimeSeriesRequest,
   type V1MetricsViewToplistRequest,
   type V1Resource,
+  V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -279,8 +281,19 @@ function getDashboardFromComparisonRequest({
   }
 
   dashboard.selectedDimensionName = req.dimension.name;
+  dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
 
   return dashboard;
+}
+
+// We are manually sending in duration, offset and round to grain for previous complete ranges.
+// This is to map back that split
+const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
+for (const preset in PreviousCompleteRangeMap) {
+  const range: V1TimeRange = PreviousCompleteRangeMap[preset];
+  PreviousCompleteRangeReverseMap[
+    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+  ] = preset as TimeRangePreset;
 }
 
 function getSelectedTimeRange(
@@ -290,6 +303,11 @@ function getSelectedTimeRange(
   executionTime: string,
 ): DashboardTimeControls | undefined {
   let selectedTimeRange: DashboardTimeControls;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
 
   if (timeRange.start && timeRange.end) {
     selectedTimeRange = {

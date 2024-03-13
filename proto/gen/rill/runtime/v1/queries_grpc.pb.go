@@ -55,11 +55,28 @@ type QueryServiceClient interface {
 	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error)
+	// Deprecated - use MetricsViewComparison instead.
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
+	// MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+	// Returns a toplist without comparison data if comparison time range is omitted.
+	//
+	// ie. comparsion toplist:
+	// | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+	// |---------------|---------------------|---------------------|--------------------|-----------|
+	// | 2             | 2                   | 0                   | 0                  | Safari    |
+	// | 1             | 0                   | 1                   | N/A                | Chrome    |
+	// | 0             | 4                   | -4                  | -1.0               | Firefox   |
+	//
+	// ie. toplist:
+	// | measure1 | measure2 | dimension |
+	// |----------|----------|-----------|
+	// | 2        | 45       | Safari    |
+	// | 1        | 350      | Chrome    |
+	// | 0        | 25       | Firefox   |
 	MetricsViewComparison(ctx context.Context, in *MetricsViewComparisonRequest, opts ...grpc.CallOption) (*MetricsViewComparisonResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
@@ -68,6 +85,20 @@ type QueryServiceClient interface {
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
 	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+	//
+	// ie. without granularity
+	// | column1 | column2 | dimension |
+	// |---------|---------|-----------|
+	// | 2       | 2       | Safari    |
+	// | 1       | 0       | Chrome    |
+	// | 0       | 4       | Firefox   |
+	//
+	// ie. with granularity
+	// | timestamp__day0      | column1 | column2 | dimension |
+	// |----------------------|---------|---------|-----------|
+	// | 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(ctx context.Context, in *MetricsViewRowsRequest, opts ...grpc.CallOption) (*MetricsViewRowsResponse, error)
 	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
 	MetricsViewTimeRange(ctx context.Context, in *MetricsViewTimeRangeRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangeResponse, error)
@@ -359,11 +390,28 @@ type QueryServiceServer interface {
 	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	// Export builds a URL to download the results of a query as a file.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error)
+	// Deprecated - use MetricsViewComparison instead.
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
+	// MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+	// Returns a toplist without comparison data if comparison time range is omitted.
+	//
+	// ie. comparsion toplist:
+	// | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+	// |---------------|---------------------|---------------------|--------------------|-----------|
+	// | 2             | 2                   | 0                   | 0                  | Safari    |
+	// | 1             | 0                   | 1                   | N/A                | Chrome    |
+	// | 0             | 4                   | -4                  | -1.0               | Firefox   |
+	//
+	// ie. toplist:
+	// | measure1 | measure2 | dimension |
+	// |----------|----------|-----------|
+	// | 2        | 45       | Safari    |
+	// | 1        | 350      | Chrome    |
+	// | 0        | 25       | Firefox   |
 	MetricsViewComparison(context.Context, *MetricsViewComparisonRequest) (*MetricsViewComparisonResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
@@ -372,6 +420,20 @@ type QueryServiceServer interface {
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
 	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+	//
+	// ie. without granularity
+	// | column1 | column2 | dimension |
+	// |---------|---------|-----------|
+	// | 2       | 2       | Safari    |
+	// | 1       | 0       | Chrome    |
+	// | 0       | 4       | Firefox   |
+	//
+	// ie. with granularity
+	// | timestamp__day0      | column1 | column2 | dimension |
+	// |----------------------|---------|---------|-----------|
+	// | 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(context.Context, *MetricsViewRowsRequest) (*MetricsViewRowsResponse, error)
 	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
 	MetricsViewTimeRange(context.Context, *MetricsViewTimeRangeRequest) (*MetricsViewTimeRangeResponse, error)

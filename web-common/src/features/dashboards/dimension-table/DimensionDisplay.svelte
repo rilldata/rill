@@ -150,7 +150,7 @@
 </script>
 
 {#if sortedQuery}
-  <div class="h-full flex flex-col" style:min-width="365px">
+  <div class="h-full flex flex-col w-full" style:min-width="365px">
     <div class="flex-none" style:height="50px">
       <DimensionHeader
         {dimensionName}

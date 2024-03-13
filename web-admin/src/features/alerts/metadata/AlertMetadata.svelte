@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
+  import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
   import {
     humaniseAlertRunDuration,
@@ -17,15 +18,16 @@
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { IconButton } from "@rilldata/web-common/components/button";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import EditAlertDialog from "@rilldata/web-common/features/alerts/EditAlertDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
@@ -55,6 +57,11 @@
   // Actions
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();
+
+  let showEditAlertDialog = false;
+  function handleEditAlert() {
+    showEditAlertDialog = true;
+  }
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
@@ -96,6 +103,7 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
+          <Button type="secondary" on:click={handleEditAlert}>Edit</Button>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton>
@@ -132,16 +140,16 @@
         </MetadataValue>
       </div>
 
-      <!-- Split by time grain -->
-      <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Split by time grain</MetadataLabel>
-        <MetadataValue>{runInterval}</MetadataValue>
-      </div>
-
       <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Schedule</MetadataLabel>
         <MetadataValue>Whenever your data refreshes</MetadataValue>
+      </div>
+
+      <!-- Split by time grain -->
+      <div class="flex flex-col gap-y-3">
+        <MetadataLabel>Evaluation interval</MetadataLabel>
+        <MetadataValue>{runInterval}</MetadataValue>
       </div>
 
       <!-- Snooze -->
@@ -168,4 +176,13 @@
       emailRecipients={$alertQuery.data.resource.alert.spec.emailRecipients}
     />
   </div>
+{/if}
+
+{#if $alertQuery.data && $dashboard.data?.metricsView.spec}
+  <EditAlertDialog
+    open={showEditAlertDialog}
+    alertSpec={$alertQuery.data.resource.alert.spec}
+    on:close={() => (showEditAlertDialog = false)}
+    metricsViewName={$dashboardName.data}
+  />
 {/if}

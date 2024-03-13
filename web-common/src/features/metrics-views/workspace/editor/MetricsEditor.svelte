@@ -1,16 +1,16 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
-  import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { mapParseErrorsToLines } from "../../errors";
+  import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import { createUpdateMetricsCallback } from "./update-metrics";
 
@@ -56,12 +56,7 @@
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
-  $: mainError = [
-    ...lineBasedRuntimeErrors,
-    ...($dashboard.data?.meta?.reconcileError
-      ? [$dashboard.data?.meta?.reconcileError as any] // TODO: revisit error
-      : []),
-  ]?.at(0);
+  $: mainError = lineBasedRuntimeErrors?.at(0);
 
   let view: EditorView;
   /** If the errors change, run the following transaction. */

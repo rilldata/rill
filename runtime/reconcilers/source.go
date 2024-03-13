@@ -345,10 +345,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 	if err != nil {
 		return err
 	}
-	sinkConfig, err := driversSink(sinkConn, tableName)
-	if err != nil {
-		return err
-	}
+	sinkConfig := driversSink(tableName)
 
 	// Set timeout on ctx
 	timeout := _defaultIngestTimeout
@@ -385,7 +382,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 		}
-		r.C.Activity.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		r.C.Activity.RecordMetric(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
 
 		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
 	}()
@@ -404,6 +401,6 @@ func (r *SourceReconciler) driversSource(ctx context.Context, self *runtimev1.Re
 	return resolveTemplatedProps(ctx, r.C, tself, propsPB.AsMap())
 }
 
-func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
-	return map[string]any{"table": tableName}, nil
+func driversSink(tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }

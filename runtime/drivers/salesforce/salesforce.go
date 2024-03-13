@@ -113,7 +113,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	// actual db connection is opened during query
 	return &connection{
 		config: config,
@@ -184,6 +184,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

@@ -1,12 +1,4 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import {
-  getTimeGrainFromDimension,
-  isTimeDimension,
-} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-import type {
-  PivotAxesData,
-  PivotDataStoreConfig,
-} from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -27,6 +19,12 @@ import {
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
+import {
+  getFilterForOtherMeasuresAxesQuery,
+  getTimeGrainFromDimension,
+  isTimeDimension,
+} from "./pivot-utils";
+import type { PivotAxesData, PivotDataStoreConfig } from "./types";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -175,6 +173,41 @@ export function getAxisForDimensions(
   );
 }
 
+export function getAxisQueryForOtherMeasures(
+  ctx: StateManagers,
+  config: PivotDataStoreConfig,
+  isMeasureSortAccessor: boolean,
+  sortAccessor: string | undefined,
+  rowDimensionValues: string[],
+  timeRange: TimeRangeString,
+) {
+  let rowAxesQueryForOtherMeasures: Readable<PivotAxesData | null> =
+    readable(null);
+
+  if (rowDimensionValues.length && isMeasureSortAccessor && sortAccessor) {
+    const { measureNames, rowDimensionNames } = config;
+    const otherMeasuresBody = measureNames
+      .map((m) => ({ name: m }))
+      .filter((m) => m.name !== sortAccessor);
+
+    const sortedRowFilters = getFilterForOtherMeasuresAxesQuery(
+      config,
+      rowDimensionValues,
+    );
+    rowAxesQueryForOtherMeasures = getAxisForDimensions(
+      ctx,
+      config,
+      rowDimensionNames.slice(0, 1),
+      otherMeasuresBody,
+      sortedRowFilters,
+      [],
+      timeRange,
+    );
+  }
+
+  return rowAxesQueryForOtherMeasures;
+}
+
 export function getTotalsRowQuery(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
@@ -219,6 +252,6 @@ export function getTotalsRowQuery(
     mergedFilter,
     config.measureFilter,
     sortBy,
-    "1000",
+    "300",
   );
 }

@@ -36,7 +36,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("https driver can't be shared")
 	}
@@ -128,6 +128,11 @@ func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

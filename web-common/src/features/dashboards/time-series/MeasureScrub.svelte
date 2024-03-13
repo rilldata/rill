@@ -12,20 +12,22 @@
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { createEventDispatcher, getContext } from "svelte";
   import type { Writable } from "svelte/store";
+  import type { TimeSeriesDatum } from "./timeseries-data-store";
+  import type { DateTimeUnit } from "luxon";
 
-  export let start;
-  export let stop;
+  export let start: Date | null;
+  export let stop: Date | null;
   export let isScrubbing = false;
   export let showLabels = false;
-  export let mouseoverTimeFormat;
+  export let mouseoverTimeFormat: (d: unknown) => string;
 
-  export let labelAccessor;
-  export let timeGrainLabel;
-  export let data;
+  export let labelAccessor: string;
+  export let timeGrainLabel: DateTimeUnit;
+  export let data: TimeSeriesDatum[];
 
-  export let isOverStart;
-  export let isOverEnd;
-  export let isInsideScrub;
+  export let isOverStart: boolean;
+  export let isOverEnd: boolean;
+  export let isInsideScrub: boolean;
 
   // scrub local control points
   let justCreatedScrub = false;
@@ -36,7 +38,7 @@
 
   const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   const strokeWidth = 1;
   const xLabelBuffer = 8;
@@ -46,19 +48,21 @@
 
   $: hasSubrangeSelected = Boolean(start && stop);
 
-  export let cursorClass = "";
+  export let cursorClass = "cursor-pointer";
   $: cursorClass = isMovingScrub
     ? "cursor-grabbing"
     : isInsideScrub
       ? "cursor-grab"
       : isScrubbing || isOverStart || isOverEnd
         ? "cursor-ew-resize"
-        : "";
+        : "cursor-pointer";
 
-  export let preventScrubReset;
-  $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;
+  export let preventScrubReset: boolean;
+  $: preventScrubReset = justCreatedScrub || isScrubbing || Boolean(isResizing);
 
-  export function startScrub(event) {
+  export function startScrub(event: CustomEvent<{ start: { x: number } }>) {
+    if (!start || !stop) return;
+
     if (hasSubrangeSelected) {
       const startX = event.detail?.start?.x;
       // check if we are scrubbing on the edges of scrub rect
@@ -81,7 +85,9 @@
     }
   }
 
-  export function moveScrub(event) {
+  export function moveScrub(
+    event: CustomEvent<{ start: { x: number }; stop: { x: number } }>,
+  ) {
     const startX = event.detail?.start?.x;
     const scrubStartDate = getBisectedTimeFromCordinates(
       startX,
@@ -142,6 +148,8 @@
           data,
           timeGrainLabel,
         );
+
+        if (!newStart || !newEnd) return;
 
         const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
         if (insideBounds && newStart?.getTime() !== start?.getTime()) {
@@ -212,12 +220,14 @@
 
 {#if start && stop}
   <WithGraphicContexts let:xScale>
-    {@const xStart = xScale(Math.min(start, stop))}
-    {@const xEnd = xScale(Math.max(start, stop))}
+    {@const numStart = Number(start)}
+    {@const numStop = Number(stop)}
+    {@const xStart = xScale(Math.min(numStart, numStop))}
+    {@const xEnd = xScale(Math.max(numStart, numStop))}
     <g>
       {#if showLabels}
         <text text-anchor="end" x={xStart - xLabelBuffer} y={y1 + yLabelBuffer}>
-          {mouseoverTimeFormat(Math.min(start, stop))}
+          {mouseoverTimeFormat(Math.min(numStart, numStop))}
         </text>
         <circle
           cx={xStart}
@@ -229,7 +239,7 @@
           stroke-width="3"
         />
         <text text-anchor="start" x={xEnd + xLabelBuffer} y={y1 + yLabelBuffer}>
-          {mouseoverTimeFormat(Math.max(start, stop))}
+          {mouseoverTimeFormat(Math.max(numStart, numStop))}
         </text>
         <circle
           cx={xEnd}

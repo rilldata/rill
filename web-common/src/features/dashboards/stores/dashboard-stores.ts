@@ -18,6 +18,7 @@ import type {
   ScrubRange,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
   V1MetricsView,
@@ -151,6 +152,7 @@ function syncDimensions(
     !dimensionsMap.has(metricsExplorer.selectedDimensionName)
   ) {
     metricsExplorer.selectedDimensionName = undefined;
+    metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
   if (metricsExplorer.allDimensionsVisible) {
@@ -232,6 +234,16 @@ const metricViewReducers = {
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
+      if (mode) {
+        metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
+      } else if (metricsExplorer.selectedDimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else if (metricsExplorer.expandedMeasureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 
@@ -244,6 +256,14 @@ const metricViewReducers = {
           dimensions.push(val);
         }
       });
+
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = dimensions?.[0]?.id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
 
       metricsExplorer.pivot.rows = {
         dimension: dimensions,
@@ -264,6 +284,14 @@ const metricViewReducers = {
         }
       });
 
+      // Reset sorting if the sorting field is not in the pivot columns
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
       metricsExplorer.pivot.columns = {
         dimension: dimensions,
         measure: measures,
@@ -333,6 +361,12 @@ const metricViewReducers = {
   setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
+      if (measureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
 
       // If going into TDD view and already having a comparison dimension,
       // then set the pinIndex
@@ -367,6 +401,11 @@ const metricViewReducers = {
   setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
+      if (dimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 

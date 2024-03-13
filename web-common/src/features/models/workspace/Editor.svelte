@@ -48,7 +48,6 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
@@ -63,11 +62,6 @@
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
-
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-
-  $: editorHeight = $observedNode?.offsetHeight || 0;
 
   let latestContent = content;
 
@@ -292,7 +286,7 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div class="h-full w-full overflow-x-auto" use:listenToNodeResize>
+<div class="h-full w-full overflow-x-auto" bind:clientHeight={editorHeight}>
   <div
     bind:this={editorContainer}
     class="editor-container h-full w-full overflow-x-auto"

@@ -44,6 +44,7 @@ func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
 		}
 		a.traverseCTEMap(toNode(node, astKeyCTE))
 		a.traverseFromTable(node, astKeyFromTable)
+		node[astKeySample] = a.correctSampleClause(toNode(node, astKeySample))
 
 	case "SET_OPERATION_NODE":
 		a.traverseCTEMap(toNode(node, astKeyCTE))

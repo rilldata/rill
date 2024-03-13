@@ -2,9 +2,10 @@ import {
   createAdminServiceGetProject,
   createAdminServiceListProjectMembers,
 } from "@rilldata/web-admin/client";
+import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
 
 export function getProjectPermissions(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+  return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       select: (data) => data?.projectPermissions,
     },
@@ -12,10 +13,10 @@ export function getProjectPermissions(orgName: string, projName: string) {
 }
 
 export function useProjectRuntime(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+  return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
-      // Proactively refetch the JWT because it's only valid for 1 hour
-      refetchInterval: 1000 * 60 * 30, // 30 minutes
+      // Proactively refetch the JWT before it expires
+      refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2,
       select: (data) => {
         // There may not be a prodDeployment if the project was hibernated
         if (!data.prodDeployment) {
@@ -48,6 +49,20 @@ export function useProjectMembersEmails(organization: string, project: string) {
             ?.filter((member) => !!member?.userEmail)
             .map((member) => member.userEmail);
         },
+      },
+    },
+  );
+}
+
+export function useProjectId(orgName: string, projectName: string) {
+  return createAdminServiceGetProject(
+    orgName,
+    projectName,
+    {},
+    {
+      query: {
+        enabled: !!orgName && !!projectName,
+        select: (resp) => resp.project?.id,
       },
     },
   );

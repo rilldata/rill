@@ -26,6 +26,7 @@ const (
 	astKeyAlias            string = "alias"
 	astKeyID               string = "id"
 	astKeySample           string = "sample"
+	astKeySampleSize       string = "sample_size"
 	astKeyColumnNameAlias  string = "column_name_alias"
 	astKeyModifiers        string = "modifiers"
 	astKeyLimit            string = "limit"

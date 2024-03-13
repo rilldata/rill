@@ -45,7 +45,11 @@
     class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
     style:max-width={labelMaxWidth}
   >
-    {label} for {dimensionName}
+    {label}
+    {#if dimensionName}
+      <!-- span needed to make sure the space before the `for` is not removed by prettier -->
+      <span> for {dimensionName}</span>
+    {/if}
   </div>
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">
     {#if shortLabel}

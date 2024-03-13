@@ -788,26 +788,36 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string metrics_view = 2;
    */
   metricsView = "";
 
   /**
+   * Required
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationDimension dimensions = 3;
    */
   dimensions: MetricsViewAggregationDimension[] = [];
 
   /**
+   * Required
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure measures = 4;
    */
   measures: MetricsViewAggregationMeasure[] = [];
 
   /**
+   * Optional. Defaults to unsorted
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationSort sort = 5;
    */
   sort: MetricsViewAggregationSort[] = [];
 
   /**
+   * Optional. Defaults to unbounded
+   *
    * @generated from field: rill.runtime.v1.TimeRange time_range = 12;
    */
   timeRange?: TimeRange;
@@ -827,36 +837,50 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   timeEnd?: Timestamp;
 
   /**
+   * Optional. List of dimensions/measures. No pivot is done if ommitted
+   *
    * @generated from field: repeated string pivot_on = 15;
    */
   pivotOn: string[] = [];
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression where = 8;
    */
   where?: Expression;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression having = 13;
    */
   having?: Expression;
 
   /**
+   * Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
+   *
    * @generated from field: int64 limit = 9;
    */
   limit = protoInt64.zero;
 
   /**
+   * Optional. Defaults to 0
+   *
    * @generated from field: int64 offset = 10;
    */
   offset = protoInt64.zero;
 
   /**
+   * Optional
+   *
    * @generated from field: int32 priority = 11;
    */
   priority = 0;
 
   /**
+   * Optional
+   *
    * Deprecated. should be removed once UI is moved to use new filters
    *
    * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 14;
@@ -910,11 +934,15 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
  */
 export class MetricsViewAggregationResponse extends Message<MetricsViewAggregationResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: rill.runtime.v1.StructType schema = 1;
    */
   schema?: StructType;
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated google.protobuf.Struct data = 2;
    */
   data: Struct[] = [];
@@ -953,16 +981,22 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
  */
 export class MetricsViewAggregationDimension extends Message<MetricsViewAggregationDimension> {
   /**
+   * Required
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
   timeGrain = TimeGrain.UNSPECIFIED;
 
   /**
+   * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+   *
    * @generated from field: string time_zone = 3;
    */
   timeZone = "";
@@ -1008,16 +1042,22 @@ export class MetricsViewAggregationDimension extends Message<MetricsViewAggregat
  */
 export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregationMeasure> {
   /**
+   * Required
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.BuiltinMeasure builtin_measure = 2;
    */
   builtinMeasure = BuiltinMeasure.UNSPECIFIED;
 
   /**
+   * Required if BUILTIN_MEASURE_COUNT_DISTINCT
+   *
    * @generated from field: repeated google.protobuf.Value builtin_measure_args = 3;
    */
   builtinMeasureArgs: Value[] = [];
@@ -1063,11 +1103,15 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
  */
 export class MetricsViewAggregationSort extends Message<MetricsViewAggregationSort> {
   /**
+   * Required. Dimension or measure name
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Optional
+   *
    * @generated from field: bool desc = 2;
    */
   desc = false;
@@ -1102,6 +1146,8 @@ export class MetricsViewAggregationSort extends Message<MetricsViewAggregationSo
 }
 
 /**
+ * Deprecated, use MetricsViewComparisonRequest without a comparison time range
+ *
  * @generated from message rill.runtime.v1.MetricsViewToplistRequest
  */
 export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest> {
@@ -1223,11 +1269,15 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
  */
 export class MetricsViewToplistResponse extends Message<MetricsViewToplistResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated google.protobuf.Struct data = 2;
    */
   data: Struct[] = [];
@@ -1278,71 +1328,100 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   metricsViewName = "";
 
   /**
+   * Required
+   *
    * @generated from field: rill.runtime.v1.MetricsViewAggregationDimension dimension = 3;
    */
   dimension?: MetricsViewAggregationDimension;
 
   /**
+   * Required
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure measures = 4;
    */
   measures: MetricsViewAggregationMeasure[] = [];
 
   /**
+   * Measures that should be compared
+   * Optional. Defaults to all measures
+   *
    * @generated from field: repeated string comparison_measures = 16;
    */
   comparisonMeasures: string[] = [];
 
   /**
+   * Required
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonSort sort = 5;
    */
   sort: MetricsViewComparisonSort[] = [];
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.TimeRange time_range = 6;
    */
   timeRange?: TimeRange;
 
   /**
+   * Optional, if omitted than the request prepares the toplist without a comparison
+   *
    * @generated from field: rill.runtime.v1.TimeRange comparison_time_range = 7;
    */
   comparisonTimeRange?: TimeRange;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression where = 8;
    */
   where?: Expression;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression having = 12;
    */
   having?: Expression;
 
   /**
+   * Optional
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonMeasureAlias aliases = 15;
    */
   aliases: MetricsViewComparisonMeasureAlias[] = [];
 
   /**
+   * Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
+   *
    * @generated from field: int64 limit = 9;
    */
   limit = protoInt64.zero;
 
   /**
+   * Optional. Defaults to 0
+   *
    * @generated from field: int64 offset = 10;
    */
   offset = protoInt64.zero;
 
   /**
+   * Optional
+   *
    * @generated from field: int32 priority = 11;
    */
   priority = 0;
 
   /**
+   * Optional, defaults to false
+   *
    * @generated from field: bool exact = 13;
    */
   exact = false;
 
   /**
+   * Optional
+   *
    * Deprecated. should be removed once UI is moved to use new filters
    *
    * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 14;
@@ -1399,6 +1478,8 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
  */
 export class MetricsViewComparisonResponse extends Message<MetricsViewComparisonResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonRow rows = 1;
    */
   rows: MetricsViewComparisonRow[] = [];
@@ -1432,25 +1513,35 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
 }
 
 /**
+ * 2 of the (start, end, iso_duration) should be set
+ *
  * @generated from message rill.runtime.v1.TimeRange
  */
 export class TimeRange extends Message<TimeRange> {
   /**
+   * Optional. Defaults to min
+   *
    * @generated from field: google.protobuf.Timestamp start = 1;
    */
   start?: Timestamp;
 
   /**
+   * Optional. Defaults to max
+   *
    * @generated from field: google.protobuf.Timestamp end = 2;
    */
   end?: Timestamp;
 
   /**
+   * Optional, ie PT1M
+   *
    * @generated from field: string iso_duration = 3;
    */
   isoDuration = "";
 
   /**
+   * Optional, ie PT1M
+   *
    * @generated from field: string iso_offset = 4;
    */
   isoOffset = "";
@@ -1461,6 +1552,8 @@ export class TimeRange extends Message<TimeRange> {
   roundToGrain = TimeGrain.UNSPECIFIED;
 
   /**
+   * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+   *
    * @generated from field: string time_zone = 6;
    */
   timeZone = "";
@@ -1503,11 +1596,15 @@ export class TimeRange extends Message<TimeRange> {
  */
 export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort> {
   /**
+   * Required
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Optional, defaults to false
+   *
    * @generated from field: bool desc = 2;
    */
   desc = false;
@@ -1560,11 +1657,15 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
  */
 export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Value dimension_value = 1;
    */
   dimensionValue?: Value;
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonValue measure_values = 2;
    */
   measureValues: MetricsViewComparisonValue[] = [];
@@ -1603,26 +1704,36 @@ export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> 
  */
 export class MetricsViewComparisonValue extends Message<MetricsViewComparisonValue> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: string measure_name = 1;
    */
   measureName = "";
 
   /**
+   * Can be null
+   *
    * @generated from field: google.protobuf.Value base_value = 2;
    */
   baseValue?: Value;
 
   /**
+   * Can be null
+   *
    * @generated from field: google.protobuf.Value comparison_value = 3;
    */
   comparisonValue?: Value;
 
   /**
+   * Can be null
+   *
    * @generated from field: google.protobuf.Value delta_abs = 4;
    */
   deltaAbs?: Value;
 
   /**
+   * Can be null
+   *
    * @generated from field: google.protobuf.Value delta_rel = 5;
    */
   deltaRel?: Value;
@@ -1723,6 +1834,8 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   metricsViewName = "";
 
   /**
+   * Required either measure_names or inline_measures
+   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
@@ -1733,31 +1846,43 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   inlineMeasures: InlineMeasure[] = [];
 
   /**
+   * Optional. Defaults to min
+   *
    * @generated from field: google.protobuf.Timestamp time_start = 4;
    */
   timeStart?: Timestamp;
 
   /**
+   * Optional. Defaults to max
+   *
    * @generated from field: google.protobuf.Timestamp time_end = 5;
    */
   timeEnd?: Timestamp;
 
   /**
+   * Required
+   *
    * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 6;
    */
   timeGranularity = TimeGrain.UNSPECIFIED;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression where = 7;
    */
   where?: Expression;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression having = 11;
    */
   having?: Expression;
 
   /**
+   * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+   *
    * @generated from field: string time_zone = 10;
    */
   timeZone = "";
@@ -1818,11 +1943,15 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
  */
 export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeriesResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.TimeSeriesValue data = 2;
    */
   data: TimeSeriesValue[] = [];
@@ -1871,6 +2000,8 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   metricsViewName = "";
 
   /**
+   * Required either measure_names or inline_measures
+   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
@@ -1881,16 +2012,22 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   inlineMeasures: InlineMeasure[] = [];
 
   /**
+   * Optional. Defaults to min
+   *
    * @generated from field: google.protobuf.Timestamp time_start = 4;
    */
   timeStart?: Timestamp;
 
   /**
+   * Optional. Defaults to max
+   *
    * @generated from field: google.protobuf.Timestamp time_end = 5;
    */
   timeEnd?: Timestamp;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression where = 7;
    */
   where?: Expression;
@@ -1948,11 +2085,15 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
  */
 export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Struct data = 2;
    */
   data?: Struct;
@@ -2001,36 +2142,50 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   metricsViewName = "";
 
   /**
+   * Optional, defaults to min
+   *
    * @generated from field: google.protobuf.Timestamp time_start = 3;
    */
   timeStart?: Timestamp;
 
   /**
+   * Optional, defaults to max
+   *
    * @generated from field: google.protobuf.Timestamp time_end = 4;
    */
   timeEnd?: Timestamp;
 
   /**
+   * Optional, doesn't prepend the timestamp rollup column if ommitted
+   *
    * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 10;
    */
   timeGranularity = TimeGrain.UNSPECIFIED;
 
   /**
+   * Optional
+   *
    * @generated from field: rill.runtime.v1.Expression where = 5;
    */
   where?: Expression;
 
   /**
+   * Optional
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSort sort = 6;
    */
   sort: MetricsViewSort[] = [];
 
   /**
+   * Optional
+   *
    * @generated from field: int32 limit = 7;
    */
   limit = 0;
 
   /**
+   * Optional
+   *
    * @generated from field: int64 offset = 8;
    */
   offset = protoInt64.zero;
@@ -2041,6 +2196,8 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   priority = 0;
 
   /**
+   * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+   *
    * @generated from field: string time_zone = 11;
    */
   timeZone = "";
@@ -2096,11 +2253,15 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
  */
 export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
    */
   meta: MetricsViewColumn[] = [];
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated google.protobuf.Struct data = 2;
    */
   data: Struct[] = [];
@@ -2139,11 +2300,15 @@ export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
  */
 export class MetricsViewSort extends Message<MetricsViewSort> {
   /**
+   * Required
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Optional, defaults to false
+   *
    * @generated from field: bool ascending = 2;
    */
   ascending = false;
@@ -2274,16 +2439,22 @@ export class MetricsViewFilter_Cond extends Message<MetricsViewFilter_Cond> {
  */
 export class MetricsViewColumn extends Message<MetricsViewColumn> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: string type = 2;
    */
   type = "";
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: bool nullable = 3;
    */
   nullable = false;
@@ -2323,11 +2494,15 @@ export class MetricsViewColumn extends Message<MetricsViewColumn> {
  */
 export class InlineMeasure extends Message<InlineMeasure> {
   /**
+   * Required
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Required, ie 'count(*)'
+   *
    * @generated from field: string expression = 2;
    */
   expression = "";
@@ -2415,6 +2590,8 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
  */
 export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: rill.runtime.v1.TimeRangeSummary time_range_summary = 1;
    */
   timeRangeSummary?: TimeRangeSummary;
@@ -2543,11 +2720,15 @@ export class ColumnRollupIntervalRequest extends Message<ColumnRollupIntervalReq
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Required
+   *
    * @generated from field: string column_name = 3;
    */
   columnName = "";
@@ -2593,16 +2774,22 @@ export class ColumnRollupIntervalRequest extends Message<ColumnRollupIntervalReq
  */
 export class ColumnRollupIntervalResponse extends Message<ColumnRollupIntervalResponse> {
   /**
+   * Minimum timestamp
+   *
    * @generated from field: google.protobuf.Timestamp start = 1;
    */
   start?: Timestamp;
 
   /**
+   * Maximum timestamp
+   *
    * @generated from field: google.protobuf.Timestamp end = 2;
    */
   end?: Timestamp;
 
   /**
+   * Human friendly time grain that is still bounded by (min, max), ie 'minute' time grain for an hour time range
+   *
    * @generated from field: rill.runtime.v1.TimeGrain interval = 3;
    */
   interval = TimeGrain.UNSPECIFIED;
@@ -2647,11 +2834,15 @@ export class ColumnTopKRequest extends Message<ColumnTopKRequest> {
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Required
+   *
    * @generated from field: string column_name = 3;
    */
   columnName = "";
@@ -2800,6 +2991,8 @@ export class CategoricalSummary extends Message<CategoricalSummary> {
  */
 export class TopK extends Message<TopK> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.TopK.Entry entries = 1;
    */
   entries: TopK_Entry[] = [];
@@ -2837,11 +3030,15 @@ export class TopK extends Message<TopK> {
  */
 export class TopK_Entry extends Message<TopK_Entry> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Value value = 1;
    */
   value?: Value;
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: double count = 2;
    */
   count = 0;
@@ -2885,11 +3082,15 @@ export class ColumnNullCountRequest extends Message<ColumnNullCountRequest> {
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Required
+   *
    * @generated from field: string column_name = 3;
    */
   columnName = "";
@@ -2935,6 +3136,8 @@ export class ColumnNullCountRequest extends Message<ColumnNullCountRequest> {
  */
 export class ColumnNullCountResponse extends Message<ColumnNullCountResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: double count = 1;
    */
   count = 0;
@@ -2977,11 +3180,15 @@ export class ColumnDescriptiveStatisticsRequest extends Message<ColumnDescriptiv
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Required
+   *
    * @generated from field: string column_name = 3;
    */
   columnName = "";
@@ -3117,6 +3324,8 @@ export class NumericSummary extends Message<NumericSummary> {
 }
 
 /**
+ * All fields are not null
+ *
  * @generated from message rill.runtime.v1.NumericHistogramBins
  */
 export class NumericHistogramBins extends Message<NumericHistogramBins> {
@@ -3215,6 +3424,8 @@ export class NumericHistogramBins_Bin extends Message<NumericHistogramBins_Bin> 
 }
 
 /**
+ * All fields are not null
+ *
  * @generated from message rill.runtime.v1.NumericStatistics
  */
 export class NumericStatistics extends Message<NumericStatistics> {
@@ -3288,6 +3499,8 @@ export class NumericStatistics extends Message<NumericStatistics> {
 }
 
 /**
+ * All fields are not null
+ *
  * @generated from message rill.runtime.v1.NumericOutliers
  */
 export class NumericOutliers extends Message<NumericOutliers> {
@@ -3395,11 +3608,15 @@ export class ColumnTimeGrainRequest extends Message<ColumnTimeGrainRequest> {
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Required
+   *
    * @generated from field: string column_name = 3;
    */
   columnName = "";
@@ -3764,16 +3981,22 @@ export class ColumnTimeRangeResponse extends Message<ColumnTimeRangeResponse> {
  */
 export class TimeRangeSummary extends Message<TimeRangeSummary> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Timestamp min = 1;
    */
   min?: Timestamp;
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Timestamp max = 2;
    */
   max?: Timestamp;
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: rill.runtime.v1.TimeRangeSummary.Interval interval = 3;
    */
   interval?: TimeRangeSummary_Interval;
@@ -3862,16 +4085,22 @@ export class TimeRangeSummary_Interval extends Message<TimeRangeSummary_Interval
  */
 export class ColumnCardinalityRequest extends Message<ColumnCardinalityRequest> {
   /**
+   * Required
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Required
+   *
    * @generated from field: string column_name = 3;
    */
   columnName = "";
@@ -3917,6 +4146,8 @@ export class ColumnCardinalityRequest extends Message<ColumnCardinalityRequest> 
  */
 export class ColumnCardinalityResponse extends Message<ColumnCardinalityResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: rill.runtime.v1.CategoricalSummary categorical_summary = 1;
    */
   categoricalSummary?: CategoricalSummary;
@@ -3959,31 +4190,43 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
 
   /**
+   * Optional. Defaults to [count(*)]
+   *
    * @generated from field: repeated rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure measures = 3;
    */
   measures: ColumnTimeSeriesRequest_BasicMeasure[] = [];
 
   /**
+   * Required
+   *
    * @generated from field: string timestamp_column_name = 4;
    */
   timestampColumnName = "";
 
   /**
+   * Optional. Defaults to [min, max)
+   *
    * @generated from field: rill.runtime.v1.TimeSeriesTimeRange time_range = 5;
    */
   timeRange?: TimeSeriesTimeRange;
 
   /**
+   * Optional. Spark is not calculated if ommitted. See http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
+   *
    * @generated from field: int32 pixels = 7;
    */
   pixels = 0;
 
   /**
+   * Unused
+   *
    * @generated from field: int32 sample_size = 8;
    */
   sampleSize = 0;
@@ -3994,6 +4237,8 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   priority = 0;
 
   /**
+   * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+   *
    * @generated from field: string time_zone = 10;
    */
   timeZone = "";
@@ -4039,19 +4284,21 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
  */
 export class ColumnTimeSeriesRequest_BasicMeasure extends Message<ColumnTimeSeriesRequest_BasicMeasure> {
   /**
+   * Unused
+   *
    * @generated from field: string id = 1;
    */
   id = "";
 
   /**
-   * mandatory user defined metadata
+   * Required. IE 'count(*)'
    *
    * @generated from field: string expression = 2;
    */
   expression = "";
 
   /**
-   * optional user defined metadata
+   * Optional. Defaults to 'measure_{i}', ie measure_0
    *
    * @generated from field: string sql_name = 3;
    */
@@ -4125,20 +4372,28 @@ export class ColumnTimeSeriesResponse extends Message<ColumnTimeSeriesResponse> 
 }
 
 /**
+ * Either [start, end] or interval should be specified
+ *
  * @generated from message rill.runtime.v1.TimeSeriesTimeRange
  */
 export class TimeSeriesTimeRange extends Message<TimeSeriesTimeRange> {
   /**
+   * Optional. Defaults to min
+   *
    * @generated from field: google.protobuf.Timestamp start = 2;
    */
   start?: Timestamp;
 
   /**
+   * Optional. Defaults to max
+   *
    * @generated from field: google.protobuf.Timestamp end = 3;
    */
   end?: Timestamp;
 
   /**
+   * Optional. Defaults to the most human friendly for [min, max) range, ie 'minute' for hour range
+   *
    * @generated from field: rill.runtime.v1.TimeGrain interval = 4;
    */
   interval = TimeGrain.UNSPECIFIED;
@@ -4178,16 +4433,22 @@ export class TimeSeriesTimeRange extends Message<TimeSeriesTimeRange> {
  */
 export class TimeSeriesResponse extends Message<TimeSeriesResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: repeated rill.runtime.v1.TimeSeriesValue results = 1;
    */
   results: TimeSeriesValue[] = [];
 
   /**
+   * Not optional, not null, empty if 'pixels' is not specified
+   *
    * @generated from field: repeated rill.runtime.v1.TimeSeriesValue spark = 2;
    */
   spark: TimeSeriesValue[] = [];
 
   /**
+   * Not optional, not null, unused
+   *
    * @generated from field: int32 sample_size = 4;
    */
   sampleSize = 0;
@@ -4227,16 +4488,22 @@ export class TimeSeriesResponse extends Message<TimeSeriesResponse> {
  */
 export class TimeSeriesValue extends Message<TimeSeriesValue> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Timestamp ts = 1;
    */
   ts?: Timestamp;
 
   /**
+   * 0-based. Can be NaN if timestamps are the same. (Used for spark data only.)
+   *
    * @generated from field: double bin = 2;
    */
   bin = 0;
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: google.protobuf.Struct records = 3;
    */
   records?: Struct;
@@ -4281,6 +4548,8 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
   instanceId = "";
 
   /**
+   * Required
+   *
    * @generated from field: string table_name = 2;
    */
   tableName = "";
@@ -4325,6 +4594,8 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
  */
 export class TableCardinalityResponse extends Message<TableCardinalityResponse> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: int64 cardinality = 1;
    */
   cardinality = protoInt64.zero;
@@ -4448,16 +4719,22 @@ export class TableColumnsResponse extends Message<TableColumnsResponse> {
  */
 export class ProfileColumn extends Message<ProfileColumn> {
   /**
+   * Not optional, not null
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Not optional, not null
+   *
    * @generated from field: string type = 2;
    */
   type = "";
 
   /**
+   * Unused
+   *
    * @generated from field: int32 largest_string_length = 3;
    */
   largestStringLength = 0;

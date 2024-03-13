@@ -299,18 +299,19 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
 }
 
 // This is function equivalent of WithBisector
-export function bisectData(
+export function bisectData<T>(
   value: Date,
   direction: "left" | "right" | "center",
-  accessor: string,
-  data: ArrayLike<unknown>,
-  returnPos = false,
-) {
-  if (!data?.length) return;
-  const bisect = bisector((d) => d[accessor])[direction];
+  accessor: keyof T,
+  data: ArrayLike<T>,
+): { position: number; entry: T } {
+  const bisect = bisector<T, unknown>((d) => d[accessor])[direction];
 
-  if (returnPos) return value !== undefined ? bisect(data, value) : undefined;
-  return value !== undefined ? data[bisect(data, value)] : undefined;
+  const position = bisect(data, value);
+  return {
+    position,
+    entry: data[position],
+  };
 }
 
 /** For a scale domain returns a formatter for axis label and super label */

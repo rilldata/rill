@@ -1,8 +1,3 @@
-<script lang="ts" context="module">
-  // only one at a time
-  const globalActiveMenu = writable<string | undefined>(undefined);
-</script>
-
 <script lang="ts">
   import {
     createEventDispatcher,
@@ -13,7 +8,6 @@
   import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import { clickOutside } from "../../../lib/actions/click-outside";
-  import { guidGenerator } from "../../../lib/guid";
 
   export let dark: boolean | undefined = undefined;
   export let maxWidth: string | undefined = undefined;
@@ -33,8 +27,6 @@
     setContext("rill:menu:dark", dark);
   }
   const dispatch = createEventDispatcher();
-
-  const menuID = guidGenerator();
 
   let key;
 
@@ -99,18 +91,12 @@
 
   let mounted = false;
   onMount(() => {
-    $globalActiveMenu = menuID;
     mounted = true;
   });
 
   // once open, we should select the first menu item.
   $: if (focusOnMount && mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
-  }
-
-  // This will effectively close any additional menus that might be open.
-  $: if ($globalActiveMenu !== menuID) {
-    dispatch("escape");
   }
 
   /** Accessibility properties */
@@ -138,12 +124,7 @@
   on:mouseleave={() => {
     $currentItem = undefined;
   }}
-  use:clickOutside={[
-    [$menuTrigger],
-    () => {
-      dispatch("click-outside");
-    },
-  ]}
+  use:clickOutside={[$menuTrigger, () => dispatch("click-outside")]}
   class:rounded
   class="
         pt-{paddingTop} 

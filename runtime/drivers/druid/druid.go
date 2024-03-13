@@ -13,15 +13,28 @@ import (
 	_ "github.com/apache/calcite-avatica-go/v5"
 )
 
+var spec = drivers.Spec{
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			Description: "Druid connection string (using the Avatica protobuf endpoint)",
+			Secret:      true,
+		},
+	},
+}
+
 func init() {
 	drivers.Register("druid", driver{})
+	drivers.RegisterAsConnector("druid", driver{})
 }
 
 type driver struct{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
@@ -55,7 +68,7 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d driver) Spec() drivers.Spec {
-	return drivers.Spec{}
+	return spec
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
@@ -103,6 +116,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

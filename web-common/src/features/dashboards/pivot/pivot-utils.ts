@@ -15,6 +15,7 @@ import type {
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
+import { mergeFilters } from "./pivot-merge-filters";
 import type {
   PivotDataRow,
   PivotDataStoreConfig,
@@ -377,4 +378,21 @@ export function getSortForAccessor(
     sortPivotBy,
     timeRange,
   };
+}
+
+export function getFilterForOtherMeasuresAxesQuery(
+  config: PivotDataStoreConfig,
+  rowDimensionValues: string[],
+): V1Expression {
+  const { rowDimensionNames } = config;
+  const anchorDimension = rowDimensionNames?.[0];
+
+  let rowFilters: V1Expression | undefined;
+  if (anchorDimension) {
+    rowFilters = createInExpression(anchorDimension, rowDimensionValues);
+  }
+
+  const mergedFilters = mergeFilters(config.whereFilter, rowFilters ?? {});
+
+  return mergedFilters;
 }

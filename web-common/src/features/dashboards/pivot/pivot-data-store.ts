@@ -1,11 +1,12 @@
-import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { prepareMeasureFilterResolutions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
@@ -24,10 +25,12 @@ import {
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
+  getAxisQueryForOtherMeasures,
   getTotalsRowQuery,
 } from "./pivot-queries";
 import {
   getTotalsRow,
+  mergeRowTotals,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
@@ -53,71 +56,98 @@ import {
  */
 function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
-    [
-      useMetricsView(ctx),
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-      measureFilterResolutionsStore(ctx),
-    ],
-    ([metricsView, dashboardStore, timeControls, measureFilterResolution]) => {
-      const time: PivotTimeConfig = {
-        timeStart: timeControls.timeStart,
-        timeEnd: timeControls.timeEnd,
-        timeZone: dashboardStore?.selectedTimezone || "UTC",
-        timeDimension: metricsView?.data?.timeDimension || "",
-      };
-
+    [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
+    ([metricsView, timeRangeSummary, dashboardStore], set) => {
       if (
         !metricsView.data?.measures ||
         !metricsView.data?.dimensions ||
-        !timeControls.ready ||
-        !measureFilterResolution.ready
+        timeRangeSummary.isFetching
       ) {
-        return {
+        set({
           measureNames: [],
           rowDimensionNames: [],
           colDimensionNames: [],
           allMeasures: [],
           allDimensions: [],
           whereFilter: dashboardStore.whereFilter,
-          measureFilter: measureFilterResolution,
+          measureFilter: { ready: true, filter: undefined },
           pivot: dashboardStore.pivot,
-          time,
-        };
+          time: {} as PivotTimeConfig,
+        });
+        return;
       }
 
-      const measureNames = dashboardStore.pivot.columns.measure.map(
-        (m) => m.id,
-      );
-
-      // This is temporary until we have a better way to handle time grains
-      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
-        if (d.type === PivotChipType.Time) {
-          return `${time.timeDimension}_rill_${d.id}`;
-        }
-        return d.id;
-      });
-
-      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
-        (d) => {
-          if (d.type === PivotChipType.Time) {
-            return `${time.timeDimension}_rill_${d.id}`;
-          }
-          return d.id;
-        },
-      );
-
-      return {
-        measureNames,
-        rowDimensionNames,
-        colDimensionNames,
-        allMeasures: metricsView.data?.measures,
-        allDimensions: metricsView.data?.dimensions,
-        whereFilter: dashboardStore.whereFilter,
-        measureFilter: measureFilterResolution,
-        pivot: dashboardStore.pivot,
-        time,
+      // This indirection makes sure only one update of dashboard store triggers this
+      const timeControl = timeControlStateSelector([
+        metricsView,
+        timeRangeSummary,
+        dashboardStore,
+      ]);
+      const time: PivotTimeConfig = {
+        timeStart: timeControl.timeStart,
+        timeEnd: timeControl.timeEnd,
+        timeZone: dashboardStore?.selectedTimezone || "UTC",
+        timeDimension: metricsView?.data?.timeDimension || "",
       };
+      derived(
+        [
+          prepareMeasureFilterResolutions(
+            dashboardStore,
+            timeControl,
+            ctx.queryClient,
+          ),
+        ],
+        ([measureFilterResolution]) => {
+          if (!measureFilterResolution.ready) {
+            return {
+              measureNames: [],
+              rowDimensionNames: [],
+              colDimensionNames: [],
+              allMeasures: [],
+              allDimensions: [],
+              whereFilter: dashboardStore.whereFilter,
+              measureFilter: measureFilterResolution,
+              pivot: dashboardStore.pivot,
+              time,
+            };
+          }
+
+          const measureNames = dashboardStore.pivot.columns.measure.map(
+            (m) => m.id,
+          );
+
+          // This is temporary until we have a better way to handle time grains
+          const rowDimensionNames = dashboardStore.pivot.rows.dimension.map(
+            (d) => {
+              if (d.type === PivotChipType.Time) {
+                return `${time.timeDimension}_rill_${d.id}`;
+              }
+              return d.id;
+            },
+          );
+
+          const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
+            (d) => {
+              if (d.type === PivotChipType.Time) {
+                return `${time.timeDimension}_rill_${d.id}`;
+              }
+              return d.id;
+            },
+          );
+
+          return {
+            measureNames,
+            rowDimensionNames,
+            colDimensionNames,
+            allMeasures: metricsView.data?.measures,
+            allDimensions: metricsView.data?.dimensions,
+            whereFilter: dashboardStore.whereFilter,
+            measureFilter: measureFilterResolution,
+            pivot: dashboardStore.pivot,
+            time,
+          };
+        },
+      ).subscribe(set);
     },
   );
 }
@@ -218,15 +248,16 @@ let expandedTableMap: Record<string, PivotDataRow[]> = {};
  *     |
  *     |  (Row headers and sort order)
  *     v
- * Create skeleton table data by querying axes values for each row dimension
+ * Create skeleton table data by querying axes values for row dimension.
+ * Also fetch column wise totals to determine columns to render
  *     |
  *     |  (Cell Data)
  *     v
- * For the visible axes values, query the data for each cell, totals and subtotals
+ * For the visible axes values, query the data for each cell
  *     |
  *     |  (Expanded)
  *     v
- * For each expanded row, query the data for each cell, totals and subtotals
+ * For each expanded row, query the data for each cell
  *     |
  *     |  (Assemble)
  *     v
@@ -244,7 +275,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
     ) {
       const isFetching =
         config.pivot.columns.measure.length > 0 ||
-        config.pivot.rows.dimension.length > 0;
+        (config.pivot.rows.dimension.length > 0 &&
+          !config.pivot.columns.dimension.length);
       return configSet({
         isFetching: isFetching,
         data: [],
@@ -287,16 +319,26 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           columnDimensionAxes?.data,
         );
 
-        let sortFilteredMeasureBody = measureBody;
+        let sortFilteredMeasureBody: V1MetricsViewAggregationMeasure[] =
+          measureBody;
+        let isMeasureSortAccessor = false;
+        let sortAccessor: string | undefined = undefined;
+
         if (sortPivotBy.length && measureWhere) {
-          const accessor = sortPivotBy[0]?.name;
-          sortFilteredMeasureBody = measureBody.map((m) => {
-            if (m.name === accessor) return { ...m, filter: measureWhere };
-            return m;
-          });
+          sortAccessor = sortPivotBy[0]?.name;
+
+          isMeasureSortAccessor = measureBody.some(
+            (m) => m.name === sortAccessor,
+          );
+          if (isMeasureSortAccessor && sortAccessor) {
+            sortFilteredMeasureBody = [
+              { name: sortAccessor, filter: measureWhere },
+            ];
+          }
         }
 
         const rowOffset = (config.pivot.rowPage - 1) * NUM_ROWS_PER_PAGE;
+
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
@@ -375,6 +417,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
             const totalColumns = getTotalColumnCount(totalsRow);
 
+            const rowAxesQueryForOtherMeasures = getAxisQueryForOtherMeasures(
+              ctx,
+              config,
+              isMeasureSortAccessor,
+              sortAccessor,
+              rowDimensionValues,
+              timeRange,
+            );
+
             let initialTableCellQuery:
               | Readable<null>
               | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
@@ -413,8 +464,25 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
              * Derive a store from initial table cell data query
              */
             return derived(
-              [initialTableCellQuery],
-              ([initialTableCellData], cellSet) => {
+              [rowAxesQueryForOtherMeasures, initialTableCellQuery],
+              ([rowOtherMeasuresAxesQuery, initialTableCellData], cellSet) => {
+                if (rowOtherMeasuresAxesQuery?.isFetching) {
+                  return cellSet({
+                    isFetching: true,
+                    data: rowTotals,
+                    columnDef,
+                    assembled: false,
+                    totalColumns,
+                  });
+                }
+
+                const mergedRowTotals = mergeRowTotals(
+                  rowDimensionValues,
+                  rowTotals,
+                  rowOtherMeasuresAxesQuery?.data?.[anchorDimension] || [],
+                  rowOtherMeasuresAxesQuery?.totals?.[anchorDimension] || [],
+                );
+
                 let pivotData: PivotDataRow[] = [];
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
                 if (getPivotConfigKey(config) in expandedTableMap) {
@@ -422,12 +490,12 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   console.log("pivotData", pivotData);
                 } else {
                   if (initialTableCellData === null) {
-                    cellData = rowTotals;
+                    cellData = mergedRowTotals;
                   } else {
                     if (initialTableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
-                        data: rowTotals,
+                        data: mergedRowTotals,
                         columnDef,
                         assembled: false,
                         totalColumns,
@@ -440,7 +508,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     anchorDimension,
                     rowDimensionValues || [],
                     columnDimensionAxes?.data || {},
-                    rowTotals,
+                    mergedRowTotals,
                     cellData,
                   );
                   pivotData = structuredClone(tableDataWithCells);

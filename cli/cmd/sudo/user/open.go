@@ -16,8 +16,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Short: "Open browser as the current user",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			authURL := cfg.AdminURL
+			authURL := ch.AdminURL
 			if strings.Contains(authURL, "http://localhost:9090") {
 				authURL = "http://localhost:8080"
 			}
@@ -27,7 +26,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			qry := map[string]string{"token": cfg.AdminTokenDefault}
+			qry := map[string]string{"token": ch.AdminTokenDefault}
 			withTokenURL, err := urlutil.WithQuery(withTokenURI, qry)
 			if err != nil {
 				return err
