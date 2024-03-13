@@ -2,6 +2,7 @@
 title: Why Rill?
 sidebar_label: Why Rill?
 sidebar_position: 1
+sidebar_class_name: hidden
 hide_table_of_contents: true
 ---
 

@@ -152,14 +152,6 @@ const config = {
       {
         redirects: [
           {
-            from: '/reference/connectors/s3',
-            to: '/build/credentials/s3',
-          },
-          {
-            from: '/reference/connectors/gcs',
-            to: '/build/credentials/gcs',
-          },
-          {
             from: '/install',
             to: '/home/install',
           },
