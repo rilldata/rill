@@ -24,9 +24,13 @@
 
   // Debounce table names to prevent flickering
   const debouncedTableNames = writable<string[]>([]);
+  const setDebouncedTableNames = debounce(
+    (tableNames: string[]) => debouncedTableNames.set(tableNames),
+    200,
+  );
   $: {
     if ($tableNames) {
-      debounce(() => debouncedTableNames.set($tableNames), 300);
+      setDebouncedTableNames($tableNames);
     }
   }
 
