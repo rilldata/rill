@@ -1,10 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { flip } from "svelte/animate";
+  import { writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
+  import { debounce } from "../../lib/create-debouncer";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import TableMenuItems from "./TableMenuItems.svelte";
@@ -19,7 +21,16 @@
     connectorInstanceId,
     olapConnector,
   );
-  $: hasAssets = $tableNames && $tableNames.length > 0;
+
+  // Debounce table names to prevent flickering
+  const debouncedTableNames = writable<string[]>([]);
+  $: {
+    if ($tableNames) {
+      debounce(() => debouncedTableNames.set($tableNames), 300);
+    }
+  }
+
+  $: hasAssets = $debouncedTableNames.length > 0;
 
   let showTables = true;
 </script>
@@ -34,8 +45,8 @@
       class="pb-3 max-h-96 overflow-auto"
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
     >
-      {#if $tableNames.length > 0}
-        {#each $tableNames as fullyQualifiedTableName (fullyQualifiedTableName)}
+      {#if $debouncedTableNames.length > 0}
+        {#each $debouncedTableNames as fullyQualifiedTableName (fullyQualifiedTableName)}
           <div
             animate:flip={{ duration: 200 }}
             out:slide|global={{ duration: LIST_SLIDE_DURATION }}
