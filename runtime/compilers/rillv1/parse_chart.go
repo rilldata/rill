@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
+
+	// Loader for remote schema
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
@@ -43,7 +45,7 @@ func (p *Parser) parseChart(node *Node) error {
 	}
 
 	if err = vegaLiteSchema.Validate(vegaLiteSpec); err != nil {
-		return fmt.Errorf(`failed to validate "vega_lite": %v`, err)
+		return fmt.Errorf(`failed to validate "vega_lite": %w`, err)
 	}
 
 	if tmp.Data == nil {
