@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,6 +42,18 @@ func emptyTransformer(v any) (any, error) {
 	return v, nil
 }
 
+func toStringArray(values []any) []string {
+	s := make([]string, len(values))
+	for i, v := range values {
+		vv, ok := v.(string)
+		if !ok {
+			return nil
+		}
+		s[i] = vv
+	}
+	return s
+}
+
 func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	b, err := json.Marshal(druidRequest(query, args))
 	if err != nil {
@@ -57,7 +68,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	// nolint:all
+	// nolint:bodyclose // closed by the caller
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -65,70 +76,67 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 	dec := json.NewDecoder(resp.Body)
 
-	jw := &JSONWalker{
-		dec: dec,
+	var obj any
+	err = dec.Decode(&obj)
+	if err != nil {
+		return nil, err
 	}
-
-	// nolint:all
-	if !jw.enterArrayOrError() {
-		return nil, jw.err
-	}
-
-	if jw.enterArray() {
-		columns, err := jw.stringArrayValues()
+	switch v := obj.(type) {
+	case map[string]any:
+		return nil, fmt.Errorf("%v", obj)
+	case []any:
+		columns := toStringArray(v)
+		err = dec.Decode(&obj)
 		if err != nil {
 			return nil, err
 		}
-		if jw.enterArray() {
-			types, err := jw.stringArrayValues()
-			if err != nil {
-				return nil, err
-			}
 
-			transformers := make([]func(any) (any, error), len(columns))
-			for i, c := range types {
-				transformers[i] = emptyTransformer
-				if c == "TIMESTAMP" {
-					transformers[i] = func(v any) (any, error) {
-						t, err := time.Parse(time.RFC3339, v.(string))
-						if err != nil {
-							return nil, err
-						}
-						return t, nil
+		types := toStringArray(obj.([]any))
+
+		transformers := make([]func(any) (any, error), len(columns))
+		for i, c := range types {
+			transformers[i] = emptyTransformer
+			if c == "TIMESTAMP" {
+				transformers[i] = func(v any) (any, error) {
+					t, err := time.Parse(time.RFC3339, v.(string))
+					if err != nil {
+						return nil, err
 					}
-				} else if c == "ARRAY" {
-					transformers[i] = func(v any) (any, error) {
-						var l []any
-						err := json.Unmarshal([]byte(v.(string)), &l)
-						if err != nil {
-							return nil, err
-						}
-						return l, nil
+					return t, nil
+				}
+			} else if c == "ARRAY" {
+				transformers[i] = func(v any) (any, error) {
+					var l []any
+					err := json.Unmarshal([]byte(v.(string)), &l)
+					if err != nil {
+						return nil, err
 					}
-				} else if c == "OTHER" {
-					transformers[i] = func(v any) (any, error) {
-						var l map[string]any
-						err := json.Unmarshal([]byte(v.(string)), &l)
-						if err != nil {
-							return nil, err
-						}
-						return l, nil
+					return l, nil
+				}
+			} else if c == "OTHER" {
+				transformers[i] = func(v any) (any, error) {
+					var l map[string]any
+					err := json.Unmarshal([]byte(v.(string)), &l)
+					if err != nil {
+						return nil, err
 					}
+					return l, nil
 				}
 			}
-
-			druidRows := &druidRows{
-				closer:       resp.Body,
-				dec:          dec,
-				jw:           jw,
-				columns:      columns,
-				types:        types,
-				transformers: transformers,
-			}
-			return druidRows, nil
 		}
+
+		druidRows := &druidRows{
+			closer: resp.Body,
+			dec:    dec,
+			// jw:           jw,
+			columns:      columns,
+			types:        types,
+			transformers: transformers,
+		}
+		return druidRows, nil
+	default:
+		return nil, fmt.Errorf("unexpected response: %v", obj)
 	}
-	return nil, jw.err
 }
 
 func toType(v any) string {
@@ -145,13 +153,15 @@ func toType(v any) string {
 }
 
 type druidRows struct {
-	closer       io.ReadCloser
-	dec          *json.Decoder
-	jw           *JSONWalker
+	closer io.ReadCloser
+	dec    *json.Decoder
+	// jw           *JSONWalker
 	columns      []string
 	types        []string
 	transformers []func(any) (any, error)
 }
+
+var _ driver.Rows = &druidRows{}
 
 func (dr *druidRows) Columns() []string {
 	return dr.columns
@@ -162,25 +172,22 @@ func (dr *druidRows) Close() error {
 }
 
 func (dr *druidRows) Next(dest []driver.Value) error {
-	if !dr.jw.hasMore() {
-		return io.EOF
-	} else if dr.jw.enterArray() {
-		values, err := dr.jw.arrayValues()
+	var a []any
+	err := dr.dec.Decode(&a)
+	if err != nil {
+		return err
+	}
+
+	for i, v := range a {
+		v, err := dr.transformers[i](v)
 		if err != nil {
 			return err
 		}
 
-		for i, v := range values {
-			v, err := dr.transformers[i](v)
-			if err != nil {
-				return err
-			}
-
-			dest[i] = v
-		}
-		return nil
+		dest[i] = v
 	}
-	return dr.jw.err
+
+	return nil
 }
 
 type stmt struct {
@@ -241,7 +248,7 @@ func druidRequest(query string, args []driver.NamedValue) *DruidRequest {
 		Query:          query,
 		Header:         true,
 		SQLTypesHeader: true,
-		ResultFormat:   "array",
+		ResultFormat:   "arrayLines",
 		Parameters:     parameters,
 		Context: DruidQueryContext{
 			SQLQueryID: uuid.New().String(),
@@ -251,102 +258,6 @@ func druidRequest(query string, args []driver.NamedValue) *DruidRequest {
 
 func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
 	return nil, fmt.Errorf("unsupported")
-}
-
-type JSONWalker struct {
-	dec *json.Decoder
-	err error
-}
-
-func (j *JSONWalker) hasMore() bool {
-	return j.dec.More()
-}
-
-func (j *JSONWalker) enterArrayOrError() bool {
-	t, err := j.dec.Token()
-	if err != nil {
-		j.err = err
-		return false
-	}
-	d, ok := t.(json.Delim)
-	if ok && d == '[' {
-		return true
-	} else if d == '{' {
-		bytes1 := make([]byte, 1024)
-		n1, err := j.dec.Buffered().Read(bytes1)
-		if err != nil {
-			j.err = err
-		}
-
-		j.err = errors.New(string(bytes1[:n1]))
-	}
-	return false
-}
-
-func (j *JSONWalker) enterArray() bool {
-	t, err := j.dec.Token()
-	if err != nil {
-		j.err = err
-		return false
-	}
-	if d, ok := t.(json.Delim); ok && d == '[' {
-		return true
-	}
-	var b []byte
-	_, _ = j.dec.Buffered().Read(b)
-	j.err = fmt.Errorf("expected array: %v %v", t, string(b))
-	return false
-}
-
-func (j *JSONWalker) exitArray() bool {
-	t, err := j.dec.Token()
-
-	if err != nil {
-		j.err = err
-		return false
-	}
-	if d, ok := t.(json.Delim); ok && d == ']' {
-		return true
-	}
-	var b []byte
-	_, _ = j.dec.Buffered().Read(b)
-	j.err = fmt.Errorf("expected array end: %v %v", t, string(b))
-
-	return false
-}
-
-func (j *JSONWalker) arrayValues() ([]any, error) {
-	var values []any
-	for j.dec.More() {
-		t, err := j.dec.Token()
-
-		if err != nil {
-			return nil, err
-		}
-		values = append(values, t)
-	}
-	if !j.exitArray() {
-		return nil, j.err
-	}
-	return values, nil
-}
-
-func (j *JSONWalker) stringArrayValues() ([]string, error) {
-	var columns []string
-	for j.dec.More() {
-		t, err := j.dec.Token()
-
-		if err != nil {
-			return nil, err
-		}
-		if s, ok := t.(string); ok {
-			columns = append(columns, s)
-		}
-	}
-	if !j.exitArray() {
-		return nil, j.err
-	}
-	return columns, nil
 }
 
 func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {

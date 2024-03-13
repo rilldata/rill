@@ -14,36 +14,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestDruid_json_walker(t *testing.T) {
-	j := `[["a", "b"], ["c", "d"], ["e", 1], ["k", 2]]`
-	dec := json.NewDecoder(strings.NewReader(j))
-	jw := JSONWalker{
-		dec: dec,
-	}
-	require.True(t, jw.enterArray())
-	require.True(t, jw.enterArray())
-	a, err := jw.stringArrayValues()
-	require.NoError(t, err)
-	require.Equal(t, []string{"a", "b"}, a)
-
-	require.True(t, jw.enterArray())
-	a, err = jw.stringArrayValues()
-	require.NoError(t, err)
-	require.Equal(t, []string{"c", "d"}, a)
-
-	require.True(t, jw.enterArray())
-	k, err := jw.arrayValues()
-	require.NoError(t, err)
-	require.Equal(t, []any{"e", 1.0}, k)
-
-	require.True(t, jw.enterArray())
-	k, err = jw.arrayValues()
-	require.NoError(t, err)
-	require.Equal(t, []any{"k", 2.0}, k)
-
-	require.NoError(t, jw.err)
-}
-
 func TestDriver_types(t *testing.T) {
 	driver := &driversDriver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
@@ -60,7 +30,7 @@ func TestDriver_types(t *testing.T) {
 		cast(1 as real) as double1,
 		cast(1 as float) as float1,
 		cast(1 as integer) as integer1,
-		date '2023-01-01' as date1,
+		date '2023-01-01' as date1
 		`,
 	})
 	require.NoError(t, err)
