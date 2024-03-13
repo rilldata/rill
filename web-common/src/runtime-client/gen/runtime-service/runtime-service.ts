@@ -40,8 +40,8 @@ import type {
   V1DeleteFileResponse,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
-  V1GenerateChartFileResponse,
-  RuntimeServiceGenerateChartFileBody,
+  V1GenerateChartSpecResponse,
+  RuntimeServiceGenerateChartSpecBody,
   V1GenerateMetricsViewFileResponse,
   RuntimeServiceGenerateMetricsViewFileBody,
   V1RenameFileResponse,
@@ -976,51 +976,51 @@ export const createRuntimeServicePutFile = <
     TContext
   >(mutationFn, mutationOptions);
 };
-export const runtimeServiceGenerateChartFile = (
+export const runtimeServiceGenerateChartSpec = (
   instanceId: string,
-  runtimeServiceGenerateChartFileBody: RuntimeServiceGenerateChartFileBody,
+  runtimeServiceGenerateChartSpecBody: RuntimeServiceGenerateChartSpecBody,
 ) => {
-  return httpClient<V1GenerateChartFileResponse>({
+  return httpClient<V1GenerateChartSpecResponse>({
     url: `/v1/instances/${instanceId}/files/generate-chart`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServiceGenerateChartFileBody,
+    data: runtimeServiceGenerateChartSpecBody,
   });
 };
 
-export type RuntimeServiceGenerateChartFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>
+export type RuntimeServiceGenerateChartSpecMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>
 >;
-export type RuntimeServiceGenerateChartFileMutationBody =
-  RuntimeServiceGenerateChartFileBody;
-export type RuntimeServiceGenerateChartFileMutationError = ErrorType<RpcStatus>;
+export type RuntimeServiceGenerateChartSpecMutationBody =
+  RuntimeServiceGenerateChartSpecBody;
+export type RuntimeServiceGenerateChartSpecMutationError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceGenerateChartFile = <
+export const createRuntimeServiceGenerateChartSpec = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>,
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateChartFileBody },
+    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>,
-    { instanceId: string; data: RuntimeServiceGenerateChartFileBody }
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
+    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
-    return runtimeServiceGenerateChartFile(instanceId, data);
+    return runtimeServiceGenerateChartSpec(instanceId, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof runtimeServiceGenerateChartFile>>,
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateChartFileBody },
+    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody },
     TContext
   >(mutationFn, mutationOptions);
 };

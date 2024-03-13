@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,10 +13,9 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/yaml.v3"
 )
 
-func (s *Server) GenerateChartFile(ctx context.Context, req *runtimev1.GenerateChartFileRequest) (*runtimev1.GenerateChartFileResponse, error) {
+func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateChartSpecRequest) (*runtimev1.GenerateChartSpecResponse, error) {
 	// TODO: telemetry
 
 	// Must have edit permissions on the repo
@@ -73,9 +73,8 @@ func (s *Server) GenerateChartFile(ctx context.Context, req *runtimev1.GenerateC
 
 		schema = tbl.Schema
 		table = req.Table
-	} else if req.MetricsView != "" {
-		// TODO
 	} else {
+		// TODO: support metrics view
 		return nil, errors.New("at lest one of chart or table must be specified")
 	}
 
@@ -84,17 +83,18 @@ func (s *Server) GenerateChartFile(ctx context.Context, req *runtimev1.GenerateC
 		return nil, err
 	}
 
-	return &runtimev1.GenerateChartFileResponse{
+	return &runtimev1.GenerateChartSpecResponse{
 		VegaLiteSpec: resp.VegaLiteSpec,
 		Sql:          resp.SQL,
 	}, nil
 }
 
 type chartAIResponse struct {
-	VegaLiteSpec string `yaml:"vega_lite_spec"`
-	SQL          string `yaml:"sql"`
+	VegaLiteSpec string `json:"vega_lite_spec"`
+	SQL          string `json:"sql"`
 }
 
+// generateChartWithAI attempts to generate a vega lite chart spec and a SQL used to display the chart.
 func (s *Server) generateChartWithAI(ctx context.Context, instanceID, tblName, userPrompt string, schema *runtimev1.StructType) (*chartAIResponse, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
@@ -133,7 +133,7 @@ func (s *Server) generateChartWithAI(ctx context.Context, instanceID, tblName, u
 	res.Data = strings.TrimSuffix(res.Data, "```")
 
 	resp := &chartAIResponse{}
-	err = yaml.Unmarshal([]byte(res.Data), resp)
+	err = json.Unmarshal([]byte(res.Data), resp)
 	if err != nil {
 		return nil, err
 	}
@@ -142,24 +142,19 @@ func (s *Server) generateChartWithAI(ctx context.Context, instanceID, tblName, u
 
 // chartYAMLSystemPrompt returns the static system prompt for the chart generation AI.
 func chartYAMLSystemPrompt() string {
-	prompt := fmt.Sprintf(`
+	return `
 You are an agent whose only task is to suggest relevant chart based on a table schema.
 You should suggest the vega config for the chart based on the data.
 Replace the data field in vega lite json with,
+{ "name": "table" }
+
+Your output should consist of valid JSON in the format below:
 {
-  "name": "table"
+  "vega_lite_spec": <vega lite json in the format: https://vega.github.io/schema/vega-lite/v5.json >
+
+  "sql": "<the sql query used to fetch the data for the above chart. replace new line with \n>"
 }
-
-Your output should consist of valid YAML in the format below:
-
-vega_lite_spec: |
-<vega lite json in the format: https://vega.github.io/schema/vega-lite/v5.json . add 2 spaces at the begining of each line>
-
-sql: |
-<the sql query used to fetch the data for the above chart. add 2 spaces at the begining of each line>
-`)
-
-	return prompt
+`
 }
 
 func chartYAMLUserPrompt(tblName, userPrompt string, schema *runtimev1.StructType) string {

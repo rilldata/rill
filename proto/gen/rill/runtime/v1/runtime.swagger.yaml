@@ -687,12 +687,12 @@ paths:
         - RuntimeService
   /v1/instances/{instanceId}/files/generate-chart:
     post:
-      operationId: RuntimeService_GenerateChartFile
+      operationId: RuntimeService_GenerateChartSpec
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GenerateChartFileResponse'
+            $ref: '#/definitions/v1GenerateChartSpecResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3607,7 +3607,7 @@ definitions:
         format: int64
       isDir:
         type: boolean
-  v1GenerateChartFileResponse:
+  v1GenerateChartSpecResponse:
     type: object
     properties:
       sql:

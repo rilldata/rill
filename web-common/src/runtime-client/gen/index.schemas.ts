@@ -331,7 +331,7 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   useAi?: boolean;
 };
 
-export type RuntimeServiceGenerateChartFileBody = {
+export type RuntimeServiceGenerateChartSpecBody = {
   chart?: string;
   table?: string;
   metricsView?: string;
@@ -1580,7 +1580,7 @@ export interface V1GenerateMetricsViewFileResponse {
   aiSucceeded?: boolean;
 }
 
-export interface V1GenerateChartFileResponse {
+export interface V1GenerateChartSpecResponse {
   sql?: string;
   vegaLiteSpec?: string;
 }

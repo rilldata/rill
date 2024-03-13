@@ -4392,30 +4392,30 @@ var _ interface {
 	ErrorName() string
 } = GenerateMetricsViewFileResponseValidationError{}
 
-// Validate checks the field values on GenerateChartFileRequest with the rules
+// Validate checks the field values on GenerateChartSpecRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GenerateChartFileRequest) Validate() error {
+func (m *GenerateChartSpecRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GenerateChartFileRequest with the
+// ValidateAll checks the field values on GenerateChartSpecRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GenerateChartFileRequestMultiError, or nil if none found.
-func (m *GenerateChartFileRequest) ValidateAll() error {
+// GenerateChartSpecRequestMultiError, or nil if none found.
+func (m *GenerateChartSpecRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateChartFileRequest) validate(all bool) error {
+func (m *GenerateChartSpecRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if !_GenerateChartFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := GenerateChartFileRequestValidationError{
+	if !_GenerateChartSpecRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateChartSpecRequestValidationError{
 			field:  "InstanceId",
 			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
 		}
@@ -4434,19 +4434,19 @@ func (m *GenerateChartFileRequest) validate(all bool) error {
 	// no validation rules for Prompt
 
 	if len(errors) > 0 {
-		return GenerateChartFileRequestMultiError(errors)
+		return GenerateChartSpecRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateChartFileRequestMultiError is an error wrapping multiple validation
-// errors returned by GenerateChartFileRequest.ValidateAll() if the designated
+// GenerateChartSpecRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateChartSpecRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GenerateChartFileRequestMultiError []error
+type GenerateChartSpecRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateChartFileRequestMultiError) Error() string {
+func (m GenerateChartSpecRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4455,11 +4455,11 @@ func (m GenerateChartFileRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateChartFileRequestMultiError) AllErrors() []error { return m }
+func (m GenerateChartSpecRequestMultiError) AllErrors() []error { return m }
 
-// GenerateChartFileRequestValidationError is the validation error returned by
-// GenerateChartFileRequest.Validate if the designated constraints aren't met.
-type GenerateChartFileRequestValidationError struct {
+// GenerateChartSpecRequestValidationError is the validation error returned by
+// GenerateChartSpecRequest.Validate if the designated constraints aren't met.
+type GenerateChartSpecRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4467,24 +4467,24 @@ type GenerateChartFileRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateChartFileRequestValidationError) Field() string { return e.field }
+func (e GenerateChartSpecRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateChartFileRequestValidationError) Reason() string { return e.reason }
+func (e GenerateChartSpecRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateChartFileRequestValidationError) Cause() error { return e.cause }
+func (e GenerateChartSpecRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateChartFileRequestValidationError) Key() bool { return e.key }
+func (e GenerateChartSpecRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateChartFileRequestValidationError) ErrorName() string {
-	return "GenerateChartFileRequestValidationError"
+func (e GenerateChartSpecRequestValidationError) ErrorName() string {
+	return "GenerateChartSpecRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateChartFileRequestValidationError) Error() string {
+func (e GenerateChartSpecRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4496,14 +4496,14 @@ func (e GenerateChartFileRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateChartFileRequest.%s: %s%s",
+		"invalid %sGenerateChartSpecRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateChartFileRequestValidationError{}
+var _ error = GenerateChartSpecRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -4511,26 +4511,26 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateChartFileRequestValidationError{}
+} = GenerateChartSpecRequestValidationError{}
 
-var _GenerateChartFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+var _GenerateChartSpecRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
-// Validate checks the field values on GenerateChartFileResponse with the rules
+// Validate checks the field values on GenerateChartSpecResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GenerateChartFileResponse) Validate() error {
+func (m *GenerateChartSpecResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GenerateChartFileResponse with the
+// ValidateAll checks the field values on GenerateChartSpecResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GenerateChartFileResponseMultiError, or nil if none found.
-func (m *GenerateChartFileResponse) ValidateAll() error {
+// GenerateChartSpecResponseMultiError, or nil if none found.
+func (m *GenerateChartSpecResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateChartFileResponse) validate(all bool) error {
+func (m *GenerateChartSpecResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4542,19 +4542,19 @@ func (m *GenerateChartFileResponse) validate(all bool) error {
 	// no validation rules for VegaLiteSpec
 
 	if len(errors) > 0 {
-		return GenerateChartFileResponseMultiError(errors)
+		return GenerateChartSpecResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateChartFileResponseMultiError is an error wrapping multiple validation
-// errors returned by GenerateChartFileResponse.ValidateAll() if the
+// GenerateChartSpecResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateChartSpecResponse.ValidateAll() if the
 // designated constraints aren't met.
-type GenerateChartFileResponseMultiError []error
+type GenerateChartSpecResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateChartFileResponseMultiError) Error() string {
+func (m GenerateChartSpecResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4563,11 +4563,11 @@ func (m GenerateChartFileResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateChartFileResponseMultiError) AllErrors() []error { return m }
+func (m GenerateChartSpecResponseMultiError) AllErrors() []error { return m }
 
-// GenerateChartFileResponseValidationError is the validation error returned by
-// GenerateChartFileResponse.Validate if the designated constraints aren't met.
-type GenerateChartFileResponseValidationError struct {
+// GenerateChartSpecResponseValidationError is the validation error returned by
+// GenerateChartSpecResponse.Validate if the designated constraints aren't met.
+type GenerateChartSpecResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4575,24 +4575,24 @@ type GenerateChartFileResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateChartFileResponseValidationError) Field() string { return e.field }
+func (e GenerateChartSpecResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateChartFileResponseValidationError) Reason() string { return e.reason }
+func (e GenerateChartSpecResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateChartFileResponseValidationError) Cause() error { return e.cause }
+func (e GenerateChartSpecResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateChartFileResponseValidationError) Key() bool { return e.key }
+func (e GenerateChartSpecResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateChartFileResponseValidationError) ErrorName() string {
-	return "GenerateChartFileResponseValidationError"
+func (e GenerateChartSpecResponseValidationError) ErrorName() string {
+	return "GenerateChartSpecResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateChartFileResponseValidationError) Error() string {
+func (e GenerateChartSpecResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4604,14 +4604,14 @@ func (e GenerateChartFileResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateChartFileResponse.%s: %s%s",
+		"invalid %sGenerateChartSpecResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateChartFileResponseValidationError{}
+var _ error = GenerateChartSpecResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -4619,7 +4619,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateChartFileResponseValidationError{}
+} = GenerateChartSpecResponseValidationError{}
 
 // Validate checks the field values on Log with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error

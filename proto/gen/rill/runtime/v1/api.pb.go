@@ -2504,7 +2504,7 @@ func (x *GenerateMetricsViewFileResponse) GetAiSucceeded() bool {
 	return false
 }
 
-type GenerateChartFileRequest struct {
+type GenerateChartSpecRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -2516,8 +2516,8 @@ type GenerateChartFileRequest struct {
 	Prompt      string `protobuf:"bytes,5,opt,name=prompt,proto3" json:"prompt,omitempty"`
 }
 
-func (x *GenerateChartFileRequest) Reset() {
-	*x = GenerateChartFileRequest{}
+func (x *GenerateChartSpecRequest) Reset() {
+	*x = GenerateChartSpecRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rill_runtime_v1_api_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2525,13 +2525,13 @@ func (x *GenerateChartFileRequest) Reset() {
 	}
 }
 
-func (x *GenerateChartFileRequest) String() string {
+func (x *GenerateChartSpecRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GenerateChartFileRequest) ProtoMessage() {}
+func (*GenerateChartSpecRequest) ProtoMessage() {}
 
-func (x *GenerateChartFileRequest) ProtoReflect() protoreflect.Message {
+func (x *GenerateChartSpecRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_rill_runtime_v1_api_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2543,47 +2543,47 @@ func (x *GenerateChartFileRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GenerateChartFileRequest.ProtoReflect.Descriptor instead.
-func (*GenerateChartFileRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GenerateChartSpecRequest.ProtoReflect.Descriptor instead.
+func (*GenerateChartSpecRequest) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{35}
 }
 
-func (x *GenerateChartFileRequest) GetInstanceId() string {
+func (x *GenerateChartSpecRequest) GetInstanceId() string {
 	if x != nil {
 		return x.InstanceId
 	}
 	return ""
 }
 
-func (x *GenerateChartFileRequest) GetChart() string {
+func (x *GenerateChartSpecRequest) GetChart() string {
 	if x != nil {
 		return x.Chart
 	}
 	return ""
 }
 
-func (x *GenerateChartFileRequest) GetTable() string {
+func (x *GenerateChartSpecRequest) GetTable() string {
 	if x != nil {
 		return x.Table
 	}
 	return ""
 }
 
-func (x *GenerateChartFileRequest) GetMetricsView() string {
+func (x *GenerateChartSpecRequest) GetMetricsView() string {
 	if x != nil {
 		return x.MetricsView
 	}
 	return ""
 }
 
-func (x *GenerateChartFileRequest) GetPrompt() string {
+func (x *GenerateChartSpecRequest) GetPrompt() string {
 	if x != nil {
 		return x.Prompt
 	}
 	return ""
 }
 
-type GenerateChartFileResponse struct {
+type GenerateChartSpecResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -2592,8 +2592,8 @@ type GenerateChartFileResponse struct {
 	VegaLiteSpec string `protobuf:"bytes,2,opt,name=vega_lite_spec,json=vegaLiteSpec,proto3" json:"vega_lite_spec,omitempty"`
 }
 
-func (x *GenerateChartFileResponse) Reset() {
-	*x = GenerateChartFileResponse{}
+func (x *GenerateChartSpecResponse) Reset() {
+	*x = GenerateChartSpecResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rill_runtime_v1_api_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2601,13 +2601,13 @@ func (x *GenerateChartFileResponse) Reset() {
 	}
 }
 
-func (x *GenerateChartFileResponse) String() string {
+func (x *GenerateChartSpecResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GenerateChartFileResponse) ProtoMessage() {}
+func (*GenerateChartSpecResponse) ProtoMessage() {}
 
-func (x *GenerateChartFileResponse) ProtoReflect() protoreflect.Message {
+func (x *GenerateChartSpecResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_rill_runtime_v1_api_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2619,19 +2619,19 @@ func (x *GenerateChartFileResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GenerateChartFileResponse.ProtoReflect.Descriptor instead.
-func (*GenerateChartFileResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GenerateChartSpecResponse.ProtoReflect.Descriptor instead.
+func (*GenerateChartSpecResponse) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{36}
 }
 
-func (x *GenerateChartFileResponse) GetSql() string {
+func (x *GenerateChartSpecResponse) GetSql() string {
 	if x != nil {
 		return x.Sql
 	}
 	return ""
 }
 
-func (x *GenerateChartFileResponse) GetVegaLiteSpec() string {
+func (x *GenerateChartSpecResponse) GetVegaLiteSpec() string {
 	if x != nil {
 		return x.VegaLiteSpec
 	}
@@ -5686,7 +5686,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x6e, 0x73, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x61, 0x69, 0x5f, 0x73, 0x75, 0x63, 0x63, 0x65, 0x65,
 	0x64, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0b, 0x61, 0x69, 0x53, 0x75, 0x63,
 	0x63, 0x65, 0x65, 0x64, 0x65, 0x64, 0x22, 0xbc, 0x01, 0x0a, 0x18, 0x47, 0x65, 0x6e, 0x65, 0x72,
-	0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75,
+	0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x53, 0x70, 0x65, 0x63, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f,
 	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xfa, 0x42, 0x15, 0x72, 0x13, 0x32,
 	0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d,
@@ -5698,7 +5698,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x52, 0x0b, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x12, 0x16, 0x0a,
 	0x06, 0x70, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70,
 	0x72, 0x6f, 0x6d, 0x70, 0x74, 0x22, 0x53, 0x0a, 0x19, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
-	0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x53, 0x70, 0x65, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x71, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x03, 0x73, 0x71, 0x6c, 0x12, 0x24, 0x0a, 0x0e, 0x76, 0x65, 0x67, 0x61, 0x5f, 0x6c, 0x69, 0x74,
 	0x65, 0x5f, 0x73, 0x70, 0x65, 0x63, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x76, 0x65,
@@ -6230,12 +6230,12 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x2f,
 	0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x2d, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
 	0x2d, 0x76, 0x69, 0x65, 0x77, 0x12, 0xa7, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61,
-	0x74, 0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x12, 0x29, 0x2e, 0x72, 0x69,
+	0x74, 0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x53, 0x70, 0x65, 0x63, 0x12, 0x29, 0x2e, 0x72, 0x69,
 	0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
-	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x52,
+	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x53, 0x70, 0x65, 0x63, 0x52,
 	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
 	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
-	0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x65, 0x43, 0x68, 0x61, 0x72, 0x74, 0x53, 0x70, 0x65, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x22, 0x3b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x35, 0x3a, 0x01, 0x2a, 0x22, 0x30, 0x2f,
 	0x76, 0x31, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x7b, 0x69, 0x6e,
 	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x66, 0x69, 0x6c, 0x65, 0x73,
@@ -6454,8 +6454,8 @@ var file_rill_runtime_v1_api_proto_goTypes = []interface{}{
 	(*UnpackEmptyResponse)(nil),             // 37: rill.runtime.v1.UnpackEmptyResponse
 	(*GenerateMetricsViewFileRequest)(nil),  // 38: rill.runtime.v1.GenerateMetricsViewFileRequest
 	(*GenerateMetricsViewFileResponse)(nil), // 39: rill.runtime.v1.GenerateMetricsViewFileResponse
-	(*GenerateChartFileRequest)(nil),        // 40: rill.runtime.v1.GenerateChartFileRequest
-	(*GenerateChartFileResponse)(nil),       // 41: rill.runtime.v1.GenerateChartFileResponse
+	(*GenerateChartSpecRequest)(nil),        // 40: rill.runtime.v1.GenerateChartSpecRequest
+	(*GenerateChartSpecResponse)(nil),       // 41: rill.runtime.v1.GenerateChartSpecResponse
 	(*Log)(nil),                             // 42: rill.runtime.v1.Log
 	(*GetLogsRequest)(nil),                  // 43: rill.runtime.v1.GetLogsRequest
 	(*GetLogsResponse)(nil),                 // 44: rill.runtime.v1.GetLogsResponse
@@ -6589,7 +6589,7 @@ var file_rill_runtime_v1_api_proto_depIdxs = []int32{
 	34, // 70: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
 	36, // 71: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
 	38, // 72: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:input_type -> rill.runtime.v1.GenerateMetricsViewFileRequest
-	40, // 73: rill.runtime.v1.RuntimeService.GenerateChartFile:input_type -> rill.runtime.v1.GenerateChartFileRequest
+	40, // 73: rill.runtime.v1.RuntimeService.GenerateChartSpec:input_type -> rill.runtime.v1.GenerateChartSpecRequest
 	43, // 74: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
 	45, // 75: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
 	47, // 76: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
@@ -6622,7 +6622,7 @@ var file_rill_runtime_v1_api_proto_depIdxs = []int32{
 	35, // 103: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
 	37, // 104: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
 	39, // 105: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:output_type -> rill.runtime.v1.GenerateMetricsViewFileResponse
-	41, // 106: rill.runtime.v1.RuntimeService.GenerateChartFile:output_type -> rill.runtime.v1.GenerateChartFileResponse
+	41, // 106: rill.runtime.v1.RuntimeService.GenerateChartSpec:output_type -> rill.runtime.v1.GenerateChartSpecResponse
 	44, // 107: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
 	46, // 108: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
 	48, // 109: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
@@ -7075,7 +7075,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GenerateChartFileRequest); i {
+			switch v := v.(*GenerateChartSpecRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -7087,7 +7087,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GenerateChartFileResponse); i {
+			switch v := v.(*GenerateChartSpecResponse); i {
 			case 0:
 				return &v.state
 			case 1:

@@ -35,7 +35,7 @@ const (
 	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
-	RuntimeService_GenerateChartFile_FullMethodName       = "/rill.runtime.v1.RuntimeService/GenerateChartFile"
+	RuntimeService_GenerateChartSpec_FullMethodName       = "/rill.runtime.v1.RuntimeService/GenerateChartSpec"
 	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
 	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
 	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
@@ -91,7 +91,7 @@ type RuntimeServiceClient interface {
 	UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error)
 	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
-	GenerateChartFile(ctx context.Context, in *GenerateChartFileRequest, opts ...grpc.CallOption) (*GenerateChartFileResponse, error)
+	GenerateChartSpec(ctx context.Context, in *GenerateChartSpecRequest, opts ...grpc.CallOption) (*GenerateChartSpecResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
 	// WatchLogs streams new logs emitted from a controller
@@ -307,9 +307,9 @@ func (c *runtimeServiceClient) GenerateMetricsViewFile(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GenerateChartFile(ctx context.Context, in *GenerateChartFileRequest, opts ...grpc.CallOption) (*GenerateChartFileResponse, error) {
-	out := new(GenerateChartFileResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateChartFile_FullMethodName, in, out, opts...)
+func (c *runtimeServiceClient) GenerateChartSpec(ctx context.Context, in *GenerateChartSpecRequest, opts ...grpc.CallOption) (*GenerateChartSpecResponse, error) {
+	out := new(GenerateChartSpecResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateChartSpec_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -543,7 +543,7 @@ type RuntimeServiceServer interface {
 	UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error)
 	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
-	GenerateChartFile(context.Context, *GenerateChartFileRequest) (*GenerateChartFileResponse, error)
+	GenerateChartSpec(context.Context, *GenerateChartSpecRequest) (*GenerateChartSpecResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)
 	// WatchLogs streams new logs emitted from a controller
@@ -637,8 +637,8 @@ func (UnimplementedRuntimeServiceServer) UnpackEmpty(context.Context, *UnpackEmp
 func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateMetricsViewFile not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GenerateChartFile(context.Context, *GenerateChartFileRequest) (*GenerateChartFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateChartFile not implemented")
+func (UnimplementedRuntimeServiceServer) GenerateChartSpec(context.Context, *GenerateChartSpecRequest) (*GenerateChartSpecResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateChartSpec not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
@@ -992,20 +992,20 @@ func _RuntimeService_GenerateMetricsViewFile_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GenerateChartFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateChartFileRequest)
+func _RuntimeService_GenerateChartSpec_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateChartSpecRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateChartFile(ctx, in)
+		return srv.(RuntimeServiceServer).GenerateChartSpec(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RuntimeService_GenerateChartFile_FullMethodName,
+		FullMethod: RuntimeService_GenerateChartSpec_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateChartFile(ctx, req.(*GenerateChartFileRequest))
+		return srv.(RuntimeServiceServer).GenerateChartSpec(ctx, req.(*GenerateChartSpecRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1372,8 +1372,8 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GenerateMetricsViewFile_Handler,
 		},
 		{
-			MethodName: "GenerateChartFile",
-			Handler:    _RuntimeService_GenerateChartFile_Handler,
+			MethodName: "GenerateChartSpec",
+			Handler:    _RuntimeService_GenerateChartSpec_Handler,
 		},
 		{
 			MethodName: "GetLogs",

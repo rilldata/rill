@@ -119,7 +119,7 @@ service RuntimeService {
     };
   }
 
-  rpc GenerateChartFile(GenerateChartFileRequest) returns (GenerateChartFileResponse) {
+  rpc GenerateChartSpec(GenerateChartSpecRequest) returns (GenerateChartSpecResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/files/generate-chart",
       body: "*"
@@ -504,7 +504,7 @@ message GenerateMetricsViewFileResponse {
   bool ai_succeeded = 1;
 }
 
-message GenerateChartFileRequest {
+message GenerateChartSpecRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string chart = 2;
   string table = 3;
@@ -512,7 +512,7 @@ message GenerateChartFileRequest {
   string prompt = 5;
 }
 
-message GenerateChartFileResponse {
+message GenerateChartSpecResponse {
   string sql = 1;
   string vega_lite_spec = 2;
 }
