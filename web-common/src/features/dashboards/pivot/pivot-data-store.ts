@@ -25,7 +25,7 @@ import {
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
-  getAxisQueryForOtherMeasures,
+  getAxisQueryForMeasureTotals,
   getTotalsRowQuery,
 } from "./pivot-queries";
 import {
@@ -340,6 +340,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
+        // Get sort order for the anchor dimension
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
@@ -429,15 +430,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
             const totalColumns = getTotalColumnCount(totalsRow);
 
-            const rowAxesQueryForOtherMeasures = getAxisQueryForOtherMeasures(
+            const rowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
               ctx,
               config,
               isMeasureSortAccessor,
               sortAccessor,
               rowDimensionValues,
               timeRange,
-              NUM_ROWS_PER_PAGE.toString(),
-              rowOffset.toString(),
             );
 
             let initialTableCellQuery:
@@ -478,9 +477,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
              * Derive a store from initial table cell data query
              */
             return derived(
-              [rowAxesQueryForOtherMeasures, initialTableCellQuery],
-              ([rowOtherMeasuresAxesQuery, initialTableCellData], cellSet) => {
-                if (rowOtherMeasuresAxesQuery?.isFetching) {
+              [rowAxesQueryForMeasureTotals, initialTableCellQuery],
+              ([rowMeasureTotalsAxesQuery, initialTableCellData], cellSet) => {
+                if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
                     data: rowTotals,
@@ -493,8 +492,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 const mergedRowTotals = mergeRowTotals(
                   rowDimensionValues,
                   rowTotals,
-                  rowOtherMeasuresAxesQuery?.data?.[anchorDimension] || [],
-                  rowOtherMeasuresAxesQuery?.totals?.[anchorDimension] || [],
+                  rowMeasureTotalsAxesQuery?.data?.[anchorDimension] || [],
+                  rowMeasureTotalsAxesQuery?.totals?.[anchorDimension] || [],
                 );
 
                 let pivotSkeleton = mergedRowTotals;

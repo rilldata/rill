@@ -20,7 +20,7 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
-  getFilterForOtherMeasuresAxesQuery,
+  getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
 } from "./pivot-utils";
@@ -173,43 +173,37 @@ export function getAxisForDimensions(
   );
 }
 
-export function getAxisQueryForOtherMeasures(
+export function getAxisQueryForMeasureTotals(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   isMeasureSortAccessor: boolean,
   sortAccessor: string | undefined,
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
-  limit: string,
-  offset: string,
 ) {
-  let rowAxesQueryForOtherMeasures: Readable<PivotAxesData | null> =
+  let rowAxesQueryForMeasureTotals: Readable<PivotAxesData | null> =
     readable(null);
 
   if (rowDimensionValues.length && isMeasureSortAccessor && sortAccessor) {
     const { measureNames, rowDimensionNames } = config;
-    const otherMeasuresBody = measureNames
-      .map((m) => ({ name: m }))
-      .filter((m) => m.name !== sortAccessor);
+    const measuresBody = measureNames.map((m) => ({ name: m }));
 
-    const sortedRowFilters = getFilterForOtherMeasuresAxesQuery(
+    const sortedRowFilters = getFilterForMeasuresTotalsAxesQuery(
       config,
       rowDimensionValues,
     );
-    rowAxesQueryForOtherMeasures = getAxisForDimensions(
+    rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
       rowDimensionNames.slice(0, 1),
-      otherMeasuresBody,
+      measuresBody,
       sortedRowFilters,
       [],
       timeRange,
-      limit,
-      offset,
     );
   }
 
-  return rowAxesQueryForOtherMeasures;
+  return rowAxesQueryForMeasureTotals;
 }
 
 export function getTotalsRowQuery(
