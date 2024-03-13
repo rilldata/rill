@@ -17,6 +17,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
   - _`local_file`_ — a locally available file.
   - _`motherduck`_ - data stored in motherduck
   - _`athena`_ - a data store defined in Amazon Athena
+  - _`redshift`_ - a data store in Amazon Redshift
   - _`postgres`_ - data stored in Postgres
   - _`sqlite`_ - data stored in SQLite
   - _`snowflake`_ - data stored in Snowflake
