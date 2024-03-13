@@ -37,8 +37,8 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	// Build the options for the regular SQL resolver
-	sqlResolverOpts := &runtime.ResolverOptions{
+	// Rewrite to the regular SQL resolver
+	return newSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,
 		Properties: map[string]any{
@@ -50,7 +50,5 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		},
 		UserAttributes: opts.UserAttributes,
 		ForExport:      opts.ForExport,
-	}
-
-	return newSQL(ctx, sqlResolverOpts)
+	})
 }

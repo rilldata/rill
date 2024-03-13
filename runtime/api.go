@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// BuiltinAPIs is a map of built-in APIs (i.e. APIs that are not created dynamically from the project's YAML files.)
+// BuiltinAPIs is a map of built-in APIs (i.e. predefined APIs that are not created dynamically from a project's YAML files.)
 var BuiltinAPIs = map[string]*runtimev1.API{}
 
 // RegisterBuiltinAPI adds a built-in API with the given name that invokes the given resolver and resolver properties.

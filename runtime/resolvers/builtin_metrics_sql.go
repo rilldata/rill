@@ -36,8 +36,8 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 		return nil, err
 	}
 
-	// Build the options for the metrics SQL resolver
-	metricsSQLResolverOpts := &runtime.ResolverOptions{
+	// Rewrite to the metrics SQL resolver
+	return newMetricsSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,
 		Properties: map[string]any{
@@ -48,7 +48,5 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 		},
 		UserAttributes: opts.UserAttributes,
 		ForExport:      opts.ForExport,
-	}
-
-	return newMetricsSQL(ctx, metricsSQLResolverOpts)
+	})
 }
