@@ -29,8 +29,8 @@ export interface DimensionDataItem {
   dimension: string;
   value: string | null;
   total?: number;
-  strokeClass: string;
-  fillClass: string;
+  // strokeClass: string;
+  // fillClass: string;
   data: TimeSeriesDatum[];
   isFetching: boolean;
 }
@@ -273,13 +273,10 @@ export function getDimensionValueTimeSeries(
                 total = dimensionValues?.totals[i];
               }
 
-              const color = "gray-300";
               return {
                 dimension: dimensionName,
                 value,
                 total,
-                strokeClass: "stroke-" + color,
-                fillClass: color ? "fill-" + color : "",
                 data: prepData,
                 isFetching: timeseries.isFetching,
               };

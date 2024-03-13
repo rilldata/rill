@@ -334,6 +334,7 @@
                   {point}
                   {xAccessor}
                   {yAccessor}
+                  {colors}
                   {dimensionData}
                   dimensionValue={$tableInteractionStore?.dimensionValue}
                   {validPercTotal}
