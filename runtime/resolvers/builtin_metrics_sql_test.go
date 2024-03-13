@@ -39,12 +39,12 @@ measures:
 		{
 			args:  map[string]any{"sql": "SELECT AGGREGATE(count) FROM bar"},
 			attrs: map[string]any{},
-			want:  `[{"count_star()":1}]`,
+			want:  `[{"count":1}]`,
 		},
 		{
 			args:  map[string]any{"sql": "SELECT AGGREGATE(count) FROM bar"},
 			attrs: map[string]any{"admin": true},
-			want:  `[{"count_star()":1}]`,
+			want:  `[{"count":1}]`,
 		},
 		{
 			args:    map[string]any{"sql": "SELECT AGGREGATE(count) FROM bar"},

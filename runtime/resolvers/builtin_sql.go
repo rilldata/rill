@@ -13,7 +13,7 @@ func init() {
 	runtime.RegisterBuiltinAPI("sql", "builtin_sql", nil)
 }
 
-type builtinSqlArgs struct {
+type builtinSQLArgs struct {
 	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
 	Priority  int    `mapstructure:"priority"`
@@ -32,7 +32,7 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Decode the args
-	args := &builtinSqlArgs{}
+	args := &builtinSQLArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
 		return nil, err
 	}
