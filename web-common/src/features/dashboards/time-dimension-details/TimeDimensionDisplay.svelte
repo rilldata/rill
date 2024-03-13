@@ -20,6 +20,7 @@
     useTimeDimensionDataStore,
   } from "./time-dimension-data-store";
   import type { TDDComparison, TableData } from "./types";
+  import { colorGetter } from "../filters/colorGetter";
 
   export let metricViewName: string;
 
@@ -27,7 +28,7 @@
   const {
     dashboardStore,
     selectors: {
-      dimensionFilters: { unselectedDimensionValues },
+      dimensionFilters: { unselectedDimensionValues, selectedDimensionValues },
     },
     actions: {
       dimensionsFilter: {
@@ -44,6 +45,7 @@
 
   $: metricsView = useMetricsView(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
+  $: values = $selectedDimensionValues(dimensionName);
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
@@ -86,6 +88,9 @@
   );
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
+
+  $: markerColors =
+    values.map((value) => $colorGetter.get(dimensionName, value)) ?? [];
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
@@ -204,6 +209,7 @@
     </div>
   {:else if formattedData && comparisonCopy}
     <TDDTable
+      {markerColors}
       {excludeMode}
       {dimensionLabel}
       {measureLabel}

@@ -33,6 +33,7 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
+  import { colorGetter } from "../filters/colorGetter";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -207,6 +208,10 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
+
+  $: colors = dimensionData.map((d) => {
+    return $colorGetter.get(d.dimension, d.value ?? "");
+  });
 </script>
 
 <TimeSeriesChartContainer
@@ -294,6 +299,7 @@
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData && interval}
             <MeasureChart
+              {colors}
               bind:mouseoverValue
               {measure}
               {isScrubbing}

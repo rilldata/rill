@@ -20,10 +20,7 @@
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
-  import { page } from "$app/stores";
   import { colorGetter } from "../filters/colorGetter";
-
-  const dashboardName = $page.params.name;
 
   export let dimensionName: string;
   export let itemData: LeaderboardItemData;
@@ -47,7 +44,7 @@
   } = getStateManagers();
 
   $: checkColor = selected
-    ? colorGetter.get(dashboardName, dimensionName, label)
+    ? $colorGetter.get(dimensionName, label)
     : "gray-300";
 
   $: isBeingCompared = $isBeingComparedReadable(dimensionName);

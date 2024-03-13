@@ -8,6 +8,7 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 import type { DashboardMutables } from "./types";
 import { colorGetter } from "../../filters/colorGetter";
+import { get } from "svelte/store";
 
 export function toggleDimensionValueSelection(
   { dashboard }: DashboardMutables,
@@ -51,7 +52,7 @@ export function toggleDimensionValueSelection(
     }
   } else {
     expr.cond.exprs.splice(inIdx, 1);
-    colorGetter.remove(dashboard.name, dimensionName, dimensionValue);
+    get(colorGetter).remove(dimensionName, dimensionValue);
 
     // Only decrement pinIndex if the removed value was before the pinned value
     if (dashboard.pinIndex >= inIdx) {
@@ -101,7 +102,7 @@ export function removeDimensionFilter(
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) return;
   dashboard.whereFilter?.cond?.exprs?.splice(exprIdx, 1);
-  colorGetter.removeDimension(dashboard.name, dimensionName);
+  get(colorGetter).removeDimension(dimensionName);
 }
 
 export function selectItemsInFilter(

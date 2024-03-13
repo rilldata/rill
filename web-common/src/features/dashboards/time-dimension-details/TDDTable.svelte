@@ -31,6 +31,7 @@
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
+  export let markerColors: string[];
 
   /** Formatter for the time axis in the table*/
   export let timeFormatter: (date: Date) => string;
@@ -115,8 +116,8 @@
 
   // Any time visible line list changes, redraw the table
   $: {
-    scrubPos;
-    highlightedCol;
+    // scrubPos;
+    // highlightedCol;
     tableData?.selectedValues;
     pivot?.draw();
   }
@@ -151,8 +152,7 @@
       else
         return {
           icon: SelectedCheckmark(
-            "fill-" +
-              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300"),
+            "fill-" + (visibleIdx < 11 ? markerColors[visibleIdx] : "gray-300"),
           ),
           muted: false,
         };

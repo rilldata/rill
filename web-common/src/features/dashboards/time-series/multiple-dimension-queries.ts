@@ -24,9 +24,9 @@ import {
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-import { colorGetter } from "../filters/colorGetter";
 
 export interface DimensionDataItem {
+  dimension: string;
   value: string | null;
   total?: number;
   strokeClass: string;
@@ -272,12 +272,10 @@ export function getDimensionValueTimeSeries(
               if (surface === "table") {
                 total = dimensionValues?.totals[i];
               }
-              const color = colorGetter.get(
-                dashboardStore.name,
-                dimensionName,
-                value,
-              );
+
+              const color = "gray-300";
               return {
+                dimension: dimensionName,
                 value,
                 total,
                 strokeClass: "stroke-" + color,

@@ -9,12 +9,9 @@
   import DimensionCompareMenu from "@rilldata/web-common/features/dashboards/leaderboard/DimensionCompareMenu.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { colorGetter } from "../filters/colorGetter";
-  import { page } from "$app/stores";
   import type { VirtualizedTableColumns } from "../../../components/virtualized-table/types";
   import type { DimensionTableRow } from "./dimension-table-types";
   import type { VirtualItem } from "@tanstack/svelte-virtual";
-
-  const dashboardName = $page.params.name;
 
   export let totalHeight: number;
   export let virtualRowItems: VirtualItem[];
@@ -56,11 +53,7 @@
       <div class="py-0.5 grid place-items-center">
         {#if isSelected && !excludeMode && isBeingCompared}
           <CheckCircle
-            className="fill-{colorGetter.get(
-              dashboardName,
-              dimensionName,
-              dimensionValue,
-            )}"
+            className="fill-{$colorGetter.get(dimensionName, dimensionValue)}"
             size="18px"
           />
         {:else if isSelected && !excludeMode}

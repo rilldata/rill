@@ -1,4 +1,6 @@
 import { CHECKMARK_COLORS } from "../config";
+import { page } from "$app/stores";
+import { derived } from "svelte/store";
 
 type DashboardName = string;
 type DimensionName = string;
@@ -19,49 +21,45 @@ function createColorLookup() {
     return smallest;
   }
 
-  return {
-    get: (
-      dashboardName: DashboardName,
-      dimensionName: DimensionName,
-      dimensionValue: DimensionValue,
-    ) => {
-      let dashboardMap = map.get(dashboardName);
+  return derived([page], ([$page]) => {
+    const dashboardName = $page.params.name;
 
-      if (!dashboardMap) {
-        dashboardMap = new Map<DimensionName, Map<DimensionValue, number>>();
-        map.set(dashboardName, dashboardMap);
-      }
+    return {
+      get: (dimensionName: DimensionName, dimensionValue: DimensionValue) => {
+        let dashboardMap = map.get(dashboardName);
 
-      let dimensionMap = dashboardMap.get(dimensionName);
+        if (!dashboardMap) {
+          dashboardMap = new Map<DimensionName, Map<DimensionValue, number>>();
+          map.set(dashboardName, dashboardMap);
+        }
 
-      if (!dimensionMap) {
-        dimensionMap = new Map<DimensionValue, number>();
-        dashboardMap.set(dimensionName, dimensionMap);
-      }
+        let dimensionMap = dashboardMap.get(dimensionName);
 
-      let colorIndex = dimensionMap.get(dimensionValue);
+        if (!dimensionMap) {
+          dimensionMap = new Map<DimensionValue, number>();
+          dashboardMap.set(dimensionName, dimensionMap);
+        }
 
-      if (colorIndex === undefined) {
-        colorIndex = firstMissingPositive([...dimensionMap.values()]);
-        dimensionMap.set(dimensionValue, colorIndex);
-      }
+        let colorIndex = dimensionMap.get(dimensionValue);
 
-      return CHECKMARK_COLORS[colorIndex] ?? "gray-300";
-    },
-    remove: (
-      dashboardName: DashboardName,
-      dimensionName: DimensionName,
-      dimensionValue: DimensionValue,
-    ) => {
-      map.get(dashboardName)?.get(dimensionName)?.delete(dimensionValue);
-    },
-    removeDimension: (
-      dashboardName: DashboardName,
-      dimensionName: DimensionName,
-    ) => {
-      map.get(dashboardName)?.delete(dimensionName);
-    },
-  };
+        if (colorIndex === undefined) {
+          colorIndex = firstMissingPositive([...dimensionMap.values()]);
+          dimensionMap.set(dimensionValue, colorIndex);
+        }
+
+        return CHECKMARK_COLORS[colorIndex] ?? "gray-300";
+      },
+      remove: (
+        dimensionName: DimensionName,
+        dimensionValue: DimensionValue,
+      ) => {
+        map.get(dashboardName)?.get(dimensionName)?.delete(dimensionValue);
+      },
+      removeDimension: (dimensionName: DimensionName) => {
+        map.get(dashboardName)?.delete(dimensionName);
+      },
+    };
+  });
 }
 
 export const colorGetter = createColorLookup();
