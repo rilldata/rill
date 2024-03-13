@@ -107,7 +107,7 @@ func TestDruid(t *testing.T) {
 	druidAPIURL, err := url.JoinPath(brokerURL, "/druid/v2/sql")
 	require.NoError(t, err)
 
-	dd := &driversDriver{}
+	dd := &driver{}
 	conn, err := dd.Open(map[string]any{"dsn": druidAPIURL}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 

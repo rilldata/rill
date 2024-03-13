@@ -2,7 +2,6 @@ package druid
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"strings"
@@ -14,8 +13,11 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestDriver_types(t *testing.T) {
-	driver := &driversDriver{}
+/*
+ * Requires standalone Druid instance running on localhost:8888.
+ */
+func Ignore_TestDriver_types(t *testing.T) {
+	driver := &driver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -51,8 +53,8 @@ func TestDriver_types(t *testing.T) {
 	require.Equal(t, "2023-01-01T00:00:00.000Z", data[0].Fields["date1"].GetStringValue())
 }
 
-func TestDriver_array_type(t *testing.T) {
-	driver := &driversDriver{}
+func Ignore_TestDriver_array_type(t *testing.T) {
+	driver := &driver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -77,8 +79,8 @@ func TestDriver_array_type(t *testing.T) {
 	require.Equal(t, 2.0, data[0].Fields["array1"].GetListValue().Values[1].GetNumberValue())
 }
 
-func TestDriver_json_type(t *testing.T) {
-	driver := &driversDriver{}
+func Ignore_TestDriver_json_type(t *testing.T) {
+	driver := &driver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
@@ -102,8 +104,8 @@ func TestDriver_json_type(t *testing.T) {
 	require.Equal(t, "b", data[0].Fields["json1"].GetStructValue().Fields["a"].GetStringValue())
 }
 
-func TestDriver_error(t *testing.T) {
-	driver := &driversDriver{}
+func Ignore_TestDriver_error(t *testing.T) {
+	driver := &driver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 

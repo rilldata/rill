@@ -9,21 +9,21 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 
-	// Load calcite avatica driver for druid
-	_ "github.com/apache/calcite-avatica-go/v5"
+	// Load Druid database/sql driver
+	_ "github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 )
 
 func init() {
-	drivers.Register("druid", &driversDriver{})
+	drivers.Register("druid", &driver{})
 }
 
-type driversDriver struct{}
+type driver struct{}
 
-var _ drivers.Driver = &driversDriver{}
+var _ drivers.Driver = &driver{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d *driversDriver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d *driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
@@ -52,19 +52,19 @@ func (d *driversDriver) Open(config map[string]any, shared bool, client activity
 	return conn, nil
 }
 
-func (d *driversDriver) Drop(config map[string]any, logger *zap.Logger) error {
+func (d *driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
-func (d *driversDriver) Spec() drivers.Spec {
+func (d *driver) Spec() drivers.Spec {
 	return drivers.Spec{}
 }
 
-func (d *driversDriver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+func (d *driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (d *driversDriver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
