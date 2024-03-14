@@ -1,5 +1,13 @@
+import { goto } from "$app/navigation";
+import {
+  ChartPromptStatus,
+  chartPromptStore,
+} from "@rilldata/web-common/features/charts/prompt/chartPromptStatus";
 import { useChart } from "@rilldata/web-common/features/charts/selectors";
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import {
+  getFilePathFromNameAndType,
+  getRouteFromName,
+} from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   createRuntimeServiceGenerateChartSpec,
@@ -12,28 +20,34 @@ import { Document } from "yaml";
 export function createChartGenerator(instanceId: string, chart: string) {
   const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
   const chartQuery = useChart(instanceId, chart);
+  const chartPath = getFilePathFromNameAndType(chart, EntityType.Chart);
 
   return async (prompt: string) => {
-    const chartSpec = get(chartQuery).data?.chart?.spec;
-    const resp = await get(generateVegaConfig).mutateAsync({
-      instanceId,
-      data: {
-        prompt,
-        resolver: chartSpec?.resolver,
-        resolverProperties: chartSpec?.resolverProperties,
-      },
-    });
-    await runtimeServicePutFile(
-      instanceId,
-      getFileAPIPathFromNameAndType(chart, EntityType.Chart),
-      {
+    try {
+      const chartSpec = get(chartQuery).data?.chart?.spec;
+      chartPromptStore.setStatus(
+        chartPath,
+        ChartPromptStatus.GeneratingChartSpec,
+      );
+      const resp = await get(generateVegaConfig).mutateAsync({
+        instanceId,
+        data: {
+          prompt,
+          resolver: chartSpec?.resolver,
+          resolverProperties: chartSpec?.resolverProperties,
+        },
+      });
+      chartPromptStore.deleteStatus(chartPath);
+      await runtimeServicePutFile(instanceId, chartPath, {
         blob: getChartYaml(
           resp.vegaLiteSpec,
           chartSpec?.resolver,
           chartSpec?.resolverProperties,
         ),
-      },
-    );
+      });
+    } catch (e) {
+      chartPromptStore.deleteStatus(chartPath);
+    }
   };
 }
 
@@ -50,34 +64,64 @@ export function createFullChartGenerator(instanceId: string) {
     }: { table?: string; connector?: string; metricsView?: string },
     newChartName: string,
   ) => {
-    const resolverResp = await get(generateResolver).mutateAsync({
-      instanceId,
-      data: {
-        table,
-        connector,
-        metricsView,
-        prompt,
-      },
-    });
-    const resp = await get(generateVegaConfig).mutateAsync({
-      instanceId,
-      data: {
-        prompt,
-        resolver: resolverResp.resolver,
-        resolverProperties: resolverResp.resolverProperties,
-      },
-    });
-    await runtimeServicePutFile(
-      instanceId,
-      getFileAPIPathFromNameAndType(newChartName, EntityType.Chart),
-      {
+    const chartPath = getFilePathFromNameAndType(
+      newChartName,
+      EntityType.Chart,
+    );
+    try {
+      // add an empty chart
+      await runtimeServicePutFile(instanceId, chartPath, {
+        blob: `kind: chart`,
+      });
+      chartPromptStore.setStatus(chartPath, ChartPromptStatus.GeneratingData);
+      console.log(chartPath, "...1");
+      await goto(getRouteFromName(newChartName, EntityType.Chart));
+      console.log(chartPath, "...2");
+      const resolverResp = await get(generateResolver).mutateAsync({
+        instanceId,
+        data: {
+          table,
+          connector,
+          metricsView,
+          prompt,
+        },
+      });
+      console.log(chartPath, "...3");
+
+      // add a chart with just the resolver
+      await runtimeServicePutFile(instanceId, chartPath, {
+        blob: getChartYaml(
+          "{}",
+          resolverResp.resolver,
+          resolverResp.resolverProperties,
+        ),
+      });
+      console.log(chartPath, "...4");
+      chartPromptStore.setStatus(
+        chartPath,
+        ChartPromptStatus.GeneratingChartSpec,
+      );
+      const resp = await get(generateVegaConfig).mutateAsync({
+        instanceId,
+        data: {
+          prompt,
+          resolver: resolverResp.resolver,
+          resolverProperties: resolverResp.resolverProperties,
+        },
+      });
+      console.log(chartPath, "...5");
+
+      chartPromptStore.deleteStatus(chartPath);
+      await runtimeServicePutFile(instanceId, chartPath, {
         blob: getChartYaml(
           resp.vegaLiteSpec,
           resolverResp.resolver,
           resolverResp.resolverProperties,
         ),
-      },
-    );
+      });
+    } catch (e) {
+      chartPromptStore.deleteStatus(chartPath);
+    }
   };
 }
 

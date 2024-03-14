@@ -105,7 +105,7 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 		}
 
 		resolverPropertiesPB, err := structpb.NewStruct(map[string]interface{}{
-			sql: sql,
+			"sql": sql,
 		})
 		if err != nil {
 			return nil, err
@@ -143,8 +143,6 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println(res.Data)
 
 	// The AI may produce Markdown output. Remove the code tags around the SQL.
 	res.Data = strings.TrimPrefix(res.Data, "```sql")
@@ -187,8 +185,6 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println(res.Data)
 
 	// The AI may produce Markdown output. Remove the code tags around the SQL.
 	res.Data = strings.TrimPrefix(res.Data, "```sql")

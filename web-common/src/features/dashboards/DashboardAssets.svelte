@@ -254,7 +254,7 @@
             Edit metrics
           </MenuItem>
           <MenuItem
-            disabled={!dashboardData?.errors?.length}
+            disabled={!!dashboardData?.errors?.length}
             icon
             on:select={() => openGenerateChartModal(dashboardName)}
           >

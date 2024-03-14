@@ -135,8 +135,9 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 	}
 
 	return &runtime.ResolverResult{
-		Data:  data,
-		Cache: cache,
+		Data:   data,
+		Schema: res.Schema,
+		Cache:  cache,
 	}, nil
 }
 
