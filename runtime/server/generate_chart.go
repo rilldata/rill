@@ -4,15 +4,25 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateChartSpecRequest) (*runtimev1.GenerateChartSpecResponse, error) {
-	// TODO: telemetry
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.resolver", req.Resolver),
+		attribute.String("args.resolver_property", marshalResolverProperties(req.ResolverProperties.AsMap())),
+		// attribute.String("args.prompt", req.Prompt), // Adding this might be a privacy issue
+	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
@@ -27,11 +37,19 @@ func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateC
 		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
 
+	start := time.Now()
+
 	vegaLiteSpec, err := s.generateChartWithAI(ctx, req.InstanceId, req.Prompt, res.Schema)
+	attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(res.Schema.Fields))}
+	attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
 	if err != nil {
+		attrs = append(attrs, attribute.Bool("succeeded", false))
+		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_chart_spec", attrs...)
 		return nil, err
 	}
 
+	attrs = append(attrs, attribute.Bool("succeeded", true))
+	s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_chart_spec", attrs...)
 	return &runtimev1.GenerateChartSpecResponse{
 		VegaLiteSpec: vegaLiteSpec,
 	}, nil
@@ -94,4 +112,20 @@ Based on a table with schema:
 		prompt += fmt.Sprintf("- column=%s, type=%s\n", field.Name, field.Type.Code.String())
 	}
 	return prompt
+}
+
+func marshalResolverProperties(resolverProperties map[string]interface{}) string {
+	if sql, ok := resolverProperties["sql"]; ok {
+		if sqlStr, ok := sql.(string); ok {
+			return sqlStr
+		}
+	}
+
+	if api, ok := resolverProperties["api"]; ok {
+		if apiStr, ok := api.(string); ok {
+			return apiStr
+		}
+	}
+
+	return ""
 }

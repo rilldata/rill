@@ -5,19 +5,30 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateResolverRequest) (*runtimev1.GenerateResolverResponse, error) {
-	// TODO: telemetry
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.table", req.Table),
+		attribute.String("args.metrics_view", req.MetricsView),
+		// attribute.String("args.prompt", req.Prompt), // Adding this might be a privacy issue
+	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
@@ -60,10 +71,19 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 			return nil, status.Error(codes.InvalidArgument, "table not found")
 		}
 
+		start := time.Now()
+
 		sql, err := s.generateResolverForTable(ctx, req.InstanceId, req.Prompt, tbl.Name, dialect, tbl.Schema)
+		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(tbl.Schema.Fields))}
+		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
 		if err != nil {
+			attrs = append(attrs, attribute.Bool("succeeded", false))
+			s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
 			return nil, err
 		}
+
+		attrs = append(attrs, attribute.Bool("succeeded", true))
+		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
 
 		resolverPropertiesPB, err := structpb.NewStruct(map[string]interface{}{
 			"sql": sql,
