@@ -19,17 +19,17 @@ we support two types of custom APIs:
     kind: api
     sql: SELECT abc FROM my_table
     ```
-    where `my_table` is your model name. Read more details about [SQL apis](./sql-apis.md).
+    where `my_table` is your model name. Read more details about [SQL apis](./sql-api.md).
 
 2. **Metrics SQL API**: You can write a SQL query referring to metrics definition and dimensions defined in the [metrics view](../metrics-dashboard.md). 
 It should have the following structure:
     
     ```yaml
     kind: api
-    metrics_sql: SELECT dimension, AGGREGATE(measure) FROM my_metrics GROUP BY 1
+    metrics_sql: SELECT dimension, AGGREGATE(measure) FROM my_metrics GROUP BY dimension
     ```
     where `my_metrics` is your metrics view name, `measure` is a custom metrics that you have defined. 
-    Read more details about [Metrics SQL API](./metrics-sql.md).
+    Read more details about [Metrics SQL API](./metrics-sql-api.md).
 
 ## How to use custom APIs
 Refer to the integration docs [here](../../integration/custom-api.md) to learn how to use custom APIs in your application.

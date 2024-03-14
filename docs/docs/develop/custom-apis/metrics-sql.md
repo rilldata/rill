@@ -2,7 +2,7 @@
 title: "Metrics SQL Syntax and Capabilities"
 description: Learn how to utilize SQL for extracting data from metrics views effectively.
 sidebar_label: "Metrics SQL"
-sidebar_position: 50
+sidebar_position: 30
 ---
 
 
