@@ -2996,6 +2996,8 @@ func (m *MetricsViewState) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Streaming
+
 	if len(errors) > 0 {
 		return MetricsViewStateMultiError(errors)
 	}

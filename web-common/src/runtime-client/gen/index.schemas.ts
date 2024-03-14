@@ -1228,6 +1228,9 @@ export interface V1MetricsViewSpec {
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+  /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+It's set to true if the metrics view is based on an externally managed table. */
+  streaming?: boolean;
 }
 
 export interface V1MetricsViewV2 {
