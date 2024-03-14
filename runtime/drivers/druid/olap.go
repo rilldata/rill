@@ -70,7 +70,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if stmt.DryRun {
-		rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
 		if err != nil {
 			return nil, err
 		}
