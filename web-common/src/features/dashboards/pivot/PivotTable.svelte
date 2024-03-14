@@ -112,14 +112,7 @@
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
-      const {
-        scrollHeight,
-        scrollTop,
-        scrollWidth,
-        scrollLeft,
-        clientHeight,
-        clientWidth,
-      } = containerRefElement;
+      const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
 
       // Fetch more data when scrolling near the bottom end
