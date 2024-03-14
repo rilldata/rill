@@ -1,12 +1,13 @@
 package rillv1
 
 import (
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
+
+	_ "embed"
 )
 
 //go:embed data/vega-lite-v5.json
