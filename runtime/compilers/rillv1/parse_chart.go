@@ -1,15 +1,16 @@
 package rillv1
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
-
-	// Loader for remote schema
-	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
+
+//go:embed data/vega-lite-v5.json
+var vegaLiteSpec string
 
 type ChartYaml struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
@@ -18,7 +19,7 @@ type ChartYaml struct {
 	VegaLite   string           `yaml:"vega_lite"`
 }
 
-var vegaLiteSchema = jsonschema.MustCompile("https://vega.github.io/schema/vega-lite/v5.json")
+var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema/vega-lite/v5.json", vegaLiteSpec)
 
 func (p *Parser) parseChart(node *Node) error {
 	// Parse YAML
