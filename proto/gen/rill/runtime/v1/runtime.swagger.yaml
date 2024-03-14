@@ -4271,6 +4271,12 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1MetricsViewSpec'
+        description: Valid spec is a (potentially previous) version of the spec that is known to currently be valid.
+      streaming:
+        type: boolean
+        description: |-
+          Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+          It's set to true if the metrics view is based on an externally managed table.
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
