@@ -514,6 +514,8 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 			Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
 			ErrorMessage: fmt.Sprintf("Alert check failed: %s", executeErr.Error()),
 		}
+
+		r.C.Logger.Info("Alert errored", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), zap.Error(executeErr))
 	}
 
 	// Finalize and pop current execution.
