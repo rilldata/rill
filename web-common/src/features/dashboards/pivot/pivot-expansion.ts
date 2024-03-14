@@ -86,6 +86,7 @@ export function createSubTableCellQuery(
       };
     } else return { name: dimension };
   });
+  const measureBody = config.measureNames.map((m) => ({ name: m }));
 
   const { filters: filterForSubTable, timeFilters: colTimeFilters } =
     getFilterForPivotTable(config, columnDimensionAxesData, totalsRow);
@@ -105,7 +106,7 @@ export function createSubTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    config.measureNames,
+    measureBody,
     dimensionBody,
     filterForSubTable,
     config.measureFilter,
@@ -140,6 +141,7 @@ export function queryExpandedRowMeasureValues(
   const expanded = config.pivot.expanded;
   if (!tableData || Object.keys(expanded).length == 0) return writable(null);
 
+  const measureBody = config.measureNames.map((m) => ({ name: m }));
   return derived(
     Object.keys(expanded)?.map((expandIndex) => {
       const nestLevel = expandIndex?.split(".")?.length;
@@ -225,6 +227,7 @@ export function queryExpandedRowMeasureValues(
             ctx,
             config,
             [anchorDimension],
+            measureBody,
             allMergedFilters,
             sortPivotBy,
             timeRange,

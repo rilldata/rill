@@ -116,7 +116,7 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
 export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
   useUnabridged = false,
-): (value: number | T) => string | T {
+): (value: number | string | T) => string | T {
   const humanizer = useUnabridged
     ? humanizeDataTypeUnabridged
     : humanizeDataType;
@@ -125,7 +125,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   // This may e.g. be the case during the initial render of a dashboard,
   // when a measureSpec has not yet loaded from a metadata query.
   if (measureSpec === undefined) {
-    return (value: number | T) => (typeof value === "number" ? "" : value);
+    return (value: number | string | T) =>
+      typeof value === "number" ? "" : value;
   }
 
   // Use the d3 formatter if it is provided and valid
@@ -134,10 +135,10 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   if (measureSpec.formatD3 !== undefined && measureSpec.formatD3 !== "") {
     try {
       const formatter = d3format(measureSpec.formatD3);
-      return (value: number | T) =>
+      return (value: number | string | T) =>
         typeof value === "number" ? formatter(value) : value;
     } catch (error) {
-      return (value: number | T) =>
+      return (value: number | string | T) =>
         typeof value === "number"
           ? humanizer(value, FormatPreset.HUMANIZE)
           : value;

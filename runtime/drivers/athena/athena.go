@@ -67,7 +67,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, _ activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, _ *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("athena driver can't be shared")
 	}
@@ -141,6 +141,11 @@ func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 

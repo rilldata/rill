@@ -4,10 +4,16 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Tab from "./Tab.svelte";
-  import { featureFlags } from "../../feature-flags";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  // import { featureFlags } from "../../feature-flags";
 
-  const { pivot: pivotAllowed } = featureFlags;
+  // const { pivot: pivotAllowed } = featureFlags;
 
   const StateManagers = getStateManagers();
 
@@ -33,13 +39,22 @@
   $: currentTabIndex = $showPivot ? 1 : 0;
 
   function handleTabChange(index: number) {
+    if (currentTabIndex === index) return;
     const selectedTab = tabs[index];
-
-    if (selectedTab.label === "Pivot" && !$pivotAllowed) return;
 
     metricsExplorerStore.setPivotMode(
       $metricsViewName,
       selectedTab.label === "Pivot",
+    );
+
+    behaviourEvent.fireNavigationEvent(
+      $metricsViewName,
+      BehaviourEventMedium.Tab,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
+      selectedTab.label === "Pivot"
+        ? MetricsEventScreenName.Pivot
+        : MetricsEventScreenName.Explore,
     );
   }
 </script>
@@ -48,8 +63,7 @@
   <div class="flex gap-x-2">
     {#each tabs as { label, Icon, beta }, i (label)}
       {@const selected = currentTabIndex === i}
-      {@const disabled = beta && !$pivotAllowed}
-      <Tab {disabled} {selected} on:click={() => handleTabChange(i)}>
+      <Tab {selected} on:click={() => handleTabChange(i)}>
         <Icon />
         <div class="flex gap-x-1 items-center group">
           {label}

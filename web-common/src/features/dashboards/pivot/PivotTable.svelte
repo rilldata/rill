@@ -9,11 +9,19 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "@tanstack/svelte-table";
+  import {
+    createVirtualizer,
+    defaultRangeExtractor,
+  } from "@tanstack/svelte-virtual";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
 
   export let pivotDataStore: PivotDataStore;
+
+  const OVERSCAN = 80;
+  const ROW_HEIGHT = 24;
+  const HEADER_HEIGHT = 30;
 
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
@@ -44,15 +52,44 @@
   const table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
+  let stickyRows = [0];
 
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
-  // $: columnPage = $dashboardStore.pivot.columnPage;
-  // $: totalColumns = $pivotDataStore.totalColumns;
 
   $: headerGroups = $table.getHeaderGroups();
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
+  $: rows = $table.getRowModel().rows;
+  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+
+  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    count: rows.length,
+    getScrollElement: () => containerRefElement,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: OVERSCAN,
+    initialOffset: rowScrollOffset,
+    rangeExtractor: (range) => {
+      const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
+
+      return [...next].sort((a, b) => a - b);
+    },
+  });
+
+  $: virtualRows = $virtualizer.getVirtualItems();
+  $: totalRowSize = $virtualizer.getTotalSize();
+
+  let rowScrollOffset = 0;
+  $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
+
+  // In this virtualization model, we create buffer rows before and after our real data
+  // This maintains the "correct" scroll position when the user scrolls
+  $: [before, after] = virtualRows.length
+    ? [
+        (virtualRows[1]?.start ?? virtualRows[0].start) - ROW_HEIGHT,
+        totalRowSize - virtualRows[virtualRows.length - 1].end,
+      ]
+    : [0, 0];
 
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
@@ -67,117 +104,97 @@
     }
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
-
-  // TODO: Ideally we would like to handle page changes by knowing the scroll
-  // position of the container and getting x0, x1, y0, y1 from the table
-  // Called when the user scrolls and possibly on mount to fetch more data as the user scrolls
-  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
-    if (containerRefElement) {
-      //   const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
-      //   const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
-      //   const leftEndDistance = scrollLeft;
-      //   // Distance threshold (in pixels) for triggering data fetch
-      //   const threshold = 500;
-      //   // Fetch more data when scrolling near the right end
-      //   if (
-      //     rightEndDistance < threshold &&
-      //     !$pivotDataStore.isFetching &&
-      //     30 * columnPage < totalColumns
-      //   ) {
-      //     metricsExplorerStore.setPivotColumnPage(
-      //       $metricsViewName,
-      //       columnPage + 1,
-      //     );
-      //   }
-      //   // Decrease page number when scrolling near the left end
-      //   // else if (
-      //   //   leftEndDistance < threshold &&
-      //   //   columnPage > 1 // Ensure we don't go below the first page
-      //   // ) {
-      //   //   metricsExplorerStore.setPivotColumnPage(
-      //   //     $metricsViewName,
-      //   //     columnPage - 1,
-      //   //   );
-      //   // }
-    }
-  };
 </script>
 
 <div
+  style:--row-height="{ROW_HEIGHT}px"
+  style:--header-length="{totalHeaderHeight}px"
   class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
-  on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table class="overflow-scroll">
-    <thead>
-      {#each headerGroups as headerGroup}
+  <div style:height="{totalRowSize + totalHeaderHeight}px">
+    <table>
+      <thead>
+        {#each headerGroups as headerGroup}
+          <tr>
+            {#each headerGroup.headers as header}
+              {@const sortDirection = header.column.getIsSorted()}
+              <th
+                colSpan={header.colSpan}
+                class:with-row-dimension={rows.length > 1}
+              >
+                <div class="header-cell" style:height="{HEADER_HEIGHT}px">
+                  {#if !header.isPlaceholder}
+                    <button
+                      class="flex items-center gap-x-1"
+                      class:cursor-pointer={header.column.getCanSort()}
+                      class:select-none={header.column.getCanSort()}
+                      on:click={header.column.getToggleSortingHandler()}
+                    >
+                      {header.column.columnDef.header}
+                      {#if sortDirection}
+                        <span
+                          class="transition-transform -mr-1"
+                          class:-rotate-180={sortDirection === "asc"}
+                        >
+                          <ArrowDown />
+                        </span>
+                      {/if}
+                    </button>
+                  {:else}
+                    <button class="w-full h-full"></button>
+                  {/if}
+                </div>
+              </th>
+            {/each}
+          </tr>
+        {/each}
+      </thead>
+      <tbody>
         <tr>
-          {#each headerGroup.headers as header}
-            {@const sortDirection = header.column.getIsSorted()}
-            <th colSpan={header.colSpan}>
-              <div class="header-cell">
-                {#if !header.isPlaceholder}
-                  <button
-                    class="flex items-center gap-x-1"
-                    class:cursor-pointer={header.column.getCanSort()}
-                    class:select-none={header.column.getCanSort()}
-                    on:click={header.column.getToggleSortingHandler()}
-                  >
-                    {header.column.columnDef.header}
-                    {#if sortDirection}
-                      <span
-                        class="transition-transform -mr-1"
-                        class:-rotate-180={sortDirection === "desc"}
-                      >
-                        <ArrowDown />
-                      </span>
-                    {/if}
-                  </button>
-                {:else}
-                  <button class="w-full h-full"></button>
-                {/if}
-              </div>
-            </th>
-          {/each}
+          <td colspan={headerGroups.length} style:height="{before}px"> </td>
         </tr>
-      {/each}
-    </thead>
-    <tbody>
-      {#each $table.getRowModel().rows as row}
+        {#each virtualRows as row (row.index)}
+          {@const cells = rows[row.index].getVisibleCells()}
+          <tr>
+            {#each cells as cell, i (cell.id)}
+              {@const result =
+                typeof cell.column.columnDef.cell === "function"
+                  ? cell.column.columnDef.cell(cell.getContext())
+                  : cell.column.columnDef.cell}
+              <td
+                class:with-row-dimension={rows.length > 1}
+                class="ui-copy-number"
+                class:border-right={i % measureCount === 0 && i}
+              >
+                <div class="cell">
+                  {#if result?.component && result?.props}
+                    <svelte:component
+                      this={result.component}
+                      {...result.props}
+                      {assembled}
+                    />
+                  {:else if typeof result === "string" || typeof result === "number"}
+                    {result}
+                  {:else}
+                    <svelte:component
+                      this={flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    />
+                  {/if}
+                </div>
+              </td>
+            {/each}
+          </tr>
+        {/each}
         <tr>
-          {#each row.getVisibleCells() as cell, i}
-            {@const result =
-              typeof cell.column.columnDef.cell === "function"
-                ? cell.column.columnDef.cell(cell.getContext())
-                : cell.column.columnDef.cell}
-            <td
-              class="ui-copy-number"
-              class:border-right={i % measureCount === 0 && i}
-            >
-              <div class="cell">
-                {#if result?.component && result?.props}
-                  <svelte:component
-                    this={result.component}
-                    {...result.props}
-                    {assembled}
-                  />
-                {:else if typeof result === "string" || typeof result === "number"}
-                  {result}
-                {:else}
-                  <svelte:component
-                    this={flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
-                    )}
-                  />
-                {/if}
-              </div>
-            </td>
-          {/each}
+          <td colspan={headerGroups.length} style:height="{after}px"></td>
         </tr>
-      {/each}
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <style lang="postcss">
@@ -189,6 +206,7 @@
     @apply border-slate-200;
   }
 
+  /* Pin header */
   thead {
     @apply sticky top-0;
     @apply z-10;
@@ -197,16 +215,22 @@
   .header-cell {
     @apply w-full h-full;
     @apply bg-white;
-    @apply p-2 px-2;
+    @apply px-2;
+    @apply flex items-center justify-start;
     @apply border-r border-b;
     @apply text-left;
+    @apply text-ellipsis whitespace-nowrap overflow-hidden;
   }
 
-  thead > tr:first-of-type > th:first-of-type > .header-cell {
+  /* The leftmost header cells have no bottom border unless they're the last row */
+  thead
+    > tr:not(:last-of-type)
+    > .with-row-dimension:first-of-type
+    > .header-cell {
     @apply border-b-0;
   }
 
-  thead > tr:last-of-type > th > div {
+  thead > tr:last-of-type > th > .header-cell {
     @apply text-right;
   }
 
@@ -220,13 +244,16 @@
     @apply p-0 m-0;
   }
 
-  tr > th:first-of-type,
-  tr > td:first-of-type {
-    @apply sticky left-0;
+  tr > .with-row-dimension:first-of-type,
+  tr > .with-row-dimension:first-of-type {
+    @apply sticky left-0 z-0;
     @apply bg-white;
+    @apply truncate;
+    /* re-evaluate this when adding resizing and virtualization */
+    max-width: 500px;
   }
 
-  tr > td:first-of-type > .cell {
+  tr > td:first-of-type:not(:last-of-type) > .cell {
     @apply border-r font-medium;
   }
 
@@ -237,10 +264,12 @@
 
   .cell {
     @apply p-1 px-2;
+    height: var(--row-height);
   }
 
-  tbody > tr:first-of-type {
-    @apply bg-slate-100;
+  tbody > tr:nth-of-type(2) {
+    @apply bg-slate-100 sticky z-10 font-semibold;
+    top: var(--header-length);
   }
 
   .border-right {

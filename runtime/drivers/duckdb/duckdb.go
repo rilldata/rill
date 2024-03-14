@@ -60,7 +60,8 @@ var spec = drivers.Spec{
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
-			Key: "dsn",
+			Key:  "path",
+			Type: drivers.StringPropertyType,
 		},
 	},
 }
@@ -78,7 +79,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("duckdb driver can't be shared")
 	}
@@ -264,7 +265,7 @@ type connection struct {
 	// config is parsed configs
 	config   *config
 	logger   *zap.Logger
-	activity activity.Client
+	activity *activity.Client
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
@@ -339,6 +340,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 
 // AsAdmin implements drivers.Handle.
 func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
@@ -723,7 +729,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 		select {
 		case <-statTicker.C:
 			estimatedDBSize, _ := c.EstimateSize()
-			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
+			c.activity.RecordMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.
 			// Commenting the below code for now. Verify with next duckdb release
@@ -758,34 +764,34 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Emit(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
 			// }
 
 			// walSize, err := humanReadableSizeToBytes(stat.WalSize)
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Emit(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
 			// }
 
 			// memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Emit(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
 			// }
 
 			// memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
 			// if err != nil {
 			// 	c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
 			// } else {
-			// 	c.activity.Emit(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
+			// 	c.activity.RecordMetric(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
 			// }
 
-			// c.activity.Emit(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
-			// c.activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
-			// c.activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
-			// c.activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			// c.activity.RecordMetric(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
 
 		case <-c.ctx.Done():
 			statTicker.Stop()

@@ -1,7 +1,6 @@
 package org
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -11,22 +10,19 @@ import (
 )
 
 func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
-
 	switchCmd := &cobra.Command{
 		Use:   "switch [<org-name>]",
 		Short: "Switch to other organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			var defaultOrg string
 			if len(args) == 0 {
-				res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+				res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{})
 				if err != nil {
 					return err
 				}
@@ -36,7 +32,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			} else {
-				_, err = client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
+				_, err = client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
 					Name: args[0],
 				})
 				if err != nil {
@@ -49,9 +45,9 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg.Org = defaultOrg
+			ch.Org = defaultOrg
 
-			ch.Printer.Printf("Set default organization to %q.\n", defaultOrg)
+			ch.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

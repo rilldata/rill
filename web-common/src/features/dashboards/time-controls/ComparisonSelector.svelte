@@ -93,14 +93,7 @@ This component needs to do the following:
 >
   <Tooltip distance={8} suppress={active}>
     {#if chipStyle}
-      <Chip
-        on:click={() => {
-          toggleFloatingElement();
-        }}
-        {label}
-        {active}
-        outline={true}
-      >
+      <Chip on:click={toggleFloatingElement} {label} {active} outline={true}>
         <div slot="body" class="flex gap-x-2">
           <div
             class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
@@ -118,12 +111,7 @@ This component needs to do the following:
         </div>
       </Chip>
     {:else}
-      <SelectorButton
-        {active}
-        on:click={() => {
-          toggleFloatingElement();
-        }}
-      >
+      <SelectorButton {active} on:click={toggleFloatingElement}>
         <div class="flex items-center gap-x-3">
           <span class="ui-copy-icon"><Compare size="16px" /></span>
 
@@ -141,9 +129,9 @@ This component needs to do the following:
   <Menu
     minWidth="280px"
     slot="floating-element"
-    let:toggleFloatingElement
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
+    let:handleClose
+    on:escape={handleClose}
+    on:click-outside={handleClose}
     label="Comparison selector"
   >
     <div class="px-2 pb-2">
@@ -161,7 +149,7 @@ This component needs to do the following:
       }}
       on:select={() => {
         disableAllComparisons();
-        toggleFloatingElement();
+        handleClose();
       }}
     >
       <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
@@ -176,7 +164,7 @@ This component needs to do the following:
       }}
       on:select={() => {
         enableComparison("time");
-        toggleFloatingElement();
+        handleClose();
       }}
     >
       <span class:font-bold={intermediateSelection === TIME}> {TIME} </span>
@@ -195,7 +183,7 @@ This component needs to do the following:
           }}
           on:select={() => {
             enableComparison("dimension", option.name);
-            toggleFloatingElement();
+            handleClose();
           }}
         >
           <span class:font-bold={intermediateSelection === option.name}>

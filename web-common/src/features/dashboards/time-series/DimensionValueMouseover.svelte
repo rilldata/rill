@@ -1,15 +1,18 @@
 <script lang="ts">
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
-  import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  export let point: NumericPlotPoint;
+  import type { TimeSeriesDatum } from "./timeseries-data-store";
+  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
+  import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+
+  export let point: TimeSeriesDatum;
   export let xAccessor: string;
   export let yAccessor: string;
-  export let mouseoverFormat;
+  export let mouseoverFormat: ReturnType<typeof createMeasureValueFormatter>;
   export let dimensionData: DimensionDataItem[];
-  export let dimensionValue: string | undefined;
+  export let dimensionValue: string | null | undefined;
   export let validPercTotal: number | null;
   export let hovered = false;
 
@@ -39,7 +42,17 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    const y = bisectData(x, "center", xAccessor, dimension?.data)[yAccessor];
+    if (!x) return { y: null, fillClass: undefined, name: "" };
+
+    const { entry: bisected } = bisectData(
+      new Date(x),
+      "center",
+      xAccessor,
+      dimension?.data,
+    );
+    if (bisected === undefined)
+      return { y: null, fillClass: undefined, name: "" };
+    const y = bisected[yAccessor];
     return {
       y,
       fillClass: dimension?.fillClass,
@@ -49,29 +62,36 @@
 
   $: points = yValues
     .map((dimension) => {
-      const y = dimension.y;
-      const currentPointIsNull = y === null;
-      let value = mouseoverFormat(y);
+      const currentPointIsNull = dimension.y === null;
+      const y = Number(dimension.y);
+      let value = mouseoverFormat(
+        dimension.y === null || typeof dimension.y === "string"
+          ? dimension.y
+          : y,
+      );
+
       if (validPercTotal) {
         const percOfTotal = y / validPercTotal;
         value =
           mouseoverFormat(y) + ",  " + (percOfTotal * 100).toFixed(2) + "%";
       }
-      return {
-        x,
+      const point: Point = {
+        x: Number(x),
         y,
-        value,
+        value: value ?? undefined,
         yOverride: currentPointIsNull,
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
-        key: dimension.name,
-        label: hovered ? truncate(dimension.name) : "",
+        key: dimension.name === null ? "null" : dimension.name,
+        label: hovered ? truncate(dimension.name || "null") : "",
         pointColorClass: dimension.fillClass,
         valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",
         labelColorClass: "fill-gray-600",
         labelStyleClass: "font-semibold",
       };
+
+      return point;
     })
     .filter((d) => !d.yOverride);
 
@@ -87,7 +107,7 @@
       direction="left"
       flipAtEdge="body"
       formatValue={mouseoverFormat}
-      point={pointSet || []}
+      point={pointSet}
     />
   </WithGraphicContexts>
 {/if}

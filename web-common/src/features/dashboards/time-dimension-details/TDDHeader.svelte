@@ -12,7 +12,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
@@ -27,7 +26,6 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
@@ -38,12 +36,12 @@
   export let metricViewName: string;
   export let dimensionName: string;
   export let isFetching = false;
-  export let comparing: TDDComparison;
+  export let comparing: TDDComparison | undefined;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
 
-  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
+  const { adminServer } = featureFlags;
 
   const {
     actions: {
@@ -102,12 +100,10 @@
   }
 
   function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, metricViewName);
     toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
-    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
   }
 
@@ -165,7 +161,7 @@
 </script>
 
 <div
-  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11"
+  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11 w-full"
 >
   <div class="flex gap-x-3 items-center font-normal text-gray-500">
     <div class="flex items-center gap-x-2">
@@ -249,10 +245,7 @@
         </TooltipContent>
       </Tooltip>
 
-      <TDDExportButton
-        {metricViewName}
-        includeScheduledReport={$featureFlags.adminServer}
-      />
+      <TDDExportButton {metricViewName} includeScheduledReport={$adminServer} />
 
       <Button
         compact

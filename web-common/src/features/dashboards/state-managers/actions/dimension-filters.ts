@@ -5,11 +5,11 @@ import {
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
-import type { DashboardMutables } from "./types";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
+import type { DashboardMutables } from "./types";
 
 export function toggleDimensionValueSelection(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
   dimensionValue: string,
   keepPillVisible?: boolean,
@@ -18,10 +18,6 @@ export function toggleDimensionValueSelection(
    */
   isExclusiveFilter?: boolean,
 ) {
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
-
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
   }
@@ -67,7 +63,7 @@ export function toggleDimensionValueSelection(
 }
 
 export function toggleDimensionFilterMode(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
 ) {
   const exclude = dashboard.dimensionFilterExcludeMode.get(dimensionName);
@@ -76,10 +72,6 @@ export function toggleDimensionFilterMode(
   if (!dashboard.whereFilter?.cond?.exprs) {
     return;
   }
-
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
 
   const exprIdx = dashboard.whereFilter.cond.exprs.findIndex(
     (e) => e.cond?.exprs?.[0].ident === dimensionName,
@@ -93,13 +85,9 @@ export function toggleDimensionFilterMode(
 }
 
 export function removeDimensionFilter(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
 ) {
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
-
   if (dashboard.temporaryFilterName === dimensionName) {
     dashboard.temporaryFilterName = null;
     return;
@@ -111,14 +99,10 @@ export function removeDimensionFilter(
 }
 
 export function selectItemsInFilter(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
-  values: string[],
+  values: (string | null)[],
 ) {
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
-
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
@@ -142,14 +126,10 @@ export function selectItemsInFilter(
 }
 
 export function deselectItemsInFilter(
-  { dashboard, cancelQueries }: DashboardMutables,
+  { dashboard }: DashboardMutables,
   dimensionName: string,
-  values: string[],
+  values: (string | null)[],
 ) {
-  // if we are able to update the filters, we must cancel any queries
-  // that are currently running.
-  cancelQueries();
-
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     return;

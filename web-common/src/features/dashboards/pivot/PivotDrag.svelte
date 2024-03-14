@@ -8,21 +8,27 @@
   export let title: PivotSidebarSection;
   export let items: PivotChipData[];
   export let collapsed = false;
+  export let chipsPerSection: number;
+  export let extraSpace: boolean;
+  export let otherChipCounts: number[];
 
-  let showMore = false;
+  $: fit =
+    extraSpace ||
+    items.length < chipsPerSection ||
+    leavesSpaceForThirdSection();
 
-  $: visible = showMore ? items.length : 3;
+  function leavesSpaceForThirdSection() {
+    return otherChipCounts.some(
+      (count) => count + items.length < chipsPerSection * 2,
+    );
+  }
 
   function toggleCollapse() {
     collapsed = !collapsed;
   }
-
-  function toggleShowMore() {
-    showMore = !showMore;
-  }
 </script>
 
-<div class="flex flex-col gap-1 items-start">
+<div class="container" class:fit class:full={!fit}>
   <button class="flex gap-1" on:click={toggleCollapse}>
     <span class="header">{title}</span>
     <div class="transition-transform" class:-rotate-180={!collapsed}>
@@ -30,24 +36,44 @@
     </div>
   </button>
 
-  {#if !collapsed}
-    <DragList items={items.slice(0, visible)} />
-
-    {#if !collapsed && items.length > 3}
-      <button class="see-more" on:click={toggleShowMore}>
-        {showMore ? "Show less" : "Show more"}
-      </button>
+  <div class="w-full h-fit overflow-scroll px-[2px] pb-2">
+    {#if !collapsed}
+      {#if items.length}
+        <DragList {items} zone={title} />
+      {:else}
+        <p class="text-gray-500 my-1">No available fields</p>
+      {/if}
     {/if}
-  {/if}
+  </div>
 </div>
 
 <style lang="postcss">
-  button {
-    @apply flex items-center justify-center;
+  .full {
+    height: 100% !important;
+    flex-shrink: 1 !important;
+    /* This is enough to work in Safari without the JS workaround */
+    /* flex-basis: 33% !important; */
+    /* max-height: fit-content !important; */
   }
 
-  .see-more {
-    @apply ml-2;
+  .fit {
+    height: fit-content !important;
+    flex-shrink: 0 !important;
+  }
+
+  .container {
+    @apply pt-3 px-4;
+    @apply flex flex-col gap-1 items-start;
+    @apply w-full overflow-hidden flex-grow-0;
+    @apply border-b border-slate-200;
+  }
+
+  .container:last-of-type {
+    @apply border-b-0;
+  }
+
+  button {
+    @apply flex items-center justify-center;
   }
 
   .header {

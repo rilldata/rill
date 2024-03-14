@@ -26,6 +26,8 @@
           alertTime: info.row.original.executionTime,
           timeZone:
             $alertQuery.data.resource.alert.spec.refreshSchedule.timeZone,
+          currentExecution:
+            $alertQuery.data.resource.alert.state.currentExecution,
           result: info.row.original.result,
         }),
     },

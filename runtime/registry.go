@@ -72,7 +72,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance, rest
 }
 
 // DeleteInstance deletes an instance and stops its controller.
-func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB bool) error {
+func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLAP *bool) error {
 	inst, err := r.registryCache.get(instanceID)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
@@ -83,8 +83,8 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// For idempotency, it's ok for some steps to fail
 
-	// Get OLAP info for dropDB
-	olapDriver, olapCfg, err := r.connectorConfig(ctx, instanceID, inst.OLAPConnector)
+	// Get OLAP info for dropOLAP
+	olapDriver, olapCfg, err := r.connectorConfig(ctx, instanceID, inst.ResolveOLAPConnector())
 	if err != nil {
 		r.logger.Error("delete instance: error getting config", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
@@ -98,8 +98,14 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
+	// If dropOLAP isn't set, let it default to true for DuckDB
+	if dropOLAP == nil && olapDriver == "duckdb" {
+		d := true
+		dropOLAP = &d
+	}
+
 	// Can now drop the OLAP
-	if dropDB {
+	if dropOLAP != nil && *dropOLAP {
 		err = drivers.Drop(olapDriver, olapCfg, r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
@@ -124,7 +130,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
 	logger        *zap.Logger
-	activity      activity.Client
+	activity      *activity.Client
 	rt            *Runtime
 	store         drivers.RegistryStore
 	mu            sync.RWMutex
@@ -152,7 +158,7 @@ type instanceWithController struct {
 	reopen    bool
 }
 
-func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac activity.Client) (*registryCache, error) {
+func newRegistryCache(rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac *activity.Client) *registryCache {
 	baseCtx, baseCtxCancel := context.WithCancel(context.Background())
 
 	r := &registryCache{
@@ -165,7 +171,7 @@ func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.Registr
 		baseCtxCancel: baseCtxCancel,
 	}
 
-	return r, nil
+	return r
 }
 
 func (r *registryCache) init(ctx context.Context) error {
@@ -183,7 +189,7 @@ func (r *registryCache) init(ctx context.Context) error {
 	return nil
 }
 
-func (r *registryCache) close(ctx context.Context) error {
+func (r *registryCache) close(ctx context.Context) {
 	wg := sync.WaitGroup{}
 
 	r.mu.Lock()
@@ -202,7 +208,6 @@ func (r *registryCache) close(ctx context.Context) error {
 
 	r.baseCtxCancel()
 	wg.Wait()
-	return nil
 }
 
 func (r *registryCache) list() ([]*drivers.Instance, error) {

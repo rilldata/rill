@@ -32,8 +32,10 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
@@ -111,14 +113,16 @@ export function getDashboardStateFromProto(
     // backwards compatibility
     correctComparisonTimeRange(entity.selectedComparisonTimeRange);
   }
-  entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
+  if (dashboard.showTimeComparison !== undefined) {
+    entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
+  }
 
-  entity.selectedTimeRange = dashboard.timeRange
-    ? fromTimeRangeProto(dashboard.timeRange)
-    : undefined;
-  if (dashboard.timeGrain && entity.selectedTimeRange) {
-    entity.selectedTimeRange.interval =
-      FromProtoTimeGrainMap[dashboard.timeGrain];
+  if (dashboard.timeRange) {
+    entity.selectedTimeRange = fromTimeRangeProto(dashboard.timeRange);
+    if (dashboard.timeGrain) {
+      entity.selectedTimeRange.interval =
+        FromProtoTimeGrainMap[dashboard.timeGrain];
+    }
   }
 
   if (dashboard.scrubRange) {
@@ -132,16 +136,6 @@ export function getDashboardStateFromProto(
 
   if (dashboard.leaderboardMeasure) {
     entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
-  }
-  if (dashboard.selectedDimension) {
-    entity.selectedDimensionName = dashboard.selectedDimension;
-  } else {
-    entity.selectedDimensionName = undefined;
-  }
-  if (dashboard.expandedMeasure) {
-    entity.expandedMeasureName = dashboard.expandedMeasure;
-  } else {
-    entity.expandedMeasureName = undefined;
   }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
@@ -159,7 +153,7 @@ export function getDashboardStateFromProto(
     entity.visibleMeasureKeys = new Set(
       metricsView.measures?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
-  } else if (dashboard.visibleMeasures) {
+  } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
   }
@@ -169,7 +163,7 @@ export function getDashboardStateFromProto(
     entity.visibleDimensionKeys = new Set(
       metricsView.dimensions?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
-  } else if (dashboard.visibleDimensions) {
+  } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
   }
@@ -186,7 +180,11 @@ export function getDashboardStateFromProto(
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
-  entity.pivot = fromPivotProto(dashboard, metricsView);
+  if (dashboard.pivotIsActive !== undefined) {
+    entity.pivot = fromPivotProto(dashboard, metricsView);
+  }
+
+  Object.assign(entity, fromActivePageProto(dashboard));
 
   return entity;
 }
@@ -309,6 +307,13 @@ function fromPivotProto(
     title: dimensionsMap.get(name)?.label || "Unknown",
     type: PivotChipType.Dimension,
   });
+  const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
+    grain: TimeGrain,
+  ) => ({
+    id: FromProtoTimeGrainMap[grain],
+    title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+    type: PivotChipType.Time,
+  });
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -322,15 +327,14 @@ function fromPivotProto(
   return {
     active: dashboard.pivotIsActive ?? false,
     rows: {
-      dimension: dashboard.pivotRowDimensions.map(mapDimension),
+      dimension: [
+        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+        ...dashboard.pivotRowDimensions.map(mapDimension),
+      ],
     },
     columns: {
       dimension: [
-        ...dashboard.pivotColumnTimeDimensions.map((tg) => ({
-          id: FromProtoTimeGrainMap[tg],
-          title: TIME_GRAIN[FromProtoTimeGrainMap[tg]].label,
-          type: PivotChipType.Time,
-        })),
+        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
         ...dashboard.pivotColumnDimensions.map(mapDimension),
       ],
       measure: dashboard.pivotColumnMeasures.map(mapMeasure),
@@ -372,4 +376,56 @@ function correctComparisonTimeRange(
 
 function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
+}
+
+function fromActivePageProto(
+  dashboard: DashboardState,
+): Partial<
+  Pick<
+    MetricsExplorerEntity,
+    "activePage" | "selectedDimensionName" | "expandedMeasureName"
+  >
+> {
+  switch (dashboard.activePage) {
+    case DashboardState_ActivePage.UNSPECIFIED:
+      // backwards compatibility
+      if (dashboard.selectedDimension) {
+        return {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          expandedMeasureName: undefined,
+          selectedDimensionName: dashboard.selectedDimension,
+        };
+      } else if (dashboard.expandedMeasure) {
+        return {
+          activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+          expandedMeasureName: dashboard.expandedMeasure,
+          selectedDimensionName: undefined,
+        };
+      }
+      // return empty so that nothing is overridden
+      // this is used to store partial data in the proto, like filters only, which should not override selected values
+      return {};
+
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.PIVOT:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: undefined,
+        selectedDimensionName: undefined,
+      };
+
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: undefined,
+        selectedDimensionName: dashboard.selectedDimension,
+      };
+
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      return {
+        activePage: dashboard.activePage,
+        expandedMeasureName: dashboard.expandedMeasure,
+        selectedDimensionName: undefined,
+      };
+  }
 }

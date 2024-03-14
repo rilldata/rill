@@ -17,8 +17,13 @@ export interface CommonUserFields {
 }
 
 export interface MetricsEvent extends CommonFields, CommonUserFields {
-  event_datetime: number;
+  // Base fields required by the telemetry service. For details, see rill/runtime/pkg/activity/README.md.
+  event_id: string;
+  event_time: string;
   event_type: string;
+  event_name: string;
+  // Legacy:
+  event_datetime: number;
 }
 
 export enum MetricsEventSpace {
@@ -29,10 +34,13 @@ export enum MetricsEventSpace {
 }
 
 export enum MetricsEventScreenName {
+  Table = "table",
   Source = "source",
   Model = "model",
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
+  Chart = "chart",
+  CustomDashboard = "custom-dashboard",
   CLI = "cli",
   Splash = "splash",
   Home = "home",
@@ -42,6 +50,8 @@ export enum MetricsEventScreenName {
   ReportExport = "report-export",
   Alert = "alert",
   Unknown = "unknown",
+  Explore = "explore",
+  Pivot = "pivot",
 }
 
 export const ScreenToEntityMap = {

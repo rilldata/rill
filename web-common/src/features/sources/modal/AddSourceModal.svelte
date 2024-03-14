@@ -1,6 +1,8 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
+  import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
+
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
     createRuntimeServiceListConnectors,
@@ -8,6 +10,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
@@ -25,14 +28,17 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import ClickHouseInstructions from "./ClickHouseInstructions.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import { duplicateSourceName } from "../sources-store";
+  import DuplicateSource from "./DuplicateSource.svelte";
+  import { addSourceModal } from "./add-source-visibility";
 
-  export let open: boolean;
+  export let step = 1;
+  export let selectedConnector: null | V1ConnectorSpec = null;
 
-  let step = 1;
-  let selectedConnector: undefined | V1ConnectorSpec;
   let requestConnector = false;
 
   const TAB_ORDER = [
@@ -42,6 +48,7 @@
     // duckdb
     "bigquery",
     "athena",
+    "redshift",
     "duckdb",
     "postgres",
     "mysql",
@@ -50,6 +57,7 @@
     "salesforce",
     "local_file",
     "https",
+    "clickhouse",
   ];
 
   const ICONS = {
@@ -59,6 +67,7 @@
     // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
     athena: AmazonAthena,
+    redshift: AmazonRedshift,
     duckdb: DuckDB,
     postgres: Postgres,
     mysql: MySQL,
@@ -67,6 +76,7 @@
     salesforce: Salesforce,
     local_file: LocalFile,
     https: Https,
+    clickhouse: ClickHouse,
   };
 
   const connectors = createRuntimeServiceListConnectors({
@@ -102,8 +112,9 @@
   }
   function resetModal() {
     requestConnector = false;
-    selectedConnector = undefined;
+    selectedConnector = null;
     step = 1;
+    addSourceModal.close();
   }
 
   const dispatch = createEventDispatcher();
@@ -113,8 +124,8 @@
     dispatch("close");
   }
 
-  function onCancelDialog() {
-    behaviourEvent?.fireSourceTriggerEvent(
+  async function onCancelDialog() {
+    await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
       $appScreen,
@@ -126,14 +137,16 @@
 </script>
 
 <!-- This precise width fits exactly 3 connectors per line  -->
-<Dialog {open} on:close={onCancelDialog} widthOverride="w-[560px]">
+<Dialog open on:close={onCancelDialog} widthOverride="w-[560px]">
   <div slot="title">
     {#if step === 1}
       Add a source
     {:else if step === 2}
       <h2 class="flex gap-x-1 items-center">
         <span>
-          {#if selectedConnector}
+          {#if $duplicateSourceName !== null}
+            Duplicate source
+          {:else if selectedConnector}
             {selectedConnector?.displayName}
           {/if}
 
@@ -145,7 +158,12 @@
     {/if}
   </div>
   <div slot="body" class="flex flex-col gap-y-4">
-    {#if step === 1}
+    {#if $duplicateSourceName}
+      <DuplicateSource
+        on:cancel={onCompleteDialog}
+        on:complete={onCompleteDialog}
+      />
+    {:else if step === 1}
       {#if $connectors.data}
         <div class="grid grid-cols-3 gap-4">
           {#each $connectors?.data?.connectors ?? [] as connector}
@@ -170,8 +188,15 @@
       </div>
     {:else if step === 2}
       {#if selectedConnector}
-        {#if selectedConnector.name === "local_file"}
+        {#if $duplicateSourceName !== null}
+          <DuplicateSource
+            on:cancel={onCompleteDialog}
+            on:complete={onCompleteDialog}
+          />
+        {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
+        {:else if selectedConnector.name === "clickhouse"}
+          <ClickHouseInstructions on:back={resetModal} />
         {:else}
           <RemoteSourceForm
             connector={selectedConnector}

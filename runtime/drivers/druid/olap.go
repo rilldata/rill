@@ -120,8 +120,30 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
-func (c *connection) DropDB() error {
-	return fmt.Errorf("dropping database not supported")
+func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
+	if r == nil {
+		return nil, nil
+	}
+
+	cts, err := r.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	fields := make([]*runtimev1.StructType_Field, len(cts))
+	for i, ct := range cts {
+		nullable, ok := ct.Nullable()
+		if !ok {
+			nullable = true
+		}
+
+		fields[i] = &runtimev1.StructType_Field{
+			Name: ct.Name(),
+			Type: databaseTypeToPB(ct.DatabaseTypeName(), nullable),
+		}
+	}
+
+	return &runtimev1.StructType{Fields: fields}, nil
 }
 
 type informationSchema struct {
@@ -231,16 +253,10 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 			res = append(res, t)
 		}
 
-		// parse column type
-		colType, err := databaseTypeToPB(columnType, nullable)
-		if err != nil {
-			return nil, err
-		}
-
 		// append column
 		t.Schema.Fields = append(t.Schema.Fields, &runtimev1.StructType_Field{
 			Name: columnName,
-			Type: colType,
+			Type: databaseTypeToPB(columnType, nullable),
 		})
 	}
 
@@ -251,38 +267,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
-	if r == nil {
-		return nil, nil
-	}
-
-	cts, err := r.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	fields := make([]*runtimev1.StructType_Field, len(cts))
-	for i, ct := range cts {
-		nullable, ok := ct.Nullable()
-		if !ok {
-			nullable = true
-		}
-
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
-		fields[i] = &runtimev1.StructType_Field{
-			Name: ct.Name(),
-			Type: t,
-		}
-	}
-
-	return &runtimev1.StructType{Fields: fields}, nil
-}
-
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "BOOLEAN":
@@ -315,7 +300,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	}
 
-	return t, nil
+	return t
 }
 
 // retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable

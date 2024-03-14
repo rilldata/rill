@@ -9,14 +9,16 @@
   import ModelInspectorHeader from "@rilldata/web-common/features/models/workspace/inspector/ModelInspectorHeader.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     V1Resource,
     createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
-  import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
+  import {
+    getModelOutOfPossiblyMalformedYAML,
+    getTableOutOfPossiblyMalformedYAML,
+  } from "../../utils";
 
   export let metricsDefName: string;
 
@@ -31,9 +33,10 @@
 
   // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
+  $: tableName = getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
 
   // check to see if this model name exists.
-  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: modelQuery = useModel($runtime.instanceId, modelName ?? "");
 
   $: allModels = useModels($runtime.instanceId);
 
@@ -45,18 +48,16 @@
   }
 
   let entry: V1Resource;
+  let containerWidth: number;
 
   // refresh entry value only if the data has changed
   $: entry = $modelQuery?.data || entry;
-
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
 </script>
 
 <div>
   {#if modelName && !$modelQuery?.isError && isValidModel}
     {#key modelName}
-      <div class="pt-1 pb-2" use:listenToNodeResize>
+      <div class="pt-1 pb-2" bind:clientWidth={containerWidth}>
         <div class="pl-4 pr-4">
           <CollapsibleSectionTitle
             tooltipText="model summary"
@@ -67,10 +68,7 @@
         </div>
         {#if showModelInformation}
           <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-            <ModelInspectorHeader
-              {modelName}
-              containerWidth={$observedNode?.clientWidth}
-            />
+            <ModelInspectorHeader {modelName} {containerWidth} />
             <hr class:opacity-0={!showColumns} class="transition-opacity" />
           </div>
         {/if}
@@ -111,6 +109,14 @@
           <p>
             Set a model with <code>model: MODEL_NAME</code> to connect your metrics
             to a model.
+          </p>
+        </div>
+      {:else if tableName !== undefined}
+        <div>
+          <p>Table not defined.</p>
+          <p>
+            Set a table with <code>table: TABLE_NAME</code> to connect your metrics
+            to a table.
           </p>
         </div>
       {/if}

@@ -37,6 +37,9 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
+	ChartSpec       *runtimev1.ChartSpec
+	DashboardSpec   *runtimev1.DashboardSpec
+	APISpec         *runtimev1.APISpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -68,6 +71,9 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
+	ResourceKindChart
+	ResourceKindDashboard
+	ResourceKindAPI
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -80,7 +86,7 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindSource, nil
 	case "model":
 		return ResourceKindModel, nil
-	case "metricsview", "metrics_view", "dashboard":
+	case "metricsview", "metrics_view":
 		return ResourceKindMetricsView, nil
 	case "migration":
 		return ResourceKindMigration, nil
@@ -90,6 +96,12 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
+	case "chart":
+		return ResourceKindChart, nil
+	case "dashboard":
+		return ResourceKindDashboard, nil
+	case "api":
+		return ResourceKindAPI, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
 	}
@@ -113,6 +125,12 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
+	case ResourceKindChart:
+		return "Chart"
+	case ResourceKindDashboard:
+		return "Dashboard"
+	case ResourceKindAPI:
+		return "API"
 	default:
 		panic(fmt.Sprintf("unexpected resource kind: %d", k))
 	}
@@ -133,11 +151,10 @@ type Diff struct {
 // Parser is not concurrency safe.
 type Parser struct {
 	// Options
-	Repo             drivers.RepoStore
-	InstanceID       string
-	Environment      string
-	DefaultConnector string
-	DuckDBConnectors []string
+	Repo                 drivers.RepoStore
+	InstanceID           string
+	Environment          string
+	DefaultOLAPConnector string
 
 	// Output
 	RillYAML  *RillYAML
@@ -174,16 +191,12 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 }
 
 // Parse creates a new parser and parses the entire project.
-//
-// Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
-// To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) (*Parser, error) {
 	p := &Parser{
-		Repo:             repo,
-		InstanceID:       instanceID,
-		Environment:      environment,
-		DefaultConnector: defaultConnector,
-		DuckDBConnectors: duckDBConnectors,
+		Repo:                 repo,
+		InstanceID:           instanceID,
+		Environment:          environment,
+		DefaultOLAPConnector: defaultOLAPConnector,
 	}
 
 	err := p.reload(ctx)
@@ -579,9 +592,9 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	}
 
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
-	node, err := p.parseStem(ctx, paths, yamlPath, yaml, sqlPath, sql)
+	node, err := p.parseStem(paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		err = p.parseNode(ctx, node)
+		err = p.parseNode(node)
 	}
 
 	// Spread error across the node's paths (YAML and/or SQL files)
@@ -720,6 +733,12 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
+	case ResourceKindChart:
+		r.ChartSpec = &runtimev1.ChartSpec{}
+	case ResourceKindDashboard:
+		r.DashboardSpec = &runtimev1.DashboardSpec{}
+	case ResourceKindAPI:
+		r.APISpec = &runtimev1.APISpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
 	}
@@ -833,6 +852,36 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 	})
 }
 
+// driverForConnector resolves a connector name to a connector driver.
+// It should not be invoked until after rill.yaml has been parsed.
+func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error) {
+	// Unless overridden in rill.yaml, the connector name is the driver name
+	driver := name
+	if p.RillYAML != nil {
+		for _, c := range p.RillYAML.Connectors {
+			if c.Name == name {
+				driver = c.Type
+				break
+			}
+		}
+	}
+
+	connector, ok := drivers.Connectors[driver]
+	if !ok {
+		return "", nil, fmt.Errorf("unknown connector type %q", driver)
+	}
+	return driver, connector, nil
+}
+
+// defaultOLAPConnector resolves the project's default OLAP connector.
+// It should not be invoked until after rill.yaml has been parsed.
+func (p *Parser) defaultOLAPConnector() string {
+	if p.RillYAML != nil && p.RillYAML.OLAPConnector != "" {
+		return p.RillYAML.OLAPConnector
+	}
+	return p.DefaultOLAPConnector
+}
+
 // pathIsSQL returns true if the path is a SQL file
 func pathIsSQL(path string) bool {
 	return strings.HasSuffix(path, ".sql")
@@ -863,7 +912,7 @@ func normalizePath(path string) string {
 }
 
 // pathStem returns a slice of the path without the final file extension.
-// If the path does not contain a file extension, the entire path is returned.f
+// If the path does not contain a file extension, the entire path is returned
 func pathStem(path string) string {
 	i := strings.LastIndexByte(path, '.')
 	if i == -1 {

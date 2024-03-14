@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"time"
@@ -22,7 +21,7 @@ type ModelYAML struct {
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseModel(ctx context.Context, node *Node) error {
+func (p *Parser) parseModel(node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
@@ -52,13 +51,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// If the connector is a DuckDB connector, extract info using DuckDB SQL parsing.
 	// (If templating was used, we skip DuckDB inference because the DuckDB parser may not be able to parse the templated code.)
-	isDuckDB := false
-	for _, c := range p.DuckDBConnectors {
-		if c == node.Connector {
-			isDuckDB = true
-			break
-		}
-	}
+	driver, _, _ := p.driverForConnector(node.Connector)
+	isDuckDB := driver == "duckdb"
 	duckDBInferRefs := true
 	if tmp.ParserConfig.DuckDB.InferRefs != nil {
 		duckDBInferRefs = *tmp.ParserConfig.DuckDB.InferRefs

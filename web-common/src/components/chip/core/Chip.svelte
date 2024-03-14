@@ -13,6 +13,8 @@
   export let active = false;
   export let outline = false;
   export let readOnly = false;
+  export let grab = false;
+  export let slideDuration = 150;
 
   /** chip style props */
   export let extraRounded = true;
@@ -28,6 +30,7 @@
   export let outlineActiveClass = defaultChipColors.outlineActiveClass;
 
   /** if removable is true, these props control the tooltip positioning */
+  export let supressTooltip = false;
   export let removeButtonTooltipLocation = "bottom";
   export let removeButtonTooltipAlignment = "start";
   export let removeButtonTooltipDistance = 12;
@@ -41,11 +44,11 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div in:slideRight={{ duration: 150 }}>
+<div in:slideRight={{ duration: slideDuration }}>
   {#if readOnly}
     <div
       class="
-      grid gap-x-2 items-center px-4
+      grid gap-x-2 items-center
       py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'}
       {textClass}
       {active ? bgActiveClass : bgBaseClass}
@@ -66,10 +69,9 @@
       {/if}
     </div>
   {:else}
-    <button
-      on:click
-      class="
-    grid gap-x-2 items-center pl-2 pr-{extraPadding ? '4' : '2'}
+    <div
+      class="w-fit
+    grid items-center
       py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'} cursor-pointer
     {textClass}
     {bgHoverClass} 
@@ -92,6 +94,7 @@
           tooltipLocation={removeButtonTooltipLocation}
           tooltipAlignment={removeButtonTooltipAlignment}
           tooltipDistance={removeButtonTooltipDistance}
+          {supressTooltip}
           on:remove
         >
           <svelte:fragment slot="remove-tooltip">
@@ -112,10 +115,24 @@
       {/if}
       <!-- body -->
       {#if $$slots.body}
-        <div>
+        <button
+          on:click
+          on:mousedown
+          class="px-2 pr-{extraPadding
+            ? '4'
+            : '2'} text-inherit w-full select-none"
+          class:grab
+          aria-label={label}
+        >
           <slot name="body" />
-        </div>
+        </button>
       {/if}
-    </button>
+    </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  .grab {
+    @apply cursor-grab;
+  }
+</style>

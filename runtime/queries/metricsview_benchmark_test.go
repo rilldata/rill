@@ -37,7 +37,7 @@ func Benchmark_writeCSV(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err = writeCSV(meta, data, w)
+		err = WriteCSV(meta, data, w)
 		require.NoError(b, err)
 	}
 }

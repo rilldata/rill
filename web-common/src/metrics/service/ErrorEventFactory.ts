@@ -55,6 +55,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
   ): SourceErrorEvent {
     const event = this.getBaseMetricsEvent(
       "error",
+      ErrorEventAction.SourceError,
       commonFields,
       commonUserFields,
     ) as SourceErrorEvent;
@@ -78,6 +79,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
+      ErrorEventAction.ErrorBoundary,
       commonFields,
       commonUserFields,
     ) as HTTPErrorEvent;
@@ -98,6 +100,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
+      ErrorEventAction.ErrorBoundary,
       commonFields,
       commonUserFields,
     ) as JavascriptErrorEvent;

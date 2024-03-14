@@ -125,10 +125,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		}
 
 		if c.activity != nil {
-			c.activity.Emit(ctx, "clickhouse_queue_latency_ms", float64(queueLatency), attrs...)
-			c.activity.Emit(ctx, "clickhouse_total_latency_ms", float64(totalLatency), attrs...)
+			c.activity.RecordMetric(ctx, "clickhouse_queue_latency_ms", float64(queueLatency), attrs...)
+			c.activity.RecordMetric(ctx, "clickhouse_total_latency_ms", float64(totalLatency), attrs...)
 			if acquired {
-				c.activity.Emit(ctx, "clickhouse_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
+				c.activity.RecordMetric(ctx, "clickhouse_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
 			}
 		}
 	}()
@@ -270,10 +270,6 @@ func (c *connection) RenameTable(ctx context.Context, name, newName string, view
 	return nil
 }
 
-func (c *connection) DropDB() error {
-	return fmt.Errorf("dropping database not supported")
-}
-
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
 func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
@@ -393,12 +389,13 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
-		nullable = true
+		return databaseTypeToPB(dbt, true)
 	}
 
 	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
+		return databaseTypeToPB(dbt, nullable)
 	}
 
 	match := true

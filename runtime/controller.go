@@ -68,7 +68,7 @@ type Controller struct {
 	Runtime     *Runtime
 	InstanceID  string
 	Logger      *zap.Logger
-	Activity    activity.Client
+	Activity    *activity.Client
 	mu          sync.RWMutex
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
@@ -95,7 +95,7 @@ type Controller struct {
 }
 
 // NewController creates a new Controller
-func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger, ac activity.Client) (*Controller, error) {
+func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger, ac *activity.Client) (*Controller, error) {
 	c := &Controller{
 		Runtime:        rt,
 		InstanceID:     instanceID,
@@ -491,7 +491,7 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 	defer c.unlock(ctx, false)
 
 	if !c.isReconcilerForResource(ctx, name) {
-		c.cancelIfRunning(name, false)
+		c.cancelIfRunning(name)
 		c.enqueue(name)
 	}
 
@@ -527,7 +527,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	defer c.unlock(ctx, false)
 
 	if !c.isReconcilerForResource(ctx, name) {
-		c.cancelIfRunning(name, false)
+		c.cancelIfRunning(name)
 		c.enqueue(name)
 	}
 
@@ -578,7 +578,7 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 	defer c.unlock(ctx, false)
 
 	if !c.isReconcilerForResource(ctx, name) {
-		c.cancelIfRunning(name, false)
+		c.cancelIfRunning(name)
 		c.enqueue(name)
 	}
 
@@ -651,7 +651,7 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
-	c.cancelIfRunning(name, false)
+	c.cancelIfRunning(name)
 
 	// Check resource exists (otherwise, DAG lookup may panic)
 	_, err := c.catalog.get(name, false, false)
@@ -737,7 +737,7 @@ func (c *Controller) Cancel(ctx context.Context, name *runtimev1.ResourceName) e
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
-	c.cancelIfRunning(name, false)
+	c.cancelIfRunning(name)
 	return nil
 }
 
@@ -1446,10 +1446,10 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 // cancelIfRunning cancels a running invocation for the resource.
 // It does nothing if no invocation is running for the resource.
 // It must be called while c.mu is held.
-func (c *Controller) cancelIfRunning(n *runtimev1.ResourceName, reschedule bool) {
+func (c *Controller) cancelIfRunning(n *runtimev1.ResourceName) {
 	inv, ok := c.invocations[nameStr(n)]
 	if ok {
-		inv.cancel(reschedule)
+		inv.cancel(false)
 	}
 }
 

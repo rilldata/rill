@@ -33,7 +33,10 @@
     // small negative change.
     //
     // Otherwise, we format the number as usual.
-    intValue = value.int;
+    let intPart = +value.int;
+    let fracPart = +value.frac / 10 ** value.frac.length;
+    intValue = Math.round(intPart + fracPart).toString();
+
     diffIsNegative = value?.neg === "-";
     negSign = diffIsNegative && !value?.approxZero ? "-" : "";
     approxSign = value?.approxZero ? "~" : "";
@@ -54,7 +57,7 @@
   {isNull}
   classes="{tabularNumber
     ? 'ui-copy-number'
-    : ''} font-normal {customStyle} {inTable && 'block text-right'}"
+    : ''} font-normal w-full {customStyle} {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">
