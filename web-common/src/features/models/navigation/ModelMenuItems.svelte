@@ -83,7 +83,10 @@
   disabled={disableCreateDashboard}
   icon
   on:select={() => {
-    dispatch("generate-chart", $modelQuery.data?.model?.state?.table ?? "");
+    dispatch("generate-chart", {
+      table: $modelQuery.data?.model?.state?.table,
+      connector: $modelQuery.data?.model?.state?.connector,
+    });
     toggleMenu();
   }}
   propogateSelect={false}

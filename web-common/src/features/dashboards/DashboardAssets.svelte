@@ -3,10 +3,12 @@
   import { page } from "$app/stores";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
@@ -33,6 +35,7 @@
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
+  import { WandIcon } from "lucide-svelte";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
@@ -190,6 +193,13 @@
     $sourceNames?.data?.length > 0 &&
     $modelNames?.data?.length > 0 &&
     $dashboardNames?.data?.length === 0;
+
+  let showGenerateChartModal = false;
+  let generateChartMetricsView = "";
+  function openGenerateChartModal(metricsView: string) {
+    showGenerateChartModal = true;
+    generateChartMetricsView = metricsView;
+  }
 </script>
 
 <NavigationHeader bind:show={showMetricsDefs} toggleText="dashboards"
@@ -243,6 +253,22 @@
             <MetricsIcon slot="icon" />
             Edit metrics
           </MenuItem>
+          <MenuItem
+            disabled={!dashboardData?.errors?.length}
+            icon
+            on:select={() => openGenerateChartModal(dashboardName)}
+          >
+            <Explore slot="icon" />
+            <div class="flex gap-x-2 items-center">
+              Generate chart with AI
+              <WandIcon class="w-3 h-3" />
+            </div>
+            <svelte:fragment slot="description">
+              {#if hasSourceError}
+                Dashboard has errors
+              {/if}
+            </svelte:fragment>
+          </MenuItem>
           <Divider />
           <MenuItem
             icon
@@ -274,4 +300,11 @@
       currentAssetName={renameMetricsDefName}
     />
   {/if}
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    metricsView={generateChartMetricsView}
+  />
 {/if}

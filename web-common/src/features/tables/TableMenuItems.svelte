@@ -2,7 +2,6 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
-  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -94,5 +93,3 @@
     <WandIcon class="w-3 h-3" />
   </div>
 </MenuItem>
-
-<GenerateChartYAMLPrompt bind:open={generateOpen} table={tableName} />

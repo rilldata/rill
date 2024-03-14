@@ -180,7 +180,7 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &rows))
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 3, len(rows[0]))
 	require.Equal(t, "msn.com", rows[0]["domain"])
@@ -207,7 +207,7 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &rows))
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, 3.0, rows[0]["total_imp"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
@@ -231,7 +231,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &rows))
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, nil, rows[0]["total_vol"])
 	require.Equal(t, 3.0, rows[0]["total_imp"])
@@ -252,7 +252,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	var resp []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &resp))
+	require.NoError(t, json.Unmarshal(res.Data, &resp))
 	require.Equal(t, 1, len(resp))
 	require.Equal(t, 11.0, resp[0]["total_vol"])
 	require.Equal(t, 3.0, resp[0]["total_imp"])

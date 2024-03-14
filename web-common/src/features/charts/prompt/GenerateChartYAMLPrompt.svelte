@@ -9,7 +9,9 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let open: boolean;
-  export let table: string;
+  export let table: string = "";
+  export let connector: string = "";
+  export let metricsView: string = "";
 
   let prompt: string;
 
@@ -18,16 +20,24 @@
 
   async function createVegaConfig() {
     const newChartName = getName(`${table}_chart`, $chartFileNames.data ?? []);
-    await generateVegaConfig(table, prompt, newChartName);
+    await generateVegaConfig(
+      prompt,
+      {
+        table,
+        connector,
+        metricsView,
+      },
+      newChartName,
+    );
     open = false;
     await goto(`/chart/${newChartName}`);
   }
 </script>
 
 <Dialog on:close={() => (open = false)} {open}>
-  <svelte:fragment slot="title"
-    >Generate chart yaml for {table} using AI</svelte:fragment
-  >
+  <svelte:fragment slot="title">
+    Generate chart yaml for "{table ?? metricsView}" using AI
+  </svelte:fragment>
   <svelte:fragment slot="body">
     <InputV2 bind:value={prompt} error="" label="Prompt" />
   </svelte:fragment>

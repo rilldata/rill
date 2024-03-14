@@ -44,6 +44,8 @@ import type {
   RuntimeServiceGenerateChartSpecBody,
   V1GenerateMetricsViewFileResponse,
   RuntimeServiceGenerateMetricsViewFileBody,
+  V1GenerateResolverResponse,
+  RuntimeServiceGenerateResolverBody,
   V1RenameFileResponse,
   RuntimeServiceRenameFileBody,
   V1UnpackEmptyResponse,
@@ -1073,6 +1075,54 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
     Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
     TError,
     { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const runtimeServiceGenerateResolver = (
+  instanceId: string,
+  runtimeServiceGenerateResolverBody: RuntimeServiceGenerateResolverBody,
+) => {
+  return httpClient<V1GenerateResolverResponse>({
+    url: `/v1/instances/${instanceId}/files/generate-resolver`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateResolverBody,
+  });
+};
+
+export type RuntimeServiceGenerateResolverMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>
+>;
+export type RuntimeServiceGenerateResolverMutationBody =
+  RuntimeServiceGenerateResolverBody;
+export type RuntimeServiceGenerateResolverMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGenerateResolver = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+    { instanceId: string; data: RuntimeServiceGenerateResolverBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateResolver(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
     TContext
   >(mutationFn, mutationOptions);
 };

@@ -167,7 +167,10 @@
   disabled={disableCreateDashboard}
   icon
   on:select={() => {
-    dispatch("generate-chart", source?.state?.table ?? "");
+    dispatch("generate-chart", {
+      table: source?.state?.table,
+      connector: source?.state?.connector,
+    });
     toggleMenu();
   }}
   propogateSelect={false}

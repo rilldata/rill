@@ -708,14 +708,12 @@ paths:
           schema:
             type: object
             properties:
-              chart:
-                type: string
-              table:
-                type: string
-              metricsView:
-                type: string
               prompt:
                 type: string
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
@@ -751,6 +749,39 @@ paths:
               useAi:
                 type: boolean
             title: Request message for RuntimeService.GenerateMetricsViewFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/generate-resolver:
+    post:
+      operationId: RuntimeService_GenerateResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              table:
+                type: string
+              connector:
+                type: string
+              metricsView:
+                type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/rename:
@@ -3610,8 +3641,6 @@ definitions:
   v1GenerateChartSpecResponse:
     type: object
     properties:
-      sql:
-        type: string
       vegaLiteSpec:
         type: string
   v1GenerateMetricsViewFileResponse:
@@ -3620,6 +3649,13 @@ definitions:
       aiSucceeded:
         type: boolean
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GenerateResolverResponse:
+    type: object
+    properties:
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1GetCatalogEntryResponse:
     type: object
     properties:

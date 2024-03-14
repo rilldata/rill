@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 
@@ -34,16 +35,22 @@ type Resolver interface {
 	ResolveInteractive(ctx context.Context) (*ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
-	// ResolveSchema returns just the schema for the query
-	ResolveSchema(ctx context.Context) (*runtimev1.StructType, error)
 }
 
 // ResolverResult is the result of a resolver's execution.
 type ResolverResult struct {
 	// Data is a JSON encoded array of objects.
 	Data []byte
+	// Schema is the schema for the Data
+	Schema *runtimev1.StructType
 	// Cache indicates whether the result can be cached.
 	Cache bool
+}
+
+// CachedResolverResult is subset of ResolverResult that is cached
+type CachedResolverResult struct {
+	Data   []byte
+	Schema *runtimev1.StructType
 }
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
@@ -88,7 +95,7 @@ type ResolveOptions struct {
 }
 
 // Resolve resolves a query using the given options.
-func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, error) {
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (*CachedResolverResult, error) {
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
@@ -141,14 +148,22 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
-		return val.([]byte), nil
+		res, ok := val.(*CachedResolverResult)
+		if ok {
+			return res, nil
+		}
+		// rerun the query if cache cannot be converted to *CachedResolverResult
 	}
 
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
 		if val, ok := r.queryCache.cache.Get(key); ok {
-			return val, nil
+			res, ok := val.(*CachedResolverResult)
+			if ok {
+				return res, nil
+			}
+			// rerun the query if cache cannot be converted to *CachedResolverResult
 		}
 
 		res, err := resolver.ResolveInteractive(ctx)
@@ -156,35 +171,21 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 			return nil, err
 		}
 
-		if res.Cache {
-			r.queryCache.cache.Set(key, res.Data, int64(len(res.Data)))
+		cRes := &CachedResolverResult{
+			Data:   res.Data,
+			Schema: res.Schema,
 		}
-		return res.Data, nil
+		if res.Cache {
+			r.queryCache.cache.Set(key, cRes, int64(len(res.Data)))
+		}
+		return cRes, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return val.([]byte), nil
-}
-
-func (r *Runtime) ResolveSchema(ctx context.Context, opts *ResolveOptions) (*runtimev1.StructType, error) {
-	// Initialize the resolver
-	initializer, ok := ResolverInitializers[opts.Resolver]
+	res, ok := val.(*CachedResolverResult)
 	if !ok {
-		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
+		return nil, errors.New("failed to parse query response")
 	}
-	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:        r,
-		InstanceID:     opts.InstanceID,
-		Properties:     opts.ResolverProperties,
-		Args:           opts.Args,
-		UserAttributes: opts.UserAttributes,
-		ForExport:      false,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer resolver.Close()
-
-	return resolver.ResolveSchema(ctx)
+	return res, nil
 }

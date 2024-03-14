@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
@@ -1878,6 +1878,110 @@ export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsView
 }
 
 /**
+ * @generated from message rill.runtime.v1.GenerateResolverRequest
+ */
+export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string prompt = 2;
+   */
+  prompt = "";
+
+  /**
+   * @generated from field: string table = 3;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string connector = 4;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string metrics_view = 5;
+   */
+  metricsView = "";
+
+  constructor(data?: PartialMessage<GenerateResolverRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateResolverRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateResolverRequest {
+    return new GenerateResolverRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateResolverRequest {
+    return new GenerateResolverRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateResolverRequest {
+    return new GenerateResolverRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateResolverRequest | PlainMessage<GenerateResolverRequest> | undefined, b: GenerateResolverRequest | PlainMessage<GenerateResolverRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateResolverRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GenerateResolverResponse
+ */
+export class GenerateResolverResponse extends Message<GenerateResolverResponse> {
+  /**
+   * @generated from field: string resolver = 1;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 2;
+   */
+  resolverProperties?: Struct;
+
+  constructor(data?: PartialMessage<GenerateResolverResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateResolverResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateResolverResponse {
+    return new GenerateResolverResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateResolverResponse {
+    return new GenerateResolverResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateResolverResponse {
+    return new GenerateResolverResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateResolverResponse | PlainMessage<GenerateResolverResponse> | undefined, b: GenerateResolverResponse | PlainMessage<GenerateResolverResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateResolverResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GenerateChartSpecRequest
  */
 export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> {
@@ -1887,24 +1991,19 @@ export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> 
   instanceId = "";
 
   /**
-   * @generated from field: string chart = 2;
-   */
-  chart = "";
-
-  /**
-   * @generated from field: string table = 3;
-   */
-  table = "";
-
-  /**
-   * @generated from field: string metrics_view = 4;
-   */
-  metricsView = "";
-
-  /**
-   * @generated from field: string prompt = 5;
+   * @generated from field: string prompt = 2;
    */
   prompt = "";
+
+  /**
+   * @generated from field: string resolver = 3;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 4;
+   */
+  resolverProperties?: Struct;
 
   constructor(data?: PartialMessage<GenerateChartSpecRequest>) {
     super();
@@ -1915,10 +2014,9 @@ export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> 
   static readonly typeName = "rill.runtime.v1.GenerateChartSpecRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "chart", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "resolver_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartSpecRequest {
@@ -1943,11 +2041,6 @@ export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> 
  */
 export class GenerateChartSpecResponse extends Message<GenerateChartSpecResponse> {
   /**
-   * @generated from field: string sql = 1;
-   */
-  sql = "";
-
-  /**
    * @generated from field: string vega_lite_spec = 2;
    */
   vegaLiteSpec = "";
@@ -1960,7 +2053,6 @@ export class GenerateChartSpecResponse extends Message<GenerateChartSpecResponse
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GenerateChartSpecResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

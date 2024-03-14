@@ -60,9 +60,11 @@
 
   let showGenerateChartModal = false;
   let generateChartTable = "";
-  function openGenerateChartModal(tableName: string) {
+  let generateChartConnector = "";
+  function openGenerateChartModal(tableName: string, connector: string) {
     showGenerateChartModal = true;
     generateChartTable = tableName;
+    generateChartConnector = connector;
   }
 
   $: hasNoAssets = $sourceNames.data?.length === 0;
@@ -104,8 +106,8 @@
                 on:rename-asset={() => {
                   openRenameTableModal(sourceName);
                 }}
-                on:generate-chart={({ detail }) => {
-                  openGenerateChartModal(detail);
+                on:generate-chart={({ detail: { table, connector } }) => {
+                  openGenerateChartModal(table, connector);
                 }}
               />
             </svelte:fragment>
@@ -134,5 +136,6 @@
   <GenerateChartYAMLPrompt
     bind:open={showGenerateChartModal}
     table={generateChartTable}
+    connector={generateChartConnector}
   />
 {/if}

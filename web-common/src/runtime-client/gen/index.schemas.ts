@@ -324,6 +324,13 @@ export type RuntimeServiceRenameFileBody = {
   toPath?: string;
 };
 
+export type RuntimeServiceGenerateResolverBody = {
+  prompt?: string;
+  table?: string;
+  connector?: string;
+  metricsView?: string;
+};
+
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
   table?: string;
@@ -331,11 +338,14 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   useAi?: boolean;
 };
 
+export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
+  [key: string]: any;
+};
+
 export type RuntimeServiceGenerateChartSpecBody = {
-  chart?: string;
-  table?: string;
-  metricsView?: string;
   prompt?: string;
+  resolver?: string;
+  resolverProperties?: RuntimeServiceGenerateChartSpecBodyResolverProperties;
 };
 
 export type RuntimeServicePutFileBody = {
@@ -524,6 +534,18 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesResponse {
+  results?: V1TimeSeriesValue[];
+  spark?: V1TimeSeriesValue[];
+  sampleSize?: number;
+}
+
+export interface V1TimeRangeSummary {
+  min?: string;
+  max?: string;
+  interval?: TimeRangeSummaryInterval;
+}
+
 export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -544,18 +566,6 @@ export interface V1TimeSeriesTimeRange {
   start?: string;
   end?: string;
   interval?: V1TimeGrain;
-}
-
-export interface V1TimeSeriesResponse {
-  results?: V1TimeSeriesValue[];
-  spark?: V1TimeSeriesValue[];
-  sampleSize?: number;
-}
-
-export interface V1TimeRangeSummary {
-  min?: string;
-  max?: string;
-  interval?: TimeRangeSummaryInterval;
 }
 
 export interface V1TimeRange {
@@ -643,11 +653,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -659,6 +664,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -749,11 +759,22 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -779,27 +800,16 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  chart?: V1Chart;
-  dashboard?: V1Dashboard;
-  api?: V1API;
 }
 
 export interface V1RenameFileResponse {
@@ -838,6 +848,16 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 export interface V1RefreshAndReconcileRequest {
   instanceId?: string;
   path?: string;
@@ -856,6 +876,16 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
 
 /**
  * - CODE_UNSPECIFIED: Unspecified error
@@ -899,26 +929,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -1576,12 +1586,20 @@ export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
 }
 
+export type V1GenerateResolverResponseResolverProperties = {
+  [key: string]: any;
+};
+
+export interface V1GenerateResolverResponse {
+  resolver?: string;
+  resolverProperties?: V1GenerateResolverResponseResolverProperties;
+}
+
 export interface V1GenerateMetricsViewFileResponse {
   aiSucceeded?: boolean;
 }
 
 export interface V1GenerateChartSpecResponse {
-  sql?: string;
   vegaLiteSpec?: string;
 }
 
@@ -1714,6 +1732,26 @@ export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
+ * ConnectorSpec represents a connector available in the runtime.
+It should not be confused with a source.
+ */
+export interface V1ConnectorSpec {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
+}
+
+/**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
@@ -1732,26 +1770,6 @@ export interface V1CreateInstanceRequest {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
-}
-
-/**
- * ConnectorSpec represents a connector available in the runtime.
-It should not be confused with a source.
- */
-export interface V1ConnectorSpec {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  properties?: ConnectorSpecProperty[];
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
 }
 
 export interface V1Condition {

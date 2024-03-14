@@ -162,19 +162,6 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	}
 }
 
-func (r *sqlResolver) ResolveSchema(ctx context.Context) (*runtimev1.StructType, error) {
-	res, err := r.olap.Execute(ctx, &drivers.Statement{
-		Query:    r.sql,
-		Priority: r.priority,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-
-	return res.Schema, nil
-}
-
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
 		Query:    r.sql,

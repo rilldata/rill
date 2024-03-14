@@ -4392,6 +4392,262 @@ var _ interface {
 	ErrorName() string
 } = GenerateMetricsViewFileResponseValidationError{}
 
+// Validate checks the field values on GenerateResolverRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateResolverRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateResolverRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateResolverRequestMultiError, or nil if none found.
+func (m *GenerateResolverRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateResolverRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateResolverRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateResolverRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Prompt
+
+	// no validation rules for Table
+
+	// no validation rules for Connector
+
+	// no validation rules for MetricsView
+
+	if len(errors) > 0 {
+		return GenerateResolverRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateResolverRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateResolverRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateResolverRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateResolverRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateResolverRequestMultiError) AllErrors() []error { return m }
+
+// GenerateResolverRequestValidationError is the validation error returned by
+// GenerateResolverRequest.Validate if the designated constraints aren't met.
+type GenerateResolverRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateResolverRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateResolverRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateResolverRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateResolverRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateResolverRequestValidationError) ErrorName() string {
+	return "GenerateResolverRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateResolverRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateResolverRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateResolverRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateResolverRequestValidationError{}
+
+var _GenerateResolverRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateResolverResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateResolverResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateResolverResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateResolverResponseMultiError, or nil if none found.
+func (m *GenerateResolverResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateResolverResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateResolverResponseValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateResolverResponseValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateResolverResponseValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GenerateResolverResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateResolverResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateResolverResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateResolverResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateResolverResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateResolverResponseMultiError) AllErrors() []error { return m }
+
+// GenerateResolverResponseValidationError is the validation error returned by
+// GenerateResolverResponse.Validate if the designated constraints aren't met.
+type GenerateResolverResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateResolverResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateResolverResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateResolverResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateResolverResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateResolverResponseValidationError) ErrorName() string {
+	return "GenerateResolverResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateResolverResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateResolverResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateResolverResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateResolverResponseValidationError{}
+
 // Validate checks the field values on GenerateChartSpecRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -4425,13 +4681,38 @@ func (m *GenerateChartSpecRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Chart
-
-	// no validation rules for Table
-
-	// no validation rules for MetricsView
-
 	// no validation rules for Prompt
+
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateChartSpecRequestValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateChartSpecRequestValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateChartSpecRequestValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return GenerateChartSpecRequestMultiError(errors)
@@ -4536,8 +4817,6 @@ func (m *GenerateChartSpecResponse) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Sql
 
 	// no validation rules for VegaLiteSpec
 
