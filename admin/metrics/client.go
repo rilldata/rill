@@ -43,16 +43,20 @@ func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offs
 		return nil, err
 	}
 	uri.Path = path.Join("/v1/instances", c.InstanceID, "/api/autoscaler-slots-recommendations")
+
+	// Add URL query parameters
+	qry := uri.Query()
 	if limit > 0 {
-		uri.Query().Set("limit", fmt.Sprintf("%d", limit))
+		qry.Set("limit", fmt.Sprintf("%d", limit))
 	}
 	if offset > 0 {
-		uri.Query().Set("offset", fmt.Sprintf("%d", offset))
+		qry.Set("offset", fmt.Sprintf("%d", offset))
 	}
+	uri.RawQuery = qry.Encode()
 	apiURL := uri.String()
 
 	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -56,7 +56,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "run_autoscaler", w.hibernateExpiredDeployments, 6*time.Hour)
+		return w.schedule(ctx, "run_autoscaler", w.runAutoscaler, 6*time.Hour)
 	})
 
 	// NOTE: Add new scheduled jobs here
