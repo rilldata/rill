@@ -2,7 +2,7 @@
 title: MySQL
 description: Connect to data in MySQL
 sidebar_label: MySQL
-sidebar_position: 8
+sidebar_position: 9
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

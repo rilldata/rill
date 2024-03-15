@@ -21,7 +21,7 @@ To check if you already have the AWS CLI installed and authenticated, open a ter
 ```bash
 aws iam get-user --no-cli-pager
 ```
-If it prints information about your user, there is nothing more to do. Rill will be able to connect to Athena that you have access to.
+If it prints information about your user, there is nothing more to do. Rill will be able to connect to any existing Athena instances that your user has privileges to access.
 
 If you do not have the AWS CLI installed and authenticated, follow these steps:
 
@@ -50,7 +50,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires you to explicitly provide an access key and secret for an AWS service account with access to Athena used in your project. 
 
-If you subsequently add sources that require new credentials (or if you input the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
+If you subsequently add sources that require new credentials (or if you had simply input the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
 ```
 rill env configure
 ```

@@ -16,6 +16,7 @@ To provide a non-exhaustive list, Rill supports the following connectors:
 - [Azure Blob Storage](/reference/connectors/azure.md)
 - [BigQuery](/reference/connectors/bigquery.md)
 - [Athena](/reference/connectors/athena.md)
+- [Redshift](/reference/connectors/redshift.md)
 - [DuckDB and MotherDuck](/reference/connectors/motherduck.md)
 - [PostgreSQL](/reference/connectors/postgres.md)
 - [MySQL](/reference/connectors/mysql.md)
