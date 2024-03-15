@@ -110,9 +110,6 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 
 		q := &queries.MetricsViewSchema{
 			MetricsViewName: req.MetricsView,
-			TableName:       mvs.Table,
-			Measures:        mvs.Measures,
-			Dimensions:      mvs.Dimensions,
 		}
 		err = s.runtime.Query(ctx, req.InstanceId, q, 0)
 		if err != nil {
