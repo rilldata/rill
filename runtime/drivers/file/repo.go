@@ -145,7 +145,7 @@ func (c *connection) Sync(ctx context.Context) error {
 func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	c.watcherMu.Lock()
 	if c.watcher == nil {
-		w, err := newWatcher(c.root)
+		w, err := newWatcher(c.root, c.logger)
 		if err != nil {
 			c.watcherMu.Unlock()
 			return err
