@@ -26,11 +26,7 @@ export async function initMetrics(localConfig: V1RuntimeGetConfig) {
   const commonUserMetrics = await collectCommonUserFields();
   actionEvent = new ActiveEventHandler(metricsService, commonUserMetrics);
   behaviourEvent = new BehaviourEventHandler(metricsService, commonUserMetrics);
-  errorEvent = new ErrorEventHandler(
-    metricsService,
-    commonUserMetrics,
-    localConfig,
-  );
+  errorEvent = new ErrorEventHandler(metricsService, commonUserMetrics);
 }
 
 // Setters used in cloud

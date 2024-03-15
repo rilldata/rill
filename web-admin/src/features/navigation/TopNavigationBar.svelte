@@ -16,7 +16,7 @@
   import {
     isDashboardPage,
     isProjectPage,
-  } from "@rilldata/web-common/features/navigation/nav-utils.js";
+  } from "@rilldata/web-common/features/navigation/nav-utils";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
 
   const user = createAdminServiceGetCurrentUser();

@@ -1,4 +1,5 @@
 import { page } from "$app/stores";
+import { dev } from "$app/environment";
 import type { RpcStatus } from "@rilldata/web-admin/client";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/navigation/nav-utils";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
@@ -7,7 +8,6 @@ import type {
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
-import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import type { Query } from "@tanstack/query-core";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
@@ -21,7 +21,6 @@ export class ErrorEventHandler {
   public constructor(
     private readonly metricsService: MetricsService,
     private readonly commonUserMetrics: CommonUserFields,
-    private readonly localConfig: V1RuntimeGetConfig,
   ) {
     this.commonUserMetrics = commonUserMetrics;
   }
@@ -31,8 +30,8 @@ export class ErrorEventHandler {
     if (!error.response) {
       this.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
-        "",
-        "unknown error",
+        error.status ?? "",
+        error.message ?? "unknown error",
         screenName,
       );
       return;
@@ -111,7 +110,7 @@ export class ErrorEventHandler {
     message: string,
     screenName: MetricsEventScreenName,
   ) {
-    if (this.localConfig.is_dev) {
+    if (dev) {
       console.log("httpErrorEvent", screenName, api, status, message);
       return;
     }
@@ -129,7 +128,7 @@ export class ErrorEventHandler {
     message: string,
     screenName: MetricsEventScreenName,
   ) {
-    if (this.localConfig.is_dev) {
+    if (dev) {
       console.log("javascriptErrorEvent", screenName, stack, message);
       return;
     }

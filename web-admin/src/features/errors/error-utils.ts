@@ -2,7 +2,6 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
-  getScreenNameFromPage,
   isDashboardPage,
   isProjectPage,
 } from "@rilldata/web-common/features/navigation/nav-utils";
