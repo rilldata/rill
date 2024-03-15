@@ -219,6 +219,7 @@ service QueryService {
 
 message QueryRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string connector = 7;
   string sql = 2;
   repeated google.protobuf.Value args = 3;
   int32 priority = 4;
@@ -660,6 +661,7 @@ message MetricsViewSchemaResponse {
 
 message ColumnRollupIntervalRequest {
   string instance_id = 1;
+  string connector = 5;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -678,6 +680,7 @@ message ColumnRollupIntervalResponse {
 
 message ColumnTopKRequest {
   string instance_id = 1;
+  string connector = 7;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -711,6 +714,7 @@ message TopK {
 
 message ColumnNullCountRequest {
   string instance_id = 1;
+  string connector = 5;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -725,6 +729,7 @@ message ColumnNullCountResponse {
 
 message ColumnDescriptiveStatisticsRequest {
   string instance_id = 1;
+  string connector = 5;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -781,6 +786,7 @@ message NumericOutliers {
 
 message ColumnTimeGrainRequest {
   string instance_id = 1;
+  string connector = 5;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -794,6 +800,7 @@ message ColumnTimeGrainResponse {
 
 message ColumnNumericHistogramRequest {
   string instance_id = 1;
+  string connector = 6;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
   HistogramMethod histogram_method = 4;
@@ -812,6 +819,7 @@ enum HistogramMethod {
 
 message ColumnRugHistogramRequest {
   string instance_id = 1;
+  string connector = 5;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
@@ -823,6 +831,7 @@ message ColumnRugHistogramResponse {
 
 message ColumnTimeRangeRequest {
   string instance_id = 1;
+  string connector = 5;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
@@ -849,6 +858,7 @@ message TimeRangeSummary {
 message ColumnCardinalityRequest {
   // Required
   string instance_id = 1;
+  string connector = 5;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -863,6 +873,7 @@ message ColumnCardinalityResponse {
 
 message ColumnTimeSeriesRequest {
   string instance_id = 1;
+  string connector = 11;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Optional. Defaults to [count(*)]
@@ -926,6 +937,7 @@ message TimeSeriesValue {
 
 message TableCardinalityRequest {
   string instance_id = 1;
+  string connector = 4;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
@@ -938,6 +950,7 @@ message TableCardinalityResponse {
 
 message TableColumnsRequest {
   string instance_id = 1;
+  string connector = 4;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
@@ -957,6 +970,7 @@ message ProfileColumn {
 
 message TableRowsRequest {
   string instance_id = 1;
+  string connector = 5;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 limit = 3 [(validate.rules).int32.gte = 0];
   int32 priority = 4;
