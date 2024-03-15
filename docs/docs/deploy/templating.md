@@ -35,6 +35,21 @@ For more information, please check our [reference documentation](/reference/proj
 
 Templating can be used in conjunction with environments to apply environment-specific logic based on whether the project is running locally on Rill Developer or when deployed to Rill Cloud. By default, Rill comes with two built-in environments defined, `dev` and `prod`, which correspond to Rill Developer and Rill Cloud respectively. For more details about using environments in Rill Cloud, please see our [environments](../build/models/environments.md) page.
 
+### Referencing other tables or models in SQL when using templating
+
+When you use templating in a SQL model, Rill loses the ability to analyze the SQL for references to other sources and models in the project. This can lead to reconcile errors where Rill tries to create a model before the sources (or other models) it depends upon have finished being ingested.
+
+To avoid this scenario, whenever you use templating in a model's SQL, it is <u>strongly recommended</u> to incorporate `ref` tags whenever you need to reference another resource in your project in SQL. For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. As an example:
+
+```sql
+# models/my_model.sql
+SELECT *
+FROM {{ ref "my_source" }}
+WHERE my_value = '{{ .vars.my_value }}'
+```
+
+In this example, the `ref` tag ensures that the model `my_model` will not be created until **after** a source named `my_source` has finished ingesting.
+
 ## Examples
 
 Let's walk through a few example scenarios to illustrate the power of templating and how it can be used within Rill.
@@ -124,7 +139,7 @@ WHERE original_language = '{{ .vars.language }}'
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. <u>Only</u> when you are leveraging [templating](/deploy/templating.md) within your `model.sql` file, you may need to `ref` table and model names to ensure that the native Go templating engine used by Rill is able to resolve the SQL syntax correctly during runtime. Otherwise, you might find that the model builds incorrectly or runs into errors when you first start Rill!
+If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
 
 :::
 

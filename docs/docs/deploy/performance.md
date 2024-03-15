@@ -92,7 +92,7 @@ As mentioned in an [above section](#consider-which-models-to-materialize), model
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. <u>Only</u> when you are leveraging [templating](/deploy/templating.md) within your `model.sql` file, you may need to `ref` table and model names to ensure that the native Go templating engine used by Rill is able to resolve the SQL syntax correctly during runtime. Otherwise, you might find that the model builds incorrectly or runs into errors when you first start Rill!
+If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
 
 :::
 
