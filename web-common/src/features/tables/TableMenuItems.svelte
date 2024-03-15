@@ -54,8 +54,6 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
-
-  let generateOpen = false;
 </script>
 
 {#if $isModelingSupportedForCurrentOlapDriver.data}
@@ -76,20 +74,6 @@
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate dashboard with AI
-    <WandIcon class="w-3 h-3" />
-  </div>
-</MenuItem>
-<MenuItem
-  icon
-  on:select={() => {
-    generateOpen = true;
-    toggleMenu();
-  }}
-  propogateSelect={false}
->
-  <Explore slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate chart with AI
     <WandIcon class="w-3 h-3" />
   </div>
 </MenuItem>

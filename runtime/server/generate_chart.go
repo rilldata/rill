@@ -36,6 +36,9 @@ func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateC
 		Args:               nil,
 		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	start := time.Now()
 

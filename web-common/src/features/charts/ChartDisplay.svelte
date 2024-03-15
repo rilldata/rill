@@ -49,10 +49,6 @@
     $chartPromptStore.charts[
       getFilePathFromNameAndType(chartName, EntityType.Chart)
     ];
-  $: console.log(
-    getFilePathFromNameAndType(chartName, EntityType.Chart),
-    promptStatus,
-  );
 </script>
 
 <div class="m-2 w-1/2">

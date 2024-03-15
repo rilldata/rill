@@ -1,4 +1,4 @@
-import { getChartYaml } from "@rilldata/web-common/features/charts/prompt/generateChart";
+import { getChartYaml } from "@rilldata/web-common/features/charts/chartYaml";
 import { describe, it, expect } from "vitest";
 
 const VegaLiteSpec = `{

@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { getChartYaml } from "@rilldata/web-common/features/charts/chartYaml";
 import {
   ChartPromptStatus,
   chartPromptStore,
@@ -15,7 +16,6 @@ import {
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { Document } from "yaml";
 
 export function createChartGenerator(instanceId: string, chart: string) {
   const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
@@ -74,9 +74,7 @@ export function createFullChartGenerator(instanceId: string) {
         blob: `kind: chart`,
       });
       chartPromptStore.setStatus(chartPath, ChartPromptStatus.GeneratingData);
-      console.log(chartPath, "...1");
       await goto(getRouteFromName(newChartName, EntityType.Chart));
-      console.log(chartPath, "...2");
       const resolverResp = await get(generateResolver).mutateAsync({
         instanceId,
         data: {
@@ -86,7 +84,6 @@ export function createFullChartGenerator(instanceId: string) {
           prompt,
         },
       });
-      console.log(chartPath, "...3");
 
       // add a chart with just the resolver
       await runtimeServicePutFile(instanceId, chartPath, {
@@ -96,7 +93,6 @@ export function createFullChartGenerator(instanceId: string) {
           resolverResp.resolverProperties,
         ),
       });
-      console.log(chartPath, "...4");
       chartPromptStore.setStatus(
         chartPath,
         ChartPromptStatus.GeneratingChartSpec,
@@ -109,7 +105,6 @@ export function createFullChartGenerator(instanceId: string) {
           resolverProperties: resolverResp.resolverProperties,
         },
       });
-      console.log(chartPath, "...5");
 
       chartPromptStore.deleteStatus(chartPath);
       await runtimeServicePutFile(instanceId, chartPath, {
@@ -123,29 +118,4 @@ export function createFullChartGenerator(instanceId: string) {
       chartPromptStore.deleteStatus(chartPath);
     }
   };
-}
-
-export function getChartYaml(
-  vegaLite: string | undefined,
-  resolver: string | undefined,
-  resolverProperties: Record<string, any> | undefined,
-) {
-  const doc = new Document();
-  doc.set("kind", "chart");
-
-  // TODO: more fields from resolverProperties
-  if (resolver === "SQL") {
-    doc.set("data", { sql: (resolverProperties?.sql as string) ?? "" });
-  } else if (resolver === "MetricsSQL") {
-    doc.set("data", { metrics_sql: (resolverProperties?.sql as string) ?? "" });
-  } else if (resolver === "API") {
-    doc.set("data", { api: (resolverProperties?.api as string) ?? "" });
-  }
-
-  doc.set(
-    "vega_lite",
-    JSON.stringify(JSON.parse(vegaLite ?? "{}"), null, 2).replace(/^/gm, "  "),
-  );
-
-  return doc.toString();
 }
