@@ -40,23 +40,16 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	compiler := &metricsSQLCompiler{
 		instanceID:     opts.InstanceID,
 		ctrl:           ctrl,
 		sql:            props.SQL,
-		dialect:        olap.Dialect(),
 		args:           opts.Args,
 		userAttributes: opts.UserAttributes,
 	}
 
 	sql, connector, refs, err := compiler.compile(ctx)
 	if err != nil {
-		release()
 		return nil, err
 	}
 
@@ -105,7 +98,6 @@ type metricsSQLCompiler struct {
 	instanceID     string
 	ctrl           *runtime.Controller
 	sql            string
-	dialect        drivers.Dialect
 	args           map[string]any
 	userAttributes map[string]any
 }
@@ -161,6 +153,10 @@ func (c *metricsSQLCompiler) compile(ctx context.Context) (string, string, []*ru
 }
 
 func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (string, map[string]string, map[string]string, error) {
+	// Dialect to use for escaping identifiers. Currently hardcoded to DuckDB.
+	// TODO: Make dynamic based on actual dialect of the OLAP connector used by the referenced metrics view.
+	dialect := drivers.DialectDuckDB
+
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
 		return "", nil, nil, fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
@@ -181,12 +177,12 @@ func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (st
 		if dim.Expression != "" {
 			dimensions[dim.Name] = dim.Expression
 		} else {
-			dimensions[dim.Name] = c.dialect.EscapeIdentifier(dim.Column)
+			dimensions[dim.Name] = dialect.EscapeIdentifier(dim.Column)
 		}
 	}
 
 	if security == nil {
-		return c.dialect.EscapeIdentifier(spec.Table), dimensions, measures, nil
+		return dialect.EscapeIdentifier(spec.Table), dimensions, measures, nil
 	}
 
 	if !security.Access || security.ExcludeAll {
@@ -215,7 +211,7 @@ func (c *metricsSQLCompiler) fromQueryForMetricsView(mv *runtimev1.Resource) (st
 		}
 	}
 
-	sql := "SELECT * FROM " + c.dialect.EscapeIdentifier(spec.Table)
+	sql := "SELECT * FROM " + dialect.EscapeIdentifier(spec.Table)
 	if security.RowFilter != "" {
 		sql += " WHERE " + security.RowFilter
 	}

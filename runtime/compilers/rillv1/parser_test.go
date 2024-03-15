@@ -1237,6 +1237,9 @@ func TestChartsAndDashboard(t *testing.T) {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
     "mark": "bar",
+    "data": {
+      "name": "table"
+    },
     "encoding": {
       "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
       "y": {"field": "total_sales", "type": "quantitative"}

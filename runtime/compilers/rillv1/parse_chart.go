@@ -4,7 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/santhosh-tekuri/jsonschema/v5"
+
+	_ "embed"
 )
+
+//go:embed data/vega-lite-v5.json
+var vegaLiteSpec string
 
 type ChartYaml struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
@@ -12,6 +19,8 @@ type ChartYaml struct {
 	Data       *DataYAML        `yaml:"data"`
 	VegaLite   string           `yaml:"vega_lite"`
 }
+
+var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema/vega-lite/v5.json", vegaLiteSpec)
 
 func (p *Parser) parseChart(node *Node) error {
 	// Parse YAML
@@ -32,8 +41,13 @@ func (p *Parser) parseChart(node *Node) error {
 	if tmp.VegaLite == "" {
 		return errors.New(`missing vega_lite configuration`)
 	}
-	if !json.Valid([]byte(tmp.VegaLite)) {
+	var vegaLiteSpec interface{}
+	if err := json.Unmarshal([]byte(tmp.VegaLite), &vegaLiteSpec); err != nil {
 		return errors.New(`failed to parse "vega_lite" as JSON`)
+	}
+
+	if err = vegaLiteSchema.Validate(vegaLiteSpec); err != nil {
+		return fmt.Errorf(`failed to validate "vega_lite": %w`, err)
 	}
 
 	if tmp.Data == nil {

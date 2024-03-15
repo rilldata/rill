@@ -11,6 +11,7 @@ import (
 )
 
 type ColumnDescriptiveStatistics struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Result     *runtimev1.NumericStatistics
@@ -46,7 +47,7 @@ func (q *ColumnDescriptiveStatistics) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

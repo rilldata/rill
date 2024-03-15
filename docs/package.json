@@ -40,5 +40,9 @@
       "last 1 safari version"
     ]
   },
-  "main": "babel.config.js"
+  "main": "babel.config.js",
+  "dependencies": {
+    "docusaurus-plugin-sass": "^0.2.5",
+    "sass": "^1.71.1"
+  }
 }

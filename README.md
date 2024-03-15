@@ -14,13 +14,13 @@ rill start my-rill-project
 
 
 <h3 align="center">
-  <a href="https://docs.rilldata.com/get-started">Quickstart</a>
+  <a href="https://docs.rilldata.com/home/get-started">Quickstart</a>
   <span> · </span>
-  <a href="https://docs.rilldata.com/install">Install</a>
+  <a href="https://docs.rilldata.com/home/install">Install</a>
   <span> · </span>
-  <a href="https://docs.rilldata.com/example-projects">Example Projects</a>
+  <a href="https://docs.rilldata.com/home/get-started#example-projects-repository">Example Projects</a>
   <span> · </span>
-  <a href="https://bit.ly/3unvA05">Community</a>
+  <a href="https://discord.gg/DJ5qcsxE2m">Community</a>
 </h3>
 
 ![home-demo](https://github.com/rilldata/rill/assets/1181922/1430f272-3fa4-495a-8e45-1bd6fa56f5d2)
