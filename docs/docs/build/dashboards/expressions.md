@@ -21,6 +21,14 @@ Rill's modeling layer provides open-ended SQL compatibility for complex SQL quer
 
 Measure expressions can take any sql numeric function, a set of aggregates and apply filters to create derived metrics. Reminder on basic expressions are available in the [create dashboard definition](dashboards.md).
 
+### Metric Formatting
+
+In addition to standard presents, you can also use `format_d3` to control the formatting of a measure in the dashboard using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+
+    - **Example**: to show a measure using fixed point formatting with 2 digits after the decimal point, your measure specification would include: `format_d3: ".2f"`.
+    - **Example**: to show a measure using grouped thousands with two significant digits, your measure specification would include: `format_d3: ",.2r"`.
+    - **Example**: to increase decimal places on a currency metric would include: `format_d3: "$.3f"`.
+
 ### Case Statements
 
 One of the most common advanced measure expressions are `case` statements used to filter or apply logic to part of the result set. Use cases for case statements include filtered sums (e.g. only sum if a flag is true) and bucketing data (e.g. if between threshold x and y the apply an aggregate). 
@@ -66,7 +74,29 @@ The syntax for fixed metrics is specific to DuckDB as an OLAP engine.
 
 To utilize an expression, replace the `column` property with `expression` and apply a non-aggregate sql expression. Common use cases would be editing fields such as `string_split(domain, '.')` or combining values `concat(domain, child_url)`.
 
+ ```yaml
+  - label: "Example Column"
+    expression: string_split(domain, '.')
+    description: "Edited Column"
+```
+
+### Unnest
+
+ For multi-value fields, you can set the unnest property within a dimension. If true, this property allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match.
+
+ ```yaml
+  - label: "Example Column"
+    column: multi_value_field
+    description: "Unnested Column"
+    unnest: true
+```
 
 ### Druid Lookups
 
 For those looking to add id to name mappings with Druid (as an OLAP engine), you can utilize expressions in your **Dimension** settings. Simply use the lookup function and provide the name of the lookup and id, i.e. `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
+
+ ```yaml
+  - label: "Cities"
+    expression: lookup(city_id, 'cities')
+    description: Cities"
+```
