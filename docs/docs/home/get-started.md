@@ -62,7 +62,7 @@ Projects on Rill Cloud are private by default. To invite others to explore your 
 rill user add
 ```
 
-## Example Projects Repository
+## Example Projects
 
 We have created several example projects that highlight common use cases for Rill. 
 
