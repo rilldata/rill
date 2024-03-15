@@ -4,14 +4,16 @@ sidebar_label: SQL API
 sidebar_position: 30
 ---
 
-You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries against a [model](../sql-models.md) that you have created. It should have the following structure:
+You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries 
+against a [model](../sql-models.md) or [source](../../reference/project-files/sources.md) that you have created. 
+It should have the following structure:
 
 ```yaml
 kind: api
 sql: SELECT abc FROM my_table
 ```
 
-where `my_table` is your model name.
+where `my_table` is your model or source name.
 
 ## SQL Templating
 

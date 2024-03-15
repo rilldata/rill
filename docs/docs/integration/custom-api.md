@@ -22,7 +22,7 @@ There are two types of bearer tokens that you can use to access the custom APIs:
 
     :::note
     1. Service accounts have full access to all APIs so if there are security policies defined for metrics view being used in metrics_sql API, they will not be enforced.
-    2. Also since there is no user context available,m this means if the api being called uses `{{ .user.<attr> }}` in SQL templating, it will fail.
+    2. Also since there is no user context available, this means if the api being called uses `{{ .user.<attr> }}` in SQL templating, it will fail.
     :::
     
 2. **User Token**: You can use a user token to access the custom API when you want user context and enforce security policies defined for the [metrics view](../develop/metrics-dashboard.md) being used in the `metrics_sql` API.

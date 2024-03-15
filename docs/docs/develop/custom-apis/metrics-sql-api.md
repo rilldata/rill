@@ -1,7 +1,7 @@
 ---
 title: Metrics SQL API
 sidebar_label: Metrics SQL API
-sidebar_position: 30
+sidebar_position: 40
 ---
 
 Metrics SQL API allows you to query data from your predefined [metrics view](../metrics-dashboard.md) using [Metrics SQL](./metrics-sql.md) dialect. 
