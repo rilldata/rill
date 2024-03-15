@@ -79,7 +79,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			token = os.Getenv("motherduck_token")
 		}
 		if token == "" {
-			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/deploy/credentials/motherduck")
+			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
 		}
 
 		// load motherduck extension; connect to motherduck service

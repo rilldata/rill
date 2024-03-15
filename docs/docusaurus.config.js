@@ -2,7 +2,7 @@
 // Note: type annotations allow type checking and IDEs autocompletion
 
 /* eslint @typescript-eslint/no-var-requires: "off" */
-const {themes} = require('prism-react-renderer');
+const { themes } = require('prism-react-renderer');
 const lightCodeTheme = themes.github;
 const darkCodeTheme = themes.dracula;
 
@@ -38,6 +38,7 @@ const config = {
         docs: {
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
+          sidebarCollapsed: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
@@ -56,7 +57,7 @@ const config = {
           },
         },
         theme: {
-          customCss: require.resolve("./src/css/custom.css"),
+          customCss: require.resolve("./src/css/custom.scss"),
         },
       }),
     ],
@@ -96,14 +97,25 @@ const config = {
         items: [
           {
             type: "doc",
-            docId: "home",
+            docId: "home/home",
             position: "left",
             label: "Docs",
+          },
+          {
+            type: "docSidebar",
+            sidebarId: "refSidebar",
+            position: "left",
+            label: "Reference",
           },
           {
             label: "Release Notes",
             to: "notes",
             position: "left",
+          },
+          {
+            to: "contact",
+            position: "left",
+            label: "Contact Us",
           },
           {
             href: "https://github.com/rilldata/rill",
@@ -117,41 +129,8 @@ const config = {
         ],
       },
       footer: {
-        style: "dark",
-        links: [
-          {
-            title: " ",
-            items: [
-              {
-                label: "Rill Data",
-                to: "https://www.rilldata.com",
-              },
-              {
-                label: "Docs",
-                to: "/",
-              },
-              {
-                label: "Release Notes",
-                to: "/notes",
-              },
-            ],
-          },
-          {
-            title: " ",
-            items: [
-              {
-                html: `
-                 <div style="display: flex; align-items: center; -webkit-box-align: center;">
-                 <a class="social-link" href="https://github.com/rilldata/rill" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1b8081e31a5e696066b_github-octocat.svg" loading="lazy" alt="github logo"></a>
-                 <a class="social-link" href="https://twitter.com/RillData" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f429995e55f34_social-twitter.svg" loading="lazy" alt="twitter logo"></a>
-                 <a class="social-link" href="https://discord.gg/eEvSYHdfWK" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1dc6a667e2367b552ae_Discord-Logo.svg" loading="lazy" alt="Discord logo"></a>
-                 </div>
-                `
-              },
-            ],
-          },
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} Rill Data, Inc. • <a href="https://www.rilldata.com/legal/privacy" target="_blank">Privacy Policy</a> • <a href="https://www.rilldata.com/legal/tos" target="_blank"> Terms of Service </a>`,
+        style: "light",
+        copyright: `© ${new Date().getFullYear()} Rill Data, Inc. • <a href="https://www.rilldata.com/legal/privacy" target="_blank">Privacy Policy</a> • <a href="https://www.rilldata.com/legal/tos" target="_blank"> Terms of Service </a> • <a href="https://github.com/rilldata/rill/blob/main/COMMUNITY-POLICY.md" target="_blank"> Community Policy </a> • <a href="https://github.com/rilldata/rill/blob/main/CONTRIBUTING.md" target="_blank"> Contributing </a>`,
       },
       prism: {
         theme: lightCodeTheme,
@@ -161,6 +140,7 @@ const config = {
     }),
 
   plugins: [
+    'docusaurus-plugin-sass',
     [
       require.resolve('docusaurus-gtm-plugin'),
       {
@@ -172,12 +152,100 @@ const config = {
       {
         redirects: [
           {
-            to: '/deploy/credentials/s3',
-            from: '/reference/connectors/s3',
+            from: '/install',
+            to: '/home/install',
           },
           {
-            to: '/deploy/credentials/gcs',
-            from: '/reference/connectors/gcs',
+            from: '/get-started',
+            to: '/home/get-started',
+          },
+          {
+            from: '/develop/import-data',
+            to: '/build/connect'
+          },
+          {
+            from: '/develop/sql-models',
+            to: '/build/models'
+          },
+          {
+            from: '/develop/metrics-dashboard',
+            to: '/build/dashboards'
+          },
+          {
+            from: '/develop/security',
+            to: '/manage/security'
+          },
+          {
+            from: '/deploy/credentials/',
+            to: '/build/credentials'
+          },
+          {
+            from: '/deploy/credentials/s3',
+            to: '/reference/connectors/s3'
+          },
+          {
+            from: '/deploy/credentials/gcs',
+            to: '/reference/connectors/gcs'
+          },
+          {
+            from: '/deploy/credentials/azure',
+            to: '/reference/connectors/azure'
+          },
+          {
+            from: '/deploy/credentials/athena',
+            to: '/reference/connectors/athena'
+          },
+          {
+            from: '/deploy/credentials/bigquery',
+            to: '/reference/connectors/bigquery'
+          },
+          {
+            from: '/deploy/credentials/snowflake',
+            to: '/reference/connectors/snowflake'
+          },
+          {
+            from: '/deploy/credentials/postgres',
+            to: '/reference/connectors/postgres'
+          },
+          {
+            from: '/deploy/credentials/salesforce',
+            to: '/reference/connectors/salesforce'
+          },
+          {
+            from: '/deploy/credentials/motherduck',
+            to: '/reference/connectors/motherduck'
+          },
+          {
+            from: '/deploy/source-refresh',
+            to: '/build/connect/source-refresh'
+          },
+          {
+            from: '/reference/glob-patterns',
+            to: '/build/connect/glob-patterns'
+          },
+          {
+            from: '/reference/templating',
+            to: '/deploy/templating'
+          },
+          {
+            from: '/example-projects',
+            to: '/home/get-started#example-projects-repository'
+          },
+          {
+            from: '/integration/embedding',
+            to: '/integrate/embedding'
+          },
+          {
+            from: '/share/user-management',
+            to: '/manage/user-management'
+          },
+          {
+            from: '/share/roles-permissions',
+            to: '/manage/roles-permissions'
+          },
+          {
+            from: '/share/scheduled-reports',
+            to: '/explore/exports'
           },
         ],
       },
