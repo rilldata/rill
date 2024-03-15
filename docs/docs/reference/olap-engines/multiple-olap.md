@@ -27,7 +27,7 @@ If there's an OLAP engine you're interested that isn't available, please don't h
 
 ## Enabling Multiple OLAP Engines
 
-To configure multiple OLAP engines, you'll want to leave the default OLAP engine as [DuckDB](duckdb.md) in your project and configure dashboards that are powered by other OLAP engines individually (more on this below).
+To configure multiple OLAP engines, you'll want to leave the <u>default</u> OLAP engine as [DuckDB](duckdb.md) in your project and configure dashboards that are powered by other OLAP engines individually (more on this below).
 
 ### Setting up your OLAP Engine connection string (DSN)
 
@@ -55,7 +55,7 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 ### Configuring DuckDB as the default OLAP engine
 
-Not much needs to be done here as DuckDB as the inherent default OLAP engine that is used by Rill. However, in case a different `olap_connector` is set in the project's `rill.yaml` file, this property should either be removed or set back to `duckdb`.
+Not much needs to be done here as _DuckDB as the inherent default OLAP engine_ that is used by Rill. However, in case a different `olap_connector` is set in the project's `rill.yaml` file, this property should either be removed and/or set back to `duckdb`.
 
 ```yaml
 olap_connector: duckdb
