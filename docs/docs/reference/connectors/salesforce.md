@@ -2,14 +2,14 @@
 title: Salesforce
 description: Connect to data in a Salesforce org using the Bulk API
 sidebar_label: Salesforce
-sidebar_position: 11
+sidebar_position: 12
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 ## Overview
 
-Salesforce is a leading cloud-based Customer Relationship Management (CRM) platform designed to help businesses connect with and understand their customers better. It offers a comprehensive suite of applications focused on sales, customer service, marketing automation, analytics, and application development. Salesforce enables organizations of all sizes to build stronger relationships with their customers through personalized experiences, streamlined communication, and predictive insights. Rill is able to ingest data from Salesforce as a source by utilizing the Bulk API, which requires a Salesforce username along with a password (and in some cases, a token, depending on the org configuration) to authenticate against a Salesforce org.
+[Salesforce](https://www.salesforce.com/) is a leading cloud-based Customer Relationship Management (CRM) platform designed to help businesses connect with and understand their customers better. It offers a comprehensive suite of applications focused on sales, customer service, marketing automation, analytics, and application development. Salesforce enables organizations of all sizes to build stronger relationships with their customers through personalized experiences, streamlined communication, and predictive insights. Rill is able to ingest data from Salesforce as a source by utilizing the Bulk API, which requires a Salesforce username along with a password (and in some cases, a token, depending on the org configuration) to authenticate against a Salesforce org.
 
 ![Connecting to Salesforce](/img/reference/connectors/salesforce/salesforce.png)
 
