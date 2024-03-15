@@ -92,6 +92,22 @@ export function prepareMeasureFilterResolutions(
         };
       }
 
+      // This makes sure dashboard.dimensionThresholdFilters and toplist is in sync
+      if (
+        toplists.length !== dashboard.dimensionThresholdFilters.length ||
+        toplists.some(
+          (t, i) =>
+            (t.data?.meta?.findIndex(
+              (c) => c.name === dashboard.dimensionThresholdFilters[i].name,
+            ) ?? -1) === -1,
+        )
+      ) {
+        return {
+          ready: false,
+          filter: undefined,
+        };
+      }
+
       const inFilters = toplists.map((t, i) =>
         // create an in expression for each dimension in the filters
         createInExpression(

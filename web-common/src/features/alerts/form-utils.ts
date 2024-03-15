@@ -1,6 +1,7 @@
 import {
   createAndExpression,
   createBinaryExpression,
+  sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1Expression,
@@ -14,13 +15,13 @@ export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
-  splitByTimeGrain: string;
   criteria: {
     field: string;
     operation: string;
     value: string;
   }[];
   criteriaOperation: V1Operation;
+  evaluationInterval: string;
   snooze: string;
   recipients: { email: string }[];
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
@@ -39,23 +40,22 @@ export function getAlertQueryArgsFromFormValues(
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: formValues.whereFilter,
-    having: createAndExpression(
-      formValues.criteria.map((c) =>
-        createBinaryExpression(
-          c.field,
-          c.operation as V1Operation,
-          Number(c.value),
+    where: sanitiseExpression(formValues.whereFilter, undefined),
+    having: sanitiseExpression(
+      undefined,
+      createAndExpression(
+        formValues.criteria.map((c) =>
+          createBinaryExpression(
+            c.field,
+            c.operation as V1Operation,
+            Number(c.value),
+          ),
         ),
       ),
     ),
-    ...(formValues.splitByTimeGrain
-      ? {
-          timeRange: {
-            isoDuration: formValues.splitByTimeGrain,
-          },
-        }
-      : {}),
+    timeRange: {
+      isoDuration: formValues.timeRange.isoDuration,
+    },
   };
 }
 
@@ -77,6 +77,11 @@ export const alertFormValidationSchema = yup.object({
     }),
   ),
 });
+export const FieldsByTab: (keyof AlertFormValues)[][] = [
+  ["name", "measure"],
+  ["criteria", "criteriaOperation"],
+  ["snooze", "recipients"],
+];
 
 export function checkIsTabValid(
   tabIndex: number,
@@ -100,16 +105,7 @@ export function checkIsTabValid(
         hasRequiredFields = false;
       }
     });
-    hasErrors = false;
-    (errors.criteria as unknown as any[]).forEach((criteriaError) => {
-      if (
-        criteriaError.field ||
-        criteriaError.operation ||
-        criteriaError.value
-      ) {
-        hasErrors = true;
-      }
-    });
+    hasErrors = !!errors.criteria;
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =

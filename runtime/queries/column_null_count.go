@@ -12,6 +12,7 @@ import (
 )
 
 type ColumnNullCount struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Result     float64
@@ -47,7 +48,7 @@ func (q *ColumnNullCount) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

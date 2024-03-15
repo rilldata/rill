@@ -1,44 +1,49 @@
 <script lang="ts">
+  import { Tag } from "@rilldata/web-common/components/tag";
+  import type { Color } from "@rilldata/web-common/components/tag/Tag.svelte";
   import {
-    type V1AssertionResult,
+    V1AlertExecution,
     V1AssertionStatus,
+    type V1AssertionResult,
   } from "@rilldata/web-common/runtime-client";
 
+  export let currentExecution: V1AlertExecution;
   export let result: V1AssertionResult;
 
-  type StatusDisplay = {
+  type AssertionResultDisplay = {
     text: string;
-    textClass: string;
-    borderClass: string;
+    color: Color;
   };
-  const statusDisplays: Record<V1AssertionStatus, StatusDisplay> = {
-    [V1AssertionStatus.ASSERTION_STATUS_UNSPECIFIED]: {
-      text: "Pending",
-      textClass: "text-purple-600",
-      borderClass: "bg-purple-50 border-purple-300",
-    },
+  const assertionResultDisplays: Record<
+    V1AssertionStatus,
+    AssertionResultDisplay
+  > = {
     [V1AssertionStatus.ASSERTION_STATUS_PASS]: {
-      text: "Pass",
-      textClass: "text-green-600",
-      borderClass: "bg-green-50 border-green-300",
-    },
-    [V1AssertionStatus.ASSERTION_STATUS_ERROR]: {
-      text: "Errored",
-      textClass: "text-red-600",
-      borderClass: "bg-red-50 border-red-300",
+      text: "Not triggered",
+      color: "gray",
     },
     [V1AssertionStatus.ASSERTION_STATUS_FAIL]: {
+      text: "Triggered",
+      color: "blue",
+    },
+    [V1AssertionStatus.ASSERTION_STATUS_ERROR]: {
       text: "Failed",
-      textClass: "text-red-600",
-      borderClass: "bg-red-50 border-red-300",
+      color: "red",
+    },
+    // This should never happen
+    [V1AssertionStatus.ASSERTION_STATUS_UNSPECIFIED]: {
+      text: "Status unknown",
+      color: "amber",
     },
   };
-  $: currentStatusDisplay = statusDisplays[result.status];
+
+  $: assertionResultDisplay = assertionResultDisplays[result.status];
 </script>
 
-<div
-  class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.borderClass}"
->
-  <span class={currentStatusDisplay.textClass}>{currentStatusDisplay.text}</span
-  >
-</div>
+{#if currentExecution}
+  <Tag color="green">Running</Tag>
+{:else}
+  <Tag color={assertionResultDisplay.color}>
+    {assertionResultDisplay.text}
+  </Tag>
+{/if}

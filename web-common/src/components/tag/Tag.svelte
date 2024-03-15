@@ -1,5 +1,5 @@
-<script lang="ts">
-  type Color =
+<script context="module" lang="ts">
+  export type Color =
     | "gray"
     | "magenta"
     | "green"
@@ -9,7 +9,9 @@
     | "amber"
     | "blue"
     | "purple";
+</script>
 
+<script lang="ts">
   export let color: Color = "gray";
   export let height = 21;
 

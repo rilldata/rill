@@ -4,10 +4,7 @@
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
-  import {
-    humaniseAlertRunDuration,
-    humaniseAlertSnoozeOption,
-  } from "@rilldata/web-admin/features/alerts/metadata/utils";
+  import { humaniseAlertSnoozeOption } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
     useAlertDashboardName,
@@ -47,9 +44,6 @@
     $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
 
-  $: runInterval = humaniseAlertRunDuration(
-    $alertQuery.data?.resource?.alert?.spec,
-  );
   $: snoozeLabel = humaniseAlertSnoozeOption(
     $alertQuery.data?.resource?.alert?.spec,
   );
@@ -140,12 +134,6 @@
         </MetadataValue>
       </div>
 
-      <!-- Split by time grain -->
-      <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Split by time grain</MetadataLabel>
-        <MetadataValue>{runInterval}</MetadataValue>
-      </div>
-
       <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Schedule</MetadataLabel>
@@ -182,7 +170,7 @@
   <EditAlertDialog
     open={showEditAlertDialog}
     alertSpec={$alertQuery.data.resource.alert.spec}
-    metricsViewSpec={$dashboard.data?.metricsView.spec}
     on:close={() => (showEditAlertDialog = false)}
+    metricsViewName={$dashboardName.data}
   />
 {/if}

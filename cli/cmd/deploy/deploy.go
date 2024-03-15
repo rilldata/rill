@@ -20,10 +20,10 @@ import (
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -93,25 +93,6 @@ type Options struct {
 }
 
 func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
-	// Setup telemetry
-	tel := telemetry.New(ch.Version)
-	if ch.IsAuthenticated() {
-		user, _ := ch.CurrentUser(ctx)
-		if user != nil {
-			tel.WithUserID(user.Id)
-		}
-	}
-	tel.Emit(telemetry.ActionDeployStart)
-	defer func() {
-		// give 5s for emitting events over the parent context.
-		// this will make sure if user cancelled the command events are still fired.
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		// telemetry errors shouldn't fail deploy command
-		_ = tel.Flush(ctx)
-	}()
-
 	// The gitPath can be either a local path or a remote .git URL.
 	// Determine which it is.
 	var isLocalGitPath bool
@@ -153,7 +134,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		// If not, we still navigate user to login and then fail afterwards.
 		if !rillv1beta.HasRillProject(localProjectPath) {
 			if !ch.IsAuthenticated() {
-				err := loginWithTelemetry(ctx, ch, "", tel)
+				err := loginWithTelemetry(ctx, ch, "")
 				if err != nil {
 					ch.PrintfWarn("Login failed with error: %s\n", err.Error())
 				}
@@ -168,11 +149,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 		// Extract the Git remote and infer the githubURL.
 		var remote *gitutil.Remote
-		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName)
+		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
 			// It's not a valid remote for Github. But we still navigate user to login and then fail afterwards.
 			if !ch.IsAuthenticated() {
-				err := loginWithTelemetry(ctx, ch, "", tel)
+				err := loginWithTelemetry(ctx, ch, "")
 				if err != nil {
 					ch.PrintfWarn("Login failed with error: %s\n", err.Error())
 				}
@@ -214,7 +195,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		if err != nil {
 			return err
 		}
-		if err := loginWithTelemetry(ctx, ch, redirectURL, tel); err != nil {
+		if err := loginWithTelemetry(ctx, ch, redirectURL); err != nil {
 			return err
 		}
 	}
@@ -225,7 +206,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	}
 
 	// Run flow for access to the Github remote (if necessary)
-	ghRes, err := githubFlow(ctx, ch, githubURL, silentGitFlow, tel)
+	ghRes, err := githubFlow(ctx, ch, githubURL, silentGitFlow)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
@@ -334,7 +315,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 
 	// If the Git path is local, we can parse the project and check if credentials are available for the connectors used by the project.
 	if isLocalGitPath {
-		variablesFlow(ctx, ch, localProjectPath, opts.Name)
+		variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
 	}
 
 	// Open browser
@@ -345,15 +326,17 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		_ = browser.Open(res.Project.FrontendUrl)
 	}
 
-	tel.Emit(telemetry.ActionDeploySuccess)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+
 	return nil
 }
 
-func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string, tel *telemetry.Telemetry) error {
+func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
 	time.Sleep(2 * time.Second)
 
-	tel.Emit(telemetry.ActionLoginStart)
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
+
 	if err := auth.Login(ctx, ch, redirectURL); err != nil {
 		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
 			ch.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
@@ -365,16 +348,14 @@ func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 		}
 		return fmt.Errorf("login failed: %w", err)
 	}
-	user, _ := ch.CurrentUser(ctx)
-	if user != nil {
-		tel.WithUserID(user.Id)
-	}
-	// fire this after we potentially get the user id
-	tel.Emit(telemetry.ActionLoginSuccess)
+
+	// The cmdutil.Helper automatically detects the login and will add the user's ID to the telemetry.
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
+
 	return nil
 }
 
-func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silent bool, tel *telemetry.Telemetry) (*adminv1.GetGithubRepoStatusResponse, error) {
+func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silent bool) (*adminv1.GetGithubRepoStatusResponse, error) {
 	// Get the admin client
 	c, err := ch.Client()
 	if err != nil {
@@ -391,7 +372,8 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 
 	// If the user has not already granted access, open browser and poll for access
 	if !res.HasAccess {
-		tel.Emit(telemetry.ActionGithubConnectedStart)
+		// Emit start telemetry
+		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
 
 		// Print instructions to grant access
 		if !silent {
@@ -428,8 +410,9 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silen
 			}
 
 			if pollRes.HasAccess {
-				// Success
-				tel.Emit(telemetry.ActionGithubConnectedSuccess)
+				// Emit success telemetry
+				ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
+
 				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
 				ch.PrintfSuccess("You have connected to the %q project in Github.\n", ghRepo)
 				return pollRes, nil
@@ -566,7 +549,7 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 	return res, err
 }
 
-func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName string) {
+func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, projectName string) {
 	// Parse the project's connectors
 	repo, instanceID, err := cmdutil.RepoForProjectPath(gitPath)
 	if err != nil {
@@ -613,7 +596,11 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, projectName
 		}
 		fmt.Print("\n")
 	}
-	ch.PrintfWarn("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
+	if subPath == "" {
+		ch.PrintfWarn("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
+	} else {
+		ch.PrintfWarn("\nRun `rill env configure --project %s` from directory `%s` to provide credentials.\n\n", projectName, gitPath)
+	}
 	time.Sleep(2 * time.Second)
 }
 

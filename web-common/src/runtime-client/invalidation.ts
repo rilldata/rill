@@ -1,4 +1,7 @@
-import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import {
+  getNameFromFile,
+  removeLeadingSlash,
+} from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
@@ -56,7 +59,10 @@ export const invalidateAfterReconcile = async (
     reconcileResponse.affectedPaths
       .map((path) => [
         queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, path),
+          getRuntimeServiceGetFileQueryKey(
+            instanceId,
+            removeLeadingSlash(path),
+          ),
         ),
         queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
@@ -195,7 +201,7 @@ export const removeEntityQueries = async (
   // remove affected catalog entries and files
   await Promise.all([
     queryClient.removeQueries(
-      getRuntimeServiceGetFileQueryKey(instanceId, path),
+      getRuntimeServiceGetFileQueryKey(instanceId, removeLeadingSlash(path)),
     ),
     queryClient.removeQueries(
       getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name),

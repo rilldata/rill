@@ -127,7 +127,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, name, claims.OwnerID())
+	data, err := s.yamlForManagedAlert(req.Options, claims.OwnerID())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
@@ -200,7 +200,7 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, req.Name, annotations.AdminOwnerUserID)
+	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
@@ -274,10 +274,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts, err := recreateAlertOptionsFromSpec(spec)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
-	}
+	opts := recreateAlertOptionsFromSpec(spec)
 
 	found := false
 	for idx, email := range opts.Recipients {
@@ -298,7 +295,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := s.yamlForManagedAlert(opts, req.Name, annotations.AdminOwnerUserID)
+		data, err := s.yamlForManagedAlert(opts, annotations.AdminOwnerUserID)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 		}
@@ -440,16 +437,17 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 	}, nil
 }
 
-func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, alertName, ownerUserID string) ([]byte, error) {
+func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID string) ([]byte, error) {
 	res := alertYAML{}
 	res.Kind = "alert"
-	res.Title = opts.Title
-	// manually add the ref
+	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+	res.Title = opts.Title
+	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
-	// hard code the user id to run for. this avoids exposing data through alert creation
+	// Hard code the user id to run for (to avoid exposing data through alert creation)
 	res.Query.For.UserID = ownerUserID
 	res.Email.Recipients = opts.Recipients
 	res.Email.Renotify = opts.EmailRenotify
@@ -472,9 +470,10 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 
 	res := alertYAML{}
 	res.Kind = "alert"
-	res.Title = opts.Title
-	// manually add the ref
+	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+	res.Title = opts.Title
+	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
@@ -522,7 +521,7 @@ func randomAlertName(title string) string {
 	return name
 }
 
-func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
+func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) *adminv1.AlertOptions {
 	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
 	opts.IntervalDuration = spec.IntervalsIsoDuration
@@ -531,19 +530,19 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	opts.Recipients = spec.EmailRecipients
 	opts.EmailRenotify = spec.EmailRenotify
 	opts.EmailRenotifyAfterSeconds = spec.EmailRenotifyAfterSeconds
-	return opts, nil
+	return opts
 }
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Kind      string   `yaml:"kind"`
-	Title     string   `yaml:"title"`
 	Refs      []string `yaml:"refs"`
+	Title     string   `yaml:"title"`
+	Watermark string   `yaml:"watermark"`
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
-	Query   struct {
+	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`

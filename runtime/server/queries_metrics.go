@@ -408,18 +408,11 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, ErrForbidden
 	}
 
-	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
 	q := &queries.MetricsViewSchema{
-		MetricsViewName: req.MetricsViewName,
-		TableName:       mv.Table,
-		Measures:        mv.Measures,
-		Dimensions:      mv.Dimensions,
+		MetricsViewName:    req.MetricsViewName,
+		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}

@@ -13,6 +13,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -57,15 +58,11 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	isDefaultConnector := req.Connector == inst.ResolveOLAPConnector()
 
 	// Connect to connector and check it's an OLAP db
-	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
-	olap, ok := handle.AsOLAP(req.InstanceId)
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "connector is not an OLAP connector")
-	}
 
 	// Get table info
 	tbl, err := olap.InformationSchema().Lookup(ctx, req.Table)
@@ -94,12 +91,32 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	var data string
 	var aiSucceeded bool
 	if req.UseAi {
-		data, err = s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		// Generate
+		start := time.Now()
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
+			data = res.data
 			aiSucceeded = true
 		}
+
+		// Emit event
+		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(tbl.Schema.Fields))}
+		attrs = append(attrs,
+			attribute.Bool("succeeded", aiSucceeded),
+			attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()),
+		)
+		if res != nil {
+			attrs = append(attrs,
+				attribute.Int("valid_measures_count", res.validMeasures),
+				attribute.Int("invalid_measures_count", res.invalidMeasures),
+			)
+		}
+		if err != nil {
+			attrs = append(attrs, attribute.String("error", err.Error()))
+		}
+		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_metrics_view_yaml", attrs...)
 	}
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
@@ -124,9 +141,16 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	return &runtimev1.GenerateMetricsViewFileResponse{AiSucceeded: aiSucceeded}, nil
 }
 
+// generateMetricsViewYAMLWithres is a struct for the result of generateMetricsViewYAMLWithAI.
+type generateMetricsViewYAMLWithres struct {
+	data            string
+	validMeasures   int
+	invalidMeasures int
+}
+
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
@@ -136,7 +160,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// Connect to the AI service configured for the instance
 	ai, release, err := s.runtime.AI(ctx, instanceID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer release()
 
@@ -147,7 +171,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// The AI may produce Markdown output. Remove the code tags around the YAML.
@@ -158,7 +182,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// Parse the YAML structure
 	var doc metricsViewYAML
 	if err := yaml.Unmarshal([]byte(res.Data), &doc); err != nil {
-		return "", fmt.Errorf("invalid metrics view YAML: %w", err)
+		return nil, fmt.Errorf("invalid metrics view YAML: %w", err)
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
@@ -188,34 +212,41 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 	validateResult, err := s.runtime.ValidateMetricsView(ctx, instanceID, spec)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Remove all invalid measures. We do this in two steps to preserve the indexes returned in MeasureErrs:
 	// First, we set the invalid measures to nil. Second, we remove the nil entries.
+	var valid, invalid int
 	for _, ie := range validateResult.MeasureErrs {
 		doc.Measures[ie.Idx] = nil
 	}
 	for idx := 0; idx < len(doc.Measures); {
 		if doc.Measures[idx] == nil {
+			invalid++
 			doc.Measures = slices.Delete(doc.Measures, idx, idx+1)
 		} else {
+			valid++
 			idx++
 		}
 	}
 
 	// If there are no valid measures left, bail
 	if len(doc.Measures) == 0 {
-		return "", errors.New("no valid measures were generated")
+		return nil, errors.New("no valid measures were generated")
 	}
 
 	// Render the updated YAML
 	out, err := marshalMetricsViewYAML(&doc, true)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return out, nil
+	return &generateMetricsViewYAMLWithres{
+		data:            out,
+		validMeasures:   valid,
+		invalidMeasures: invalid,
+	}, nil
 }
 
 // metricsViewYAMLSystemPrompt returns the static system prompt for the metrics view generation AI.

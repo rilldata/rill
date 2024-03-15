@@ -25,14 +25,14 @@
     metricViewName,
   );
 
-  $: isEditableDashboard = $featureFlags.readOnly === false;
+  const { readOnly } = featureFlags;
 
   $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
   $: dashboardIsIdle =
     $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  function viewMetrics(metricViewName: string) {
+  async function viewMetrics(metricViewName: string) {
     goto(`/dashboard/${metricViewName}/edit`);
 
     behaviourEvent.fireNavigationEvent(
@@ -45,13 +45,18 @@
   }
 
   let showDeployDashboardModal = false;
+
+  function showDeployModal() {
+    behaviourEvent?.fireDeployIntentEvent();
+    showDeployDashboardModal = true;
+  }
 </script>
 
 <div class="flex gap-2 flex-shrink-0">
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  {#if isEditableDashboard}
+  {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
         disabled={!dashboardIsIdle}
@@ -69,9 +74,7 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={() => (showDeployDashboardModal = true)} type="primary">
-        Deploy
-      </Button>
+      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

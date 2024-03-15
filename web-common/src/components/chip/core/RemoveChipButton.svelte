@@ -33,7 +33,7 @@
   suppress={supressTooltip}
 >
   <button
-    class={textClass}
+    class="{textClass} pl-2"
     on:mouseover={focusOnRemove}
     on:focus={focusOnRemove}
     on:mouseleave={blurOnRemove}

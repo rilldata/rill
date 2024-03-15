@@ -377,6 +377,11 @@ on publisher
 `,
 			`SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) UNPIVOT ("value" FOR "name" IN ('publisher'))`,
 		},
+		{
+			"percent sample",
+			`select * from read_parquet('data/sales_data_more_variability_aggregated.parquet') USING SAMPLE 10%`,
+			`SELECT * FROM sales_data_more_variability_aggregated USING SAMPLE 10% (System)`,
+		},
 	}
 
 	for _, tt := range sqlVariations {

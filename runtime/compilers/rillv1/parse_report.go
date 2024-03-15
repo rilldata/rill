@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,7 +33,7 @@ type ReportYAML struct {
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseReport(ctx context.Context, node *Node) error {
+func (p *Parser) parseReport(node *Node) error {
 	// Parse YAML
 	tmp := &ReportYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)

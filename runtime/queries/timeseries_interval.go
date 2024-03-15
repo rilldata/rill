@@ -10,6 +10,7 @@ import (
 )
 
 type RollupInterval struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Result     *runtimev1.ColumnRollupIntervalResponse
@@ -46,6 +47,7 @@ func (q *RollupInterval) UnmarshalResult(v any) error {
 
 func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	ctr := &ColumnTimeRange{
+		Connector:  q.Connector,
 		TableName:  q.TableName,
 		ColumnName: q.ColumnName,
 	}

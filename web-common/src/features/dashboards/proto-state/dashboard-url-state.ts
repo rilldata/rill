@@ -27,11 +27,7 @@ export type DashboardUrlStore = Readable<DashboardUrlState>;
  */
 export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
   return derived(
-    [
-      derived(ctx.dashboardStore, (dashboard) => dashboard?.proto),
-      useDashboardDefaultProto(ctx),
-      page,
-    ],
+    [useDashboardProto(ctx), useDashboardDefaultProto(ctx), page],
     ([proto, defaultProtoState, page]) => {
       if (defaultProtoState.isFetching)
         return {
@@ -78,18 +74,9 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   const metricsView = useMetricsView(ctx);
 
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
-  const unsub = dashboardUrlState.subscribe((state) => {
+  return dashboardUrlState.subscribe((state) => {
     const metricViewName = get(ctx.metricsViewName);
     if (state.urlName !== metricViewName) {
-      // Edge case where the instance of sync doesnt match the active metrics view
-      // TODO: We really need to rethink the new architecture that leads to this issue.
-      //       Using a single constant store that changes based on name in ctx will lead to stale data.
-      try {
-        // Race condition when unsub is not yet initialised
-        unsub();
-      } catch (e) {
-        // no-op
-      }
       return;
     }
 
@@ -111,8 +98,6 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
       lastKnownProto = state.urlProto;
     }
   });
-
-  return unsub;
 }
 
 function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
@@ -123,7 +108,7 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   const newUrl = getUrlForPath(url.pathname, ["features", "theme"]);
 
   if (newState !== defaultState) {
-    newStateInUrl = encodeURIComponent(newState);
+    newStateInUrl = newState;
     newUrl.searchParams.set("state", newStateInUrl);
   }
 
@@ -131,6 +116,16 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
 
   if (newStateInUrl === currentStateInUrl) return;
   goto(newUrl.toString());
+}
+
+/**
+ * Pulls data from dashboard to create the url state.
+ * Any subsections in the future would be added here to build the final url state.
+ */
+export function useDashboardProto(ctx: StateManagers) {
+  return derived([ctx.dashboardStore], ([dashboard]) =>
+    getProtoFromDashboardState(dashboard),
+  );
 }
 
 // NOTE: the data here can be stale when metricsViewName changes in ctx, along with the metricsView.

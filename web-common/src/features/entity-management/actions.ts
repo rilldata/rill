@@ -12,6 +12,7 @@ import {
   getFileAPIPathFromNameAndType,
   getLabel,
   getRouteFromName,
+  removeLeadingSlash,
 } from "./entity-mappers";
 import { getNextEntityName } from "./name-utils";
 import type { EntityType } from "./types";
@@ -42,7 +43,7 @@ export async function deleteFileArtifact(
 ) {
   const path = getFileAPIPathFromNameAndType(name, type);
   try {
-    await runtimeServiceDeleteFile(instanceId, path);
+    await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(path));
 
     httpRequestQueue.removeByName(name);
     if (showNotification) {

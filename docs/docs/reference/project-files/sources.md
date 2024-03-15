@@ -11,18 +11,19 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 **`connector`**
  —  the type of connector you are using for the source _(required)_. Possible values include:
-  - `https` — public files available on the web.
-  - `s3` — a file available on amazon s3. 
+  - _`https`_ — public files available on the web.
+  - _`s3`_ — a file available on amazon s3. 
     - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
-  - `gcs` — a file available on google cloud platform.
+  - _`gcs`_ — a file available on google cloud platform.
   - `local_file` — a locally available file.
-  - `motherduck` - data stored in motherduck
-  - `athena` - a data store defined in Amazon Athena
-  - `postgres` - data stored in Postgres
-  - `sqlite` - data stored in SQLite
-  - `snowflake` - data stored in Snowflake
-  - `bigquery` - data stored in BigQuery
-  - `duckdb` - use the [embedded DuckDB](../olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
+  - _`motherduck`_ - data stored in motherduck
+  - _`athena`_ - a data store defined in Amazon Athena
+  - _`redshift`_ - a data store in Amazon Redshift
+  - _`postgres`_ - data stored in Postgres
+  - _`sqlite`_ - data stored in SQLite
+  - _`snowflake`_ - data stored in Snowflake
+  - _`bigquery`_ - data stored in BigQuery
+  - _`duckdb`_ - use the [embedded DuckDB](../olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
 
 **`type`**
  —  deprecated but preserves a legacy alias to `connector`.

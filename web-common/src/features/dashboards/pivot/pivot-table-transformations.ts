@@ -137,3 +137,27 @@ export function getTotalsRow(
 
   return totalsRow;
 }
+
+export function mergeRowTotals(
+  rowValues: string[],
+  sortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
+  unsortedRowValues: string[],
+  unsortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
+): V1MetricsViewAggregationResponseDataItem[] {
+  if (unsortedRowValues.length === 0) {
+    return sortedRowTotals;
+  }
+
+  const unsortedRowValuesMap = createIndexMap(unsortedRowValues);
+
+  const orderedRowTotals = rowValues.map((rowValue) => {
+    const unsortedRowIndex = unsortedRowValuesMap.get(rowValue);
+    if (unsortedRowIndex === undefined) {
+      console.error("Row value not found in unsorted row values", rowValue);
+    }
+    const rowTotal = unsortedRowTotals[unsortedRowIndex as number];
+    return rowTotal;
+  });
+
+  return orderedRowTotals;
+}

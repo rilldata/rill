@@ -1,10 +1,7 @@
 import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 
-export function clearAllFilters({
-  dashboard,
-  cancelQueries,
-}: DashboardMutables) {
+export function clearAllFilters({ dashboard }: DashboardMutables) {
   const hasFilters =
     dashboard.whereFilter.cond?.exprs?.length ||
     dashboard.havingFilter.cond?.exprs?.length ||
@@ -12,8 +9,6 @@ export function clearAllFilters({
   if (!hasFilters) {
     return;
   }
-
-  cancelQueries();
 
   dashboard.whereFilter = createAndExpression([]);
   dashboard.havingFilter = createAndExpression([]);

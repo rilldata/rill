@@ -253,7 +253,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 
 		s.Logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
 
-		err = s.teardownDeployment(ctx, proj, depl)
+		err = s.teardownDeployment(ctx, depl)
 		if err != nil {
 			s.Logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
@@ -284,7 +284,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
+func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Connect to the deployment's runtime
 	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
@@ -365,13 +365,15 @@ func defaultModelMaterialize(vars map[string]string) (bool, error) {
 	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
 	// Remove when we have a way to conditionally configure it using code files.
 
+	systemDefault := false
+
 	if vars == nil {
-		return true, nil
+		return systemDefault, nil
 	}
 
 	s, ok := vars["__materialize_default"]
 	if !ok {
-		return true, nil
+		return systemDefault, nil
 	}
 
 	val, err := strconv.ParseBool(s)

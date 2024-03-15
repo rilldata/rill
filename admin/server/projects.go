@@ -22,9 +22,14 @@ import (
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
-// runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access to users (not used for internal communication between the admin and runtime).
-// This TTL is also used for JWTs issued for embedding, and since most embedders probably won't implement refresh and state management, it can't be set to a very low value.
-const runtimeAccessTokenTTL = 24 * time.Hour
+// runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
+// This TTL is not used for tokens created for internal communication between the admin and runtime services.
+const runtimeAccessTokenDefaultTTL = 30 * time.Minute
+
+// runtimeAccessTokenEmbedTTL is the validation duration of JWTs issued for embedding.
+// Since low-risk embed users might not implement refresh, it defaults to a high value of 24 hours.
+// It can be overridden to a lower value when issued for high-risk embed users.
+const runtimeAccessTokenEmbedTTL = 24 * time.Hour
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -142,10 +147,15 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}
 	}
 
+	ttlDuration := runtimeAccessTokenDefaultTTL
+	if req.AccessTokenTtlSeconds != 0 {
+		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
-		TTL:         runtimeAccessTokenTTL,
+		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
 				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
@@ -153,6 +163,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadProfiling,
 				runtimeauth.ReadRepo,
+				runtimeauth.ReadAPI,
 			},
 		},
 		Attributes: attr,

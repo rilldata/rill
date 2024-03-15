@@ -12,6 +12,7 @@ import (
 )
 
 type TableHead struct {
+	Connector string
 	TableName string
 	Limit     int
 	Result    []*structpb.Struct
@@ -54,7 +55,7 @@ func (q *TableHead) UnmarshalResult(v any) error {
 }
 
 func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 }
 
 func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
@@ -98,20 +99,20 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 			filename := q.TableName
 			sql := q.buildTableHeadSQL()
 			args := []interface{}{}
-			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
 	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
 	default:
@@ -121,7 +122,7 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 	return nil
 }
 
-func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore) error {
+func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -140,11 +141,11 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, q.Result, w)
+		return WriteCSV(meta, q.Result, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, q.Result, w)
+		return WriteXLSX(meta, q.Result, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, q.Result, w)
+		return WriteParquet(meta, q.Result, w)
 	}
 
 	return nil

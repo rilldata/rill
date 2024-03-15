@@ -46,7 +46,7 @@
     },
   } = stateManagers;
 
-  const { adminServer, alerts } = featureFlags;
+  const { adminServer } = featureFlags;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -153,7 +153,7 @@
 
     <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
 
-    {#if $adminServer && $alerts}
+    {#if $adminServer}
       <CreateAlertButton />
     {/if}
   </div>

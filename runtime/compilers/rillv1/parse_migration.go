@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"strings"
 )
 
@@ -11,7 +10,7 @@ type MigrationYAML struct {
 }
 
 // parseMigration parses a migration definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
+func (p *Parser) parseMigration(node *Node) error {
 	// Parse YAML
 	tmp := &MigrationYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
