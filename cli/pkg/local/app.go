@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -414,7 +415,10 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 
 	uri := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
-	client := http.Client{Timeout: time.Second}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	for {
 		// Check for cancellation
 		if ctx.Err() != nil {
