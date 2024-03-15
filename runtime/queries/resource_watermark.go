@@ -114,6 +114,10 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 	}
 
 	if !t.IsZero() {
+		// Hacky workaround for the following issue: the watermark is used as the *exclusive* upper bound for time ranges.
+		// We need to add a small delta to ensure the row with the watermark is included in the result.
+		t = t.Add(time.Second)
+
 		q.Result = &t
 	}
 
