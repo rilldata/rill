@@ -9,9 +9,9 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
 
 ## Properties
 
-**`model`** — the **model** name powering the dashboard with no path specified; should only be used for [Rill models](../../build/models/models.md) _(either **model** or **table** is required)_
+**`model`** — the **model** name powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_
 
-**`table`** - the **table** name powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](../../build/connect/connect.md) and/or from [external OLAP tables](build/olap/olap.md#external-olap-tables) _(either **table** or **model** is required)_
+**`table`** - the **table** name powering the dashboard with no path specified; should be used instead of `model` for dashboards created directly from [sources](/build/connect/connect.md) and/or from [external OLAP tables](build/olap/olap.md#external-olap-tables) _(either **table** or **model** is required)_
 
 **`title`** — the display name for the dashboard _(required)_
 
@@ -36,7 +36,7 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
     - `dimension` - dimension comparison mode
   - **`dimension`** - for dimension mode, specify the comparison dimension by name
 
-**`dimensions`** — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
+**`dimensions`** — for exploring [segments](/build/dashboards/dashboards.md#dimensions) and filtering the dashboard _(required)_
   - **`column`** — a categorical column _(required)_ 
   - **`expression`** a non-aggregate expression such as `string_split(domain, '.')`. One of `column` and `expression` is required but cannot have both at the same time _(required)_
   - **`name`** — a stable identifier for the dimension _(optional)_
@@ -45,7 +45,7 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
   - **`unnest`** - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
   - **`ignore`** — hides the dimension _(optional)_ 
 
-**`measures`** — numeric [aggregates](../../develop/metrics-dashboard#measures) of columns from your data model  _(required)_
+**`measures`** — numeric [aggregates](/build/dashboards/dashboards.md#measures) of columns from your data model  _(required)_
   - **`expression`** — a combination of operators and functions for aggregations _(required)_ 
   - **`name`** — a stable identifier for the measure _(required)_
   - **`label`** — a label for your dashboard measure _(optional)_ 
@@ -86,7 +86,7 @@ _**`default_dimensions`**_ - A list of dimensions that should be visible by defa
 
 _**`default_measures`**_ - A list of measures that should be visible by default.
 
-**`security`** - define a [security policy](../../develop/security) for the dashboard _(optional)_
+**`security`** - define a [security policy](/manage/security) for the dashboard _(optional)_
   - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
   - **`row_filter`** - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
   - **`exclude`** - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included. _(optional)_

@@ -107,4 +107,4 @@ Note that you must `cd` into the Git repository that your project was deployed f
 ## Additional Notes
 
 - At the moment, we do not officially support modeling with ClickHouse. If this is something you're interested in, please [contact us](../../contact.md).
-- For dashboards powered by ClickHouse, [measure definitions](../../build/dashboards/dashboards.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
+- For dashboards powered by ClickHouse, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.

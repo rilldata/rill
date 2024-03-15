@@ -28,7 +28,7 @@ You define access policies for dashboards under the `security` key in a dashboar
 
 ![access](../../static/img/manage/security/access.png)
 
-See the [Dashboard YAML](../reference/project-files/dashboards) reference docs for all the available fields.
+See the [Dashboard YAML](/reference/project-files/dashboards) reference docs for all the available fields.
 
 See the [Examples](#examples) below for how to set up each type of configuration.
 
@@ -115,7 +115,7 @@ security:
         - id
 ```
 
-Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](../reference/project-files/dashboards) reference for details.
+Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](/reference/project-files/dashboards) reference for details.
 
 <!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
 <!--
@@ -133,7 +133,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column and external users should only be able to see data for the tenant they belong to.
 
-To support this, we can ingest a separate data [source](./import-data) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter.
+To support this, we can ingest a separate data [source](/build/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter.
 
 For example, if we have a `mappings.csv` file in the `data` directory of our Rill project with the following contents:
 ```csv

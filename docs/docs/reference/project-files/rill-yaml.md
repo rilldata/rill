@@ -12,7 +12,7 @@ The `rill.yaml` file contains metadata about your project.
 **`title`** — the name of your project which will be displayed in the upper left hand corner
 **`compiler`** — the Rill project compiler version compatible with your project files (currently defaults to: `rillv1`)
 **`olap_connector`** - the default OLAP engine to use in your project
-**`mock_users`** — a list of mock users to test against dashboard [security policies](../../develop/security). For each mock user, possible attributes include:
+**`mock_users`** — a list of mock users to test against dashboard [security policies](/manage/security). For each mock user, possible attributes include:
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
@@ -95,6 +95,6 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 variable=xyz
 ```
 
-Similar to how [connector credentials can be pushed / pulled](../../build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::

@@ -51,7 +51,7 @@ Once you have downloaded GitHub and connected your account, you'll be able to cr
 
 - Run the Rill install command ```curl https://rill.sh | sh``` (or run ```rill start``` if you've already installed)
 
-Now - any changes you make locally can be synced directly with your GitHub repo in one click! You can revisit our [build section](../../build/) for refreshers on connecting to new sources, modeling data, or building dashboards.
+Now - any changes you make locally can be synced directly with your GitHub repo in one click! You can revisit our [build section](/build/connect/connect.md) for refreshers on connecting to new sources, modeling data, or building dashboards.
 
 ## Pushing Changes
 

@@ -25,4 +25,4 @@ Well now you can! For more details, see our page on [Using Multiple OLAP Engines
 
 ## Additional Notes
 
-- For dashboards powered by DuckDB, [measure definitions](../../build/dashboards/dashboards.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
+- For dashboards powered by DuckDB, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.

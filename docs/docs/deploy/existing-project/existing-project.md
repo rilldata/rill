@@ -44,7 +44,7 @@ The CLI will guide you through authenticating with Rill Cloud and granting read-
 :::tip configure credentials
 Cloud datastores will require service keys to access data. Make sure to create the necessary key and then run ```rill env configure``` with the correct credentials. 
 
-More details on credentials by source can be found in our [connectors section](../../build/credentials/credentials.md). 
+More details on credentials by source can be found in our [connectors section](/build/credentials/credentials.md). 
 :::
 
 
