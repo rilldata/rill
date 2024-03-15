@@ -82,9 +82,9 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
     - rill-WTD // Week-To-date
     ```
 
-_**`default_dimensions`**_ - A list of dimensions that should be visible by default.
+**`default_dimensions`** - A list of dimensions that should be visible by default.
 
-_**`default_measures`**_ - A list of measures that should be visible by default.
+**`default_measures`** - A list of measures that should be visible by default.
 
 **`security`** - define a [security policy](/manage/security) for the dashboard _(optional)_
   - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
