@@ -1019,6 +1019,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1053,6 +1057,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1082,6 +1090,10 @@ paths:
           description: Required
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           description: Required
@@ -1688,6 +1700,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1721,6 +1737,10 @@ paths:
         - name: tableName
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           in: query
@@ -1771,6 +1791,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -1800,6 +1822,10 @@ paths:
         - name: tableName
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: limit
           in: query
@@ -1835,6 +1861,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: columnName
           in: query
           required: false
@@ -1868,6 +1898,10 @@ paths:
           description: Required
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           description: Required
@@ -1904,6 +1938,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1932,6 +1970,10 @@ paths:
         - name: tableName
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           in: query
@@ -1973,6 +2015,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               measures:
                 type: array
                 items:
@@ -2032,6 +2076,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -2071,6 +2117,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               sql:
                 type: string
               args:
@@ -3160,6 +3208,8 @@ definitions:
       instanceId:
         type: string
         title: Required
+      connector:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3180,6 +3230,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3198,6 +3250,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3220,6 +3274,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3238,6 +3294,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3267,6 +3325,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3283,6 +3343,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3303,6 +3365,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3319,6 +3383,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3358,6 +3424,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -4347,6 +4415,12 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1MetricsViewSpec'
+        description: Valid spec is a (potentially previous) version of the spec that is known to currently be valid.
+      streaming:
+        type: boolean
+        description: |-
+          Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+          It's set to true if the metrics view is based on an externally managed table.
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
@@ -5445,6 +5519,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5462,6 +5538,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -5487,6 +5565,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string

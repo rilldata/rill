@@ -80,7 +80,6 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.evaluationInterval,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),

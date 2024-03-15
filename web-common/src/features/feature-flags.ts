@@ -1,71 +1,92 @@
 import type { BeforeNavigate } from "@sveltejs/kit";
 import type { Readable } from "svelte/store";
-import { derived, writable } from "svelte/store";
+import { writable } from "svelte/store";
+import { parse } from "yaml";
+import { createRuntimeServiceGetFile } from "../runtime-client";
+import { runtime } from "../runtime-client/runtime-store";
+import { debounce } from "../lib/create-debouncer";
 
 export type DerivedReadables<T> = {
   [K in keyof T]: Readable<T[K]>;
 };
 
-const urlParams = new URLSearchParams(window.location.search);
+class FeatureFlag {
+  system = false;
+  private state = writable(false);
 
-const features = urlParams.get("features")?.split(",") ?? [];
+  constructor(scope: "user" | "system" = "user") {
+    this.system = scope === "system";
+  }
 
-const flags = {
-  adminServer: false,
-  readOnly: false,
-  pivot: features?.includes("pivot") || false,
-  alerts: features?.includes("alerts") || false,
-  ai: true,
-  cloudDataViewer: features?.includes("data-viewer") || false,
-  customDashboards: features?.includes("custom-dashboards") || false,
-};
+  subscribe = this.state.subscribe;
+  toggle = () => this.state.update((n) => !n);
+  set = (n: boolean) => this.state.set(n);
+}
 
-export type FeatureFlags = typeof flags;
+type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 
-export const featureFlags = (() => {
-  const data = writable<FeatureFlags>(flags);
-  const { subscribe, update } = data;
+class FeatureFlags {
+  adminServer = new FeatureFlag("system");
+  readOnly = new FeatureFlag("system");
+  pivot = new FeatureFlag();
+  ai = new FeatureFlag();
+  cloudDataViewer = new FeatureFlag();
+  customDashboards = new FeatureFlag();
 
-  const derivedGetters = Object.keys(flags).reduce(
-    (acc, flag: keyof FeatureFlags) => {
-      acc[flag] = derived(data, ($flags) => $flags[flag]);
-      return acc;
-    },
-    {} as DerivedReadables<FeatureFlags>,
-  );
+  constructor() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFlags = (urlParams.get("features") ?? "").split(",");
 
-  return {
-    subscribe,
-    set(bool: boolean, ...toggleFlags: (keyof FeatureFlags)[]) {
-      update((flags) => {
-        toggleFlags.forEach((n) => {
-          flags[n] = bool;
-        });
+    const localFlags = (localStorage.getItem("features") ?? "").split(",");
 
-        return flags;
+    const staticFlags = [...urlFlags, ...localFlags];
+
+    const updateFlags = debounce((userFlags: Set<string>) => {
+      Object.keys(this).forEach((key) => {
+        const flag = this[key] as FeatureFlag;
+        if (flag.system) return;
+        flag.set(userFlags.has(key));
       });
-    },
-    update(changedFlags: Partial<FeatureFlags>) {
-      update((flags) => {
-        return {
-          ...flags,
-          ...changedFlags,
-        };
-      });
-    },
-    toggle(...toggleFlags: (keyof FeatureFlags)[]) {
-      update((flags) => {
-        toggleFlags.forEach((n) => {
-          flags[n] = !flags[n];
-        });
+    }, 400);
 
-        return flags;
-      });
-    },
+    // Responsively update flags based rill.yaml
+    runtime.subscribe((runtime) => {
+      if (!runtime?.instanceId) return;
 
-    ...derivedGetters,
-  };
-})();
+      createRuntimeServiceGetFile(runtime.instanceId, "rill.yaml", {
+        query: {
+          select: (data) => {
+            let features: string[] = [];
+            try {
+              const projectData = parse(data?.blob ?? "") as {
+                features?: string[];
+              };
+              features = projectData?.features ?? [];
+            } catch (e) {
+              console.error(e);
+            }
+            return features;
+          },
+        },
+      }).subscribe((features) => {
+        if (!Array.isArray(features?.data)) return;
+        updateFlags(new Set([...staticFlags, ...features.data]));
+      });
+    });
+  }
+
+  get set() {
+    return (bool: boolean, ...toggleFlags: FeatureFlagKey[]) => {
+      toggleFlags.forEach((n) => {
+        const flag = this[n] as FeatureFlag | undefined;
+        if (!flag) return;
+        flag.set(bool);
+      });
+    };
+  }
+}
+
+export const featureFlags = new FeatureFlags();
 
 export function retainFeaturesFlags(navigation: BeforeNavigate) {
   const featureFlags = navigation?.from?.url?.searchParams.get("features");

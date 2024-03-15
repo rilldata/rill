@@ -12,6 +12,7 @@ import (
 )
 
 type TableHead struct {
+	Connector string
 	TableName string
 	Limit     int
 	Result    []*structpb.Struct
@@ -54,7 +55,7 @@ func (q *TableHead) UnmarshalResult(v any) error {
 }
 
 func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 }
 
 func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

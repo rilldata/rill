@@ -14,6 +14,7 @@ import (
 func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.ColumnRollupIntervalRequest) (*runtimev1.ColumnRollupIntervalResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -26,6 +27,7 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 	}
 
 	q := &queries.RollupInterval{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}
@@ -40,6 +42,7 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTimeSeriesRequest) (*runtimev1.ColumnTimeSeriesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.StringSlice("args.measures.ids", marshalColumnTimeSeriesRequestBasicMeasure(req.Measures)),
 		attribute.String("args.timestamp_column", req.TimestampColumnName),
@@ -61,6 +64,7 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 	}
 
 	q := &queries.ColumnTimeseries{
+		Connector:           req.Connector,
 		TableName:           req.TableName,
 		TimestampColumnName: req.TimestampColumnName,
 		Measures:            req.Measures,

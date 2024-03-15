@@ -12,6 +12,7 @@ import (
 )
 
 type ColumnNumericHistogram struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Method     runtimev1.HistogramMethod
@@ -136,7 +137,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 }
 
 func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
@@ -254,7 +255,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 }
 
 func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

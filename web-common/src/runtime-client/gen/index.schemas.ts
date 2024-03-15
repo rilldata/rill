@@ -81,6 +81,7 @@ export type QueryServiceQueryBatchBody = {
 };
 
 export type QueryServiceQueryBody = {
+  connector?: string;
   sql?: string;
   args?: unknown[];
   priority?: number;
@@ -89,6 +90,7 @@ export type QueryServiceQueryBody = {
 };
 
 export type QueryServiceColumnTopKBody = {
+  connector?: string;
   columnName?: string;
   agg?: string;
   k?: number;
@@ -96,6 +98,7 @@ export type QueryServiceColumnTopKBody = {
 };
 
 export type QueryServiceColumnTimeSeriesBody = {
+  connector?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
@@ -106,25 +109,36 @@ export type QueryServiceColumnTimeSeriesBody = {
 };
 
 export type QueryServiceColumnTimeRangeParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceTableCardinalityParams = { priority?: number };
+export type QueryServiceTableCardinalityParams = {
+  connector?: string;
+  priority?: number;
+};
 
 export type QueryServiceColumnTimeGrainParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnRugHistogramParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceTableRowsParams = { limit?: number; priority?: number };
+export type QueryServiceTableRowsParams = {
+  connector?: string;
+  limit?: number;
+  priority?: number;
+};
 
 export type QueryServiceColumnRollupIntervalBody = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
@@ -140,12 +154,14 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
 } as const;
 
 export type QueryServiceColumnNumericHistogramParams = {
+  connector?: string;
   columnName?: string;
   histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
   priority?: number;
 };
 
 export type QueryServiceColumnNullCountParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
@@ -248,13 +264,18 @@ export type QueryServiceExportBody = {
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceTableColumnsParams = { priority?: number };
+export type QueryServiceTableColumnsParams = {
+  connector?: string;
+  priority?: number;
+};
 
 export type QueryServiceColumnCardinalityParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
@@ -599,6 +620,7 @@ export interface V1TableRowsResponse {
 
 export interface V1TableRowsRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   limit?: number;
   priority?: number;
@@ -615,6 +637,7 @@ export interface V1TableColumnsResponse {
 
 export interface V1TableColumnsRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   priority?: number;
 }
@@ -625,6 +648,7 @@ export interface V1TableCardinalityResponse {
 
 export interface V1TableCardinalityRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   priority?: number;
 }
@@ -1253,6 +1277,9 @@ export interface V1MetricsViewSpec {
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+  /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+It's set to true if the metrics view is based on an externally managed table. */
+  streaming?: boolean;
 }
 
 export interface V1MetricsViewV2 {
@@ -1783,6 +1810,7 @@ export interface V1ColumnTopKResponse {
 
 export interface V1ColumnTopKRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   agg?: string;
@@ -1796,6 +1824,7 @@ export interface V1ColumnTimeSeriesResponse {
 
 export interface V1ColumnTimeSeriesRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
@@ -1812,6 +1841,7 @@ export interface V1ColumnTimeRangeResponse {
 
 export interface V1ColumnTimeRangeRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1823,6 +1853,7 @@ export interface V1ColumnTimeGrainResponse {
 
 export interface V1ColumnTimeGrainRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1834,6 +1865,7 @@ export interface V1ColumnRugHistogramResponse {
 
 export interface V1ColumnRugHistogramRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1847,6 +1879,7 @@ export interface V1ColumnRollupIntervalResponse {
 
 export interface V1ColumnRollupIntervalRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1858,6 +1891,7 @@ export interface V1ColumnNumericHistogramResponse {
 
 export interface V1ColumnNumericHistogramRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   histogramMethod?: V1HistogramMethod;
@@ -1870,6 +1904,7 @@ export interface V1ColumnNullCountResponse {
 
 export interface V1ColumnNullCountRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1881,6 +1916,7 @@ export interface V1ColumnDescriptiveStatisticsResponse {
 
 export interface V1ColumnDescriptiveStatisticsRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1892,6 +1928,7 @@ export interface V1ColumnCardinalityResponse {
 
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;

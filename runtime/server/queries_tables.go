@@ -16,6 +16,7 @@ const _tableHeadDefaultLimit = 25
 func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardinalityRequest) (*runtimev1.TableCardinalityResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
@@ -27,6 +28,7 @@ func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardi
 	}
 
 	q := &queries.TableCardinality{
+		Connector: req.Connector,
 		TableName: req.TableName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -47,6 +49,7 @@ type ColumnInfo struct {
 func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRequest) (*runtimev1.TableColumnsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
@@ -58,6 +61,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 	}
 
 	q := &queries.TableColumns{
+		Connector: req.Connector,
 		TableName: req.TableName,
 	}
 
@@ -74,6 +78,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest) (*runtimev1.TableRowsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -91,6 +96,7 @@ func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest)
 	}
 
 	q := &queries.TableHead{
+		Connector: req.Connector,
 		TableName: req.TableName,
 		Limit:     limit,
 	}

@@ -20,13 +20,21 @@
 <script lang="ts">
   export let item: PivotChipData;
   export let removable = false;
+  export let grab = false;
+  export let slideDuration = 150;
+  export let active = false;
 
   const dispatch = createEventDispatcher();
 </script>
 
 <Chip
+  {grab}
+  on:mousedown
+  on:click
   outline
   supressTooltip
+  {active}
+  {slideDuration}
   {removable}
   {...colors[item.type]}
   extraPadding={false}

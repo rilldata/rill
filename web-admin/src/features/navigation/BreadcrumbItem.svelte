@@ -12,7 +12,7 @@
   export let isCurrentPage = false;
 </script>
 
-<li class="flex flex items-center gap-x-2 p-2">
+<li class="flex items-center gap-x-2 p-2">
   <slot name="icon" />
   <div class="flex flex-row gap-x-1 items-center">
     <a
@@ -30,7 +30,7 @@
         >
           <CaretDownIcon size="14px" />
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start">
+        <DropdownMenu.Content align="start" class="max-h-96 overflow-auto">
           {#each menuOptions as option}
             <DropdownMenu.Item on:click={() => onSelectMenuOption(option.key)}>
               {#if option.key === menuKey}
