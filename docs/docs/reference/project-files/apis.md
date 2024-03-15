@@ -1,7 +1,7 @@
 ---
 title: API YAML
 sidebar_label: API YAML
-sidebar_position: 10
+sidebar_position: 50
 ---
 
 In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition.
