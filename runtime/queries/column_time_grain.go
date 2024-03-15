@@ -12,6 +12,7 @@ import (
 )
 
 type ColumnTimeGrain struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Result     runtimev1.TimeGrain
@@ -56,7 +57,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

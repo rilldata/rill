@@ -20,6 +20,7 @@ const hourInDay = 24
 var microsInDay = hourInDay * time.Hour.Microseconds()
 
 type ColumnTimeRange struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Result     *runtimev1.TimeRangeSummary
@@ -55,7 +56,7 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

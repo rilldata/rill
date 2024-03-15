@@ -90,7 +90,7 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		return nil
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, spec.Connector)
 	if err != nil {
 		return err
 	}
