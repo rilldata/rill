@@ -22,6 +22,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	org := r.PathValue("org")
 	project := r.PathValue("project")
 	proxyPath := r.PathValue("path")
+	proxyRawQuery := r.URL.RawQuery
 
 	// Find the production deployment for the project we're proxying to
 	proj, err := s.admin.DB.FindProjectByName(r.Context(), org, project)
@@ -104,13 +105,15 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 
 	// Create the URL to proxy to by prepending `/v1/instances/{instanceID}` to the proxy path.
-	proxyURL, err := url.JoinPath(runtimeHost, "/v1/instances", depl.RuntimeInstanceID, proxyPath)
+	proxyURL, err := url.Parse(runtimeHost)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
+	proxyURL = proxyURL.JoinPath("/v1/instances", depl.RuntimeInstanceID, proxyPath)
+	proxyURL.RawQuery = proxyRawQuery
 
 	// Create the proxied request.
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, proxyURL, r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, proxyURL.String(), r.Body)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
