@@ -560,14 +560,18 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                       expandedTableMap = {};
                       expandedTableMap[key] = tableDataExpanded;
                     }
-                    lastPivotData = tableDataExpanded;
-                    lastPivotColumnDef = columnDef;
-                    lastTotalColumns = totalColumns;
 
                     let assembledTableData = tableDataExpanded;
-                    if (rowDimensionNames.length && measureNames.length) {
+                    if (
+                      rowDimensionNames.length &&
+                      measureNames.length &&
+                      rowPage === 1
+                    ) {
                       assembledTableData = [totalsRow, ...tableDataExpanded];
                     }
+                    lastPivotData = assembledTableData;
+                    lastPivotColumnDef = columnDef;
+                    lastTotalColumns = totalColumns;
 
                     return {
                       isFetching: false,
