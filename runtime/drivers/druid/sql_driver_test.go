@@ -104,6 +104,42 @@ func Ignore_TestDriver_json_type(t *testing.T) {
 	require.Equal(t, "b", data[0].Fields["json1"].GetStructValue().Fields["a"].GetStringValue())
 }
 
+func TestDriver_multiple_rows(t *testing.T) {
+	driver := &driver{}
+	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	olap, ok := handle.AsOLAP("")
+	require.True(t, ok)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{
+		Query: `
+		select 
+			cast(1 as boolean) as bool1,
+			cast(1 as bigint) as bigint1
+		union all
+		select 
+			cast(1 as boolean) as bool1,
+			cast(1 as bigint) as bigint1
+		`,
+	})
+	require.NoError(t, err)
+	schema, err := rowsToSchema(res.Rows)
+	require.NoError(t, err)
+	require.True(t, len(schema.Fields) > 0)
+
+	data, err := rowsToData(res)
+
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(data))
+	require.True(t, data[0].Fields["bool1"].GetBoolValue())
+	require.Equal(t, 1.0, data[0].Fields["bigint1"].GetNumberValue())
+	require.True(t, data[1].Fields["bool1"].GetBoolValue())
+	require.Equal(t, 1.0, data[1].Fields["bigint1"].GetNumberValue())
+
+}
+
 func Ignore_TestDriver_error(t *testing.T) {
 	driver := &driver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())

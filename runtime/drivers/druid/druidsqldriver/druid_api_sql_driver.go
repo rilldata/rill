@@ -19,7 +19,7 @@ type druidSQLDriver struct{}
 var _ driver.Driver = &druidSQLDriver{}
 
 func (a *druidSQLDriver) Open(dsn string) (driver.Conn, error) {
-	client := http.Client{Timeout: time.Second * 10}
+	client := http.Client{}
 
 	return &sqlConnection{
 		client: &client,
@@ -38,24 +38,8 @@ type sqlConnection struct {
 
 var _ driver.QueryerContext = &sqlConnection{}
 
-func emptyTransformer(v any) (any, error) {
-	return v, nil
-}
-
-func toStringArray(values []any) []string {
-	s := make([]string, len(values))
-	for i, v := range values {
-		vv, ok := v.(string)
-		if !ok {
-			return nil
-		}
-		s[i] = vv
-	}
-	return s
-}
-
 func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
-	b, err := json.Marshal(druidRequest(query, args))
+	b, err := json.Marshal(newDruidRequest(query, args))
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +81,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 		transformers := make([]func(any) (any, error), len(columns))
 		for i, c := range types {
-			transformers[i] = emptyTransformer
+			transformers[i] = identityTransformer
 			if c == "TIMESTAMP" {
 				transformers[i] = func(v any) (any, error) {
 					t, err := time.Parse(time.RFC3339, v.(string))
@@ -129,11 +113,12 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		}
 
 		druidRows := &druidRows{
-			closer:       resp.Body,
-			dec:          dec,
-			columns:      columns,
-			types:        types,
-			transformers: transformers,
+			closer:        resp.Body,
+			dec:           dec,
+			columns:       columns,
+			types:         types,
+			transformers:  transformers,
+			currentValues: make([]any, len(columns)),
 		}
 		return druidRows, nil
 	default:
@@ -142,25 +127,13 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	}
 }
 
-func toType(v any) string {
-	switch v.(type) {
-	case int:
-		return "INTEGER"
-	case float64:
-		return "DOUBLE"
-	case bool:
-		return "BOOLEAN"
-	default:
-		return "VARCHAR"
-	}
-}
-
 type druidRows struct {
-	closer       io.ReadCloser
-	dec          *json.Decoder
-	columns      []string
-	types        []string
-	transformers []func(any) (any, error)
+	closer        io.ReadCloser
+	dec           *json.Decoder
+	columns       []string
+	types         []string
+	transformers  []func(any) (any, error)
+	currentValues []any
 }
 
 var _ driver.Rows = &druidRows{}
@@ -174,13 +147,12 @@ func (dr *druidRows) Close() error {
 }
 
 func (dr *druidRows) Next(dest []driver.Value) error {
-	var a []any
-	err := dr.dec.Decode(&a)
+	err := dr.dec.Decode(&dr.currentValues)
 	if err != nil {
 		return err
 	}
 
-	for i, v := range a {
+	for i, v := range dr.currentValues {
 		v, err := dr.transformers[i](v)
 		if err != nil {
 			return err
@@ -238,7 +210,7 @@ type DruidRequest struct {
 	Context        DruidQueryContext `json:"context"`
 }
 
-func druidRequest(query string, args []driver.NamedValue) *DruidRequest {
+func newDruidRequest(query string, args []driver.NamedValue) *DruidRequest {
 	parameters := make([]DruidParameter, len(args))
 	for i, arg := range args {
 		parameters[i] = DruidParameter{
@@ -264,4 +236,30 @@ func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
 
 func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	return nil, fmt.Errorf("unsupported")
+}
+
+func identityTransformer(v any) (any, error) {
+	return v, nil
+}
+
+func toStringArray(values []any) []string {
+	s := make([]string, len(values))
+	for i, v := range values {
+		vv, _ := v.(string)
+		s[i] = vv
+	}
+	return s
+}
+
+func toType(v any) string {
+	switch v.(type) {
+	case int:
+		return "INTEGER"
+	case float64:
+		return "DOUBLE"
+	case bool:
+		return "BOOLEAN"
+	default:
+		return "VARCHAR"
+	}
 }
