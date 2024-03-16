@@ -67,6 +67,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	}
 
 	c := &connection{
+		logger:       logger,
 		root:         absPath,
 		driverConfig: config,
 		driverName:   d.name,
@@ -110,6 +111,7 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 type connection struct {
+	logger *zap.Logger
 	// root should be absolute path
 	root         string
 	driverConfig map[string]any
