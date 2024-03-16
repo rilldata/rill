@@ -16,10 +16,10 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Amazon Athena",
-	Description:        "Connect to Amazon Athena database.",
-	ServiceAccountDocs: "",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Amazon Athena",
+	Description: "Connect to Amazon Athena database.",
+	DocsURL:     "",
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -53,7 +53,7 @@ var spec = drivers.Spec{
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
+	ConfigProperties: []drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",
 			Secret: true,

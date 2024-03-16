@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ListConnectorsResponse,
+  V1AnalyzeConnectorsResponse,
   RpcStatus,
+  V1AnalyzeConnectorsRequest,
+  V1ListConnectorDriversResponse,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
   V1IssueDevJWTResponse,
@@ -80,32 +82,82 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 /**
- * @summary ListConnectors returns a description of all the connectors implemented in the runtime,
-including their schema and validation rules
+ * @summary AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
  */
-export const runtimeServiceListConnectors = (signal?: AbortSignal) => {
-  return httpClient<V1ListConnectorsResponse>({
+export const runtimeServiceAnalyzeConnectors = (
+  v1AnalyzeConnectorsRequest: V1AnalyzeConnectorsRequest,
+) => {
+  return httpClient<V1AnalyzeConnectorsResponse>({
+    url: `/v1/connectors/analyze`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1AnalyzeConnectorsRequest,
+  });
+};
+
+export type RuntimeServiceAnalyzeConnectorsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>
+>;
+export type RuntimeServiceAnalyzeConnectorsMutationBody =
+  V1AnalyzeConnectorsRequest;
+export type RuntimeServiceAnalyzeConnectorsMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceAnalyzeConnectors = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>,
+    TError,
+    { data: V1AnalyzeConnectorsRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>,
+    { data: V1AnalyzeConnectorsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceAnalyzeConnectors(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>,
+    TError,
+    { data: V1AnalyzeConnectorsRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+including their configuration specs and the capabilities they support.
+ */
+export const runtimeServiceListConnectorDrivers = (signal?: AbortSignal) => {
+  return httpClient<V1ListConnectorDriversResponse>({
     url: `/v1/connectors/meta`,
     method: "get",
     signal,
   });
 };
 
-export const getRuntimeServiceListConnectorsQueryKey = () => [
+export const getRuntimeServiceListConnectorDriversQueryKey = () => [
   `/v1/connectors/meta`,
 ];
 
-export type RuntimeServiceListConnectorsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceListConnectors>>
+export type RuntimeServiceListConnectorDriversQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>
 >;
-export type RuntimeServiceListConnectorsQueryError = ErrorType<RpcStatus>;
+export type RuntimeServiceListConnectorDriversQueryError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceListConnectors = <
-  TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
+export const createRuntimeServiceListConnectorDrivers = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
   TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
+    Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
     TError,
     TData
   >;
@@ -113,14 +165,14 @@ export const createRuntimeServiceListConnectors = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceListConnectorsQueryKey();
+    queryOptions?.queryKey ?? getRuntimeServiceListConnectorDriversQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceListConnectors>>
-  > = ({ signal }) => runtimeServiceListConnectors(signal);
+    Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>
+  > = ({ signal }) => runtimeServiceListConnectorDrivers(signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
+    Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

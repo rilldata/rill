@@ -3,14 +3,11 @@ package bigquery
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -23,10 +20,17 @@ func init() {
 
 // spec for bigquery connector
 var spec = drivers.Spec{
-	DisplayName:        "BigQuery",
-	Description:        "Import data from BigQuery.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "BigQuery",
+	Description: "Import data from BigQuery.",
+	DocsURL:     "https://docs.rilldata.com/deploy/credentials/gcs",
+	ConfigProperties: []drivers.PropertySpec{
+		{
+			Key:  "google_application_credentials",
+			Type: drivers.FilePropertyType,
+			Hint: "Enter path of file to load from.",
+		},
+	},
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -50,44 +54,10 @@ var spec = drivers.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-gcs",
+			DocsURL:     "https://docs.rilldata.com/develop/import-data#configure-credentials-for-gcs",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:  "google_application_credentials",
-			Hint: "Enter path of file to load from.",
-			ValidateFunc: func(any interface{}) error {
-				val := any.(string)
-				if val == "" {
-					// user can chhose to leave empty for public sources
-					return nil
-				}
-
-				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
-				if err != nil {
-					return err
-				}
-
-				_, err = os.Stat(path)
-				return err
-			},
-			TransformFunc: func(any interface{}) interface{} {
-				val := any.(string)
-				if val == "" {
-					return ""
-				}
-
-				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
-				if err != nil {
-					return err
-				}
-				// ignoring error since PathError is already validated
-				content, _ := os.ReadFile(path)
-				return string(content)
-			},
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}

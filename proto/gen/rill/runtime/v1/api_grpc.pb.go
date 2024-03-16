@@ -41,6 +41,8 @@ const (
 	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
+	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
+	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
 	RuntimeService_ListCatalogEntries_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
 	RuntimeService_GetCatalogEntry_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
 	RuntimeService_TriggerRefresh_FullMethodName          = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
@@ -49,7 +51,6 @@ const (
 	RuntimeService_DeleteFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
 	RuntimeService_RenameFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
 	RuntimeService_RefreshAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
-	RuntimeService_ListConnectors_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListConnectors"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 )
 
@@ -103,6 +104,11 @@ type RuntimeServiceClient interface {
 	// CreateTrigger creates a trigger in the catalog.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
+	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+	// including their configuration specs and the capabilities they support.
+	ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error)
+	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+	AnalyzeConnectors(ctx context.Context, in *AnalyzeConnectorsRequest, opts ...grpc.CallOption) (*AnalyzeConnectorsResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -124,9 +130,6 @@ type RuntimeServiceClient interface {
 	// RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
 	RenameFileAndReconcile(ctx context.Context, in *RenameFileAndReconcileRequest, opts ...grpc.CallOption) (*RenameFileAndReconcileResponse, error)
 	RefreshAndReconcile(ctx context.Context, in *RefreshAndReconcileRequest, opts ...grpc.CallOption) (*RefreshAndReconcileResponse, error)
-	// ListConnectors returns a description of all the connectors implemented in the runtime,
-	// including their schema and validation rules
-	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 }
 
@@ -405,6 +408,24 @@ func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, in *CreateTrig
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error) {
+	out := new(ListConnectorDriversResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListConnectorDrivers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) AnalyzeConnectors(ctx context.Context, in *AnalyzeConnectorsRequest, opts ...grpc.CallOption) (*AnalyzeConnectorsResponse, error) {
+	out := new(AnalyzeConnectorsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_AnalyzeConnectors_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error) {
 	out := new(ListCatalogEntriesResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_ListCatalogEntries_FullMethodName, in, out, opts...)
@@ -477,15 +498,6 @@ func (c *runtimeServiceClient) RefreshAndReconcile(ctx context.Context, in *Refr
 	return out, nil
 }
 
-func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
-	out := new(ListConnectorsResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_ListConnectors_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error) {
 	out := new(IssueDevJWTResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_IssueDevJWT_FullMethodName, in, out, opts...)
@@ -545,6 +557,11 @@ type RuntimeServiceServer interface {
 	// CreateTrigger creates a trigger in the catalog.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
+	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+	// including their configuration specs and the capabilities they support.
+	ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error)
+	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+	AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -566,9 +583,6 @@ type RuntimeServiceServer interface {
 	// RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
 	RenameFileAndReconcile(context.Context, *RenameFileAndReconcileRequest) (*RenameFileAndReconcileResponse, error)
 	RefreshAndReconcile(context.Context, *RefreshAndReconcileRequest) (*RefreshAndReconcileResponse, error)
-	// ListConnectors returns a description of all the connectors implemented in the runtime,
-	// including their schema and validation rules
-	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
@@ -643,6 +657,12 @@ func (UnimplementedRuntimeServiceServer) GetResource(context.Context, *GetResour
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
 }
+func (UnimplementedRuntimeServiceServer) ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConnectorDrivers not implemented")
+}
+func (UnimplementedRuntimeServiceServer) AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeConnectors not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
 }
@@ -666,9 +686,6 @@ func (UnimplementedRuntimeServiceServer) RenameFileAndReconcile(context.Context,
 }
 func (UnimplementedRuntimeServiceServer) RefreshAndReconcile(context.Context, *RefreshAndReconcileRequest) (*RefreshAndReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefreshAndReconcile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -1091,6 +1108,42 @@ func _RuntimeService_CreateTrigger_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListConnectorDrivers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConnectorDriversRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListConnectorDrivers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListConnectorDrivers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListConnectorDrivers(ctx, req.(*ListConnectorDriversRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_AnalyzeConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AnalyzeConnectorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).AnalyzeConnectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_AnalyzeConnectors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).AnalyzeConnectors(ctx, req.(*AnalyzeConnectorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListCatalogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCatalogEntriesRequest)
 	if err := dec(in); err != nil {
@@ -1235,24 +1288,6 @@ func _RuntimeService_RefreshAndReconcile_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConnectorsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListConnectors(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_ListConnectors_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListConnectors(ctx, req.(*ListConnectorsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueDevJWTRequest)
 	if err := dec(in); err != nil {
@@ -1355,6 +1390,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_CreateTrigger_Handler,
 		},
 		{
+			MethodName: "ListConnectorDrivers",
+			Handler:    _RuntimeService_ListConnectorDrivers_Handler,
+		},
+		{
+			MethodName: "AnalyzeConnectors",
+			Handler:    _RuntimeService_AnalyzeConnectors_Handler,
+		},
+		{
 			MethodName: "ListCatalogEntries",
 			Handler:    _RuntimeService_ListCatalogEntries_Handler,
 		},
@@ -1385,10 +1428,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefreshAndReconcile",
 			Handler:    _RuntimeService_RefreshAndReconcile_Handler,
-		},
-		{
-			MethodName: "ListConnectors",
-			Handler:    _RuntimeService_ListConnectors_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",

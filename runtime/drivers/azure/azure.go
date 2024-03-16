@@ -32,10 +32,32 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Azure Blob Storage",
-	Description:        "Connect to Azure Blob Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/azure",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Azure Blob Storage",
+	Description: "Connect to Azure Blob Storage.",
+	DocsURL:     "https://docs.rilldata.com/deploy/credentials/azure",
+	ConfigProperties: []drivers.PropertySpec{
+		{
+			Key:    "azure_storage_account",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_sas_token",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_connection_string",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "path",
 			DisplayName: "Blob URI",
@@ -53,24 +75,7 @@ var spec = drivers.Spec{
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "azure_storage_account",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_key",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_sas_token",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_connection_string",
-			Secret: true,
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 type driver struct{}

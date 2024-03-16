@@ -13,21 +13,26 @@ import (
 	_ "github.com/apache/calcite-avatica-go/v5"
 )
 
+func init() {
+	drivers.Register("druid", driver{})
+	drivers.RegisterAsConnector("druid", driver{})
+}
+
 var spec = drivers.Spec{
-	ConfigProperties: []drivers.PropertySchema{
+	DisplayName: "Druid",
+	Description: "Connect to Apache Druid.",
+	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/druid",
+	ConfigProperties: []drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			Description: "Druid connection string (using the Avatica protobuf endpoint)",
+			DisplayName: "Connection string",
+			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
 		},
 	},
-}
-
-func init() {
-	drivers.Register("druid", driver{})
-	drivers.RegisterAsConnector("druid", driver{})
+	ImplementsOLAP: true,
 }
 
 type driver struct{}

@@ -36,7 +36,7 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/admin")
 
 var spec = drivers.Spec{
 	DisplayName: "Rill Admin",
-	ConfigProperties: []drivers.PropertySchema{
+	ConfigProperties: []drivers.PropertySpec{
 		{
 			Key:    "access_token",
 			Secret: true,

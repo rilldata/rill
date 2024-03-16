@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Local file",
 	Description: "Import Locally Stored File.",
-	SourceProperties: []drivers.PropertySchema{
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,
@@ -41,6 +41,7 @@ var spec = drivers.Spec{
 			Placeholder: "csv",
 		},
 	},
+	ImplementsFileStore: true,
 }
 
 type driver struct {

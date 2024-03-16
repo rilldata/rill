@@ -16,7 +16,15 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	SourceProperties: []drivers.PropertySchema{
+	ConfigProperties: []drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Placeholder: "username:password@tcp(example.com:3306)/my-db",
+			Secret:      true,
+		},
+	},
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -30,17 +38,12 @@ var spec = drivers.Spec{
 			DisplayName: "MySQL Connection String",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
-			Href:        "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
+			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
 			Hint:        "Either set this or pass --var connector.mysql.dsn=... to rill start",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "dsn",
-			Secret: true,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}

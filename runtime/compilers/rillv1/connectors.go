@@ -12,8 +12,8 @@ import (
 
 // Connector contains metadata about a connector used in a Rill project
 type Connector struct {
-	Driver          string
 	Name            string
+	Driver          string
 	Spec            drivers.Spec
 	Resources       []*Resource
 	AnonymousAccess bool
@@ -134,8 +134,8 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 		}
 
 		res = &Connector{
-			Driver:          driver,
 			Name:            connector,
+			Driver:          driver,
 			Spec:            driverConnector.Spec(),
 			AnonymousAccess: true,
 		}

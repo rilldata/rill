@@ -16,10 +16,20 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Amazon Redshift",
-	Description:        "Connect to Amazon Redshift database.",
-	ServiceAccountDocs: "",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Amazon Redshift",
+	Description: "Connect to Amazon Redshift database.",
+	DocsURL:     "",
+	ConfigProperties: []drivers.PropertySpec{
+		{
+			Key:    "aws_access_key_id",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Secret: true,
+		},
+	},
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -77,16 +87,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "aws_access_key_id",
-			Secret: true,
-		},
-		{
-			Key:    "aws_secret_access_key",
-			Secret: true,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}

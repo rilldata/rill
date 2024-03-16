@@ -16,7 +16,13 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	SourceProperties: []drivers.PropertySchema{
+	ConfigProperties: []drivers.PropertySpec{
+		{
+			Key:    "dsn",
+			Secret: true,
+		},
+	},
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -30,17 +36,12 @@ var spec = drivers.Spec{
 			DisplayName: "Snowflake Connection String",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
-			Href:        "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
+			DocsURL:     "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
 			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "dsn",
-			Secret: true,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}

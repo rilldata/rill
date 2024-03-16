@@ -5,8 +5,8 @@
 
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
-    createRuntimeServiceListConnectors,
-    V1ConnectorSpec,
+    createRuntimeServiceListConnectorDrivers,
+    V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
@@ -37,7 +37,7 @@
   import { addSourceModal } from "./add-source-visibility";
 
   export let step = 1;
-  export let selectedConnector: null | V1ConnectorSpec = null;
+  export let selectedConnector: null | V1ConnectorDriver = null;
 
   let requestConnector = false;
 
@@ -79,7 +79,7 @@
     clickhouse: ClickHouse,
   };
 
-  const connectors = createRuntimeServiceListConnectors({
+  const connectors = createRuntimeServiceListConnectorDrivers({
     query: {
       // arrange connectors in the way we would like to display them
       select: (data) => {
@@ -102,7 +102,7 @@
     },
   });
 
-  function goToConnectorForm(connector: V1ConnectorSpec) {
+  function goToConnectorForm(connector: V1ConnectorDriver) {
     selectedConnector = connector;
     step = 2;
   }

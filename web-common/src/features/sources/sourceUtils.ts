@@ -1,5 +1,5 @@
 import type {
-  V1ConnectorSpec,
+  V1ConnectorDriver,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { extractFileExtension } from "./extract-table-name";
@@ -83,7 +83,7 @@ function extensionContainsParts(
   return false;
 }
 
-export function inferSourceName(connector: V1ConnectorSpec, path: string) {
+export function inferSourceName(connector: V1ConnectorDriver, path: string) {
   if (
     !path ||
     path.endsWith("/") ||

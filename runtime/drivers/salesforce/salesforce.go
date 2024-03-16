@@ -23,7 +23,29 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	SourceProperties: []drivers.PropertySchema{
+	ConfigProperties: []drivers.PropertySpec{
+		{
+			Key:    "username",
+			Secret: false,
+		},
+		{
+			Key:    "password",
+			Secret: true,
+		},
+		{
+			Key:    "key",
+			Secret: true,
+		},
+		{
+			Key:    "endpoint",
+			Secret: false,
+		},
+		{
+			Key:    "client_id",
+			Secret: false,
+		},
+	},
+	SourceProperties: []drivers.PropertySpec{
 		{
 			Key:         "soql",
 			Type:        drivers.StringPropertyType,
@@ -87,28 +109,7 @@ var spec = drivers.Spec{
 			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "username",
-			Secret: false,
-		},
-		{
-			Key:    "password",
-			Secret: true,
-		},
-		{
-			Key:    "key",
-			Secret: true,
-		},
-		{
-			Key:    "endpoint",
-			Secret: false,
-		},
-		{
-			Key:    "client_id",
-			Secret: false,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}
