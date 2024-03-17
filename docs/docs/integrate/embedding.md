@@ -264,12 +264,12 @@ public class DashboardController {
 
 The API accepts the following parameters:
 
-| Parameter | Description                                                                                                                                                                                    | Required                         |
-| --- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
-| resource | The name of the dashboard to embed                                                                                                                                                             | Yes                              |
-| user_email | The email of the user to embed the dashboard for                                                                                                                                               | No (either this or `attributes`) |
-| attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy | No (either this or `user_email`) |
-| ttl_seconds | The time to live for the iframe URL                                                                                                                                                            | No (Default: 86400)              |
+| Parameter | Description                                                                                                                                                                                     | Required                         |
+| --- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
+| resource | The name of the dashboard to embed                                                                                                                                                              | Yes                              |
+| user_email | The email of the user to embed the dashboard for                                                                                                                                                | No (either this or `attributes`) |
+| attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` | No (either this or `user_email`) |
+| ttl_seconds | The time to live for the iframe URL                                                                                                                                                             | No (Default: 86400)              |
 
 The response will contain an `iframeSrc` value that can be used to embed the dashboard in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. After the TTL has elapsed, the iframe URL needs be refreshed. Here's an example response:
 

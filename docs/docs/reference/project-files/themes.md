@@ -1,7 +1,7 @@
 ---
 title: Theme YAML
 sidebar_label: Theme YAML
-sidebar_position: 41
+sidebar_position: 60
 hide_table_of_contents: true
 ---
 
