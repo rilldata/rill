@@ -123,6 +123,11 @@ const config = {
             position: "left",
           },
           {
+            href: "https://www.rilldata.com/blog",
+            label: "Blog",
+            position: "left",
+          },
+          {
             type: "search",
             position: "right"
           }
