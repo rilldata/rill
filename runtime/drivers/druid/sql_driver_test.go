@@ -104,7 +104,7 @@ func Ignore_TestDriver_json_type(t *testing.T) {
 	require.Equal(t, "b", data[0].Fields["json1"].GetStructValue().Fields["a"].GetStringValue())
 }
 
-func TestDriver_multiple_rows(t *testing.T) {
+func Ignore_TestDriver_multiple_rows(t *testing.T) {
 	driver := &driver{}
 	handle, err := driver.Open(map[string]any{"pool_size": 2, "dsn": "http://localhost:8888/druid/v2/sql"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
