@@ -271,7 +271,7 @@ The API accepts the following parameters:
 
 | Parameter | Description                                                                                                                                                                                     | Required                         |
 | --- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
-| resource | The name of the dashboard to embed                                                                                                                                              | Yes                              |
+| resource | The name of the dashboard to embed                                                                                                                                              | No (if not specified, `navigation` should be set to `true`)                              |
 | navigation | Boolean whether to enable navigation and allow users to navigate to other dashboards (set to `false` if you wish to hard embed and allow access to only a single dashboard)                                                                                                                           | No (either set to `true` or `false`) |
 | theme | If [themes](/build/dashboards/customize.md#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                          | No (set to the name of the theme) |
 | user_id | The id of the user to embed the dashboard for                                                                                                                                                | No (only `user_id`, `user_email`, or `attributes` can be specified) |
@@ -283,7 +283,7 @@ The API accepts the following parameters:
 
 One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!
 
-If you wish to embed a single dashboard **only**, your payload may look like:
+If you wish to embed a single dashboard **only**, your payload might look like:
 ```json
 {
   // simply provide a resource
@@ -291,7 +291,7 @@ If you wish to embed a single dashboard **only**, your payload may look like:
 }
 ```
 
-If you wish to still embed a dashboard _but allow navigation between dashboards_, then use the following payload:
+If you wish to still embed a dashboard _but allow navigation between dashboards_, then your payload should include both parameters:
 ```json
 {
   // enable navigation and provide a resource
@@ -300,7 +300,7 @@ If you wish to still embed a dashboard _but allow navigation between dashboards_
 }
 ```
 
-Finally, _if you wish to embed the project list view of dashboards instead (what you see when you first open a project in Rill Cloud)_, then you can use this payload:
+Finally, _if you wish to embed the project list view of dashboards instead (what you see when you first open a project in Rill Cloud)_, then you can simply omit the `resource` and appropriately set `navigation` in your payload:
 ```json
 {
   // enable navigation and do NOT provide a resource
@@ -310,7 +310,7 @@ Finally, _if you wish to embed the project list view of dashboards instead (what
 
 :::
 
-The response of the above POST request will contain an `iframeSrc` value that can then be used to embed the dashboard / set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
+The response of the above POST request will then contain an `iframeSrc` value that can be used to embed the dashboard / set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
 
 ```json
 {
