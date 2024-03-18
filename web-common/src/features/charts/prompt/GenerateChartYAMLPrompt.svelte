@@ -3,6 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import ChartPromptHistoryDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptHistoryDisplay.svelte";
   import { createFullChartGenerator } from "@rilldata/web-common/features/charts/prompt/generateChart";
   import { useChartFileNames } from "@rilldata/web-common/features/charts/selectors";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
@@ -43,6 +44,7 @@
   </svelte:fragment>
   <svelte:fragment slot="body">
     <InputV2 bind:value={prompt} error="" label="Prompt" />
+    <ChartPromptHistoryDisplay entityName={table || metricsView} />
   </svelte:fragment>
   <div class="pt-2" slot="footer">
     <Button on:click={createVegaConfig}>Generate</Button>

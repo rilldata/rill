@@ -1,10 +1,6 @@
+import type { ChartPromptStatus } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
 import { type Readable, type Updater, writable } from "svelte/store";
 
-export enum ChartPromptStatus {
-  Idle,
-  GeneratingData,
-  GeneratingChartSpec,
-}
 export type ChartPromptState = {
   charts: Record<string, ChartPromptStatus>;
 };

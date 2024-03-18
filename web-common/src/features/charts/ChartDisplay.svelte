@@ -1,12 +1,8 @@
 <script lang="ts">
-  import {
-    ChartPromptStatus,
-    chartPromptStore,
-  } from "@rilldata/web-common/features/charts/prompt/chartPromptStatus";
+  import type { ChartPromptStatus } from "@rilldata/web-common/features/charts/prompt/chartPromptStatus";
+  import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createQuery } from "@tanstack/svelte-query";
 
@@ -44,25 +40,16 @@
   } catch (e) {
     error = e;
   }
-
-  $: promptStatus =
-    $chartPromptStore.charts[
-      getFilePathFromNameAndType(chartName, EntityType.Chart)
-    ];
 </script>
 
 <div class="m-2 w-1/2">
-  {#if promptStatus}
-    <p>
-      Generating {promptStatus === ChartPromptStatus.GeneratingData
-        ? "data"
-        : "chart spec"} using AI
-    </p>
-  {:else if error}
-    <p>{error}</p>
-  {:else if !parsedVegaSpec}
-    <p>Chart not available</p>
-  {:else}
-    <VegaLiteRenderer {data} spec={parsedVegaSpec} />
-  {/if}
+  <ChartPromptStatusDisplay {chartName}>
+    {#if error}
+      <p>{error}</p>
+    {:else if !parsedVegaSpec}
+      <p>Chart not available</p>
+    {:else}
+      <VegaLiteRenderer {data} spec={parsedVegaSpec} />
+    {/if}
+  </ChartPromptStatusDisplay>
 </div>
