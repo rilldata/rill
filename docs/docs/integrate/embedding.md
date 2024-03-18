@@ -328,9 +328,11 @@ Your frontend should request an iframe URL from your backend API (which you set 
 <iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
 
-### Example
+## Appendix
 
-Depending on how your app is written and the language being used, you can then use the resulting iframe URL to embed and display Rill dashboards accordingly. Please find below a very basic example of how to fetch and render a dashboard in **React**:
+### React Example
+
+Depending on how your app is written and the language being used, you can then use the resulting iframe URL to embed and display Rill dashboards accordingly. Please find below a basic example of how to fetch and render a dashboard in **React**:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
@@ -375,6 +377,6 @@ export default function RillDashboard() {
 };
 ```
 
-## End-to-end example for Next.js
+### Next.js Example
 
-You can find a more complete and end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [Github repo](https://github.com/rilldata/rill-embedding-example).
+You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [Github repo](https://github.com/rilldata/rill-embedding-example).
