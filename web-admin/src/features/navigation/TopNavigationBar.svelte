@@ -13,10 +13,7 @@
   import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
-  import {
-    isDashboardPage,
-    isProjectPage,
-  } from "@rilldata/web-common/features/navigation/nav-utils";
+  import { isDashboardPage, isProjectPage } from "./nav-utils";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
 
   const user = createAdminServiceGetCurrentUser();

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { isDashboardPage } from "@rilldata/web-common/features/navigation/nav-utils";
+  import { isDashboardPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import {

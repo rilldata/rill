@@ -1,7 +1,4 @@
-import { page } from "$app/stores";
-import { dev } from "$app/environment";
 import type { RpcStatus } from "@rilldata/web-admin/client";
-import { getScreenNameFromPage } from "@rilldata/web-common/features/navigation/nav-utils";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
@@ -10,7 +7,6 @@ import type {
 import type { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Query } from "@tanstack/query-core";
 import type { AxiosError } from "axios";
-import { get } from "svelte/store";
 import type {
   SourceConnectionType,
   SourceErrorCodes,
@@ -21,12 +17,14 @@ export class ErrorEventHandler {
   public constructor(
     private readonly metricsService: MetricsService,
     private readonly commonUserMetrics: CommonUserFields,
+    private readonly isDev: boolean,
+    private readonly screenNameGetter: () => MetricsEventScreenName,
   ) {
     this.commonUserMetrics = commonUserMetrics;
   }
 
-  public handleSvelteQueryError(error: AxiosError, query: Query) {
-    const screenName = getScreenNameFromPage(get(page));
+  public errorEventHandler(error: AxiosError, query: Query) {
+    const screenName = this.screenNameGetter();
     if (!error.response) {
       this.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
@@ -50,7 +48,7 @@ export class ErrorEventHandler {
       this.fireJavascriptErrorBoundaryEvent(
         errorEvt.error?.stack ?? "",
         errorEvt.message,
-        getScreenNameFromPage(get(page)),
+        this.screenNameGetter(),
       );
     };
     const unhandledRejectionHandler = (
@@ -69,7 +67,7 @@ export class ErrorEventHandler {
       this.fireJavascriptErrorBoundaryEvent(
         stack,
         message,
-        getScreenNameFromPage(get(page)),
+        this.screenNameGetter(),
       );
     };
 
@@ -110,7 +108,7 @@ export class ErrorEventHandler {
     message: string,
     screenName: MetricsEventScreenName,
   ) {
-    if (dev) {
+    if (this.isDev) {
       console.log("httpErrorEvent", screenName, api, status, message);
       return;
     }
@@ -128,7 +126,7 @@ export class ErrorEventHandler {
     message: string,
     screenName: MetricsEventScreenName,
   ) {
-    if (dev) {
+    if (this.isDev) {
       console.log("javascriptErrorEvent", screenName, stack, message);
       return;
     }

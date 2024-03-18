@@ -17,21 +17,8 @@ export function isProjectPage(page: Page): boolean {
 export function isDashboardPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]/[dashboard]" ||
-    page.route.id === "/-/embed" ||
-    page.route.id === "/(application)/dashboard/[name]"
+    page.route.id === "/-/embed"
   );
-}
-
-export function isMetricsDefinitionPage(page: Page): boolean {
-  return page.route.id === "/(application)/dashboard/[name]/edit";
-}
-
-export function isSourcePage(page: Page): boolean {
-  return page.route.id === "/(application)/source/[name]";
-}
-
-export function isModelPage(page: Page): boolean {
-  return page.route.id === "/(application)/model/[name]";
 }
 
 export function isReportPage(page: Page): boolean {
@@ -57,12 +44,6 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Project;
     case isDashboardPage(page):
       return MetricsEventScreenName.Dashboard;
-    case isMetricsDefinitionPage(page):
-      return MetricsEventScreenName.MetricsDefinition;
-    case isSourcePage(page):
-      return MetricsEventScreenName.Source;
-    case isModelPage(page):
-      return MetricsEventScreenName.Model;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):

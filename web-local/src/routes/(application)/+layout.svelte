@@ -17,7 +17,7 @@
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
     query: Query,
-  ) => errorEvent?.handleSvelteQueryError(error, query);
+  ) => errorEvent?.errorEventHandler(error, query);
 
   beforeNavigate(retainFeaturesFlags);
 

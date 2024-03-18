@@ -25,7 +25,7 @@
     isOrganizationPage,
     isProjectPage,
     isReportPage,
-  } from "@rilldata/web-common/features/navigation/nav-utils";
+  } from "./nav-utils";
 
   const user = createAdminServiceGetCurrentUser();
 
