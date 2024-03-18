@@ -1233,7 +1233,7 @@ paths:
                 type: string
               public:
                 type: boolean
-              region:
+              provisioner:
                 type: string
               prodOlapDriver:
                 type: string
@@ -1252,6 +1252,8 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              prodVersion:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -1344,13 +1346,15 @@ paths:
               prodSlots:
                 type: string
                 format: int64
-              region:
+              provisioner:
                 type: string
               newName:
                 type: string
               prodTtlSeconds:
                 type: string
                 format: int64
+              prodVersion:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
@@ -2746,7 +2750,7 @@ definitions:
         type: string
       public:
         type: boolean
-      region:
+      provisioner:
         type: string
       githubUrl:
         type: string
@@ -2772,6 +2776,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      prodVersion:
+        type: string
       createdOn:
         type: string
         format: date-time
