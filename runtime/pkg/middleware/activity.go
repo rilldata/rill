@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.StreamServerInterceptor {
+func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.StreamServerInterceptor {
 	return func(
 		srv interface{},
 		ss grpc.ServerStream,
@@ -23,10 +23,19 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 		ctx := ss.Context()
 		subject := auth.GetClaims(ctx).Subject()
 
-		ctx = activity.WithDims(ctx,
-			attribute.String("user_id", subject),
-			attribute.String("request_method", info.FullMethod),
-		)
+		// Only set the user ID attribute if it is not empty. This prevents overwriting a user ID attribute set upstream.
+		// (For example, in the CLI on local, the user ID is set at start time, and individual requests on localhost are unauthenticated.)
+		if subject != "" {
+			ctx = activity.SetAttributes(ctx,
+				attribute.String(activity.AttrKeyUserID, subject),
+				attribute.String("request_method", info.FullMethod),
+			)
+		} else {
+			ctx = activity.SetAttributes(ctx,
+				attribute.String("request_method", info.FullMethod),
+			)
+		}
+
 		wss := grpc_middleware.WrapServerStream(ss)
 		wss.WrappedContext = ctx
 
@@ -34,7 +43,7 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			activityClient.Emit(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
+			activityClient.RecordMetric(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
 		}()
 
 		err := handler(srv, wss)
@@ -43,7 +52,7 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 	}
 }
 
-func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnaryServerInterceptor {
+func ActivityUnaryServerInterceptor(activityClient *activity.Client) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -52,16 +61,24 @@ func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnarySe
 	) (interface{}, error) {
 		subject := auth.GetClaims(ctx).Subject()
 
-		ctx = activity.WithDims(ctx,
-			attribute.String("user_id", subject),
-			attribute.String("request_method", info.FullMethod),
-		)
+		// Only set the user ID attribute if it is not empty. This prevents overwriting a user ID attribute set upstream.
+		// (For example, in the CLI on local, the user ID is set at start time, and individual requests on localhost are unauthenticated.)
+		if subject != "" {
+			ctx = activity.SetAttributes(ctx,
+				attribute.String(activity.AttrKeyUserID, subject),
+				attribute.String("request_method", info.FullMethod),
+			)
+		} else {
+			ctx = activity.SetAttributes(ctx,
+				attribute.String("request_method", info.FullMethod),
+			)
+		}
 
 		var code codes.Code
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			activityClient.Emit(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
+			activityClient.RecordMetric(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()), attribute.String("grpc_code", code.String()))
 		}()
 
 		res, err := handler(ctx, req)

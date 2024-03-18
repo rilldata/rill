@@ -12,6 +12,7 @@ import (
 )
 
 type ColumnNumericHistogram struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Method     runtimev1.HistogramMethod
@@ -74,7 +75,7 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 	return ErrExportNotSupported
 }
 
-func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
+func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
 	var qryString string
 	switch olap.Dialect() {
@@ -136,7 +137,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 }
 
 func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 
 	sanitizedColumnName := safeName(q.ColumnName)
-	bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
+	bucketSize, err := q.calculateBucketSize(ctx, olap, priority)
 	if err != nil {
 		return err
 	}
@@ -254,7 +255,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 }
 
 func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

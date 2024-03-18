@@ -47,11 +47,11 @@
       name: "",
       measure: $dashboardStore.leaderboardMeasureName ?? "",
       splitByDimension: $dashboardStore.selectedDimensionName ?? "",
-      splitByTimeGrain: "",
+      evaluationInterval: "",
       criteria: [
         {
-          field: "",
-          operation: "",
+          field: $dashboardStore.leaderboardMeasureName ?? "",
+          operation: V1Operation.OPERATION_GTE,
           value: "0",
         },
       ],
@@ -66,6 +66,7 @@
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
       timeRange: {
+        isoDuration: timeControls.selectedTimeRange?.name,
         start: timeControls.timeStart,
         end: timeControls.timeEnd,
       },
@@ -79,7 +80,6 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.splitByTimeGrain,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
@@ -121,5 +121,5 @@
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
-  <BaseAlertForm isEditForm={false} {formState} on:close />
+  <BaseAlertForm {formState} isEditForm={false} on:close />
 </Dialog>

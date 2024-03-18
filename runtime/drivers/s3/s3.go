@@ -28,7 +28,7 @@ import (
 var spec = drivers.Spec{
 	DisplayName:        "Amazon S3",
 	Description:        "Connect to AWS S3 Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/s3",
+	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/s3",
 	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "path",
@@ -63,7 +63,7 @@ var spec = drivers.Spec{
 			Description: "AWS credentials inferred from your local environment.",
 			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-s3",
+			Href:        "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
@@ -98,7 +98,7 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(cfgMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("s3 driver can't be shared")
 	}

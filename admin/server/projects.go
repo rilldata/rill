@@ -163,6 +163,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadProfiling,
 				runtimeauth.ReadRepo,
+				runtimeauth.ReadAPI,
 			},
 		},
 		Attributes: attr,

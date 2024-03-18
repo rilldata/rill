@@ -24,8 +24,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
 			C.COLUMN_NAME AS COLUMNS,
-			C.DATA_TYPE AS COLUMN_TYPE,
-			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
+			C.DATA_TYPE AS COLUMN_TYPE
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'default'
@@ -60,8 +59,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
 			C.COLUMN_NAME AS COLUMN_NAME,
-			C.DATA_TYPE AS COLUMN_TYPE,
-			C.IS_NULLABLE = '1' AS IS_NULLABLE
+			C.DATA_TYPE AS COLUMN_TYPE
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'default' AND T.TABLE_NAME = ?
@@ -102,9 +100,8 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var tableType string
 		var columnName string
 		var columnType string
-		var nullable bool
 
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType, &nullable)
+		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType)
 		if err != nil {
 			return nil, err
 		}
@@ -122,13 +119,14 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				Database:       database,
 				DatabaseSchema: schema,
 				Name:           name,
+				View:           tableType == "VIEW",
 				Schema:         &runtimev1.StructType{},
 			}
 			res = append(res, t)
 		}
 
 		// parse column type
-		colType, err := databaseTypeToPB(columnType, nullable)
+		colType, err := databaseTypeToPB(columnType, false)
 		if err != nil {
 			return nil, err
 		}

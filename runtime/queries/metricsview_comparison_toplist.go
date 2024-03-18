@@ -79,7 +79,13 @@ func (q *MetricsViewComparison) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
 	}
@@ -87,12 +93,6 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
-	if err != nil {
-		return err
 	}
 
 	if mv.TimeDimension == "" && (!isTimeRangeNil(q.TimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
@@ -377,7 +377,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -610,7 +610,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
-	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -621,7 +621,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, whereClauseArgs...)
 	}
 
-	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -940,7 +940,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
 	}
@@ -976,7 +976,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 			}
 
 			filename := q.generateFilename()
-			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
@@ -1105,11 +1105,11 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, data, w)
+		return WriteCSV(meta, data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, data, w)
+		return WriteXLSX(meta, data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, data, w)
+		return WriteParquet(meta, data, w)
 	}
 
 	return nil
@@ -1126,7 +1126,7 @@ func (q *MetricsViewComparison) generateFilename() string {
 
 // TODO: a) Ensure correct time zone handling, b) Implement support for tr.RoundToGrain
 // (Maybe consider pushing all this logic into the SQL instead?)
-func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
+func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, timeCol string, args *[]any) (string, error) {
 	var clause string
 	if isTimeRangeNil(tr) {
 		return clause, nil

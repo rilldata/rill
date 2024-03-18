@@ -59,7 +59,7 @@ type configProperties struct {
 	Branch      string `mapstructure:"branch"`
 }
 
-func (d driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("admin driver can't be shared")
 	}
@@ -240,7 +240,7 @@ func (h *Handle) cloneOrPullUnsafe(ctx context.Context) error {
 	}
 
 	if !h.cloned.Load() {
-		err := h.cloneUnsafeGit(ctx)
+		err := h.cloneUnsafeGit()
 		if err == nil {
 			err = h.pullUnsafeVirtual(ctx)
 		}
@@ -248,7 +248,7 @@ func (h *Handle) cloneOrPullUnsafe(ctx context.Context) error {
 		return err
 	}
 
-	err = h.pullUnsafeGit(ctx)
+	err = h.pullUnsafeGit()
 	if err == nil {
 		err = h.pullUnsafeVirtual(ctx)
 	}
@@ -300,7 +300,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 
 // cloneUnsafe clones the Git repository. It removes any existing repository at the repoPath (in case a previous clone failed in a dirty state).
 // Unsafe for concurrent use.
-func (h *Handle) cloneUnsafeGit(ctx context.Context) error {
+func (h *Handle) cloneUnsafeGit() error {
 	_, err := os.Stat(h.repoPath)
 	if err == nil {
 		_ = os.RemoveAll(h.repoPath)
@@ -316,7 +316,7 @@ func (h *Handle) cloneUnsafeGit(ctx context.Context) error {
 
 // pullUnsafeGit pulls changes from the Git repo. It must run after a successful call to cloneUnsafeGit.
 // Unsafe for concurrent use.
-func (h *Handle) pullUnsafeGit(ctx context.Context) error {
+func (h *Handle) pullUnsafeGit() error {
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
 		return err

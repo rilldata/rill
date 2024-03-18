@@ -5,6 +5,12 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Tab from "./Tab.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   // import { featureFlags } from "../../feature-flags";
 
   // const { pivot: pivotAllowed } = featureFlags;
@@ -33,11 +39,22 @@
   $: currentTabIndex = $showPivot ? 1 : 0;
 
   function handleTabChange(index: number) {
+    if (currentTabIndex === index) return;
     const selectedTab = tabs[index];
 
     metricsExplorerStore.setPivotMode(
       $metricsViewName,
       selectedTab.label === "Pivot",
+    );
+
+    behaviourEvent.fireNavigationEvent(
+      $metricsViewName,
+      BehaviourEventMedium.Tab,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
+      selectedTab.label === "Pivot"
+        ? MetricsEventScreenName.Pivot
+        : MetricsEventScreenName.Explore,
     );
   }
 </script>

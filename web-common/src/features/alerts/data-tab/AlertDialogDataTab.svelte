@@ -1,42 +1,40 @@
 <script lang="ts">
-  import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
-  import { AlertIntervalOptions } from "@rilldata/web-common/features/alerts/data-tab/intervals";
-  import AlertDataPreview from "web-common/src/features/alerts/AlertDataPreview.svelte";
+  import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
   import { useMetricsView } from "../../dashboards/selectors";
-  import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
-  export let isEditForm: boolean;
 
   const { form, errors, handleChange } = formState;
 
-  $: metricsView = useMetricsView(
-    $runtime.instanceId,
-    $form["metricsViewName"],
-  );
+  $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
+  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures?.map((m) => ({
       value: m.name as string,
       label: m.label?.length ? m.label : m.expression,
     })) ?? [];
-  $: dimensionOptions =
-    $metricsView.data?.dimensions?.map((d) => ({
+  $: dimensionOptions = [
+    {
+      value: "",
+      label: "None",
+    },
+    ...($metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
       label: d.label?.length ? d.label : d.expression,
-    })) ?? [];
-
-  $: hasAtLeastOneFilter = $form.whereFilter.cond.exprs.length > 0;
+    })) ?? []),
+  ];
 </script>
 
 <div class="flex flex-col gap-y-3">
   <FormSection title="Alert name">
     <InputV2
+      alwaysShowError
       error={$errors["name"]}
       id="name"
       on:change={handleChange}
@@ -45,19 +43,15 @@
     />
   </FormSection>
   <FormSection
-    description={hasAtLeastOneFilter
-      ? "These are inherited from the underlying dashboard view."
-      : ""}
+    description="These are inherited from the underlying dashboard view."
     title="Filters"
   >
-    {#if hasAtLeastOneFilter}
-      <FilterChipsReadOnly
-        metricsViewName={$form["metricsViewName"]}
-        filters={$form["whereFilter"]}
-      />
-    {:else}
-      <NoFiltersSelected {isEditForm} />
-    {/if}
+    <FilterChipsReadOnly
+      dimensionThresholdFilters={[]}
+      filters={$form["whereFilter"]}
+      metricsViewName={$form["metricsViewName"]}
+      timeRange={$form["timeRange"]}
+    />
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."
@@ -78,22 +72,12 @@
       options={dimensionOptions}
       placeholder="Select a dimension"
     />
-    <Select
-      bind:value={$form["splitByTimeGrain"]}
-      id="splitByTimeGrain"
-      label="Split by time grain"
-      optional
-      options={AlertIntervalOptions}
-      placeholder="Select a time grain"
-    />
   </FormSection>
   <FormSection title="Data preview">
-    <AlertDataPreview
-      criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
+    <DataPreview
       measure={$form["measure"]}
       metricsViewName={$form["metricsViewName"]}
       splitByDimension={$form["splitByDimension"]}
-      splitByTimeGrain={$form["splitByTimeGrain"]}
       timeRange={$form["timeRange"]}
       whereFilter={$form["whereFilter"]}
     />

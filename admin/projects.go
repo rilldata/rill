@@ -98,7 +98,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
-		err2 := s.teardownDeployment(ctx, proj, depl)
+		err2 := s.teardownDeployment(ctx, depl)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
@@ -117,7 +117,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	}
 
 	for _, d := range ds {
-		err := s.teardownDeployment(ctx, p, d)
+		err := s.teardownDeployment(ctx, d)
 		if err != nil {
 			return err
 		}
@@ -280,13 +280,13 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
-		err2 := s.teardownDeployment(ctx, proj, newDepl)
+		err2 := s.teardownDeployment(ctx, newDepl)
 		return nil, multierr.Combine(err, err2)
 	}
 
 	// Delete old prod deployment if exists
 	if prevDepl != nil {
-		err = s.teardownDeployment(ctx, proj, prevDepl)
+		err = s.teardownDeployment(ctx, prevDepl)
 		if err != nil {
 			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}

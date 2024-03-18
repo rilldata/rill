@@ -7,7 +7,7 @@
   export let metricsDefName: string;
 </script>
 
-<WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
+<WorkspaceContainer>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} />
   <MetricsEditor slot="body" {metricsDefName} />
   <MetricsInspector slot="inspector" {metricsDefName} />

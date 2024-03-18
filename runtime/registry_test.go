@@ -330,7 +330,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.NoError(t, err)
 
 			// Acquire OLAP (to make sure it's opened)
-			firstOlap, release, err := rt.OLAP(ctx, inst.ID)
+			firstOlap, release, err := rt.OLAP(ctx, inst.ID, "")
 			require.NoError(t, err)
 			release()
 
@@ -364,7 +364,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// Verify new olap connection is opened
-			olap, release, err := rt.OLAP(ctx, inst.ID)
+			olap, release, err := rt.OLAP(ctx, inst.ID, "")
 			require.NoError(t, err)
 			defer release()
 			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
@@ -417,7 +417,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.NoError(t, err)
 
 			// Acquire OLAP
-			olap, release, err := rt.OLAP(ctx, inst.ID)
+			olap, release, err := rt.OLAP(ctx, inst.ID, "")
 			require.NoError(t, err)
 			defer release()
 
@@ -484,7 +484,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Put some data into it to create a .db file on disk
-	olap, release, err := rt.OLAP(ctx, inst.ID)
+	olap, release, err := rt.OLAP(ctx, inst.ID, "")
 	require.NoError(t, err)
 	defer release()
 	err = olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"})
@@ -498,7 +498,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check we can't open it anymore
-	_, _, err = rt.OLAP(ctx, inst.ID)
+	_, _, err = rt.OLAP(ctx, inst.ID, "")
 	require.Error(t, err)
 	require.FileExists(t, dbpath)
 

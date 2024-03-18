@@ -23,7 +23,11 @@
     </span>
   </div>
   <div class="px-4 py-1.5 border-l border-gray-600 text-sm">
-    <a href={link.href} on:click={() => dispatch("clear")}>{link.text}</a>
+    <a
+      class="text-primary-300 hover:text-primary-200"
+      href={link.href}
+      on:click={() => dispatch("clear")}>{link.text}</a
+    >
   </div>
   <div class="px-2.5 py-1.5 border-l border-gray-600">
     <IconButton on:click={() => dispatch("clear")} bgDark>

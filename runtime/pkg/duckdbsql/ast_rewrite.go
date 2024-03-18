@@ -24,7 +24,7 @@ func (fn *fromNode) rewriteToReadTableFunction(name string, paths []string, prop
 	return nil
 }
 
-func (sn *selectNode) rewriteLimit(limit, offset int) error {
+func (sn *selectNode) rewriteLimit(limit int) error {
 	modifiersNode := toNodeArray(sn.ast, astKeyModifiers)
 	updated := false
 	for _, v := range modifiersNode {
@@ -62,8 +62,8 @@ func (sn *selectNode) rewriteLimit(limit, offset int) error {
 	return nil
 }
 
-func (fn *fromNode) rewriteToSqliteScanFunction(name string, params []string) error {
-	baseTable, err := createSqliteScanTableFunction(params, fn.ast)
+func (fn *fromNode) rewriteToSqliteScanFunction(params []string) error {
+	baseTable, err := createSqliteScanTableFunction(params)
 	if err != nil {
 		return err
 	}
@@ -301,6 +301,56 @@ func createGenericValue(key string, val any) (astNode, error) {
 	return n, err
 }
 
+func createStandaloneValue(val any) (astNode, error) {
+	var t string
+	switch vt := val.(type) {
+	// these are not supported for standalone value
+	// case map[string]any:
+	// case []any:
+	case bool:
+		t = "BOOLEAN"
+	case int, int32:
+		t = "INTEGER"
+	case int64:
+		t = "BIGINT"
+	case uint, uint32:
+		t = "UINTEGER"
+	case uint64:
+		t = "UBIGINT"
+	case float32:
+		t = "FLOAT"
+		// Temporary fix since duckdb is not converting to sql properly
+		if math.Floor(float64(vt)) == float64(vt) {
+			val = forceConvertToNum[int32](vt)
+			t = "INTEGER"
+		}
+	case float64:
+		t = "DOUBLE"
+		// Temporary fix since duckdb is not converting to sql properly
+		if math.Floor(vt) == vt {
+			val = forceConvertToNum[int64](vt)
+			t = "BIGINT"
+		}
+	case string:
+		t = "VARCHAR"
+		val = fmt.Sprintf(`"%s"`, vt)
+	// TODO: others
+	default:
+		return nil, nil
+	}
+
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
+	"type": {
+		"id": "%s",
+		"type_info": null
+	},
+	"is_null": false,
+	"value": %v
+}`, t, val)), &n)
+	return n, err
+}
+
 func createStructValue(key string, val map[string]any) (astNode, error) {
 	n, err := createFunctionCall(key, "struct_pack", "main")
 	if err != nil {
@@ -367,7 +417,7 @@ func createFunctionCall(key, name, schema string) (astNode, error) {
 	return n, err
 }
 
-func createSqliteScanTableFunction(params []string, ast astNode) (astNode, error) {
+func createSqliteScanTableFunction(params []string) (astNode, error) {
 	var n astNode
 	err := json.Unmarshal([]byte(`{
   "type": "TABLE_FUNCTION",

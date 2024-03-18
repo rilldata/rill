@@ -9,7 +9,7 @@
 </script>
 
 {#key modelName}
-  <WorkspaceContainer assetID={modelName}>
+  <WorkspaceContainer>
     <ModelWorkspaceHeader slot="header" {modelName} />
     <ModelBody slot="body" {modelName} {focusEditorOnMount} />
     <ModelInspector {modelName} slot="inspector" />

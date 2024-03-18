@@ -73,8 +73,6 @@ type Config struct {
 	EmailBCC                 string                 `split_words:"true"`
 	OpenAIAPIKey             string                 `envconfig:"openai_api_key"`
 	ActivitySinkType         string                 `default:"" split_words:"true"`
-	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
-	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
 	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
 }
@@ -133,7 +131,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Init telemetry
+			// Init observability
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
@@ -141,17 +139,46 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
-				logger.Fatal("error starting telemetry", zap.Error(err))
+				logger.Fatal("error starting observability", zap.Error(err))
 			}
 			defer func() {
-				// Allow 10 seconds to gracefully shutdown telemetry
+				// Allow 10 seconds to gracefully shutdown observability
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				err := shutdown(ctx)
 				if err != nil {
-					logger.Error("telemetry shutdown failed", zap.Error(err))
+					logger.Error("observability shutdown failed", zap.Error(err))
 				}
 			}()
+
+			// Init activity client
+			var activityClient *activity.Client
+			switch conf.ActivitySinkType {
+			case "", "noop":
+				activityClient = activity.NewNoopClient()
+			case "kafka":
+				// NOTE: ActivityUISinkKafkaTopic specifically denotes a topic for UI events.
+				// This is acceptable since the UI is presently the only source that records events on the admin server's telemetry.
+				// However, if other events are emitted from the admin server in the future, we should refactor to emit all events of any kind to a single topic.
+				// (And handle multiplexing of different event types downstream.)
+				sink, err := activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivityUISinkKafkaTopic, logger)
+				if err != nil {
+					logger.Fatal("error creating kafka sink", zap.Error(err))
+				}
+				activityClient = activity.NewClient(sink, logger)
+			default:
+				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
+			}
+			defer activityClient.Close(context.Background())
+
+			// Add service info to activity client
+			activityClient = activityClient.WithServiceName("admin-server")
+			if ch.Version.Number != "" || ch.Version.Commit != "" {
+				activityClient = activityClient.WithServiceVersion(ch.Version.Number, ch.Version.Commit)
+			}
+			if ch.Version.IsDev() {
+				activityClient = activityClient.WithIsDev()
+			}
 
 			// Init runtime JWT issuer
 			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
@@ -231,17 +258,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			runWorker := len(args) == 0 || args[0] == "worker"
 			runJobs := len(args) == 0 || args[0] == "jobs"
 
-			uiActivityClient := activity.NewClientFromConf(
-				conf.ActivitySinkType,
-				conf.ActivitySinkPeriodMs,
-				conf.ActivityMaxBufferSize,
-				conf.ActivitySinkKafkaBrokers,
-				conf.ActivityUISinkKafkaTopic,
-				logger,
-				"admin-server",
-				ch.Version.String(),
-			)
-
 			// Init and run server
 			if runServer {
 				var limiter ratelimit.Limiter
@@ -254,7 +270,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
-				srv, err := server.New(logger, adm, issuer, limiter, uiActivityClient, &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,

@@ -13,6 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sys/unix"
 )
@@ -23,6 +24,7 @@ const maxBufferSize = 1000
 
 // watcher implements a recursive, batching file watcher on top of fsnotify.
 type watcher struct {
+	logger           *zap.Logger
 	root             string
 	watcher          *fsnotify.Watcher
 	closed           atomic.Bool
@@ -34,13 +36,16 @@ type watcher struct {
 	buffer           map[string]drivers.WatchEvent
 }
 
-func newWatcher(root string) (*watcher, error) {
+// newWatcher creates a new watcher for the given root directory.
+// The root directory must be an absolute path.
+func newWatcher(root string, logger *zap.Logger) (*watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
 	w := &watcher{
+		logger:      logger,
 		root:        root,
 		watcher:     fsw,
 		done:        make(chan struct{}),
@@ -162,8 +167,10 @@ func (w *watcher) runInner() error {
 
 			path, err := filepath.Rel(w.root, e.Name)
 			if err != nil {
-				return err
+				w.logger.Warn("ignoring watcher event: failed to get relative path", zap.String("root", w.root), zap.String("event_name", e.Name), zap.String("event_op", e.Op.String()))
+				continue
 			}
+
 			path = filepath.Join("/", path)
 			we.Path = path
 

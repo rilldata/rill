@@ -73,15 +73,15 @@ describe("Show/Hide Selectors", () => {
       );
       expect(get(showHideMeasure).selectedItems).toEqual([true, false]);
 
-      // toggle visibility
-      showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
-      // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
-      expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
+      // toggle visibility (hiding all is not supported from UI)
+      // showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
+      // // assert visibility is persisted in AdBids and after mirroring using the url proto state
+      // assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
+      // expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
 
       // toggle back visibility
       showHideMeasure.toggleVisibility(AD_BIDS_BID_PRICE_MEASURE);
-      showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
+      // showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
       assertVisiblePartsWithMirroring(
         get(mock).data,
@@ -226,15 +226,17 @@ describe("Show/Hide Selectors", () => {
       ]);
       expect(get(showHideDimensions).selectedItems).toEqual([false, true]);
 
-      // toggle visibility
-      showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
-      // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(get(mock).data, undefined, []);
-      expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
+      // toggle visibility (hiding all is not supported from UI)
+      // showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
+      // // assert visibility is persisted in AdBids and after mirroring using the url proto state
+      // assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+      //   AD_BIDS_DOMAIN_DIMENSION,
+      // ]);
+      // expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
 
       // toggle back visibility
       showHideDimensions.toggleVisibility(AD_BIDS_PUBLISHER_DIMENSION);
-      showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
+      // showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
       assertVisiblePartsWithMirroring(get(mock).data, undefined, [
         AD_BIDS_PUBLISHER_DIMENSION,

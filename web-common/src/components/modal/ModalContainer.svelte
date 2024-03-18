@@ -1,10 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
-  import Portal from "../Portal.svelte";
   import Modal from "./modal";
   import Overlay from "./Overlay.svelte";
   import { lockBodyScrolling, unlockBodyScrolling } from "./scroll";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   export let focusTriggerOnClose = true;
 
@@ -73,16 +73,15 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<Portal>
+<div
+  use:portal
+  bind:this={container}
+  class="fixed top-0 left-0 right-0 bottom-0 z-50"
+  transition:fly|global={{ duration: 125, y: 4 }}
+>
   <Overlay />
-  <div
-    bind:this={container}
-    class="fixed top-0 left-0 right-0 bottom-0 z-50"
-    transition:fly|global={{ duration: 125, y: 4 }}
-  >
-    <slot />
-  </div>
-</Portal>
+  <slot />
+</div>
 
 <style>
   :global(.sl-scroll-lock) {

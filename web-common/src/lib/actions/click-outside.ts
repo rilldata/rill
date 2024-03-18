@@ -1,14 +1,15 @@
-export function clickOutside(node: Node, [elementsToIgnore, cb]) {
-  function handleClick(event) {
-    if (
-      !node.contains(document.activeElement) &&
-      !node.contains(event.target) &&
-      node !== event.target &&
-      (!elementsToIgnore.every((element) => Boolean(element)) ||
-        elementsToIgnore.every((element) => !element.contains(event.target)))
-    ) {
-      cb(event);
-    }
+export function clickOutside(
+  node: Node,
+  [trigger, cb]: [Node, (event: Event) => void],
+) {
+  function handleClick(e: MouseEvent) {
+    if (!(e.target instanceof Node)) return;
+    if (node === e.target) return;
+    if (node.contains(e.target)) return;
+    if (!trigger) return;
+    if (trigger.contains(e.target)) return;
+
+    cb(e);
   }
   document.addEventListener("click", handleClick);
   return {

@@ -15,6 +15,7 @@ import (
 func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.k", int(req.K)),
@@ -38,6 +39,7 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 	}
 
 	q := &queries.ColumnTopK{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 		Agg:        agg,
@@ -61,6 +63,7 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -73,6 +76,7 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 	}
 
 	q := &queries.ColumnNullCount{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}
@@ -90,6 +94,7 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -102,6 +107,7 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 	}
 
 	q := &queries.ColumnDescriptiveStatistics{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}
@@ -153,6 +159,7 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -165,6 +172,7 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 	}
 
 	q := &queries.ColumnTimeGrain{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}
@@ -180,6 +188,7 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.String("args.histogram", req.HistogramMethod.String()),
@@ -193,6 +202,7 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 	}
 
 	q := &queries.ColumnNumericHistogram{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 		Method:     req.HistogramMethod,
@@ -218,6 +228,7 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -230,6 +241,7 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 	}
 
 	q := &queries.ColumnRugHistogram{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}
@@ -251,6 +263,7 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -263,6 +276,7 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 	}
 
 	q := &queries.ColumnTimeRange{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}
@@ -278,6 +292,7 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -290,6 +305,7 @@ func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCar
 	}
 
 	q := &queries.ColumnCardinality{
+		Connector:  req.Connector,
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
 	}

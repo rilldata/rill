@@ -21,7 +21,7 @@
   } from "./time-dimension-data-store";
   import type { TDDComparison, TableData } from "./types";
 
-  export let metricViewName;
+  export let metricViewName: string;
 
   const stateManagers = getStateManagers();
   const {
@@ -75,7 +75,6 @@
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
-
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
@@ -170,59 +169,80 @@
   }
 </script>
 
-<TDDHeader
-  {areAllTableRowsSelected}
-  comparing={$timeDimensionDataStore?.comparing}
-  {dimensionName}
-  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
-  isRowsEmpty={!rowHeaderLabels.length}
-  {metricViewName}
-  on:search={(e) => {
-    metricsExplorerStore.setSearchText(metricViewName, e.detail);
-  }}
-  on:toggle-all-search-items={() => toggleAllSearchItems()}
-/>
-
-{#if formattedData && comparisonCopy}
-  <TDDTable
-    {excludeMode}
-    {dimensionLabel}
-    {measureLabel}
-    sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
-    sortType={$dashboardStore.dashboardSortType}
-    comparing={comparisonCopy}
-    {timeFormatter}
-    tableData={formattedData}
-    highlightedCol={$chartInteractionColumn?.hover}
-    pinIndex={$dashboardStore?.pinIndex}
-    scrubPos={{
-      start: $chartInteractionColumn?.scrubStart,
-      end: $chartInteractionColumn?.scrubEnd,
+<div class="h-full w-full flex flex-col">
+  <TDDHeader
+    {areAllTableRowsSelected}
+    comparing={$timeDimensionDataStore?.comparing}
+    {dimensionName}
+    isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
+    isRowsEmpty={!rowHeaderLabels.length}
+    {metricViewName}
+    on:search={(e) => {
+      metricsExplorerStore.setSearchText(metricViewName, e.detail);
     }}
-    on:toggle-pin={togglePin}
-    on:toggle-filter={toggleFilter}
-    on:toggle-sort={(e) => {
-      toggleSort(
-        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
-      );
-    }}
-    on:highlight={highlightCell}
+    on:toggle-all-search-items={() => toggleAllSearchItems()}
   />
-{/if}
 
-{#if $timeDimensionDataStore?.comparing === "none"}
-  <!-- Get height by subtracting table and header heights -->
-  <div class="w-full" style:height="calc(100% - 200px)">
-    <div class="flex flex-col items-center justify-center h-full text-sm">
-      <Compare size="32px" />
-      <div class="font-semibold text-gray-600 mt-1">
-        No comparison dimension selected
-      </div>
-      <div class="text-gray-600">
-        To see more values, select a comparison dimension above.
+  {#if $timeDimensionDataStore?.isError}
+    <div
+      style:height="calc(100% - 200px)"
+      class="w-full flex items-center justify-center text-sm"
+    >
+      <div class="text-center">
+        <div class="text-red-600 mt-1 text-lg">
+          We encountered an error while loading the data. Please try refreshing
+          the page.
+        </div>
+        <div class="text-gray-600">
+          If the issue persists, please contact us on <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="http://bit.ly/3jg4IsF">Discord</a
+          >.
+        </div>
       </div>
     </div>
-  </div>
-{/if}
+  {:else if formattedData && comparisonCopy}
+    <TDDTable
+      {excludeMode}
+      {dimensionLabel}
+      {measureLabel}
+      sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
+      sortType={$dashboardStore.dashboardSortType}
+      comparing={comparisonCopy}
+      {timeFormatter}
+      tableData={formattedData}
+      highlightedCol={$chartInteractionColumn?.hover}
+      pinIndex={$dashboardStore?.pinIndex}
+      scrubPos={{
+        start: $chartInteractionColumn?.scrubStart,
+        end: $chartInteractionColumn?.scrubEnd,
+      }}
+      on:toggle-pin={togglePin}
+      on:toggle-filter={toggleFilter}
+      on:toggle-sort={(e) => {
+        toggleSort(
+          e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
+        );
+      }}
+      on:highlight={highlightCell}
+    />
+  {/if}
+
+  {#if $timeDimensionDataStore?.comparing === "none"}
+    <!-- Get height by subtracting table and header heights -->
+    <div class="w-full" style:height="calc(100% - 200px)">
+      <div class="flex flex-col items-center justify-center h-full text-sm">
+        <Compare size="32px" />
+        <div class="font-semibold text-gray-600 mt-1">
+          No comparison dimension selected
+        </div>
+        <div class="text-gray-600">
+          To see more values, select a comparison dimension above.
+        </div>
+      </div>
+    </div>
+  {/if}
+</div>
 
 <svelte:window on:keydown={handleKeyDown} />

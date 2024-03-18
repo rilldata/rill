@@ -34,11 +34,14 @@
   // Org breadcrumb
   $: orgName = $page.params.organization;
   $: organization = createAdminServiceGetOrganization(orgName);
-  $: organizations = createAdminServiceListOrganizations(undefined, {
-    query: {
-      enabled: !!$user.data?.user,
+  $: organizations = createAdminServiceListOrganizations(
+    { pageSize: 100 },
+    {
+      query: {
+        enabled: !!$user.data?.user,
+      },
     },
-  });
+  );
   $: onOrganizationPage = isOrganizationPage($page);
   async function onOrgChange(org: string) {
     const activeOrgLocalStorageKey = getActiveOrgLocalStorageKey(

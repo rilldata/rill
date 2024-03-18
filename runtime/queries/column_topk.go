@@ -12,6 +12,7 @@ import (
 )
 
 type ColumnTopK struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Agg        string
@@ -50,7 +51,7 @@ func (q *ColumnTopK) UnmarshalResult(v any) error {
 
 func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Get OLAP connection
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

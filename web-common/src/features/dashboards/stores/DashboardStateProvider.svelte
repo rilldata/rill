@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { syncDashboardState } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -25,28 +26,14 @@
     metricViewName,
   );
 
-  function syncDashboardState() {
-    if (!$metricsView.data || !$metricsViewSchema.data?.schema) return;
-    if (metricViewName in $metricsExplorerStore.entities) {
-      metricsExplorerStore.sync(metricViewName, $metricsView.data);
-    } else {
-      metricsExplorerStore.init(
-        metricViewName,
-        $metricsView.data,
-        $timeRangeQuery.data,
-      );
-      const urlState = $page.url.searchParams.get("state");
-      if (urlState) {
-        metricsExplorerStore.syncFromUrl(
-          metricViewName,
-          urlState,
-          $metricsView.data,
-          $metricsViewSchema.data.schema,
-        );
-        // Call sync to make sure changes in dashboard are honoured
-        metricsExplorerStore.sync(metricViewName, $metricsView.data);
-      }
-    }
+  function syncDashboardStateLocal() {
+    syncDashboardState(
+      metricViewName,
+      $metricsView.data,
+      $metricsViewSchema.data?.schema,
+      $timeRangeQuery.data,
+      $page.url.searchParams.get("state"),
+    );
   }
 
   $: if (
@@ -54,7 +41,7 @@
     $metricsViewSchema.data &&
     ($timeRangeQuery.data || !$hasTimeSeries.data)
   ) {
-    syncDashboardState();
+    syncDashboardStateLocal();
   }
 
   $: ready = metricViewName in $metricsExplorerStore.entities;
