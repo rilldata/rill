@@ -69,7 +69,7 @@
   {#if onDashboardPage}
     <div class="grow" />
     <div class="flex gap-x-4 items-center">
-      <LastRefreshedDate dashboardName={activeResourceName} />
+      <LastRefreshedDate dashboard={activeResourceName} />
     </div>
   {/if}
 </div>
