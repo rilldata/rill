@@ -1,0 +1,15 @@
+Your alert triggered for {{ .ExecutionTimeString }}. 
+
+The first row that matched your alert criteria is:
+
+{{ range $key, $value := .FailRow }}
+• *{{ $key }}*: {{ $value }}
+{{ end }}
+
+<{{ .OpenLink }}|Open in browser>
+
+To edit or unsubscribe from this alert, <{{ .EditLink }}|click here>.
+
+© 2023 Rill Data, Inc
+18 Bartol St., San Francisco, CA
+<https://www.rilldata.com/contact|Contact us> • <https://bit.ly/3unvA05|Community> • <https://www.rilldata.com/legal/privacy|Privacy Policy>

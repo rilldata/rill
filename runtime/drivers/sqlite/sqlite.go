@@ -160,3 +160,8 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}

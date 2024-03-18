@@ -277,9 +277,16 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	opts := recreateAlertOptionsFromSpec(spec)
 
 	found := false
-	for idx, email := range opts.Recipients {
+	for idx, email := range opts.EmailRecipients {
 		if strings.EqualFold(user.Email, email) {
-			opts.Recipients = slices.Delete(opts.Recipients, idx, idx+1)
+			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, email := range opts.SlackEmails {
+		if strings.EqualFold(user.Email, email) {
+			opts.SlackEmails = slices.Delete(opts.SlackEmails, idx, idx+1)
 			found = true
 			break
 		}
@@ -289,7 +296,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
-	if len(opts.Recipients) == 0 {
+	if len(opts.EmailRecipients) == 0 && len(opts.SlackEmails) == 0 && len(opts.SlackChannels) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -449,9 +456,12 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
 	res.Query.For.UserID = ownerUserID
-	res.Email.Recipients = opts.Recipients
-	res.Email.Renotify = opts.EmailRenotify
-	res.Email.RenotifyAfter = opts.EmailRenotifyAfterSeconds
+	// Notification options
+	res.Notify.Renotify = opts.Renotify
+	res.Notify.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.Email.Emails = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Emails = opts.SlackEmails
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -477,9 +487,12 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
-	res.Email.Recipients = opts.Recipients
-	res.Email.Renotify = opts.EmailRenotify
-	res.Email.RenotifyAfter = opts.EmailRenotifyAfterSeconds
+	// Notification options
+	res.Notify.Renotify = opts.Renotify
+	res.Notify.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.Email.Emails = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Emails = opts.SlackEmails
 	return yaml.Marshal(res)
 }
 
@@ -527,9 +540,9 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) *adminv1.AlertOptio
 	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.Recipients = spec.EmailRecipients
-	opts.EmailRenotify = spec.EmailRenotify
-	opts.EmailRenotifyAfterSeconds = spec.EmailRenotifyAfterSeconds
+	opts.EmailRecipients = spec.EmailRecipients
+	opts.Renotify = spec.Renotify
+	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
 	return opts
 }
 
@@ -555,6 +568,17 @@ type alertYAML struct {
 		Renotify      bool     `yaml:"renotify"`
 		RenotifyAfter uint32   `yaml:"renotify_after"`
 	} `yaml:"email"`
+	Notify struct {
+		Renotify      bool   `yaml:"renotify"`
+		RenotifyAfter uint32 `yaml:"renotify_after"`
+		Slack         struct {
+			Channels []string `yaml:"channels"`
+			Emails   []string `yaml:"emails"`
+		}
+		Email struct {
+			Emails []string `yaml:"emails"`
+		}
+	}
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
 }
 

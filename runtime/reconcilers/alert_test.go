@@ -55,9 +55,10 @@ query:
         exprs:
         - ident: measure_0
         - val: 4
-email:
-  recipients:
-    - somebody@example.com
+notify:
+  email:
+    recipients:
+      - somebody@example.com
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
@@ -83,7 +84,7 @@ email:
 					QueryName:            "MetricsViewAggregation",
 					QueryArgsJson:        "{\"dimensions\":[{\"name\":\"country\"}],\"having\":{\"cond\":{\"exprs\":[{\"ident\":\"measure_0\"},{\"val\":4}],\"op\":\"OPERATION_GTE\"}},\"measures\":[{\"name\":\"measure_0\"}],\"metrics_view\":\"mv1\",\"time_range\":{\"iso_duration\":\"P1W\"}}",
 					EmailRecipients:      []string{"somebody@example.com"},
-					EmailOnFail:          true,
+					NotifyOnFail:         true,
 				},
 				State: &runtimev1.AlertState{
 					ExecutionCount: 1,

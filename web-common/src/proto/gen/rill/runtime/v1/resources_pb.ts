@@ -2030,37 +2030,47 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * @generated from field: repeated string email_recipients = 14;
+   * @generated from field: bool notify_on_recover = 14;
+   */
+  notifyOnRecover = false;
+
+  /**
+   * @generated from field: bool notify_on_fail = 15;
+   */
+  notifyOnFail = false;
+
+  /**
+   * @generated from field: bool notify_on_error = 16;
+   */
+  notifyOnError = false;
+
+  /**
+   * @generated from field: bool renotify = 17;
+   */
+  renotify = false;
+
+  /**
+   * @generated from field: uint32 renotify_after_seconds = 18;
+   */
+  renotifyAfterSeconds = 0;
+
+  /**
+   * @generated from field: repeated string email_recipients = 19;
    */
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: bool email_on_recover = 15;
+   * @generated from field: repeated string slack_channels = 20;
    */
-  emailOnRecover = false;
+  slackChannels: string[] = [];
 
   /**
-   * @generated from field: bool email_on_fail = 16;
+   * @generated from field: repeated string slack_emails = 21;
    */
-  emailOnFail = false;
+  slackEmails: string[] = [];
 
   /**
-   * @generated from field: bool email_on_error = 17;
-   */
-  emailOnError = false;
-
-  /**
-   * @generated from field: bool email_renotify = 18;
-   */
-  emailRenotify = false;
-
-  /**
-   * @generated from field: uint32 email_renotify_after_seconds = 19;
-   */
-  emailRenotifyAfterSeconds = 0;
-
-  /**
-   * @generated from field: map<string, string> annotations = 20;
+   * @generated from field: map<string, string> annotations = 22;
    */
   annotations: { [key: string]: string } = {};
 
@@ -2085,13 +2095,15 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
-    { no: 14, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 15, name: "email_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 16, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 18, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 19, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 14, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 19, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 21, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 22, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {

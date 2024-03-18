@@ -183,6 +183,11 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
 }
 
+// AsNotifier implements drivers.Handle.
+func (c *Connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 type configProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`

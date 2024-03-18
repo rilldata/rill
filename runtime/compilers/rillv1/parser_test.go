@@ -1099,12 +1099,13 @@ query:
   for:
     user_email: benjamin@example.com
 
-email:
+notify:
   on_recover: true
   renotify: true
   renotify_after: 24h
-  recipients:
-    - benjamin@example.com
+  email:
+    recipients:
+      - benjamin@example.com
 
 annotations:
   foo: bar
@@ -1131,19 +1132,19 @@ annotations:
 					RefUpdate:     false,
 					TickerSeconds: 86400,
 				},
-				WatermarkInherit:          true,
-				IntervalsIsoDuration:      "PT1H",
-				IntervalsLimit:            10,
-				QueryName:                 "MetricsViewToplist",
-				QueryArgsJson:             `{"metrics_view":"mv1"}`,
-				QueryFor:                  &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
-				EmailRecipients:           []string{"jane@example.com"},
-				EmailOnRecover:            true,
-				EmailOnFail:               true,
-				EmailOnError:              false,
-				EmailRenotify:             true,
-				EmailRenotifyAfterSeconds: 24 * 60 * 60,
-				Annotations:               map[string]string{"foo": "bar"},
+				WatermarkInherit:     true,
+				IntervalsIsoDuration: "PT1H",
+				IntervalsLimit:       10,
+				QueryName:            "MetricsViewToplist",
+				QueryArgsJson:        `{"metrics_view":"mv1"}`,
+				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
+				EmailRecipients:      []string{"jane@example.com"},
+				NotifyOnRecover:      true,
+				NotifyOnFail:         true,
+				NotifyOnError:        false,
+				Renotify:             true,
+				RenotifyAfterSeconds: 24 * 60 * 60,
+				Annotations:          map[string]string{"foo": "bar"},
 			},
 		},
 	}

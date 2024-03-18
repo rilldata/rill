@@ -34,14 +34,20 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
-	Email struct {
-		Recipients    []string `yaml:"recipients"`
-		OnRecover     *bool    `yaml:"on_recover"`
-		OnFail        *bool    `yaml:"on_fail"`
-		OnError       *bool    `yaml:"on_error"`
-		Renotify      *bool    `yaml:"renotify"`
-		RenotifyAfter string   `yaml:"renotify_after"`
-	} `yaml:"email"`
+	Notify struct {
+		OnRecover     *bool  `yaml:"on_recover"`
+		OnFail        *bool  `yaml:"on_fail"`
+		OnError       *bool  `yaml:"on_error"`
+		Renotify      *bool  `yaml:"renotify"`
+		RenotifyAfter string `yaml:"renotify_after"`
+		Email         struct {
+			Recipients []string `yaml:"recipients"`
+		}
+		Slack struct {
+			Channels []string `yaml:"channels"`
+			Emails   []string `yaml:"emails"`
+		}
+	}
 	Annotations map[string]string `yaml:"annotations"`
 }
 
@@ -148,8 +154,8 @@ func (p *Parser) parseAlert(node *Node) error {
 		return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
 	}
 
-	// Validate recipients
-	for _, email := range tmp.Email.Recipients {
+	// Validate email recipients
+	for _, email := range tmp.Notify.Email.Recipients {
 		_, err := mail.ParseAddress(email)
 		if err != nil {
 			return fmt.Errorf("invalid recipient email address %q", email)
@@ -157,11 +163,19 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Validate email.renotify_after
-	var emailRenotifyAfter time.Duration
-	if tmp.Email.RenotifyAfter != "" {
-		emailRenotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
+	var renotifyAfter time.Duration
+	if tmp.Notify.RenotifyAfter != "" {
+		renotifyAfter, err = parseDuration(tmp.Notify.RenotifyAfter)
 		if err != nil {
 			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+		}
+	}
+
+	// Validate slack email recipients
+	for _, email := range tmp.Notify.Slack.Emails {
+		_, err := mail.ParseAddress(email)
+		if err != nil {
+			return fmt.Errorf("invalid recipient slack email address %q", email)
 		}
 	}
 
@@ -195,28 +209,31 @@ func (p *Parser) parseAlert(node *Node) error {
 		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
 	}
 
-	r.AlertSpec.EmailRecipients = tmp.Email.Recipients
+	// Notification default settings
+	r.AlertSpec.NotifyOnRecover = false
+	r.AlertSpec.NotifyOnFail = true
+	r.AlertSpec.NotifyOnError = false
+	r.AlertSpec.Renotify = false
 
-	// Email notification default settings
-	r.AlertSpec.EmailOnRecover = false
-	r.AlertSpec.EmailOnFail = true
-	r.AlertSpec.EmailOnError = false
-	r.AlertSpec.EmailRenotify = false
-
-	// Override email notification defaults
-	if tmp.Email.OnRecover != nil {
-		r.AlertSpec.EmailOnRecover = *tmp.Email.OnRecover
+	// Override notification defaults
+	if tmp.Notify.OnRecover != nil {
+		r.AlertSpec.NotifyOnRecover = *tmp.Notify.OnRecover
 	}
-	if tmp.Email.OnFail != nil {
-		r.AlertSpec.EmailOnFail = *tmp.Email.OnFail
+	if tmp.Notify.OnFail != nil {
+		r.AlertSpec.NotifyOnFail = *tmp.Notify.OnFail
 	}
-	if tmp.Email.OnError != nil {
-		r.AlertSpec.EmailOnError = *tmp.Email.OnError
+	if tmp.Notify.OnError != nil {
+		r.AlertSpec.NotifyOnError = *tmp.Notify.OnError
 	}
-	if tmp.Email.Renotify != nil {
-		r.AlertSpec.EmailRenotify = *tmp.Email.Renotify
-		r.AlertSpec.EmailRenotifyAfterSeconds = uint32(emailRenotifyAfter.Seconds())
+	if tmp.Notify.Renotify != nil {
+		r.AlertSpec.Renotify = *tmp.Notify.Renotify
+		r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
 	}
+	// Email settings
+	r.AlertSpec.EmailRecipients = tmp.Notify.Email.Recipients
+	// Slack settings
+	r.AlertSpec.SlackChannels = tmp.Notify.Slack.Channels
+	r.AlertSpec.SlackEmails = tmp.Notify.Slack.Emails
 
 	r.AlertSpec.Annotations = tmp.Annotations
 

@@ -12,8 +12,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/duration"
-	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.uber.org/zap"
@@ -623,11 +623,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		// The status has changed since the last execution, so we should notify.
 		// NOTE: This case may also match in an edge case of execution history limits, but that's fine.
 		notify = true
-	} else if a.Spec.EmailRenotify {
-		if a.Spec.EmailRenotifyAfterSeconds == 0 {
+	} else if a.Spec.Renotify {
+		if a.Spec.RenotifyAfterSeconds == 0 {
 			// The status has not changed since the last execution and there's no renotify suppression period, so we should notify.
 			notify = true
-		} else if int(td.Seconds()) >= int(a.Spec.EmailRenotifyAfterSeconds) {
+		} else if int(td.Seconds()) >= int(a.Spec.RenotifyAfterSeconds) {
 			// The status has not changed since the last email and the last email was sent more than the renotify suppression period ago, so we should notify.
 			notify = true
 		}
@@ -640,11 +640,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	}
 
 	// Generate the email message to send (if any)
-	var msg *email.AlertStatus
+	var msg *drivers.AlertStatus
 	if notify {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
-			if !a.Spec.EmailOnRecover {
+			if !a.Spec.NotifyOnRecover {
 				break
 			}
 
@@ -657,29 +657,29 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				break
 			}
 
-			msg = &email.AlertStatus{
+			msg = &drivers.AlertStatus{
 				Title:         a.Spec.Title,
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				IsRecover:     true,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
-			if !a.Spec.EmailOnFail {
+			if !a.Spec.NotifyOnFail {
 				break
 			}
 
-			msg = &email.AlertStatus{
+			msg = &drivers.AlertStatus{
 				Title:         a.Spec.Title,
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				FailRow:       current.Result.FailRow.AsMap(),
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
-			if !a.Spec.EmailOnError {
+			if !a.Spec.NotifyOnError {
 				break
 			}
 
-			msg = &email.AlertStatus{
+			msg = &drivers.AlertStatus{
 				Title:          a.Spec.Title,
 				ExecutionTime:  executionTime,
 				Status:         current.Result.Status,
@@ -706,6 +706,25 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			if err != nil {
 				emailErr = fmt.Errorf("Failed to send email to %q: %w", recipient, err)
 				break
+			}
+		}
+
+		if a.Spec.SlackChannels != nil || a.Spec.SlackEmails != nil {
+			conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, "slack")
+			if err != nil {
+				return err
+			}
+			defer release()
+			n, ok := conn.AsNotifier()
+			if !ok {
+				return fmt.Errorf("slack notifier not available")
+			}
+			err = n.SendAlertStatus(msg, &slack.RecipientsOpts{
+				Channels: a.Spec.SlackChannels,
+				Emails:   a.Spec.SlackEmails,
+			})
+			if err != nil {
+				emailErr = fmt.Errorf("Failed to send slack notification: %w", err)
 			}
 		}
 		sentEmails = true

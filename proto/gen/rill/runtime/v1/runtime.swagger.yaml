@@ -2831,7 +2831,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2946,21 +2946,29 @@ definitions:
         type: string
       queryForAttributes:
         type: object
+      notifyOnRecover:
+        type: boolean
+      notifyOnFail:
+        type: boolean
+      notifyOnError:
+        type: boolean
+      renotify:
+        type: boolean
+      renotifyAfterSeconds:
+        type: integer
+        format: int64
       emailRecipients:
         type: array
         items:
           type: string
-      emailOnRecover:
-        type: boolean
-      emailOnFail:
-        type: boolean
-      emailOnError:
-        type: boolean
-      emailRenotify:
-        type: boolean
-      emailRenotifyAfterSeconds:
-        type: integer
-        format: int64
+      slackChannels:
+        type: array
+        items:
+          type: string
+      slackEmails:
+        type: array
+        items:
+          type: string
       annotations:
         type: object
         additionalProperties:

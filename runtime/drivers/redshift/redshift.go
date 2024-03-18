@@ -207,6 +207,11 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Handle.
+func (c *Connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 type configProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`

@@ -4350,15 +4350,15 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
-	// no validation rules for EmailOnRecover
+	// no validation rules for NotifyOnRecover
 
-	// no validation rules for EmailOnFail
+	// no validation rules for NotifyOnFail
 
-	// no validation rules for EmailOnError
+	// no validation rules for NotifyOnError
 
-	// no validation rules for EmailRenotify
+	// no validation rules for Renotify
 
-	// no validation rules for EmailRenotifyAfterSeconds
+	// no validation rules for RenotifyAfterSeconds
 
 	// no validation rules for Annotations
 

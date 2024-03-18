@@ -2029,12 +2029,14 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
+  notifyOnRecover?: boolean;
+  notifyOnFail?: boolean;
+  notifyOnError?: boolean;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
   emailRecipients?: string[];
-  emailOnRecover?: boolean;
-  emailOnFail?: boolean;
-  emailOnError?: boolean;
-  emailRenotify?: boolean;
-  emailRenotifyAfterSeconds?: number;
+  slackChannels?: string[];
+  slackEmails?: string[];
   annotations?: V1AlertSpecAnnotations;
 }
 
@@ -2087,7 +2089,7 @@ export interface Runtimev1CharLocation {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

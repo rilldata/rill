@@ -75,11 +75,11 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
-              emailRenotify: !!values.snooze,
-              emailRenotifyAfterSeconds: values.snooze
-                ? Number(values.snooze)
-                : 0,
+              emailRecipients: values.recipients
+                .map((r) => r.email)
+                .filter(Boolean),
+              renotify: !!values.snooze,
+              renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },
           },
         });
