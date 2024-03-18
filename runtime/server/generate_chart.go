@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,11 +17,14 @@ import (
 )
 
 func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateChartSpecRequest) (*runtimev1.GenerateChartSpecResponse, error) {
+	rp, err := json.Marshal(req.ResolverProperties.AsMap())
+	if err != nil {
+		return nil, err
+	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.resolver", req.Resolver),
-		attribute.String("args.resolver_property", marshalResolverProperties(req.ResolverProperties.AsMap())),
-		// attribute.String("args.prompt", req.Prompt), // Adding this might be a privacy issue
+		attribute.String("args.resolver_property", string(rp)),
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
@@ -115,20 +119,4 @@ Based on a table with schema:
 		prompt += fmt.Sprintf("- column=%s, type=%s\n", field.Name, field.Type.Code.String())
 	}
 	return prompt
-}
-
-func marshalResolverProperties(resolverProperties map[string]interface{}) string {
-	if sql, ok := resolverProperties["sql"]; ok {
-		if sqlStr, ok := sql.(string); ok {
-			return sqlStr
-		}
-	}
-
-	if api, ok := resolverProperties["api"]; ok {
-		if apiStr, ok := api.(string); ok {
-			return apiStr
-		}
-	}
-
-	return ""
 }

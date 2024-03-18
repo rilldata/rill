@@ -115,21 +115,23 @@ service RuntimeService {
   // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
   rpc GenerateMetricsViewFile(GenerateMetricsViewFileRequest) returns (GenerateMetricsViewFileResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/generate-metrics-view",
+      post: "/v1/instances/{instance_id}/generate/metrics-view",
       body: "*"
     };
   }
 
+  // GenerateResolver generates resolver and resolver properties from a table or a metrics view
   rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/generate-resolver",
+      post: "/v1/instances/{instance_id}/generate/resolver",
       body: "*"
     };
   }
 
+  // GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
   rpc GenerateChartSpec(GenerateChartSpecRequest) returns (GenerateChartSpecResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/generate-chart",
+      post: "/v1/instances/{instance_id}/generate/chart",
       body: "*"
     };
   }
@@ -515,8 +517,10 @@ message GenerateMetricsViewFileResponse {
 message GenerateResolverRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string prompt = 2;
-  string table = 3;
-  string connector = 4;
+  // Both connector and table must be specified if metrics_view is not.
+  string connector = 3;
+  string table = 4;
+  // table and connector should not be provided if metrics_view is provided.
   string metrics_view = 5;
 }
 

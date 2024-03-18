@@ -8,6 +8,7 @@
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
@@ -48,6 +49,8 @@
   $: runtimeInstanceId = $runtime.instanceId;
 
   const dispatch = createEventDispatcher();
+
+  const { customDashboards } = featureFlags;
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   let source: V1SourceV2 | undefined;
@@ -163,31 +166,33 @@
     {/if}
   </svelte:fragment>
 </MenuItem>
-<MenuItem
-  disabled={disableCreateDashboard}
-  icon
-  on:select={() => {
-    dispatch("generate-chart", {
-      table: source?.state?.table,
-      connector: source?.state?.connector,
-    });
-    toggleMenu();
-  }}
-  propogateSelect={false}
->
-  <Explore slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate chart with AI
-    <WandIcon class="w-3 h-3" />
-  </div>
-  <svelte:fragment slot="description">
-    {#if $sourceHasError}
-      Source has errors
-    {:else if !sourceIsIdle}
-      Source is being ingested
-    {/if}
-  </svelte:fragment>
-</MenuItem>
+{#if customDashboards}
+  <MenuItem
+    disabled={disableCreateDashboard}
+    icon
+    on:select={() => {
+      dispatch("generate-chart", {
+        table: source?.state?.table,
+        connector: source?.state?.connector,
+      });
+      toggleMenu();
+    }}
+    propogateSelect={false}
+  >
+    <Explore slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate chart with AI
+      <WandIcon class="w-3 h-3" />
+    </div>
+    <svelte:fragment slot="description">
+      {#if $sourceHasError}
+        Source has errors
+      {:else if !sourceIsIdle}
+        Source is being ingested
+      {/if}
+    </svelte:fragment>
+  </MenuItem>
+{/if}
 
 <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
   <svelte:fragment slot="icon">

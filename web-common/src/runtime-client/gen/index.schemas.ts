@@ -323,6 +323,30 @@ export type RuntimeServiceGetLogsParams = {
   level?: RuntimeServiceGetLogsLevel;
 };
 
+export type RuntimeServiceGenerateResolverBody = {
+  prompt?: string;
+  connector?: string;
+  table?: string;
+  metricsView?: string;
+};
+
+export type RuntimeServiceGenerateMetricsViewFileBody = {
+  connector?: string;
+  table?: string;
+  path?: string;
+  useAi?: boolean;
+};
+
+export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
+  [key: string]: any;
+};
+
+export type RuntimeServiceGenerateChartSpecBody = {
+  prompt?: string;
+  resolver?: string;
+  resolverProperties?: RuntimeServiceGenerateChartSpecBodyResolverProperties;
+};
+
 export type RuntimeServiceWatchFiles200 = {
   result?: V1WatchFilesResponse;
   error?: RpcStatus;
@@ -343,30 +367,6 @@ export type RuntimeServiceUnpackEmptyBody = {
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
-};
-
-export type RuntimeServiceGenerateResolverBody = {
-  prompt?: string;
-  table?: string;
-  connector?: string;
-  metricsView?: string;
-};
-
-export type RuntimeServiceGenerateMetricsViewFileBody = {
-  connector?: string;
-  table?: string;
-  path?: string;
-  useAi?: boolean;
-};
-
-export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
-  [key: string]: any;
-};
-
-export type RuntimeServiceGenerateChartSpecBody = {
-  prompt?: string;
-  resolver?: string;
-  resolverProperties?: RuntimeServiceGenerateChartSpecBodyResolverProperties;
 };
 
 export type RuntimeServicePutFileBody = {

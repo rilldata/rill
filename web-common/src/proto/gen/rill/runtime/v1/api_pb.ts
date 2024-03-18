@@ -1892,14 +1892,14 @@ export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
   prompt = "";
 
   /**
-   * @generated from field: string table = 3;
-   */
-  table = "";
-
-  /**
-   * @generated from field: string connector = 4;
+   * @generated from field: string connector = 3;
    */
   connector = "";
+
+  /**
+   * @generated from field: string table = 4;
+   */
+  table = "";
 
   /**
    * @generated from field: string metrics_view = 5;
@@ -1916,8 +1916,8 @@ export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

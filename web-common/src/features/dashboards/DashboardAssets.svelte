@@ -62,7 +62,7 @@
 
   const createDashboard = createRuntimeServicePutFile();
 
-  const { readOnly } = featureFlags;
+  const { readOnly, customDashboards } = featureFlags;
 
   let showMetricsDefs = true;
 
@@ -253,22 +253,24 @@
             <MetricsIcon slot="icon" />
             Edit metrics
           </MenuItem>
-          <MenuItem
-            disabled={!!dashboardData?.errors?.length}
-            icon
-            on:select={() => openGenerateChartModal(dashboardName)}
-          >
-            <Explore slot="icon" />
-            <div class="flex gap-x-2 items-center">
-              Generate chart with AI
-              <WandIcon class="w-3 h-3" />
-            </div>
-            <svelte:fragment slot="description">
-              {#if hasSourceError}
-                Dashboard has errors
-              {/if}
-            </svelte:fragment>
-          </MenuItem>
+          {#if customDashboards}
+            <MenuItem
+              disabled={!!dashboardData?.errors?.length}
+              icon
+              on:select={() => openGenerateChartModal(dashboardName)}
+            >
+              <Explore slot="icon" />
+              <div class="flex gap-x-2 items-center">
+                Generate chart with AI
+                <WandIcon class="w-3 h-3" />
+              </div>
+              <svelte:fragment slot="description">
+                {#if hasSourceError}
+                  Dashboard has errors
+                {/if}
+              </svelte:fragment>
+            </MenuItem>
+          {/if}
           <Divider />
           <MenuItem
             icon

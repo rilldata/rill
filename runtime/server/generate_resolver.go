@@ -26,7 +26,6 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.Table),
 		attribute.String("args.metrics_view", req.MetricsView),
-		// attribute.String("args.prompt", req.Prompt), // Adding this might be a privacy issue
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
@@ -64,6 +63,9 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 		return nil, err
 	}
 
+	var resolver string
+	var resolverProps map[string]interface{}
+
 	if req.Table != "" && req.Connector != "" {
 		// Get table info
 		tbl, err := olap.InformationSchema().Lookup(ctx, req.Table)
@@ -73,7 +75,7 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 
 		start := time.Now()
 
-		sql, err := s.generateResolverForTable(ctx, req.InstanceId, req.Prompt, tbl.Name, dialect, tbl.Schema)
+		resolver, resolverProps, err = s.generateResolverForTable(ctx, req.InstanceId, req.Prompt, tbl.Name, dialect, tbl.Schema)
 		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(tbl.Schema.Fields))}
 		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
 		if err != nil {
@@ -84,18 +86,6 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 
 		attrs = append(attrs, attribute.Bool("succeeded", true))
 		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
-
-		resolverPropertiesPB, err := structpb.NewStruct(map[string]interface{}{
-			"sql": sql,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		return &runtimev1.GenerateResolverResponse{
-			Resolver:           "SQL",
-			ResolverProperties: resolverPropertiesPB,
-		}, nil
 	} else if req.MetricsView != "" {
 		res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Name: req.MetricsView, Kind: runtime.ResourceKindMetricsView}, true)
 		if err != nil {
@@ -116,28 +106,35 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 			return nil, err
 		}
 
-		sql, err := s.generateResolverForMetricsView(ctx, req.InstanceId, req.Prompt, req.MetricsView, dialect, q.Result.Schema)
+		start := time.Now()
+
+		resolver, resolverProps, err = s.generateResolverForMetricsView(ctx, req.InstanceId, req.Prompt, req.MetricsView, dialect, q.Result.Schema)
+		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(q.Result.Schema.Fields))}
+		attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
 		if err != nil {
+			attrs = append(attrs, attribute.Bool("succeeded", false))
+			s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
 			return nil, err
 		}
 
-		resolverPropertiesPB, err := structpb.NewStruct(map[string]interface{}{
-			"sql": sql,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		return &runtimev1.GenerateResolverResponse{
-			Resolver:           "MetricsSQL",
-			ResolverProperties: resolverPropertiesPB,
-		}, nil
+		attrs = append(attrs, attribute.Bool("succeeded", true))
+		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_resolver", attrs...)
+	} else {
+		return nil, errors.New("one of table or metrics_view should be provided")
 	}
 
-	return nil, errors.New("one of table or metrics_view should be provided")
+	resolverPropsPB, err := structpb.NewStruct(resolverProps)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GenerateResolverResponse{
+		Resolver:           resolver,
+		ResolverProperties: resolverPropsPB,
+	}, nil
 }
 
-func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userPrompt, tblName, dialect string, schema *runtimev1.StructType) (string, error) {
+func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userPrompt, tblName, dialect string, schema *runtimev1.StructType) (string, map[string]interface{}, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: resolverForTableSystemPrompt()},
@@ -147,7 +144,7 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	// Connect to the AI service configured for the instance
 	ai, release, err := s.runtime.AI(ctx, instanceID)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	defer release()
 
@@ -158,7 +155,7 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// The AI may produce Markdown output. Remove the code tags around the SQL.
@@ -166,7 +163,9 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	res.Data = strings.TrimPrefix(res.Data, "```")
 	res.Data = strings.TrimSuffix(res.Data, "```")
 
-	return res.Data, nil
+	return "sql", map[string]interface{}{
+		"sql": res.Data,
+	}, nil
 }
 
 func resolverForTableSystemPrompt() string {
@@ -179,7 +178,7 @@ Your output should consist of valid SQL in the format below:
 }
 
 // generateResolverForMetricsView uses AI to generate a MetricsSQL resolver
-func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID, userPrompt, metricsView, dialect string, schema *runtimev1.StructType) (string, error) {
+func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID, userPrompt, metricsView, dialect string, schema *runtimev1.StructType) (string, map[string]interface{}, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: resolverForMetricsViewSystemPrompt()},
@@ -189,7 +188,7 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	// Connect to the AI service configured for the instance
 	ai, release, err := s.runtime.AI(ctx, instanceID)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	defer release()
 
@@ -200,7 +199,7 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// The AI may produce Markdown output. Remove the code tags around the SQL.
@@ -208,13 +207,15 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	res.Data = strings.TrimPrefix(res.Data, "```")
 	res.Data = strings.TrimSuffix(res.Data, "```")
 
-	return res.Data, nil
+	return "metrics_sql", map[string]interface{}{
+		"sql": res.Data,
+	}, nil
 }
 
 func resolverForMetricsViewSystemPrompt() string {
 	return `
 You are an agent whose only task is to suggest an SQL query to get data based on a table schema.
-Wrap aggregations with "AGGREGATE", EG: AGGREGATE(impressions).
+Wrap aggregations with "AGGREGATE" and do not add column alias, EG: AGGREGATE(impressions).
 Do not use any complex aggregations and do not use WHERE or FILTER.
 
 Your output should consist of valid SQL in the format below:

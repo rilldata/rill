@@ -685,105 +685,6 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/files/generate-chart:
-    post:
-      operationId: RuntimeService_GenerateChartSpec
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateChartSpecResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              resolver:
-                type: string
-              resolverProperties:
-                type: object
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/files/generate-metrics-view:
-    post:
-      summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
-      operationId: RuntimeService_GenerateMetricsViewFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateMetricsViewFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              connector:
-                type: string
-              table:
-                type: string
-              path:
-                type: string
-              useAi:
-                type: boolean
-            title: Request message for RuntimeService.GenerateMetricsViewFile
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/files/generate-resolver:
-    post:
-      operationId: RuntimeService_GenerateResolver
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateResolverResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              prompt:
-                type: string
-              table:
-                type: string
-              connector:
-                type: string
-              metricsView:
-                type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/files/rename:
     post:
       summary: RenameFile renames a file in a repo
@@ -905,6 +806,107 @@ paths:
           in: query
           required: false
           type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/chart:
+    post:
+      summary: GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+      operationId: RuntimeService_GenerateChartSpec
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateChartSpecResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/metrics-view:
+    post:
+      summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+      operationId: RuntimeService_GenerateMetricsViewFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateMetricsViewFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              connector:
+                type: string
+              table:
+                type: string
+              path:
+                type: string
+              useAi:
+                type: boolean
+            title: Request message for RuntimeService.GenerateMetricsViewFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/resolver:
+    post:
+      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
+      operationId: RuntimeService_GenerateResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              connector:
+                type: string
+              table:
+                type: string
+              metricsView:
+                type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:

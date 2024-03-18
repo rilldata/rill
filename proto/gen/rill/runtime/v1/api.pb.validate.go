@@ -4427,9 +4427,9 @@ func (m *GenerateResolverRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
-	// no validation rules for Table
-
 	// no validation rules for Connector
+
+	// no validation rules for Table
 
 	// no validation rules for MetricsView
 

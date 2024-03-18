@@ -92,7 +92,9 @@ type RuntimeServiceClient interface {
 	UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error)
 	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
+	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
+	// GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
 	GenerateChartSpec(ctx context.Context, in *GenerateChartSpecRequest, opts ...grpc.CallOption) (*GenerateChartSpecResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
@@ -554,7 +556,9 @@ type RuntimeServiceServer interface {
 	UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error)
 	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
+	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
+	// GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
 	GenerateChartSpec(context.Context, *GenerateChartSpecRequest) (*GenerateChartSpecResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)

@@ -9,18 +9,15 @@ export function getChartYaml(
   doc.set("kind", "chart");
 
   // TODO: more fields from resolverProperties
-  if (resolver === "SQL") {
+  if (resolver === "sql") {
     doc.set("data", { sql: (resolverProperties?.sql as string) ?? "" });
-  } else if (resolver === "MetricsSQL") {
+  } else if (resolver === "metrics_sql") {
     doc.set("data", { metrics_sql: (resolverProperties?.sql as string) ?? "" });
-  } else if (resolver === "API") {
+  } else if (resolver === "api") {
     doc.set("data", { api: (resolverProperties?.api as string) ?? "" });
   }
 
-  doc.set(
-    "vega_lite",
-    JSON.stringify(JSON.parse(vegaLite ?? "{}"), null, 2).replace(/^/gm, "  "),
-  );
+  doc.set("vega_lite", vegaLite ?? "{}");
 
   return doc.toString();
 }
