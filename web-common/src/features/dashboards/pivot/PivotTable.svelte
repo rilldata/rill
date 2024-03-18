@@ -1,5 +1,6 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { NUM_COLUMNS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -57,6 +58,8 @@
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
+  $: columnPage = $dashboardStore.pivot.columnPage;
+  $: totalColumns = $pivotDataStore.totalColumns;
 
   $: headerGroups = $table.getHeaderGroups();
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
@@ -104,6 +107,29 @@
     }
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
+
+  // TODO: Ideally we would like to handle page changes by knowing the scroll
+  // position of the container and getting x0, x1, y0, y1 from the table
+  // Called when the user scrolls and possibly on mount to fetch more data as the user scrolls
+  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+    if (containerRefElement) {
+      const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
+      // Distance threshold (in pixels) for triggering data fetch
+      const threshold = 500;
+      // Fetch more data when scrolling near the right end
+      if (
+        rightEndDistance < threshold &&
+        !$pivotDataStore.isFetching &&
+        NUM_COLUMNS_PER_PAGE * columnPage < totalColumns
+      ) {
+        metricsExplorerStore.setPivotColumnPage(
+          $metricsViewName,
+          columnPage + 1,
+        );
+      }
+    }
+  };
 </script>
 
 <div
@@ -111,6 +137,7 @@
   style:--header-length="{totalHeaderHeight}px"
   class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
+  on:scroll={() => handleScroll(containerRefElement)}
 >
   <div style:height="{totalRowSize + totalHeaderHeight}px">
     <table>

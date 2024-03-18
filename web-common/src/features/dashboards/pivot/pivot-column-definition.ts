@@ -42,9 +42,9 @@ function createColumnDefinitionForDimensions(
 
   const filterColumns = Boolean(dimensionNames.length);
 
-  const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
-    createIndexMap(headers[colDimension]),
-  );
+  const colValuesIndexMaps = dimensionNames?.map((colDimension) => {
+    return createIndexMap(headers[colDimension]);
+  });
 
   const levels = dimensionNames.length;
 

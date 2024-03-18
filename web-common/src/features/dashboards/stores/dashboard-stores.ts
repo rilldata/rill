@@ -296,6 +296,8 @@ const metricViewReducers = {
         dimension: dimensions,
         measure: measures,
       };
+
+      metricsExplorer.pivot.columnPage = 1;
     });
   },
 
