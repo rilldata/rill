@@ -257,7 +257,9 @@ message ReportSpec {
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
   repeated string email_recipients = 9;
-  map<string, string> annotations = 10;
+  repeated string slack_channels = 10;
+  repeated string slack_emails = 11;
+  map<string, string> annotations = 12;
 }
 
 message ReportState {

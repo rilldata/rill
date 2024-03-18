@@ -96,7 +96,9 @@
               openProjectSubpath: (
                 reportSpec.annotations as V1ReportSpecAnnotations
               )["web_open_project_subpath"],
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
+              emailRecipients: values.recipients
+                .map((r) => r.email)
+                .filter(Boolean),
             },
           },
         });

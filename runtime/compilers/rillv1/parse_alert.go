@@ -42,12 +42,12 @@ type AlertYAML struct {
 		RenotifyAfter string `yaml:"renotify_after"`
 		Email         struct {
 			Recipients []string `yaml:"recipients"`
-		}
+		} `yaml:"email"`
 		Slack struct {
 			Channels []string `yaml:"channels"`
 			Emails   []string `yaml:"emails"`
-		}
-	}
+		} `yaml:"slack"`
+	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
 }
 

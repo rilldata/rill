@@ -10,6 +10,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server"
@@ -142,7 +144,7 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if reportErr != nil {
 		if errors.Is(reportErr, context.Canceled) {
 			if dirtyErr {
-				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted after some emails were sent. The report will not automatically retry."
+				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted after some notifications were sent. The report will not automatically retry."
 			} else {
 				retry = true
 				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted. It will automatically retry."
@@ -256,7 +258,7 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 }
 
 // sendReport composes and sends the actual report to the configured recipients.
-// It returns true if an error occurred after some or all emails were sent.
+// It returns true if an error occurred after some or all notifications were sent.
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t))
 
@@ -298,6 +300,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	exportURL.RawQuery = exportURLQry.Encode()
 
+	sent := false
 	for _, recipient := range rep.Spec.EmailRecipients {
 		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 			ToEmail:        recipient,
@@ -311,6 +314,36 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		})
 		if err != nil {
 			return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+		}
+		sent = true
+	}
+
+	if rep.Spec.SlackChannels != nil || rep.Spec.SlackEmails != nil {
+		conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, "slack")
+		if err != nil {
+			return sent, err
+		}
+		defer release()
+		n, ok := conn.AsNotifier()
+		if !ok {
+			return sent, fmt.Errorf("slack notifier not available")
+		}
+		err = n.SendScheduledReport(
+			&drivers.ScheduledReport{
+				Title:          rep.Spec.Title,
+				ReportTime:     t,
+				DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+				OpenLink:       meta.OpenURL,
+				DownloadLink:   exportURL.String(),
+				EditLink:       meta.EditURL,
+			},
+			&slack.RecipientsOpts{
+				Channels: rep.Spec.SlackChannels,
+				Emails:   rep.Spec.SlackEmails,
+			},
+		)
+		if err != nil {
+			return true, fmt.Errorf("failed to send slack notification: %w", err)
 		}
 	}
 

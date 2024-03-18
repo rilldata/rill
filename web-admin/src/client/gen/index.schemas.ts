@@ -447,7 +447,9 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   openProjectSubpath?: string;
-  recipients?: string[];
+  emailRecipients?: string[];
+  slackChannels?: string[];
+  slackEmails?: string[];
 }
 
 export interface V1RemoveWhitelistedDomainResponse {

@@ -5167,6 +5167,14 @@ definitions:
         type: array
         items:
           type: string
+      slackChannels:
+        type: array
+        items:
+          type: string
+      slackEmails:
+        type: array
+        items:
+          type: string
       annotations:
         type: object
         additionalProperties:

@@ -8074,9 +8074,19 @@ export class ReportOptions extends Message<ReportOptions> {
   openProjectSubpath = "";
 
   /**
-   * @generated from field: repeated string recipients = 8;
+   * @generated from field: repeated string email_recipients = 8;
    */
-  recipients: string[] = [];
+  emailRecipients: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_channels = 10;
+   */
+  slackChannels: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_emails = 11;
+   */
+  slackEmails: string[] = [];
 
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
@@ -8094,7 +8104,9 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 7, name: "open_project_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {

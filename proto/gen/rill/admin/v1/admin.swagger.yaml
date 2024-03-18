@@ -2870,7 +2870,15 @@ definitions:
         $ref: '#/definitions/v1ExportFormat'
       openProjectSubpath:
         type: string
-      recipients:
+      emailRecipients:
+        type: array
+        items:
+          type: string
+      slackChannels:
+        type: array
+        items:
+          type: string
+      slackEmails:
         type: array
         items:
           type: string

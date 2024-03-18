@@ -1475,7 +1475,9 @@ message ReportOptions {
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
   string open_project_subpath = 7;
-  repeated string recipients = 8;
+  repeated string email_recipients = 8;
+  repeated string slack_channels = 10;
+  repeated string slack_emails = 11;
 }
 
 message AlertOptions {

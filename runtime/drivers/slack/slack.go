@@ -55,7 +55,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	conn := &handle{
 		config:    conf,
 		logger:    logger,
-		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/slack/*.md")),
+		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/slack/*.slack")),
 	}
 	return conn, nil
 }
@@ -144,14 +144,33 @@ func (h *handle) AsNotifier() (drivers.Notifier, bool) {
 	return h, true
 }
 
+func (h *handle) SendScheduledReport(s *drivers.ScheduledReport, r drivers.RecipientOpts) error {
+	opts, ok := r.(*RecipientsOpts)
+	if !ok {
+		return fmt.Errorf("invalid recipient type: %T", r)
+	}
+	buf := new(bytes.Buffer)
+	err := h.templates.Lookup("scheduled_report.slack").Execute(buf, s)
+	if err != nil {
+		return fmt.Errorf("slack template error: %w", err)
+	}
+	txt := buf.String()
+
+	api := slack.New(h.config.BotToken)
+	if err := h.sendTextToChannels(opts.Channels, api, txt); err != nil {
+		return err
+	}
+	return h.sendTextToEmails(opts, api, txt)
+}
+
 func (h *handle) SendAlertStatus(s *drivers.AlertStatus, r drivers.RecipientOpts) error {
 	slackSpec, ok := r.(*RecipientsOpts)
 	if !ok {
-		return fmt.Errorf("invalid recipient s type: %T", r)
+		return fmt.Errorf("invalid recipient type: %T", r)
 	}
 	switch s.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
-		return h.sendAlertStatus(slackSpec, &drivers.AlertStatusData{
+		return h.sendAlertStatus(slackSpec, &AlertStatusData{
 			Title:               s.Title,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			IsPass:              true,
@@ -160,7 +179,7 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, r drivers.RecipientOpts
 			EditLink:            htemplate.URL(s.EditLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
-		return h.sendAlertFail(slackSpec, &drivers.AlertFailData{
+		return h.sendAlertFail(slackSpec, &AlertFailData{
 			Title:               s.Title,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			FailRow:             s.FailRow,
@@ -168,7 +187,7 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, r drivers.RecipientOpts
 			EditLink:            htemplate.URL(s.EditLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
-		return h.sendAlertStatus(slackSpec, &drivers.AlertStatusData{
+		return h.sendAlertStatus(slackSpec, &AlertStatusData{
 			Title:               s.Title,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			IsError:             true,
@@ -181,7 +200,7 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, r drivers.RecipientOpts
 	}
 }
 
-func (h *handle) sendAlertStatus(spec *RecipientsOpts, data *drivers.AlertStatusData) error {
+func (h *handle) sendAlertStatus(opts *RecipientsOpts, data *AlertStatusData) error {
 	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)
@@ -189,50 +208,48 @@ func (h *handle) sendAlertStatus(spec *RecipientsOpts, data *drivers.AlertStatus
 	data.Subject = subject
 
 	buf := new(bytes.Buffer)
-	err := h.templates.Lookup("alert_status.md").Execute(buf, data)
+	err := h.templates.Lookup("alert_status.slack").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("slack template error: %w", err)
 	}
 	txt := buf.String()
-	api := slack.New(h.config.BotToken)
-	for _, channel := range spec.Channels {
-		_, _, err := api.PostMessage(channel, slack.MsgOptionText(txt, false))
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-	}
-	for _, email := range spec.Emails {
-		user, err := api.GetUserByEmail(email)
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-		_, _, err = api.PostMessage(user.ID, slack.MsgOptionText(txt, false))
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-	}
 
-	return nil
+	api := slack.New(h.config.BotToken)
+	if err := h.sendTextToChannels(opts.Channels, api, txt); err != nil {
+		return err
+	}
+	return h.sendTextToEmails(opts, api, txt)
 }
 
-func (h *handle) sendAlertFail(spec *RecipientsOpts, data *drivers.AlertFailData) error {
+func (h *handle) sendAlertFail(opts *RecipientsOpts, data *AlertFailData) error {
 	data.Subject = fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
-	err := h.templates.Lookup("alert_fail.md").Execute(buf, data)
+	err := h.templates.Lookup("alert_fail.slack").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("slack template error: %w", err)
 	}
 	txt := buf.String()
 
 	api := slack.New(h.config.BotToken)
-	for _, channel := range spec.Channels {
-		_, _, err := api.PostMessage(channel, slack.MsgOptionText(txt, false))
+	if err := h.sendTextToChannels(opts.Channels, api, txt); err != nil {
+		return err
+	}
+	return h.sendTextToEmails(opts, api, txt)
+}
+
+func (h *handle) sendTextToChannels(channels []string, api *slack.Client, txt string) error {
+	for _, channel := range channels {
+		_, _, err := api.PostMessage(channel, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
 	}
-	for _, email := range spec.Emails {
+	return nil
+}
+
+func (h *handle) sendTextToEmails(opts *RecipientsOpts, api *slack.Client, txt string) error {
+	for _, email := range opts.Emails {
 		user, err := api.GetUserByEmail(email)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
@@ -252,4 +269,25 @@ type configProperties struct {
 type RecipientsOpts struct {
 	Channels []string
 	Emails   []string
+}
+
+type AlertStatusData struct {
+	Subject             string
+	Title               string
+	ExecutionTimeString string // Will be inferred from ExecutionTime
+	IsPass              bool
+	IsRecover           bool
+	IsError             bool
+	ErrorMessage        string
+	OpenLink            htemplate.URL
+	EditLink            htemplate.URL
+}
+
+type AlertFailData struct {
+	Subject             string
+	Title               string
+	ExecutionTimeString string // Will be inferred from ExecutionTime
+	FailRow             map[string]any
+	OpenLink            htemplate.URL
+	EditLink            htemplate.URL
 }

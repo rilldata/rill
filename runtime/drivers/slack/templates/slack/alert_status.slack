@@ -1,5 +1,3 @@
-*{{ .Subject }}*
-
 *{{ .Title }}*
 
 {{- if .IsError }}

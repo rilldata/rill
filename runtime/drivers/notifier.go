@@ -1,7 +1,6 @@
 package drivers
 
 import (
-	"html/template"
 	"time"
 
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -10,6 +9,7 @@ import (
 // Notifier sends notifications.
 type Notifier interface {
 	SendAlertStatus(s *AlertStatus, r RecipientOpts) error
+	SendScheduledReport(s *ScheduledReport, r RecipientOpts) error
 }
 
 type RecipientOpts interface{}
@@ -27,23 +27,11 @@ type AlertStatus struct {
 	EditLink       string
 }
 
-type AlertStatusData struct {
-	Subject             string
-	Title               string
-	ExecutionTimeString string // Will be inferred from ExecutionTime
-	IsPass              bool
-	IsRecover           bool
-	IsError             bool
-	ErrorMessage        string
-	OpenLink            template.URL
-	EditLink            template.URL
-}
-
-type AlertFailData struct {
-	Subject             string
-	Title               string
-	ExecutionTimeString string // Will be inferred from ExecutionTime
-	FailRow             map[string]any
-	OpenLink            template.URL
-	EditLink            template.URL
+type ScheduledReport struct {
+	Title          string
+	ReportTime     time.Time
+	DownloadFormat string
+	OpenLink       string
+	DownloadLink   string
+	EditLink       string
 }

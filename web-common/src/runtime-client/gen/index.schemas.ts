@@ -803,6 +803,8 @@ export interface V1ReportSpec {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];
+  slackChannels?: string[];
+  slackEmails?: string[];
   annotations?: V1ReportSpecAnnotations;
 }
 

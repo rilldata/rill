@@ -1750,7 +1750,17 @@ export class ReportSpec extends Message<ReportSpec> {
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: map<string, string> annotations = 10;
+   * @generated from field: repeated string slack_channels = 10;
+   */
+  slackChannels: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_emails = 11;
+   */
+  slackEmails: string[] = [];
+
+  /**
+   * @generated from field: map<string, string> annotations = 12;
    */
   annotations: { [key: string]: string } = {};
 
@@ -1771,7 +1781,9 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 9, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
