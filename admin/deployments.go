@@ -395,7 +395,7 @@ func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deploym
 			return err
 		}
 	} else {
-		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	// Delete the deployment
