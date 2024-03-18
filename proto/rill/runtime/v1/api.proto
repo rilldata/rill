@@ -115,7 +115,7 @@ service RuntimeService {
   // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
   rpc GenerateMetricsViewFile(GenerateMetricsViewFileRequest) returns (GenerateMetricsViewFileResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/metrics-view",
+      post: "/v1/instances/{instance_id}/files/generate-metrics-view",
       body: "*"
     };
   }

@@ -325,16 +325,11 @@ export type RuntimeServiceGetLogsParams = {
 
 export type RuntimeServiceGenerateResolverBody = {
   prompt?: string;
+  /** Both connector and table must be specified if metrics_view is not. */
   connector?: string;
   table?: string;
+  /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
-};
-
-export type RuntimeServiceGenerateMetricsViewFileBody = {
-  connector?: string;
-  table?: string;
-  path?: string;
-  useAi?: boolean;
 };
 
 export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
@@ -367,6 +362,13 @@ export type RuntimeServiceUnpackEmptyBody = {
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
+};
+
+export type RuntimeServiceGenerateMetricsViewFileBody = {
+  connector?: string;
+  table?: string;
+  path?: string;
+  useAi?: boolean;
 };
 
 export type RuntimeServicePutFileBody = {

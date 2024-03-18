@@ -685,6 +685,41 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-metrics-view:
+    post:
+      summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+      operationId: RuntimeService_GenerateMetricsViewFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateMetricsViewFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              connector:
+                type: string
+              table:
+                type: string
+              path:
+                type: string
+              useAi:
+                type: boolean
+            title: Request message for RuntimeService.GenerateMetricsViewFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/rename:
     post:
       summary: RenameFile renames a file in a repo
@@ -840,41 +875,6 @@ paths:
                 type: object
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/generate/metrics-view:
-    post:
-      summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
-      operationId: RuntimeService_GenerateMetricsViewFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateMetricsViewFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              connector:
-                type: string
-              table:
-                type: string
-              path:
-                type: string
-              useAi:
-                type: boolean
-            title: Request message for RuntimeService.GenerateMetricsViewFile
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/generate/resolver:
     post:
       summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
@@ -903,10 +903,12 @@ paths:
                 type: string
               connector:
                 type: string
+                description: Both connector and table must be specified if metrics_view is not.
               table:
                 type: string
               metricsView:
                 type: string
+                description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:

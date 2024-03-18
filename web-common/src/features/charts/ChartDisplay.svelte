@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { ChartPromptStatus } from "@rilldata/web-common/features/charts/prompt/chartPromptStatus";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";

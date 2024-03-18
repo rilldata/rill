@@ -1892,6 +1892,8 @@ export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
   prompt = "";
 
   /**
+   * Both connector and table must be specified if metrics_view is not.
+   *
    * @generated from field: string connector = 3;
    */
   connector = "";
@@ -1902,6 +1904,8 @@ export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
   table = "";
 
   /**
+   * table and connector should not be provided if metrics_view is provided.
+   *
    * @generated from field: string metrics_view = 5;
    */
   metricsView = "";
