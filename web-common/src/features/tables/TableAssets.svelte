@@ -39,7 +39,7 @@
 </script>
 
 {#if hasAssets}
-  <div>
+  <div class="h-fit flex flex-col">
     <NavigationHeader bind:show={showTables}>Tables</NavigationHeader>
 
     {#if showTables}

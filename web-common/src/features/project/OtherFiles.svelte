@@ -6,7 +6,7 @@
   let showOtherFiles = true;
 </script>
 
-<div>
+<div class="h-fit flex flex-col">
   <NavigationHeader bind:show={showOtherFiles}>Others</NavigationHeader>
 
   {#if showOtherFiles}

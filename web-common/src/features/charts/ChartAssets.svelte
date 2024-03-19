@@ -24,7 +24,7 @@
   }
 </script>
 
-<div>
+<div class="h-fit flex flex-col">
   <NavigationHeader bind:show={showCharts}>Charts</NavigationHeader>
 
   {#if showCharts}
@@ -42,12 +42,12 @@
           </li>
         {/each}
       {/if}
+      <AddAssetButton
+        id="add-chart"
+        label="Add chart"
+        bold={false}
+        on:click={handleAddChart}
+      />
     </ol>
-    <AddAssetButton
-      id="add-chart"
-      label="Add chart"
-      bold={false}
-      on:click={handleAddChart}
-    />
   {/if}
 </div>
