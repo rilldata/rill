@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../config";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
