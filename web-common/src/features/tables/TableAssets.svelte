@@ -39,29 +39,29 @@
 </script>
 
 {#if hasAssets}
-  <NavigationHeader bind:show={showTables} toggleText="tables">
-    Tables
-  </NavigationHeader>
+  <div>
+    <NavigationHeader bind:show={showTables}>Tables</NavigationHeader>
 
-  {#if showTables}
-    <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
-      {#if $debouncedTableNames.length > 0}
-        {#each $debouncedTableNames as fullyQualifiedTableName (fullyQualifiedTableName)}
-          <li
-            animate:flip={{ duration }}
-            out:slide|global={{ duration }}
-            aria-label={fullyQualifiedTableName}
-          >
-            <NavigationEntry
-              name={fullyQualifiedTableName}
-              href={`/table/${fullyQualifiedTableName}`}
-              open={$page.url.pathname === `/table/${fullyQualifiedTableName}`}
+    {#if showTables}
+      <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
+        {#if $debouncedTableNames.length > 0}
+          {#each $debouncedTableNames as fullyQualifiedTableName (fullyQualifiedTableName)}
+            <li
+              animate:flip={{ duration }}
+              aria-label={fullyQualifiedTableName}
             >
-              <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
-            </NavigationEntry>
-          </li>
-        {/each}
-      {/if}
-    </ol>
-  {/if}
+              <NavigationEntry
+                name={fullyQualifiedTableName}
+                href={`/table/${fullyQualifiedTableName}`}
+                open={$page.url.pathname ===
+                  `/table/${fullyQualifiedTableName}`}
+              >
+                <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
+              </NavigationEntry>
+            </li>
+          {/each}
+        {/if}
+      </ol>
+    {/if}
+  </div>
 {/if}

@@ -1,20 +1,25 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "../config";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
 
   export let show = true;
-  export let toggleText: string;
 </script>
 
-<div
-  class="pl-4 pb-1 pr-2 grid justify-between"
-  style="grid-template-columns: auto max-content;"
-  out:slide={{ duration: LIST_SLIDE_DURATION }}
->
-  <CollapsibleSectionTitle tooltipText={toggleText} bind:active={show}>
-    <div class="flex flex-row items-center gap-x-2">
+<Tooltip location="right" alignment="middle">
+  <button
+    on:click={() => {
+      show = !show;
+    }}
+    class="align-middle text-left pl-4 pr-2 font-semibold text-[11px] w-fit"
+  >
+    <slot />
+  </button>
+  <TooltipContent slot="tooltip-content">
+    <SlidingWords active={show}>
       <slot />
-    </div>
-  </CollapsibleSectionTitle>
-</div>
+    </SlidingWords>
+  </TooltipContent>
+</Tooltip>

@@ -6,19 +6,19 @@
   let showOtherFiles = true;
 </script>
 
-<NavigationHeader bind:show={showOtherFiles} toggleText="others">
-  Others
-</NavigationHeader>
+<div>
+  <NavigationHeader bind:show={showOtherFiles}>Others</NavigationHeader>
 
-{#if showOtherFiles}
-  <ol>
-    <li aria-label={"rill.yaml"}>
-      <NavigationEntry
-        showContextMenu={false}
-        name={"rill.yaml"}
-        href={`/rill.yaml`}
-        open={$page.url.pathname === `/rill.yaml`}
-      />
-    </li>
-  </ol>
-{/if}
+  {#if showOtherFiles}
+    <ol>
+      <li aria-label={"rill.yaml"}>
+        <NavigationEntry
+          showContextMenu={false}
+          name={"rill.yaml"}
+          href={`/rill.yaml`}
+          open={$page.url.pathname === `/rill.yaml`}
+        />
+      </li>
+    </ol>
+  {/if}
+</div>

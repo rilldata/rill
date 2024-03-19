@@ -21,7 +21,7 @@
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
   import Resizer from "../Resizer.svelte";
 
-  const { customDashboards } = featureFlags;
+  const { customDashboards, readOnly } = featureFlags;
 
   /** FIXME: come up with strong defaults here when needed */
   const navigationLayout =
@@ -40,8 +40,6 @@
   const navVisibilityTween =
     getContext<Readable<number>>("rill:app:navigation-visibility-tween") ||
     tweened(0, { duration: 50 });
-
-  const { readOnly } = featureFlags;
 
   let previousWidth: number;
 
@@ -90,6 +88,7 @@
     <div class="nav-wrapper">
       {#if isModelerEnabled}
         <TableAssets />
+
         {#if olapConnector === "duckdb"}
           <SourceAssets />
         {/if}
@@ -140,13 +139,17 @@
 <style lang="postcss">
   .sidebar {
     will-change: width;
-    @apply fixed flex flex-col h-screen border-r border-gray-200 overflow-hidden;
+    @apply fixed flex flex-col;
+    @apply h-screen border-r overflow-hidden;
+  }
+
+  .nav-wrapper {
+    @apply flex flex-col h-fit w-full gap-y-3;
   }
 
   .scroll-container {
-    @apply overflow-y-scroll flex grow flex-col overflow-x-hidden transition-colors top-0 h-fit bg-white pb-8;
-  }
-  .nav-wrapper {
-    @apply flex flex-col h-fit w-full;
+    @apply grow;
+    @apply overflow-y-scroll overflow-x-hidden;
+    @apply transition-colors h-full bg-white pb-8;
   }
 </style>

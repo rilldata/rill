@@ -24,34 +24,30 @@
   }
 </script>
 
-<NavigationHeader bind:show={showCharts} toggleText="charts">
-  Charts
-</NavigationHeader>
+<div>
+  <NavigationHeader bind:show={showCharts}>Charts</NavigationHeader>
 
-{#if showCharts}
-  <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
-    {#if $chartFileNames?.data}
-      {#each $chartFileNames.data as chartName (chartName)}
-        <li
-          animate:flip={{ duration }}
-          out:slide|global={{ duration }}
-          aria-label={chartName}
-        >
-          <NavigationEntry
-            name={chartName}
-            href={`/chart/${chartName}`}
-            open={$page.url.pathname === `/chart/${chartName}`}
-          >
-            <ChartMenuItems slot="menu-items" {chartName} />
-          </NavigationEntry>
-        </li>
-      {/each}
-    {/if}
+  {#if showCharts}
+    <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
+      {#if $chartFileNames?.data}
+        {#each $chartFileNames.data as chartName (chartName)}
+          <li animate:flip={{ duration }} aria-label={chartName}>
+            <NavigationEntry
+              name={chartName}
+              href={`/chart/${chartName}`}
+              open={$page.url.pathname === `/chart/${chartName}`}
+            >
+              <ChartMenuItems slot="menu-items" {chartName} />
+            </NavigationEntry>
+          </li>
+        {/each}
+      {/if}
+    </ol>
     <AddAssetButton
       id="add-chart"
       label="Add chart"
       bold={false}
       on:click={handleAddChart}
     />
-  </ol>
-{/if}
+  {/if}
+</div>

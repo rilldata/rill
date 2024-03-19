@@ -45,53 +45,44 @@
     modelNames.length === 0;
 </script>
 
-<NavigationHeader bind:show={showModels} toggleText="models">
-  Models
-</NavigationHeader>
+<div class="flex flex-col h-fit gap-0">
+  <NavigationHeader bind:show={showModels}>Models</NavigationHeader>
 
-{#if showModels}
-  <ol
-    class="pb-3 justify-self-end"
-    transition:slide|global={{ duration }}
-    id="assets-model-list"
-  >
-    {#each modelNames as modelName (modelName)}
-      <li
-        animate:flip={{ duration }}
-        out:slide|global={{ duration }}
-        aria-label={modelName}
-      >
-        <NavigationEntry
-          expandable
-          name={modelName}
-          href={`/model/${modelName}`}
-          open={$page.url.pathname === `/model/${modelName}`}
-        >
-          <div transition:slide={{ duration }} slot="more">
-            <ColumnProfile indentLevel={1} objectName={modelName} />
-          </div>
+  {#if showModels}
+    <ol transition:slide={{ duration }} id="assets-model-list">
+      {#each modelNames as modelName (modelName)}
+        <li animate:flip={{ duration }} aria-label={modelName}>
+          <NavigationEntry
+            expandable
+            name={modelName}
+            href={`/model/${modelName}`}
+            open={$page.url.pathname === `/model/${modelName}`}
+          >
+            <div transition:slide={{ duration }} slot="more">
+              <ColumnProfile indentLevel={1} objectName={modelName} />
+            </div>
 
-          <ModelTooltip slot="tooltip-content" {modelName} />
+            <ModelTooltip slot="tooltip-content" {modelName} />
 
-          <ModelMenuItems
-            slot="menu-items"
-            {modelName}
-            on:rename-asset={() => {
-              openRenameModelModal(modelName);
-            }}
-          />
-        </NavigationEntry>
-      </li>
-    {/each}
-
-    <AddAssetButton
-      id="create-model-button"
-      label="Add model"
-      bold={hasSourceButNoModels}
-      on:click={handleAddModel}
-    />
-  </ol>
-{/if}
+            <ModelMenuItems
+              slot="menu-items"
+              {modelName}
+              on:rename-asset={() => {
+                openRenameModelModal(modelName);
+              }}
+            />
+          </NavigationEntry>
+        </li>
+      {/each}
+      <AddAssetButton
+        id="create-model-button"
+        label="Add model"
+        bold={hasSourceButNoModels}
+        on:click={handleAddModel}
+      />
+    </ol>
+  {/if}
+</div>
 
 {#if showRenameModelModal && renameModelName !== null}
   <RenameAssetModal

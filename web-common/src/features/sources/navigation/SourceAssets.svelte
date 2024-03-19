@@ -60,51 +60,51 @@
   }
 </script>
 
-<NavigationHeader bind:show={showTables} toggleText="sources">
-  Sources
-</NavigationHeader>
+<div class="h-fit flex flex-col">
+  <NavigationHeader bind:show={showTables}>Sources</NavigationHeader>
 
-{#if showTables}
-  <ol class="pb-3" transition:slide={{ duration }}>
-    {#if $sourceNames?.data}
-      {#each $sourceNames.data as sourceName (sourceName)}
-        <li
-          animate:flip={{ duration: 200 }}
-          out:slide|global={{ duration }}
-          aria-label={sourceName}
-        >
-          <NavigationEntry
-            expandable
-            name={sourceName}
-            href={`/source/${sourceName}`}
-            open={$page.url.pathname === `/source/${sourceName}`}
-            on:command-click={() => queryHandler(sourceName)}
+  {#if showTables}
+    <ol transition:slide={{ duration }}>
+      {#if $sourceNames?.data}
+        {#each $sourceNames.data as sourceName (sourceName)}
+          <li
+            animate:flip={{ duration: 200 }}
+            transition:slide={{ duration }}
+            aria-label={sourceName}
           >
-            <div slot="more" transition:slide={{ duration }}>
-              <ColumnProfile indentLevel={1} objectName={sourceName} />
-            </div>
+            <NavigationEntry
+              expandable
+              name={sourceName}
+              href={`/source/${sourceName}`}
+              open={$page.url.pathname === `/source/${sourceName}`}
+              on:command-click={() => queryHandler(sourceName)}
+            >
+              <div slot="more" transition:slide={{ duration }}>
+                <ColumnProfile indentLevel={1} objectName={sourceName} />
+              </div>
 
-            <SourceTooltip slot="tooltip-content" {sourceName} connector="" />
+              <SourceTooltip slot="tooltip-content" {sourceName} connector="" />
 
-            <SourceMenuItems
-              slot="menu-items"
-              {sourceName}
-              on:rename-asset={() => {
-                openRenameTableModal(sourceName);
-              }}
-            />
-          </NavigationEntry>
-        </li>
-      {/each}
-    {/if}
-    <AddAssetButton
-      id="add-table"
-      label="Add source"
-      bold={hasNoAssets}
-      on:click={openShowAddSourceModal}
-    />
-  </ol>
-{/if}
+              <SourceMenuItems
+                slot="menu-items"
+                {sourceName}
+                on:rename-asset={() => {
+                  openRenameTableModal(sourceName);
+                }}
+              />
+            </NavigationEntry>
+          </li>
+        {/each}
+      {/if}
+      <AddAssetButton
+        id="add-table"
+        label="Add source"
+        bold={hasNoAssets}
+        on:click={openShowAddSourceModal}
+      />
+    </ol>
+  {/if}
+</div>
 
 {#if showRenameTableModal && renameTableName !== null}
   <RenameAssetModal

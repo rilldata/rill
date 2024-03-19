@@ -9,8 +9,8 @@
 <button
   on:click
   {id}
-  class="pl-2.5 pr-2 py-1 hover:bg-gray-100 w-full text-left flex gap-x-1.5 items-center text-xs {bold &&
-    'font-bold'}"
+  class:font-bold={bold}
+  class="pl-2.5 pr-2 py-1 hover:bg-gray-100 w-full text-left flex gap-x-1.5 items-center text-xs"
 >
   <Add className="text-gray-900 bg-gray-300 rounded" size={"16px"} />
   {label}

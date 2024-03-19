@@ -29,39 +29,36 @@
   }
 </script>
 
-<NavigationHeader
-  bind:show={showCustomDashboards}
-  toggleText="custom dashboards"
->
-  Custom Dashboards
-</NavigationHeader>
+<div class="h-fit flex flex-col">
+  <NavigationHeader bind:show={showCustomDashboards}>
+    Custom Dashboards
+  </NavigationHeader>
 
-{#if showCustomDashboards}
-  <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
-    {#if $customDashboardFileNames?.data}
-      {#each $customDashboardFileNames.data as customDashboardName (customDashboardName)}
-        <li
-          animate:flip={{ duration }}
-          out:slide|global={{ duration }}
-          aria-label={customDashboardName}
-        >
-          <NavigationEntry
-            name={customDashboardName}
-            href={`/custom-dashboard/${customDashboardName}`}
-            open={$page.url.pathname ===
-              `/custom-dashboard/${customDashboardName}`}
-          >
-            <CustomDashboardMenuItems slot="menu-items" {customDashboardName} />
-          </NavigationEntry>
-        </li>
-      {/each}
-    {/if}
-
-    <AddAssetButton
-      id="add-custom-dashboard"
-      label="Add dashboard"
-      bold={false}
-      on:click={handleAddCustomDashboard}
-    />
-  </ol>
-{/if}
+  {#if showCustomDashboards}
+    <ol transition:slide={{ duration }}>
+      {#if $customDashboardFileNames?.data}
+        {#each $customDashboardFileNames.data as customDashboardName (customDashboardName)}
+          <li animate:flip={{ duration }} aria-label={customDashboardName}>
+            <NavigationEntry
+              name={customDashboardName}
+              href={`/custom-dashboard/${customDashboardName}`}
+              open={$page.url.pathname ===
+                `/custom-dashboard/${customDashboardName}`}
+            >
+              <CustomDashboardMenuItems
+                slot="menu-items"
+                {customDashboardName}
+              />
+            </NavigationEntry>
+          </li>
+        {/each}
+      {/if}
+      <AddAssetButton
+        id="add-custom-dashboard"
+        label="Add dashboard"
+        bold={false}
+        on:click={handleAddCustomDashboard}
+      />
+    </ol>
+  {/if}
+</div>

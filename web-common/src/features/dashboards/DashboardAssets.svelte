@@ -193,90 +193,83 @@
     $dashboardNames?.data?.length === 0;
 </script>
 
-<NavigationHeader bind:show={showMetricsDefs} toggleText="dashboards"
-  >Dashboards</NavigationHeader
->
+<div class="h-fit flex flex-col">
+  <NavigationHeader bind:show={showMetricsDefs}>Dashboards</NavigationHeader>
 
-{#if showMetricsDefs && $dashboardNames.data}
-  <ol
-    class="pb-3 justify-self-end"
-    transition:slide|global={{ duration }}
-    id="assets-metrics-list"
-  >
-    {#each $dashboardNames.data as dashboardName (dashboardName)}
-      {@const dashboardData = getDashboardData(
-        $fileArtifactsStore.entities,
-        dashboardName,
-      )}
-      <li
-        animate:flip={{ duration }}
-        out:slide|global={{ duration }}
-        aria-label={dashboardName}
-      >
-        <NavigationEntry
-          showContextMenu={!$readOnly}
-          name={dashboardName}
-          href={`/dashboard/${dashboardName}`}
-          open={$page.url.pathname === `/dashboard/${dashboardName}` ||
-            $page.url.pathname === `/dashboard/${dashboardName}/edit`}
-        >
-          <svelte:fragment slot="menu-items">
-            {@const selectionError = MetricsSourceSelectionError(
-              dashboardData?.errors,
-            )}
-            {@const hasSourceError =
-              selectionError !== SourceModelValidationStatus.OK &&
-              selectionError !== ""}
-            <NavigationMenuItem
-              disabled={hasSourceError}
-              on:click={() => editModel(dashboardName)}
-            >
-              <Model slot="icon" />
-              Edit model
-              <svelte:fragment slot="description">
-                {#if hasSourceError}
-                  {selectionError}
-                {/if}
-              </svelte:fragment>
-            </NavigationMenuItem>
-            <NavigationMenuItem
-              disabled={hasSourceError}
-              on:click={() => editMetrics(dashboardName)}
-            >
-              <MetricsIcon slot="icon" />
-              Edit metrics
-            </NavigationMenuItem>
-            <NavigationMenuSeparator />
-            <NavigationMenuItem
-              on:click={() => openRenameMetricsDefModal(dashboardName)}
-            >
-              <EditIcon slot="icon" />
-              Rename...
-            </NavigationMenuItem>
-            <NavigationMenuItem
-              on:click={() => deleteMetricsDef(dashboardName)}
-            >
-              <Cancel slot="icon" />
-              Delete
-            </NavigationMenuItem>
-          </svelte:fragment>
-        </NavigationEntry>
-      </li>
-    {/each}
-    {#if canAddDashboard}
-      <AddAssetButton
-        id="add-dashboard"
-        label="Add dashboard"
-        bold={hasSourceAndModelButNoDashboards ?? false}
-        on:click={() => dispatchAddEmptyMetricsDef()}
-      />
-    {/if}
-  </ol>
-  {#if showRenameMetricsDefinitionModal && renameMetricsDefName}
-    <RenameAssetModal
-      entityType={EntityType.MetricsDefinition}
-      closeModal={() => (showRenameMetricsDefinitionModal = false)}
-      currentAssetName={renameMetricsDefName}
-    />
+  {#if showMetricsDefs && $dashboardNames.data}
+    <ol transition:slide={{ duration }} id="assets-metrics-list">
+      {#each $dashboardNames.data as dashboardName (dashboardName)}
+        {@const dashboardData = getDashboardData(
+          $fileArtifactsStore.entities,
+          dashboardName,
+        )}
+        <li animate:flip={{ duration }} aria-label={dashboardName}>
+          <NavigationEntry
+            showContextMenu={!$readOnly}
+            name={dashboardName}
+            href={`/dashboard/${dashboardName}`}
+            open={$page.url.pathname === `/dashboard/${dashboardName}` ||
+              $page.url.pathname === `/dashboard/${dashboardName}/edit`}
+          >
+            <svelte:fragment slot="menu-items">
+              {@const selectionError = MetricsSourceSelectionError(
+                dashboardData?.errors,
+              )}
+              {@const hasSourceError =
+                selectionError !== SourceModelValidationStatus.OK &&
+                selectionError !== ""}
+              <NavigationMenuItem
+                disabled={hasSourceError}
+                on:click={() => editModel(dashboardName)}
+              >
+                <Model slot="icon" />
+                Edit model
+                <svelte:fragment slot="description">
+                  {#if hasSourceError}
+                    {selectionError}
+                  {/if}
+                </svelte:fragment>
+              </NavigationMenuItem>
+              <NavigationMenuItem
+                disabled={hasSourceError}
+                on:click={() => editMetrics(dashboardName)}
+              >
+                <MetricsIcon slot="icon" />
+                Edit metrics
+              </NavigationMenuItem>
+              <NavigationMenuSeparator />
+              <NavigationMenuItem
+                on:click={() => openRenameMetricsDefModal(dashboardName)}
+              >
+                <EditIcon slot="icon" />
+                Rename...
+              </NavigationMenuItem>
+              <NavigationMenuItem
+                on:click={() => deleteMetricsDef(dashboardName)}
+              >
+                <Cancel slot="icon" />
+                Delete
+              </NavigationMenuItem>
+            </svelte:fragment>
+          </NavigationEntry>
+        </li>
+      {/each}
+      {#if canAddDashboard}
+        <AddAssetButton
+          id="add-dashboard"
+          label="Add dashboard"
+          bold={hasSourceAndModelButNoDashboards ?? false}
+          on:click={() => dispatchAddEmptyMetricsDef()}
+        />
+      {/if}
+    </ol>
   {/if}
+</div>
+
+{#if showRenameMetricsDefinitionModal && renameMetricsDefName}
+  <RenameAssetModal
+    entityType={EntityType.MetricsDefinition}
+    closeModal={() => (showRenameMetricsDefinitionModal = false)}
+    currentAssetName={renameMetricsDefName}
+  />
 {/if}
