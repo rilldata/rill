@@ -2,7 +2,8 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { flexRender } from "@tanstack/svelte-table";
+  import { Row, flexRender } from "@tanstack/svelte-table";
+  import { createEventDispatcher } from "svelte";
   import Table from "../../../components/table/Table.svelte";
   import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
@@ -11,8 +12,7 @@
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
   import { DashboardResource, useDashboardsV2 } from "./selectors";
 
-  export let organization: string;
-  export let project: string;
+  export let isEmbedded = false;
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
 
@@ -29,16 +29,17 @@
   const columns = [
     {
       id: "composite",
-      cell: ({ row }) =>
-        flexRender(DashboardsTableCompositeCell, {
-          organization: organization,
-          project: project,
-          name: row.original.resource.meta.name.name,
-          title: row.original.resource.metricsView.spec.title,
-          lastRefreshed: row.original.refreshedOn,
-          description: row.original.resource.metricsView.spec.description,
-          error: row.original.resource.meta.reconcileError,
-        }),
+      cell: ({ row }) => {
+        const dashboard = row.original as DashboardResource;
+        return flexRender(DashboardsTableCompositeCell, {
+          name: dashboard.resource.meta.name.name,
+          title: dashboard.resource.metricsView.spec.title,
+          lastRefreshed: dashboard.refreshedOn,
+          description: dashboard.resource.metricsView.spec.description,
+          error: dashboard.resource.meta.reconcileError,
+          isEmbedded,
+        });
+      },
     },
     {
       id: "title",
@@ -66,6 +67,12 @@
     lastRefreshed: false,
     description: false,
   };
+
+  const dispatch = createEventDispatcher();
+
+  function handleClickRow(e: CustomEvent<Row<DashboardResource>>) {
+    dispatch("select-dashboard", e.detail.original.resource.meta.name.name);
+  }
 </script>
 
 {#if $dashboards.isLoading}
@@ -78,7 +85,12 @@
   {#if $dashboards.data.length === 0}
     <NoDashboardsCTA />
   {:else}
-    <Table data={$dashboards?.data} {columns} {columnVisibility}>
+    <Table
+      data={$dashboards?.data}
+      {columns}
+      {columnVisibility}
+      on:click-row={handleClickRow}
+    >
       <DashboardsTableHeader slot="header" />
       <DashboardsTableEmpty slot="empty" />
     </Table>

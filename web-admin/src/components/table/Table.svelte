@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    Row,
     createSvelteTable,
     flexRender,
     getCoreRowModel,
@@ -7,13 +8,15 @@
     getSortedRowModel,
   } from "@tanstack/svelte-table";
   import type { ColumnDef, TableOptions } from "@tanstack/table-core/src/types";
-  import { setContext } from "svelte";
+  import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
   export let maxWidthOverride: string | null = null;
+
+  const dispatch = createEventDispatcher();
 
   let maxWidth = maxWidthOverride ?? "max-w-[800px]";
 
@@ -55,6 +58,10 @@
   // Expose the table API to the children components via Context
   setContext("table", table);
 
+  function handleClickRow(row: Row<unknown>) {
+    dispatch("click-row", row);
+  }
+
   function rerender() {
     options.update((options) => ({
       ...options,
@@ -77,7 +84,7 @@
       </tr>
     {:else}
       {#each $table.getRowModel().rows as row}
-        <tr>
+        <tr on:click={() => handleClickRow(row)}>
           {#each row.getVisibleCells() as cell}
             <td class="hover:bg-slate-50">
               <svelte:component
