@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -75,6 +76,7 @@ type Config struct {
 	ActivitySinkType         string                 `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
+	MetricsProject           string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -223,6 +225,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				aiClient = ai.NewNoop()
 			}
 
+			// Parse metrics project name
+			var metricsProjectOrg, metricsProjectName string
+			if conf.MetricsProject != "" {
+				parts := strings.Split(conf.MetricsProject, "/")
+				if len(parts) != 2 {
+					logger.Fatal("invalid metrics project slug", zap.String("name", conf.MetricsProject))
+				}
+				metricsProjectOrg = parts[0]
+				metricsProjectName = parts[1]
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:     conf.DatabaseDriver,
@@ -231,6 +244,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				DefaultProvisioner: conf.DefaultProvisioner,
 				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
 				VersionNumber:      ch.Version.Number,
+				MetricsProjectOrg:  metricsProjectOrg,
+				MetricsProjectName: metricsProjectName,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
