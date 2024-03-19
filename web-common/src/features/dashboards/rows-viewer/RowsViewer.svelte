@@ -8,6 +8,7 @@
   import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
+  import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
   export let metricViewName = "";
   export let height: number;
@@ -47,36 +48,18 @@
       limit.set(FALLBACK_SAMPLE_SIZE);
     });
   }
-
-  let rows;
-  let tableColumns: VirtualizedTableColumns[];
-  $: {
-    if ($tableQuery.isSuccess) {
-      rows = $tableQuery.data.data;
-      tableColumns = $tableQuery.data.meta as VirtualizedTableColumns[];
-    }
-  }
-
-  let rowOverscanAmount = 0;
-  let columnOverscanAmount = 0;
-
-  const configOverride = {
-    indexWidth: 72,
-    rowHeight: 32,
-  };
 </script>
 
 <div
-  class="overflow-y-auto bg-gray-100 border-t border-gray-200"
-  style="height: {height}px"
+  class="overflow-y-auto max-h-fit bg-gray-100 border-t border-gray-200 flex items-center justify-center"
+  style:height="{height}px"
 >
-  {#if rows}
+  {#if $tableQuery.isSuccess}
     <PreviewTable
-      {rows}
-      columnNames={tableColumns}
-      {rowOverscanAmount}
-      {columnOverscanAmount}
-      {configOverride}
+      rows={$tableQuery.data.data}
+      columns={$tableQuery.data.meta ?? []}
     />
+  {:else}
+    <ReconcilingSpinner />
   {/if}
 </div>

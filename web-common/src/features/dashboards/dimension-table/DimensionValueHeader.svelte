@@ -65,7 +65,7 @@
 <div
   class="sticky self-start left-6 top-0 z-20"
   style:height="{totalHeight}px"
-  style:width="{width}px"
+  style:width="{20}px"
 >
   <StickyHeader
     header={{ size: width, start: 0 }}

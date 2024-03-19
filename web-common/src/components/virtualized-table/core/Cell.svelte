@@ -33,6 +33,8 @@
   export let positionStatic = false;
   export let label: string | undefined = undefined;
 
+  // $: console.log({ value });
+
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
 

@@ -13,9 +13,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
-  import DimensionTable from "./DimensionTable.svelte";
+
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
+
+  import VirtualTable from "@rilldata/web-common/components/table/VirtualTable.svelte";
+  import DimensionTableCell from "./DimensionTableCell.svelte";
+  import DimensionTableHeaderCell from "./DimensionTableHeaderCell.svelte";
+  import DimensionRowHeader from "./DimensionRowHeader.svelte";
 
   const stateManagers = getStateManagers();
   const {
@@ -27,16 +32,20 @@
       },
       comparison: { isBeingCompared },
       dimensions: { dimensionTableDimName, dimensionTableColumnName },
-      dimensionFilters: { unselectedDimensionValues },
+      dimensionFilters: { unselectedDimensionValues, isFilterExcludeMode },
       dimensionTable: {
         virtualizedTableColumns,
         selectedDimensionValueNames,
         prepareDimTableRows,
+        sortedByDimensionValue,
       },
+      sorting: { sortedAscending },
       activeMeasure: { activeMeasureName },
       measureFilters: { getResolvedFilterForMeasureFilters },
     },
     actions: {
+      sorting: { sortByDimensionValue },
+      dimensionTable: { handleMeasureColumnHeaderClick },
       dimensionsFilter: {
         toggleDimensionValueSelection,
         selectItemsInFilter,
@@ -79,6 +88,7 @@
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
 
+  $: console.log($totalsQuery);
   $: columns = $virtualizedTableColumns($totalsQuery);
 
   $: sortedQuery = createQueryServiceMetricsViewComparison(
@@ -99,7 +109,7 @@
     $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
   );
 
-  function onSelectItem(event) {
+  function onSelectItem(event: CustomEvent<{ index: number; meta?: boolean }>) {
     const label = tableRows[event.detail.index][dimensionColumnName] as string;
     toggleDimensionValueSelection(
       dimensionName,
@@ -147,6 +157,8 @@
       toggleAllSearchItems();
     }
   }
+
+  $: console.log(tableRows);
 </script>
 
 {#if sortedQuery}
@@ -164,17 +176,57 @@
       />
     </div>
 
-    {#if tableRows && columns.length && dimensionName}
-      <div class="grow" style="overflow-y: hidden;">
-        <DimensionTable
-          on:select-item={(event) => onSelectItem(event)}
+    {#if tableRows.length && columns.length && dimensionName}
+      <div class="grow flex" style="overflow-y: hidden;">
+        <!-- <DimensionTable
+          on:select-item={onSelectItem}
           on:toggle-dimension-comparison={() =>
             toggleComparisonDimension(dimensionName, isBeingCompared)}
-          isFetching={$sortedQuery?.isFetching}
+          on:column-click={(e) => {
+            if (e.detail.startsWith("measure")) {
+              handleMeasureColumnHeaderClick(e.detail);
+            } else {
+              sortByDimensionValue();
+            }
+          }}
           {dimensionName}
           {columns}
+          isBeingCompared={$isBeingCompared(dimensionName)}
+          excludeMode={$isFilterExcludeMode(dimensionName)}
           selectedValues={$selectedDimensionValueNames}
           rows={tableRows}
+          sortedColumn={columns.find((col) => col.sorted)?.name ??
+            dimensionName}
+          sortedAscending={$sortedAscending}
+        /> -->
+        <VirtualTable
+          stickyBorders
+          {columns}
+          rows={tableRows}
+          headerHeight={44}
+          columnAccessor="name"
+          PinnedCell={DimensionRowHeader}
+          Cell={DimensionTableCell}
+          HeaderCell={DimensionTableHeaderCell}
+          pinnedColumns={new Map([[0, 0]])}
+          valueAccessor={(name) => `__formatted_${name}`}
+          sortedColumn={columns.find((col) => col.sorted)?.name ??
+            dimensionName}
+          sortedAscending={$sortedAscending}
+          on:select-item={onSelectItem}
+          selectedIndexes={$selectedDimensionValueNames.map((name) => {
+            const index = tableRows.findIndex(
+              (row) => row[dimensionColumnName] === name,
+            );
+            return index;
+          })}
+          on:column-click={(e) => {
+            if (e.detail.startsWith("measure")) {
+              handleMeasureColumnHeaderClick(e.detail);
+            } else {
+              sortByDimensionValue();
+            }
+          }}
         />
       </div>
     {/if}

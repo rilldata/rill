@@ -42,7 +42,7 @@
   <div class="max-h-64 overflow-auto">
     <PreviewTable
       rows={$alertPreviewQuery.data.rows}
-      columnNames={$alertPreviewQuery.data.schema}
+      columns={$alertPreviewQuery.data.schema}
     />
   </div>
 {:else}
