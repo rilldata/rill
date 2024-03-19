@@ -22,7 +22,7 @@
 {:else if isProjectDeployed}
   <ContentContainer>
     <div class="flex flex-col items-center gap-y-4">
-      <DashboardsTable {organization} {project} />
+      <DashboardsTable />
     </div>
   </ContentContainer>
 {/if}
