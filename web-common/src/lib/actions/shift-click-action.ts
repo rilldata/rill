@@ -47,7 +47,7 @@ export function createShiftClickAction(
     clickShiftCallbacks: callbacks,
     shiftHeld,
     // put this in a use:shiftClickAction
-    shiftClickAction(node: Element) {
+    shiftClickAction: (node: Element) => {
       function mouseDown(event) {
         if (event.shiftKey) {
           shiftHeld.set(true);

@@ -61,7 +61,7 @@ Some metrics may be at a different level of granularity where a sum across the m
 To create the correct value, you can utilize DuckDB's unnest functionality. In the example below, you would be pulling a single value of `daily_budget` based on `campaign_id` to get the sum of budget for the day by campaign ids.
 
 ```
-(select sum(a.val) as value from (select unnest(list(distinct {key: concat(campaign_id), val: daily_budget })) a ))
+(select sum(a.val) as value from (select unnest(list(distinct {key: campaign_id, val: daily_budget })) a ))
 ```
 
 :::note 

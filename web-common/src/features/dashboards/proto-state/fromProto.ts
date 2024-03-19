@@ -1,8 +1,8 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
-  type PivotChipData,
   PivotChipType,
+  type PivotChipData,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
@@ -342,6 +342,7 @@ function fromPivotProto(
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
+    rowPage: 1,
     rowJoinType:
       FromProtoPivotRowJoinTypeMap[
         dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST

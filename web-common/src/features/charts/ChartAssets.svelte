@@ -1,9 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -12,10 +11,11 @@
   import ChartMenuItems from "./ChartMenuItems.svelte";
   import { createChart } from "./createChart";
   import { useChartFileNames } from "./selectors";
-
-  $: chartFileNames = useChartFileNames($runtime.instanceId);
+  import { flip } from "svelte/animate";
 
   let showCharts = true;
+
+  $: chartFileNames = useChartFileNames($runtime.instanceId);
 
   async function handleAddChart() {
     const newChartName = getName("chart", $chartFileNames.data ?? []);
@@ -24,39 +24,30 @@
   }
 </script>
 
-<NavigationHeader bind:show={showCharts} toggleText="charts">
-  Charts
-</NavigationHeader>
+<div class="h-fit flex flex-col">
+  <NavigationHeader bind:show={showCharts}>Charts</NavigationHeader>
 
-{#if showCharts}
-  <div
-    class="pb-3 max-h-96 overflow-auto"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
-  >
-    {#if $chartFileNames?.data}
-      {#each $chartFileNames.data as chartName (chartName)}
-        <div
-          animate:flip={{ duration: 200 }}
-          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
-        >
-          <NavigationEntry
-            name={chartName}
-            href={`/chart/${chartName}`}
-            open={$page.url.pathname === `/chart/${chartName}`}
-            expandable={false}
-          >
-            <svelte:fragment slot="menu-items">
-              <ChartMenuItems {chartName} />
-            </svelte:fragment>
-          </NavigationEntry>
-        </div>
-      {/each}
-    {/if}
-    <AddAssetButton
-      id="add-chart"
-      label="Add chart"
-      bold={false}
-      on:click={handleAddChart}
-    />
-  </div>
-{/if}
+  {#if showCharts}
+    <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
+      {#if $chartFileNames?.data}
+        {#each $chartFileNames.data as chartName (chartName)}
+          <li animate:flip={{ duration }} aria-label={chartName}>
+            <NavigationEntry
+              name={chartName}
+              href={`/chart/${chartName}`}
+              open={$page.url.pathname === `/chart/${chartName}`}
+            >
+              <ChartMenuItems slot="menu-items" {chartName} />
+            </NavigationEntry>
+          </li>
+        {/each}
+      {/if}
+      <AddAssetButton
+        id="add-chart"
+        label="Add chart"
+        bold={false}
+        on:click={handleAddChart}
+      />
+    </ol>
+  {/if}
+</div>

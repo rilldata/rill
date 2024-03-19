@@ -33,7 +33,6 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	p1, err := db.InsertProject(ctx, &database.InsertProjectOptions{
 		OrganizationID: org.ID,
 		Name:           "p-q",
-		Region:         "us-east-1",
 		ProdBranch:     "main",
 		ProdSlots:      1,
 	})
@@ -42,6 +41,8 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	// insert data
 	_, err = db.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         p1.ID,
+		Provisioner:       "static",
+		ProvisionID:       uuid.NewString(),
 		Slots:             2,
 		Branch:            "main",
 		RuntimeHost:       "host_1",
@@ -51,6 +52,8 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         p1.ID,
+		Provisioner:       "static",
+		ProvisionID:       uuid.NewString(),
 		Slots:             5,
 		Branch:            "main",
 		RuntimeHost:       "host_2",
@@ -60,6 +63,8 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 
 	_, err = db.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         p1.ID,
+		Provisioner:       "static",
+		ProvisionID:       uuid.NewString(),
 		Slots:             4,
 		Branch:            "main",
 		RuntimeHost:       "host_3",
@@ -70,9 +75,9 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	// spec
 	spec := &StaticSpec{
 		Runtimes: []*StaticRuntimeSpec{
-			{Host: "host_1", Slots: 6, Region: "us-east-1"},
-			{Host: "host_2", Slots: 6, Region: "us-east-1"},
-			{Host: "host_3", Slots: 6, Region: "us-east-1"},
+			{Host: "host_1", Slots: 6},
+			{Host: "host_2", Slots: 6},
+			{Host: "host_3", Slots: 6},
 		},
 	}
 
@@ -86,42 +91,23 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 		{
 			name:    "all applicable ",
 			spec:    spec,
-			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-1"},
+			opts:    &ProvisionOptions{Slots: 1},
 			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(40) * int64(datasize.GB)},
 			wantErr: false,
 		},
 		{
 			name:    "one applicable ",
 			spec:    spec,
-			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 4, Region: "us-east-1"},
+			opts:    &ProvisionOptions{Slots: 4},
 			want:    &Allocation{CPU: 4, MemoryGB: 8, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
 			wantErr: false,
 		},
 		{
 			name:    "none applicable ",
 			spec:    spec,
-			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 5, Region: "us-east-1"},
+			opts:    &ProvisionOptions{Slots: 5},
 			want:    nil,
 			wantErr: true,
-		},
-		{
-			name:    "none applicable - region mismatch",
-			spec:    spec,
-			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-2"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "1 applicable - region match",
-			spec: &StaticSpec{
-				Runtimes: []*StaticRuntimeSpec{
-					{Host: "host_1", Slots: 6, Region: "us-east-1"},
-					{Host: "host_2", Slots: 6, Region: "us-east-2"},
-				},
-			},
-			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-2"},
-			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(40) * int64(datasize.GB), Host: "host_2"},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

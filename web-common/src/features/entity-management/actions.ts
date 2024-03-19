@@ -1,7 +1,6 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { appScreen } from "@rilldata/web-common/layout/app-store";
-import { currentHref } from "@rilldata/web-common/layout/navigation/stores";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceRenameFile,
@@ -52,9 +51,8 @@ export async function deleteFileArtifact(
 
     if (get(appScreen)?.name === name) {
       const route = getRouteFromName(getNextEntityName(names, name), type);
-      /** set the href store so the menu selection has an immediate visual update. */
-      currentHref.set(route);
-      goto(route);
+
+      await goto(route);
     }
   } catch (err) {
     console.error(err);

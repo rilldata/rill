@@ -2,7 +2,6 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -17,10 +16,11 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel, useModelFileNames } from "../selectors";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let modelName: string;
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
-  export let toggleMenu: () => void;
+
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
 
   const queryClient = useQueryClient();
@@ -56,18 +56,12 @@
         $modelNames.data,
       );
     }
-    toggleMenu();
   };
 </script>
 
-<MenuItem
+<NavigationMenuItem
   disabled={disableCreateDashboard}
-  icon
-  on:select={() => {
-    void createDashboardFromTable();
-    toggleMenu();
-  }}
-  propogateSelect={false}
+  on:click={createDashboardFromTable}
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -81,19 +75,16 @@
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>
-</MenuItem>
+</NavigationMenuItem>
 {#if customDashboards}
-  <MenuItem
+  <NavigationMenuItem
     disabled={disableCreateDashboard}
-    icon
-    on:select={() => {
+    on:click={() => {
       dispatch("generate-chart", {
         table: $modelQuery.data?.model?.state?.table,
         connector: $modelQuery.data?.model?.state?.connector,
       });
-      toggleMenu();
     }}
-    propogateSelect={false}
   >
     <Explore slot="icon" />
     <div class="flex gap-x-2 items-center">
@@ -107,23 +98,20 @@
         Dependencies are being reconciled.
       {/if}
     </svelte:fragment>
-  </MenuItem>
+  </NavigationMenuItem>
 {/if}
-<Divider />
-<MenuItem
-  icon
-  on:select={() => {
+
+<NavigationMenuSeparator />
+
+<NavigationMenuItem
+  on:click={() => {
     dispatch("rename-asset");
   }}
 >
   <EditIcon slot="icon" />
   Rename...
-</MenuItem>
-<MenuItem
-  icon
-  on:select={() => handleDeleteModel(modelName)}
-  propogateSelect={false}
->
+</NavigationMenuItem>
+<NavigationMenuItem on:click={() => handleDeleteModel(modelName)}>
   <Cancel slot="icon" />
   Delete
-</MenuItem>
+</NavigationMenuItem>

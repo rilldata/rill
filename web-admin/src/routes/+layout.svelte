@@ -9,13 +9,11 @@
     retainFeaturesFlags,
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
-  import {
-    addJavascriptErrorListeners,
-    createGlobalErrorCallback,
-  } from "../features/errors/error-utils";
+  import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
@@ -43,7 +41,7 @@
   clearViewedAsUserAfterNavigate(queryClient);
   initCloudMetrics();
 
-  onMount(() => addJavascriptErrorListeners());
+  onMount(() => errorEventHandler?.addJavascriptErrorListeners());
 
   $: isEmbed = $page.url.pathname === "/-/embed";
 
