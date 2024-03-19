@@ -235,8 +235,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.state", req.State),
 	)
 
-	if req.Resource == "" {
-		return nil, status.Error(codes.InvalidArgument, "resource must be specified")
+	if !req.Navigation && req.Resource == "" {
+		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)

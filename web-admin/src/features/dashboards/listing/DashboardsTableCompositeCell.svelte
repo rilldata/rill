@@ -1,25 +1,30 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { timeAgo } from "./utils";
 
-  export let organization: string;
-  export let project: string;
   export let name: string;
   export let title: string;
   export let lastRefreshed: string;
   export let description: string;
   export let error: string;
+  export let isEmbedded: boolean;
+
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
   $: lastRefreshedDate = new Date(lastRefreshed);
   $: isValidLastRefreshedDate = !isNaN(lastRefreshedDate.getTime());
 </script>
 
-<a
-  href={`/${organization}/${project}/${name}`}
-  class="flex flex-col gap-y-0.5 group px-4 py-[5px]"
+<svelte:element
+  this={isEmbedded ? "button" : "a"}
+  class="flex flex-col gap-y-0.5 group px-4 py-[5px] w-full"
+  href={isEmbedded ? undefined : `/${organization}/${project}/${name}`}
+  role={isEmbedded ? "button" : "link"}
 >
   <div class="flex gap-x-2 items-center">
     <DashboardIcon size={"14px"} className="text-slate-500" />
@@ -49,4 +54,4 @@
       <span class="line-clamp-1">{description}</span>
     {/if}
   </div>
-</a>
+</svelte:element>
