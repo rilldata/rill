@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -42,6 +43,7 @@ type Compiler struct {
 
 func New() *Compiler {
 	p := parser.New()
+	p.SetSQLMode(mysql.ModeANSI)
 	return &Compiler{p: p}
 }
 
@@ -129,11 +131,10 @@ func (s *walker) walkSelectStmt(ctx context.Context, node *ast.SelectStmt) (stri
 			return "", fmt.Errorf("metrics sql: group by clause is implicitly added when any measure is selected. The implicit group by includes all selected dimensions")
 		}
 
-		var sb strings.Builder
 		sb.WriteString(" GROUP BY ")
 		for i, dim := range s.dimExpressions {
 			if i != 0 {
-				sb.WriteString(",")
+				sb.WriteString(", ")
 			}
 			sb.WriteString(dim)
 		}
@@ -176,25 +177,29 @@ func (s *walker) walkSelectStmtColumns(ctx context.Context, node *ast.SelectStmt
 	var sb strings.Builder
 	for i, field := range node.Fields.Fields {
 		if i != 0 {
-			sb.WriteString(",")
+			sb.WriteString(", ")
 		}
 		if field.WildCard != nil {
 			return "", fmt.Errorf("metrics sql: wildcard is not supported")
 		}
 
-		defExpr, ok := field.Expr.(*ast.ColumnNameExpr)
+		colExpr, ok := field.Expr.(*ast.ColumnNameExpr)
 		if !ok {
 			return "", fmt.Errorf("metrics sql: can only select plain dimension/measures")
 		}
 
-		col, expr, typ, err := s.walkColumnNameExpr(ctx, defExpr)
+		col, expr, typ, err := s.walkColumnNameExpr(ctx, colExpr)
 		if err != nil {
 			return "", err
 		}
 
 		sb.WriteString(expr)
 		sb.WriteString(" AS ")
-		sb.WriteString(col)
+		if field.AsName.String() != "" {
+			sb.WriteString(field.AsName.String())
+		} else {
+			sb.WriteString(col)
+		}
 		if typ == "MEASURE" {
 			s.measureExpressions = append(s.measureExpressions, expr)
 		} else {
@@ -239,7 +244,7 @@ func (s *walker) walkFromClause(ctx context.Context, node *ast.TableRefsClause) 
 func (s *walker) walkExprNode(ctx context.Context, node ast.ExprNode) (string, error) {
 	switch node := node.(type) {
 	case *ast.ColumnNameExpr:
-		expr, _, _, err := s.walkColumnNameExpr(ctx, node)
+		_, expr, _, err := s.walkColumnNameExpr(ctx, node)
 		return expr, err
 	case *ast.BinaryOperationExpr:
 		return s.walkBinaryOperationExpr(ctx, node)
@@ -397,7 +402,7 @@ func (s *walker) walkUnaryOperationExpr(ctx context.Context, node *ast.UnaryOper
 func (s *walker) walkValueExpr(_ context.Context, node ast.ValueExpr) (string, error) {
 	// todo :: fix this
 	var sb strings.Builder
-	rctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
+	rctx := format.NewRestoreCtx(format.DefaultRestoreFlags|format.RestoreStringWithoutCharset, &sb)
 	if err := node.Restore(rctx); err != nil {
 		return "", err
 	}
@@ -413,7 +418,7 @@ func (s *walker) walkOrderByClause(ctx context.Context, node *ast.OrderByClause)
 	var sb strings.Builder
 	for i, item := range node.Items {
 		if i != 0 {
-			sb.WriteString(",")
+			sb.WriteString(", ")
 		}
 		expr, err := s.walkExprNode(ctx, item.Expr)
 		if err != nil {
@@ -421,6 +426,8 @@ func (s *walker) walkOrderByClause(ctx context.Context, node *ast.OrderByClause)
 		}
 		if item.Desc {
 			sb.WriteString(expr + " DESC")
+		} else {
+			sb.WriteString(expr + " ASC")
 		}
 	}
 	return sb.String(), nil
