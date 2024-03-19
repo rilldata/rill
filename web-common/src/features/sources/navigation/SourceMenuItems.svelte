@@ -5,7 +5,6 @@
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -37,10 +36,11 @@
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let sourceName: string;
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
-  export let toggleMenu: () => void;
+
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
@@ -83,7 +83,6 @@
       EntityType.Table,
       $sourceNames.data ?? [],
     );
-    toggleMenu();
   };
 
   const handleCreateModel = async () => {
@@ -96,7 +95,7 @@
         embedded ? `"${path}"` : sourceName,
       );
 
-      behaviourEvent.fireNavigationEvent(
+      await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
@@ -136,19 +135,14 @@
   }
 </script>
 
-<MenuItem icon on:select={() => handleCreateModel()}>
+<NavigationMenuItem on:click={() => handleCreateModel()}>
   <Model slot="icon" />
   Create new model
-</MenuItem>
+</NavigationMenuItem>
 
-<MenuItem
+<NavigationMenuItem
   disabled={disableCreateDashboard}
-  icon
-  on:select={() => {
-    void createDashboardFromTable();
-    toggleMenu();
-  }}
-  propogateSelect={false}
+  on:click={createDashboardFromTable}
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -162,40 +156,33 @@
       Source is being ingested
     {/if}
   </svelte:fragment>
-</MenuItem>
+</NavigationMenuItem>
 
-<MenuItem icon on:select={() => onRefreshSource(sourceName)}>
-  <svelte:fragment slot="icon">
-    <RefreshIcon />
-  </svelte:fragment>
+<NavigationMenuItem on:click={() => onRefreshSource(sourceName)}>
+  <RefreshIcon slot="icon" />
   Refresh source
-</MenuItem>
+</NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <MenuItem icon on:select={() => onReplaceSource(sourceName)}>
-    <svelte:fragment slot="icon">
-      <Import />
-    </svelte:fragment>
+  <NavigationMenuItem on:click={() => onReplaceSource(sourceName)}>
+    <Import slot="icon" />
     Replace source with uploaded file
-  </MenuItem>
+  </NavigationMenuItem>
 {/if}
 
-<Divider />
-<MenuItem
-  icon
-  on:select={() => {
+<NavigationMenuSeparator />
+
+<NavigationMenuItem
+  on:click={() => {
     dispatch("rename-asset");
   }}
 >
   <EditIcon slot="icon" />
   Rename...
-</MenuItem>
+</NavigationMenuItem>
+
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<MenuItem
-  icon
-  on:select={() => handleDeleteSource(sourceName)}
-  propogateSelect={false}
->
+<NavigationMenuItem on:click={() => handleDeleteSource(sourceName)}>
   <Cancel slot="icon" />
   Delete
-</MenuItem>
+</NavigationMenuItem>
