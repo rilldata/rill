@@ -55,10 +55,13 @@ query:
         exprs:
         - ident: measure_0
         - val: 4
+email:
+  recipients:
+  - somebody_1@example.com
 notify:
   email:
     recipients:
-      - somebody@example.com
+      - somebody_2@example.com
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
@@ -83,7 +86,7 @@ notify:
 					IntervalsIsoDuration: "P1D",
 					QueryName:            "MetricsViewAggregation",
 					QueryArgsJson:        "{\"dimensions\":[{\"name\":\"country\"}],\"having\":{\"cond\":{\"exprs\":[{\"ident\":\"measure_0\"},{\"val\":4}],\"op\":\"OPERATION_GTE\"}},\"measures\":[{\"name\":\"measure_0\"}],\"metrics_view\":\"mv1\",\"time_range\":{\"iso_duration\":\"P1W\"}}",
-					EmailRecipients:      []string{"somebody@example.com"},
+					EmailRecipients:      []string{"somebody_1@example.com", "somebody_2@example.com"},
 					NotifyOnFail:         true,
 				},
 				State: &runtimev1.AlertState{
@@ -160,9 +163,11 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 
 	// Check that the alert was sent
 	emails := rt.Email.Sender.(*email.TestSender).Emails
-	require.Len(t, emails, 1)
-	require.Equal(t, emails[0].ToEmail, "somebody@example.com")
+	require.Len(t, emails, 2)
+	require.Equal(t, emails[0].ToEmail, "somebody_1@example.com")
 	require.Contains(t, emails[0].Body, "Denmark")
+	require.Equal(t, emails[1].ToEmail, "somebody_2@example.com")
+	require.Contains(t, emails[1].Body, "Denmark")
 }
 
 func newMetricsView(name, table, timeDim string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {

@@ -49,6 +49,15 @@ type AlertYAML struct {
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
+	// Backwards compatibility
+	Email struct {
+		Recipients    []string `yaml:"recipients"`
+		OnRecover     *bool    `yaml:"on_recover"`
+		OnFail        *bool    `yaml:"on_fail"`
+		OnError       *bool    `yaml:"on_error"`
+		Renotify      *bool    `yaml:"renotify"`
+		RenotifyAfter string   `yaml:"renotify_after"`
+	} `yaml:"email"`
 }
 
 // parseAlert parses an alert definition and adds the resulting resource to p.Resources.
@@ -155,6 +164,15 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Validate email recipients
+	// Backwards compatibility
+	for _, email := range tmp.Email.Recipients {
+		_, err := mail.ParseAddress(email)
+		if err != nil {
+			return fmt.Errorf("invalid recipient email address %q", email)
+		}
+	}
+
+	// Validate email recipients
 	for _, email := range tmp.Notify.Email.Recipients {
 		_, err := mail.ParseAddress(email)
 		if err != nil {
@@ -163,7 +181,16 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Validate email.renotify_after
+	// Backwards compatibility
 	var renotifyAfter time.Duration
+	if tmp.Email.RenotifyAfter != "" {
+		renotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
+		if err != nil {
+			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+		}
+	}
+
+	// Validate notify.renotify_after
 	if tmp.Notify.RenotifyAfter != "" {
 		renotifyAfter, err = parseDuration(tmp.Notify.RenotifyAfter)
 		if err != nil {
@@ -215,6 +242,22 @@ func (p *Parser) parseAlert(node *Node) error {
 	r.AlertSpec.NotifyOnError = false
 	r.AlertSpec.Renotify = false
 
+	// Override email notification defaults
+	// Backwards compatibility
+	if tmp.Email.OnRecover != nil {
+		r.AlertSpec.NotifyOnRecover = *tmp.Email.OnRecover
+	}
+	if tmp.Email.OnFail != nil {
+		r.AlertSpec.NotifyOnFail = *tmp.Email.OnFail
+	}
+	if tmp.Email.OnError != nil {
+		r.AlertSpec.NotifyOnError = *tmp.Email.OnError
+	}
+	if tmp.Email.Renotify != nil {
+		r.AlertSpec.Renotify = *tmp.Email.Renotify
+		r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+	}
+
 	// Override notification defaults
 	if tmp.Notify.OnRecover != nil {
 		r.AlertSpec.NotifyOnRecover = *tmp.Notify.OnRecover
@@ -229,8 +272,11 @@ func (p *Parser) parseAlert(node *Node) error {
 		r.AlertSpec.Renotify = *tmp.Notify.Renotify
 		r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
 	}
+
 	// Email settings
-	r.AlertSpec.EmailRecipients = tmp.Notify.Email.Recipients
+	r.AlertSpec.EmailRecipients = tmp.Email.Recipients // Backwards compatibility
+	r.AlertSpec.EmailRecipients = append(r.AlertSpec.EmailRecipients, tmp.Notify.Email.Recipients...)
+
 	// Slack settings
 	r.AlertSpec.SlackChannels = tmp.Notify.Slack.Channels
 	r.AlertSpec.SlackEmails = tmp.Notify.Slack.Emails
