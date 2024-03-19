@@ -3,6 +3,7 @@ import {
   getLastStateUpdatedOn,
   resourcesStore,
 } from "@rilldata/web-common/features/entity-management/resources-store";
+import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
@@ -77,12 +78,27 @@ export function invalidateResourceResponse(
   );
 }
 
+const invalidateOlapDebouncer = createDebouncer();
 async function invalidateResource(
   queryClient: QueryClient,
   instanceId: string,
   resource: V1Resource,
 ) {
   refreshResource(queryClient, instanceId, resource);
+
+  if (
+    resource.meta.renamedFrom &&
+    (resource.meta.name.kind === ResourceKind.Source ||
+      resource.meta.name.kind === ResourceKind.Model)
+  ) {
+    invalidateOlapDebouncer(
+      () =>
+        queryClient.invalidateQueries(
+          getConnectorServiceOLAPListTablesQueryKey(),
+        ),
+      250,
+    );
+  }
 
   const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
   if (
