@@ -107,7 +107,10 @@ export function createFullChartGenerator(instanceId: string) {
         },
       });
 
-      chartPromptsStore.updatePromptStatus(chartPath, ChartPromptStatus.Idle);
+      chartPromptsStore.updatePromptStatus(
+        newChartName,
+        ChartPromptStatus.Idle,
+      );
       await runtimeServicePutFile(instanceId, chartPath, {
         blob: getChartYaml(
           resp.vegaLiteSpec,
@@ -116,7 +119,10 @@ export function createFullChartGenerator(instanceId: string) {
         ),
       });
     } catch (e) {
-      chartPromptsStore.updatePromptStatus(chartPath, ChartPromptStatus.Error);
+      chartPromptsStore.updatePromptStatus(
+        newChartName,
+        ChartPromptStatus.Error,
+      );
     }
   };
 }

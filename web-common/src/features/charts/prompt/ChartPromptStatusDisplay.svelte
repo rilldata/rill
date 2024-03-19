@@ -11,7 +11,8 @@
   $: chartPrompt = chartPromptsStore.getStatusForChart(chartName);
 </script>
 
-{#if $chartPrompt && $chartPrompt.status !== ChartPromptStatus.Idle}
+<!-- TODO: handle prompt error -->
+{#if $chartPrompt && $chartPrompt.status !== ChartPromptStatus.Idle && $chartPrompt.status !== ChartPromptStatus.Error}
   <div class="flex flex-row gap-x-2">
     <Spinner size="16px" status={EntityStatus.Running} />
     <div class="flex flex-col gap-y-2">

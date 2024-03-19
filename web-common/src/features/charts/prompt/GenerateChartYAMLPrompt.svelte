@@ -44,7 +44,12 @@
   </svelte:fragment>
   <svelte:fragment slot="body">
     <InputV2 bind:value={prompt} error="" label="Prompt" />
-    <ChartPromptHistoryDisplay entityName={table || metricsView} />
+    <ChartPromptHistoryDisplay
+      entityName={table || metricsView}
+      on:reuse-prompt={({ detail }) => {
+        prompt = detail;
+      }}
+    />
   </svelte:fragment>
   <div class="pt-2" slot="footer">
     <Button on:click={createVegaConfig}>Generate</Button>

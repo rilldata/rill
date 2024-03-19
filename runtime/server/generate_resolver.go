@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -134,6 +135,8 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 	}, nil
 }
 
+var semiColonRegex = regexp.MustCompile(`(?m);\s*$`)
+
 func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userPrompt, tblName, dialect string, schema *runtimev1.StructType) (string, map[string]interface{}, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
@@ -162,6 +165,8 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	res.Data = strings.TrimPrefix(res.Data, "```sql")
 	res.Data = strings.TrimPrefix(res.Data, "```")
 	res.Data = strings.TrimSuffix(res.Data, "```")
+	// Remove the trailing semicolon
+	res.Data = semiColonRegex.ReplaceAllString(res.Data, "")
 
 	return "sql", map[string]interface{}{
 		"sql": res.Data,
@@ -206,6 +211,8 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	res.Data = strings.TrimPrefix(res.Data, "```sql")
 	res.Data = strings.TrimPrefix(res.Data, "```")
 	res.Data = strings.TrimSuffix(res.Data, "```")
+	// Remove the trailing semicolon
+	res.Data = semiColonRegex.ReplaceAllString(res.Data, "")
 
 	return "metrics_sql", map[string]interface{}{
 		"sql": res.Data,

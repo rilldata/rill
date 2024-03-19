@@ -23,7 +23,12 @@
   <svelte:fragment slot="title">Generate vega config using AI</svelte:fragment>
   <svelte:fragment slot="body">
     <InputV2 bind:value={prompt} error="" label="Prompt" />
-    <ChartPromptHistoryDisplay entityName={chart} />
+    <ChartPromptHistoryDisplay
+      entityName={chart}
+      on:reuse-prompt={({ detail }) => {
+        prompt = detail;
+      }}
+    />
   </svelte:fragment>
   <div class="pt-2" slot="footer">
     <Button on:click={createVegaConfig}>Generate</Button>

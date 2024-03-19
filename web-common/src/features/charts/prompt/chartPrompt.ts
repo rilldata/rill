@@ -1,5 +1,5 @@
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, get, type Readable, writable } from "svelte/store";
 
 export enum ChartPromptStatus {
   Idle,
@@ -31,12 +31,14 @@ export class ChartPromptsStore {
     },
   );
 
+  private readonly chartStatus = writable<Record<string, ChartPrompt>>({});
+
   public constructor(private readonly maxHistoryCount: number) {}
 
   public getStatusForChart(
     chartName: string,
   ): Readable<ChartPrompt | undefined> {
-    return derived(this.history, (h) => h.entities[chartName]?.[0]);
+    return derived(this.chartStatus, (cs) => cs[chartName]);
   }
 
   public getHistoryForEntity(entityName: string): Readable<Array<ChartPrompt>> {
@@ -44,7 +46,7 @@ export class ChartPromptsStore {
   }
 
   public startPrompt(entityName: string, chartName: string, prompt: string) {
-    this.addToHistory(entityName, {
+    const chartPrompt: ChartPrompt = {
       entityName,
       chartName,
       prompt,
@@ -53,10 +55,19 @@ export class ChartPromptsStore {
         entityName === chartName
           ? ChartPromptStatus.GeneratingData
           : ChartPromptStatus.GeneratingChartSpec,
+    };
+    this.chartStatus.update((cs) => {
+      cs[chartName] = chartPrompt;
+      return cs;
     });
+    this.addToHistory(entityName, chartPrompt);
   }
 
   public updatePromptStatus(chartName: string, status: ChartPromptStatus) {
+    this.chartStatus.update((cs) => {
+      if (cs[chartName]) cs[chartName].status = status;
+      return cs;
+    });
     this.history.update((h) => {
       if (!h.entities[chartName]?.length) return;
       h.entities[chartName][0].status = status;
@@ -66,6 +77,13 @@ export class ChartPromptsStore {
   private addToHistory(entityName: string, newEntry: ChartPrompt) {
     let history = get(this.history);
     history.entities[entityName] ??= [];
+
+    const existingPromptIdx = history.entities[entityName].findIndex(
+      (p) => p.prompt === newEntry.prompt,
+    );
+    if (existingPromptIdx >= 0) {
+      history.entities[entityName].splice(existingPromptIdx, 1);
+    }
     history.entities[entityName].unshift(newEntry);
 
     while (history.count >= this.maxHistoryCount) {
