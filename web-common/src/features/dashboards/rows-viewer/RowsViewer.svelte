@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
