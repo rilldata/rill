@@ -11,7 +11,7 @@
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
-  import { queryClient } from "../../lib/svelte-query/globalQueryClient";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,

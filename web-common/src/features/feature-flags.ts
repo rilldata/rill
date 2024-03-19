@@ -5,7 +5,7 @@ import { parse } from "yaml";
 import { createRuntimeServiceGetFile } from "../runtime-client";
 import { runtime } from "../runtime-client/runtime-store";
 import { debounce } from "../lib/create-debouncer";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export type DerivedReadables<T> = {
   [K in keyof T]: Readable<T[K]>;
