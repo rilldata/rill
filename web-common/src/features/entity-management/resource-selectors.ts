@@ -6,7 +6,11 @@ import {
   V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type {
+  CreateQueryResult,
+  QueryClient,
+  QueryObserverResult,
+} from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export enum ResourceKind {
@@ -135,9 +139,12 @@ export function createSchemaForTable(
   ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 
-export function resourceIsLoading(resource?: V1Resource) {
+export function resourceIsLoading(resp: QueryObserverResult<V1Resource>) {
+  if (resp.isFetching) return true;
   return (
-    !!resource &&
-    resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
+    resp.data?.meta?.reconcileStatus ===
+      V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+    resp.data?.meta?.reconcileStatus ===
+      V1ReconcileStatus.RECONCILE_STATUS_RUNNING
   );
 }

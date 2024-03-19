@@ -18,7 +18,7 @@ import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return (error: AxiosError, query: Query) => {
-    errorEventHandler?.requestErrorEventHandler(error, query);
+    errorEventHandler?.handleSvelteQueryError(error, query);
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {

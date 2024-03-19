@@ -23,7 +23,7 @@ export class ErrorEventHandler {
     this.commonUserMetrics = commonUserMetrics;
   }
 
-  public requestErrorEventHandler(error: AxiosError, query: Query) {
+  public handleSvelteQueryError(error: AxiosError, query: Query) {
     const screenName = this.screenNameGetter();
     if (!error.response) {
       this.fireHTTPErrorBoundaryEvent(

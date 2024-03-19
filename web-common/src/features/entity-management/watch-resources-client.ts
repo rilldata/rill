@@ -10,16 +10,7 @@ export function startWatchResourcesClient(queryClient: QueryClient) {
   return new WatchRequestClient<V1WatchResourcesResponse>(
     (runtime) =>
       `${runtime.host}/v1/instances/${runtime.instanceId}/resources/-/watch`,
-    (res) => handleWatchResourceResponse(queryClient, res),
+    (res) => invalidateResourceResponse(queryClient, res),
     () => invalidateAllResources(queryClient),
   ).start();
-}
-
-function handleWatchResourceResponse(
-  queryClient: QueryClient,
-  res: V1WatchResourcesResponse,
-) {
-  if (!res.resource) return;
-
-  invalidateResourceResponse(queryClient, res);
 }

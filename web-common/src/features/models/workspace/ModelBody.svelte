@@ -143,7 +143,7 @@
       {#if !$modelEmpty?.data}
         <ConnectedPreviewTable
           objectName={$modelQuery?.data?.model?.state?.table}
-          loading={resourceIsLoading($modelQuery?.data)}
+          loading={resourceIsLoading($modelQuery)}
           {limit}
         />
       {/if}

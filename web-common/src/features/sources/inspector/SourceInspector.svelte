@@ -114,7 +114,7 @@
 </script>
 
 <div class="{isSourceUnsaved && 'grayscale'} transition duration-200">
-  {#if resourceIsLoading($sourceQuery?.data)}
+  {#if resourceIsLoading($sourceQuery)}
     <div class="mt-6">
       <ReconcilingSpinner />
     </div>

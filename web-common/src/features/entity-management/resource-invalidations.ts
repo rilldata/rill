@@ -3,7 +3,10 @@ import {
   getLastStateUpdatedOn,
   resourcesStore,
 } from "@rilldata/web-common/features/entity-management/resources-store";
-import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ResourceName,
+  V1WatchResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
   V1Resource,
@@ -45,6 +48,10 @@ export function invalidateResourceResponse(
   if (!UsedResourceKinds[res.name.kind]) return;
 
   const instanceId = get(runtime).instanceId;
+  if (!res.resource) {
+    refreshResource(queryClient, instanceId, res.name, undefined);
+    return;
+  }
   if (
     MainResourceKinds[res.name.kind] &&
     shouldSkipResource(queryClient, instanceId, res.resource)
@@ -82,7 +89,7 @@ async function invalidateResource(
   instanceId: string,
   resource: V1Resource,
 ) {
-  refreshResource(queryClient, instanceId, resource);
+  refreshResource(queryClient, instanceId, resource.meta?.name, resource);
 
   const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
   if (
@@ -178,11 +185,11 @@ function shouldSkipResource(
       return true;
 
     case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-      refreshResource(queryClient, instanceId, res);
+      refreshResource(queryClient, instanceId, res.meta.name, res);
       return true;
 
     case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-      refreshResource(queryClient, instanceId, res);
+      refreshResource(queryClient, instanceId, res.meta.name, res);
       resourcesStore.reconciling(res);
       return true;
   }
@@ -193,13 +200,19 @@ function shouldSkipResource(
 export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
+  name: V1ResourceName,
   res: V1Resource,
 ) {
-  return queryClient.resetQueries(
+  queryClient.setQueryData(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": res.meta.name.name,
-      "name.kind": res.meta.name.kind,
+      "name.name": name.name,
+      "name.kind": name.kind,
     }),
+    res
+      ? {
+          resource: res,
+        }
+      : {},
   );
 }
 

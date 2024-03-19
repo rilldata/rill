@@ -73,7 +73,7 @@
 
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
-  $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
+  $: sourceIsReconciling = resourceIsLoading($sourceQuery);
 
   let connector: string | undefined;
   $: connector = source?.state?.connector;
@@ -205,7 +205,7 @@
         </div>
       {/if}
     </svelte:fragment>
-    <svelte:fragment slot="cta" let:width={headerWidth}>
+    <svelte:fragment let:width={headerWidth} slot="cta">
       <PanelCTA side="right">
         <Button
           disabled={!isSourceUnsaved}
@@ -259,10 +259,10 @@
           </Button>
           <Menu
             dark
+            let:toggleFloatingElement
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
-            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

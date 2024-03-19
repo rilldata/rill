@@ -55,7 +55,7 @@
     {#if !$allErrors?.length}
       <ConnectedPreviewTable
         objectName={$sourceQuery?.data?.source?.state?.table}
-        loading={resourceIsLoading($sourceQuery?.data)}
+        loading={resourceIsLoading($sourceQuery)}
       />
     {:else if $allErrors[0].message}
       <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />

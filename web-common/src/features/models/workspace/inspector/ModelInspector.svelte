@@ -24,7 +24,7 @@
 </script>
 
 {#if !$emptyModel?.data}
-  {#if resourceIsLoading($modelQuery?.data)}
+  {#if resourceIsLoading($modelQuery)}
     <div class="mt-6">
       <ReconcilingSpinner />
     </div>
