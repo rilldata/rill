@@ -9,7 +9,7 @@
     retainFeaturesFlags,
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
-  import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
@@ -46,7 +46,7 @@
   clearViewedAsUserAfterNavigate(queryClient);
   initCloudMetrics();
 
-  onMount(() => errorEvent?.addJavascriptErrorListeners());
+  onMount(() => errorEventHandler?.addJavascriptErrorListeners());
 
   $: isEmbed = $page.url.pathname === "/-/embed";
 

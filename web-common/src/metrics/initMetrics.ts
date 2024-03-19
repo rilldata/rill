@@ -16,7 +16,7 @@ export let metricsService: MetricsService;
 
 export let actionEvent: ActiveEventHandler;
 export let behaviourEvent: BehaviourEventHandler;
-export let errorEvent: ErrorEventHandler;
+export let errorEventHandler: ErrorEventHandler;
 
 export async function initMetrics(localConfig: V1RuntimeGetConfig) {
   metricsService = new MetricsService(new RillIntakeClient(), [
@@ -29,7 +29,7 @@ export async function initMetrics(localConfig: V1RuntimeGetConfig) {
   const commonUserMetrics = await collectCommonUserFields();
   actionEvent = new ActiveEventHandler(metricsService, commonUserMetrics);
   behaviourEvent = new BehaviourEventHandler(metricsService, commonUserMetrics);
-  errorEvent = new ErrorEventHandler(
+  errorEventHandler = new ErrorEventHandler(
     metricsService,
     commonUserMetrics,
     localConfig.is_dev,
@@ -43,5 +43,5 @@ export function setMetricsService(ms: MetricsService) {
 }
 
 export function setErrorEvent(ev: ErrorEventHandler) {
-  errorEvent = ev;
+  errorEventHandler = ev;
 }

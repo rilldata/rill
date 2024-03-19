@@ -2,7 +2,7 @@ import { categorizeSourceError } from "@rilldata/web-common/features/sources/mod
 import { getFileTypeFromPath } from "@rilldata/web-common/features/sources/sourceUtils";
 import {
   behaviourEvent,
-  errorEvent,
+  errorEventHandler,
 } from "@rilldata/web-common/metrics/initMetrics";
 import type { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 import type {
@@ -22,7 +22,7 @@ export function emitSourceErrorTelemetry(
   const fileType = getFileTypeFromPath(fileName);
   const isGlob = fileName.includes("*");
 
-  errorEvent?.fireSourceErrorEvent(
+  errorEventHandler?.fireSourceErrorEvent(
     space,
     screenName,
     categorizedError,

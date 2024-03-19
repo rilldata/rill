@@ -4,7 +4,7 @@
   import { startWatchResourcesClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
   import { retainFeaturesFlags } from "@rilldata/web-common/features/feature-flags";
   import RillDeveloperLayout from "@rilldata/web-common/layout/RillDeveloperLayout.svelte";
-  import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import type { Query } from "@tanstack/query-core";
@@ -17,7 +17,7 @@
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
     query: Query,
-  ) => errorEvent?.errorEventHandler(error, query);
+  ) => errorEventHandler?.requestErrorEventHandler(error, query);
 
   beforeNavigate(retainFeaturesFlags);
 
@@ -25,7 +25,7 @@
     const stopWatchFilesClient = startWatchFilesClient(queryClient);
     const stopWatchResourcesClient = startWatchResourcesClient(queryClient);
     const stopJavascriptErrorListeners =
-      errorEvent?.addJavascriptErrorListeners();
+      errorEventHandler?.addJavascriptErrorListeners();
     return () => {
       stopWatchFilesClient();
       stopWatchResourcesClient();

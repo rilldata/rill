@@ -5,7 +5,7 @@ import {
   isDashboardPage,
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
-import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -18,7 +18,7 @@ import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return (error: AxiosError, query: Query) => {
-    errorEvent?.errorEventHandler(error, query);
+    errorEventHandler?.requestErrorEventHandler(error, query);
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {

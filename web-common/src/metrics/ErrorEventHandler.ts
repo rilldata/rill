@@ -23,7 +23,7 @@ export class ErrorEventHandler {
     this.commonUserMetrics = commonUserMetrics;
   }
 
-  public errorEventHandler(error: AxiosError, query: Query) {
+  public requestErrorEventHandler(error: AxiosError, query: Query) {
     const screenName = this.screenNameGetter();
     if (!error.response) {
       this.fireHTTPErrorBoundaryEvent(
