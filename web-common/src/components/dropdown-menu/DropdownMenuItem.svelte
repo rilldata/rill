@@ -10,12 +10,11 @@
   let className: $$Props["class"] = undefined;
   export let inset: $$Props["inset"] = undefined;
   export { className as class };
-  console.log($$restProps);
 </script>
 
 <DropdownMenuPrimitive.Item
   class={cn(
-    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[highlighted]:cursor-pointer",
+    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[highlighted]:cursor-pointer  data-[disabled]:pointer-events-none  data-[disabled]:opacity-50",
     inset && "pl-8",
     className,
   )}

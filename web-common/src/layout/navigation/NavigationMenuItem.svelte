@@ -6,7 +6,7 @@
 
 {#key disabled}
   <DropdownMenu.Item
-    class="data-[highlighted]:bg-gray-600 dark gap-2 data-[disabled]:pointer-events-none"
+    class="data-[highlighted]:bg-gray-600 dark gap-2"
     aria-disabled={disabled}
     {disabled}
     on:click
