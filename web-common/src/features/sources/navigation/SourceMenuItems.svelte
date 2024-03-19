@@ -172,7 +172,7 @@
   >
     <Explore slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate dashboard with AI
+      Generate chart with AI
       <WandIcon class="w-3 h-3" />
     </div>
     <svelte:fragment slot="description">
