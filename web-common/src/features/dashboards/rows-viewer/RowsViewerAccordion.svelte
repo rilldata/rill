@@ -7,12 +7,10 @@
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { drag } from "../../../layout/drag";
-  import type { LayoutElement } from "../../../layout/workspace/types";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
 
   export let metricViewName: string;
 
@@ -20,10 +18,17 @@
   const MIN_HEIGHT_EXPANDED = 30;
   const MAX_HEIGHT_EXPANDED = 1000;
 
+  const timeControlsStore = useTimeControlStore(getStateManagers());
+
   let isOpen = false;
-  const toggle = () => {
-    isOpen = !isOpen;
-  };
+  let height = INITIAL_HEIGHT_EXPANDED;
+  let timeEnd: string;
+
+  $: label = `${formatCompactInteger(
+    ($filteredTotalsQuery?.data?.data?.count as number) ?? 0,
+  )} of ${formatCompactInteger(($totalsQuery?.data?.data?.count as number) ?? 0)} rows`;
+
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -47,10 +52,6 @@
     },
   );
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-  const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  let timeEnd: string;
   $: {
     let maybeEnd = $timeControlsStore.timeEnd;
     if (maybeEnd) {
@@ -89,35 +90,23 @@
     },
   );
 
-  let label = "";
-
-  $: {
-    if ($totalsQuery.data && $filteredTotalsQuery.data) {
-      label = `${formatCompactInteger(
-        $filteredTotalsQuery.data.data?.count,
-      )} of ${formatCompactInteger($totalsQuery.data.data?.count)} rows`;
-    }
+  function toggle() {
+    isOpen = !isOpen;
   }
-
-  const rowsViewerLayout = writable<LayoutElement>({
-    value: INITIAL_HEIGHT_EXPANDED,
-    visible: true,
-  });
 </script>
 
-<div>
-  <div
-    class="flex items-center px-2 h-7 w-full bg-gray-100 border-t border-t-gray-200 {isOpen
-      ? '!cursor-ns-resize'
-      : '!cursor-default'}"
-    use:drag={{
-      store: rowsViewerLayout,
-      minSize: MIN_HEIGHT_EXPANDED,
-      maxSize: MAX_HEIGHT_EXPANDED,
-      orientation: "vertical",
-      reverse: true,
-    }}
-  >
+<div class="flex flex-col relative">
+  {#if isOpen}
+    <Resizer
+      bind:dimension={height}
+      min={MIN_HEIGHT_EXPANDED}
+      max={MAX_HEIGHT_EXPANDED}
+      basis={INITIAL_HEIGHT_EXPANDED}
+      direction="NS"
+      side="top"
+    />
+  {/if}
+  <div class="tab">
     <button
       aria-label="Toggle rows viewer"
       class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
@@ -131,12 +120,20 @@
       <span class="font-bold">Model Data</span>
       {label}
     </button>
+
     <div class="ml-auto">
       <ExportModelDataButton />
     </div>
   </div>
 
   {#if isOpen}
-    <RowsViewer {metricViewName} height={$rowsViewerLayout.value} />
+    <RowsViewer {metricViewName} {height} />
   {/if}
 </div>
+
+<style lang="postcss">
+  .tab {
+    @apply flex justify-between px-2 h-7 items-center w-full;
+    @apply bg-gray-100 border-t border-t-gray-200;
+  }
+</style>
