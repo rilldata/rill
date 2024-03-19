@@ -53,22 +53,22 @@
     <ExpanderButton rotated={showDetails} on:click={onShowDetails} />
   {/if}
 
-  <Tooltip location="right" alignment="start" distance={48} activeDelay={0}>
-    <svelte:element
-      this={open && expandable ? "button" : "a"}
-      role="link"
-      class="clickable-text"
-      class:expandable
-      class:open
-      tabindex={open ? -1 : 0}
-      href={open ? undefined : href}
-      use:shiftClickAction
-      use:commandClickAction
-      on:command-click
-      on:mousedown={handleMouseDown}
-      on:shift-click={shiftClickHandler}
-      on:click={handleClick}
-    >
+  <svelte:element
+    this={open && expandable ? "button" : "a"}
+    role="link"
+    class="clickable-text"
+    class:expandable
+    class:open
+    tabindex={open ? -1 : 0}
+    href={open ? undefined : href}
+    use:shiftClickAction
+    use:commandClickAction
+    on:command-click
+    on:mousedown={handleMouseDown}
+    on:shift-click={shiftClickHandler}
+    on:click={handleClick}
+  >
+    <Tooltip location="right" alignment="start" distance={48} activeDelay={0}>
       {#if $$slots["icon"]}
         <span class="text-gray-400" style:width="1em" style:height="1em">
           <slot name="icon" />
@@ -77,14 +77,13 @@
       <div class="w-full truncate">
         {name}
       </div>
-    </svelte:element>
-
-    <svelte:fragment slot="tooltip-content">
-      {#if $$slots["tooltip-content"]}
-        <TooltipContent><slot name="tooltip-content" /></TooltipContent>
-      {/if}
-    </svelte:fragment>
-  </Tooltip>
+      <svelte:fragment slot="tooltip-content">
+        {#if $$slots["tooltip-content"]}
+          <TooltipContent><slot name="tooltip-content" /></TooltipContent>
+        {/if}
+      </svelte:fragment>
+    </Tooltip>
+  </svelte:element>
 
   {#if showContextMenu}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
