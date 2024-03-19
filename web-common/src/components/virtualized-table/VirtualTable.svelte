@@ -15,7 +15,7 @@
     V1MetricsViewRowsResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { tick } from "svelte";
-  import type { VirtualizedTableColumns } from "../virtualized-table/types";
+  import type { VirtualizedTableColumns } from "./types";
   import { writable } from "svelte/store";
   import { initColumnWidths } from "../preview-table/init-widths";
   import { clamp } from "@rilldata/web-common/lib/clamp";

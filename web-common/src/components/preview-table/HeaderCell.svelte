@@ -6,7 +6,7 @@
 
   export let name: string = "";
   export let type: string = "";
-  export let nullable: boolean = false;
+  // export let nullable: boolean = false;
 </script>
 
 <div class="header-cell">

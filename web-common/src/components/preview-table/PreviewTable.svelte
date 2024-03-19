@@ -1,5 +1,5 @@
 <script lang="ts">
-  import VirtualTable from "../table/VirtualTable.svelte";
+  import VirtualTable from "../virtualized-table/VirtualTable.svelte";
   import HeaderCell from "./HeaderCell.svelte";
   import Cell from "./Cell.svelte";
   import RowHeader from "./RowHeader.svelte";

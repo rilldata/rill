@@ -15,18 +15,6 @@
   export let description: string | undefined;
 </script>
 
-<!-- <th
-  class:first-column-header={index === 0}
-  style:width
-  style:max-width={width}
-  class:sorted
-  class="py-1"
-  data-description={description}
-  data-index={index}
-  data-header={true}
-  data-column={name}
-  on:mouseenter
-> -->
 <button
   class:text-left={index === 0}
   class="header-cell size-full px-2 text-right"
@@ -48,16 +36,13 @@
   >
     {label}
   </p>
-  <!-- </p> -->
+
   {#if sorted}
     <div class="mt-0.5 ui-copy-icon" class:-rotate-180={sorted === 1}>
       <ArrowDown size="12px" />
     </div>
   {/if}
 </button>
-<slot name="resizer" />
-
-<!-- </th> -->
 
 <style lang="postcss">
   .header-cell {

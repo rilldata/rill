@@ -17,7 +17,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
 
-  import VirtualTable from "@rilldata/web-common/components/table/VirtualTable.svelte";
+  import VirtualTable from "@rilldata/web-common/components/virtualized-table/VirtualTable.svelte";
   import DimensionTableCell from "./DimensionTableCell.svelte";
   import DimensionTableHeaderCell from "./DimensionTableHeaderCell.svelte";
   import DimensionRowHeader from "./DimensionRowHeader.svelte";
