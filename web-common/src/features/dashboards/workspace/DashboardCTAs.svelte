@@ -25,14 +25,14 @@
     metricViewName,
   );
 
-  $: isEditableDashboard = $featureFlags.readOnly === false;
+  const { readOnly } = featureFlags;
 
   $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
   $: dashboardIsIdle =
     $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  function viewMetrics(metricViewName: string) {
+  async function viewMetrics(metricViewName: string) {
     goto(`/dashboard/${metricViewName}/edit`);
 
     behaviourEvent.fireNavigationEvent(
@@ -56,7 +56,7 @@
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  {#if isEditableDashboard}
+  {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
         disabled={!dashboardIsIdle}

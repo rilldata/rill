@@ -69,7 +69,7 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 	// Handle basic SQL resolver
 	if raw.SQL != "" {
 		count++
-		resolver = "SQL"
+		resolver = "sql"
 		resolverProps["sql"] = raw.SQL
 		resolverProps["connector"] = raw.Connector
 	}
@@ -77,14 +77,14 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 	// Handle metrics SQL resolver
 	if raw.MetricsSQL != "" {
 		count++
-		resolver = "MetricsSQL"
+		resolver = "metrics_sql"
 		resolverProps["sql"] = raw.MetricsSQL
 	}
 
 	// Handle API resolver
 	if raw.API != "" {
 		count++
-		resolver = "API"
+		resolver = "api"
 		resolverProps["api"] = raw.API
 		refs = append(refs, ResourceName{Kind: ResourceKindAPI, Name: raw.API})
 		if raw.Args != nil {

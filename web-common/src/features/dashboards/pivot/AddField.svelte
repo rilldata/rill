@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-  export let type: "rows" | "columns" | null = null;
+  export let zone: "rows" | "columns" | null = null;
 
   const {
     selectors: {
@@ -20,7 +20,7 @@
   let open = false;
 
   function handleSelectValue(data: PivotChipData) {
-    metricsExplorerStore.addPivotField($metricsViewName, data, type === "rows");
+    metricsExplorerStore.addPivotField($metricsViewName, data, zone === "rows");
   }
 </script>
 
@@ -32,7 +32,7 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content class="h-80 w-64 overflow-scroll" align="start">
-    {#if type === "columns"}
+    {#if zone === "columns"}
       <DropdownMenu.Label>Measures</DropdownMenu.Label>
       <DropdownMenu.Group>
         {#each $measures as measure}

@@ -82,9 +82,10 @@ export type AdminServiceUpdateProjectBody = {
   prodBranch?: string;
   githubUrl?: string;
   prodSlots?: string;
-  region?: string;
+  provisioner?: string;
   newName?: string;
   prodTtlSeconds?: string;
+  prodVersion?: string;
 };
 
 export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
@@ -95,7 +96,7 @@ export type AdminServiceCreateProjectBody = {
   name?: string;
   description?: string;
   public?: boolean;
-  region?: string;
+  provisioner?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
@@ -103,6 +104,7 @@ export type AdminServiceCreateProjectBody = {
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
+  prodVersion?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -505,7 +507,7 @@ export interface V1Project {
   orgName?: string;
   description?: string;
   public?: boolean;
-  region?: string;
+  provisioner?: string;
   githubUrl?: string;
   subpath?: string;
   prodBranch?: string;
@@ -516,6 +518,7 @@ export interface V1Project {
   frontendUrl?: string;
   prodTtlSeconds?: string;
   annotations?: V1ProjectAnnotations;
+  prodVersion?: string;
   createdOn?: string;
   updatedOn?: string;
 }

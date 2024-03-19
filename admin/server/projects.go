@@ -235,7 +235,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
 		attribute.Bool("args.public", req.Public),
-		attribute.String("args.region", req.Region),
+		attribute.String("args.provisioner", req.Provisioner),
+		attribute.String("args.prod_version", req.ProdVersion),
 		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
 		attribute.String("args.sub_path", req.Subpath),
@@ -305,7 +306,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Name:                 req.Name,
 		Description:          req.Description,
 		Public:               req.Public,
-		Region:               req.Region,
+		Provisioner:          req.Provisioner,
+		ProdVersion:          req.ProdVersion,
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
@@ -357,8 +359,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
 	}
-	if req.Region != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.region", *req.Region))
+	if req.Provisioner != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.provisioner", *req.Provisioner))
+	}
+	if req.ProdVersion != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_version", *req.ProdVersion))
 	}
 	if req.ProdBranch != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
@@ -422,12 +427,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Public:               valOrDefault(req.Public, proj.Public),
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
-		Region:               valOrDefault(req.Region, proj.Region),
+		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
@@ -481,12 +487,13 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		Public:               proj.Public,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        req.Variables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Region:               proj.Region,
+		Provisioner:          proj.Provisioner,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -844,12 +851,13 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Public:               proj.Public,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Region:               proj.Region,
+		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
 	if err != nil {
@@ -871,7 +879,8 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Public:           p.Public,
 		OrgId:            p.OrganizationID,
 		OrgName:          orgName,
-		Region:           p.Region,
+		Provisioner:      p.Provisioner,
+		ProdVersion:      p.ProdVersion,
 		ProdOlapDriver:   p.ProdOLAPDriver,
 		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),

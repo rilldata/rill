@@ -53,7 +53,7 @@ export function useCreateDashboardFromTableUIAction(
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
-  const isAiEnabled = get(featureFlags).ai;
+  const isAiEnabled = get(featureFlags.ai);
 
   // Get the list of existing dashboards to generate a unique name
   // We call here to avoid: `Error: Function called outside component initialization`
@@ -152,7 +152,7 @@ export async function createDashboardFromTableInMetricsEditor(
   modelName: string,
   metricsViewName: string,
 ) {
-  const isAiEnabled = get(featureFlags).ai;
+  const isAiEnabled = get(featureFlags.ai);
 
   const tableName = modelName;
   let isAICancelled = false;

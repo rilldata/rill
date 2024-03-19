@@ -11,6 +11,7 @@ import (
 )
 
 type ColumnRugHistogram struct {
+	Connector  string
 	TableName  string
 	ColumnName string
 	Result     []*runtimev1.NumericOutliers_Outlier
@@ -51,7 +52,7 @@ func (q *ColumnRugHistogram) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

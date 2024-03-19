@@ -30,6 +30,8 @@ const alertQueryPriority = 1
 
 const alertCheckDefaultTimeout = 5 * time.Minute
 
+const alertStreamingRefDefaultRefreshCron = "*/10 * * * *"
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindAlert, newAlertReconciler)
 }
@@ -102,9 +104,19 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
+	// As a special rule, we override the refresh schedule to run every 10 minutes if:
+	// ref_update=true and one of the refs is streaming (and an explicit schedule wasn't provided).
+	if hasStreamingRef(ctx, r.C, self.Meta.Refs) {
+		if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate {
+			if a.Spec.RefreshSchedule.TickerSeconds == 0 && a.Spec.RefreshSchedule.Cron == "" {
+				a.Spec.RefreshSchedule.Cron = alertStreamingRefDefaultRefreshCron
+			}
+		}
+	}
+
 	// Unlike other resources, alerts have different hashes for the spec and the refs' state.
 	// This enables differentiating behavior between changes to the spec and changes to the refs.
-	// When the spec changes, we clear all alert state. When the refs change, we just use it to trigger the alert ()
+	// When the spec changes, we clear all alert state. When the refs change, we just use it to trigger the alert.
 	specHash, err := r.executionSpecHash(a.Spec, self.Meta.Refs)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
@@ -460,7 +472,7 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	}
 
 	if len(ts) == 0 {
-		r.C.Logger.Debug("Skipped alert check because watermark has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+		r.C.Logger.Debug("Skipped alert check because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
 		return nil
 	}
 
@@ -502,6 +514,8 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 			Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
 			ErrorMessage: fmt.Sprintf("Alert check failed: %s", executeErr.Error()),
 		}
+
+		r.C.Logger.Info("Alert errored", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), zap.Error(executeErr))
 	}
 
 	// Finalize and pop current execution.
@@ -743,6 +757,13 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 // calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
 // If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
 func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
+	// If the watermark is unchanged, skip the check.
+	// NOTE: It might make sense to make this configurable in the future, but the use cases seem limited.
+	// The watermark can only be unchanged if watermark="inherit" and since that indicates watermarks can be trusted, why check for the same watermark?
+	if watermark.Equal(previousWatermark) {
+		return nil, nil
+	}
+
 	// If the alert is not configured to run on intervals, check it just for the current watermark.
 	if a.Spec.IntervalsIsoDuration == "" {
 		return []time.Time{watermark}, nil

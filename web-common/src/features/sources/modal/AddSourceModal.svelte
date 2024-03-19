@@ -1,6 +1,8 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
+  import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
+
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
     createRuntimeServiceListConnectors,
@@ -46,6 +48,7 @@
     // duckdb
     "bigquery",
     "athena",
+    "redshift",
     "duckdb",
     "postgres",
     "mysql",
@@ -64,6 +67,7 @@
     // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
     athena: AmazonAthena,
+    redshift: AmazonRedshift,
     duckdb: DuckDB,
     postgres: Postgres,
     mysql: MySQL,

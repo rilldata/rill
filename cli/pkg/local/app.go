@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -406,15 +407,18 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 }
 
 func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
-	scheme := "http"
+	client := &http.Client{Timeout: time.Second}
 
+	scheme := "http"
 	if secure {
 		scheme = "https"
+		client.Transport = &http.Transport{
+			// nolint:gosec // this is a health check against localhost, so it's safe to ignore the cert
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 	}
-
 	uri := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
-	client := http.Client{Timeout: time.Second}
 	for {
 		// Check for cancellation
 		if ctx.Err() != nil {

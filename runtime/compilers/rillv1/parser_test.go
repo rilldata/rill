@@ -1237,6 +1237,9 @@ func TestChartsAndDashboard(t *testing.T) {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
     "mark": "bar",
+    "data": {
+      "name": "table"
+    },
     "encoding": {
       "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
       "y": {"field": "total_sales", "type": "quantitative"}
@@ -1280,7 +1283,7 @@ components:
 			Paths: []string{"/charts/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ChartSpec: &runtimev1.ChartSpec{
-				Resolver:           "API",
+				Resolver:           "api",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
 				VegaLiteSpec:       vegaLiteSpec,
 			},
@@ -1290,7 +1293,7 @@ components:
 			Paths: []string{"/charts/c2.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ChartSpec: &runtimev1.ChartSpec{
-				Resolver:           "API",
+				Resolver:           "api",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
 				VegaLiteSpec:       vegaLiteSpec,
 			},
@@ -1350,7 +1353,7 @@ metrics_sql: select * from m1
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Resolver:           "SQL",
+				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
@@ -1358,7 +1361,7 @@ metrics_sql: select * from m1
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
 			Paths: []string{"/apis/a2.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Resolver:           "MetricsSQL",
+				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},

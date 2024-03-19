@@ -440,13 +440,14 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID string) ([]byte, error) {
 	res := alertYAML{}
 	res.Kind = "alert"
-	res.Title = opts.Title
-	// manually add the ref
+	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+	res.Title = opts.Title
+	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
-	// hard code the user id to run for. this avoids exposing data through alert creation
+	// Hard code the user id to run for (to avoid exposing data through alert creation)
 	res.Query.For.UserID = ownerUserID
 	res.Email.Recipients = opts.Recipients
 	res.Email.Renotify = opts.EmailRenotify
@@ -469,9 +470,10 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 
 	res := alertYAML{}
 	res.Kind = "alert"
-	res.Title = opts.Title
-	// manually add the ref
+	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+	res.Title = opts.Title
+	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
@@ -534,13 +536,13 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) *adminv1.AlertOptio
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Kind      string   `yaml:"kind"`
-	Title     string   `yaml:"title"`
 	Refs      []string `yaml:"refs"`
+	Title     string   `yaml:"title"`
+	Watermark string   `yaml:"watermark"`
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
-	Query   struct {
+	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
