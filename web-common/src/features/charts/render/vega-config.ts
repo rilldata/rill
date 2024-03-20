@@ -1,13 +1,37 @@
-const markColor = "royalblue";
+import {
+  MainAreaColorGradientDark,
+  MainAreaColorGradientLight,
+  MainLineColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+
+const markColor = MainLineColor;
 const axisColor = "#E5E7EB";
-const axisLabelColor = "#727883";
+const axisLabelColor = "#727880";
 
 export const getRillTheme = () => ({
-  mark: {
-    color: markColor,
-  },
   arc: { fill: markColor },
-  area: { fill: markColor },
+  area: {
+    stroke: null,
+    line: markColor,
+    color: {
+      x1: 1,
+      y1: 1,
+      x2: 1,
+      y2: 0,
+      gradient: "linear",
+      stops: [
+        {
+          offset: 0,
+          color: MainAreaColorGradientLight,
+        },
+        {
+          offset: 1,
+          color: MainAreaColorGradientDark,
+        },
+      ],
+    },
+  },
+  bar: { fill: markColor },
   line: { stroke: markColor },
   path: { stroke: markColor },
   rect: { fill: markColor },
@@ -20,7 +44,7 @@ export const getRillTheme = () => ({
     domain: false,
     labelFont: "Inter, sans-serif",
     labelFontSize: 10,
-    labelFontWeight: "normal",
+    labelFontWeight: 500,
     labelColor: axisLabelColor,
     labelPadding: 5,
     titleColor: axisLabelColor,
@@ -37,7 +61,7 @@ export const getRillTheme = () => ({
     domain: false,
     labelFont: "Inter, sans-serif",
     labelFontSize: 10,
-    labelFontWeight: "normal",
+    labelFontWeight: 500,
     labelPadding: 5,
     labelColor: axisLabelColor,
     titleColor: axisLabelColor,
@@ -48,17 +72,5 @@ export const getRillTheme = () => ({
   },
   view: {
     strokeWidth: 0,
-  },
-  range: {
-    category: [
-      "#3e5c69",
-      "#6793a6",
-      "#182429",
-      "#0570b0",
-      "#3690c0",
-      "#74a9cf",
-      "#a6bddb",
-      "#e2ddf2",
-    ],
   },
 });
