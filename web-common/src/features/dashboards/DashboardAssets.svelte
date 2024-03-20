@@ -5,7 +5,10 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useDashboardFileNames,
+    useDashboards,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
     getFileAPIPathFromNameAndType,
@@ -22,17 +25,20 @@
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
@@ -40,15 +46,14 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
-  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
+  import { ResourceKind } from "../entity-management/resource-selectors";
 
   $: instanceId = $runtime.instanceId;
 
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
+  $: dashboards = useDashboards(instanceId);
 
   const MetricsSourceSelectionError = (
     errors: Array<V1ReconcileError> | undefined,
@@ -105,6 +110,22 @@
 
     await goto(`/dashboard/${newDashboardName}`);
   };
+
+  /**
+   * Get the name of a dashboard's underlying model (if any).
+   * Note that not all dashboards have an underlying model.
+   * Some dashboards are underpinned by a source/table.
+   */
+  function getModelForDashboard(dashboardName: string) {
+    const dashboard = $dashboards.data?.filter(
+      (dashboard) => dashboard.meta?.name?.name === dashboardName,
+    )[0];
+    const modelRef = dashboard?.meta?.refs?.filter(
+      (ref) => ref?.kind === ResourceKind.Model,
+    )[0];
+    if (!modelRef) return "";
+    return modelRef?.name;
+  }
 
   const editModel = async (dashboardName: string) => {
     await getDashboardArtifact(instanceId, dashboardName);
@@ -203,6 +224,7 @@
             $fileArtifactsStore.entities,
             dashboardName,
           )}
+          {@const modelForDashboard = getModelForDashboard(dashboardName)}
           <li animate:flip={{ duration }} aria-label={dashboardName}>
             <NavigationEntry
               showContextMenu={!$readOnly}
@@ -218,18 +240,20 @@
                 {@const hasSourceError =
                   selectionError !== SourceModelValidationStatus.OK &&
                   selectionError !== ""}
-                <NavigationMenuItem
-                  disabled={hasSourceError}
-                  on:click={() => editModel(dashboardName)}
-                >
-                  <Model slot="icon" />
-                  Edit model
-                  <svelte:fragment slot="description">
-                    {#if hasSourceError}
-                      {selectionError}
-                    {/if}
-                  </svelte:fragment>
-                </NavigationMenuItem>
+                {#if modelForDashboard}
+                  <NavigationMenuItem
+                    disabled={hasSourceError}
+                    on:click={() => editModel(dashboardName)}
+                  >
+                    <Model slot="icon" />
+                    Edit model
+                    <svelte:fragment slot="description">
+                      {#if hasSourceError}
+                        {selectionError}
+                      {/if}
+                    </svelte:fragment>
+                  </NavigationMenuItem>
+                {/if}
                 <NavigationMenuItem
                   disabled={hasSourceError}
                   on:click={() => editMetrics(dashboardName)}
