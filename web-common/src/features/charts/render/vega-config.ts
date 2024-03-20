@@ -6,7 +6,7 @@ import {
 
 const markColor = MainLineColor;
 const axisColor = "#E5E7EB";
-const axisLabelColor = "#727880";
+const axisLabelColor = "#4b5563";
 
 export const getRillTheme = () => ({
   arc: { fill: markColor },
