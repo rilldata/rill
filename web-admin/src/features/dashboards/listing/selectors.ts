@@ -8,11 +8,9 @@ import {
   PollTimeWhenProjectDeploymentError,
   PollTimeWhenProjectDeploymentPending,
 } from "@rilldata/web-admin/features/projects/status/selectors";
+import { useDashboards } from "@rilldata/web-common/features/dashboards/selectors";
 import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
-import {
-  ResourceKind,
-  useFilteredResources,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   createRuntimeServiceListResources,
@@ -61,12 +59,6 @@ export async function getDashboardsForProject(
   const catalogEntries = catalogEntriesResponse.data?.resources as V1Resource[];
 
   return catalogEntries.filter((e) => !!e.metricsView);
-}
-
-export function useDashboards(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data.resources.filter((res) => !!res.metricsView?.state?.validSpec),
-  );
 }
 
 export function useDashboardsLastUpdated(

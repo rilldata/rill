@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
+  import { useDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import type {
     V1MetricsViewSpec,
     V1Resource,
@@ -14,7 +15,6 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import { useDashboards } from "../dashboards/listing/selectors";
   import { getActiveOrgLocalStorageKey } from "../organizations/active-org/local-storage";
   import { useReports } from "../scheduled-reports/selectors";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
