@@ -127,19 +127,11 @@
     return modelRef?.name;
   }
 
-  const editModel = async (dashboardName: string) => {
-    await getDashboardArtifact(instanceId, dashboardName);
-
-    const dashboardData = getDashboardData(
-      $fileArtifactsStore.entities,
-      dashboardName,
-    );
-    const sourceModelName = dashboardData.jsonRepresentation?.model as string;
-
+  const editModel = async (modelName: string) => {
     const previousActiveEntity = $appScreen?.type;
-    await goto(`/model/${sourceModelName}`);
+    await goto(`/model/${modelName}`);
     await behaviourEvent.fireNavigationEvent(
-      sourceModelName,
+      modelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousActiveEntity,
@@ -243,7 +235,7 @@
                 {#if modelForDashboard}
                   <NavigationMenuItem
                     disabled={hasSourceError}
-                    on:click={() => editModel(dashboardName)}
+                    on:click={() => editModel(modelForDashboard)}
                   >
                     <Model slot="icon" />
                     Edit model
