@@ -6,7 +6,7 @@ import {
 
 const markColor = MainLineColor;
 const axisColor = "#E5E7EB";
-const axisLabelColor = "#4b5563";
+const axisLabelColor = "#4b5563"; // gray-600
 
 export const getRillTheme = () => ({
   arc: { fill: markColor },
@@ -40,6 +40,7 @@ export const getRillTheme = () => ({
 
   axisY: {
     gridColor: axisColor,
+    gridDash: [2],
     tickColor: axisColor,
     domain: false,
     labelFont: "Inter, sans-serif",
@@ -56,6 +57,7 @@ export const getRillTheme = () => ({
   },
   axisX: {
     gridColor: axisColor,
+    gridDash: [2],
     tickColor: axisColor,
     tickSize: 0,
     domain: false,
