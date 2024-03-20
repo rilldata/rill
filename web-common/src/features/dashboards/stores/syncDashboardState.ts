@@ -50,7 +50,7 @@ export function createDashboardStateSync(
         initialUrlStateRes?.isFetching ||
         // requests errored out
         !metricsViewSpecRes.data ||
-        !timeRangeRes.data ||
+        (!!metricsViewSpecRes.data.timeDimension && !timeRangeRes.data) ||
         !metricsViewSchemaRes.data?.schema
       ) {
         return false;
