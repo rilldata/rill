@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/exp/maps"
 
 	// need to import parser driver as well
 	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
@@ -37,17 +38,32 @@ var supportedOpCodes = map[opcode.Op]any{
 	opcode.IsNull:   nil,
 }
 
+var supportedFuncs = map[string]any{
+	"date_trunc": nil,
+}
+
 type Compiler struct {
-	p *parser.Parser
+	p              *parser.Parser
+	controller     *runtime.Controller
+	instanceID     string
+	userAttributes map[string]any
 }
 
-func New() *Compiler {
+// New returns a compiler and created a tidb parser object.
+// The instantiated parser object and thus compiler is not goroutine safe and not lightweight.
+// It is better to keep it in a single goroutine, and reuse it if possible.
+func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any) *Compiler {
 	p := parser.New()
-	p.SetSQLMode(mysql.ModeANSI)
-	return &Compiler{p: p}
+	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
+	return &Compiler{
+		p:              p,
+		controller:     ctrl,
+		instanceID:     instanceID,
+		userAttributes: userAttributes,
+	}
 }
 
-func (c *Compiler) Compile(ctrl *runtime.Controller, instanceID, sql string, userAttributes map[string]any) (string, string, []*runtimev1.ResourceName, error) {
+func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*runtimev1.ResourceName, error) {
 	stmtNodes, _, err := c.p.ParseSQL(sql)
 	if err != nil {
 		return "", "", nil, err
@@ -62,8 +78,14 @@ func (c *Compiler) Compile(ctrl *runtime.Controller, instanceID, sql string, use
 		return "", "", nil, errors.New("metrics sql: expected a SELECT statement")
 	}
 
-	s := &walker{controller: ctrl, instanceID: instanceID, userAttributes: userAttributes}
-	compiledSQL, err := s.walkSelectStmt(context.Background(), stmt)
+	s := &walker{
+		controller:       c.controller,
+		instanceID:       c.instanceID,
+		userAttributes:   c.userAttributes,
+		dimExprToCol:     make(map[string]string),
+		measureExprToCol: make(map[string]string),
+	}
+	compiledSQL, err := s.walkSelectStmt(ctx, stmt)
 	if err != nil {
 		return "", "", nil, err
 	}
@@ -82,8 +104,8 @@ type walker struct {
 	dimsToExpr    map[string]string
 	measureToExpr map[string]string
 
-	dimExpressions     []string
-	measureExpressions []string
+	dimExprToCol     map[string]string
+	measureExprToCol map[string]string
 }
 
 func (s *walker) walkSelectStmt(ctx context.Context, node *ast.SelectStmt) (string, error) {
@@ -119,29 +141,32 @@ func (s *walker) walkSelectStmt(ctx context.Context, node *ast.SelectStmt) (stri
 	sb.WriteString(fromClause)
 
 	if node.Where != nil {
-		where, err := s.walkExprNode(ctx, node.Where)
+		where, err := s.walkExprNode(ctx, node.Where, false)
 		if err != nil {
 			return "", err
 		}
 		sb.WriteString(" WHERE ")
 		sb.WriteString(where)
 	}
-	if len(s.measureExpressions) > 0 {
+	if len(s.measureExprToCol) > 0 {
 		if node.GroupBy != nil {
 			return "", fmt.Errorf("metrics sql: group by clause is implicitly added when any measure is selected. The implicit group by includes all selected dimensions")
 		}
 
 		sb.WriteString(" GROUP BY ")
-		for i, dim := range s.dimExpressions {
+		dimExprList := maps.Keys(s.dimExprToCol)
+		// sort so that consistent group by sql is produced
+		slices.Sort(dimExprList)
+		for i, expr := range dimExprList {
 			if i != 0 {
 				sb.WriteString(", ")
 			}
-			sb.WriteString(dim)
+			sb.WriteString(expr)
 		}
-	}
+	} // todo :: support group by if only dimensions are selected
 
 	if node.Having != nil {
-		having, err := s.walkHavingClause(ctx, node.Having)
+		having, err := s.walkHavingClause(ctx, node.Having, false)
 		if err != nil {
 			return "", err
 		}
@@ -150,7 +175,7 @@ func (s *walker) walkSelectStmt(ctx context.Context, node *ast.SelectStmt) (stri
 	}
 
 	if node.OrderBy != nil {
-		orderBy, err := s.walkOrderByClause(ctx, node.OrderBy)
+		orderBy, err := s.walkOrderByClause(ctx, node.OrderBy, false)
 		if err != nil {
 			return "", err
 		}
@@ -159,7 +184,7 @@ func (s *walker) walkSelectStmt(ctx context.Context, node *ast.SelectStmt) (stri
 	}
 
 	if node.Limit != nil {
-		limit, err := s.walkLimitClause(ctx, node.Limit)
+		limit, err := s.walkLimitClause(ctx, node.Limit, false)
 		if err != nil {
 			return "", err
 		}
@@ -183,27 +208,28 @@ func (s *walker) walkSelectStmtColumns(ctx context.Context, node *ast.SelectStmt
 			return "", fmt.Errorf("metrics sql: wildcard is not supported")
 		}
 
-		colExpr, ok := field.Expr.(*ast.ColumnNameExpr)
-		if !ok {
-			return "", fmt.Errorf("metrics sql: can only select plain dimension/measures")
-		}
-
-		col, expr, typ, err := s.walkColumnNameExpr(ctx, colExpr)
+		expr, err := s.walkExprNode(ctx, field.Expr, true)
 		if err != nil {
 			return "", err
 		}
 
 		sb.WriteString(expr)
-		sb.WriteString(" AS ")
-		if field.AsName.String() != "" {
+		// write alias if any
+		if field.AsName.String() != "" { // if explicitly specified in the metrics_sql
+			sb.WriteString(" AS ")
 			sb.WriteString(field.AsName.String())
 		} else {
-			sb.WriteString(col)
-		}
-		if typ == "MEASURE" {
-			s.measureExpressions = append(s.measureExpressions, expr)
-		} else {
-			s.dimExpressions = append(s.dimExpressions, expr)
+			var name string
+			// selecting a plain dimension or measure adds dimension/measure name as alias
+			if col, ok := s.dimExprToCol[expr]; ok {
+				name = col
+			} else if col, ok := s.measureExprToCol[expr]; ok {
+				name = col
+			} else {
+				continue
+			}
+			sb.WriteString(" AS ")
+			sb.WriteString(name)
 		}
 	}
 	return sb.String(), nil
@@ -241,66 +267,112 @@ func (s *walker) walkFromClause(ctx context.Context, node *ast.TableRefsClause) 
 	return s.fromQueryForMetricsView(mv)
 }
 
-func (s *walker) walkExprNode(ctx context.Context, node ast.ExprNode) (string, error) {
-	switch node := node.(type) {
-	case *ast.ColumnNameExpr:
-		_, expr, _, err := s.walkColumnNameExpr(ctx, node)
-		return expr, err
-	case *ast.BinaryOperationExpr:
-		return s.walkBinaryOperationExpr(ctx, node)
-	case *ast.IsNullExpr:
-		return s.walkIsNullOperationExpr(ctx, node)
-	case *ast.IsTruthExpr:
-		return s.walkIsTruthOperationExpr(ctx, node)
-	case *ast.ParenthesesExpr:
-		return s.walkParenthesesExpr(ctx, node)
-	case *ast.PatternInExpr:
-		return s.walkPatternInExpr(ctx, node)
-	// case *ast.PatternLikeOrIlikeExpr: // todo :: fix
-	// 	return s.walkPatternLikeOrIlikeExpr(ctx, node)
-	case *ast.UnaryOperationExpr:
-		return s.walkUnaryOperationExpr(ctx, node)
-	case ast.ValueExpr:
-		return s.walkValueExpr(ctx, node)
-	default:
-		var sb strings.Builder
-		rctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
-		_ = node.Restore(rctx)
-		return "", fmt.Errorf("metrics sql: unsupported expression %q", sb.String())
-	}
+func (s *walker) walkHavingClause(ctx context.Context, node *ast.HavingClause, updateSelect bool) (string, error) {
+	return s.walkExprNode(ctx, node.Expr, updateSelect)
 }
 
-func (s *walker) walkColumnNameExpr(_ context.Context, node *ast.ColumnNameExpr) (col, expr, typ string, err error) {
-	if node.Name == nil {
-		return "", "", "", fmt.Errorf("metrics sql: can only have dimension/measure name(s) in select list")
+func (s *walker) walkOrderByClause(ctx context.Context, node *ast.OrderByClause, updateSelect bool) (string, error) {
+	var sb strings.Builder
+	for i, item := range node.Items {
+		if i != 0 {
+			sb.WriteString(", ")
+		}
+		expr, err := s.walkExprNode(ctx, item.Expr, updateSelect)
+		if err != nil {
+			return "", err
+		}
+		if item.Desc {
+			sb.WriteString(expr + " DESC")
+		} else {
+			sb.WriteString(expr + " ASC")
+		}
 	}
-	if node.Name.Schema.String() != "" || node.Name.Table.String() != "" {
-		return "", "", "", fmt.Errorf("metrics sql: no alias or table reference is supported in column name. Found in `%s`", node.Name.String())
-	}
-
-	col = node.Name.String()
-	if colExpr, ok := s.dimsToExpr[col]; ok {
-		expr = colExpr
-		typ = "DIMENSION"
-	} else if colExpr, ok := s.measureToExpr[col]; ok {
-		expr = colExpr
-		typ = "MEASURE"
-	} else if s.metricsView.Spec.TimeDimension == col {
-		expr = col
-		typ = "TIMEDIMENSION"
-	} else {
-		err = fmt.Errorf("metrics sql: selected column `%s` not found in dimensions/measures in metrics view", col)
-	}
-	return col, expr, typ, err
+	return sb.String(), nil
 }
 
-func (s *walker) walkBinaryOperationExpr(ctx context.Context, node *ast.BinaryOperationExpr) (string, error) {
-	left, err := s.walkExprNode(ctx, node.L)
+func (s *walker) walkLimitClause(ctx context.Context, node *ast.Limit, updateSelect bool) (string, error) {
+	count, err := s.walkExprNode(ctx, node.Count, updateSelect)
 	if err != nil {
 		return "", err
 	}
 
-	right, err := s.walkExprNode(ctx, node.R)
+	var sb strings.Builder
+	sb.WriteString(count)
+	if node.Offset != nil {
+		offset, err := s.walkExprNode(ctx, node.Offset, updateSelect)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(" OFFSET ")
+		sb.WriteString(offset)
+	}
+
+	return sb.String(), nil
+}
+
+func (s *walker) walkExprNode(ctx context.Context, node ast.ExprNode, updateSelect bool) (string, error) {
+	switch node := node.(type) {
+	case *ast.ColumnNameExpr:
+		return s.walkColumnNameExpr(ctx, node, updateSelect)
+	case *ast.BinaryOperationExpr:
+		return s.walkBinaryOperationExpr(ctx, node, updateSelect)
+	case *ast.IsNullExpr:
+		return s.walkIsNullOperationExpr(ctx, node, updateSelect)
+	case *ast.IsTruthExpr:
+		return s.walkIsTruthOperationExpr(ctx, node, updateSelect)
+	case *ast.ParenthesesExpr:
+		return s.walkParenthesesExpr(ctx, node, updateSelect)
+	case *ast.PatternInExpr:
+		return s.walkPatternInExpr(ctx, node, updateSelect)
+	// case *ast.PatternLikeOrIlikeExpr: // todo :: fix
+	// 	return s.walkPatternLikeOrIlikeExpr(ctx, node)
+	case *ast.UnaryOperationExpr:
+		return s.walkUnaryOperationExpr(ctx, node, updateSelect)
+	case ast.ValueExpr:
+		return s.walkValueExpr(ctx, node)
+	case *ast.FuncCallExpr:
+		return s.walkFuncCallExpr(ctx, node, updateSelect)
+	default:
+		return "", fmt.Errorf("metrics sql: unsupported expression %q", restore(node))
+	}
+}
+
+func (s *walker) walkColumnNameExpr(_ context.Context, node *ast.ColumnNameExpr, updateSelect bool) (string, error) {
+	if node.Name == nil {
+		return "", fmt.Errorf("metrics sql: can only have dimension/measure name(s) in select list")
+	}
+	if node.Name.Schema.String() != "" || node.Name.Table.String() != "" {
+		return "", fmt.Errorf("metrics sql: no alias or table reference is supported in column name. Found in `%s`", node.Name.String())
+	}
+
+	col := node.Name.Name.O
+	if colExpr, ok := s.measureToExpr[col]; ok {
+		if updateSelect {
+			s.measureExprToCol[colExpr] = restore(node.Name) // makes sure double quotes are added
+		}
+		return colExpr, nil
+	}
+	var expr string
+	if colExpr, ok := s.dimsToExpr[col]; ok {
+		expr = colExpr
+	} else if s.metricsView.Spec.TimeDimension == col {
+		expr = col
+	} else {
+		return "", fmt.Errorf("metrics sql: selected column `%s` not found in dimensions/measures in metrics view", col)
+	}
+	if updateSelect {
+		s.dimExprToCol[expr] = restore(node.Name) // makes sure double quotes are added
+	}
+	return expr, nil
+}
+
+func (s *walker) walkBinaryOperationExpr(ctx context.Context, node *ast.BinaryOperationExpr, updateSelect bool) (string, error) {
+	left, err := s.walkExprNode(ctx, node.L, updateSelect)
+	if err != nil {
+		return "", err
+	}
+
+	right, err := s.walkExprNode(ctx, node.R, updateSelect)
 	if err != nil {
 		return "", err
 	}
@@ -311,8 +383,33 @@ func (s *walker) walkBinaryOperationExpr(ctx context.Context, node *ast.BinaryOp
 	return fmt.Sprintf("%s %s %s", left, opToString(node.Op), right), nil
 }
 
-func (s *walker) walkIsNullOperationExpr(ctx context.Context, node *ast.IsNullExpr) (string, error) {
-	expr, err := s.walkExprNode(ctx, node.Expr)
+func (s *walker) walkFuncCallExpr(ctx context.Context, node *ast.FuncCallExpr, updateSelect bool) (string, error) {
+	fncName := node.FnName
+	if _, ok := supportedFuncs[fncName.L]; !ok {
+		return "", fmt.Errorf("metrics sql: unsupported function %v", fncName.O)
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fncName.O)
+	sb.WriteString("(")
+	// keeping it generic and not doing any arg validation for now, can be added later in future if required
+	for i, arg := range node.Args {
+		if i != 0 {
+			sb.WriteString(", ")
+		}
+		expr, err := s.walkExprNode(ctx, arg, updateSelect)
+		if err != nil {
+			return "", err
+		}
+
+		sb.WriteString(expr)
+	}
+	sb.WriteString(")")
+	return sb.String(), nil
+}
+
+func (s *walker) walkIsNullOperationExpr(ctx context.Context, node *ast.IsNullExpr, updateSelect bool) (string, error) {
+	expr, err := s.walkExprNode(ctx, node.Expr, updateSelect)
 	if err != nil {
 		return "", err
 	}
@@ -327,8 +424,8 @@ func (s *walker) walkIsNullOperationExpr(ctx context.Context, node *ast.IsNullEx
 	return sb.String(), nil
 }
 
-func (s *walker) walkIsTruthOperationExpr(ctx context.Context, n *ast.IsTruthExpr) (string, error) {
-	expr, err := s.walkExprNode(ctx, n)
+func (s *walker) walkIsTruthOperationExpr(ctx context.Context, n *ast.IsTruthExpr, updateSelect bool) (string, error) {
+	expr, err := s.walkExprNode(ctx, n, updateSelect)
 	if err != nil {
 		return "", err
 	}
@@ -348,20 +445,20 @@ func (s *walker) walkIsTruthOperationExpr(ctx context.Context, n *ast.IsTruthExp
 	return sb.String(), nil
 }
 
-func (s *walker) walkParenthesesExpr(ctx context.Context, node *ast.ParenthesesExpr) (string, error) {
-	expr, err := s.walkExprNode(ctx, node.Expr)
+func (s *walker) walkParenthesesExpr(ctx context.Context, node *ast.ParenthesesExpr, updateSelect bool) (string, error) {
+	expr, err := s.walkExprNode(ctx, node.Expr, updateSelect)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("(%s)", expr), nil
 }
 
-func (s *walker) walkPatternInExpr(ctx context.Context, node *ast.PatternInExpr) (string, error) {
+func (s *walker) walkPatternInExpr(ctx context.Context, node *ast.PatternInExpr, updateSelect bool) (string, error) {
 	if node.Sel != nil {
 		return "", fmt.Errorf("metrics sql: `IN` is not supported with `SELECT` clause")
 	}
 
-	expr, err := s.walkExprNode(ctx, node.Expr)
+	expr, err := s.walkExprNode(ctx, node.Expr, updateSelect)
 	if err != nil {
 		return "", err
 	}
@@ -377,7 +474,7 @@ func (s *walker) walkPatternInExpr(ctx context.Context, node *ast.PatternInExpr)
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		expr, err = s.walkExprNode(ctx, n)
+		expr, err = s.walkExprNode(ctx, n, updateSelect)
 		if err != nil {
 			return "", err
 		}
@@ -390,8 +487,8 @@ func (s *walker) walkPatternInExpr(ctx context.Context, node *ast.PatternInExpr)
 // func (s *stateFlow) walkPatternLikeOrIlikeExpr(ctx context.Context, n *ast.PatternLikeOrIlikeExpr) (string, error) {
 // }
 
-func (s *walker) walkUnaryOperationExpr(ctx context.Context, node *ast.UnaryOperationExpr) (string, error) {
-	expr, err := s.walkExprNode(ctx, node.V)
+func (s *walker) walkUnaryOperationExpr(ctx context.Context, node *ast.UnaryOperationExpr, updateSelect bool) (string, error) {
+	expr, err := s.walkExprNode(ctx, node.V, updateSelect)
 	if err != nil {
 		return "", err
 	}
@@ -405,49 +502,6 @@ func (s *walker) walkValueExpr(_ context.Context, node ast.ValueExpr) (string, e
 	rctx := format.NewRestoreCtx(format.DefaultRestoreFlags|format.RestoreStringWithoutCharset, &sb)
 	if err := node.Restore(rctx); err != nil {
 		return "", err
-	}
-
-	return sb.String(), nil
-}
-
-func (s *walker) walkHavingClause(ctx context.Context, node *ast.HavingClause) (string, error) {
-	return s.walkExprNode(ctx, node.Expr)
-}
-
-func (s *walker) walkOrderByClause(ctx context.Context, node *ast.OrderByClause) (string, error) {
-	var sb strings.Builder
-	for i, item := range node.Items {
-		if i != 0 {
-			sb.WriteString(", ")
-		}
-		expr, err := s.walkExprNode(ctx, item.Expr)
-		if err != nil {
-			return "", err
-		}
-		if item.Desc {
-			sb.WriteString(expr + " DESC")
-		} else {
-			sb.WriteString(expr + " ASC")
-		}
-	}
-	return sb.String(), nil
-}
-
-func (s *walker) walkLimitClause(ctx context.Context, node *ast.Limit) (string, error) {
-	count, err := s.walkExprNode(ctx, node.Count)
-	if err != nil {
-		return "", err
-	}
-
-	var sb strings.Builder
-	sb.WriteString(count)
-	if node.Offset != nil {
-		offset, err := s.walkExprNode(ctx, node.Offset)
-		if err != nil {
-			return "", err
-		}
-		sb.WriteString(" OFFSET ")
-		sb.WriteString(offset)
 	}
 
 	return sb.String(), nil
@@ -522,5 +576,12 @@ func (s *walker) fromQueryForMetricsView(mv *runtimev1.Resource) (string, error)
 func opToString(op opcode.Op) string {
 	var sb strings.Builder
 	op.Format(&sb)
+	return sb.String()
+}
+
+func restore(node ast.Node) string {
+	var sb strings.Builder
+	rctx := format.NewRestoreCtx(format.RestoreStringSingleQuotes|format.RestoreKeyWordUppercase|format.RestoreNameDoubleQuotes|format.RestoreStringWithoutCharset, &sb)
+	_ = node.Restore(rctx)
 	return sb.String()
 }
