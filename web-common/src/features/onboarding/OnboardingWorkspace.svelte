@@ -71,34 +71,34 @@
   ];
 </script>
 
-<WorkspaceContainer inspector={false}>
-  <div class="pt-20 px-8 flex flex-col gap-y-6 items-center" slot="body">
-    <div class="text-center">
-      <div class="font-bold">Getting started</div>
-      <p>Building data intuition at every step of analysis</p>
-    </div>
-    <ol
-      class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
-    >
-      {#if olapConnector}
-        {#each steps as step, i (step.heading)}
-          <li class="flex gap-x-0.5">
-            <span class="font-bold">{i + 1}.</span>
-            <div class="flex flex-col items-start gap-y-2">
-              <div class="flex flex-col items-start gap-y-0.5">
-                <h5 class="font-bold">{step.heading}</h5>
-                <p>{step.description}</p>
-              </div>
-              {#if step.id === "source"}
-                <Button type="secondary" on:click={addSourceModal.open}>
-                  <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                  <span>Add data</span>
-                </Button>
-              {/if}
-            </div>
-          </li>
-        {/each}
-      {/if}
-    </ol>
+<!-- <WorkspaceContainer inspector={false}> -->
+<div class="pt-20 px-8 flex flex-col gap-y-6 items-center bg-gray-100 w-full">
+  <div class="text-center">
+    <div class="font-bold">Getting started</div>
+    <p>Building data intuition at every step of analysis</p>
   </div>
-</WorkspaceContainer>
+  <ol
+    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
+  >
+    {#if olapConnector}
+      {#each steps as step, i (step.heading)}
+        <li class="flex gap-x-0.5">
+          <span class="font-bold">{i + 1}.</span>
+          <div class="flex flex-col items-start gap-y-2">
+            <div class="flex flex-col items-start gap-y-0.5">
+              <h5 class="font-bold">{step.heading}</h5>
+              <p>{step.description}</p>
+            </div>
+            {#if step.id === "source"}
+              <Button type="secondary" on:click={addSourceModal.open}>
+                <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
+                <span>Add data</span>
+              </Button>
+            {/if}
+          </div>
+        </li>
+      {/each}
+    {/if}
+  </ol>
+</div>
+<!-- </WorkspaceContainer> -->

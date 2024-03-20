@@ -6,8 +6,6 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -22,13 +20,15 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
 
   export let metricViewName: string;
-  export let leftMargin = undefined;
 
-  const { cloudDataViewer } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   let exploreContainerWidth: number;
+
+  $: extraLeftPadding = !$navigationOpen;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
@@ -40,19 +40,6 @@
     metricViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
-
-  // the navigationVisibilityTween is a tweened value that is used
-  // to animate the extra padding that needs to be added to the
-  // dashboard container when the navigation pane is collapsed
-  const navigationVisibilityTween = getContext<Tweened<number>>(
-    "rill:app:navigation-visibility-tween",
-  );
-
-  const { readOnly } = featureFlags;
-
-  $: leftSide = leftMargin
-    ? leftMargin
-    : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 
   $: isRillDeveloper = $readOnly === false;
 
@@ -68,8 +55,8 @@
 >
   <div
     id="header"
-    class="border-b w-full flex flex-col bg-slate-50"
-    style:padding-left={leftSide}
+    class="border-b w-full flex flex-col bg-slate-50 pl-4 slide"
+    class:left-shift={extraLeftPadding}
   >
     {#if isRillDeveloper}
       <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header 
@@ -110,10 +97,10 @@
         <PivotDisplay />
       {:else}
         <div
-          class="flex gap-x-1 gap-y-4 pt-3 size-full overflow-hidden"
+          class="flex gap-x-1 gap-y-4 pt-3 size-full overflow-hidde pl-4 slide"
           class:flex-col={expandedMeasureName}
           class:flex-row={!expandedMeasureName}
-          style:padding-left={leftSide}
+          class:left-shift={extraLeftPadding}
         >
           {#key metricViewName}
             {#if hasTimeSeries}
@@ -142,3 +129,9 @@
     {/if}
   {/if}
 </section>
+
+<style lang="postcss">
+  .left-shift {
+    @apply pl-8;
+  }
+</style>
