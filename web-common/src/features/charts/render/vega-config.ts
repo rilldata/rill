@@ -2,7 +2,7 @@ const markColor = "royalblue";
 const axisColor = "#E5E7EB";
 const axisLabelColor = "#727883";
 
-export const getVegaConfig = () => ({
+export const getRillTheme = () => ({
   mark: {
     color: markColor,
   },

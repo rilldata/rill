@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getVegaConfig } from "@rilldata/web-common/features/charts/render/vega-config";
+  import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
   import { VegaLite, View } from "svelte-vega";
 
   export let data: Record<string, unknown> = {};
@@ -12,7 +12,7 @@
   }
 
   let options: Options = {
-    config: getVegaConfig(),
+    config: getRillTheme(),
     renderer: "svg",
   };
 
