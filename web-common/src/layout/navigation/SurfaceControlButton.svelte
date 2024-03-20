@@ -10,30 +10,35 @@
   export let resizing: boolean;
   export let show = true;
 
+  let active = false;
+
   $: label = navOpen ? "Close sidebar" : "Show sidebar";
 </script>
 
-<Tooltip location="bottom" alignment="start" distance={12}>
-  <button
-    class="text-gray-500"
-    class:resizing
-    class:opacity-0={!show}
-    class:shift={!navOpen}
-    style:left="{navWidth - 32}px"
-    on:click
-    use:portal
-  >
+<button
+  class="text-gray-500"
+  class:resizing
+  class:opacity-0={!show}
+  class:shift={!navOpen}
+  style:left="{navWidth - 32}px"
+  aria-label={label}
+  on:click
+  on:mousedown={() => {
+    active = false;
+  }}
+  use:portal
+>
+  <Tooltip location="bottom" alignment="start" distance={12} bind:active>
     {#if navOpen}
       <HideLeftSidebar size="18px" />
     {:else}
       <SurfaceView size="16px" mode={"hamburger"} />
     {/if}
-  </button>
-
-  <TooltipContent slot="tooltip-content">
-    {label}
-  </TooltipContent>
-</Tooltip>
+    <TooltipContent slot="tooltip-content">
+      {label}
+    </TooltipContent>
+  </Tooltip>
+</button>
 
 <style lang="postcss">
   button {
