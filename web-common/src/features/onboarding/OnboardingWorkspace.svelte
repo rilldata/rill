@@ -2,7 +2,6 @@
   import { IconSpaceFixer } from "../../components/button";
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
-  import { WorkspaceContainer } from "../../layout/workspace";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
@@ -71,7 +70,6 @@
   ];
 </script>
 
-<!-- <WorkspaceContainer inspector={false}> -->
 <div class="pt-20 px-8 flex flex-col gap-y-6 items-center bg-gray-100 w-full">
   <div class="text-center">
     <div class="font-bold">Getting started</div>
@@ -101,4 +99,3 @@
     {/if}
   </ol>
 </div>
-<!-- </WorkspaceContainer> -->
