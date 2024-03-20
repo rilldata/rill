@@ -1,3 +1,4 @@
+import { page } from "$app/stores";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import {
   createMetricsViewSchema,
@@ -8,29 +9,45 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { derived, get } from "svelte/store";
 
+/**
+ * createDashboardStateSync creates a store that keeps the dashboard state in sync with metrics config.
+ * It derives from metrics view spec, time range summary and metrics view schema.
+ *
+ * For the 1st time it is run it will call `metricsExplorerStore.init` to initialise the dashboard store.
+ * Optionally loads an initial url state.
+ *
+ * For successive runs it will call `metricsExplorerStore.sync` to keep the store in sync with metrics config.
+ * `sync` will make sure any removed measures and dimensions are not selected in anything in the dashboard.
+ *
+ * Note that this returns a readable so that the body of the `subscribe` is executed.
+ *
+ * @param ctx
+ * @param initialUrlStateStore Initial url state to load when the dashboard store is initialised for the 1st time.
+ * @returns A boolean readable that is true once the dashbaord store is created.
+ */
 export function createDashboardStateSync(
   ctx: StateManagers,
-  preloadUrlStore: CompoundQueryResult<string>,
+  initialUrlStateStore?: CompoundQueryResult<string>,
 ) {
   return derived(
     [
       useMetricsView(ctx),
       createTimeRangeSummary(ctx),
       createMetricsViewSchema(ctx),
-      preloadUrlStore,
+      ...(initialUrlStateStore ? [initialUrlStateStore] : []),
     ],
     ([
       metricsViewSpecRes,
       timeRangeRes,
       metricsViewSchemaRes,
-      preloadUrlRes,
+      initialUrlStateRes,
     ]) => {
       if (
         // still fetching
         metricsViewSpecRes.isFetching ||
         timeRangeRes.isFetching ||
         metricsViewSchemaRes.isFetching ||
-        preloadUrlRes.isFetching ||
+        initialUrlStateRes?.isFetching ||
         // requests errored out
         !metricsViewSpecRes.data ||
         !timeRangeRes.data ||
@@ -50,11 +67,13 @@ export function createDashboardStateSync(
           metricsViewSpecRes.data,
           timeRangeRes.data,
         );
-        if (preloadUrlRes.data) {
+        const initialUrlState =
+          get(page).url.searchParams.get("state") ?? initialUrlStateRes?.data;
+        if (initialUrlState) {
           // If there is data to be loaded, load it during the init
           metricsExplorerStore.syncFromUrl(
             metricViewName,
-            preloadUrlRes.data,
+            initialUrlState,
             metricsViewSpecRes.data,
             metricsViewSchemaRes.data.schema,
           );

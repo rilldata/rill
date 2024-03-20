@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { useQueryClient } from "@rilldata/svelte-query";
-  import { getHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import { getHomeBookmarkData } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createDashboardStateSync } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -13,7 +13,7 @@
 
   $: initLocalUserPreferenceStore(metricViewName);
   const queryClient = useQueryClient();
-  $: bookmarks = getHomeBookmark(
+  const homeBookmark = getHomeBookmarkData(
     queryClient,
     $runtime?.instanceId,
     $page.params.organization,
@@ -21,13 +21,13 @@
     metricViewName,
   );
 
-  const dashboardStateSync = createDashboardStateSync(
+  const dashboardStoreReady = createDashboardStateSync(
     getStateManagers(),
-    bookmarks,
+    homeBookmark,
   );
 </script>
 
-{#if $dashboardStateSync}
+{#if $dashboardStoreReady}
   <slot />
 {:else}
   <div class="grid place-items-center mt-40">

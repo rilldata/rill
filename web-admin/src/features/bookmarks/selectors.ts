@@ -106,7 +106,7 @@ export function searchBookmarks(
   };
 }
 
-export function getHomeBookmark(
+export function getHomeBookmarkData(
   queryClient: QueryClient,
   instanceId: string,
   orgName: string,
@@ -122,7 +122,7 @@ export function getHomeBookmark(
       metricsViewName,
     ),
     (bookmarks) => {
-      if (bookmarks.isFetching) {
+      if (bookmarks.isFetching || !bookmarks.data) {
         return {
           isFetching: true,
           error: "",
@@ -136,7 +136,7 @@ export function getHomeBookmark(
       return {
         isFetching: false,
         error: "",
-        data: bookmarks.data.home?.resource?.data,
+        data: bookmarks.data?.home?.resource?.data,
       };
     },
   );
