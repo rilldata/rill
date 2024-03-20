@@ -1,32 +1,68 @@
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import {
+  createMetricsViewSchema,
+  createTimeRangeSummary,
+  useMetricsView,
+} from "@rilldata/web-common/features/dashboards/selectors/index";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type {
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-  V1StructType,
-} from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
+import { derived, get } from "svelte/store";
 
-export function syncDashboardState(
-  metricViewName: string,
-  metricsViewSpec: V1MetricsViewSpec | undefined,
-  metricsViewSchema: V1StructType | undefined,
-  timeRangeQuery: V1MetricsViewTimeRangeResponse | undefined,
-  preloadUrlState: string | null,
+export function createDashboardStateSync(
+  ctx: StateManagers,
+  preloadUrlStore: CompoundQueryResult<string>,
 ) {
-  if (!metricsViewSpec || !metricsViewSchema) return;
-  if (metricViewName in get(metricsExplorerStore).entities) {
-    metricsExplorerStore.sync(metricViewName, metricsViewSpec);
-  } else {
-    metricsExplorerStore.init(metricViewName, metricsViewSpec, timeRangeQuery);
-    if (preloadUrlState) {
-      metricsExplorerStore.syncFromUrl(
-        metricViewName,
-        preloadUrlState,
-        metricsViewSpec,
-        metricsViewSchema,
-      );
-      // Call sync to make sure changes in dashboard are honoured
-      metricsExplorerStore.sync(metricViewName, metricsViewSpec);
-    }
-  }
+  return derived(
+    [
+      useMetricsView(ctx),
+      createTimeRangeSummary(ctx),
+      createMetricsViewSchema(ctx),
+      preloadUrlStore,
+    ],
+    ([
+      metricsViewSpecRes,
+      timeRangeRes,
+      metricsViewSchemaRes,
+      preloadUrlRes,
+    ]) => {
+      if (
+        // still fetching
+        metricsViewSpecRes.isFetching ||
+        timeRangeRes.isFetching ||
+        metricsViewSchemaRes.isFetching ||
+        preloadUrlRes.isFetching ||
+        // requests errored out
+        !metricsViewSpecRes.data ||
+        !timeRangeRes.data ||
+        !metricsViewSchemaRes.data?.schema
+      ) {
+        return false;
+      }
+
+      const metricViewName = get(ctx.metricsViewName);
+      if (metricViewName in get(metricsExplorerStore).entities) {
+        // Successive syncs with metrics view spec
+        metricsExplorerStore.sync(metricViewName, metricsViewSpecRes.data);
+      } else {
+        // Running for the 1st time. Initialise the dashboard store.
+        metricsExplorerStore.init(
+          metricViewName,
+          metricsViewSpecRes.data,
+          timeRangeRes.data,
+        );
+        if (preloadUrlRes.data) {
+          // If there is data to be loaded, load it during the init
+          metricsExplorerStore.syncFromUrl(
+            metricViewName,
+            preloadUrlRes.data,
+            metricsViewSpecRes.data,
+            metricsViewSchemaRes.data.schema,
+          );
+          // Call sync to make sure changes in dashboard are honoured
+          metricsExplorerStore.sync(metricViewName, metricsViewSpecRes.data);
+        }
+      }
+      return true;
+    },
+  );
 }

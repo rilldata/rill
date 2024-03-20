@@ -3,6 +3,7 @@ import {
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
 import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   useMetricsView,
@@ -103,6 +104,42 @@ export function searchBookmarks(
     personal: bookmarks?.personal.filter(matchName) ?? [],
     shared: bookmarks?.shared.filter(matchName) ?? [],
   };
+}
+
+export function getHomeBookmark(
+  queryClient: QueryClient,
+  instanceId: string,
+  orgName: string,
+  projectName: string,
+  metricsViewName: string,
+): CompoundQueryResult<string> {
+  return derived(
+    getBookmarks(
+      queryClient,
+      instanceId,
+      orgName,
+      projectName,
+      metricsViewName,
+    ),
+    (bookmarks) => {
+      if (bookmarks.isFetching) {
+        return {
+          isFetching: true,
+          error: "",
+        };
+      } else if (bookmarks.isError) {
+        return {
+          isFetching: false,
+          error: bookmarks.error,
+        };
+      }
+      return {
+        isFetching: false,
+        error: "",
+        data: bookmarks.data.home?.resource?.data,
+      };
+    },
+  );
 }
 
 export function getPrettySelectedTimeRange(
