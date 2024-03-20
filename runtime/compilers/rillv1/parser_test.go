@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	"reflect"
 )
 
 func TestRillYAML(t *testing.T) {
@@ -1036,7 +1037,17 @@ export:
 
 email:
   recipients:
-    - benjamin@example.com
+    - benjamin_1@example.com
+
+notify:
+  email:
+    recipients:
+      - benjamin_2@example.com
+  slack:
+    channels:
+      - reports
+    emails:
+      - benjamin_3@example.com
 
 annotations:
   foo: bar
@@ -1058,7 +1069,9 @@ annotations:
 				QueryArgsJson:   `{"metrics_view":"mv1"}`,
 				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportLimit:     10000,
-				EmailRecipients: []string{"jane@example.com"},
+				EmailRecipients: []string{"benjamin_1@example.com", "benjamin_2@example.com"},
+				SlackChannels:   []string{"reports"},
+				SlackEmails:     []string{"benjamin_3@example.com"},
 				Annotations:     map[string]string{"foo": "bar"},
 			},
 		},
@@ -1129,8 +1142,8 @@ annotations:
 			AlertSpec: &runtimev1.AlertSpec{
 				Title: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
-					RefUpdate:     false,
-					TickerSeconds: 86400,
+					Cron:      "0 * * * *",
+					RefUpdate: false,
 				},
 				WatermarkInherit:     true,
 				IntervalsIsoDuration: "PT1H",
@@ -1138,7 +1151,7 @@ annotations:
 				QueryName:            "MetricsViewToplist",
 				QueryArgsJson:        `{"metrics_view":"mv1"}`,
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
-				EmailRecipients:      []string{"jane@example.com"},
+				EmailRecipients:      []string{"benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,
 				NotifyOnError:        false,
@@ -1388,6 +1401,8 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ReportSpec, got.ReportSpec, "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true
