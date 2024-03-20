@@ -1478,6 +1478,7 @@ message ReportOptions {
   repeated string email_recipients = 8;
   repeated string slack_channels = 10;
   repeated string slack_emails = 11;
+  repeated string slack_webhooks = 12;
 }
 
 message AlertOptions {
@@ -1491,4 +1492,5 @@ message AlertOptions {
   repeated string email_recipients = 8;
   repeated string slack_channels = 9;
   repeated string slack_emails = 10;
+  repeated string slack_webhooks = 11;
 }

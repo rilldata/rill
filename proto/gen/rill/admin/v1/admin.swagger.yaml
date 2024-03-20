@@ -2243,6 +2243,10 @@ definitions:
         type: array
         items:
           type: string
+      slackWebhooks:
+        type: array
+        items:
+          type: string
   v1Bookmark:
     type: object
     properties:
@@ -2879,6 +2883,10 @@ definitions:
         items:
           type: string
       slackEmails:
+        type: array
+        items:
+          type: string
+      slackWebhooks:
         type: array
         items:
           type: string

@@ -296,7 +296,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
-	if len(opts.EmailRecipients) == 0 && len(opts.SlackEmails) == 0 && len(opts.SlackChannels) == 0 {
+	if len(opts.EmailRecipients) == 0 && len(opts.SlackEmails) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -462,6 +462,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Notify.Email.Emails = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Emails = opts.SlackEmails
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -493,6 +494,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Notify.Email.Emails = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Emails = opts.SlackEmails
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	return yaml.Marshal(res)
 }
 
@@ -574,6 +576,7 @@ type alertYAML struct {
 		Slack         struct {
 			Channels []string `yaml:"channels"`
 			Emails   []string `yaml:"emails"`
+			Webhooks []string `yaml:"webhooks"`
 		}
 		Email struct {
 			Emails []string `yaml:"emails"`

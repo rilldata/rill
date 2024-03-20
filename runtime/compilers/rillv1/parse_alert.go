@@ -46,6 +46,7 @@ type AlertYAML struct {
 		Slack struct {
 			Channels []string `yaml:"channels"`
 			Emails   []string `yaml:"emails"`
+			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
@@ -280,6 +281,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	// Slack settings
 	r.AlertSpec.SlackChannels = tmp.Notify.Slack.Channels
 	r.AlertSpec.SlackEmails = tmp.Notify.Slack.Emails
+	r.AlertSpec.SlackWebhooks = tmp.Notify.Slack.Webhooks
 
 	r.AlertSpec.Annotations = tmp.Annotations
 

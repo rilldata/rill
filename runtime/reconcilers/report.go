@@ -340,6 +340,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			&slack.RecipientsOpts{
 				Channels: rep.Spec.SlackChannels,
 				Emails:   rep.Spec.SlackEmails,
+				Webhooks: rep.Spec.SlackWebhooks,
 			},
 		)
 		if err != nil {

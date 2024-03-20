@@ -156,11 +156,13 @@ func (h *handle) SendScheduledReport(s *drivers.ScheduledReport, r drivers.Recip
 	}
 	txt := buf.String()
 
-	api := slack.New(h.config.BotToken)
-	if err := h.sendTextToChannels(opts.Channels, api, txt); err != nil {
+	if err := h.sendTextToChannels(txt, opts.Channels); err != nil {
 		return err
 	}
-	return h.sendTextToEmails(opts, api, txt)
+	if err := h.sendTextToEmails(txt, opts.Emails); err != nil {
+		return err
+	}
+	return h.sendTextViaWebhooks(txt, opts.Webhooks)
 }
 
 func (h *handle) SendAlertStatus(s *drivers.AlertStatus, r drivers.RecipientOpts) error {
@@ -214,11 +216,13 @@ func (h *handle) sendAlertStatus(opts *RecipientsOpts, data *AlertStatusData) er
 	}
 	txt := buf.String()
 
-	api := slack.New(h.config.BotToken)
-	if err := h.sendTextToChannels(opts.Channels, api, txt); err != nil {
+	if err := h.sendTextToChannels(txt, opts.Channels); err != nil {
 		return err
 	}
-	return h.sendTextToEmails(opts, api, txt)
+	if err := h.sendTextToEmails(txt, opts.Emails); err != nil {
+		return err
+	}
+	return h.sendTextViaWebhooks(txt, opts.Webhooks)
 }
 
 func (h *handle) sendAlertFail(opts *RecipientsOpts, data *AlertFailData) error {
@@ -231,14 +235,17 @@ func (h *handle) sendAlertFail(opts *RecipientsOpts, data *AlertFailData) error 
 	}
 	txt := buf.String()
 
-	api := slack.New(h.config.BotToken)
-	if err := h.sendTextToChannels(opts.Channels, api, txt); err != nil {
+	if err := h.sendTextToChannels(txt, opts.Channels); err != nil {
 		return err
 	}
-	return h.sendTextToEmails(opts, api, txt)
+	if err := h.sendTextToEmails(txt, opts.Emails); err != nil {
+		return err
+	}
+	return h.sendTextViaWebhooks(txt, opts.Webhooks)
 }
 
-func (h *handle) sendTextToChannels(channels []string, api *slack.Client, txt string) error {
+func (h *handle) sendTextToChannels(txt string, channels []string) error {
+	api := slack.New(h.config.BotToken)
 	for _, channel := range channels {
 		_, _, err := api.PostMessage(channel, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
 		if err != nil {
@@ -248,8 +255,9 @@ func (h *handle) sendTextToChannels(channels []string, api *slack.Client, txt st
 	return nil
 }
 
-func (h *handle) sendTextToEmails(opts *RecipientsOpts, api *slack.Client, txt string) error {
-	for _, email := range opts.Emails {
+func (h *handle) sendTextToEmails(txt string, emails []string) error {
+	api := slack.New(h.config.BotToken)
+	for _, email := range emails {
 		user, err := api.GetUserByEmail(email)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
@@ -262,6 +270,19 @@ func (h *handle) sendTextToEmails(opts *RecipientsOpts, api *slack.Client, txt s
 	return nil
 }
 
+func (h *handle) sendTextViaWebhooks(txt string, webhooks []string) error {
+	for _, webhook := range webhooks {
+		payload := slack.WebhookMessage{
+			Text: txt,
+		}
+		err := slack.PostWebhook(webhook, &payload)
+		if err != nil {
+			return fmt.Errorf("slack webhook error: %w", err)
+		}
+	}
+	return nil
+}
+
 type configProperties struct {
 	BotToken string `mapstructure:"bot_token"`
 }
@@ -269,6 +290,7 @@ type configProperties struct {
 type RecipientsOpts struct {
 	Channels []string
 	Emails   []string
+	Webhooks []string
 }
 
 type AlertStatusData struct {

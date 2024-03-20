@@ -36,6 +36,7 @@ type ReportYAML struct {
 		Slack struct {
 			Channels []string `yaml:"channels"`
 			Emails   []string `yaml:"emails"`
+			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
@@ -107,7 +108,8 @@ func (p *Parser) parseReport(node *Node) error {
 
 	// Validate recipients
 	emptyLegacyEmailRecipients := len(tmp.Email.Recipients) == 0 // Backward compatibility
-	emptyNotificationRecipients := len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 && len(tmp.Notify.Slack.Emails) == 0
+	emptyNotificationRecipients := len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 &&
+		len(tmp.Notify.Slack.Emails) == 0 && len(tmp.Notify.Slack.Webhooks) == 0
 	if emptyLegacyEmailRecipients && emptyNotificationRecipients {
 		return fmt.Errorf(`missing notification recipients`)
 	}
@@ -152,6 +154,7 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.EmailRecipients = append(r.ReportSpec.EmailRecipients, tmp.Notify.Email.Recipients...)
 	r.ReportSpec.SlackChannels = tmp.Notify.Slack.Channels
 	r.ReportSpec.SlackEmails = tmp.Notify.Slack.Emails
+	r.ReportSpec.SlackWebhooks = tmp.Notify.Slack.Webhooks
 	r.ReportSpec.Annotations = tmp.Annotations
 
 	return nil

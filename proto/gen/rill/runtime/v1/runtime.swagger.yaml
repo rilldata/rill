@@ -2969,6 +2969,10 @@ definitions:
         type: array
         items:
           type: string
+      slackWebhooks:
+        type: array
+        items:
+          type: string
       annotations:
         type: object
         additionalProperties:
@@ -5172,6 +5176,10 @@ definitions:
         items:
           type: string
       slackEmails:
+        type: array
+        items:
+          type: string
+      slackWebhooks:
         type: array
         items:
           type: string

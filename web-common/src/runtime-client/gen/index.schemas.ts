@@ -805,6 +805,7 @@ export interface V1ReportSpec {
   emailRecipients?: string[];
   slackChannels?: string[];
   slackEmails?: string[];
+  slackWebhooks?: string[];
   annotations?: V1ReportSpecAnnotations;
 }
 
@@ -2039,6 +2040,7 @@ export interface V1AlertSpec {
   emailRecipients?: string[];
   slackChannels?: string[];
   slackEmails?: string[];
+  slackWebhooks?: string[];
   annotations?: V1AlertSpecAnnotations;
 }
 

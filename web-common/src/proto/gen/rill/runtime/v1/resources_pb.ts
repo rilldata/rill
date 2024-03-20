@@ -1760,7 +1760,12 @@ export class ReportSpec extends Message<ReportSpec> {
   slackEmails: string[] = [];
 
   /**
-   * @generated from field: map<string, string> annotations = 12;
+   * @generated from field: repeated string slack_webhooks = 12;
+   */
+  slackWebhooks: string[] = [];
+
+  /**
+   * @generated from field: map<string, string> annotations = 13;
    */
   annotations: { [key: string]: string } = {};
 
@@ -1783,7 +1788,8 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 9, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 12, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
@@ -2082,7 +2088,12 @@ export class AlertSpec extends Message<AlertSpec> {
   slackEmails: string[] = [];
 
   /**
-   * @generated from field: map<string, string> annotations = 22;
+   * @generated from field: repeated string slack_webhooks = 22;
+   */
+  slackWebhooks: string[] = [];
+
+  /**
+   * @generated from field: map<string, string> annotations = 23;
    */
   annotations: { [key: string]: string } = {};
 
@@ -2115,7 +2126,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 19, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 20, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 21, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 22, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 22, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {

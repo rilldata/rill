@@ -722,6 +722,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			err = n.SendAlertStatus(msg, &slack.RecipientsOpts{
 				Channels: a.Spec.SlackChannels,
 				Emails:   a.Spec.SlackEmails,
+				Webhooks: a.Spec.SlackWebhooks,
 			})
 			if err != nil {
 				emailErr = fmt.Errorf("Failed to send slack notification: %w", err)

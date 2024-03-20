@@ -8088,6 +8088,11 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   slackEmails: string[] = [];
 
+  /**
+   * @generated from field: repeated string slack_webhooks = 12;
+   */
+  slackWebhooks: string[] = [];
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8107,6 +8112,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -8180,6 +8186,11 @@ export class AlertOptions extends Message<AlertOptions> {
    */
   slackEmails: string[] = [];
 
+  /**
+   * @generated from field: repeated string slack_webhooks = 11;
+   */
+  slackWebhooks: string[] = [];
+
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8198,6 +8209,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 9, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

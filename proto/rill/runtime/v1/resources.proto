@@ -259,7 +259,8 @@ message ReportSpec {
   repeated string email_recipients = 9;
   repeated string slack_channels = 10;
   repeated string slack_emails = 11;
-  map<string, string> annotations = 12;
+  repeated string slack_webhooks = 12;
+  map<string, string> annotations = 13;
 }
 
 message ReportState {
@@ -306,7 +307,8 @@ message AlertSpec {
   repeated string email_recipients = 19;
   repeated string slack_channels = 20;
   repeated string slack_emails = 21;
-  map<string, string> annotations = 22;
+  repeated string slack_webhooks = 22;
+  map<string, string> annotations = 23;
 }
 
 message AlertState {
