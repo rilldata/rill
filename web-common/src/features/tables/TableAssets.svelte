@@ -43,7 +43,7 @@
     <NavigationHeader bind:show={showTables}>Tables</NavigationHeader>
 
     {#if showTables}
-      <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
+      <ol transition:slide={{ duration }}>
         {#if $debouncedTableNames.length > 0}
           {#each $debouncedTableNames as fullyQualifiedTableName (fullyQualifiedTableName)}
             <li

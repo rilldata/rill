@@ -135,7 +135,7 @@
 
   .clickable-text {
     @apply text-left size-full overflow-hidden pl-6 flex items-center;
-    @apply ui-copy gap-x-1;
+    @apply text-gray-900 gap-x-1;
   }
 
   .expandable {
