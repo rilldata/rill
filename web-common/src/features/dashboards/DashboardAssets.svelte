@@ -112,18 +112,25 @@
   };
 
   /**
-   * Get the name of a dashboard's underlying model (if any).
-   * Note that not all dashboards have an underlying model.
-   * Some dashboards are underpinned by a source/table.
+   * Get the name of the dashboard's underlying model (if any).
+   * Note that not all dashboards have an underlying model. Some dashboards are
+   * underpinned by a source/table.
    */
-  function getModelForDashboard(dashboardName: string) {
+  function getReferenceModelNameForDashboard(
+    dashboardName: string,
+  ): string | undefined {
+    // Get the dashboard resource from the dashboard list
     const dashboard = $dashboards.data?.filter(
       (dashboard) => dashboard.meta?.name?.name === dashboardName,
     )[0];
+
+    // Get the model reference (if any) from the dashboard resource
     const modelRef = dashboard?.meta?.refs?.filter(
       (ref) => ref?.kind === ResourceKind.Model,
     )[0];
-    if (!modelRef) return "";
+
+    // Return the model name (if any)
+    if (!modelRef) return undefined;
     return modelRef?.name;
   }
 
@@ -216,7 +223,8 @@
             $fileArtifactsStore.entities,
             dashboardName,
           )}
-          {@const modelForDashboard = getModelForDashboard(dashboardName)}
+          {@const referenceModelName =
+            getReferenceModelNameForDashboard(dashboardName)}
           <li animate:flip={{ duration }} aria-label={dashboardName}>
             <NavigationEntry
               showContextMenu={!$readOnly}
@@ -232,10 +240,10 @@
                 {@const hasSourceError =
                   selectionError !== SourceModelValidationStatus.OK &&
                   selectionError !== ""}
-                {#if modelForDashboard}
+                {#if referenceModelName}
                   <NavigationMenuItem
                     disabled={hasSourceError}
-                    on:click={() => editModel(modelForDashboard)}
+                    on:click={() => editModel(referenceModelName)}
                   >
                     <Model slot="icon" />
                     Edit model
