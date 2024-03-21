@@ -26,6 +26,7 @@ func TestCompiler_Compile(t *testing.T) {
 		"select pub, dom from ad_bids_metrics order by pub desc, dom asc":                                                               "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" ORDER BY \"publisher\" DESC, \"domain\" ASC",
 		"select pub, dom from ad_bids_metrics order by pub desc, dom asc limit 10":                                                      "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" ORDER BY \"publisher\" DESC, \"domain\" ASC LIMIT 10",
 		"select pub, dom from ad_bids_metrics where tld = 'Yahoo'":                                                                      "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2) = 'Yahoo'",
+		"select pub, dom from ad_bids_metrics where dom like '%google%'":                                                                "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE \"domain\" LIKE '%google%'",
 		"select pub, dom from ad_bids_metrics where tld = 'Yahoo' LIMIT 5":                                                              "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2) = 'Yahoo' LIMIT 5",
 		"select pub, dom from ad_bids_metrics  where tld = 'Yahoo' order by pub desc":                                                   "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2) = 'Yahoo' ORDER BY \"publisher\" DESC",
 		"select pub, dom from ad_bids_metrics  where tld = 'Yahoo' order by pub desc, dom asc":                                          "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2) = 'Yahoo' ORDER BY \"publisher\" DESC, \"domain\" ASC",
@@ -48,7 +49,7 @@ func TestCompiler_Compile(t *testing.T) {
 	}
 	for inSQL, outSQL := range passTests {
 		got, _, _, err := compiler.Compile(context.Background(), inSQL)
-		require.NoError(t, err)
+		require.NoError(t, err, "input = %v", inSQL)
 		if got != outSQL {
 			t.Errorf("Compiler.Compile() input = %v, got = %v, want = %v", inSQL, got, outSQL)
 		}
