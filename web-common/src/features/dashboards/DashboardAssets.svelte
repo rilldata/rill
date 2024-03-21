@@ -5,7 +5,10 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useDashboardFileNames,
+    useDashboardRoutes,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
     getFileAPIPathFromNameAndType,
@@ -49,6 +52,7 @@
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
+  $: dashboardRoutes = useDashboardRoutes(instanceId);
 
   const MetricsSourceSelectionError = (
     errors: Array<V1ReconcileError> | undefined,
@@ -148,9 +152,12 @@
     );
     await deleteFileArtifact(
       instanceId,
-      dashboardName,
+      getFileAPIPathFromNameAndType(
+        dashboardName,
+        EntityType.MetricsDefinition,
+      ),
       EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? [],
+      $dashboardRoutes?.data ?? [],
     );
 
     // redirect to model when metric is deleted

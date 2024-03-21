@@ -1,8 +1,8 @@
 import {
   extractFileExtension,
-  extractTableName,
+  extractFileName,
   sanitizeEntityName,
-} from "@rilldata/web-common/features/sources/extract-table-name";
+} from "@rilldata/web-common/features/sources/extract-file-name";
 import { describe, it, expect } from "vitest";
 
 function generateTestCases(
@@ -42,7 +42,7 @@ describe("extract-table-name", () => {
   describe("should extract and sanitise table name", () => {
     for (const variation of TestCases) {
       it(variation.title, () => {
-        expect(sanitizeEntityName(extractTableName(variation.path))).toBe(
+        expect(sanitizeEntityName(extractFileName(variation.path))).toBe(
           variation.expectedFileName,
         );
       });
