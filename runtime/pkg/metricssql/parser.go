@@ -216,8 +216,9 @@ func (s *walker) walkSelectStmtColumns(ctx context.Context, node *ast.SelectStmt
 		sb.WriteString(expr)
 		// write alias if any
 		if field.AsName.String() != "" { // if explicitly specified in the metrics_sql
-			sb.WriteString(" AS ")
+			sb.WriteString(" AS \"")
 			sb.WriteString(field.AsName.String())
+			sb.WriteString("\"")
 		} else {
 			var name string
 			// selecting a plain dimension or measure adds dimension/measure name as alias
