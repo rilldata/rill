@@ -19,22 +19,22 @@ import (
 )
 
 type MetricsViewComparison struct {
-	MetricsViewName     string                                         `json:"metrics_view_name,omitempty"`
-	DimensionName       string                                         `json:"dimension_name,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
-	ComparisonMeasures  []string                                       `json:"comparison_measures,omitempty"`
-	TimeRange           *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
-	Limit               int64                                          `json:"limit,omitempty"`
-	Offset              int64                                          `json:"offset,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
-	Where               *runtimev1.Expression                          `json:"where,omitempty"`
-	Having              *runtimev1.Expression                          `json:"having,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
-	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	Exact               bool                                           `json:"exact"`
-	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
-	NoDruidExactify     bool                                           `json:"druid_exactify,omitempty"`
+	MetricsViewName       string                                         `json:"metrics_view_name,omitempty"`
+	DimensionName         string                                         `json:"dimension_name,omitempty"`
+	Measures              []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	ComparisonMeasures    []string                                       `json:"comparison_measures,omitempty"`
+	TimeRange             *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
+	ComparisonTimeRange   *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
+	Limit                 int64                                          `json:"limit,omitempty"`
+	Offset                int64                                          `json:"offset,omitempty"`
+	Sort                  []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
+	Where                 *runtimev1.Expression                          `json:"where,omitempty"`
+	Having                *runtimev1.Expression                          `json:"having,omitempty"`
+	Filter                *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
+	Aliases               []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
+	Exact                 bool                                           `json:"exact"`
+	SecurityAttributes    map[string]any                                 `json:"security_attributes,omitempty"`
+	NoExploreExactifyMode bool                                           `json:"druid_exactify,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 
@@ -118,7 +118,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		// execute toplist for base and get dim list
 		// create and add filter and execute comprison toplist
 		// remove strict limits in comp toplist sql
-		if drivers.DialectDruid != olap.Dialect() || !q.NoDruidExactify {
+		if drivers.DialectDruid != olap.Dialect() || q.NoExploreExactifyMode {
 			return q.executeComparisonToplist(ctx, olap, mv, priority, security)
 		}
 
@@ -154,7 +154,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	if drivers.DialectDruid != olap.Dialect() || !q.NoDruidExactify {
+	if drivers.DialectDruid != olap.Dialect() || q.NoExploreExactifyMode {
 		return nil
 	}
 
@@ -171,7 +171,11 @@ func (q *MetricsViewComparison) addDimsAsFilter() {
 	for _, r := range q.Result.Rows {
 		inExpressions = append(inExpressions, expressionpb.Value(r.DimensionValue))
 	}
-	q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
+	if q.Where != nil {
+		q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
+	} else {
+		q.Where = expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)
+	}
 }
 
 func (q *MetricsViewComparison) calculateMeasuresMeta() error {
@@ -779,7 +783,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
 
 		approximationLimit := 0
-		if q.NoDruidExactify {
+		if q.NoExploreExactifyMode {
 			approximationLimit = int(q.Limit)
 			if q.Limit != 0 && q.Limit < 100 && deltaComparison {
 				approximationLimit = 100
