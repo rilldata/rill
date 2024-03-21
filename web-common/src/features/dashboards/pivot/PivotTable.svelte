@@ -16,6 +16,7 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -24,6 +25,9 @@
   const HEADER_HEIGHT = 30;
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
+  const MIN_COL_WIDTH = 150;
+  const MAX_COL_WIDTH = 600;
+  const MAX_INIT_COL_WIDTH = 400;
 
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
@@ -66,6 +70,15 @@
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
   $: rows = $table.getRowModel().rows;
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: firstColumnName = headerGroups[0].headers[0].column.columnDef.id;
+
+  $: hasDimension = rows.length > 1;
+  $: calculatedFirstColumnWidth =
+    hasDimension && firstColumnName
+      ? calculateFirstColumnWidth(firstColumnName)
+      : undefined;
+
+  $: firstColumnWidth = calculatedFirstColumnWidth;
 
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
@@ -124,26 +137,83 @@
       }
     }
   };
+
+  function calculateFirstColumnWidth(firstColumnName: string) {
+    const rows = $pivotDataStore.data;
+
+    const isTimeDimension = firstColumnName.startsWith("__time");
+
+    // Dates are displayed as shorter values
+    if (isTimeDimension) return MIN_COL_WIDTH;
+
+    const samples = extractSamples(
+      rows.map((row) => row[firstColumnName]),
+    ).filter((v): v is string => typeof v === "string");
+
+    const averageValueLength =
+      samples.reduce((sum, value) => sum + value.length, 0) / rows.length;
+
+    const finalBasis = Math.max(firstColumnName.length, averageValueLength);
+    const pixelLength = finalBasis * 7;
+    const final = Math.max(
+      MIN_COL_WIDTH,
+      Math.min(MAX_INIT_COL_WIDTH, pixelLength + 30),
+    );
+
+    return final;
+  }
+
+  function extractSamples<T>(arr: T[], sampleSize: number = 30) {
+    if (arr.length <= sampleSize) {
+      return arr.slice();
+    }
+
+    const sectionSize = Math.floor(sampleSize / 3);
+
+    const lastSectionSize = sampleSize - sectionSize * 2;
+
+    const first = arr.slice(0, sectionSize);
+
+    let middleStartIndex = Math.floor((arr.length - sectionSize) / 2);
+    const middle = arr.slice(middleStartIndex, middleStartIndex + sectionSize);
+
+    const last = arr.slice(-lastSectionSize);
+
+    return [...first, ...middle, ...last];
+  }
 </script>
 
 <div
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-length="{totalHeaderHeight}px"
+  style:--first-column-width="{firstColumnWidth}px"
   class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
   <div style:height="{totalRowSize + totalHeaderHeight}px">
-    <table>
+    <table class:table-fixed={rows.length > 1}>
       <thead>
         {#each headerGroups as headerGroup}
           <tr>
-            {#each headerGroup.headers as header}
+            {#each headerGroup.headers as header, i}
               {@const sortDirection = header.column.getIsSorted()}
               <th
+                class:first-column={hasDimension && i === 0}
                 colSpan={header.colSpan}
-                class:with-row-dimension={rows.length > 1}
+                class:with-row-dimension={hasDimension}
+                class="relative"
               >
+                {#if i === 0 && hasDimension && firstColumnWidth !== undefined}
+                  <Resizer
+                    min={MIN_COL_WIDTH}
+                    max={MAX_COL_WIDTH}
+                    basis={firstColumnWidth}
+                    bind:dimension={firstColumnWidth}
+                    side="right"
+                    direction="EW"
+                  />
+                {/if}
                 <div class="header-cell" style:height="{HEADER_HEIGHT}px">
                   {#if !header.isPlaceholder}
                     <button
@@ -184,7 +254,8 @@
                   ? cell.column.columnDef.cell(cell.getContext())
                   : cell.column.columnDef.cell}
               <td
-                class:with-row-dimension={rows.length > 1}
+                class:first-column={hasDimension && i === 0}
+                class:with-row-dimension={hasDimension}
                 class="ui-copy-number"
                 class:border-right={i % measureCount === 0 && i}
               >
@@ -310,5 +381,10 @@
   tr:hover,
   tr:hover .cell {
     @apply bg-slate-100;
+  }
+
+  .first-column {
+    width: var(--first-column-width) !important;
+    max-width: var(--first-column-width) !important;
   }
 </style>

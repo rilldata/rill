@@ -143,13 +143,12 @@
     @apply h-screen border-r overflow-hidden;
   }
 
-  .nav-wrapper {
-    @apply flex flex-col h-fit w-full gap-y-3;
+  .scroll-container {
+    @apply overflow-y-auto overflow-x-hidden;
+    @apply transition-colors h-full bg-white pb-8;
   }
 
-  .scroll-container {
-    @apply grow;
-    @apply overflow-y-scroll overflow-x-hidden;
-    @apply transition-colors h-full bg-white pb-8;
+  .nav-wrapper {
+    @apply flex flex-col h-fit w-full gap-y-3;
   }
 </style>
