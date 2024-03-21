@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -33,6 +34,7 @@ type MetricsViewComparison struct {
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact"`
 	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
+	NoDruidExactify     bool                                           `json:"druid_exactify,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 
@@ -113,10 +115,63 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
+		// execute toplist for base and get dim list
+		// create and add filter and execute comprison toplist
+		// remove strict limits in comp toplist sql
+		if drivers.DialectDruid != olap.Dialect() || !q.NoDruidExactify {
+			return q.executeComparisonToplist(ctx, olap, mv, priority, security)
+		}
+
+		if q.Exact {
+			return fmt.Errorf("Cannot calculate Exact when Druid Exactify is requested")
+		}
+
+		// Druid-based `exactify` approach:
+		// The previous query collected a list of dimensions. The following query will filter in those dimensions
+		// to reduce the topN list to fit in memory to exclude discrepancies due incomplete topN tables merged by the previous query
+		if q.isBase() || q.isDeltaComparison() {
+			err = q.executeToplist(ctx, olap, mv, priority, security)
+			if err != nil {
+				return err
+			}
+		} else {
+			ttr := q.TimeRange
+			q.TimeRange = q.ComparisonTimeRange
+			err = q.executeToplist(ctx, olap, mv, priority, security)
+			if err != nil {
+				return err
+			}
+
+			q.TimeRange = ttr
+		}
+		q.addDimsAsFilter()
+
 		return q.executeComparisonToplist(ctx, olap, mv, priority, security)
 	}
 
+	err = q.executeToplist(ctx, olap, mv, priority, security)
+	if err != nil {
+		return err
+	}
+
+	if drivers.DialectDruid != olap.Dialect() || !q.NoDruidExactify {
+		return nil
+	}
+
+	// Druid-based `exactify` approach:
+	// The previous query collected a list of dimensions. The following query will filter in those dimensions
+	// to reduce the topN list to fit in memory to exclude discrepancies due incomplete topN tables merged by the previous query
+	q.addDimsAsFilter()
+
 	return q.executeToplist(ctx, olap, mv, priority, security)
+}
+
+func (q *MetricsViewComparison) addDimsAsFilter() {
+	inExpressions := make([]*runtimev1.Expression, 0, len(q.Result.Rows))
+	for _, r := range q.Result.Rows {
+		inExpressions = append(inExpressions, expressionpb.Value(r.DimensionValue))
+	}
+	q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
 }
 
 func (q *MetricsViewComparison) calculateMeasuresMeta() error {
@@ -723,9 +778,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		deltaComparison := q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
 			q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
 
-		approximationLimit := q.Limit
-		if q.Limit != 0 && q.Limit < 100 && deltaComparison {
-			approximationLimit = 100
+		approximationLimit := 0
+		if q.NoDruidExactify {
+			approximationLimit = int(q.Limit)
+			if q.Limit != 0 && q.Limit < 100 && deltaComparison {
+				approximationLimit = 100
+			}
 		}
 
 		if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison {
@@ -779,23 +837,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
 			// to keep the clause builder consistent we add an outer query here.
 			sql = fmt.Sprintf(`
-  SELECT * from (
-		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
-			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY 1 %[12]s 
-			) base
-		%[11]s JOIN
-			(
-				SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
-			) comparison
-		ON
-				%[17]s
-		%[6]s
-		%[7]s
-		OFFSET
-			%[8]d
-  ) WHERE %[15]s 
-		`,
+				SELECT * from (
+					SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
+						(
+							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY 1 %[12]s 
+						) base
+					%[11]s JOIN
+						(
+							SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
+						) comparison
+					ON
+							%[17]s
+					%[6]s
+					%[7]s
+					OFFSET
+						%[8]d
+				) WHERE %[15]s 
+			`,
 				subSelectClause,           // 1
 				colName,                   // 2
 				safeName(mv.Table),        // 3
@@ -1206,4 +1264,13 @@ func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAli
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
+}
+
+func (q *MetricsViewComparison) isDeltaComparison() bool {
+	return q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
+		q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+}
+
+func (q *MetricsViewComparison) isBase() bool {
+	return q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
 }
