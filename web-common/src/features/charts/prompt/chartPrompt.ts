@@ -14,7 +14,7 @@ export type ChartPrompt = {
   prompt: string;
   time: number;
   status: ChartPromptStatus;
-  // TODO: store error as well?
+  error?: string;
 };
 
 export type ChartPromptHistory = {
@@ -71,6 +71,20 @@ export class ChartPromptsStore {
     this.history.update((h) => {
       if (!h.entities[chartName]?.length) return;
       h.entities[chartName][0].status = status;
+    });
+  }
+
+  public setPromptError(chartName: string, error: string) {
+    this.chartStatus.update((cs) => {
+      if (cs[chartName]) {
+        cs[chartName].status = ChartPromptStatus.Error;
+        cs[chartName].error = error;
+      }
+      return cs;
+    });
+    this.history.update((h) => {
+      if (!h.entities[chartName]?.length) return;
+      h.entities[chartName][0].status = ChartPromptStatus.Error;
     });
   }
 

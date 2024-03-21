@@ -43,7 +43,10 @@ export function createChartGenerator(instanceId: string, chart: string) {
         ),
       });
     } catch (e) {
-      chartPromptsStore.updatePromptStatus(chart, ChartPromptStatus.Error);
+      chartPromptsStore.setPromptError(
+        chart,
+        e.message ?? e.response.data.message,
+      );
     }
   };
 }
@@ -119,9 +122,9 @@ export function createFullChartGenerator(instanceId: string) {
         ),
       });
     } catch (e) {
-      chartPromptsStore.updatePromptStatus(
+      chartPromptsStore.setPromptError(
         newChartName,
-        ChartPromptStatus.Error,
+        e.message ?? e.response.data.message,
       );
     }
   };
