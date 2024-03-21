@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -30,7 +30,7 @@
 
   $: yaml = $file.data?.blob || "";
 
-  $: allErrors = getAllErrorsForFile(
+  $: allErrors = newFileArtifactStore.getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
     filePath,

@@ -8,11 +8,11 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
+  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
   import {
     resourceIsLoading,
     useAllNames,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -179,7 +179,11 @@
     );
   };
 
-  $: hasErrors = getFileHasErrors(queryClient, $runtime.instanceId, filePath);
+  $: hasErrors = newFileArtifactStore.getFileHasErrors(
+    queryClient,
+    $runtime.instanceId,
+    filePath,
+  );
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;
@@ -205,7 +209,7 @@
         </div>
       {/if}
     </svelte:fragment>
-    <svelte:fragment slot="cta" let:width={headerWidth}>
+    <svelte:fragment let:width={headerWidth} slot="cta">
       <PanelCTA side="right">
         <Button
           disabled={!isSourceUnsaved}
@@ -259,10 +263,10 @@
           </Button>
           <Menu
             dark
+            let:toggleFloatingElement
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
-            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

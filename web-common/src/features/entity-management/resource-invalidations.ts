@@ -1,8 +1,6 @@
+import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  getLastStateUpdatedOn,
-  resourcesStore,
-} from "@rilldata/web-common/features/entity-management/resources-store";
+import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
@@ -44,6 +42,8 @@ export function invalidateResourceResponse(
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
 
+  if (res.resource) newFileArtifactStore.setResource(res.resource);
+
   const instanceId = get(runtime).instanceId;
   if (
     MainResourceKinds[res.name.kind] &&
@@ -84,7 +84,9 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
+  const lastStateUpdatedOn = newFileArtifactStore.getLastStateUpdatedOn(
+    resource.meta?.filePaths?.[0] ?? "",
+  );
   if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
     !lastStateUpdatedOn
@@ -146,6 +148,7 @@ async function invalidateRemovedResource(
     }),
   );
   resourcesStore.deleteResource(resource);
+  newFileArtifactStore.deleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
   // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource.meta.name.kind) {

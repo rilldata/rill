@@ -1,20 +1,12 @@
-import {
-  ResourceKind,
-  useProjectParser,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  getAllErrorsForFile,
-  getLastStateUpdatedOnByKindAndName,
-  getResourceNameForFile,
-  useResourceForFile,
-} from "@rilldata/web-common/features/entity-management/resources-store";
+import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, Readable, Unsubscriber } from "svelte/store";
+import { derived, Readable } from "svelte/store";
 
 export enum ResourceStatus {
   Idle,
@@ -29,68 +21,26 @@ export type ResourceStatusState = {
 };
 
 /**
- * Used during creation to wait until either a resource is created or parse has errored.
- */
-export function initialResourceStatusStore(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-): Readable<ResourceStatus> {
-  return derived(
-    [
-      getResourceNameForFile(filePath),
-      useProjectParser(queryClient, instanceId),
-    ],
-    ([resourceName, projectParserResp]) => {
-      if (
-        !projectParserResp.data ||
-        (projectParserResp?.data?.projectParser?.state?.parseErrors?.filter(
-          (s) => s.filePath === filePath,
-        ).length ?? 0) > 0
-      ) {
-        return ResourceStatus.Errored;
-      }
-
-      return !resourceName ? ResourceStatus.Busy : ResourceStatus.Idle;
-    },
-  );
-}
-
-export function waitForResource(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-) {
-  return new Promise<void>((resolve) => {
-    let unsub: Unsubscriber;
-    // eslint-disable-next-line prefer-const
-    unsub = initialResourceStatusStore(
-      queryClient,
-      instanceId,
-      filePath,
-    ).subscribe((status) => {
-      if (status === ResourceStatus.Busy) return;
-      unsub?.();
-      resolve();
-    });
-  });
-}
-
-/**
  * Used while saving to wait until either a resource is created or parse has errored.
  */
 export function resourceStatusStore(
   queryClient: QueryClient,
   instanceId: string,
   filePath: string,
-  kind: ResourceKind,
-  name: string,
 ) {
-  const lastUpdatedOn = getLastStateUpdatedOnByKindAndName(kind, name);
+  const lastUpdatedOn = newFileArtifactStore.getLastStateUpdatedOn(filePath);
   return derived(
     [
-      useResourceForFile(queryClient, instanceId, filePath),
-      getAllErrorsForFile(queryClient, instanceId, filePath),
+      newFileArtifactStore.getResourceForFile(
+        queryClient,
+        instanceId,
+        filePath,
+      ),
+      newFileArtifactStore.getAllErrorsForFile(
+        queryClient,
+        instanceId,
+        filePath,
+      ),
     ],
     ([res, errors]) => {
       if (res.isFetching) return { status: ResourceStatus.Busy };
@@ -126,8 +76,6 @@ export function waitForResourceUpdate(
   queryClient: QueryClient,
   instanceId: string,
   filePath: string,
-  kind: ResourceKind,
-  name: string,
 ) {
   return new Promise<boolean>((resolve) => {
     let timer;
@@ -143,8 +91,6 @@ export function waitForResourceUpdate(
       queryClient,
       instanceId,
       filePath,
-      kind,
-      name,
     ).subscribe((status) => {
       if (status.status === ResourceStatus.Busy) return;
       if (timer) clearTimeout(timer);
@@ -175,11 +121,19 @@ export function getResourceStatusStore(
   instanceId: string,
   filePath: string,
   validator?: (res: V1Resource) => boolean,
-): Readable<ResourceStatusState> {
+) {
   return derived(
     [
-      useResourceForFile(queryClient, instanceId, filePath),
-      getAllErrorsForFile(queryClient, instanceId, filePath),
+      newFileArtifactStore.getResourceForFile(
+        queryClient,
+        instanceId,
+        filePath,
+      ),
+      newFileArtifactStore.getAllErrorsForFile(
+        queryClient,
+        instanceId,
+        filePath,
+      ),
       useProjectParser(queryClient, instanceId),
     ],
     ([resourceResp, errors, projectParserResp]) => {
@@ -216,5 +170,5 @@ export function getResourceStatusStore(
         resource: resourceResp.data,
       };
     },
-  );
+  ) as Readable<ResourceStatusState>;
 }

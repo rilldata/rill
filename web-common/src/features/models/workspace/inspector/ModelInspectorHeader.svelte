@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useModel,
@@ -34,7 +34,7 @@
   $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelHasError = getFileHasErrors(
+  $: modelHasError = newFileArtifactStore.getFileHasErrors(
     queryClient,
     $runtime.instanceId,
     modelPath,

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../../runtime-client/runtime-store";
@@ -18,7 +18,11 @@
 
   $: path = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelQuery = useModel($runtime?.instanceId, modelName);
-  $: modelHasError = getFileHasErrors(queryClient, $runtime?.instanceId, path);
+  $: modelHasError = newFileArtifactStore.getFileHasErrors(
+    queryClient,
+    $runtime?.instanceId,
+    path,
+  );
 
   $: emptyModel = useModelFileIsEmpty($runtime?.instanceId, modelName);
 </script>

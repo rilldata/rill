@@ -1,3 +1,4 @@
+import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
 import {
   ResourceKind,
   useProjectParser,
@@ -123,96 +124,6 @@ export const resourcesStore: ResourcesStore = {
   subscribe,
   ...resourcesStoreReducers,
 };
-
-export function getResourceNameForFile(filePath: string) {
-  return derived([resourcesStore], ([state]) => state.resources[filePath]);
-}
-
-export function useResourceForFile(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-): CreateQueryResult<V1Resource> {
-  return derived([getResourceNameForFile(filePath)], ([resourceName], set) => {
-    return useResource(
-      instanceId,
-      resourceName?.name,
-      resourceName?.kind as ResourceKind,
-      undefined,
-      queryClient,
-    ).subscribe(set);
-  });
-}
-
-// TODO: memoize?
-export function getAllErrorsForFile(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-): Readable<Array<V1ParseError>> {
-  return derived(
-    [
-      useProjectParser(queryClient, instanceId),
-      useResourceForFile(queryClient, instanceId, filePath),
-    ],
-    ([projectParser, resource]) => {
-      if (
-        projectParser.isFetching ||
-        projectParser.isError ||
-        resource.isFetching
-      ) {
-        // TODO: what should the error be for failed get resource API
-        return [];
-      }
-      return [
-        ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
-          (e) => e.filePath && removeLeadingSlash(e.filePath) === filePath,
-        ),
-        ...(resource.data?.meta?.reconcileError
-          ? [
-              {
-                filePath,
-                message: resource.data.meta.reconcileError,
-              },
-            ]
-          : []),
-      ];
-    },
-    [],
-  );
-}
-
-export function getFileHasErrors(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-): Readable<boolean> {
-  return derived(
-    [getAllErrorsForFile(queryClient, instanceId, filePath)],
-    ([errors]) => errors.length > 0,
-  );
-}
-
-export function getReconcilingItems() {
-  return derived([resourcesStore], ([state]) => {
-    const currentlyReconciling = new Array<V1ResourceName>();
-    for (const filePath in state.currentlyReconciling) {
-      currentlyReconciling.push(state.currentlyReconciling[filePath]);
-    }
-    return currentlyReconciling;
-  });
-}
-
-export function getLastStateUpdatedOn(resource: V1Resource) {
-  return get(resourcesStore).lastStateUpdatedOn[getKeyForResource(resource)];
-}
-
-export function getLastStateUpdatedOnByKindAndName(
-  kind: ResourceKind,
-  name: string,
-) {
-  return get(resourcesStore).lastStateUpdatedOn[`${kind}/${name}`];
-}
 
 function getKeyForResource(resource: V1Resource) {
   return `${resource.meta.name.kind}/${resource.meta.name.name}`;

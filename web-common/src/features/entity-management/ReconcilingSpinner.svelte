@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new.js";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { getReconcilingItems } from "@rilldata/web-common/features/entity-management/resources-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
-  $: reconcilingItems = getReconcilingItems();
+  $: reconcilingItems = newFileArtifactStore.getReconcilingItems();
 
   const KindToName: Partial<Record<ResourceKind, string>> = {
     [ResourceKind.Source]: "source",

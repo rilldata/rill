@@ -1,3 +1,4 @@
+import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import {
   getRuntimeServiceGetFileQueryKey,
@@ -34,26 +35,23 @@ function handleWatchFileResponse(
     return;
 
   const instanceId = get(runtime).instanceId;
+  const cleanedPath = removeLeadingSlash(res.path);
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`
   switch (res.event) {
     case "FILE_EVENT_WRITE":
       void queryClient.refetchQueries(
-        getRuntimeServiceGetFileQueryKey(
-          instanceId,
-          removeLeadingSlash(res.path),
-        ),
+        getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
+      newFileArtifactStore.updateFile(cleanedPath);
       break;
 
     case "FILE_EVENT_DELETE":
       queryClient.removeQueries(
-        getRuntimeServiceGetFileQueryKey(
-          instanceId,
-          removeLeadingSlash(res.path),
-        ),
+        getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
-      resourcesStore.deleteFile(removeLeadingSlash(res.path));
+      newFileArtifactStore.deleteFile(cleanedPath);
+      resourcesStore.deleteFile(cleanedPath);
       break;
   }
   // TODO: should this be throttled?
