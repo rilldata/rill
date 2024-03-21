@@ -148,7 +148,7 @@ func (s *walker) walkSelectStmt(ctx context.Context, node *ast.SelectStmt) (stri
 		sb.WriteString(" WHERE ")
 		sb.WriteString(where)
 	}
-	if len(s.measureExprToCol) > 0 {
+	if len(s.measureExprToCol) > 0 && len(s.dimExprToCol) > 0 {
 		if node.GroupBy != nil {
 			return "", fmt.Errorf("metrics sql: group by clause is implicitly added when any measure is selected. The implicit group by includes all selected dimensions")
 		}
