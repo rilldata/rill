@@ -7,7 +7,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import {
     useDashboardFileNames,
-    useDashboards,
+    useValidDashboards,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
@@ -53,7 +53,7 @@
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useValidDashboards(instanceId);
 
   const MetricsSourceSelectionError = (
     errors: Array<V1ReconcileError> | undefined,

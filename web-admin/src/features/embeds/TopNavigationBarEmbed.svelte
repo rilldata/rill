@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import type {
     V1MetricsViewSpec,
     V1Resource,
@@ -18,7 +18,7 @@
   $: onProjectPage = !activeResourceName;
 
   // Dashboard breadcrumb
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useValidDashboards(instanceId);
   let currentResource: V1Resource;
   $: currentResource = $dashboards?.data?.find(
     (listing) => listing.meta.name.name === activeResourceName,

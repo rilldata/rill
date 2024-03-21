@@ -30,7 +30,7 @@ export function useDashboard(instanceId: string, metricViewName: string) {
   return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
 }
 
-export function useDashboards(instanceId: string) {
+export function useValidDashboards(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
     data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
   );

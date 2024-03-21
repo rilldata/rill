@@ -8,7 +8,7 @@ import {
   PollTimeWhenProjectDeploymentError,
   PollTimeWhenProjectDeploymentPending,
 } from "@rilldata/web-admin/features/projects/status/selectors";
-import { useDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
 import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -68,7 +68,7 @@ export function useDashboardsLastUpdated(
 ) {
   return derived(
     [
-      useDashboards(instanceId),
+      useValidDashboards(instanceId),
       createAdminServiceGetProject(organization, project),
     ],
     ([dashboardsResp, projResp]) => {
@@ -148,7 +148,7 @@ export function listenAndInvalidateDashboards(
   instanceId: string,
 ) {
   const store = derived(
-    [useDashboardsStatus(instanceId), useDashboards(instanceId)],
+    [useDashboardsStatus(instanceId), useValidDashboards(instanceId)],
     (state) => state,
   );
 
