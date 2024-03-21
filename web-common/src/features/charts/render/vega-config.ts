@@ -5,15 +5,30 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { Config } from "vega-lite";
 
-const markColor = MainLineColor;
-const axisColor = "#E5E7EB";
-const axisLabelColor = "#4b5563"; // gray-600
+const BarFill = "var(--color-primary-400)";
+const CategoryColors = [
+  "var(--color-primary-200)",
+  "var(--color-secondary-200)",
+  "var(--color-secondary-500)",
+  "var(--color-primary-500)",
+  "var(--color-primary-950)",
+  "var(--color-primary-50)",
+  "var(--color-primary-700)",
+];
+
+const defaultMarkColor = MainLineColor;
+const gridColor = "#d1d5db"; // gray-300
+const axisLabelColor = "#374151"; // gray-700
 
 export const getRillTheme: () => Config = () => ({
-  arc: { fill: markColor },
+  mark: {
+    tooltip: true,
+  },
+  arc: { fill: defaultMarkColor },
   area: {
-    line: { stroke: markColor },
+    line: { stroke: MainLineColor, strokeWidth: 1 },
     stroke: null,
+    fillOpacity: 0.7,
     color: {
       x1: 1,
       y1: 1,
@@ -32,17 +47,17 @@ export const getRillTheme: () => Config = () => ({
       ],
     },
   },
-  bar: { fill: markColor },
-  line: { stroke: markColor },
-  path: { stroke: markColor },
-  rect: { fill: markColor },
-  shape: { stroke: markColor },
-  symbol: { fill: markColor },
+  bar: { fill: BarFill, opacity: 0.7 },
+  line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
+  path: { stroke: defaultMarkColor },
+  rect: { fill: defaultMarkColor },
+  shape: { stroke: defaultMarkColor },
+  symbol: { fill: defaultMarkColor },
 
   axisY: {
-    gridColor: axisColor,
+    gridColor: gridColor,
     gridDash: [2],
-    tickColor: axisColor,
+    tickColor: gridColor,
     domain: false,
     labelFont: "Inter, sans-serif",
     labelFontSize: 10,
@@ -57,9 +72,9 @@ export const getRillTheme: () => Config = () => ({
     labelOverlap: false,
   },
   axisX: {
-    gridColor: axisColor,
+    gridColor: gridColor,
     gridDash: [2],
-    tickColor: axisColor,
+    tickColor: gridColor,
     tickSize: 0,
     domain: false,
     labelFont: "Inter, sans-serif",
@@ -75,5 +90,8 @@ export const getRillTheme: () => Config = () => ({
   },
   view: {
     strokeWidth: 0,
+  },
+  range: {
+    category: CategoryColors,
   },
 });
