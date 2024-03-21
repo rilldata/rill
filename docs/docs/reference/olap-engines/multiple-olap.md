@@ -35,7 +35,7 @@ Before getting started, you'll need to first configure the appopriate connection
 
 **For Rill Developer:**
 - You can set these variables in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- Alternatively, you can pass in these connector DSN variables to `rill start` directly when starting Rill (e.g. `rill start --var connection.druid.dsn=... --var connection.clickhouse.dsn=...`)
+- Alternatively, you can pass in these connector DSN variables to `rill start` directly when starting Rill (e.g. `rill start --var connector.druid.dsn=... --var connector.clickhouse.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -45,7 +45,7 @@ There might be instances where you've configured the project's `.env` file with 
 
 **For Rill Cloud:**
 - You can pass in the appropriate DSN connection string for each required OLAP engine by using the `rill env configure` command
-- Alternatively, if the required `connection.<olap-engine>.dsn` parameters have been set in your project's `.env`, you can "push" these updated variables to your deployed project directly using `rill env push`
+- Alternatively, if the required `connector.<olap-engine>.dsn` parameters have been set in your project's `.env`, you can "push" these updated variables to your deployed project directly using `rill env push`
 
 :::info
 
