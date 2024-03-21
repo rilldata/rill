@@ -3,16 +3,17 @@ import {
   MainAreaColorGradientLight,
   MainLineColor,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import type { Config } from "vega-lite";
 
 const markColor = MainLineColor;
 const axisColor = "#E5E7EB";
 const axisLabelColor = "#4b5563"; // gray-600
 
-export const getRillTheme = () => ({
+export const getRillTheme: () => Config = () => ({
   arc: { fill: markColor },
   area: {
+    line: { stroke: markColor },
     stroke: null,
-    line: markColor,
     color: {
       x1: 1,
       y1: 1,
