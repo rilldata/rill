@@ -1,5 +1,6 @@
 <script>
   import { page } from "$app/stores";
+  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -14,12 +15,12 @@
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  $: dashboard = $page.params.dashboard;
 
   $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
@@ -58,7 +59,7 @@
       <ShareProjectButton {organization} {project} />
     {/if}
     {#if onDashboardPage}
-      <LastRefreshedDate />
+      <LastRefreshedDate {dashboard} />
       <Bookmarks />
       <ShareDashboardButton />
     {/if}

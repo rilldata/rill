@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { MenuItem } from "@rilldata/web-common/components/menu";
   import { runtime } from "../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../entity-management/actions";
   import { EntityType } from "../entity-management/types";
   import { useCustomDashboardFileNames } from "./selectors";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let customDashboardName: string;
 
@@ -21,6 +21,6 @@
   }
 </script>
 
-<MenuItem icon on:select={handleDeleteCustomDashboard} propogateSelect={false}>
+<DropdownMenu.Item on:click={handleDeleteCustomDashboard}>
   Delete custom dashboard
-</MenuItem>
+</DropdownMenu.Item>

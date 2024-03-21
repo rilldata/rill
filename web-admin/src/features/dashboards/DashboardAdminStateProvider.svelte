@@ -1,18 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { useQueryClient } from "@rilldata/svelte-query";
-  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import {
-    createTimeRangeSummary,
-    useMetricsView,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getHomeBookmarkData } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { hasPersistentDashboardData } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-  import { syncDashboardState } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
+  import { createDashboardStateSync } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -20,17 +12,8 @@
   export let metricViewName: string;
 
   $: initLocalUserPreferenceStore(metricViewName);
-  const stateManagers = getStateManagers();
-  const metricsView = useMetricsView(stateManagers);
-  const hasTimeSeries = useModelHasTimeSeries(stateManagers);
-  const timeRangeQuery = createTimeRangeSummary(stateManagers);
-  const metricsViewSchema = createQueryServiceMetricsViewSchema(
-    $runtime.instanceId,
-    metricViewName,
-  );
-
   const queryClient = useQueryClient();
-  $: bookmarks = getBookmarks(
+  const homeBookmark = getHomeBookmarkData(
     queryClient,
     $runtime?.instanceId,
     $page.params.organization,
@@ -38,37 +21,13 @@
     metricViewName,
   );
 
-  function syncDashboardStateLocal() {
-    let stateToLoad = $page.url.searchParams.get("state");
-    if (
-      !hasPersistentDashboardData() &&
-      !stateToLoad &&
-      $bookmarks.data?.home?.resource.data
-    ) {
-      stateToLoad = $bookmarks.data?.home?.resource.data;
-    }
-    syncDashboardState(
-      metricViewName,
-      $metricsView.data,
-      $metricsViewSchema.data?.schema,
-      $timeRangeQuery.data,
-      stateToLoad,
-    );
-  }
-
-  $: if (
-    $metricsView.data &&
-    $metricsViewSchema.data &&
-    ($timeRangeQuery.data || !$hasTimeSeries.data) &&
-    !$bookmarks.isFetching
-  ) {
-    syncDashboardStateLocal();
-  }
-
-  $: ready = metricViewName in $metricsExplorerStore.entities;
+  const dashboardStoreReady = createDashboardStateSync(
+    getStateManagers(),
+    homeBookmark,
+  );
 </script>
 
-{#if ready}
+{#if $dashboardStoreReady}
   <slot />
 {:else}
   <div class="grid place-items-center mt-40">
