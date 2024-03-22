@@ -21,12 +21,12 @@
   } from "./time-dimension-data-store";
   import type { TDDComparison, TableData } from "./types";
   import { colorGetter } from "../filters/colorGetter";
-  import { page } from "$app/stores";
 
   export let metricViewName: string;
 
   const stateManagers = getStateManagers();
   const {
+    metricsViewName,
     dashboardStore,
     selectors: {
       dimensionFilters: { unselectedDimensionValues, selectedDimensionValues },
@@ -92,7 +92,7 @@
 
   $: markerColors =
     values.map((value) =>
-      colorGetter.get($page.params.name, dimensionName, value),
+      colorGetter.get($metricsViewName, dimensionName, value),
     ) ?? [];
 
   // Create a time formatter for the column headers

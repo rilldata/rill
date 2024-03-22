@@ -1,6 +1,4 @@
 import { CHECKMARK_COLORS } from "../config";
-// import { page } from "$app/stores";
-// import { derived } from "svelte/store";
 
 type DashboardName = string;
 type DimensionName = string;
@@ -11,10 +9,6 @@ function createColorLookup() {
     DashboardName,
     Map<DimensionName, Map<DimensionValue, number>>
   >();
-
-  // Temporarily commenting out the derived nature because it's causing an issue with testing
-  // return derived([page], ([$page]) => {
-  //   const dashboardName = $page.params.name;
 
   return {
     get: (
@@ -59,7 +53,6 @@ function createColorLookup() {
       map.get(dashboardName)?.delete(dimensionName);
     },
   };
-  // });
 }
 
 function firstMissingPositive(nums: number[]) {
