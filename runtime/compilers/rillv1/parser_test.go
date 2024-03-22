@@ -1267,13 +1267,13 @@ vega_lite: |%s
 		`dashboards/d1.yaml`: `
 kind: dashboard
 grid:
-  rows: 3
+  gap: 3
   columns: 4
 components:
   - chart: c1
   - chart: c2
-    rows: 1
-    columns: 2
+    width: 1
+    height: 2
 `,
 	})
 
