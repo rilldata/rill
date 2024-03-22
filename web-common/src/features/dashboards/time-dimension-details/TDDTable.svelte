@@ -115,8 +115,8 @@
 
   // Any time visible line list changes, redraw the table
   $: {
-    // scrubPos;
-    // highlightedCol;
+    scrubPos;
+    highlightedCol;
     tableData?.selectedValues;
     pivot?.draw();
   }
