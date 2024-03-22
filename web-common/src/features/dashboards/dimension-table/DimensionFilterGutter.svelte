@@ -45,6 +45,7 @@
   </div>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const isSelected = selectedIndex.includes(row.index)}
+    {@const indexOf = selectedIndex.indexOf(row.index)}
     {@const dimensionValue = String(rows[row.index][column.name])}
     <StickyHeader
       enableResize={false}
@@ -53,12 +54,13 @@
     >
       <div class="py-0.5 grid place-items-center">
         {#if isSelected && !excludeMode && isBeingCompared}
+          {@const color = colorGetter.get(
+            $metricsViewName,
+            dimensionName,
+            dimensionValue,
+          )}
           <CheckCircle
-            className="fill-{colorGetter.get(
-              $metricsViewName,
-              dimensionName,
-              dimensionValue,
-            )}"
+            className="fill-{indexOf >= 7 ? 'gray-300' : color}"
             size="18px"
           />
         {:else if isSelected && !excludeMode}

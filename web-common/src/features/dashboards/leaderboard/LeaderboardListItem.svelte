@@ -113,12 +113,9 @@
   >
     <div style:width="22px" class="grid place-items-center">
       {#if selected && !excluded && isBeingCompared}
+        {@const color = colorGetter.get($metricsViewName, dimensionName, label)}
         <CheckCircle
-          className="fill-{colorGetter.get(
-            $metricsViewName,
-            dimensionName,
-            label,
-          )}"
+          className="fill-{itemData.selectedIndex >= 7 ? 'gray-300' : color}"
           size="18px"
         />
       {:else if selected && !excluded}
