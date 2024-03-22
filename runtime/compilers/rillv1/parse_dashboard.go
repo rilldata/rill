@@ -12,14 +12,14 @@ type DashboardYAML struct {
 	Title      string           `yaml:"title"`
 	Grid       struct {
 		Columns uint32 `yaml:"columns"`
-		Gap    uint32 `yaml:"gap"`
+		Gap     uint32 `yaml:"gap"`
 	} `yaml:"grid"`
 	Components []struct {
-		Chart   string `yaml:"chart"`
-		X       uint32  `yaml:"x"`
-		Y       uint32  `yaml:"y"`
-		Width   uint32  `yaml:"width"`
-		Height  uint32  `yaml:"height"`
+		Chart  string `yaml:"chart"`
+		X      uint32 `yaml:"x"`
+		Y      uint32 `yaml:"y"`
+		Width  uint32 `yaml:"width"`
+		Height uint32 `yaml:"height"`
 	} `yaml:"components"`
 }
 
@@ -64,9 +64,9 @@ func (p *Parser) parseDashboard(node *Node) error {
 	r.DashboardSpec.Components = make([]*runtimev1.DashboardComponent, len(tmp.Components))
 	for i, component := range tmp.Components {
 		r.DashboardSpec.Components[i] = &runtimev1.DashboardComponent{
-			Chart:   component.Chart,
-			X: component.X,
-			Y:    component.Y,
+			Chart:  component.Chart,
+			X:      component.X,
+			Y:      component.Y,
 			Width:  component.Width,
 			Height: component.Height,
 		}
