@@ -21,7 +21,7 @@
     metricViewName,
   );
 
-  const dashboardStoreReady = createDashboardStateSync(
+  $: dashboardStoreReady = createDashboardStateSync(
     getStateManagers(),
     homeBookmark,
   );
