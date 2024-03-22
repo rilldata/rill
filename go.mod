@@ -343,6 +343,6 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 
 // snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
 // gosnowflake v1.8.0 has an issue with arrow batches - it retunrs 0 batches if returned data is huge (e.g. 100k rows)
-replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/esevastyanov/gosnowflake v0.0.0-20231129090721-012eca4e3448
+replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
 exclude modernc.org/sqlite v1.18.1
