@@ -1,6 +1,5 @@
 import {
   createAdminServiceGetCurrentUser,
-  createAdminServiceGetUser,
   createAdminServiceListBookmarks,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
