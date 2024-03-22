@@ -199,21 +199,22 @@
 
 <div
   class="table-wrapper"
+  class:with-row-dimension={hasDimension}
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
-  class:with-row-dimension={hasDimension}
   style:--total-header-height="{totalHeaderHeight + headerGroups.length}px"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
   <table>
     <thead>
-      {#each headerGroups as headerGroup}
+      {#each headerGroups as headerGroup (headerGroup.id)}
         <tr>
-          {#each headerGroup.headers as header, i}
+          {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
+            {@const canResize = i === 0 && hasDimension}
             <th colSpan={header.colSpan}>
-              {#if i === 0 && hasDimension}
+              {#if canResize}
                 <Resizer
                   min={MIN_COL_WIDTH}
                   max={MAX_COL_WIDTH}
@@ -228,9 +229,7 @@
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
-                style:width={i === 0 && hasDimension
-                  ? `${firstColumnWidth}px`
-                  : "100%"}
+                style:width={canResize ? `${firstColumnWidth}px` : "100%"}
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
@@ -307,11 +306,6 @@
     @apply border rounded-md z-40;
   }
 
-  th,
-  td {
-    @apply p-0 m-0;
-  }
-
   /* Pin header */
   thead {
     @apply sticky top-0;
@@ -332,8 +326,17 @@
     height: var(--header-height);
   }
 
+  th,
+  td {
+    @apply p-0 m-0 text-xs;
+  }
+
   th {
-    @apply border-r border-b;
+    @apply border-r border-b relative;
+  }
+
+  td {
+    @apply text-right;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
@@ -345,14 +348,6 @@
     @apply text-right;
   }
 
-  th {
-    @apply relative;
-  }
-
-  td {
-    @apply text-right;
-  }
-
   .with-row-dimension tr > td:first-of-type,
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-10;
@@ -361,11 +356,6 @@
 
   tr > td:first-of-type:not(:last-of-type) {
     @apply border-r font-medium;
-  }
-
-  th,
-  td {
-    @apply whitespace-nowrap text-xs;
   }
 
   .cell {
