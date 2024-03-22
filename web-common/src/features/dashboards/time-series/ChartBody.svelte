@@ -88,7 +88,6 @@
     {#each dimensionData as d, i}
       {@const isHighlighted = d?.value === dimensionValue}
 
-      {@const delay = 100}
       <g
         class="transition-opacity"
         class:opacity-20={isDimValueHiglighted && !isHighlighted}
