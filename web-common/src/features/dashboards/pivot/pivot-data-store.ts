@@ -54,7 +54,9 @@ import {
 /**
  * Extract out config relevant to pivot from dashboard and meta store
  */
-function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
+export function getPivotConfig(
+  ctx: StateManagers,
+): Readable<PivotDataStoreConfig> {
   return derived(
     [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
     ([metricsView, timeRangeSummary, dashboardStore], set) => {
