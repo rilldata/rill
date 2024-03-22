@@ -173,7 +173,7 @@
   <title>Rill Developer | {customDashboardName}</title>
 </svelte:head>
 
-<WorkspaceContainer assetID={customDashboardName} inspector={false}>
+<WorkspaceContainer inspector={false}>
   <WorkspaceHeader
     slot="header"
     titleInput={customDashboardName}
