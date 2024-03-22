@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -39,7 +40,8 @@ type Config struct {
 	DatabaseDriver           string                 `default:"postgres" split_words:"true"`
 	DatabaseURL              string                 `split_words:"true"`
 	RedisURL                 string                 `default:"" split_words:"true"`
-	ProvisionerSpec          string                 `split_words:"true"`
+	ProvisionerSetJSON       string                 `split_words:"true"`
+	DefaultProvisioner       string                 `split_words:"true"`
 	Jobs                     []string               `split_words:"true"`
 	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
@@ -72,10 +74,9 @@ type Config struct {
 	EmailBCC                 string                 `split_words:"true"`
 	OpenAIAPIKey             string                 `envconfig:"openai_api_key"`
 	ActivitySinkType         string                 `default:"" split_words:"true"`
-	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
-	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
 	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
+	MetricsProject           string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -132,7 +133,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Init telemetry
+			// Init observability
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
@@ -140,17 +141,46 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
-				logger.Fatal("error starting telemetry", zap.Error(err))
+				logger.Fatal("error starting observability", zap.Error(err))
 			}
 			defer func() {
-				// Allow 10 seconds to gracefully shutdown telemetry
+				// Allow 10 seconds to gracefully shutdown observability
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				err := shutdown(ctx)
 				if err != nil {
-					logger.Error("telemetry shutdown failed", zap.Error(err))
+					logger.Error("observability shutdown failed", zap.Error(err))
 				}
 			}()
+
+			// Init activity client
+			var activityClient *activity.Client
+			switch conf.ActivitySinkType {
+			case "", "noop":
+				activityClient = activity.NewNoopClient()
+			case "kafka":
+				// NOTE: ActivityUISinkKafkaTopic specifically denotes a topic for UI events.
+				// This is acceptable since the UI is presently the only source that records events on the admin server's telemetry.
+				// However, if other events are emitted from the admin server in the future, we should refactor to emit all events of any kind to a single topic.
+				// (And handle multiplexing of different event types downstream.)
+				sink, err := activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivityUISinkKafkaTopic, logger)
+				if err != nil {
+					logger.Fatal("error creating kafka sink", zap.Error(err))
+				}
+				activityClient = activity.NewClient(sink, logger)
+			default:
+				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
+			}
+			defer activityClient.Close(context.Background())
+
+			// Add service info to activity client
+			activityClient = activityClient.WithServiceName("admin-server")
+			if ch.Version.Number != "" || ch.Version.Commit != "" {
+				activityClient = activityClient.WithServiceVersion(ch.Version.Number, ch.Version.Commit)
+			}
+			if ch.Version.IsDev() {
+				activityClient = activityClient.WithIsDev()
+			}
 
 			// Init runtime JWT issuer
 			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
@@ -195,12 +225,27 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				aiClient = ai.NewNoop()
 			}
 
+			// Parse metrics project name
+			var metricsProjectOrg, metricsProjectName string
+			if conf.MetricsProject != "" {
+				parts := strings.Split(conf.MetricsProject, "/")
+				if len(parts) != 2 {
+					logger.Fatal("invalid metrics project slug", zap.String("name", conf.MetricsProject))
+				}
+				metricsProjectOrg = parts[0]
+				metricsProjectName = parts[1]
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:  conf.DatabaseDriver,
-				DatabaseDSN:     conf.DatabaseURL,
-				ProvisionerSpec: conf.ProvisionerSpec,
-				ExternalURL:     conf.ExternalGRPCURL, // NOTE: using gRPC url
+				DatabaseDriver:     conf.DatabaseDriver,
+				DatabaseDSN:        conf.DatabaseURL,
+				ProvisionerSetJSON: conf.ProvisionerSetJSON,
+				DefaultProvisioner: conf.DefaultProvisioner,
+				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
+				VersionNumber:      ch.Version.Number,
+				MetricsProjectOrg:  metricsProjectOrg,
+				MetricsProjectName: metricsProjectName,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
@@ -228,17 +273,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			runWorker := len(args) == 0 || args[0] == "worker"
 			runJobs := len(args) == 0 || args[0] == "jobs"
 
-			uiActivityClient := activity.NewClientFromConf(
-				conf.ActivitySinkType,
-				conf.ActivitySinkPeriodMs,
-				conf.ActivityMaxBufferSize,
-				conf.ActivitySinkKafkaBrokers,
-				conf.ActivityUISinkKafkaTopic,
-				logger,
-				"admin-server",
-				ch.Version.String(),
-			)
-
 			// Init and run server
 			if runServer {
 				var limiter ratelimit.Limiter
@@ -251,7 +285,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
-				srv, err := server.New(logger, adm, issuer, limiter, uiActivityClient, &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,

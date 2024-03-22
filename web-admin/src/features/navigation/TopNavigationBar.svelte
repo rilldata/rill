@@ -1,5 +1,6 @@
 <script>
   import { page } from "$app/stores";
+  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -19,6 +20,7 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  $: dashboard = $page.params.dashboard;
 
   $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
@@ -32,15 +34,15 @@
 >
   <Tooltip distance={2}>
     <a
-      href="/"
       class="inline-flex items-center hover:bg-gray-200 grid place-items-center rounded"
+      href="/"
+      style:height="36px"
+      style:margin-bottom="4px"
       style:margin-left="8px"
       style:margin-top="4px"
-      style:margin-bottom="4px"
-      style:height="36px"
       style:width="36px"
     >
-      <Home size="20px" color="black" />
+      <Home color="black" size="20px" />
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
@@ -57,7 +59,10 @@
       <ShareProjectButton {organization} {project} />
     {/if}
     {#if onDashboardPage}
-      <LastRefreshedDate />
+      <LastRefreshedDate {dashboard} />
+      {#if $user.isSuccess && $user.data.user}
+        <Bookmarks />
+      {/if}
       <ShareDashboardButton />
     {/if}
     {#if $user.isSuccess}

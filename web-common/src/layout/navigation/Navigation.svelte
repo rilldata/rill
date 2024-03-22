@@ -1,14 +1,19 @@
+<script lang="ts" context="module">
+  export const navigationOpen = (() => {
+    const store = writable(true);
+    return {
+      subscribe: store.subscribe,
+      toggle: () => store.update((open) => !open),
+    };
+  })();
+</script>
+
 <script lang="ts">
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
-  import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import SourceAssets from "@rilldata/web-common/features/sources/navigation/SourceAssets.svelte";
-  import { getContext } from "svelte";
-  import { tweened } from "svelte/motion";
-  import { Readable, Writable, writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import ChartAssets from "../../features/charts/ChartAssets.svelte";
   import CustomDashboardAssets from "../../features/custom-dashboards/CustomDashboardAssets.svelte";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
@@ -18,33 +23,16 @@
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
-  import { drag } from "../drag";
   import Footer from "./Footer.svelte";
+  import Resizer from "../Resizer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
-  const { customDashboards } = featureFlags;
+  const { customDashboards, readOnly } = featureFlags;
 
-  /** FIXME: come up with strong defaults here when needed */
-  const navigationLayout =
-    getContext<
-      Writable<{
-        value: number;
-        visible: boolean;
-      }>
-    >("rill:app:navigation-layout") ||
-    writable({ value: DEFAULT_NAV_WIDTH, visible: true });
-
-  const navigationWidth =
-    getContext<Readable<number>>("rill:app:navigation-width-tween") ||
-    writable(DEFAULT_NAV_WIDTH);
-
-  const navVisibilityTween =
-    getContext<Readable<number>>("rill:app:navigation-visibility-tween") ||
-    tweened(0, { duration: 50 });
-
-  const { readOnly } = featureFlags;
-
+  let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
+  let container: HTMLElement;
+  let resizing = false;
 
   $: isModelerEnabled = $readOnly === false;
 
@@ -61,7 +49,7 @@
     const currentWidth = e.currentTarget.innerWidth;
 
     if (currentWidth < previousWidth && currentWidth < 768) {
-      $navigationLayout.visible = false;
+      $navigationOpen = false;
     }
 
     previousWidth = currentWidth;
@@ -70,53 +58,29 @@
 
 <svelte:window on:resize={handleResize} />
 
-<div
-  aria-hidden={!$navigationLayout?.visible}
-  class="box-border assets fixed"
-  style:left="{-$navVisibilityTween * $navigationWidth}px"
+<nav
+  class="sidebar"
+  class:hide={!$navigationOpen}
+  class:resizing
+  style:width="{width}px"
+  bind:this={container}
 >
-  <div
-    class="
-  border-r
-  fixed
-  overflow-auto
-  border-gray-200
-  transition-colors
-  h-screen
-  bg-white
-"
-    class:hidden={$navVisibilityTween === 1}
-    class:pointer-events-none={!$navigationLayout?.visible}
-    style:top="0px"
-    style:width="{$navigationWidth}px"
-  >
-    <!-- draw handler -->
-    {#if $navigationLayout?.visible}
-      <Portal>
-        <div
-          role="separator"
-          on:dblclick={() => {
-            navigationLayout.update((state) => {
-              state.value = DEFAULT_NAV_WIDTH;
-              return state;
-            });
-          }}
-          class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
-          style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
-          use:drag={{
-            minSize: DEFAULT_NAV_WIDTH,
-            maxSize: 440,
-            store: navigationLayout,
-          }}
-        />
-      </Portal>
-    {/if}
+  <Resizer
+    min={DEFAULT_NAV_WIDTH}
+    basis={DEFAULT_NAV_WIDTH}
+    max={440}
+    bind:dimension={width}
+    bind:resizing
+    side="right"
+  />
+  <div class="inner" style:width="{width}px">
+    <ProjectTitle />
 
-    <div class="w-full flex flex-col h-full">
-      <div class="grow">
-        <ProjectTitle />
+    <div class="scroll-container">
+      <div class="nav-wrapper">
         {#if isModelerEnabled}
           <TableAssets />
+
           {#if olapConnector === "duckdb"}
             <SourceAssets />
           {/if}
@@ -133,36 +97,47 @@
           <OtherFiles />
         {/if}
       </div>
-      <Footer />
     </div>
+    <Footer />
   </div>
-</div>
+</nav>
 
 <SurfaceControlButton
-  left="{($navigationWidth - 12 - 20) * (1 - $navVisibilityTween) +
-    12 * $navVisibilityTween}px"
-  on:click={() => {
-    //assetsVisible.set(!$assetsVisible);
-    navigationLayout.update((state) => {
-      state.visible = !state.visible;
-      return state;
-    });
-  }}
-  show={true}
->
-  {#if $navigationLayout?.visible}
-    <HideLeftSidebar size="18px" />
-  {:else}
-    <SurfaceViewIcon size="16px" mode={"hamburger"} />
-  {/if}
-  <svelte:fragment slot="tooltip-content">
-    {#if $navVisibilityTween === 0}
-      Close
-    {:else}
-      Show
-    {/if} sidebar
-  </svelte:fragment>
-</SurfaceControlButton>
+  {resizing}
+  navWidth={width}
+  navOpen={$navigationOpen}
+  on:click={navigationOpen.toggle}
+/>
 
-<style>
+<style lang="postcss">
+  .sidebar {
+    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply h-screen border-r z-0;
+    transition-property: width;
+    will-change: width;
+  }
+
+  .inner {
+    @apply h-full;
+    will-change: width;
+  }
+
+  .nav-wrapper {
+    @apply flex flex-col h-fit w-full gap-y-3;
+  }
+
+  .scroll-container {
+    @apply grow;
+    @apply overflow-y-scroll overflow-x-hidden;
+    @apply transition-colors h-full bg-white pb-8;
+  }
+
+  .sidebar:not(.resizing) {
+    transition-duration: 400ms;
+    transition-timing-function: ease-in-out;
+  }
+
+  .hide {
+    width: 0px !important;
+  }
 </style>

@@ -64,6 +64,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
@@ -87,6 +88,7 @@ type DB interface {
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
+	UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
@@ -257,10 +259,11 @@ type Project struct {
 	Name                 string
 	Description          string
 	Public               bool
-	Region               string
+	Provisioner          string
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
 	Subpath              string            `db:"subpath"`
+	ProdVersion          string            `db:"prod_version"`
 	ProdBranch           string            `db:"prod_branch"`
 	ProdVariables        map[string]string `db:"prod_variables"`
 	ProdOLAPDriver       string            `db:"prod_olap_driver"`
@@ -279,10 +282,11 @@ type InsertProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
-	Region               string
+	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	Subpath              string
+	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdOLAPDriver       string
@@ -296,14 +300,15 @@ type UpdateProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
-	Region               string
 	Annotations          map[string]string
 }
 
@@ -322,6 +327,9 @@ const (
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	Provisioner       string           `db:"provisioner"`
+	ProvisionID       string           `db:"provision_id"`
+	RuntimeVersion    string           `db:"runtime_version"`
 	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
@@ -337,6 +345,9 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	Provisioner       string `validate:"required"`
+	ProvisionID       string
+	RuntimeVersion    string
 	Slots             int
 	Branch            string `validate:"required"`
 	RuntimeHost       string `validate:"required"`
@@ -682,6 +693,7 @@ type UpdateBookmarkOptions struct {
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	Data        []byte `json:"data"`
+	Shared      bool   `json:"shared"`
 }
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)

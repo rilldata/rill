@@ -31,7 +31,6 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     editable={false}
-    onChangeCallback={undefined}
     showInspectorToggle={false}
     {...{ titleInput: fullyQualifiedTableName }}
   >

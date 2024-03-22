@@ -33,7 +33,7 @@ type Runtime struct {
 	Email          *email.Client
 	opts           *Options
 	logger         *zap.Logger
-	activity       activity.Client
+	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
 	connCache      conncache.Cache
@@ -41,7 +41,7 @@ type Runtime struct {
 	securityEngine *securityEngine
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Client, emailClient *email.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}

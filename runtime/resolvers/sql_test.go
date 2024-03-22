@@ -3,10 +3,11 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestSimpleSQLApi(t *testing.T) {
@@ -15,17 +16,16 @@ func TestSimpleSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "simple_sql_api")
 	require.NoError(t, err)
 
-	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           nil,
-		UserAttributes: nil,
-		Priority:       0,
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Args:               nil,
+		UserAttributes:     nil,
 	})
-
 	require.NoError(t, err)
 	require.NotNil(t, res)
+
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 5, len(rows))
@@ -43,17 +43,16 @@ func TestTemplateSQLApi(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api")
 	require.NoError(t, err)
 
-	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           map[string]any{"domain": "sports.yahoo.com"},
-		UserAttributes: nil,
-		Priority:       0,
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Args:               map[string]any{"domain": "sports.yahoo.com"},
+		UserAttributes:     nil,
 	})
-
 	require.NoError(t, err)
 	require.NotNil(t, res)
+
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 5, len(rows))
@@ -74,17 +73,16 @@ func TestTemplateSQLApi2(t *testing.T) {
 	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api_2")
 	require.NoError(t, err)
 
-	res, err := runtime.Resolve(context.Background(), &runtime.APIResolverOptions{
-		Runtime:        rt,
-		InstanceID:     instanceID,
-		API:            api,
-		Args:           map[string]any{"isExport": false, "pageSize": 5},
-		UserAttributes: map[string]any{"domain": "msn.com"},
-		Priority:       0,
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Args:               map[string]any{"pageSize": 5},
+		UserAttributes:     map[string]any{"domain": "msn.com"},
 	})
-
 	require.NoError(t, err)
 	require.NotNil(t, res)
+
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res, &rows))
 	require.Equal(t, 5, len(rows))

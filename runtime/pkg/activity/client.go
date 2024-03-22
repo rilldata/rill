@@ -2,251 +2,285 @@ package activity
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
-type Client interface {
-	With(dims ...attribute.KeyValue) Client
-	Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue)
-	Close() error
+// Client constructs telemetry events and sends them to a sink.
+type Client struct {
+	logger    *zap.Logger
+	sink      Sink
+	withAttrs []attribute.KeyValue
 }
 
-// wrappedClient is designed to wrap a client and enrich every emitted event with common dimensions
-type wrappedClient struct {
-	client     Client
-	commonDims []attribute.KeyValue
-}
-
-func newWrappedClient(client Client, commonDims ...attribute.KeyValue) Client {
-	return &wrappedClient{
-		client:     client,
-		commonDims: commonDims,
+// NewClient creates a base telemetry client that sends events to the provided sink.
+// The client will close the sink when Close is called.
+func NewClient(sink Sink, logger *zap.Logger) *Client {
+	client := &Client{
+		logger: logger,
+		sink:   sink,
 	}
-}
-
-func (w *wrappedClient) With(dims ...attribute.KeyValue) Client {
-	dims = append(dims, w.commonDims...)
-	return &wrappedClient{
-		client:     w.client,
-		commonDims: dims,
-	}
-}
-
-func (w *wrappedClient) Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue) {
-	dims = append(dims, w.commonDims...)
-	w.client.Emit(ctx, name, value, dims...)
-}
-
-func (w *wrappedClient) Close() error {
-	return w.client.Close()
-}
-
-// bufferedClient collects and periodically sinks Event-s.
-type bufferedClient struct {
-	sink       Sink
-	sinkPeriod time.Duration
-	buffer     []Event
-	bufferSize int
-	bufferMx   sync.Mutex
-	stop       chan struct{}
-	sinkWg     sync.WaitGroup
-	logger     *zap.Logger
-}
-
-type BufferedClientOptions struct {
-	Sink       Sink
-	SinkPeriod time.Duration
-	BufferSize int
-	Logger     *zap.Logger
-}
-
-func NewClientFromConf(
-	sinkType string,
-	sinkPeriodMs, maxBufferSize int,
-	sinkKafkaBrokers, sinkKafkaTopic string,
-	logger *zap.Logger,
-	serviceName, serviceVersion string,
-) Client {
-	var err error
-	var sink Sink
-	switch sinkType {
-	case "", "noop":
-		sink = NewNoopSink()
-	case "kafka":
-		sink, err = NewKafkaSink(sinkKafkaBrokers, sinkKafkaTopic, logger)
-		if err != nil {
-			logger.Fatal("failed to create a kafka sink", zap.Error(err))
-		}
-	default:
-		logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", sinkType))
-	}
-
-	return NewBufferedClient(BufferedClientOptions{
-		Sink:       sink,
-		SinkPeriod: time.Duration(sinkPeriodMs) * time.Millisecond,
-		BufferSize: maxBufferSize,
-		Logger:     logger,
-	}).With(attribute.String("service_name", serviceName), attribute.String("service_version", serviceVersion))
-}
-
-func NewBufferedClient(opts BufferedClientOptions) Client {
-	client := &bufferedClient{
-		sink:       opts.Sink,
-		sinkPeriod: opts.SinkPeriod,
-		buffer:     make([]Event, 0, opts.BufferSize),
-		bufferSize: opts.BufferSize,
-		stop:       make(chan struct{}),
-		logger:     opts.Logger,
-	}
-
-	go client.init()
 
 	return client
 }
 
-func (c *bufferedClient) With(dims ...attribute.KeyValue) Client {
-	return newWrappedClient(c, dims...)
+// NewNoopClient creates a client that discards all events.
+func NewNoopClient() *Client {
+	return NewClient(NewNoopSink(), zap.NewNop())
 }
 
-func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue) {
-	dimsFromCtx := GetDimsFromContext(ctx)
-	if dimsFromCtx == nil {
-		dimsFromCtx = &[]attribute.KeyValue{}
-	}
-
-	if dims == nil {
-		dims = []attribute.KeyValue{}
-	}
-	dims = append(*dimsFromCtx, dims...)
-
-	event := Event{Time: time.Now(), Name: name, Value: value, Dims: dims}
-
-	c.bufferMx.Lock()
-	defer c.bufferMx.Unlock()
-
-	c.buffer = append(c.buffer, event)
-
-	if len(c.buffer) >= c.bufferSize {
-		events := c.buffer
-		c.buffer = make([]Event, 0, c.bufferSize)
-
-		go func() {
-			err := c.flush(events)
-			if err != nil {
-				c.logger.Error("could not flush activity events", zap.Error(err))
-			}
-		}()
-	}
-}
-
-func (c *bufferedClient) Close() error {
-	close(c.stop)
-
-	var events []Event
-	// flush call may take some time to process, so it's better to unlock the mutex early
-	func() {
-		c.bufferMx.Lock()
-		defer c.bufferMx.Unlock()
-
-		events = c.buffer
-		c.buffer = make([]Event, 0, c.bufferSize)
+// Close the client. Also closes the sink passed to NewClient.
+func (c *Client) Close(ctx context.Context) error {
+	// Close the sink in the background.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.sink.Close()
 	}()
-	errFlush := c.flush(events) // Do not return the error immediately so concurrent flush calls can complete
 
-	// Wait for all Sink calls to complete
-	c.sinkWg.Wait()
-	errSink := c.sink.Close()
-
-	return errors.Join(errFlush, errSink)
-}
-
-func (c *bufferedClient) init() {
-	ticker := time.NewTicker(c.sinkPeriod)
-
-	for {
-		select {
-		case <-ticker.C:
-			var events []Event
-			// flush call may take some time to process, so it's better to unlock the mutex early
-			func() {
-				c.bufferMx.Lock()
-				defer c.bufferMx.Unlock()
-
-				events = c.buffer
-				c.buffer = make([]Event, 0, c.bufferSize)
-			}()
-
-			err := c.flush(events)
-			if err != nil {
-				c.logger.Error("could not flush activity events", zap.Error(err))
-			}
-		case <-c.stop:
-			ticker.Stop()
-			return
-		}
+	// Wait for the sink to close or the context to be done.
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
-func (c *bufferedClient) flush(events []Event) error {
-	c.sinkWg.Add(1)
-	defer c.sinkWg.Done()
-
-	// If there are events, use a sink to process them
-	if len(events) > 0 {
-		err := c.sink.Sink(context.Background(), events)
-		if err != nil {
-			return err
-		}
+// With returns a copy of the client that will set the provided attributes on all events.
+func (c *Client) With(attrs ...attribute.KeyValue) *Client {
+	if len(attrs) == 0 {
+		return c
 	}
 
+	res := make([]attribute.KeyValue, len(c.withAttrs)+len(attrs))
+	copy(res, c.withAttrs)
+	copy(res[len(c.withAttrs):], attrs)
+
+	return &Client{
+		logger:    c.logger,
+		sink:      c.sink,
+		withAttrs: res,
+	}
+}
+
+// WithServiceName returns a copy of the client with an attribute set for AttrKeyServiceName.
+func (c *Client) WithServiceName(serviceName string) *Client {
+	return c.With(attribute.String(AttrKeyServiceName, serviceName))
+}
+
+// WithServiceVersion returns a copy of the client with attributes set for AttrKeyServiceVersion and AttrKeyServiceCommit.
+func (c *Client) WithServiceVersion(number, commit string) *Client {
+	return c.With(attribute.String(AttrKeyServiceVersion, number), attribute.String(AttrKeyServiceCommit, commit))
+}
+
+// WithIsDev returns a copy of the client with an attribute set for AttrKeyIsDev.
+func (c *Client) WithIsDev() *Client {
+	return c.With(attribute.Bool(AttrKeyIsDev, true))
+}
+
+// WithInstallID returns a copy of the client with an attribute set for AttrKeyInstallID.
+func (c *Client) WithInstallID(installID string) *Client {
+	return c.With(attribute.String(AttrKeyInstallID, installID))
+}
+
+// WithUserID returns a copy of the client with an attribute set for AttrKeyUserID.
+func (c *Client) WithUserID(userID string) *Client {
+	return c.With(attribute.String(AttrKeyUserID, userID))
+}
+
+// Record sends a generic telemetry event with the provided event type and name.
+func (c *Client) Record(ctx context.Context, typ, name string, extraAttrs ...attribute.KeyValue) {
+	c.emitRaw(Event{
+		EventID:   uuid.New().String(),
+		EventTime: time.Now(),
+		EventType: typ,
+		EventName: name,
+		Data:      c.resolveAttrs(ctx, extraAttrs),
+	})
+}
+
+// RecordMetric sends a telemetry event of type "metric" with the provided name and value.
+func (c *Client) RecordMetric(ctx context.Context, name string, value float64, attrs ...attribute.KeyValue) {
+	c.emitRaw(Event{
+		EventID:   uuid.New().String(),
+		EventTime: time.Now(),
+		EventType: EventTypeMetric,
+		EventName: name,
+		Data: c.resolveAttrs(ctx, attrs,
+			attribute.Float64("value", value),
+			// Backwards compatibility with a previous format (before event_name and event_time)
+			attribute.String("name", name),
+			attribute.String("time", time.Now().Format(time.RFC3339)),
+		),
+	})
+}
+
+// EmitBehavioral sends a telemetry event of type "behavioral" with the provided name and attributes.
+// The event additionally has all the attributes associated with out legacy behavioral events.
+// It will panic if all of WithServiceName, WithServiceVersion, WithInstallID and WithUserID have not been called on the client.
+func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.KeyValue) {
+	// For compatibility with the legacy behavioral events, we need to ensure the output has at least these properties:
+	//     app_name       string
+	//     install_id     string
+	//     build_id       string
+	//     version        string
+	//     user_id        string
+	//     is_dev         bool
+	//     mode           string
+	//     action         string
+	//     medium         string
+	//     space          string
+	//     screen_name    string
+	//     event_datetime int64
+	//     event_type     string
+	//     payload        map[string]any
+
+	data := c.resolveAttrs(context.Background(), extraAttrs)
+
+	if _, ok := data["install_id"]; !ok {
+		data["install_id"] = ""
+	}
+
+	if _, ok := data["user_id"]; !ok {
+		data["user_id"] = ""
+	}
+
+	_, ok := data[AttrKeyServiceCommit]
+	if !ok {
+		data[AttrKeyServiceCommit] = ""
+	}
+	data["build_id"] = data[AttrKeyServiceCommit]
+
+	_, ok = data[AttrKeyServiceVersion]
+	if !ok {
+		data[AttrKeyServiceVersion] = ""
+	}
+	data["version"] = data[AttrKeyServiceVersion]
+
+	if val, ok := data["olap_connector"]; ok {
+		payload := make(map[string]any)
+		payload["olap_connector"] = val
+		if conns, ok := data["connectors"]; ok {
+			payload["connectors"] = conns
+		}
+		data["payload"] = payload
+	}
+
+	data["app_name"] = "rill-developer"
+	data["mode"] = "edit"
+	data["action"] = name
+	data["medium"] = "cli"
+	data["space"] = "terminal"
+	data["screen_name"] = "terminal"
+
+	t := time.Now()
+	data["event_datetime"] = t.Unix() * 1000
+
+	c.emitRaw(Event{
+		EventID:   uuid.New().String(),
+		EventTime: t,
+		EventType: EventTypeBehavioral,
+		EventName: name,
+		Data:      data,
+	})
+}
+
+// RecordRaw proxies a raw event represented as a map to the client's sink.
+// It does not enrich the provided event with any of the client's contextual attributes.
+// It returns an error if the event does not contain the required fields (see the Event type for required fields).
+func (c *Client) RecordRaw(data map[string]any) error {
+	// Ensure the event is not nil
+	if data == nil {
+		return fmt.Errorf("empty event")
+	}
+
+	// Pop event_id
+	id, ok := data["event_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_id")
+	}
+	delete(data, "event_id")
+
+	// Pop event_time
+	tStr, ok := data["event_time"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_time")
+	}
+	t, err := time.Parse(time.RFC3339Nano, tStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse event_time: %w", err)
+	}
+	delete(data, "event_time")
+
+	// Pop event_type
+	typ, ok := data["event_type"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_type")
+	}
+	delete(data, "event_type")
+
+	// Pop event_name
+	name, ok := data["event_name"].(string)
+	if !ok {
+		return fmt.Errorf("missing event_name")
+	}
+	delete(data, "event_name")
+
+	// Emit the event
+	c.emitRaw(Event{
+		EventID:   id,
+		EventTime: t,
+		EventType: typ,
+		EventName: name,
+		Data:      data,
+	})
 	return nil
 }
 
-type noopClient struct{}
-
-func NewNoopClient() Client {
-	return &noopClient{}
+// emitRaw sends an event to the sink.
+func (c *Client) emitRaw(e Event) {
+	err := c.sink.Emit(e)
+	if err != nil {
+		c.logger.Error("Failed to emit event", zap.Error(err))
+	}
 }
 
-func (n *noopClient) With(_ ...attribute.KeyValue) Client {
-	return n
-}
-
-func (n *noopClient) Emit(_ context.Context, _ string, _ float64, _ ...attribute.KeyValue) {
-}
-
-func (n *noopClient) Close() error {
-	return nil
-}
-
-type Event struct {
-	Time  time.Time
-	Name  string
-	Value float64
-	Dims  []attribute.KeyValue
-}
-
-func (e *Event) Marshal() ([]byte, error) {
-	// Create a map to hold the flattened event structure.
-	flattened := make(map[string]interface{})
-
-	// Iterate over the dims slice and add each dim to the map.
-	for _, dim := range e.Dims {
-		key := string(dim.Key)
-		flattened[key] = dim.Value.AsInterface()
+// resolveAttrs combines the attributes from the client, context, and args into a map.
+func (c *Client) resolveAttrs(ctx context.Context, extraAttrs []attribute.KeyValue, extraExtraAttrs ...attribute.KeyValue) map[string]any {
+	n := len(c.withAttrs) + len(extraAttrs) + len(extraExtraAttrs)
+	attrsFromCtx := attrsFromContext(ctx)
+	if attrsFromCtx != nil {
+		n += len(*attrsFromCtx)
 	}
 
-	// Add the non-dim fields.
-	flattened["time"] = e.Time.UTC().Format(time.RFC3339)
-	flattened["name"] = e.Name
-	flattened["value"] = e.Value
+	if n == 0 {
+		return nil
+	}
 
-	return json.Marshal(flattened)
+	data := make(map[string]any, n+4) // +4 to leave room for the common fields without reallocation.
+
+	for _, a := range c.withAttrs {
+		data[string(a.Key)] = a.Value.AsInterface()
+	}
+
+	if attrsFromCtx != nil {
+		for _, a := range *attrsFromCtx {
+			data[string(a.Key)] = a.Value.AsInterface()
+		}
+	}
+
+	for _, a := range extraAttrs {
+		data[string(a.Key)] = a.Value.AsInterface()
+	}
+
+	for _, a := range extraExtraAttrs {
+		data[string(a.Key)] = a.Value.AsInterface()
+	}
+
+	return data
 }

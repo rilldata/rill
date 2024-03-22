@@ -1237,6 +1237,9 @@ func TestChartsAndDashboard(t *testing.T) {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
     "mark": "bar",
+    "data": {
+      "name": "table"
+    },
     "encoding": {
       "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
       "y": {"field": "total_sales", "type": "quantitative"}
@@ -1248,23 +1251,18 @@ func TestChartsAndDashboard(t *testing.T) {
 		`charts/c1.yaml`: fmt.Sprintf(`
 kind: chart
 data:
-  name: MetricsViewAggregation
+  api: MetricsViewAggregation
   args:
     metrics_view: foo
-
-vega_lite: |-
-%s
-
+vega_lite: |%s
 `, vegaLiteSpec),
 		`charts/c2.yaml`: fmt.Sprintf(`
 kind: chart
 data:
-  name: MetricsViewAggregation
+  api: MetricsViewAggregation
   args:
     metrics_view: bar
-
 vega_lite: |%s
-
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
@@ -1283,19 +1281,21 @@ components:
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c1"},
 			Paths: []string{"/charts/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:     "MetricsViewAggregation",
-				QueryArgsJson: `{"metrics_view":"foo"}`,
-				VegaLiteSpec:  vegaLiteSpec,
+				Resolver:           "api",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
+				VegaLiteSpec:       vegaLiteSpec,
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindChart, Name: "c2"},
 			Paths: []string{"/charts/c2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ChartSpec: &runtimev1.ChartSpec{
-				QueryName:     "MetricsViewAggregation",
-				QueryArgsJson: `{"metrics_view":"bar"}`,
-				VegaLiteSpec:  vegaLiteSpec,
+				Resolver:           "api",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
+				VegaLiteSpec:       vegaLiteSpec,
 			},
 		},
 		{
@@ -1334,8 +1334,7 @@ sql: select * from m1
 		// api a2
 		`apis/a2.yaml`: `
 kind: api
-metrics:
-  sql: select * from m1
+metrics_sql: select * from m1
 `,
 	})
 
@@ -1353,7 +1352,7 @@ metrics:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Resolver:           "SQL",
+				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
@@ -1361,7 +1360,7 @@ metrics:
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
 			Paths: []string{"/apis/a2.yaml"},
 			APISpec: &runtimev1.APISpec{
-				Resolver:           "Metrics",
+				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},

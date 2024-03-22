@@ -14,65 +14,67 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func (s *Server) apiForName(w http.ResponseWriter, req *http.Request) error {
-	if !auth.GetClaims(req.Context()).CanInstance(req.PathValue("instance_id"), auth.ReadAPI) {
+func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
+	// Parse path parameters
+	ctx := req.Context()
+	instanceID := req.PathValue("instance_id")
+	apiName := req.PathValue("name")
+
+	// Add observability attributes
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", instanceID),
+		attribute.String("args.name", apiName),
+	)
+	s.addInstanceRequestAttributes(ctx, instanceID)
+
+	// Check if user has access to query for API data
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
 	}
 
-	ctx := req.Context()
-	if req.PathValue("name") == "" {
-		return httputil.Errorf(http.StatusBadRequest, "invalid path")
-	}
-
+	// Parse args from the request body and URL query
+	args := make(map[string]any)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return httputil.Errorf(http.StatusBadRequest, "failed to read request body: %w", err)
 	}
-
-	reqParams := make(map[string]interface{})
-	if len(body) > 0 { // post
-		if err := json.Unmarshal(body, &reqParams); err != nil {
+	if len(body) > 0 { // For POST requests
+		if err := json.Unmarshal(body, &args); err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "failed to unmarshal request body: %w", err)
 		}
 	}
-
-	queryParams := req.URL.Query()
-	for k, v := range queryParams {
-		// set only the first value so that client does need to put array accessors in templates.
-		reqParams[k] = v[0]
+	for k, v := range req.URL.Query() {
+		// Set only the first value so that client does need to put array accessors in templates.
+		args[k] = v[0]
 	}
 
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.PathValue("instance_id")),
-		attribute.String("args.name", req.PathValue("name")),
-	)
-
-	s.addInstanceRequestAttributes(ctx, req.PathValue("instance_id"))
-
-	api, err := s.runtime.APIForName(ctx, req.PathValue("instance_id"), req.PathValue("name"))
+	// Find the API resource
+	api, err := s.runtime.APIForName(ctx, instanceID, apiName)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return httputil.Errorf(http.StatusNotFound, "api with name %q does not exist", req.PathValue("name"))
+			return httputil.Errorf(http.StatusNotFound, "api with name %q not found", apiName)
 		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	res, err := runtime.Resolve(ctx, &runtime.APIResolverOptions{
-		Runtime:        s.runtime,
-		InstanceID:     req.PathValue("instance_id"),
-		API:            api,
-		Args:           reqParams,
-		UserAttributes: auth.GetClaims(ctx).Attributes(),
-		Priority:       0,
+	// Resolve the API to JSON data
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Args:               args,
+		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
 	if err != nil {
-		return httputil.Error(http.StatusInternalServerError, err)
+		return httputil.Error(http.StatusBadRequest, err)
 	}
 
+	// Write the response
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(res)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
+
 	return nil
 }

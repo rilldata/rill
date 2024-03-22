@@ -74,7 +74,7 @@ dimensions:
     await waitForDashboard(page);
 
     // make the viewport big enough to see the whole dashboard
-    page.setViewportSize({ width: 1920, height: 1200 });
+    await page.setViewportSize({ width: 1920, height: 1200 });
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
@@ -116,11 +116,14 @@ dimensions:
      * but a few combinations of format and context column.
      *
      ******************/
+
+    const measuresButton = page.getByRole("button", {
+      name: "Select a measure to filter by",
+    });
     await page.getByRole("button", { name: "Select a context column" }).click();
-    await page
-      .getByRole("button", { name: "humanized default", exact: true })
-      .click();
+    await measuresButton.click();
     await page.getByRole("menuitem", { name: "USD" }).click();
+    await expect(measuresButton).toHaveText("Showing USD");
     // turn on a context column to check the formatting there
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
@@ -129,16 +132,18 @@ dimensions:
       page.getByRole("button", { name: "null $98.8k 33%" }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "USD", exact: true }).click();
+    await measuresButton.click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
+    await expect(measuresButton).toHaveText("Showing percentage");
 
     await expect(
       page.getByRole("button", { name: "null 9.9M% 33%" }),
     ).toBeVisible();
 
     // try interval_ms...
-    await page.getByRole("button", { name: "percentage", exact: true }).click();
+    await measuresButton.click();
     await page.getByRole("menuitem", { name: "interval_ms" }).click();
+    await expect(measuresButton).toHaveText("Showing interval_ms");
     // ...and add a time comparison to check absolute change
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
@@ -152,10 +157,9 @@ dimensions:
     ).toBeVisible();
 
     // try No Format...
-    await page
-      .getByRole("button", { name: "interval_ms", exact: true })
-      .click();
+    await measuresButton.click();
     await page.getByRole("menuitem", { name: "No Format" }).click();
+    await expect(measuresButton).toHaveText("Showing No Format");
     // ...with percent change context column
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
@@ -171,7 +175,7 @@ dimensions:
      * just smoke testing, so we'll just check one value
      * per column.
      ******************/
-    await page.locator("#svelte").getByText("Publisher").click();
+    await page.getByText("Publisher").click();
 
     // humanized default
     await expect(

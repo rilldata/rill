@@ -46,7 +46,7 @@
     },
   } = stateManagers;
 
-  const { adminServer, alerts } = featureFlags;
+  const { adminServer } = featureFlags;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -88,7 +88,7 @@
   }
 </script>
 
-<div class="flex justify-between items-center p-1">
+<div class="flex justify-between items-center p-1 pr-5">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
       <div>
@@ -153,7 +153,7 @@
 
     <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
 
-    {#if $adminServer && $alerts}
+    {#if $adminServer}
       <CreateAlertButton />
     {/if}
   </div>

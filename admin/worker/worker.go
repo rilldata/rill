@@ -37,7 +37,9 @@ func New(logger *zap.Logger, adm *admin.Service) *Worker {
 
 func (w *Worker) Run(ctx context.Context) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return w.schedule(ctx, "check_slots", w.checkSlots, 15*time.Minute) })
+	group.Go(func() error {
+		return w.schedule(ctx, "check_provisioner_capacity", w.checkProvisionerCapacity, 15*time.Minute)
+	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredAuthTokens, 6*time.Hour)
 	})
@@ -50,6 +52,12 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
+	group.Go(func() error {
+		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
+	})
+	group.Go(func() error {
+		return w.schedule(ctx, "run_autoscaler", w.runAutoscaler, 6*time.Hour)
+	})
 
 	// NOTE: Add new scheduled jobs here
 
@@ -60,10 +68,12 @@ func (w *Worker) Run(ctx context.Context) error {
 
 func (w *Worker) RunJob(ctx context.Context, name string) error {
 	switch name {
-	case "check_slots":
-		return w.runJob(ctx, name, w.checkSlots)
+	case "check_provisioner_capacity":
+		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
 		return w.runJob(ctx, name, w.resetAllDeployments)
+	case "upgrade_latest_version_projects":
+		return w.runJob(ctx, name, w.upgradeLatestVersionProjects)
 	// NOTE: Add new ad-hoc jobs here
 	default:
 		return fmt.Errorf("unknown job: %s", name)
@@ -119,5 +129,7 @@ func StartPingServer(ctx context.Context, port int) error {
 		Handler: httpMux,
 	}
 
-	return graceful.ServeHTTP(ctx, srv, port)
+	return graceful.ServeHTTP(ctx, srv, graceful.ServeOptions{
+		Port: port,
+	})
 }

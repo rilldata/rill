@@ -220,7 +220,11 @@ message MetricsViewSpec {
 }
 
 message MetricsViewState {
+  // Valid spec is a (potentially previous) version of the spec that is known to currently be valid.
   MetricsViewSpec valid_spec = 1;
+  // Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+  // It's set to true if the metrics view is based on an externally managed table.
+  bool streaming = 2;
 }
 
 message Migration {
@@ -396,8 +400,8 @@ message Chart {
 
 message ChartSpec {
   string title = 1;
-  string query_name = 2;
-  string query_args_json = 3;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
   string vega_lite_spec = 4;
 }
 

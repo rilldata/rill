@@ -1,0 +1,248 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+
+  --palette_neutral_0: #FFFFFF;
+  --palette_neutral_100: #F9F9F9;
+  --palette_neutral_200: #DFDFDF;
+  --palette_neutral_300: #C0C0C0;
+  --palette_neutral_400: #A0A0A0;
+  --palette_neutral_500: #808080;
+  --palette_neutral_600: #606060;
+  --palette_neutral_650: #414141;
+  --palette_neutral_700: #282828;
+  --palette_neutral_725: #212121;
+  --palette_neutral_750: #1F1F1C;
+  --palette_neutral_800: #1D1D1D;
+  --palette_neutral_900: #151515;
+
+  --palette_slate_50: #F6F7FA;
+  --palette_slate_100: #E6E7E9;
+  --palette_slate_200: #CCCFD3;
+  --palette_slate_300: #B3B6BD;
+  --palette_slate_400: #9A9EA7;
+  --palette_slate_500: #808691;
+  --palette_slate_600: #696E79;
+  --palette_slate_700: #53575F;
+  --palette_slate_750: #373439;
+  --palette_slate_800: #302E32;
+  --palette_slate_900: #161517;
+
+  --default-font: 14px;
+  --default-line-height: 21px;
+  --ifm-color-primary: #3524C7;
+  --ifm-color-primary-dark: #3125AE;
+  --ifm-color-primary-darker: #2C2689;
+  --ifm-color-primary-darkest: #1C1650;
+  --ifm-color-primary-light: #00B8FF;
+  --ifm-color-primary-lighter: #2CC9FF;
+  --ifm-color-primary-lightest: #01DCE9;
+  --ifm-color-secondary-contrast-background: #efefef;
+  --ifm-font-family-base: Inter, sans-serif;
+  --ifm-h3-font-size: 1rem !important;
+  --ifm-h2-font-size: 1.25rem !important;
+  --ifm-h1-font-size: 1.75rem !important;
+  --ifm-font-weight-semibold: 500;
+  --ifm-color-emphasis-300: #dadde1;
+
+  /* Sidebar */
+  --ifm-hover-overlay: var(--click-color-sidebar-item-active);
+  --ifm-menu-color: #000000;
+  --ifm-menu-link-padding-vertical: 0.1rem;
+  --ifm-menu-link-padding-horizontal: 1rem;
+  --ifm-menu-color-active: #000000;
+  --ifm-menu-link-sublist-icon: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11.9988 9.21211L16.2363 13.4684L15.4488 14.2559L11.9988 10.8059L8.54883 14.2559L7.76133 13.4684L11.9988 9.21211Z' fill='%23575C6B'/%3E%3Cpath d='M11.9988 9.21211L16.2363 13.4684L15.4488 14.2559L11.9988 10.8059L8.54883 14.2559L7.76133 13.4684L11.9988 9.21211Z' fill='black' fill-opacity='0.2'/%3E%3C/svg%3E");
+  --ifm-menu-link-padding-horizontal: 1rem;
+  --ifm-menu-link-padding-vertical: 0.375rem;
+  --ifm-menu-link-sublist-icon-filter: none;
+  --ifm-menu-link-padding-horizontal: 0;
+
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.2);
+  --color-stroke: var(--palette_slate_100);
+
+  --doc-menu-caret-right-padding: 20px;
+
+  /* Footer */
+  --ifm-footer-padding-vertical: 1rem;
+
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #459BFF;
+  --ifm-color-primary-dark: #3190FF;
+  --ifm-color-primary-darker: #107FFF;
+  --ifm-color-primary-darkest: #27599A;
+  --ifm-color-primary-light: #00CBD7;
+  --ifm-color-primary-lighter: #01D4E0;
+  --ifm-color-primary-lightest: #75DAFF;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --color-stroke: var(--palette_neutral_700);
+
+  /* Sidebar */
+  --ifm-menu-color: #FFFFF;
+  --ifm-menu-color-active: #FFFFFF;
+
+}
+
+body {
+  font-size: var(--default-font);
+  line-height: var(--default-line-height);
+  font-family: var(--ifm-font-family-base), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+}
+
+.social-link {
+  margin-right: 16px;
+  width: 36px;
+}
+
+.tabs-container {
+  border-style: solid;
+  border-color: var(--ifm-toc-border-color);
+  border-radius: var(--ifm-global-radius);
+  padding: 0px 20px 20px 20px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Documentation headings */
+
+.markdown h1:first-child {
+  font-size: 32px !important;
+}
+
+.markdown h2 {
+  margin-top: 32px;
+  padding-top: 32px;
+  margin-bottom: 12px;
+  --ifm-h2-font-size: 1.25rem !important;
+  font-weight: 700;
+  line-height: 24px;
+  border-top: 1px solid var(--color-stroke);
+}
+
+.markdown h3 {
+  --ifm-h3-font-size: 1rem !important;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+/* Sidebar */
+
+nav.menu {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+.theme-doc-sidebar-item-category-level-1 .theme-doc-sidebar-item-link-level-1 {
+  padding-left: 0;
+}
+
+li.theme-doc-sidebar-item-category-level-1 {
+  .menu__list-item-collapsible {
+    font-weight: 700;
+
+    &:hover>a[href] {
+      background: var(--ifm-menu-color-background-hover);
+    }
+
+    &>.menu__link--active {
+      font-weight: 700;
+    }
+  }
+
+  &:not(:first-of-type) .menu__list-item-collapsible {
+    margin-top: 24px;
+  }
+
+  /* This is a very hacky way to hide references from the main sidebar */
+  &:last-of-type {
+    display: none;
+  }
+}
+
+li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
+  font-weight: 400 !important;
+  margin-top: 0 !important;
+}
+
+.menu__link {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 8px;
+
+  &--active {
+    font-weight: 600;
+  }
+}
+
+.menu__caret:before {
+  padding-right: var(--doc-menu-caret-right-padding);
+}
+
+.menu__link--sublist-caret:after {
+  padding-right: var(--doc-menu-caret-right-padding);
+}
+
+.menu__caret {
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+
+}
+
+.theme-doc-sidebar-item-link-level-3,
+.theme-doc-sidebar-item-link-level-4 {
+  padding-left: 0.75rem;
+}
+
+.theme-doc-sidebar-item-category-level-3,
+.theme-doc-sidebar-item-category-level-4 {
+  padding-left: 0.75rem;
+}
+
+.theme-doc-sidebar-item-link-level-5 {
+  padding-left: 1.9rem;
+}
+
+.theme-doc-sidebar-item-category-level-5 {
+  padding-left: 1.9rem;
+}
+
+.theme-doc-sidebar-item-link-level-6 {
+  padding-left: 2.2rem;
+}
+
+.theme-doc-sidebar-item-category-level-6 {
+  padding-left: 2.2rem;
+}
+
+li.theme-doc-sidebar-item-category-level-2>.menu__list {
+  border-left: 1px solid var(--click-color-stroke);
+}
+
+.menu__list-item--collapsed .menu__link--sublist:after,
+.menu__list-item--collapsed .menu__caret:before {
+  padding-right: var(--doc-menu-caret-right-padding);
+}
+
+li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
+  font-weight: 400 !important;
+  margin-top: 0 !important;
+  /*  font-size: 14px !important; */
+}
+
+.sub-menu-link .menu__link--sublist {
+  font-weight: 700;
+}
+
+.center-content {
+  display: flex;
+  justify-content: center;
+}

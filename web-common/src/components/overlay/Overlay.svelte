@@ -1,6 +1,6 @@
 <script>
   import { fade } from "svelte/transition";
-  import Portal from "../Portal.svelte";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   export let bg = "rgba(0,0,0,.8)";
 
@@ -22,7 +22,7 @@
 
 <svelte:window on:keydown={captureKeydown} />
 
-<Portal>
+<div use:portal>
   {#key bg}
     <div
       transition:fade|global={{ duration: 200 }}
@@ -33,7 +33,7 @@
   <div transition:fade|global={{ duration: 300 }} class={classes}>
     <slot />
   </div>
-</Portal>
+</div>
 
 <style lang="postcss">
   :global(.body) {

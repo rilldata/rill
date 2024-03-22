@@ -380,7 +380,7 @@ export function getSortForAccessor(
   };
 }
 
-export function getFilterForOtherMeasuresAxesQuery(
+export function getFilterForMeasuresTotalsAxesQuery(
   config: PivotDataStoreConfig,
   rowDimensionValues: string[],
 ): V1Expression {

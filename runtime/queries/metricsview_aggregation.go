@@ -35,6 +35,8 @@ type MetricsViewAggregation struct {
 	PivotOn            []string                                     `json:"pivot_on,omitempty"`
 	SecurityAttributes map[string]any                               `json:"security_attributes,omitempty"`
 
+	Exporting bool
+
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
 
@@ -73,7 +75,13 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
 	}
@@ -81,12 +89,6 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
-	if err != nil {
-		return err
 	}
 
 	if mv.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
@@ -162,7 +164,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 				})
 			}()
 
-			schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createPivotSQL(temporaryTableName), nil)
+			schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createPivotSQL(temporaryTableName, mv), nil)
 			if err != nil {
 				return err
 			}
@@ -187,10 +189,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer rows.Close()
 
-	return q.pivotDruid(ctx, rows)
+	return q.pivotDruid(ctx, rows, mv)
 }
 
-func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result) error {
+func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec) error {
 	pivotDB, err := sqlx.Connect("duckdb", "")
 	if err != nil {
 		return err
@@ -278,7 +280,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 
 		ctx, cancelFunc := context.WithTimeout(ctx, defaultExecutionTimeout)
 		defer cancelFunc()
-		pivotRows, err := pivotDB.QueryxContext(ctx, q.createPivotSQL(temporaryTableName))
+		pivotRows, err := pivotDB.QueryxContext(ctx, q.createPivotSQL(temporaryTableName, mv))
 		if err != nil {
 			return err
 		}
@@ -303,11 +305,21 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 	}()
 }
 
-func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string) string {
+func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
 	measureCols := make([]string, 0, len(q.Measures))
 	for _, m := range q.Measures {
 		sn := safeName(m.Name)
-		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, sn))
+		alias := sn
+		if q.Exporting {
+			for _, measure := range mv.Measures {
+				if strings.EqualFold(measure.Name, m.Name) {
+					if measure.Label != "" {
+						alias = safeName(measure.Label)
+					}
+				}
+			}
+		}
+		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, alias))
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
@@ -370,6 +382,7 @@ func toData(rows *sqlx.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, 
 }
 
 func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	q.Exporting = true
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err

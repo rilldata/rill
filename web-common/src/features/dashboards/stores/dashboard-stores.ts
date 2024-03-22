@@ -31,10 +31,10 @@ import {
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
-import { derived, Readable, writable } from "svelte/store";
+import { Readable, derived, writable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import type { PivotColumns, PivotRows } from "../pivot/types";
-import { type PivotChipData, PivotChipType } from "../pivot/types";
+import { PivotChipType, type PivotChipData } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -249,6 +249,8 @@ const metricViewReducers = {
 
   setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
       const dimensions: PivotChipData[] = [];
 
       value.forEach((val) => {
@@ -273,6 +275,8 @@ const metricViewReducers = {
 
   setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
       const dimensions: PivotChipData[] = [];
       const measures: PivotChipData[] = [];
 
@@ -301,6 +305,7 @@ const metricViewReducers = {
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
       if (value.type === PivotChipType.Measure) {
         metricsExplorer.pivot.columns.measure.push(value);
       } else {
@@ -321,7 +326,7 @@ const metricViewReducers = {
 
   setPivotSort(name: string, sorting: SortingState) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting };
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
     });
   },
 
@@ -330,6 +335,15 @@ const metricViewReducers = {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         columnPage: pageNumber,
+      };
+    });
+  },
+
+  setPivotRowPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        rowPage: pageNumber,
       };
     });
   },
@@ -344,6 +358,7 @@ const metricViewReducers = {
         expanded: {},
         sorting: [],
         columnPage: 1,
+        rowPage: 1,
       };
     });
   },

@@ -95,12 +95,12 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 
 	// Create cmdutil Helper
 	ch := &cmdutil.Helper{
+		Printer:           printer.NewPrinter(printer.FormatHuman),
 		Version:           ver,
 		AdminURL:          adminURL,
 		AdminTokenDefault: adminTokenDefault,
 		Org:               defaultOrg,
 		Interactive:       true,
-		Printer:           printer.NewPrinter(printer.FormatHuman),
 	}
 	defer ch.Close()
 

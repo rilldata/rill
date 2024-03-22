@@ -20,7 +20,7 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
-  getFilterForOtherMeasuresAxesQuery,
+  getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
 } from "./pivot-utils";
@@ -89,6 +89,8 @@ export function getAxisForDimensions(
   whereFilter: V1Expression,
   sortBy: V1MetricsViewAggregationSort[] = [],
   timeRange: TimeRangeString | undefined = undefined,
+  limit = "100",
+  offset = "0",
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
@@ -137,8 +139,8 @@ export function getAxisForDimensions(
         whereFilter,
         config.measureFilter,
         sortByForDimension,
-        "100",
-        "0",
+        limit,
+        offset,
         timeRange,
       );
     }),
@@ -171,7 +173,7 @@ export function getAxisForDimensions(
   );
 }
 
-export function getAxisQueryForOtherMeasures(
+export function getAxisQueryForMeasureTotals(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   isMeasureSortAccessor: boolean,
@@ -179,31 +181,29 @@ export function getAxisQueryForOtherMeasures(
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
 ) {
-  let rowAxesQueryForOtherMeasures: Readable<PivotAxesData | null> =
+  let rowAxesQueryForMeasureTotals: Readable<PivotAxesData | null> =
     readable(null);
 
   if (rowDimensionValues.length && isMeasureSortAccessor && sortAccessor) {
     const { measureNames, rowDimensionNames } = config;
-    const otherMeasuresBody = measureNames
-      .map((m) => ({ name: m }))
-      .filter((m) => m.name !== sortAccessor);
+    const measuresBody = measureNames.map((m) => ({ name: m }));
 
-    const sortedRowFilters = getFilterForOtherMeasuresAxesQuery(
+    const sortedRowFilters = getFilterForMeasuresTotalsAxesQuery(
       config,
       rowDimensionValues,
     );
-    rowAxesQueryForOtherMeasures = getAxisForDimensions(
+    rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
       rowDimensionNames.slice(0, 1),
-      otherMeasuresBody,
+      measuresBody,
       sortedRowFilters,
       [],
       timeRange,
     );
   }
 
-  return rowAxesQueryForOtherMeasures;
+  return rowAxesQueryForMeasureTotals;
 }
 
 export function getTotalsRowQuery(

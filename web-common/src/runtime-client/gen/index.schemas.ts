@@ -81,6 +81,7 @@ export type QueryServiceQueryBatchBody = {
 };
 
 export type QueryServiceQueryBody = {
+  connector?: string;
   sql?: string;
   args?: unknown[];
   priority?: number;
@@ -89,6 +90,7 @@ export type QueryServiceQueryBody = {
 };
 
 export type QueryServiceColumnTopKBody = {
+  connector?: string;
   columnName?: string;
   agg?: string;
   k?: number;
@@ -96,6 +98,7 @@ export type QueryServiceColumnTopKBody = {
 };
 
 export type QueryServiceColumnTimeSeriesBody = {
+  connector?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
@@ -106,25 +109,36 @@ export type QueryServiceColumnTimeSeriesBody = {
 };
 
 export type QueryServiceColumnTimeRangeParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceTableCardinalityParams = { priority?: number };
+export type QueryServiceTableCardinalityParams = {
+  connector?: string;
+  priority?: number;
+};
 
 export type QueryServiceColumnTimeGrainParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnRugHistogramParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceTableRowsParams = { limit?: number; priority?: number };
+export type QueryServiceTableRowsParams = {
+  connector?: string;
+  limit?: number;
+  priority?: number;
+};
 
 export type QueryServiceColumnRollupIntervalBody = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
@@ -140,12 +154,14 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
 } as const;
 
 export type QueryServiceColumnNumericHistogramParams = {
+  connector?: string;
   columnName?: string;
   histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
   priority?: number;
 };
 
 export type QueryServiceColumnNullCountParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
@@ -248,15 +264,25 @@ export type QueryServiceExportBody = {
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceTableColumnsParams = { priority?: number };
+export type QueryServiceTableColumnsParams = {
+  connector?: string;
+  priority?: number;
+};
 
 export type QueryServiceColumnCardinalityParams = {
+  connector?: string;
   columnName?: string;
   priority?: number;
+};
+
+export type RuntimeServiceWatchLogs200 = {
+  result?: V1WatchLogsResponse;
+  error?: RpcStatus;
 };
 
 export type RuntimeServiceWatchLogsLevel =
@@ -450,11 +476,6 @@ export interface V1WatchLogsResponse {
   log?: V1Log;
 }
 
-export type RuntimeServiceWatchLogs200 = {
-  result?: V1WatchLogsResponse;
-  error?: RpcStatus;
-};
-
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
@@ -582,6 +603,7 @@ export interface V1TableRowsResponse {
 
 export interface V1TableRowsRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   limit?: number;
   priority?: number;
@@ -598,6 +620,7 @@ export interface V1TableColumnsResponse {
 
 export interface V1TableColumnsRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   priority?: number;
 }
@@ -608,6 +631,7 @@ export interface V1TableCardinalityResponse {
 
 export interface V1TableCardinalityRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   priority?: number;
 }
@@ -742,24 +766,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  chart?: V1Chart;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -793,6 +799,24 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export interface V1RenameFileResponse {
@@ -1236,6 +1260,9 @@ export interface V1MetricsViewSpec {
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+  /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+It's set to true if the metrics view is based on an externally managed table. */
+  streaming?: boolean;
 }
 
 export interface V1MetricsViewV2 {
@@ -1708,26 +1735,6 @@ export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
- * ConnectorSpec represents a connector available in the runtime.
-It should not be confused with a source.
- */
-export interface V1ConnectorSpec {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  properties?: ConnectorSpecProperty[];
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
-}
-
-/**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
@@ -1748,6 +1755,26 @@ export interface V1CreateInstanceRequest {
   modelMaterializeDelaySeconds?: number;
 }
 
+/**
+ * ConnectorSpec represents a connector available in the runtime.
+It should not be confused with a source.
+ */
+export interface V1ConnectorSpec {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
+}
+
 export interface V1Condition {
   op?: V1Operation;
   exprs?: V1Expression[];
@@ -1759,6 +1786,7 @@ export interface V1ColumnTopKResponse {
 
 export interface V1ColumnTopKRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   agg?: string;
@@ -1772,6 +1800,7 @@ export interface V1ColumnTimeSeriesResponse {
 
 export interface V1ColumnTimeSeriesRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
@@ -1788,6 +1817,7 @@ export interface V1ColumnTimeRangeResponse {
 
 export interface V1ColumnTimeRangeRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1799,6 +1829,7 @@ export interface V1ColumnTimeGrainResponse {
 
 export interface V1ColumnTimeGrainRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1810,6 +1841,7 @@ export interface V1ColumnRugHistogramResponse {
 
 export interface V1ColumnRugHistogramRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1823,6 +1855,7 @@ export interface V1ColumnRollupIntervalResponse {
 
 export interface V1ColumnRollupIntervalRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1834,6 +1867,7 @@ export interface V1ColumnNumericHistogramResponse {
 
 export interface V1ColumnNumericHistogramRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   histogramMethod?: V1HistogramMethod;
@@ -1846,6 +1880,7 @@ export interface V1ColumnNullCountResponse {
 
 export interface V1ColumnNullCountRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1857,6 +1892,7 @@ export interface V1ColumnDescriptiveStatisticsResponse {
 
 export interface V1ColumnDescriptiveStatisticsRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1868,6 +1904,7 @@ export interface V1ColumnCardinalityResponse {
 
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
+  connector?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1884,10 +1921,12 @@ export interface V1ChartState {
   [key: string]: any;
 }
 
+export type V1ChartSpecResolverProperties = { [key: string]: any };
+
 export interface V1ChartSpec {
   title?: string;
-  queryName?: string;
-  queryArgsJson?: string;
+  resolver?: string;
+  resolverProperties?: V1ChartSpecResolverProperties;
   vegaLiteSpec?: string;
 }
 

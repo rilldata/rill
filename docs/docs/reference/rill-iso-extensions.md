@@ -2,7 +2,7 @@
 title: Rill extensions to ISO 8601
 description: All the extensions options to the standard ISO 8601 duration standard
 sidebar_label: Rill extensions to ISO 8601
-sidebar_position: 13
+sidebar_position: 30
 ---
 
 We have extended the ISO 8601 standard to specify ranges like `Week-to-Date`.

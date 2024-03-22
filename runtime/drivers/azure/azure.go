@@ -34,7 +34,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName:        "Azure Blob Storage",
 	Description:        "Connect to Azure Blob Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/azure",
+	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/azure",
 	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "path",
@@ -83,7 +83,7 @@ type configProperties struct {
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("azure driver does not support shared connections")
 	}

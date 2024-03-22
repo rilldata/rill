@@ -222,13 +222,12 @@ func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGe
 }
 
 func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTablesRequest) (*runtimev1.OLAPListTablesResponse, error) {
-	conn, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	olap, _ := conn.AsOLAP(req.InstanceId)
 	tables, err := olap.InformationSchema().All(ctx)
 	if err != nil {
 		return nil, err
@@ -247,16 +246,11 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 }
 
 func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRequest) (*runtimev1.OLAPGetTableResponse, error) {
-	conn, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
-
-	olap, ok := conn.AsOLAP(req.InstanceId)
-	if !ok {
-		return nil, fmt.Errorf("connector %q is not an OLAP data store", req.Connector)
-	}
 
 	table, err := olap.InformationSchema().Lookup(ctx, req.Table)
 	if err != nil {

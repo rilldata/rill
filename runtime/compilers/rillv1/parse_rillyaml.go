@@ -17,6 +17,7 @@ type RillYAML struct {
 	Connectors    []*ConnectorDef
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
+	Features      []string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -34,20 +35,36 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
-	Title         string `yaml:"title"`
-	Description   string `yaml:"description"`
+	// Title of the project
+	Title string `yaml:"title"`
+	// Description of the project
+	Description string `yaml:"description"`
+	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
-	Connectors    []struct {
+	// Connectors required by the project
+	Connectors []struct {
 		Type     string            `yaml:"type"`
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	Vars       map[string]string    `yaml:"vars"`
-	Env        map[string]yaml.Node `yaml:"env"`
-	Sources    yaml.Node            `yaml:"sources"`
-	Models     yaml.Node            `yaml:"models"`
-	Dashboards yaml.Node            `yaml:"dashboards"`
-	Migrations yaml.Node            `yaml:"migrations"`
+	// Variables required by the project and their default values
+	Vars map[string]string `yaml:"vars"`
+	// Environment-specific overrides for rill.yaml
+	Env map[string]yaml.Node `yaml:"env"`
+	// Shorthand for setting "env:dev:"
+	Dev yaml.Node `yaml:"dev"`
+	// Shorthand for setting "env:prod:"
+	Prod yaml.Node `yaml:"prod"`
+	// Default YAML values for sources
+	Sources yaml.Node `yaml:"sources"`
+	// Default YAML values for models
+	Models yaml.Node `yaml:"models"`
+	// Default YAML values for metric views
+	Dashboards yaml.Node `yaml:"dashboards"`
+	// Default YAML values for migrations
+	Migrations yaml.Node `yaml:"migrations"`
+	// Feature flags
+	Features []string `yaml:"features"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -73,6 +90,20 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			tmp.Vars[k] = v.Value
 			delete(tmp.Env, k)
 		}
+	}
+
+	// Handle "dev:" and "prod:" shorthands (copy to to tmp.Env)
+	if !tmp.Dev.IsZero() {
+		if tmp.Env == nil {
+			tmp.Env = make(map[string]yaml.Node)
+		}
+		tmp.Env["dev"] = tmp.Dev
+	}
+	if !tmp.Prod.IsZero() {
+		if tmp.Env == nil {
+			tmp.Env = make(map[string]yaml.Node)
+		}
+		tmp.Env["prod"] = tmp.Prod
 	}
 
 	// Apply environment-specific overrides
@@ -116,6 +147,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			ResourceKindMetricsView: tmp.Dashboards,
 			ResourceKindMigration:   tmp.Migrations,
 		},
+		Features: tmp.Features,
 	}
 
 	for i, c := range tmp.Connectors {

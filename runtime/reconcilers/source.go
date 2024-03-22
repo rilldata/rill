@@ -88,8 +88,9 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		// Check if the table exists (it should, but might somehow have been corrupted)
-		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
-		if ok && !t.View { // Checking View only out of caution (would indicate very corrupted DB)
+		_, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
+		// NOTE: Not checking if it's a view because some backends will represent sources as views (like DuckDB with external table storage enabled).
+		if ok {
 			// Rename and update state
 			err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
 			if err != nil {
@@ -382,7 +383,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 		}
-		r.C.Activity.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		r.C.Activity.RecordMetric(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
 
 		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
 	}()

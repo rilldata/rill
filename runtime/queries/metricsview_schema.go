@@ -12,10 +12,8 @@ import (
 )
 
 type MetricsViewSchema struct {
-	MetricsViewName string                                   `json:"metrics_view_name,omitempty"`
-	TableName       string                                   `json:"table_name,omitempty"`
-	Measures        []*runtimev1.MetricsViewSpec_MeasureV2   `json:"measures,omitempty"`
-	Dimensions      []*runtimev1.MetricsViewSpec_DimensionV2 `json:"dimensions,omitempty"`
+	MetricsViewName    string         `json:"metrics_view_name,omitempty"`
+	SecurityAttributes map[string]any `json:"security_attributes,omitempty"`
 
 	Result *runtimev1.MetricsViewSchemaResponse `json:"-"`
 }
@@ -49,13 +47,21 @@ func (q *MetricsViewSchema) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	// Resolve metrics view
+	mv, _, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	schema, _, err := olapQuery(ctx, olap, priority, q.buildMetricsViewDataTypesSQL(olap.Dialect()), nil)
+	sql := q.buildMetricsViewDataTypesSQL(mv, olap.Dialect())
+
+	schema, _, err := olapQuery(ctx, olap, priority, sql, nil)
 	if err != nil {
 		return err
 	}
@@ -71,11 +77,11 @@ func (q *MetricsViewSchema) Export(ctx context.Context, rt *runtime.Runtime, ins
 	return nil
 }
 
-func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(dialect drivers.Dialect) string {
+func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect) string {
 	var dimensions []string
 	var unnestClauses []string
-	for _, dim := range q.Dimensions {
-		sel, unnestClause := dimensionSelect(q.TableName, dim, dialect)
+	for _, dim := range mv.Dimensions {
+		sel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 		if unnestClause != "" {
 			unnestClauses = append(unnestClauses, unnestClause)
 		}
@@ -83,7 +89,7 @@ func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(dialect drivers.Dialect
 	}
 
 	var measures []string
-	for _, meas := range q.Measures {
+	for _, meas := range mv.Measures {
 		measures = append(measures, fmt.Sprintf("%s as %s", meas.Expression, safeName(meas.Name)))
 	}
 
@@ -111,7 +117,7 @@ func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(dialect drivers.Dialect
 	return fmt.Sprintf(
 		`SELECT %[1]s FROM %[2]s %[3]s %[4]s LIMIT 0`,
 		columns,                         // 1
-		safeName(q.TableName),           // 2
+		safeName(mv.Table),              // 2
 		strings.Join(unnestClauses, ""), // 3
 		groupBy,                         // 4
 	)

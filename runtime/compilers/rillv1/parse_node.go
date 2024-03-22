@@ -75,6 +75,10 @@ type commonYAML struct {
 	SQL string `yaml:"sql"`
 	// Environment-specific overrides
 	Env map[string]yaml.Node `yaml:"env"`
+	// Shorthand for setting "env:dev:"
+	Dev yaml.Node `yaml:"dev"`
+	// Shorthand for setting "env:prod:"
+	Prod yaml.Node `yaml:"prod"`
 }
 
 // parseStem parses a pair of YAML and SQL files with the same path stem (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
@@ -109,6 +113,20 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath
+
+		// Handle "dev:" and "prod:" shorthands (copy to to cfg.Env)
+		if !cfg.Dev.IsZero() {
+			if cfg.Env == nil {
+				cfg.Env = make(map[string]yaml.Node)
+			}
+			cfg.Env["dev"] = cfg.Dev
+		}
+		if !cfg.Prod.IsZero() {
+			if cfg.Env == nil {
+				cfg.Env = make(map[string]yaml.Node)
+			}
+			cfg.Env["prod"] = cfg.Prod
+		}
 
 		// Set environment-specific override
 		if envOverride := cfg.Env[p.Environment]; !envOverride.IsZero() {

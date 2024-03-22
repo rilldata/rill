@@ -58,6 +58,7 @@ export class MetricsService
   public loadLocalFields(localConfig: V1RuntimeGetConfig) {
     const projectPathParts = localConfig.project_path.split("/");
     this.commonFields = {
+      service_name: "web-local",
       app_name: "rill-developer",
       install_id: localConfig.install_id,
       client_id: this.getOrSetClientID(),
@@ -74,6 +75,7 @@ export class MetricsService
   public loadCloudFields(fields: CloudMetricsFields) {
     this.commonFields = {
       // TODO: build_id and version
+      service_name: "web-admin",
       app_name: "rill-cloud",
       client_id: this.getOrSetClientID(),
       is_dev: fields.isDev,
