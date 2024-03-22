@@ -34,6 +34,7 @@ import {
   StateManagerReadables,
   createStateManagerReadables,
 } from "./selectors";
+import { createContext } from "@rilldata/web-common/lib/context";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
@@ -65,9 +66,10 @@ export type StateManagers = {
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
 
-export function getStateManagers(): StateManagers {
-  return getContext(DEFAULT_STORE_KEY);
-}
+export const stateManagersContext =
+  createContext<StateManagers>(DEFAULT_STORE_KEY);
+
+export const getStateManagers = stateManagersContext.get;
 
 export function createStateManagers({
   queryClient,

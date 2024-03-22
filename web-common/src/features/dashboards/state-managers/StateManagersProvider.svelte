@@ -1,8 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { setContext } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
+  import { createStateManagers, stateManagersContext } from "./state-managers";
 
   export let metricsViewName: string;
 
@@ -16,7 +15,8 @@
     extraKeyPrefix:
       orgName && projectName ? `__${orgName}__${projectName}` : "",
   });
-  setContext(DEFAULT_STORE_KEY, stateManagers);
+
+  stateManagersContext.set(stateManagers);
 
   $: {
     // update metrics view name

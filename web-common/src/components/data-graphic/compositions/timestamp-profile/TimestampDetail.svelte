@@ -22,7 +22,7 @@
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
   import { scaleLinear } from "d3-scale";
-  import { onMount, setContext } from "svelte";
+  import { onMount } from "svelte";
   import { cubicOut as easing } from "svelte/easing";
   import { spring } from "svelte/motion";
   import type { Writable } from "svelte/store";
@@ -39,6 +39,7 @@
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
+  import { dataGraphicContext } from "./context";
 
   const id = guidGenerator();
 
@@ -82,8 +83,9 @@
   const X: Writable<ScaleLinear<number, number>> = writable(undefined);
   const Y: Writable<ScaleLinear<number, number>> = writable(undefined);
   /** make them available to the children. */
-  setContext("rill:data-graphic:X", X);
-  setContext("rill:data-graphic:Y", Y);
+
+  dataGraphicContext.x.set(X);
+  dataGraphicContext.y.set(Y);
 
   const coordinates = writable(DEFAULT_COORDINATES);
 
@@ -105,7 +107,7 @@
     id,
   });
 
-  setContext("rill:data-graphic:plot-config", plotConfig);
+  dataGraphicContext.plotConfig.set(plotConfig);
 
   $: $plotConfig.devicePixelRatio = devicePixelRatio;
   $: $plotConfig.width = width;
