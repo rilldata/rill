@@ -201,7 +201,7 @@ func (f *fileIterator) Next() ([]string, error) {
 		zap.Int("batches", len(f.batches)), zap.Int("parallel_fetch_limit", f.parallelFetchLimit))
 
 	// Fetch batches async
-	fetchGrp, ctx := errgroup.WithContext(f.ctx)
+	fetchGrp, _ := errgroup.WithContext(f.ctx)
 	fetchGrp.SetLimit(f.parallelFetchLimit)
 	fetchResultChan := make(chan fetchResult)
 
@@ -209,40 +209,33 @@ func (f *fileIterator) Next() ([]string, error) {
 	writeGrp, _ := errgroup.WithContext(f.ctx)
 	writeGrp.Go(func() error {
 		batchesLeft := len(f.batches)
-		for {
-			select {
-			case result, ok := <-fetchResultChan:
-				if !ok {
-					return nil
+		for result := range fetchResultChan {
+			batch := result.batch
+			writeStart := time.Now()
+			for _, rec := range *result.records {
+				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
+					writer.NewBufferedRowGroup()
 				}
-				batch := result.batch
-				writeStart := time.Now()
-				for _, rec := range *result.records {
-					if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
-						writer.NewBufferedRowGroup()
-					}
-					if err := writer.WriteBuffered(rec); err != nil {
-						return err
-					}
-					fileInfo, err := os.Stat(fw.Name())
-					if err == nil { // ignore error
-						if fileInfo.Size() > f.limitInBytes {
-							return drivers.ErrStorageLimitExceeded
-						}
+				if err := writer.WriteBuffered(rec); err != nil {
+					return err
+				}
+				fileInfo, err := os.Stat(fw.Name())
+				if err == nil { // ignore error
+					if fileInfo.Size() > f.limitInBytes {
+						return drivers.ErrStorageLimitExceeded
 					}
 				}
-				batchesLeft--
-				f.logger.Debug(
-					"wrote an arrow batch to a parquet file",
-					zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
-					zap.Int("row_count", batch.GetRowCount()),
-					zap.Duration("write_duration", time.Since(writeStart)),
-				)
-				f.totalRecords += int64(result.batch.GetRowCount())
-			case <-ctx.Done():
-				return ctx.Err()
 			}
+			batchesLeft--
+			f.logger.Debug(
+				"wrote an arrow batch to a parquet file",
+				zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
+				zap.Int("row_count", batch.GetRowCount()),
+				zap.Duration("write_duration", time.Since(writeStart)),
+			)
+			f.totalRecords += int64(result.batch.GetRowCount())
 		}
+		return nil
 	})
 
 	for _, batch := range f.batches {
