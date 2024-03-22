@@ -6,7 +6,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -32,7 +32,7 @@
   $: yaml = $fileQuery.data?.blob || "";
 
   const queryClient = useQueryClient();
-  $: allErrors = newFileArtifactStore.getAllErrorsForFile(
+  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
     getFilePathFromNameAndType(chartName, EntityType.Chart),

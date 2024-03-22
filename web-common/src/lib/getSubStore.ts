@@ -13,7 +13,7 @@ export function getSubStore<SubStore>(
 ): Readable<SubStore> {
   const store = writable(defaultStore);
   const unsub = entries.subscribe((e) => {
-    if (!(key in entries) || !(key in subStore)) return e;
+    if (!(key in e) || !(key in subStore)) return e;
     setTimeout(() => {
       store.set(subStore[key]);
       unsub();

@@ -3,7 +3,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -26,7 +26,7 @@
   const dispatch = createEventDispatcher();
 
   $: modelNames = useModelFileNames($runtime.instanceId);
-  $: modelHasError = newFileArtifactStore.getFileHasErrors(
+  $: modelHasError = fileArtifactsStore.getFileHasErrors(
     queryClient,
     $runtime.instanceId,
     modelPath,

@@ -1,4 +1,4 @@
-import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { waitForResourceUpdate } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -10,7 +10,7 @@ export function checkSourceImported(
   sourceName: string,
   filePath: string,
 ) {
-  const lastUpdatedOn = newFileArtifactStore.getLastStateUpdatedOn(filePath);
+  const lastUpdatedOn = fileArtifactsStore.getLastStateUpdatedOn(filePath);
   if (lastUpdatedOn) return; // For now only show for fresh sources
   waitForResourceUpdate(queryClient, get(runtime).instanceId, filePath).then(
     (success) => {

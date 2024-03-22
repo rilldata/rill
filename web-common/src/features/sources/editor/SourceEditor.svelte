@@ -2,7 +2,7 @@
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -39,7 +39,7 @@
     setLineStatuses([], view);
   }
 
-  $: allErrors = newFileArtifactStore.getAllErrorsForFile(
+  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
     filePath,

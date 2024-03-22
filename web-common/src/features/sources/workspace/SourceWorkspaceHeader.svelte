@@ -8,7 +8,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import {
     resourceIsLoading,
     useAllNames,
@@ -179,7 +179,7 @@
     );
   };
 
-  $: hasErrors = newFileArtifactStore.getFileHasErrors(
+  $: hasErrors = fileArtifactsStore.getFileHasErrors(
     queryClient,
     $runtime.instanceId,
     filePath,

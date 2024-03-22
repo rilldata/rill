@@ -1,4 +1,4 @@
-import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ReconcileStatus,
@@ -28,19 +28,11 @@ export function resourceStatusStore(
   instanceId: string,
   filePath: string,
 ) {
-  const lastUpdatedOn = newFileArtifactStore.getLastStateUpdatedOn(filePath);
+  const lastUpdatedOn = fileArtifactsStore.getLastStateUpdatedOn(filePath);
   return derived(
     [
-      newFileArtifactStore.getResourceForFile(
-        queryClient,
-        instanceId,
-        filePath,
-      ),
-      newFileArtifactStore.getAllErrorsForFile(
-        queryClient,
-        instanceId,
-        filePath,
-      ),
+      fileArtifactsStore.getResourceForFile(queryClient, instanceId, filePath),
+      fileArtifactsStore.getAllErrorsForFile(queryClient, instanceId, filePath),
     ],
     ([res, errors]) => {
       if (res.isFetching) return { status: ResourceStatus.Busy };
@@ -124,16 +116,8 @@ export function getResourceStatusStore(
 ) {
   return derived(
     [
-      newFileArtifactStore.getResourceForFile(
-        queryClient,
-        instanceId,
-        filePath,
-      ),
-      newFileArtifactStore.getAllErrorsForFile(
-        queryClient,
-        instanceId,
-        filePath,
-      ),
+      fileArtifactsStore.getResourceForFile(queryClient, instanceId, filePath),
+      fileArtifactsStore.getAllErrorsForFile(queryClient, instanceId, filePath),
       useProjectParser(queryClient, instanceId),
     ],
     ([resourceResp, errors, projectParserResp]) => {

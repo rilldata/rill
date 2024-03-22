@@ -1,6 +1,6 @@
 <script lang="ts">
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
@@ -36,7 +36,7 @@
       commitHash: config.build_commit,
     });
 
-    return resourcesStore.init(config.instance_id);
+    return fileArtifactsStore.init(config.instance_id);
   });
 
   let showDropOverlay = false;
@@ -76,7 +76,6 @@
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
-    role="application"
     class="index-body absolute w-screen h-screen"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation
@@ -85,6 +84,7 @@
     }}
     on:drag|preventDefault|stopPropagation
     on:drop|preventDefault|stopPropagation
+    role="application"
   >
     <WelcomePageRedirect>
       <BasicLayout>

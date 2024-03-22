@@ -1,131 +1,231 @@
-import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
-import { derived, Readable, writable } from "svelte/store";
-import { parseDocument } from "yaml";
-import type { MetricsConfig } from "../metrics-views/metrics-internal-store";
+import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import {
+  ResourceKind,
+  useProjectParser,
+  useResource,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { getSubStore } from "@rilldata/web-common/lib/getSubStore";
+import {
+  runtimeServiceListResources,
+  type V1ParseError,
+  V1ReconcileStatus,
+  type V1Resource,
+  type V1ResourceName,
+} from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
+import { derived, get, type Readable, writable } from "svelte/store";
 
-export type FileArtifactsData = {
-  // name used for the file. will not always be dependent on the file
-  name?: string;
-  errors?: Array<V1ReconcileError>;
-  jsonRepresentation?: MetricsConfig | Record<string, never>;
-  isReconciling?: boolean;
-};
+export class FileArtifact {
+  public readonly path = writable<string>("");
 
-/**
- * Store to save data for each file artifact.
- * Currently, stores reconcile errors
- */
-export type FileArtifactsState = {
-  entities: Record<string, FileArtifactsData>;
-};
-const { update, subscribe } = writable({
-  entities: {},
-} as FileArtifactsState);
+  public readonly name = writable<V1ResourceName | undefined>(undefined);
 
-const createOrUpdateFileArtifact = (
-  path: string,
-  callback: (entityData: FileArtifactsData) => void,
-) => {
-  update((state) => {
-    if (!state.entities[path]) {
-      state.entities[path] = {
-        errors: [],
-        jsonRepresentation: {},
-        isReconciling: false,
-      };
-    }
-    callback(state.entities[path]);
-    return state;
-  });
-};
+  /**
+   * Last time the state of the resource `kind/name` was updated
+   * used to make sure we do not have unnecessary refreshes
+   */
+  public lastStateUpdatedOn: string | undefined;
 
-const fileArtifactsEntitiesReducers = {
-  setName(path: string, name: string) {
-    createOrUpdateFileArtifact(path, (entityData) => {
-      entityData.name = name;
-    });
-  },
+  public constructor(filePath: string) {
+    this.path.set(filePath);
+  }
 
-  setErrors(affectedPaths: Array<string>, errors: Array<V1ReconcileError>) {
-    const errorsForPaths = new Map<string, Array<V1ReconcileError>>();
-    affectedPaths.forEach((affectedPath) =>
-      errorsForPaths.set(correctFilePath(affectedPath), []),
-    );
-
-    errors.forEach((error) => {
-      const filePath = correctFilePath(error.filePath);
-
-      // empty models should not show error
-      if (
-        filePath.endsWith(".sql") &&
-        error.message.endsWith("No statement to prepare!")
-      ) {
-        return;
-      }
-
-      if (!errorsForPaths.has(filePath)) {
-        errorsForPaths.set(filePath, []);
-      }
-      errorsForPaths.get(filePath).push(error);
-    });
-
-    errorsForPaths.forEach((errors, path) => {
-      createOrUpdateFileArtifact(path, (entityData: FileArtifactsData) => {
-        entityData.errors = errors;
+  public updateResource(resource: V1Resource) {
+    const curName = get(this.name);
+    if (
+      curName?.name !== resource.meta?.name?.name ||
+      curName?.kind !== resource.meta?.name?.kind
+    ) {
+      this.name.set({
+        kind: resource.meta?.name?.kind,
+        name: resource.meta?.name?.name,
       });
-    });
-  },
+    }
+    this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
+  }
 
-  // reducer for storing Metric artifact
-  setJSONRep(affectedPath: string, fileData: string) {
-    const jsonRepresentation = parseDocument(fileData).toJSON();
-    createOrUpdateFileArtifact(
-      affectedPath,
-      (entityData: FileArtifactsData) => {
-        entityData.jsonRepresentation = jsonRepresentation;
-      },
-    );
-  },
-
-  setIsReconciling(affectedPath: string, isReconciling: boolean) {
-    createOrUpdateFileArtifact(
-      affectedPath,
-      (entityData: FileArtifactsData) => {
-        entityData.isReconciling = isReconciling;
-      },
-    );
-  },
-};
-
-export type FileArtifactsStore = Readable<FileArtifactsState> &
-  typeof fileArtifactsEntitiesReducers;
-
-export const fileArtifactsStore: FileArtifactsStore = {
-  subscribe,
-  ...fileArtifactsEntitiesReducers,
-};
-
-export function getIsFileReconcilingStore(file: string) {
-  return derived(
-    fileArtifactsStore,
-    ($store) => $store.entities[file]?.isReconciling,
-  );
+  public deleteResource() {
+    this.name.set(undefined);
+  }
 }
+
+export class FileArtifactsStore {
+  /**
+   * Map of all files and whether it is reconciling or not.
+   * If an entry is present here then there should be on in {@link artifacts} as well
+   */
+  public readonly files = writable<Record<string, boolean>>({});
+
+  /**
+   * Map of all files and its individual store
+   */
+  private readonly artifacts: Record<string, FileArtifact> = {};
+
+  // Actions
+
+  public async init(instanceId: string) {
+    const resourcesResp = await runtimeServiceListResources(instanceId);
+    if (!resourcesResp.resources?.length) return;
+    for (const resource of resourcesResp.resources) {
+      switch (resource.meta?.name?.kind) {
+        case ResourceKind.Source:
+        case ResourceKind.Model:
+        case ResourceKind.MetricsView:
+        case ResourceKind.Chart:
+        case ResourceKind.Dashboard:
+          this.setResource(resource);
+          break;
+      }
+    }
+  }
+
+  public updateFile(filePath: string) {
+    if (get(this.files)[filePath]) return;
+    this.artifacts[filePath] = new FileArtifact(filePath);
+    this.files.update((f) => {
+      f[filePath] = false;
+      return f;
+    });
+  }
+
+  public deleteFile(filePath: string) {
+    delete this.artifacts[filePath];
+    this.files.update((f) => {
+      delete f[filePath];
+      return f;
+    });
+  }
+
+  public setResource(resource: V1Resource) {
+    resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath].updateResource(resource);
+    });
+    this.files.update((f) => {
+      resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
+        f[filePath] =
+          resource.meta?.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
+      });
+      return f;
+    });
+  }
+
+  public deleteResource(resource: V1Resource) {
+    resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
+      this.artifacts[filePath]?.deleteResource();
+    });
+  }
+
+  // Selectors
+
+  public getFileArtifact(filePath: string) {
+    return getSubStore(
+      this.files,
+      this.artifacts,
+      filePath,
+      // Dummy store to not break component code
+      new FileArtifact(filePath),
+    );
+  }
+
+  public getLastStateUpdatedOn(filePath: string) {
+    return this.artifacts[correctFilePath(filePath)]?.lastStateUpdatedOn;
+  }
+
+  public getResourceNameForFile(filePath: string) {
+    return derived(this.getFileArtifact(filePath), (artifact, set) =>
+      derived(artifact.name, (resourceName) => resourceName).subscribe(set),
+    ) as Readable<V1ResourceName | undefined>;
+  }
+
+  public getReconcilingItems() {
+    return derived(this.files, (files) => {
+      const currentlyReconciling = new Array<V1ResourceName>();
+      for (const filePath in files) {
+        const name = get(this.artifacts[filePath]?.name);
+        if (files[filePath] && name) {
+          currentlyReconciling.push(name);
+        }
+      }
+      return currentlyReconciling;
+    });
+  }
+
+  // Complex selectors based on resource API
+
+  public getResourceForFile(
+    queryClient: QueryClient,
+    instanceId: string,
+    filePath: string,
+  ) {
+    return derived(this.getResourceNameForFile(filePath), (resourceName, set) =>
+      useResource(
+        instanceId,
+        resourceName?.name as string,
+        resourceName?.kind as ResourceKind,
+        undefined,
+        queryClient,
+      ).subscribe(set),
+    ) as ReturnType<typeof useResource<V1Resource>>;
+  }
+
+  public getAllErrorsForFile(
+    queryClient: QueryClient,
+    instanceId: string,
+    filePath: string,
+  ): Readable<V1ParseError[]> {
+    return derived(
+      [
+        useProjectParser(queryClient, instanceId),
+        this.getResourceForFile(queryClient, instanceId, filePath),
+      ],
+      ([projectParser, resource]) => {
+        if (
+          projectParser.isFetching ||
+          projectParser.isError ||
+          resource.isFetching
+        ) {
+          // TODO: what should the error be for failed get resource API
+          return [];
+        }
+        return [
+          ...(
+            projectParser.data?.projectParser?.state?.parseErrors ?? []
+          ).filter(
+            (e) => e.filePath && removeLeadingSlash(e.filePath) === filePath,
+          ),
+          ...(resource.data?.meta?.reconcileError
+            ? [
+                {
+                  filePath,
+                  message: resource.data.meta.reconcileError,
+                },
+              ]
+            : []),
+        ];
+      },
+      [],
+    );
+  }
+
+  public getFileHasErrors(
+    queryClient: QueryClient,
+    instanceId: string,
+    filePath: string,
+  ) {
+    return derived(
+      this.getAllErrorsForFile(queryClient, instanceId, filePath),
+      (errors) => errors.length > 0,
+    );
+  }
+}
+
+export const fileArtifactsStore = new FileArtifactsStore();
 
 function correctFilePath(filePath: string) {
-  // TODO: why does affectedPaths not have the leading /
-  if (!filePath.startsWith("/")) {
-    filePath = "/" + filePath;
+  if (filePath.startsWith("/")) {
+    return filePath.substring(1);
   }
   return filePath;
-}
-
-export function getFileArtifactReconciliationErrors(
-  fileState: FileArtifactsState,
-  fileName: string,
-): V1ReconcileError[] {
-  const path = Object.keys(fileState?.entities)?.find((key) => {
-    return key.endsWith(fileName);
-  });
-  return fileState?.entities?.[path]?.errors;
 }

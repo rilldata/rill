@@ -1,5 +1,4 @@
-import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
-import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
@@ -43,15 +42,14 @@ function handleWatchFileResponse(
       void queryClient.refetchQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
-      newFileArtifactStore.updateFile(cleanedPath);
+      fileArtifactsStore.updateFile(cleanedPath);
       break;
 
     case "FILE_EVENT_DELETE":
       queryClient.removeQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
-      newFileArtifactStore.deleteFile(cleanedPath);
-      resourcesStore.deleteFile(cleanedPath);
+      fileArtifactsStore.deleteFile(cleanedPath);
       break;
   }
   // TODO: should this be throttled?

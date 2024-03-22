@@ -7,7 +7,7 @@
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -30,7 +30,7 @@
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
   $: yaml = $fileQuery?.data?.blob;
-  $: allErrors = newFileArtifactStore.getAllErrorsForFile(
+  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
     filePath,

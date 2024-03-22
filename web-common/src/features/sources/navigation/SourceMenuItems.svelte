@@ -6,7 +6,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
@@ -54,7 +54,7 @@
   $: source = $sourceQuery.data?.source;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
-  $: sourceHasError = newFileArtifactStore.getFileHasErrors(
+  $: sourceHasError = fileArtifactsStore.getFileHasErrors(
     queryClient,
     runtimeInstanceId,
     filePath,

@@ -1,6 +1,5 @@
-import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
@@ -42,7 +41,7 @@ export function invalidateResourceResponse(
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
 
-  if (res.resource) newFileArtifactStore.setResource(res.resource);
+  if (res.resource) fileArtifactsStore.setResource(res.resource);
 
   const instanceId = get(runtime).instanceId;
   if (
@@ -67,8 +66,6 @@ export function invalidateResourceResponse(
 
   // only re-fetch list queries for kinds in `MainResources`
   if (!MainResourceKinds[res.name.kind]) return;
-  resourcesStore.doneReconciling(res.resource);
-  resourcesStore.setResource(res.resource);
   return queryClient.refetchQueries(
     // we only use individual kind's queries
     getRuntimeServiceListResourcesQueryKey(instanceId, {
@@ -84,7 +81,7 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  const lastStateUpdatedOn = newFileArtifactStore.getLastStateUpdatedOn(
+  const lastStateUpdatedOn = fileArtifactsStore.getLastStateUpdatedOn(
     resource.meta?.filePaths?.[0] ?? "",
   );
   if (
@@ -93,7 +90,6 @@ async function invalidateResource(
   ) {
     // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
     // So handle the case when it is 1st queued and status != IDLE
-    resourcesStore.setVersion(resource);
     return;
   }
 
@@ -103,7 +99,6 @@ async function invalidateResource(
   )
     return;
 
-  resourcesStore.setVersion(resource);
   const failed = !!resource.meta.reconcileError;
 
   switch (resource.meta.name.kind) {
@@ -147,8 +142,7 @@ async function invalidateRemovedResource(
       "name.kind": resource.meta.name.kind,
     }),
   );
-  resourcesStore.deleteResource(resource);
-  newFileArtifactStore.deleteResource(resource);
+  fileArtifactsStore.deleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
   // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource.meta.name.kind) {
@@ -186,7 +180,6 @@ function shouldSkipResource(
 
     case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
       refreshResource(queryClient, instanceId, res);
-      resourcesStore.reconciling(res);
       return true;
   }
 

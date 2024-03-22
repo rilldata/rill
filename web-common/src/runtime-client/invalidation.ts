@@ -2,7 +2,6 @@ import {
   getNameFromFile,
   removeLeadingSlash,
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
@@ -62,13 +61,6 @@ export const invalidateAfterReconcile = async (
           getRuntimeServiceGetFileQueryKey(
             instanceId,
             removeLeadingSlash(path),
-          ),
-        ),
-        queryClient.refetchQueries(
-          getRuntimeServiceGetCatalogEntryQueryKey(
-            instanceId,
-            get(fileArtifactsStore).entities[path]?.name ??
-              getNameFromFile(path),
           ),
         ),
       ])

@@ -5,7 +5,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -38,7 +38,7 @@
   $: tableVisible = workspaceLayout.table.visible;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelHasError = newFileArtifactStore.getFileHasErrors(
+  $: modelHasError = fileArtifactsStore.getFileHasErrors(
     queryClient,
     runtimeInstanceId,
     modelPath,

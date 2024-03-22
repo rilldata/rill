@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { newFileArtifactStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store-new";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
@@ -30,7 +30,7 @@
 
   $: yaml = $file.data?.blob || "";
 
-  $: allErrors = newFileArtifactStore.getAllErrorsForFile(
+  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
     filePath,
