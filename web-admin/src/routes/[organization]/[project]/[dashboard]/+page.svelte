@@ -110,7 +110,7 @@
           <DashboardBookmarksStateProvider metricViewName={dashboardName}>
             <DashboardURLStateProvider metricViewName={dashboardName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+                <Dashboard metricViewName={dashboardName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
@@ -118,7 +118,7 @@
           <DashboardStateProvider metricViewName={dashboardName}>
             <DashboardURLStateProvider metricViewName={dashboardName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+                <Dashboard metricViewName={dashboardName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>
