@@ -10,9 +10,10 @@ export async function createChart(instanceId: string, newChartName: string) {
       blob: `kind: chart
 data:
   metrics_sql: |
-    SELECT advertiser_name, AGGREGATE(measure_2) as measure_2
+    SELECT advertiser_name, AGGREGATE(measure_2)
     FROM Bids_Sample_Dash
     GROUP BY advertiser_name
+    ORDER BY measure_2 DESC
     LIMIT 20
 
 vega_lite: |

@@ -230,16 +230,6 @@ export function estimateColumnSizes(
         config.defaultColumnWidth;
   });
 
-  const measureColumnSizeSum = estimatedColumnSizes
-    .slice(1)
-    .reduce((a, b) => a + b, 0);
-
-  /* Dimension column should expand to cover whole container */
-  estimatedColumnSizes[0] = Math.max(
-    containerWidth - measureColumnSizeSum - config.indexWidth,
-    estimatedColumnSizes[0],
-  );
-
   return estimatedColumnSizes;
 }
 

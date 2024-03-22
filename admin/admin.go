@@ -19,19 +19,22 @@ type Options struct {
 	DefaultProvisioner string
 	ExternalURL        string
 	VersionNumber      string
+	MetricsProjectOrg  string
+	MetricsProjectName string
 }
 
 type Service struct {
-	DB             database.DB
-	ProvisionerSet map[string]provisioner.Provisioner
-	Email          *email.Client
-	Github         Github
-	AI             ai.Client
-	Used           *usedFlusher
-	Logger         *zap.Logger
-	opts           *Options
-	issuer         *auth.Issuer
-	VersionNumber  string
+	DB               database.DB
+	ProvisionerSet   map[string]provisioner.Provisioner
+	Email            *email.Client
+	Github           Github
+	AI               ai.Client
+	Used             *usedFlusher
+	Logger           *zap.Logger
+	opts             *Options
+	issuer           *auth.Issuer
+	VersionNumber    string
+	metricsProjectID string
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
@@ -72,17 +75,28 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		return nil, fmt.Errorf("default provisioner %q is not in the provisioner set", opts.DefaultProvisioner)
 	}
 
+	// Look for the optional metrics project
+	var metricsProjectID string
+	if opts.MetricsProjectOrg != "" && opts.MetricsProjectName != "" {
+		proj, err := db.FindProjectByName(ctx, opts.MetricsProjectOrg, opts.MetricsProjectName)
+		if err != nil {
+			return nil, fmt.Errorf("error looking up metrics project: %w", err)
+		}
+		metricsProjectID = proj.ID
+	}
+
 	return &Service{
-		DB:             db,
-		ProvisionerSet: provSet,
-		Email:          emailClient,
-		Github:         github,
-		AI:             aiClient,
-		Used:           newUsedFlusher(logger, db),
-		Logger:         logger,
-		opts:           opts,
-		issuer:         issuer,
-		VersionNumber:  opts.VersionNumber,
+		DB:               db,
+		ProvisionerSet:   provSet,
+		Email:            emailClient,
+		Github:           github,
+		AI:               aiClient,
+		Used:             newUsedFlusher(logger, db),
+		Logger:           logger,
+		opts:             opts,
+		issuer:           issuer,
+		VersionNumber:    opts.VersionNumber,
+		metricsProjectID: metricsProjectID,
 	}, nil
 }
 
