@@ -8,7 +8,6 @@
     WorkspaceContainer,
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { goto } from "$app/navigation";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
