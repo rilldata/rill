@@ -159,7 +159,10 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	// Druid-based `exactify` approach (see comments above)
-	originalMeasures := q.removeNoSortMeasures()
+	originalMeasures := q.Measures
+	if len(q.Measures) >= 5 {
+		originalMeasures = q.removeNoSortMeasures()
+	}
 
 	err = q.executeToplist(ctx, olap, mv, priority, security)
 	if err != nil {
