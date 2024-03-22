@@ -3,16 +3,32 @@ import {
   MainAreaColorGradientLight,
   MainLineColor,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import type { Config } from "vega-lite";
 
-const markColor = MainLineColor;
-const axisColor = "#E5E7EB";
-const axisLabelColor = "#4b5563"; // gray-600
+const BarFill = "var(--color-primary-400)";
+const CategoryColors = [
+  "#5FA9B9",
+  "#875FB9",
+  "#306B59",
+  "#594159",
+  "#E29FE3",
+  "#B7DAF0",
+  "#FFCBDF",
+];
 
-export const getRillTheme = () => ({
-  arc: { fill: markColor },
+const defaultMarkColor = MainLineColor;
+const gridColor = "#d1d5db"; // gray-300
+const axisLabelColor = "#374151"; // gray-700
+
+export const getRillTheme: () => Config = () => ({
+  mark: {
+    tooltip: true,
+  },
+  arc: { fill: defaultMarkColor },
   area: {
+    line: { stroke: MainLineColor, strokeWidth: 1 },
     stroke: null,
-    line: markColor,
+    fillOpacity: 0.7,
     color: {
       x1: 1,
       y1: 1,
@@ -31,17 +47,17 @@ export const getRillTheme = () => ({
       ],
     },
   },
-  bar: { fill: markColor },
-  line: { stroke: markColor },
-  path: { stroke: markColor },
-  rect: { fill: markColor },
-  shape: { stroke: markColor },
-  symbol: { fill: markColor },
+  bar: { fill: BarFill, opacity: 0.7 },
+  line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
+  path: { stroke: defaultMarkColor },
+  rect: { fill: defaultMarkColor },
+  shape: { stroke: defaultMarkColor },
+  symbol: { fill: defaultMarkColor },
 
   axisY: {
-    gridColor: axisColor,
+    gridColor: gridColor,
     gridDash: [2],
-    tickColor: axisColor,
+    tickColor: gridColor,
     domain: false,
     labelFont: "Inter, sans-serif",
     labelFontSize: 10,
@@ -56,9 +72,9 @@ export const getRillTheme = () => ({
     labelOverlap: false,
   },
   axisX: {
-    gridColor: axisColor,
+    gridColor: gridColor,
     gridDash: [2],
-    tickColor: axisColor,
+    tickColor: gridColor,
     tickSize: 0,
     domain: false,
     labelFont: "Inter, sans-serif",
@@ -74,5 +90,8 @@ export const getRillTheme = () => ({
   },
   view: {
     strokeWidth: 0,
+  },
+  range: {
+    category: CategoryColors,
   },
 });

@@ -13,7 +13,7 @@ Rill supports connecting to an existing Druid cluster and using it as an OLAP en
 
 ## Connection string (DSN)
 
-Rill connects to Druid using the [Avatica protobuf endpoint](https://druid.apache.org/docs/latest/api-reference/sql-jdbc/) and requires using a connection string of the following format: `http://<host>/druid/v2/sql/avatica-protobuf/`. This should be set in the `connection.druid.dsn` property in Rill.
+Rill connects to Druid using the [Avatica protobuf endpoint](https://druid.apache.org/docs/latest/api-reference/sql-jdbc/) and requires using a connection string of the following format: `http://<host>/druid/v2/sql/avatica-protobuf/`. This should be set in the `connector.druid.dsn` property in Rill.
 
 As an example, this typically looks something like:
 
@@ -54,8 +54,8 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 ## Configuring Rill Developer
 
 When using Rill for local development, there are two options to configure Rill to enable Druid as an OLAP engine:
-- You can set `connection.druid.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connection.druid.dsn` as a variable to `rill start` directly (e.g. `rill start --var connection.druid.dsn=...`)
+- You can set `connector.druid.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
+- You can pass in `connector.druid.dsn` as a variable to `rill start` directly (e.g. `rill start --var connector.druid.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -66,8 +66,8 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 ## Configuring Rill Cloud
 
 When deploying a Druid-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
-- Use the `rill env configure` command to set `connection.druid.dsn` after deploying the project
-- If `connection.druid.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
+- Use the `rill env configure` command to set `connector.druid.dsn` after deploying the project
+- If `connector.druid.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
 
 :::info
 
