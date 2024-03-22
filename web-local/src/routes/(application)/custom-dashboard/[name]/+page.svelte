@@ -183,7 +183,7 @@
   >
     <div slot="workspace-controls" class="flex gap-x-4">
       {#if !singlePanel || !editing}
-        <Toggle bind:bool={showGrid} text={["Hide grid", "Show grid"]} />
+        <Toggle bind:bool={showGrid} text={["Show grid", "Hide grid"]} />
       {/if}
 
       {#if singlePanel}
