@@ -117,7 +117,11 @@ test.describe("dashboard", () => {
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
 
     // Change the metric trend granularity
-    await page.getByRole("button", { name: "Metric trends by day" }).click();
+
+    const timeGrainSelector = page.getByRole("button", {
+      name: "Select a time grain",
+    });
+    await timeGrainSelector.click();
     await page.getByRole("menuitem", { name: "day" }).click();
 
     // Change the time range
@@ -360,9 +364,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
 
     // Assert that time dimension is now week
-    await expect(
-      page.getByRole("button", { name: "Metric trends by week" }),
-    ).toBeVisible();
+    await expect(timeGrainSelector).toHaveText("Metric trends by week");
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
