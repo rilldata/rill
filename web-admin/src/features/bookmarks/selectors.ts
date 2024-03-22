@@ -1,4 +1,6 @@
 import {
+  createAdminServiceGetCurrentUser,
+  createAdminServiceGetUser,
   createAdminServiceListBookmarks,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
@@ -46,8 +48,9 @@ export function getBookmarks(
       useProjectId(orgName, projectName),
       useMetricsView(instanceId, metricsViewName),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
+      createAdminServiceGetCurrentUser(),
     ],
-    ([projectId, metricsViewResp, schemaResp], set) =>
+    ([projectId, metricsViewResp, schemaResp, userResp], set) =>
       createAdminServiceListBookmarks(
         {
           projectId: projectId.data,
@@ -60,7 +63,9 @@ export function getBookmarks(
               !!projectId?.data &&
               !!metricsViewName &&
               !metricsViewResp.isFetching &&
-              !schemaResp.isFetching,
+              !schemaResp.isFetching &&
+              userResp.isSuccess &&
+              !!userResp.data.user,
             select: (resp) => {
               const bookmarks: Bookmarks = {
                 home: undefined,
