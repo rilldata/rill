@@ -71,7 +71,7 @@ require (
 	github.com/rs/cors v1.9.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/sashabaranov/go-openai v1.19.3
-	github.com/snowflakedb/gosnowflake v1.7.2
+	github.com/snowflakedb/gosnowflake v1.8.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -340,5 +340,9 @@ replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb 
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
+
+// snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
+// gosnowflake v1.8.0 has an issue with arrow batches - it retunrs 0 batches if returned data is huge (e.g. 100k rows)
+replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/esevastyanov/gosnowflake v0.0.0-20231129090721-012eca4e3448
 
 exclude modernc.org/sqlite v1.18.1
