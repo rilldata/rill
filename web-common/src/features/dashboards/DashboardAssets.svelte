@@ -3,10 +3,13 @@
   import { page } from "$app/stores";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import {
     useDashboardFileNames,
+    useDashboardRoutes,
     useValidDashboards,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
@@ -37,6 +40,7 @@
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
+  import { WandIcon } from "lucide-svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
@@ -53,6 +57,7 @@
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
+  $: dashboardRoutes = useDashboardRoutes(instanceId);
   $: dashboards = useValidDashboards(instanceId);
 
   const MetricsSourceSelectionError = (
@@ -65,7 +70,7 @@
 
   const createDashboard = createRuntimeServicePutFile();
 
-  const { readOnly } = featureFlags;
+  const { readOnly, customDashboards } = featureFlags;
 
   let showMetricsDefs = true;
 
@@ -168,9 +173,12 @@
     );
     await deleteFileArtifact(
       instanceId,
-      dashboardName,
+      getFileAPIPathFromNameAndType(
+        dashboardName,
+        EntityType.MetricsDefinition,
+      ),
       EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? [],
+      $dashboardRoutes?.data ?? [],
     );
 
     // redirect to model when metric is deleted
@@ -211,6 +219,13 @@
     $sourceNames?.data?.length > 0 &&
     $modelNames?.data?.length > 0 &&
     $dashboardNames?.data?.length === 0;
+
+  let showGenerateChartModal = false;
+  let generateChartMetricsView = "";
+  function openGenerateChartModal(metricsView: string) {
+    showGenerateChartModal = true;
+    generateChartMetricsView = metricsView;
+  }
 </script>
 
 <div class="h-fit flex flex-col">
@@ -261,6 +276,22 @@
                   <MetricsIcon slot="icon" />
                   Edit metrics
                 </NavigationMenuItem>
+                {#if customDashboards}
+                  <NavigationMenuItem
+                    on:click={() => openGenerateChartModal(dashboardName)}
+                  >
+                    <Explore slot="icon" />
+                    <div class="flex gap-x-2 items-center">
+                      Generate chart with AI
+                      <WandIcon class="w-3 h-3" />
+                    </div>
+                    <svelte:fragment slot="description">
+                      {#if hasSourceError}
+                        Dashboard has errors
+                      {/if}
+                    </svelte:fragment>
+                  </NavigationMenuItem>
+                {/if}
                 <NavigationMenuSeparator />
                 <NavigationMenuItem
                   on:click={() => openRenameMetricsDefModal(dashboardName)}
@@ -296,5 +327,12 @@
     entityType={EntityType.MetricsDefinition}
     closeModal={() => (showRenameMetricsDefinitionModal = false)}
     currentAssetName={renameMetricsDefName}
+  />
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    metricsView={generateChartMetricsView}
   />
 {/if}

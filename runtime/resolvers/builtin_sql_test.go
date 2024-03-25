@@ -55,7 +55,7 @@ func TestBuiltinSQL(t *testing.T) {
 		if tc.wantErr != "" {
 			require.Equal(t, tc.wantErr, err.Error())
 		} else {
-			require.Equal(t, []byte(tc.want), res)
+			require.Equal(t, []byte(tc.want), res.Data)
 		}
 	}
 }
