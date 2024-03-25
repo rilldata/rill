@@ -7,7 +7,7 @@ import { EntityType } from "../entity-management/types";
 import {
   extractFileExtension,
   sanitizeEntityName,
-} from "web-common/src/features/sources/extract-file-name";
+} from "@rilldata/web-common/features/sources/extract-file-name";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
