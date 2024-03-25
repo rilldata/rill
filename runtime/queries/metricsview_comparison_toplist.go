@@ -122,34 +122,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 			return q.executeComparisonToplist(ctx, olap, mv, priority, security)
 		}
 
-		// Druid-based `exactify` approach:
-		// 1. The first query fetch topN dimensions.
-		// 2. The second query fetches topN filtered by the colleted dimensions.
-		// The dimension filter contrains topN table avoiding approximation in measures (due to mearging multiple topN Druid results from different nodes).
-		// Optimizations:
-		// * the first query fetches only sorted dimensions
-		// * the second query isn't run if the topN already less than the limit
-		originalMeasures := q.removeNoSortMeasures()
-
-		if q.isBase() || q.isDeltaComparison() {
-			err = q.executeToplist(ctx, olap, mv, priority, security)
-			if err != nil {
-				return err
-			}
-		} else {
-			ttr := q.TimeRange
-			q.TimeRange = q.ComparisonTimeRange
-			err = q.executeToplist(ctx, olap, mv, priority, security)
-			if err != nil {
-				return err
-			}
-
-			q.TimeRange = ttr
-		}
-
-		q.addDimsAsFilter()
-		q.Measures = originalMeasures
-		return q.executeComparisonToplist(ctx, olap, mv, priority, security)
+		return q.executeDruidApproximateComparison(ctx, olap, mv, priority, security)
 	}
 
 	// general toplist
@@ -157,13 +130,48 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return q.executeToplist(ctx, olap, mv, priority, security)
 	}
 
-	// Druid-based `exactify` approach (see comments above)
+	return q.executeDruidApproximateToplist(ctx, olap, mv, priority, security)
+}
+
+// Druid-based `exactify` approach:
+// 1. The first query fetch topN dimensions.
+// 2. The second query fetches topN filtered by the collected dimensions.
+// The dimension filter contrains topN table avoiding approximation in measures (due to mearging multiple topN Druid results from different nodes).
+func (q *MetricsViewComparison) executeDruidApproximateComparison(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, security *runtime.ResolvedMetricsViewSecurity) error {
+	originalMeasures := q.removeNoSortMeasures()
+
+	if q.isBase() || q.isDeltaComparison() {
+		err := q.executeToplist(ctx, olap, mv, priority, security)
+		if err != nil {
+			return err
+		}
+	} else {
+		ttr := q.TimeRange
+		q.TimeRange = q.ComparisonTimeRange
+		err := q.executeToplist(ctx, olap, mv, priority, security)
+		if err != nil {
+			return err
+		}
+
+		q.TimeRange = ttr
+	}
+
+	q.addDimsAsFilter()
+	q.Measures = originalMeasures
+	return q.executeComparisonToplist(ctx, olap, mv, priority, security)
+}
+
+// Druid-based `exactify` approach (see comments above)
+// Optimizations:
+// * the first query fetches only sorted dimensions
+// * the second query isn't run if the topN already less than the limit
+func (q *MetricsViewComparison) executeDruidApproximateToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, security *runtime.ResolvedMetricsViewSecurity) error {
 	originalMeasures := q.Measures
 	if len(q.Measures) >= 5 {
 		originalMeasures = q.removeNoSortMeasures()
 	}
 
-	err = q.executeToplist(ctx, olap, mv, priority, security)
+	err := q.executeToplist(ctx, olap, mv, priority, security)
 	if err != nil {
 		return err
 	}
