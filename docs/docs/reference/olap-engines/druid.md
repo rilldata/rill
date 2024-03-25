@@ -13,13 +13,13 @@ Rill supports connecting to an existing Druid cluster and using it as an OLAP en
 
 ## Connection string (DSN)
 
-Rill connects to Druid using the [Avatica protobuf endpoint](https://druid.apache.org/docs/latest/api-reference/sql-jdbc/) and requires using a connection string of the following format: `http://<host>/druid/v2/sql/avatica-protobuf/`. This should be set in the `connector.druid.dsn` property in Rill.
+Rill connects to Druid using the [HTTP API](https://druid.apache.org/docs/latest/api-reference/sql-api) and requires using a connection string of the following format: `http://<user>:<password>@<host>:<port>/druid/v2/sql`. This should be set in the `connector.druid.dsn` property in Rill.
 
 As an example, this typically looks something like:
 
 ```bash
 
-connector.druid.dsn="https://<hostname>:<port>/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=<username>&avaticaPassword=<password>"
+connector.druid.dsn="https://user1:2lkj1%40fs@localhost:8888/druid/v2/sql"
 
 ```
 
