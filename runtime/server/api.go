@@ -71,7 +71,7 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 
 	// Write the response
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(res)
+	_, err = w.Write(res.Data)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}

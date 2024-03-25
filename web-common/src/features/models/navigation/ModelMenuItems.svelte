@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -27,6 +28,8 @@
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
+
+  const { customDashboards } = featureFlags;
 
   $: modelRoutes = useModelRoutes($runtime.instanceId);
   $: modelHasError = getFileHasErrors(
@@ -76,6 +79,30 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
+{#if customDashboards}
+  <NavigationMenuItem
+    disabled={disableCreateDashboard}
+    on:click={() => {
+      dispatch("generate-chart", {
+        table: $modelQuery.data?.model?.state?.table,
+        connector: $modelQuery.data?.model?.state?.connector,
+      });
+    }}
+  >
+    <Explore slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate chart with AI
+      <WandIcon class="w-3 h-3" />
+    </div>
+    <svelte:fragment slot="description">
+      {#if $modelHasError}
+        Model has errors
+      {:else if !modelIsIdle}
+        Dependencies are being reconciled.
+      {/if}
+    </svelte:fragment>
+  </NavigationMenuItem>
+{/if}
 
 <NavigationMenuSeparator />
 
