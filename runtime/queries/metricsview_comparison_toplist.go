@@ -19,22 +19,21 @@ import (
 )
 
 type MetricsViewComparison struct {
-	MetricsViewName       string                                         `json:"metrics_view_name,omitempty"`
-	DimensionName         string                                         `json:"dimension_name,omitempty"`
-	Measures              []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
-	ComparisonMeasures    []string                                       `json:"comparison_measures,omitempty"`
-	TimeRange             *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
-	ComparisonTimeRange   *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
-	Limit                 int64                                          `json:"limit,omitempty"`
-	Offset                int64                                          `json:"offset,omitempty"`
-	Sort                  []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
-	Where                 *runtimev1.Expression                          `json:"where,omitempty"`
-	Having                *runtimev1.Expression                          `json:"having,omitempty"`
-	Filter                *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
-	Aliases               []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	Exact                 bool                                           `json:"exact"`
-	SecurityAttributes    map[string]any                                 `json:"security_attributes,omitempty"`
-	NoExploreExactifyMode bool                                           `json:"druid_exactify,omitempty"`
+	MetricsViewName     string                                         `json:"metrics_view_name,omitempty"`
+	DimensionName       string                                         `json:"dimension_name,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	ComparisonMeasures  []string                                       `json:"comparison_measures,omitempty"`
+	TimeRange           *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
+	Limit               int64                                          `json:"limit,omitempty"`
+	Offset              int64                                          `json:"offset,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
+	Where               *runtimev1.Expression                          `json:"where,omitempty"`
+	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	Filter              *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
+	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
+	Exact               bool                                           `json:"exact"`
+	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 
