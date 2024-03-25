@@ -1,13 +1,18 @@
 <script lang="ts">
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import type { Builder } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
 
   export let active = false;
   export let disabled = false;
   export let label: string | undefined = undefined;
+  export let builders: Builder[] = [];
 </script>
 
 <button
+  {...getAttrs(builders)}
+  use:builderActions={{ builders }}
   {disabled}
   aria-label={label}
   class:bg-gray-200={active}

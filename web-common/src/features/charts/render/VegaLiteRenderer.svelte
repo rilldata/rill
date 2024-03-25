@@ -1,17 +1,11 @@
 <script lang="ts">
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
-  import { VegaLite, View } from "svelte-vega";
+  import { VegaLite, View, type EmbedOptions } from "svelte-vega";
 
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
 
-  // EmbedOptions type missing from svelte-vega
-  interface Options {
-    config: undefined | Record<string, unknown>;
-    renderer: "canvas" | "svg";
-  }
-
-  let options: Options = {
+  let options: EmbedOptions = {
     config: getRillTheme(),
     renderer: "svg",
   };

@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import type {
     V1MetricsViewSpec,
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import { useDashboards } from "../dashboards/listing/selectors";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import BreadcrumbItem from "../navigation/BreadcrumbItem.svelte";
 
@@ -18,7 +18,7 @@
   $: onProjectPage = !activeResourceName;
 
   // Dashboard breadcrumb
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useValidDashboards(instanceId);
   let currentResource: V1Resource;
   $: currentResource = $dashboards?.data?.find(
     (listing) => listing.meta.name.name === activeResourceName,

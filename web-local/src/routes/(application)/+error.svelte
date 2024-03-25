@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
 </script>
 
-<div class="grid h-screen place-content-center bg-white text-xl">
+<div class="w-full h-full items-center flex justify-center">
   {#if $page.error?.message}
     <p class="error">{$page.status}: {$page.error?.message}</p>
   {:else}
