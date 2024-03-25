@@ -3,6 +3,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
+  import * as yup from "yup";
   import { notifications } from "../../../components/notifications";
 
   const dispatch = createEventDispatcher();
@@ -18,6 +19,10 @@
         request: "",
         email: "",
       },
+      validationSchema: yup.object({
+        request: yup.string().required("Required"),
+        email: yup.string().email("Invalid email"),
+      }),
       onSubmit: async (values) => {
         // Following the approach here: https://stackoverflow.com/questions/51995070/post-data-to-a-google-form-with-ajax
         const submitFormEndpoint = `${GOOGLE_FORM_ENDPOINT}/formResponse?${REQUEST_FIELD_ID}=${values.request}&${EMAIL_FIELD_ID}=${values.email}&submit=Submit`;
