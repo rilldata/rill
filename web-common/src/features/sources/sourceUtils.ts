@@ -4,7 +4,10 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
-import { extractFileExtension, sanitizeEntityName } from "./extract-table-name";
+import {
+  extractFileExtension,
+  sanitizeEntityName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,

@@ -7,6 +7,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import {
     useDashboardFileNames,
+    useDashboardRoutes,
     useValidDashboards,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
@@ -53,6 +54,7 @@
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
+  $: dashboardRoutes = useDashboardRoutes(instanceId);
   $: dashboards = useValidDashboards(instanceId);
 
   const MetricsSourceSelectionError = (
@@ -168,9 +170,12 @@
     );
     await deleteFileArtifact(
       instanceId,
-      dashboardName,
+      getFileAPIPathFromNameAndType(
+        dashboardName,
+        EntityType.MetricsDefinition,
+      ),
       EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? [],
+      $dashboardRoutes?.data ?? [],
     );
 
     // redirect to model when metric is deleted
