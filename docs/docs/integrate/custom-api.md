@@ -9,8 +9,14 @@ Rill exposes [custom APIs](/integrate/custom-apis/index.md) you have created und
 at `https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>`.
 
 ## Accessing custom APIs
-You need to do a POST request to the API endpoint with A bearer token in the `Authorization` header.
-    
+Custom APIs accepts both POST and GET requests to the API endpoint with a bearer token in the `Authorization` header.
+For GET requests parameters can be passed in the url.
+
+```bash
+curl https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
+-H "Authorization: Bearer <token>"
+```
+
 ```bash
 curl -X POST https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
 -H "Authorization: Bearer <token>"

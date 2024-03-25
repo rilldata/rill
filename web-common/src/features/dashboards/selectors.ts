@@ -30,6 +30,12 @@ export function useDashboard(instanceId: string, metricViewName: string) {
   return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
 }
 
+export function useValidDashboards(instanceId: string) {
+  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
+    data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
+  );
+}
+
 /**
  * Gets the valid metrics view spec. Only to be used in displaying a dashboard.
  * Use {@link useDashboard} in the metrics view editor and other use cases.

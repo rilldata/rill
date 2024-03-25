@@ -1,16 +1,13 @@
 <script lang="ts">
-  import { VegaLite, View } from "svelte-vega";
+  import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
+  import { VegaLite, View, type EmbedOptions } from "svelte-vega";
 
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
 
-  // EmbedOptions type missing from svelte-vega
-  interface Options {
-    theme: undefined | "vox" | "ggplot2";
-  }
-
-  let options: Options = {
-    theme: "vox",
+  let options: EmbedOptions = {
+    config: getRillTheme(),
+    renderer: "svg",
   };
 
   let viewVL: View;

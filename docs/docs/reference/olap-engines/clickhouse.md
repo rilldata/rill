@@ -16,7 +16,7 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 
 ## Connection string (DSN)
 
-Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connection.clickhouse.dsn` property in Rill.
+Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
 
 A very simple example might look like the following:
 
@@ -83,8 +83,8 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 ## Configuring Rill Developer
 
 When using Rill for local development, there are two options to configure Rill to enable ClickHouse as an OLAP engine:
-- You can set `connection.clickhouse.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connection.clickhouse.dsn` as a variable to `rill start` directly (e.g. `rill start --var connection.clickhouse.dsn=...`)
+- You can set `connector.clickhouse.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
+- You can pass in `connector.clickhouse.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.clickhouse.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -95,8 +95,8 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 ## Configuring Rill Cloud
 
 When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
-- Use the `rill env configure` command to set `connection.clickhouse.dsn` after deploying the project
-- If `connection.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
+- Use the `rill env configure` command to set `connector.clickhouse.dsn` after deploying the project
+- If `connector.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
 
 :::info
 

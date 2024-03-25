@@ -28,7 +28,7 @@
   <NavigationHeader bind:show={showCharts}>Charts</NavigationHeader>
 
   {#if showCharts}
-    <ol class="pb-3 max-h-96 overflow-auto" transition:slide={{ duration }}>
+    <ol transition:slide={{ duration }}>
       {#if $chartFileNames?.data}
         {#each $chartFileNames.data as chartName (chartName)}
           <li animate:flip={{ duration }} aria-label={chartName}>

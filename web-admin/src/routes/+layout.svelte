@@ -10,23 +10,14 @@
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
+  import { QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
-        retry: false,
-      },
-    },
-  });
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks

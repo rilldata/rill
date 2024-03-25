@@ -7,7 +7,10 @@
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
-  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useDashboardFileNames,
+    useValidDashboards,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import {
     getFileAPIPathFromNameAndType,
@@ -24,18 +27,21 @@
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { WandIcon } from "lucide-svelte";
-  import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
@@ -43,15 +49,14 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
-  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
+  import { ResourceKind } from "../entity-management/resource-selectors";
 
   $: instanceId = $runtime.instanceId;
 
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
+  $: dashboards = useValidDashboards(instanceId);
 
   const MetricsSourceSelectionError = (
     errors: Array<V1ReconcileError> | undefined,
@@ -109,19 +114,34 @@
     await goto(`/dashboard/${newDashboardName}`);
   };
 
-  const editModel = async (dashboardName: string) => {
-    await getDashboardArtifact(instanceId, dashboardName);
+  /**
+   * Get the name of the dashboard's underlying model (if any).
+   * Note that not all dashboards have an underlying model. Some dashboards are
+   * underpinned by a source/table.
+   */
+  function getReferenceModelNameForDashboard(
+    dashboardName: string,
+  ): string | undefined {
+    // Get the dashboard resource from the dashboard list
+    const dashboard = $dashboards.data?.filter(
+      (dashboard) => dashboard.meta?.name?.name === dashboardName,
+    )[0];
 
-    const dashboardData = getDashboardData(
-      $fileArtifactsStore.entities,
-      dashboardName,
-    );
-    const sourceModelName = dashboardData.jsonRepresentation?.model as string;
+    // Get the model reference (if any) from the dashboard resource
+    const modelRef = dashboard?.meta?.refs?.filter(
+      (ref) => ref?.kind === ResourceKind.Model,
+    )[0];
 
+    // Return the model name (if any)
+    if (!modelRef) return undefined;
+    return modelRef?.name;
+  }
+
+  const editModel = async (modelName: string) => {
     const previousActiveEntity = $appScreen?.type;
-    await goto(`/model/${sourceModelName}`);
+    await goto(`/model/${modelName}`);
     await behaviourEvent.fireNavigationEvent(
-      sourceModelName,
+      modelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousActiveEntity,
@@ -213,6 +233,8 @@
             $fileArtifactsStore.entities,
             dashboardName,
           )}
+          {@const referenceModelName =
+            getReferenceModelNameForDashboard(dashboardName)}
           <li animate:flip={{ duration }} aria-label={dashboardName}>
             <NavigationEntry
               showContextMenu={!$readOnly}
@@ -228,18 +250,20 @@
                 {@const hasSourceError =
                   selectionError !== SourceModelValidationStatus.OK &&
                   selectionError !== ""}
-                <NavigationMenuItem
-                  disabled={hasSourceError}
-                  on:click={() => editModel(dashboardName)}
-                >
-                  <Model slot="icon" />
-                  Edit model
-                  <svelte:fragment slot="description">
-                    {#if hasSourceError}
-                      {selectionError}
-                    {/if}
-                  </svelte:fragment>
-                </NavigationMenuItem>
+                {#if referenceModelName}
+                  <NavigationMenuItem
+                    disabled={hasSourceError}
+                    on:click={() => editModel(referenceModelName)}
+                  >
+                    <Model slot="icon" />
+                    Edit model
+                    <svelte:fragment slot="description">
+                      {#if hasSourceError}
+                        {selectionError}
+                      {/if}
+                    </svelte:fragment>
+                  </NavigationMenuItem>
+                {/if}
                 <NavigationMenuItem
                   disabled={hasSourceError}
                   on:click={() => editMetrics(dashboardName)}
