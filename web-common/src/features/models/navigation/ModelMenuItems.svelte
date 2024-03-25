@@ -2,7 +2,10 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -14,7 +17,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { useModel, useModelFileNames } from "../selectors";
+  import { useModel, useModelRoutes } from "../selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
@@ -25,7 +28,7 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  $: modelNames = useModelFileNames($runtime.instanceId);
+  $: modelRoutes = useModelRoutes($runtime.instanceId);
   $: modelHasError = fileArtifactsStore.getFileHasErrors(
     queryClient,
     $runtime.instanceId,
@@ -45,12 +48,12 @@
   );
 
   const handleDeleteModel = async (modelName: string) => {
-    if ($modelNames.data) {
+    if ($modelRoutes.data) {
       await deleteFileArtifact(
         $runtime.instanceId,
-        modelName,
+        getFileAPIPathFromNameAndType(modelName, EntityType.Model),
         EntityType.Model,
-        $modelNames.data,
+        $modelRoutes.data,
       );
     }
   };

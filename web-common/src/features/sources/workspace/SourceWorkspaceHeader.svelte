@@ -103,8 +103,8 @@
       const entityType = EntityType.Table;
       await renameFileArtifact(
         runtimeInstanceId,
-        sourceName,
-        toName,
+        getFilePathFromNameAndType(sourceName, entityType),
+        getFilePathFromNameAndType(toName, entityType),
         entityType,
       );
       goto(getRouteFromName(toName, entityType), {

@@ -5,14 +5,17 @@
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
     useSource,
-    useSourceFileNames,
     useSourceFromYaml,
+    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -66,7 +69,7 @@
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: sourceRoutes = useSourceRoutes($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
@@ -79,9 +82,9 @@
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
       runtimeInstanceId,
-      tableName,
+      getFileAPIPathFromNameAndType(tableName, EntityType.Table),
       EntityType.Table,
-      $sourceNames.data ?? [],
+      $sourceRoutes.data ?? [],
     );
   };
 
