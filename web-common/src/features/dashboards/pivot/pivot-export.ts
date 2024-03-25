@@ -40,7 +40,6 @@ export default async function exportPivot({
       format,
       query: {
         metricsViewAggregationRequest: {
-          // Q: should I use the `pivot.dimensions` selector directly?
           dimensions: rows.dimension.map((d) =>
             d.type === PivotChipType.Time
               ? {
@@ -55,7 +54,6 @@ export default async function exportPivot({
           where: sanitiseExpression(dashboard.whereFilter, measureFilters),
           instanceId: get(runtime).instanceId,
           limit: undefined, // the backend handles export limits
-          // Q: should I use the `pivot.measures` selector directly?
           measures: columns.measure.map((m) => {
             return {
               name: m.id,
