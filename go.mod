@@ -71,7 +71,7 @@ require (
 	github.com/rs/cors v1.9.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/sashabaranov/go-openai v1.19.3
-	github.com/snowflakedb/gosnowflake v1.7.2
+	github.com/snowflakedb/gosnowflake v1.8.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -340,5 +340,11 @@ replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb 
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
+
+// gosnowflake v1.8.0 has an issue with arrow batches - it retunrs 0 batches if the first batch has no records
+// see a corresponding PR for details: https://github.com/snowflakedb/gosnowflake/pull/1068
+// the issue is supposed to be fixed in v1.8.1 but make sure apache/arrow/go/v15 doesn't cause any breaking changes
+// see the following PR: https://github.com/snowflakedb/gosnowflake/pull/1062
+replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
 exclude modernc.org/sqlite v1.18.1
