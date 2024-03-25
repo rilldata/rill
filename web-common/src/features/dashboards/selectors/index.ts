@@ -10,6 +10,8 @@ import {
   V1MetricsViewToplistResponse,
   createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewToplist,
+  createQueryServiceMetricsViewSchema,
+  type V1MetricsViewSchemaResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
@@ -114,6 +116,19 @@ export function createTimeRangeSummary(
             enabled: !!metricsView.data?.timeDimension,
           },
         },
+      ).subscribe(set),
+  );
+}
+
+export function createMetricsViewSchema(
+  ctx: StateManagers,
+): CreateQueryResult<V1MetricsViewSchemaResponse> {
+  return derived(
+    [ctx.runtime, ctx.metricsViewName],
+    ([runtime, metricsViewName], set) =>
+      createQueryServiceMetricsViewSchema(
+        runtime.instanceId,
+        metricsViewName,
       ).subscribe(set),
   );
 }

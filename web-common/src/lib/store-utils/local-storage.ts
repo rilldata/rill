@@ -23,7 +23,7 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
       setStore(value);
       localStorage.setItem(itemKey, JSON.stringify(value));
     },
-    update(f) {
+    update(f: (s: T) => void) {
       updateStore((state) => {
         f(state);
         localStorage.setItem(itemKey, JSON.stringify(state));

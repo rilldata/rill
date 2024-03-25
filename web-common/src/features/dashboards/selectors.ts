@@ -1,4 +1,5 @@
 import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
@@ -6,6 +7,7 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1Expression,
   V1MetricsViewSpec,
@@ -26,8 +28,20 @@ export function useDashboardFileNames(instanceId: string) {
   return useMainEntityFiles(instanceId, "dashboards");
 }
 
+export function useDashboardRoutes(instanceId: string) {
+  return useMainEntityFiles(instanceId, "dashboards", (name) =>
+    getRouteFromName(name, EntityType.MetricsDefinition),
+  );
+}
+
 export function useDashboard(instanceId: string, metricViewName: string) {
   return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
+}
+
+export function useValidDashboards(instanceId: string) {
+  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
+    data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
+  );
 }
 
 /**

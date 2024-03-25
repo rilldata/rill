@@ -7,6 +7,7 @@ import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-clie
 export function useMainEntityFiles(
   instanceId: string,
   prefix: "sources" | "models" | "dashboards" | "charts" | "custom-dashboards",
+  transform = (name: string) => name,
 ) {
   let extension: string;
   switch (prefix) {
@@ -40,7 +41,9 @@ export function useMainEntityFiles(
             })
             .map((filePath) => {
               // Remove the directory and extension from the filePath to get the file name
-              return filePath.replace(`/${prefix}/`, "").replace(extension, "");
+              return transform(
+                filePath.replace(`/${prefix}/`, "").replace(extension, ""),
+              );
             })
             // Sort the file names alphabetically in a case-insensitive manner
             .sort((fileNameA, fileNameB) =>

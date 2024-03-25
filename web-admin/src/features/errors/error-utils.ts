@@ -2,44 +2,49 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
-  getScreenNameFromPage,
   isDashboardPage,
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
-import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import type { RpcStatus } from "../../client";
-import { getAdminServiceGetProjectQueryKey } from "../../client";
+import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
+import {
+  adminServiceGetCurrentUser,
+  getAdminServiceGetCurrentUserQueryKey,
+  getAdminServiceGetProjectQueryKey,
+} from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
-  return (error: AxiosError, query: Query) => {
-    const screenName = getScreenNameFromPage(get(page));
-    if (!error.response) {
-      errorEvent?.fireHTTPErrorBoundaryEvent(
-        query.queryKey[0] as string,
-        "",
-        "unknown error",
-        screenName,
-      );
-      return;
-    } else {
-      errorEvent?.fireHTTPErrorBoundaryEvent(
-        query.queryKey[0] as string,
-        error.response?.status + "" ?? error.status,
-        (error.response?.data as RpcStatus)?.message ?? error.message,
-        screenName,
-      );
+  return async (error: AxiosError, query: Query) => {
+    errorEventHandler?.requestErrorEventHandler(error, query);
+
+    // If an anonymous user hits a 403 error, redirect to the login page
+    if (error.response?.status === 403) {
+      // Check for a logged-in user
+      const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
+        queryKey: getAdminServiceGetCurrentUserQueryKey(),
+        queryFn: () => adminServiceGetCurrentUser(),
+      });
+      const isLoggedIn = !!userQuery.user;
+
+      // If not logged in, redirect to the login page
+      if (!isLoggedIn) {
+        await goto(
+          `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
+        );
+        return;
+      }
     }
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      goto(
+      await goto(
         `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
       );
       return;
@@ -57,7 +62,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
       if ((error.response.data as RpcStatus).message === "driver: not found") {
         const [, org, proj] = get(page).url.pathname.split("/");
-        queryClient.resetQueries(getAdminServiceGetProjectQueryKey(org, proj));
+        void queryClient.resetQueries(
+          getAdminServiceGetProjectQueryKey(org, proj),
+        );
         return;
       }
     }
@@ -164,39 +171,5 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
-  };
-}
-
-export function addJavascriptErrorListeners() {
-  const errorHandler = (errorEvt: ErrorEvent) => {
-    errorEvent?.fireJavascriptErrorBoundaryEvent(
-      errorEvt.error?.stack ?? "",
-      errorEvt.message,
-      getScreenNameFromPage(get(page)),
-    );
-  };
-  const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
-    let stack = "";
-    let message = "";
-    if (typeof rejectionEvent.reason === "string") {
-      message = rejectionEvent.reason;
-    } else if (rejectionEvent.reason instanceof Error) {
-      stack = rejectionEvent.reason.stack ?? "";
-      message = rejectionEvent.reason.message;
-    } else {
-      message = String.toString.apply(rejectionEvent.reason);
-    }
-    errorEvent?.fireJavascriptErrorBoundaryEvent(
-      stack,
-      message,
-      getScreenNameFromPage(get(page)),
-    );
-  };
-
-  window.addEventListener("error", errorHandler);
-  window.addEventListener("unhandledrejection", unhandledRejectionHandler);
-  return () => {
-    window.removeEventListener("error", errorHandler);
-    window.removeEventListener("unhandledrejection", unhandledRejectionHandler);
   };
 }

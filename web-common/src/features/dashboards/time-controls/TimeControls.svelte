@@ -74,11 +74,11 @@
       localUserPreferences.set({ timeZone: "UTC" });
     }
 
-    baseTimeRange = $dashboardStore.selectedTimeRange?.start &&
-      $dashboardStore.selectedTimeRange?.end && {
-        name: $dashboardStore.selectedTimeRange?.name,
-        start: $dashboardStore.selectedTimeRange.start,
-        end: $dashboardStore.selectedTimeRange.end,
+    baseTimeRange = $timeControlsStore.selectedTimeRange?.start &&
+      $timeControlsStore.selectedTimeRange?.end && {
+        name: $timeControlsStore.selectedTimeRange?.name,
+        start: $timeControlsStore.selectedTimeRange.start,
+        end: $timeControlsStore.selectedTimeRange.end,
       };
   }
 

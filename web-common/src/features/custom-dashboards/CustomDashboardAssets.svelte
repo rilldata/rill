@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import { flip } from "svelte/animate";
+  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -13,11 +13,11 @@
   import { createCustomDashboard } from "./createCustomDashboard";
   import { useCustomDashboardFileNames } from "./selectors";
 
+  let showCustomDashboards = true;
+
   $: customDashboardFileNames = useCustomDashboardFileNames(
     $runtime.instanceId,
   );
-
-  let showCustomDashboards = true;
 
   async function handleAddCustomDashboard() {
     const newCustomDashboardName = getName(
@@ -29,43 +29,36 @@
   }
 </script>
 
-<NavigationHeader
-  bind:show={showCustomDashboards}
-  toggleText="custom dashboards"
->
-  Custom Dashboards
-</NavigationHeader>
+<div class="h-fit flex flex-col">
+  <NavigationHeader bind:show={showCustomDashboards}>
+    Custom Dashboards
+  </NavigationHeader>
 
-{#if showCustomDashboards}
-  <div
-    class="pb-3 max-h-96 overflow-auto"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
-  >
-    {#if $customDashboardFileNames?.data}
-      {#each $customDashboardFileNames.data as customDashboardName (customDashboardName)}
-        <div
-          animate:flip={{ duration: 200 }}
-          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
-        >
-          <NavigationEntry
-            name={customDashboardName}
-            href={`/custom-dashboard/${customDashboardName}`}
-            open={$page.url.pathname ===
-              `/custom-dashboard/${customDashboardName}`}
-            expandable={false}
-          >
-            <svelte:fragment slot="menu-items">
-              <CustomDashboardMenuItems {customDashboardName} />
-            </svelte:fragment>
-          </NavigationEntry>
-        </div>
-      {/each}
-    {/if}
-    <AddAssetButton
-      id="add-custom-dashboard"
-      label="Add dashboard"
-      bold={false}
-      on:click={handleAddCustomDashboard}
-    />
-  </div>
-{/if}
+  {#if showCustomDashboards}
+    <ol transition:slide={{ duration }}>
+      {#if $customDashboardFileNames?.data}
+        {#each $customDashboardFileNames.data as customDashboardName (customDashboardName)}
+          <li animate:flip={{ duration }} aria-label={customDashboardName}>
+            <NavigationEntry
+              name={customDashboardName}
+              href={`/custom-dashboard/${customDashboardName}`}
+              open={$page.url.pathname ===
+                `/custom-dashboard/${customDashboardName}`}
+            >
+              <CustomDashboardMenuItems
+                slot="menu-items"
+                {customDashboardName}
+              />
+            </NavigationEntry>
+          </li>
+        {/each}
+      {/if}
+      <AddAssetButton
+        id="add-custom-dashboard"
+        label="Add dashboard"
+        bold={false}
+        on:click={handleAddCustomDashboard}
+      />
+    </ol>
+  {/if}
+</div>

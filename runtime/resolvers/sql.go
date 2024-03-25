@@ -60,7 +60,7 @@ func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRef
 		return nil, err
 	}
 
-	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID)
+	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +145,9 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 	}
 
 	return &runtime.ResolverResult{
-		Data:  data,
-		Cache: cache,
+		Data:   data,
+		Schema: res.Schema,
+		Cache:  cache,
 	}, nil
 }
 

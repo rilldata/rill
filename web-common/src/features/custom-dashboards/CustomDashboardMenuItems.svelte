@@ -1,26 +1,25 @@
 <script lang="ts">
-  import { MenuItem } from "@rilldata/web-common/components/menu";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { runtime } from "../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../entity-management/actions";
   import { EntityType } from "../entity-management/types";
-  import { useCustomDashboardFileNames } from "./selectors";
+  import { useCustomDashboardRoutes } from "./selectors";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let customDashboardName: string;
 
-  $: customDashboardFileNames = useCustomDashboardFileNames(
-    $runtime.instanceId,
-  );
+  $: customDashboardRoutes = useCustomDashboardRoutes($runtime.instanceId);
 
   async function handleDeleteCustomDashboard() {
     await deleteFileArtifact(
       $runtime.instanceId,
-      customDashboardName,
+      getFileAPIPathFromNameAndType(customDashboardName, EntityType.Dashboard),
       EntityType.Dashboard,
-      $customDashboardFileNames.data ?? [],
+      $customDashboardRoutes.data ?? [],
     );
   }
 </script>
 
-<MenuItem icon on:select={handleDeleteCustomDashboard} propogateSelect={false}>
+<DropdownMenu.Item on:click={handleDeleteCustomDashboard}>
   Delete custom dashboard
-</MenuItem>
+</DropdownMenu.Item>

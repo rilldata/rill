@@ -35,6 +35,28 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 	return nil
 }
 
+// hasStreamingRef returns true if one or more of the refs have data that may be updated outside of a reconcile.
+func hasStreamingRef(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) bool {
+	for _, ref := range refs {
+		// Currently only metrics views can be streaming.
+		if ref.Kind != runtime.ResourceKindMetricsView {
+			continue
+		}
+
+		res, err := c.Get(ctx, ref, false)
+		if err != nil {
+			// Broken refs are not streaming.
+			continue
+		}
+		mv := res.GetMetricsView()
+
+		if mv.State.Streaming {
+			return true
+		}
+	}
+	return false
+}
+
 // nextRefreshTime returns the earliest time AFTER t that the schedule should trigger.
 func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, error) {
 	if schedule == nil || schedule.Disable {

@@ -31,7 +31,7 @@ export function createCommandClickAction(
     clickCommandCallbacks: callbacks,
     commandHeld,
     // put this in a use:commandClickAction
-    commandClickAction(node: Element) {
+    commandClickAction: (node: Element) => {
       function mouseDown(event) {
         if (event.ctrlKey || event.metaKey) {
           commandHeld.set(true);
