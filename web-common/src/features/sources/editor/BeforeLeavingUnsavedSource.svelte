@@ -7,29 +7,24 @@ https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037 -->
   import { emitNavigationTelemetry } from "../../../layout/navigation/navigation-utils";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import { useSourceStore } from "../sources-store";
   import UnsavedSourceDialog from "./UnsavedSourceDialog.svelte";
 
-  export let sourceName: string;
+  export let filePath: string;
 
-  const sourceStore = useSourceStore(sourceName);
+  const sourceStore = useSourceStore(filePath);
 
   let interceptedNavigation: string | null = null;
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    sourceName,
+    filePath,
     $sourceStore.clientYAML,
   );
 
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
-  $: file = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-  );
+  $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
   function handleCancel() {
     interceptedNavigation = null;

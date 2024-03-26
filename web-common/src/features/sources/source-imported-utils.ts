@@ -7,7 +7,6 @@ import { get } from "svelte/store";
 
 export function checkSourceImported(
   queryClient: QueryClient,
-  sourceName: string,
   filePath: string,
 ) {
   const lastUpdatedOn = fileArtifactsStore.getLastStateUpdatedOn(filePath);
@@ -15,7 +14,7 @@ export function checkSourceImported(
   waitForResourceUpdate(queryClient, get(runtime).instanceId, filePath).then(
     (success) => {
       if (!success) return;
-      sourceImportedName.set(sourceName);
+      sourceImportedName.set(filePath);
       // TODO: telemetry
     },
   );

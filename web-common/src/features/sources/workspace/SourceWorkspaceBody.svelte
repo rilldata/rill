@@ -7,19 +7,15 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import SourceEditor from "../editor/SourceEditor.svelte";
   import ErrorPane from "../errors/ErrorPane.svelte";
-  import { useIsSourceUnsaved, useSource } from "../selectors";
+  import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
-  export let sourceName: string;
+  export let filePath: string;
 
   const queryClient = useQueryClient();
-  const sourceStore = useSourceStore(sourceName);
-
-  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  const sourceStore = useSourceStore(filePath);
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
@@ -36,11 +32,15 @@
     filePath,
   );
 
-  $: sourceQuery = useSource($runtime.instanceId, sourceName);
+  $: sourceQuery = fileArtifactsStore.getResourceForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath,
+  );
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    sourceName,
+    filePath,
     $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
@@ -48,7 +48,7 @@
 
 <div class="editor-pane h-full overflow-hidden w-full flex flex-col">
   <WorkspaceEditorContainer>
-    <SourceEditor {sourceName} {yaml} />
+    <SourceEditor {filePath} {yaml} />
   </WorkspaceEditorContainer>
 
   <WorkspaceTableContainer fade={isSourceUnsaved}>
@@ -58,7 +58,7 @@
         loading={resourceIsLoading($sourceQuery?.data)}
       />
     {:else if $allErrors[0].message}
-      <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
+      <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
     {/if}
   </WorkspaceTableContainer>
 </div>

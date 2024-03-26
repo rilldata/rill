@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
     formatConnectorType,
@@ -21,22 +22,29 @@
     createQueryServiceTableColumns,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { resourceIsLoading } from "../../entity-management/resource-selectors";
-  import { useIsSourceUnsaved, useSource } from "../selectors";
+  import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
-  export let sourceName: string;
+  export let filePath: string;
 
+  const queryClient = useQueryClient();
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  $: sourceQuery = fileArtifactsStore.getResourceForFile(
+    queryClient,
+    runtimeInstanceId,
+    filePath,
+  );
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
+  $: tableName = source?.state?.table ?? "";
 
   let showColumns = true;
 
@@ -54,7 +62,7 @@
 
   $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
-    sourceName,
+    tableName,
   );
   $: cardinality = $cardinalityQuery?.data?.cardinality
     ? Number($cardinalityQuery?.data?.cardinality)
@@ -62,7 +70,7 @@
 
   $: profileColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
-    sourceName,
+    tableName,
     {},
     { query: { keepPreviousData: true } },
   );
@@ -84,7 +92,7 @@
 
   let summaries: Readable<Array<ColumnSummary>>;
   $: if ($profileColumns?.data?.profileColumns) {
-    summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
+    summaries = getSummaries(tableName, $runtime?.instanceId, $profileColumns);
   }
 
   let totalNulls: number | undefined = undefined;
@@ -103,11 +111,11 @@
         : undefined;
   }
 
-  const sourceStore = useSourceStore(sourceName);
+  const sourceStore = useSourceStore(tableName);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    sourceName,
+    tableName,
     $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;

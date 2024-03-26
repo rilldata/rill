@@ -59,3 +59,14 @@ export function useMainEntityFiles(
     },
   );
 }
+
+const FILE_PATH_SPLIT_REGEX = /\//;
+export function splitFolderAndName(
+  filePath: string,
+): [folder: string, fileName: string] {
+  const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
+  return [
+    filePath.substring(0, filePath.length - fileName.length - 1),
+    fileName,
+  ];
+}
