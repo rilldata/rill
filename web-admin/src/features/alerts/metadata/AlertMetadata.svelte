@@ -161,7 +161,9 @@
 
     <!-- Recipients -->
     <EmailRecipients
-      emailRecipients={$alertQuery.data.resource.alert.spec.emailRecipients}
+      emailRecipients={$alertQuery.data.resource.alert.spec.notifySpec.notifiers.find(
+        (n) => n.connector === "email",
+      )?.email?.recipients ?? []}
     />
   </div>
 {/if}
