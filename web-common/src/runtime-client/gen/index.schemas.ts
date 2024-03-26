@@ -323,6 +323,25 @@ export type RuntimeServiceGetLogsParams = {
   level?: RuntimeServiceGetLogsLevel;
 };
 
+export type RuntimeServiceGenerateResolverBody = {
+  prompt?: string;
+  /** Both connector and table must be specified if metrics_view is not. */
+  connector?: string;
+  table?: string;
+  /** table and connector should not be provided if metrics_view is provided. */
+  metricsView?: string;
+};
+
+export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
+  [key: string]: any;
+};
+
+export type RuntimeServiceGenerateChartSpecBody = {
+  prompt?: string;
+  resolver?: string;
+  resolverProperties?: RuntimeServiceGenerateChartSpecBodyResolverProperties;
+};
+
 export type RuntimeServiceWatchFiles200 = {
   result?: V1WatchFilesResponse;
   error?: RpcStatus;
@@ -538,12 +557,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -571,6 +584,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -660,11 +679,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -676,6 +690,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -790,13 +809,6 @@ export interface V1Resource {
   api?: V1API;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportNotifySpec {
@@ -822,6 +834,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1612,8 +1631,21 @@ export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
 }
 
+export type V1GenerateResolverResponseResolverProperties = {
+  [key: string]: any;
+};
+
+export interface V1GenerateResolverResponse {
+  resolver?: string;
+  resolverProperties?: V1GenerateResolverResponseResolverProperties;
+}
+
 export interface V1GenerateMetricsViewFileResponse {
   aiSucceeded?: boolean;
+}
+
+export interface V1GenerateChartSpecResponse {
+  vegaLiteSpec?: string;
 }
 
 export interface V1GCSObject {
@@ -1749,6 +1781,26 @@ export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
+ * ConnectorSpec represents a connector available in the runtime.
+It should not be confused with a source.
+ */
+export interface V1ConnectorSpec {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
+}
+
+/**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
@@ -1767,26 +1819,6 @@ export interface V1CreateInstanceRequest {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
-}
-
-/**
- * ConnectorSpec represents a connector available in the runtime.
-It should not be confused with a source.
- */
-export interface V1ConnectorSpec {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  properties?: ConnectorSpecProperty[];
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
 }
 
 export interface V1Condition {

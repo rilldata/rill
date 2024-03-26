@@ -11,10 +11,13 @@ import TabItem from '@theme/TabItem';
 ## Embedding dashboards
 
 ### Introduction
-You can embed Rill dashboards as components in your own application using iframes.
 
-To embed a dashboard, use a Rill service token on your backend to request an authenticated iframe URL from the Rill API.
-Then pass the iframe URL to your frontend for rendering. Here is a diagram of the flow:
+Rill Cloud provides the ability to embed dashboards as components in your own application using iframes, with a few different options:
+- Embedding individual dashboards as standalone iframes
+- Embedding individual dashboards with the ability to navigate to other dashboards (that exist in the _same_ project)
+- Embedding the dashboard list page present in a Rill project (with the ability to select and navigate between dashboards)
+
+When embedding Rill, a service token for the backend will need to be generated to request an authenticated iframe URL via the Rill APIs. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
 
 ```mermaid
 sequenceDiagram
@@ -42,19 +45,21 @@ Use the Rill CLI to create a service token for your current organization using t
 rill service create <service_name>
 ```
 
-:::caution
-The service account provides admin-level access to your organization and should be handled confidentially and NOT integrated in a frontend or other user-facing code.
+:::info
+See our CLI reference docs for more details on managing a [service account and token](../reference/cli/service).
 :::
 
-See the reference docs for more details on managing [service account and token](../reference/cli/service).
+:::caution
+The service account _provides admin-level access to your organization_ and should be handled confidentially. Therefore, the service account itself should **not** be integrated directly in a fronted or other user-facing code that can be exposed publicly.
+:::
 
 ### Backend: Build an iframe URL
 You should implement an API on your backend that uses the service token to retrieve and return an iframe URL from Rill's API (which is hosted on `admin.rilldata.com`).
 
-There are multiple reasons why the iframe URL must be constructed on your backend:
+There are multiple reasons why the iframe URL <u>must</u> be constructed on your backend:
 - To avoid leaking your master Rill service token in the browser
 - To allow you to use your own authentication and authorization logic to restrict access to the dashboard
-- To optionally allow you to use your backend's context about the authenticated user to include user attributes in the iframe URL for enforcement of row-level security policies
+- To allow you to optionally use your backend's context about the authenticated user to include user attributes in the iframe URL for enforcement of row-level security policies
 
 Here are examples of how to get an iframe URL using different languages:
 
@@ -266,12 +271,46 @@ The API accepts the following parameters:
 
 | Parameter | Description                                                                                                                                                                                     | Required                         |
 | --- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
-| resource | The name of the dashboard to embed                                                                                                                                                              | Yes                              |
-| user_email | The email of the user to embed the dashboard for                                                                                                                                                | No (either this or `attributes`) |
-| attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` | No (either this or `user_email`) |
-| ttl_seconds | The time to live for the iframe URL                                                                                                                                                             | No (Default: 86400)              |
+| resource | The name of the dashboard to embed                                                                                                                                              | No (if not specified, `navigation` should be set to `true`)                              |
+| navigation | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation)                                                                        | No (defaults to `false`) |
+| theme | If [themes](/build/dashboards/customize.md#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                          | No (set to the name of the theme) |
+| user_id | The id of the user to embed the dashboard for                                                                                                                                                | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
+| user_email | The email of the user to embed the dashboard for                                                                                                                                                | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
+| attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
+| ttl_seconds | The time to live for the iframe URL                                                                                                                                                | No (Default: 86400)              |
 
-The response will contain an `iframeSrc` value that can be used to embed the dashboard in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. After the TTL has elapsed, the iframe URL needs be refreshed. Here's an example response:
+:::tip Embedding the project vs embedding an individual dashboard
+
+One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!
+
+If you wish to embed a single dashboard **only**, your payload might look like:
+```json
+{
+  // simply provide a resource
+  resource: 'dashboardName'
+}
+```
+
+If you wish to still embed a dashboard _but allow navigation between dashboards_, then your payload should include both parameters:
+```json
+{
+  // enable navigation and provide a resource
+    resource: 'dashboardName',
+    navigation: true
+}
+```
+
+Finally, _if you wish to embed the project list view of dashboards instead (what you see when you first open a project in Rill Cloud)_, then you can simply omit the `resource` and appropriately set `navigation` in your payload:
+```json
+{
+  // enable navigation and do NOT provide a resource
+  navigation: true
+}
+```
+
+:::
+
+The response of the above POST request will then contain an `iframeSrc` value that can be used to embed the dashboard / set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
 
 ```json
 {
@@ -289,8 +328,11 @@ Your frontend should request an iframe URL from your backend API (which you set 
 <iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
 
-### Example
-Here's an example of how to fetch and render a dashboard in React:
+## Appendix
+
+### React Example
+
+Depending on how your app is written and the language being used, you can then use the resulting iframe URL to embed and display Rill dashboards accordingly. Please find below a basic example of how to fetch and render a dashboard in **React**:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
@@ -335,6 +377,6 @@ export default function RillDashboard() {
 };
 ```
 
-## End-to-end example for Next.js
+### Next.js Example
 
-You can find an end-to-end example of embedding a Rill dashboard in a Next.js project on [github.com/rilldata/rill-embedding-example](https://github.com/rilldata/rill-embedding-example).
+You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [Github repo](https://github.com/rilldata/rill-embedding-example).

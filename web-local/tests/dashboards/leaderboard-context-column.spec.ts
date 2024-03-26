@@ -30,7 +30,7 @@ test.describe("leaderboard context column", () => {
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Close the navigation sidebar to give the code editor more space
-    await page.locator(".contents > .fixed").click();
+    await page.getByRole("button", { name: "Close sidebar" }).click();
   });
 
   test("Leaderboard context column", async ({ page }) => {

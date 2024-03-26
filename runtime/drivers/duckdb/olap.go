@@ -448,7 +448,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 // `DETACH foo__1`
 // `rm foo/1.db`
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
-	c.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), zap.Bool("view", view))
+	c.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), zap.Bool("view", view), zap.Bool("ext", c.config.ExtTableStorage))
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: old and new name are same case insensitive strings")
 	}
@@ -461,9 +461,6 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		return err
 	}
 	if !exist {
-		if !view {
-			return fmt.Errorf("rename: table %q does not exist", oldName)
-		}
 		return c.dropAndReplace(ctx, oldName, newName, view)
 	}
 

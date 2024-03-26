@@ -40,6 +40,8 @@ type Resolver interface {
 type ResolverResult struct {
 	// Data is a JSON encoded array of objects.
 	Data []byte
+	// Schema is the schema for the Data
+	Schema *runtimev1.StructType
 	// Cache indicates whether the result can be cached.
 	Cache bool
 }
@@ -85,12 +87,18 @@ type ResolveOptions struct {
 	UserAttributes     map[string]any
 }
 
+// ResolveResult is subset of ResolverResult that is cached
+type ResolveResult struct {
+	Data   []byte
+	Schema *runtimev1.StructType
+}
+
 // Resolve resolves a query using the given options.
-func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, error) {
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveResult, error) {
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
-		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
+		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
 		Runtime:        r,
@@ -101,18 +109,18 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 		ForExport:      false,
 	})
 	if err != nil {
-		return nil, err
+		return ResolveResult{}, err
 	}
 	defer resolver.Close()
 
 	// Build cache key based on the resolver's key and refs
 	ctrl, err := r.Controller(ctx, opts.InstanceID)
 	if err != nil {
-		return nil, err
+		return ResolveResult{}, err
 	}
 	hash := md5.New()
 	if _, err := hash.Write([]byte(resolver.Key())); err != nil {
-		return nil, err
+		return ResolveResult{}, err
 	}
 	for _, ref := range resolver.Refs() {
 		res, err := ctrl.Get(ctx, ref, false)
@@ -122,16 +130,16 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 		}
 
 		if _, err := hash.Write([]byte(res.Meta.Name.Kind)); err != nil {
-			return nil, err
+			return ResolveResult{}, err
 		}
 		if _, err := hash.Write([]byte(res.Meta.Name.Name)); err != nil {
-			return nil, err
+			return ResolveResult{}, err
 		}
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Seconds); err != nil {
-			return nil, err
+			return ResolveResult{}, err
 		}
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Nanos); err != nil {
-			return nil, err
+			return ResolveResult{}, err
 		}
 	}
 	sum := hex.EncodeToString(hash.Sum(nil))
@@ -139,7 +147,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
-		return val.([]byte), nil
+		return val.(ResolveResult), nil
 	}
 
 	// Load with singleflight
@@ -151,16 +159,20 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) ([]byte, er
 
 		res, err := resolver.ResolveInteractive(ctx)
 		if err != nil {
-			return nil, err
+			return ResolveResult{}, err
 		}
 
-		if res.Cache {
-			r.queryCache.cache.Set(key, res.Data, int64(len(res.Data)))
+		cRes := ResolveResult{
+			Data:   res.Data,
+			Schema: res.Schema,
 		}
-		return res.Data, nil
+		if res.Cache {
+			r.queryCache.cache.Set(key, cRes, int64(len(res.Data)))
+		}
+		return cRes, nil
 	})
 	if err != nil {
-		return nil, err
+		return ResolveResult{}, err
 	}
-	return val.([]byte), nil
+	return val.(ResolveResult), nil
 }

@@ -14,7 +14,6 @@
   } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
@@ -90,25 +89,19 @@
 </svelte:head>
 
 {#if ($fileQuery.data && $resourceStatusStore.status === ResourceStatus.Idle) || showErrorPage}
-  <WorkspaceContainer bgClass="bg-white" inspector={false}>
-    <svelte:fragment slot="body">
-      {#key metricViewName}
-        <StateManagersProvider metricsViewName={metricViewName}>
-          <DashboardStateProvider {metricViewName}>
-            <DashboardURLStateProvider {metricViewName}>
-              <DashboardThemeProvider>
-                <Dashboard {metricViewName} />
-              </DashboardThemeProvider>
-            </DashboardURLStateProvider>
-          </DashboardStateProvider>
-        </StateManagersProvider>
-      {/key}
-    </svelte:fragment>
-  </WorkspaceContainer>
+  {#key metricViewName}
+    <StateManagersProvider metricsViewName={metricViewName}>
+      <DashboardStateProvider {metricViewName}>
+        <DashboardURLStateProvider {metricViewName}>
+          <DashboardThemeProvider>
+            <Dashboard {metricViewName} />
+          </DashboardThemeProvider>
+        </DashboardURLStateProvider>
+      </DashboardStateProvider>
+    </StateManagersProvider>
+  {/key}
 {:else if $resourceStatusStore.status === ResourceStatus.Busy}
-  <WorkspaceContainer bgClass="bg-white" inspector={false}>
-    <div class="grid h-screen place-content-center" slot="body">
-      <ReconcilingSpinner />
-    </div>
-  </WorkspaceContainer>
+  <div class="grid h-screen w-full place-content-center">
+    <ReconcilingSpinner />
+  </div>
 {/if}

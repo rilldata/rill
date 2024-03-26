@@ -236,3 +236,13 @@ body {
 a {
   @apply text-primary-500 hover:text-primary-600 font-medium;
 }
+
+.slide {
+  transition-property: padding-left;
+  transition-duration: 400ms;
+  transition-timing-function: ease-in-out;
+}
+
+.left-shift {
+  @apply pl-8;
+}
