@@ -19,14 +19,16 @@
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
-  export let defaultDate: DashboardTimeControls;
+  export let defaultDate: DashboardTimeControls | undefined;
   export let zone: string;
 
   let selectingStart = true;
   let isCustomRangeOpen = false;
   let error: string | undefined = undefined;
-  let start = DateTime.fromJSDate(defaultDate.start).setZone(zone);
-  let end = DateTime.fromJSDate(defaultDate.end).setZone(zone);
+  let start = DateTime.fromJSDate(defaultDate?.start ?? boundaryStart).setZone(
+    zone,
+  );
+  let end = DateTime.fromJSDate(defaultDate?.end ?? boundaryEnd).setZone(zone);
   let nudgeGrain: "day" | "week" | "month" | "year" = "day";
 
   $: disabled = !start || !end || error !== undefined;
