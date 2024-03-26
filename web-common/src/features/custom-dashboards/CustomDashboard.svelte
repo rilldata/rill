@@ -1,21 +1,11 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import GridLines from "./GridLines.svelte";
   import Element from "./Element.svelte";
   import type { Vector } from "./types";
+  import { vector } from "./util";
   import { createEventDispatcher } from "svelte";
 
-  const vector = {
-    add: (a: Vector, b: Vector): Vector => {
-      return [a[0] + b[0], a[1] + b[1]];
-    },
-    subtract: (minuend: Vector, subtrahend: Vector): Vector => {
-      return [minuend[0] - subtrahend[0], minuend[1] - subtrahend[1]];
-    },
-  };
-</script>
-
-<script lang="ts">
   const dispatch = createEventDispatcher();
 
   export let columns = 20;
