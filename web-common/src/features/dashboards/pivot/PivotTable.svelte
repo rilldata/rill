@@ -423,11 +423,6 @@
     @apply p-1 px-2 truncate;
   }
 
-  /* tbody > tr:nth-of-type(2) {
-    @apply bg-slate-100 sticky z-20 font-semibold;
-    top: var(--total-header-height);
-  } */
-
   tbody > tr:first-of-type > td:first-of-type > .cell {
     @apply font-bold;
   }
