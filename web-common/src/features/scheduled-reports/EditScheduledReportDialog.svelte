@@ -56,7 +56,7 @@
         reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
       recipients:
-        reportSpec.emailRecipients?.map((email) => ({
+        reportSpec.notifySpec?.notifiers?.find((n) => n.connector === "email")?.email?.recipients?.map((email) => ({
           email: email,
         })) ?? [],
     },

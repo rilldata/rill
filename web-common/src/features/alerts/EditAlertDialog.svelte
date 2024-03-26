@@ -52,7 +52,7 @@
     initialValues: {
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
-      recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
+      recipients: alertSpec?.notifySpec?.notifiers?.find((n) => n.connector === "email")?.email?.recipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertFormValues(
         queryArgsJson,
