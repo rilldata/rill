@@ -39,6 +39,7 @@ type sqlConnection struct {
 var _ driver.QueryerContext = &sqlConnection{}
 
 func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+	dr := newDruidRequest(query, args)
 	b, err := json.Marshal(newDruidRequest(query, args))
 	if err != nil {
 		return nil, err
@@ -46,6 +47,20 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 	bodyReader := bytes.NewReader(b)
 
+	context.AfterFunc(ctx, func() {
+		tctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		r, err := http.NewRequestWithContext(tctx, http.MethodDelete, c.dsn+"/"+dr.Context.SQLQueryID, http.NoBody)
+		if err != nil {
+			return
+		}
+
+		resp, err := c.client.Do(r)
+		if err != nil {
+			return
+		}
+		resp.Body.Close()
+	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.dsn, bodyReader)
 	if err != nil {
 		return nil, err
