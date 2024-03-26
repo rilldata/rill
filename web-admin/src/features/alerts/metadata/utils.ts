@@ -20,14 +20,14 @@ export function humaniseAlertRunDuration(alert: V1AlertSpec | undefined) {
 export function humaniseAlertSnoozeOption(
   alert: V1AlertSpec | undefined,
 ): string {
-  if (!alert?.notifySpec.renotify || !alert?.notifySpec.renotifyAfterSeconds)
+  if (!alert?.notifySpec?.renotify || !alert?.notifySpec?.renotifyAfterSeconds)
     return SnoozeOptions[0].label;
   const preset = SnoozeOptions.find(
-    (o) => o.value === alert.notifySpec.renotifyAfterSeconds + "",
+    (o) => o.value === alert.notifySpec?.renotifyAfterSeconds + "",
   );
   if (preset) return preset.label;
   return (
     "Rest of " +
-    Duration.fromMillis(alert.notifySpec.renotifyAfterSeconds * 1000).toHuman()
+    Duration.fromMillis(alert.notifySpec?.renotifyAfterSeconds * 1000).toHuman()
   );
 }
