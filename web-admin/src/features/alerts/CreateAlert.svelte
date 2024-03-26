@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { Button } from "@rilldata/web-common/components/button";
   import { BellPlusIcon } from "lucide-svelte";
+  import CreateAlertDialog from "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte";
 
   const {
     selectors: {
@@ -13,17 +13,6 @@
   } = getStateManagers();
 
   let showAlertDialog = false;
-
-  // Only import the Create Alert dialog if in the Cloud context.
-  // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let CreateAlertDialog;
-  onMount(async () => {
-    CreateAlertDialog = (
-      await import(
-        "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte"
-      )
-    ).default;
-  });
 </script>
 
 <Tooltip location="top" distance={8} suppress={!$isCustomTimeRange}>
