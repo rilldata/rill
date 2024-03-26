@@ -6,10 +6,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
   import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
   import { workspaces } from "./workspace-stores";
+  import { navigationOpen } from "../navigation/Navigation.svelte";
 
   export let onChangeCallback: (
     e: Event & {
@@ -28,10 +27,6 @@
   $: workspaceLayout = $workspaces;
 
   $: visible = workspaceLayout.inspector.visible;
-
-  const navigationVisibilityTween = getContext<Tweened<number>>(
-    "rill:app:navigation-visibility-tween",
-  );
 
   function onKeydown(
     event: KeyboardEvent & {
@@ -58,7 +53,7 @@
   style:height="var(--header-height)"
   bind:clientWidth={width}
 >
-  <div style:padding-left="{$navigationVisibilityTween * 24}px">
+  <div class:pl-4={!$navigationOpen} class="slide">
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"

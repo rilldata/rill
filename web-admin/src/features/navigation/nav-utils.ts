@@ -13,6 +13,7 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/status"
   );
 }
+
 export function isDashboardPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]/[dashboard]" ||

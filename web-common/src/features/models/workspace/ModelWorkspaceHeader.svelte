@@ -14,6 +14,7 @@
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
+    getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
@@ -86,8 +87,8 @@
       const entityType = EntityType.Model;
       await renameFileArtifact(
         runtimeInstanceId,
-        modelName,
-        toName,
+        getFileAPIPathFromNameAndType(modelName, entityType),
+        getFileAPIPathFromNameAndType(toName, entityType),
         entityType,
       );
       await goto(getRouteFromName(toName, entityType), {
@@ -114,7 +115,7 @@
       </svelte:fragment>
     </IconButton>
   </svelte:fragment>
-  <svelte:fragment slot="cta" let:width>
+  <svelte:fragment let:width slot="cta">
     {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs

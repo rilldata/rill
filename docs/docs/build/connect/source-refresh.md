@@ -7,7 +7,13 @@ sidebar_position: 10
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-After deploying a project to Rill Cloud, you can then configure how often the underlying sources are refreshed. This is handled through the underlying source or project YAML using standard cron or go duration string syntax. 
+When creating or updating a source in Rill Cloud, you also have the option to configure how often the underlying source is refreshed (and thus ingested into the underlying OLAP layer powering Rill models and dashboards). By default, sources are refreshed manually but this can also be automated to a predefined schedule. This is handled through the underlying [source](/reference/project-files/sources.md) and/or [project YAML](/reference/project-files/rill-yaml.md#project-wide-defaults) using standard cron or Go duration syntax.
+
+:::tip Configuring source refreshes for Cloud deployments
+
+It is generally strongly recommended to configure source refreshes when [deploying a project](/deploy/existing-project/existing-project.md) to Rill Cloud to ensure that your production data (and dashboards) _remains up-to-date_. The interval that you should set really depends on how often your own source data is refreshed. Furthermore, while it is technically possible to configure source refreshes for Rill Developer as well, Rill Developer is primarily used for local development and thus typically does not require working with the most up-to-date data (local source refreshes that occur too often as well could also lead to resource constraints on your local machine). For more details, please see our pages on [environments](/build/models/environments#default-dev-and-prod-environments), [templating](/deploy/templating#environments-and-rill), and [performance optimization](/deploy/performance#configure-source-refresh-schedules-in-production-only).
+
+:::
 
 ## Configuring source refresh individually
 
@@ -25,7 +31,7 @@ refresh:
   cron: '*/15 * * * *'
 ```
 
-:::tip Source settings
+:::note Source settings
 
 For more details about available source configurations and properties, check our [Source YAML](../../reference/project-files/sources) reference page.
 
@@ -51,6 +57,6 @@ sources:
 
 :::info Did you know?
 
-If you have both a project-wide default and source specific refresh schedule configured in the same project, the source specific refresh will override the project default. Otherwise, the schedule will be inherited!
+If you have both a project-wide default and source specific refresh schedule _configured in the same project_, the source specific refresh will **override** the project default based on how [inheritance](/build/models/environments#specifying-environment-specific-yaml-overrides) works in Rill. Otherwise, if not specified, the project-wide default will be used instead!
 
 :::

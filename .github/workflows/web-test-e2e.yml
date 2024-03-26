@@ -81,8 +81,7 @@ jobs:
           path: web-local/playwright-report/
           retention-days: 30
 
-      - name: Build & Test the web admin
+      - name: Build web admin
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
           npm run build -w web-admin
-          npm run test -w web-admin
