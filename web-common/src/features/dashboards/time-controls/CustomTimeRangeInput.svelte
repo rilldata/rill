@@ -12,7 +12,7 @@
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
 
-  import { ChevronLeft, ChevronRight } from "lucide-svelte";
+  import { ChevronRight } from "lucide-svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -22,7 +22,7 @@
   export let defaultDate: DashboardTimeControls;
   export let zone: string;
 
-  let selecting: "start" | "end" = "start";
+  let selectingStart = true;
   let isCustomRangeOpen = false;
   let error: string | undefined = undefined;
   let start = DateTime.fromJSDate(defaultDate.start).setZone(zone);
@@ -77,7 +77,7 @@
   </DropdownMenu.SubTrigger>
 
   <DropdownMenu.SubContent align="start" sideOffset={12}>
-    <Calendar bind:start bind:end {zone} bind:selecting />
+    <Calendar bind:start bind:end {zone} bind:selectingStart />
   </DropdownMenu.SubContent>
 </DropdownMenu.Sub>
 
@@ -91,12 +91,12 @@
       <label for="start-date" class="!font-medium">Start date (Inclusive)</label
       >
       <DateSelector
-        selecting={isCustomRangeOpen && selecting === "start"}
-        bind:value={start}
-        maxYear={boundaryEnd.getFullYear()}
-        minYear={boundaryStart.getFullYear()}
         {zone}
         label="start"
+        maxYear={boundaryEnd.getFullYear()}
+        minYear={boundaryStart.getFullYear()}
+        selecting={isCustomRangeOpen && selectingStart}
+        bind:value={start}
       />
     </div>
 
@@ -104,7 +104,7 @@
       <label for="end-date" class="!font-medium">End date (Exclusive)</label>
 
       <DateSelector
-        selecting={isCustomRangeOpen && selecting === "end"}
+        selecting={isCustomRangeOpen && !selectingStart}
         bind:value={end}
         maxYear={boundaryEnd.getFullYear()}
         minYear={boundaryStart.getFullYear()}

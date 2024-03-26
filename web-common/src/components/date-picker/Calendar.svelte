@@ -6,7 +6,7 @@
   export let end: DateTime;
   export let zone: string;
   export let visibleMonths = 2;
-  export let selecting: "start" | "end" = "start";
+  export let selectingStart: boolean;
 
   let potentialEnd: DateTime | undefined;
   let potentialStart: DateTime | undefined;
@@ -14,7 +14,7 @@
   let firstVisibleMonth = start;
 
   $: months = Array.from({ length: visibleMonths }, (_, i) =>
-    firstVisibleMonth.plus({ month: i }),
+    firstVisibleMonth.plus({ month: i }).set({ day: 1 }),
   );
 
   function handleDecrementMonth() {
@@ -26,12 +26,12 @@
   }
 
   function handleSelectDay(e: CustomEvent<DateTime>) {
-    if (selecting === "start") {
+    if (selectingStart) {
       start = e.detail;
-      selecting = "end";
+      selectingStart = false;
     } else {
       end = e.detail;
-      selecting = "start";
+      selectingStart = true;
     }
   }
 </script>
@@ -39,17 +39,17 @@
 <div class="flex gap-x-3 p-1">
   {#each months as month, i}
     <Month
-      on:select-day={handleSelectDay}
-      on:previous={handleDecrementMonth}
-      on:next={handleIncrementMonth}
-      {month}
       {start}
-      {selecting}
       {end}
       {zone}
+      startDay={month}
+      {selectingStart}
       visibleIndex={i}
       bind:potentialStart
       bind:potentialEnd
+      on:select-day={handleSelectDay}
+      on:previous={handleDecrementMonth}
+      on:next={handleIncrementMonth}
     />
   {/each}
 </div>

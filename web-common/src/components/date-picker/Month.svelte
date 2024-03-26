@@ -6,20 +6,20 @@
 
   const dispatch = createEventDispatcher();
 
-  export let month: DateTime;
+  export let startDay: DateTime;
   export let startOfWeek = 0;
   export let start: DateTime;
   export let end: DateTime;
-  export let selecting: "start" | "end" = "start";
+  export let selectingStart: boolean;
   export let zone: string;
   export let visibleMonths = 2;
   export let visibleIndex: number;
   export let potentialEnd: DateTime | undefined;
   export let potentialStart: DateTime | undefined;
 
-  $: daysInMonth = month.daysInMonth ?? 0;
-  $: firstDay = month.startOf("month").weekday;
-  $: year = month.year;
+  $: daysInMonth = startDay.daysInMonth ?? 0;
+  $: firstDay = startDay.startOf("month").weekday;
+  $: year = startDay.year;
 
   $: days = Array.from({ length: firstDay }, (_) => -1).concat(
     Array.from({ length: daysInMonth }, (_, i) => i + 1),
@@ -52,8 +52,8 @@
       <ChevronLeft size="14px" />
     </button>
     <div class="w-full text-center p-2 text-sm flex gap-x-1 justify-center">
-      <b>{month.monthLong}</b>
-      <p>{month.year}</p>
+      <b>{startDay.monthLong}</b>
+      <p>{startDay.year}</p>
     </div>
     <button
       class:hide={visibleIndex !== visibleMonths - 1}
@@ -71,11 +71,11 @@
     {/each}
   </div>
   <div class="w-fit">
-    <div class="grid grid-cols-7" class:selecting-start={selecting === "start"}>
+    <div class="grid grid-cols-7" class:selecting-start={selectingStart}>
       {#each days as day}
         {@const date = DateTime.fromObject({
           year,
-          month: month.month,
+          month: startDay.month,
           day,
         }).setZone(zone)}
         {@const inRange = date >= start && date <= end}
@@ -92,7 +92,7 @@
               resetPotentialDates();
             }}
             on:mouseenter={() => {
-              if (selecting === "start") {
+              if (selectingStart) {
                 potentialStart = date;
               } else {
                 potentialEnd = date;

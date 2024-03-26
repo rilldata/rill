@@ -1,12 +1,10 @@
 <script lang="ts">
   import { Select as SelectPrimitive } from "bits-ui";
-  // import CaretSort from "svelte-radix/CaretSort.svelte";
-  // import {  } from "lucide-svelte";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
   type $$Props = SelectPrimitive.TriggerProps;
-  type $$Events = SelectPrimitive.TriggerEvents;
+  // type $$Events = SelectPrimitive.TriggerEvents;
 
   let className: $$Props["class"] = undefined;
   export { className as class };
