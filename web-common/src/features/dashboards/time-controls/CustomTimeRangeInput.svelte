@@ -88,10 +88,11 @@
   id="custom-time-range-form"
   on:submit|preventDefault={handleSubmit}
 >
-  <div class="flex flex-col gap-2 size-full">
+  <div class="flex flex-col gap-3 size-full">
     <div class="date-wrapper">
-      <label for="start-date" class="!font-medium">Start date (Inclusive)</label
-      >
+      <label for="start-date">
+        Start Date <span class="secondary">(Inclusive)</span>
+      </label>
       <DateSelector
         {zone}
         label="start"
@@ -103,7 +104,9 @@
     </div>
 
     <div class="date-wrapper">
-      <label for="end-date" class="!font-medium">End date (Exclusive)</label>
+      <label for="end-date">
+        End Date <span class="secondary">(Exclusive)</span>
+      </label>
 
       <DateSelector
         selecting={isCustomRangeOpen && !selectingStart}
@@ -124,11 +127,11 @@
     <div class="flex gap-x-1 items-center">
       <button
         aria-label="Nudge backward"
+        class="nudge rotate-180 pl-0.5"
         on:click|preventDefault={() => {
           start = start.minus({ [nudgeGrain]: 1 });
           end = end.minus({ [nudgeGrain]: 1 });
         }}
-        class="nudge rotate-180 pl-0.5"
       >
         <ChevronRight size="18px" />
       </button>
@@ -143,6 +146,7 @@
         <ChevronRight size="18px" />
       </button>
       <span>by</span>
+
       <div
         role="radiogroup"
         class="flex border rounded-full overflow-hidden"
@@ -195,5 +199,9 @@
 
   .nudge:active {
     @apply bg-gray-200;
+  }
+
+  .secondary {
+    @apply text-gray-600 text-[11px] font-medium;
   }
 </style>
