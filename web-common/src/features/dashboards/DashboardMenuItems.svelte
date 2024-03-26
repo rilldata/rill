@@ -5,6 +5,7 @@
     useDashboardFileNames,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
@@ -69,7 +70,10 @@
   const deleteMetricsDef = async () => {
     await deleteFileArtifact(
       instanceId,
-      metricsViewName,
+      getFileAPIPathFromNameAndType(
+        metricsViewName,
+        EntityType.MetricsDefinition,
+      ),
       EntityType.MetricsDefinition,
       $dashboardNames?.data ?? [],
     );

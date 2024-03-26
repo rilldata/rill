@@ -16,7 +16,7 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, type Readable, writable } from "svelte/store";
 
 export class FileArtifact {
-  public readonly path = writable<string>("");
+  public readonly path: string;
 
   public readonly name = writable<V1ResourceName | undefined>(undefined);
 
@@ -27,7 +27,7 @@ export class FileArtifact {
   public lastStateUpdatedOn: string | undefined;
 
   public constructor(filePath: string) {
-    this.path.set(filePath);
+    this.path = filePath;
   }
 
   public updateResource(resource: V1Resource) {
@@ -81,7 +81,7 @@ export class FileArtifactsStore {
 
   public updateFile(filePath: string) {
     if (get(this.files)[filePath]) return;
-    this.artifacts[filePath] = new FileArtifact(filePath);
+    this.artifacts[filePath] ??= new FileArtifact(filePath);
     this.files.update((f) => {
       f[filePath] = false;
       return f;
@@ -97,10 +97,11 @@ export class FileArtifactsStore {
   }
 
   public setResource(resource: V1Resource) {
-    resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
-      this.artifacts[filePath].updateResource(resource);
-    });
+    this.updateArtifact(resource);
+    this.updateReconciling(resource);
+  }
+
+  public updateReconciling(resource: V1Resource) {
     this.files.update((f) => {
       resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
         f[filePath] =
@@ -108,6 +109,13 @@ export class FileArtifactsStore {
           V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
       });
       return f;
+    });
+  }
+
+  public updateArtifact(resource: V1Resource) {
+    resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath].updateResource(resource);
     });
   }
 
@@ -133,10 +141,12 @@ export class FileArtifactsStore {
     return this.artifacts[correctFilePath(filePath)]?.lastStateUpdatedOn;
   }
 
-  public getResourceNameForFile(filePath: string) {
+  public getResourceNameForFile(
+    filePath: string,
+  ): Readable<V1ResourceName | undefined> {
     return derived(this.getFileArtifact(filePath), (artifact, set) =>
-      derived(artifact.name, (resourceName) => resourceName).subscribe(set),
-    ) as Readable<V1ResourceName | undefined>;
+      artifact.name.subscribe(set),
+    );
   }
 
   public getReconcilingItems() {

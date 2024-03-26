@@ -41,8 +41,6 @@ export function invalidateResourceResponse(
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
 
-  if (res.resource) fileArtifactsStore.setResource(res.resource);
-
   const instanceId = get(runtime).instanceId;
   if (
     MainResourceKinds[res.name.kind] &&
@@ -90,6 +88,7 @@ async function invalidateResource(
   ) {
     // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
     // So handle the case when it is 1st queued and status != IDLE
+    fileArtifactsStore.updateArtifact(resource);
     return;
   }
 
@@ -99,6 +98,7 @@ async function invalidateResource(
   )
     return;
 
+  fileArtifactsStore.setResource(resource);
   const failed = !!resource.meta.reconcileError;
 
   switch (resource.meta.name.kind) {
@@ -180,6 +180,7 @@ function shouldSkipResource(
 
     case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
       refreshResource(queryClient, instanceId, res);
+      fileArtifactsStore.updateReconciling(res);
       return true;
   }
 
