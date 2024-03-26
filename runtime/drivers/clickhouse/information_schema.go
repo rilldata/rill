@@ -70,6 +70,18 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+	if strings.ContainsRune(name, '.') && db == "" && schema == "" {
+		parts := strings.Split(name, ".")
+		if len(parts) == 2 {
+			schema = parts[0]
+			name = parts[1]
+		} else if len(parts) == 3 {
+			db = parts[0]
+			schema = parts[1]
+			name = parts[2]
+		}
+	}
+
 	var q string
 	var args []any
 	if db == "" && schema == "" {
