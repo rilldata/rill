@@ -252,7 +252,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	}
 	defer release()
 
-	table, err := olap.InformationSchema().Lookup(ctx, req.Table)
+	table, err := olap.InformationSchema().Lookup(ctx, req.Database, req.Schema, req.Table)
 	if err != nil {
 		return nil, err
 	}

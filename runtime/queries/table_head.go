@@ -12,11 +12,13 @@ import (
 )
 
 type TableHead struct {
-	Connector string
-	TableName string
-	Limit     int
-	Result    []*structpb.Struct
-	Schema    *runtimev1.StructType
+	Connector    string
+	DatabaseName string
+	SchemaName   string
+	TableName    string
+	Limit        int
+	Result       []*structpb.Struct
+	Schema       *runtimev1.StructType
 }
 
 var _ runtime.Query = &TableHead{}
@@ -159,7 +161,7 @@ func (q *TableHead) buildTableHeadSQL() string {
 
 	sql := fmt.Sprintf(
 		`SELECT * FROM %s%s`,
-		safeName(q.TableName),
+		fullTableName(q.DatabaseName, q.SchemaName, q.TableName),
 		limitClause,
 	)
 	return sql

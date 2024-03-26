@@ -117,7 +117,7 @@ func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(mv *runtimev1.MetricsVi
 	return fmt.Sprintf(
 		`SELECT %[1]s FROM %[2]s %[3]s %[4]s LIMIT 0`,
 		columns,                         // 1
-		safeName(mv.Table),              // 2
+		fullyQualifiedTableName(mv),     // 2
 		strings.Join(unnestClauses, ""), // 3
 		groupBy,                         // 4
 	)

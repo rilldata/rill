@@ -65,7 +65,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	defer release()
 
 	// Get table info
-	tbl, err := olap.InformationSchema().Lookup(ctx, req.Table)
+	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.Schema, req.Table)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "table not found")
 	}
@@ -93,7 +93,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Database, tbl.DatabaseSchema, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
@@ -150,7 +150,7 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, db, dbSchema, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
@@ -195,6 +195,8 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			doc.Connector = connector
 		}
 		doc.Table = tblName
+		doc.Database = db
+		doc.Schema = dbSchema
 	}
 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
@@ -371,6 +373,8 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metr
 type metricsViewYAML struct {
 	Title              string                      `yaml:"title,omitempty"`
 	Connector          string                      `yaml:"connector,omitempty"`
+	Database           string                      `yaml:"database,omitempty"`
+	Schema             string                      `yaml:"schema,omitempty"`
 	Table              string                      `yaml:"table,omitempty"`
 	Model              string                      `yaml:"model,omitempty"`
 	TimeDimension      string                      `yaml:"timeseries,omitempty"`

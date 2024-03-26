@@ -13,9 +13,11 @@ import (
 )
 
 type TableColumns struct {
-	Connector string
-	TableName string
-	Result    []*runtimev1.ProfileColumn
+	Connector    string
+	TableName    string
+	SchemaName   string
+	DatabaseName string
+	Result       []*runtimev1.ProfileColumn
 }
 
 var _ runtime.Query = &TableColumns{}
@@ -113,7 +115,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			return nil
 		})
 	case drivers.DialectClickHouse, drivers.DialectDruid:
-		tbl, err := olap.InformationSchema().Lookup(ctx, q.TableName)
+		tbl, err := olap.InformationSchema().Lookup(ctx, q.DatabaseName, q.SchemaName, q.TableName)
 		if err != nil {
 			return err
 		}

@@ -120,6 +120,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: schema
+          in: query
+          required: false
+          type: string
         - name: table
           in: query
           required: false
@@ -710,6 +718,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              schema:
                 type: string
               table:
                 type: string
@@ -4340,6 +4352,12 @@ definitions:
       connector:
         type: string
         title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database of the table (optional)
+      schema:
+        type: string
+        title: Name of the schema of the table (optional)
       table:
         type: string
         title: Name of the table the metrics view is based on

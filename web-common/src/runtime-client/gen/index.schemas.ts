@@ -366,6 +366,8 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
+  database?: string;
+  schema?: string;
   table?: string;
   path?: string;
   useAi?: boolean;
@@ -467,6 +469,8 @@ export type ConnectorServiceScanConnectorsParams = { instanceId?: string };
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  schema?: string;
   table?: string;
 };
 
@@ -1251,6 +1255,8 @@ export interface V1MetricsViewTimeRangeResponse {
 
 export interface V1MetricsViewSpec {
   connector?: string;
+  database?: string;
+  schema?: string;
   table?: string;
   title?: string;
   description?: string;

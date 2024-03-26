@@ -504,6 +504,8 @@ message UnpackEmptyResponse {}
 message GenerateMetricsViewFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string connector = 2;
+  string database = 6;
+  string schema = 7;
   string table = 3;
   string path = 4;
   bool use_ai = 5;

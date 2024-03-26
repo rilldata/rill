@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -17,7 +18,28 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 }
 
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	q := `
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
+	var databases []string
+	dbs, ok := i.c.config["databases"].(string)
+	if ok {
+		databases = strings.Split(dbs, ",")
+	} else {
+		row := conn.QueryRowxContext(ctx, "SELECT currentDatabase()")
+		var db string
+		if err := row.Scan(&db); err != nil {
+			return nil, err
+		}
+		databases = append(databases, db)
+	}
+
+	var res []*drivers.Table
+	for _, database := range databases {
+		q := `
 		SELECT
 			T.TABLE_CATALOG AS DATABASE,
 			T.TABLE_SCHEMA AS SCHEMA,
@@ -27,31 +49,28 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			C.DATA_TYPE AS COLUMN_TYPE
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = currentDatabase()
+		WHERE T.TABLE_SCHEMA = ?
 		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
-	conn, release, err := i.c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = release() }()
+		rows, err := conn.QueryxContext(ctx, q, database)
+		if err != nil {
+			return nil, err
+		}
 
-	rows, err := conn.QueryxContext(ctx, q)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+		tables, err := i.scanTables(rows)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
 
-	tables, err := i.scanTables(rows)
-	if err != nil {
-		return nil, err
+		rows.Close()
+		res = append(res, tables...)
 	}
-
-	return tables, nil
+	return res, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	q := `
 		SELECT
 			T.TABLE_CATALOG AS DATABASE,

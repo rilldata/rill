@@ -86,7 +86,7 @@ func (r *Result) Close() error {
 // Table lookups should be case insensitive.
 type InformationSchema interface {
 	All(ctx context.Context) ([]*Table, error)
-	Lookup(ctx context.Context, name string) (*Table, error)
+	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 
 // Table represents a table in an information schema.

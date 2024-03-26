@@ -179,6 +179,10 @@ message MetricsViewSpec {
   }
   // Connector containing the table
   string connector = 1;
+  // Name of the database of the table (optional)
+  string database = 21;
+  // Name of the schema of the table (optional)
+  string schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
   // User friendly label for the dashboard

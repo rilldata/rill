@@ -55,7 +55,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err

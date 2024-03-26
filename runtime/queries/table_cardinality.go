@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -12,9 +13,11 @@ import (
 )
 
 type TableCardinality struct {
-	Connector string
-	TableName string
-	Result    int64
+	Connector    string
+	DatabaseName string
+	SchemaName   string
+	TableName    string
+	Result       int64
 }
 
 var _ runtime.Query = &TableCardinality{}
@@ -48,7 +51,7 @@ func (q *TableCardinality) UnmarshalResult(v any) error {
 
 func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	countSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s",
-		safeName(q.TableName),
+		fullTableName(q.DatabaseName, q.SchemaName, q.TableName),
 	)
 
 	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
@@ -90,4 +93,18 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 func (q *TableCardinality) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return ErrExportNotSupported
+}
+
+func fullTableName(db, schema, table string) string {
+	var sb strings.Builder
+	if db != "" {
+		sb.WriteString(safeName(db))
+		sb.WriteString(".")
+	}
+	if schema != "" {
+		sb.WriteString(safeName(schema))
+		sb.WriteString(".")
+	}
+	sb.WriteString(safeName(table))
+	return sb.String()
 }

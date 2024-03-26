@@ -592,7 +592,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		// SELECT m1, m2, d1, d2 FROM t, LATERAL UNNEST(t.d1) tbl(unnested_d1_) WHERE d1 = 'a' GROUP BY d1, d2
 		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
 			strings.Join(selectCols, ", "),  // 1
-			safeName(mv.Table),              // 2
+			fullyQualifiedTableName(mv),     // 2
 			strings.Join(unnestClauses, ""), // 3
 			whereClause,                     // 4
 			groupClause,                     // 5
@@ -627,7 +627,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
-			safeName(mv.Table),
+			fullyQualifiedTableName(mv),
 			strings.Join(unnestClauses, ""),
 			whereClause,
 			groupClause,
@@ -649,8 +649,8 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	selfJoinTableAlias := tempName("self_join")
 	nonNullValue := tempName("non_null")
 	for _, d := range q.Dimensions {
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", safeName(mv.Table), safeName(d.Name), selfJoinTableAlias, nonNullValue))
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", fullyQualifiedTableName(mv), safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", fullyQualifiedTableName(mv), safeName(d.Name)))
 		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(d.Name)))
 	}
 	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
@@ -701,7 +701,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 					OFFSET %[12]d
 				`,
 		strings.Join(selfJoinCols, ", "),      // 1
-		safeName(mv.Table),                    // 2
+		fullyQualifiedTableName(mv),           // 2
 		strings.Join(unnestClauses, ""),       // 3
 		whereClause,                           // 4
 		groupClause,                           // 5

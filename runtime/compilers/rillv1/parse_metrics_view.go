@@ -22,6 +22,8 @@ type MetricsViewYAML struct {
 	Description        string           `yaml:"description"`
 	Model              string           `yaml:"model"`
 	Table              string           `yaml:"table"`
+	Schema             string           `yaml:"schema"`
+	Database           string           `yaml:"database"`
 	TimeDimension      string           `yaml:"timeseries"`
 	Watermark          string           `yaml:"watermark"`
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
@@ -416,6 +418,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Connector = node.Connector
 	spec.Table = table
+	spec.Schema = tmp.Schema
+	spec.Database = tmp.Database
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension

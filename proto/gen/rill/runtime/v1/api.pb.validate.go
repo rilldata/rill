@@ -4198,6 +4198,10 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for Schema
+
 	// no validation rules for Table
 
 	// no validation rules for Path

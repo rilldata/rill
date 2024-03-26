@@ -1792,6 +1792,16 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string schema = 7;
+   */
+  schema = "";
+
+  /**
    * @generated from field: string table = 3;
    */
   table = "";
@@ -1816,6 +1826,8 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

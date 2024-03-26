@@ -20,7 +20,7 @@
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: tableName = fullyQualifiedTableName.split(".")[1];
+  $: tableName = fullyQualifiedTableName;
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelNames = useModelFileNames($runtime.instanceId);
 

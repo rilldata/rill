@@ -965,6 +965,16 @@ export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 4;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string schema = 5;
+   */
+  schema = "";
+
+  /**
    * @generated from field: string table = 3;
    */
   table = "";
@@ -979,6 +989,8 @@ export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
