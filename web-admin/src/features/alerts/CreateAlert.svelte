@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Tooltip from "../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
+  import { page } from "$app/stores";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { Button } from "@rilldata/web-common/components/button";
+  import { BellPlusIcon } from "lucide-svelte";
 
   const {
     selectors: {
@@ -16,27 +19,30 @@
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
   let CreateAlertDialog;
   onMount(async () => {
-    CreateAlertDialog = (await import("./CreateAlertDialog.svelte")).default;
+    CreateAlertDialog = (
+      await import(
+        "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte"
+      )
+    ).default;
   });
 </script>
 
 <Tooltip location="top" distance={8} suppress={!$isCustomTimeRange}>
-  <button
+  <Button
     disabled={$isCustomTimeRange}
-    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-gray-100"
-    on:click={() => {
-      showAlertDialog = true;
-    }}
+    on:click={() => (showAlertDialog = true)}
+    compact
+    type="secondary"
   >
-    Create alert
-  </button>
+    <BellPlusIcon class="inline-flex" size="16px" />
+  </Button>
   <TooltipContent slot="tooltip-content">
     To create an alert, set a non-custom time range.
   </TooltipContent>
 </Tooltip>
 
 <!-- Including `showAlertDialog` in the conditional ensures we tear 
-  down the form state when the dialog closes -->
+    down the form state when the dialog closes -->
 {#if showAlertDialog}
   <svelte:component
     this={CreateAlertDialog}

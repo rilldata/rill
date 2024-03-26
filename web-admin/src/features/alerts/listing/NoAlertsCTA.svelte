@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import { BellIcon } from "lucide-svelte";
 </script>
 
 <div
@@ -7,7 +7,7 @@
 >
   <div class="flex flex-col justify-center items-center">
     <div class="relative">
-      <ReportIcon className="text-slate-300 w-12 h-12" />
+      <BellIcon className="text-slate-300 w-12 h-12" />
     </div>
   </div>
   <div
