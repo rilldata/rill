@@ -29,7 +29,7 @@ var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/s3",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",
 			Secret: true,
@@ -39,7 +39,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			DisplayName: "S3 URI",

@@ -59,7 +59,7 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
-		SourceProperties: []drivers.PropertySpec{
+		SourceProperties: []*drivers.PropertySpec{
 			{
 				Key:         "db",
 				Type:        drivers.StringPropertyType,

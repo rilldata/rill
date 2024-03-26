@@ -19,7 +19,7 @@ var spec = drivers.Spec{
 	DisplayName: "Amazon Athena",
 	Description: "Connect to Amazon Athena database.",
 	DocsURL:     "",
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -53,7 +53,7 @@ var spec = drivers.Spec{
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",
 			Secret: true,

@@ -16,13 +16,13 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "database_url",
 			Secret: true,
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,

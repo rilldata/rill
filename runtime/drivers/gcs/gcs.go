@@ -33,14 +33,14 @@ var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:  "google_application_credentials",
 			Type: drivers.FilePropertyType,
 			Hint: "Enter path of file to load from.",
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			DisplayName: "GS URI",

@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Local file",
 	Description: "Import Locally Stored File.",
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,

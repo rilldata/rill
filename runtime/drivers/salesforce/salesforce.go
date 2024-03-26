@@ -23,7 +23,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
 			Secret: false,
@@ -45,7 +45,7 @@ var spec = drivers.Spec{
 			Secret: false,
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "soql",
 			Type:        drivers.StringPropertyType,

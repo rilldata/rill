@@ -95,7 +95,7 @@ func driverSpecToPB(name string, spec drivers.Spec) *runtimev1.ConnectorDriver {
 	return pb
 }
 
-func driverPropertySpecToPB(spec drivers.PropertySpec) *runtimev1.ConnectorDriver_Property {
+func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriver_Property {
 	var t runtimev1.ConnectorDriver_Property_Type
 	switch spec.Type {
 	case drivers.NumberPropertyType:

@@ -20,8 +20,8 @@ type Spec struct {
 	DisplayName           string
 	Description           string
 	DocsURL               string
-	ConfigProperties      []PropertySpec
-	SourceProperties      []PropertySpec
+	ConfigProperties      []*PropertySpec
+	SourceProperties      []*PropertySpec
 	ImplementsRegistry    bool
 	ImplementsCatalog     bool
 	ImplementsRepo        bool

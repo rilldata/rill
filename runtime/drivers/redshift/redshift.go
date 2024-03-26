@@ -19,7 +19,7 @@ var spec = drivers.Spec{
 	DisplayName: "Amazon Redshift",
 	Description: "Connect to Amazon Redshift database.",
 	DocsURL:     "",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",
 			Secret: true,
@@ -29,7 +29,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,

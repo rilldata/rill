@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/resources.proto";
-import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.

@@ -16,7 +16,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
@@ -24,7 +24,7 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,

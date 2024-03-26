@@ -23,14 +23,14 @@ var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/bigquery",
-	ConfigProperties: []drivers.PropertySpec{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:  "google_application_credentials",
 			Type: drivers.FilePropertyType,
 			Hint: "Enter path of file to load from.",
 		},
 	},
-	SourceProperties: []drivers.PropertySpec{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
