@@ -21,9 +21,10 @@
 
   export let pivotDataStore: PivotDataStore;
 
-  const OVERSCAN = 80;
+  const OVERSCAN = 60;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
+  const MEASURE_PADDING = 16;
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
   const MIN_COL_WIDTH = 150;
@@ -94,6 +95,20 @@
       : 0;
 
   $: firstColumnWidth = calculatedFirstColumnWidth;
+  $: measureGroups = headerGroups[headerGroups.length - 2]?.headers?.slice(
+    1,
+  ) ?? [null];
+  $: measureGroupsLength = measureGroups.length;
+
+  $: measureLengths =
+    $dashboardStore.pivot?.columns?.measure?.map((measure) => {
+      return measure.title.length * 7 + MEASURE_PADDING;
+    }) ?? [];
+
+  $: totalMeasureWidth = measureLengths.reduce((acc, val) => acc + val, 0);
+  $: totalLength = measureGroupsLength * totalMeasureWidth;
+
+  $: totalsRow = rows[0].getVisibleCells();
 
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
@@ -206,7 +221,22 @@
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table>
+  <table style:width="{totalLength}px">
+    <colgroup>
+      <col
+        style:width="{firstColumnWidth}px"
+        style:max-width="{firstColumnWidth}px"
+      />
+    </colgroup>
+
+    {#each measureGroups as _}
+      <colgroup>
+        {#each measureLengths as length}
+          <col style:width="{length}px" style:max-width="{length}px" />
+        {/each}
+      </colgroup>
+    {/each}
+
     <thead>
       {#each headerGroups as headerGroup (headerGroup.id)}
         <tr>
@@ -229,7 +259,6 @@
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
-                style:width={canResize ? `${firstColumnWidth}px` : "100%"}
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
@@ -248,10 +277,42 @@
           {/each}
         </tr>
       {/each}
+
+      <tr style:height="{ROW_HEIGHT}px">
+        {#each totalsRow as cell, i (cell.id)}
+          {@const result =
+            typeof cell.column.columnDef.cell === "function"
+              ? cell.column.columnDef.cell(cell.getContext())
+              : cell.column.columnDef.cell}
+          <td
+            class="bg-slate-100 font-semibold ui-copy-number"
+            class:border-r={i % measureCount === 0 && i}
+          >
+            <div class="cell">
+              {#if result?.component && result?.props}
+                <svelte:component
+                  this={result.component}
+                  {...result.props}
+                  {assembled}
+                />
+              {:else if typeof result === "string" || typeof result === "number"}
+                {result}
+              {:else}
+                <svelte:component
+                  this={flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext(),
+                  )}
+                />
+              {/if}
+            </div>
+          </td>
+        {/each}
+      </tr>
     </thead>
     <tbody>
       <tr style:height="{before}px" />
-      {#each virtualRows as row (row.index)}
+      {#each virtualRows.slice(1) as row (row.index)}
         {@const cells = rows[row.index].getVisibleCells()}
         <tr>
           {#each cells as cell, i (cell.id)}
@@ -298,7 +359,7 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal select-none;
-    @apply bg-white;
+    @apply bg-white table-fixed;
   }
 
   .table-wrapper {
@@ -340,7 +401,7 @@
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
-  .with-row-dimension thead > tr:not(:last-of-type) > th:first-of-type {
+  .with-row-dimension thead > tr:not(:nth-last-of-type(2)) > th:first-of-type {
     @apply border-b-0;
   }
 
@@ -359,13 +420,13 @@
   }
 
   .cell {
-    @apply p-1 px-2;
+    @apply p-1 px-2 truncate;
   }
 
-  tbody > tr:nth-of-type(2) {
+  /* tbody > tr:nth-of-type(2) {
     @apply bg-slate-100 sticky z-20 font-semibold;
     top: var(--total-header-height);
-  }
+  } */
 
   tbody > tr:first-of-type > td:first-of-type > .cell {
     @apply font-bold;
