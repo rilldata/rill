@@ -9,7 +9,11 @@
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
-  import { getLabel, getRouteFromName } from "./entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getLabel,
+    getRouteFromName,
+  } from "./entity-mappers";
   import {
     INVALID_NAME_MESSAGE,
     VALID_NAME_PATTERN,
@@ -50,8 +54,8 @@
       try {
         await renameFileArtifact(
           runtimeInstanceId,
-          currentAssetName,
-          values.newName,
+          getFileAPIPathFromNameAndType(currentAssetName, entityType),
+          getFileAPIPathFromNameAndType(values.newName, entityType),
           entityType,
         );
         goto(getRouteFromName(values.newName, entityType), {

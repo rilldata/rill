@@ -36,10 +36,10 @@ export async function submitRemoteSourceForm(
   const instanceId = get(runtime).instanceId;
 
   // Emit telemetry
-  behaviourEvent?.fireSourceTriggerEvent(
+  await behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
-    get(appScreen),
+    get(appScreen).type,
     MetricsEventSpace.Modal,
   );
 

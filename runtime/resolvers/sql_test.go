@@ -27,7 +27,7 @@ func TestSimpleSQLApi(t *testing.T) {
 	require.NotNil(t, res)
 
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &rows))
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 5, len(rows[0]))
 	require.Equal(t, 4.09, rows[0]["bid_price"])
@@ -54,7 +54,7 @@ func TestTemplateSQLApi(t *testing.T) {
 	require.NotNil(t, res)
 
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &rows))
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 5, len(rows[0]))
 	require.Equal(t, 1.81, rows[0]["bid_price"])
@@ -84,7 +84,7 @@ func TestTemplateSQLApi2(t *testing.T) {
 	require.NotNil(t, res)
 
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res, &rows))
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 5, len(rows[0]))
 	require.Equal(t, 4.09, rows[0]["bid_price"])

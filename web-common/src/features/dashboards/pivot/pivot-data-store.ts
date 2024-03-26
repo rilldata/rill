@@ -18,7 +18,10 @@ import {
   addExpandedDataToPivot,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
-import { sliceColumnAxesDataForDef } from "./pivot-infinite-scroll";
+import {
+  NUM_ROWS_PER_PAGE,
+  sliceColumnAxesDataForDef,
+} from "./pivot-infinite-scroll";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
@@ -334,6 +337,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           }
         }
 
+        const rowPage = config.pivot.rowPage;
+        const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
+
         // Get sort order for the anchor dimension
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
@@ -343,6 +349,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           config.whereFilter,
           sortPivotBy,
           timeRange,
+          NUM_ROWS_PER_PAGE.toString(),
+          rowOffset.toString(),
         );
 
         let globalTotalsQuery:
@@ -399,9 +407,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               });
             }
 
-            const rowDimensionValues =
-              rowDimensionAxes?.data?.[anchorDimension] || [];
-            const rowTotals = rowDimensionAxes?.totals?.[anchorDimension] || [];
             const totalsRow = getTotalsRow(
               config,
               columnDimensionAxes?.data,
@@ -409,7 +414,24 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               globalTotalsResponse?.data?.data,
             );
 
+            const rowDimensionValues =
+              rowDimensionAxes?.data?.[anchorDimension] || [];
+
+            if (rowDimensionValues.length === 0 && rowPage > 1) {
+              return axesSet({
+                isFetching: false,
+                data: [totalsRow, ...lastPivotData],
+                columnDef: lastPivotColumnDef,
+                assembled: true,
+                totalColumns: lastTotalColumns,
+                reachedEndForRowData: true,
+              });
+            }
+
             const totalColumns = getTotalColumnCount(totalsRow);
+
+            const axesRowTotals =
+              rowDimensionAxes?.totals?.[anchorDimension] || [];
 
             const rowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
               ctx,
@@ -463,7 +485,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
-                    data: rowTotals,
+                    data: axesRowTotals,
                     columnDef,
                     assembled: false,
                     totalColumns,
@@ -472,10 +494,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
                 const mergedRowTotals = mergeRowTotals(
                   rowDimensionValues,
-                  rowTotals,
+                  axesRowTotals,
                   rowMeasureTotalsAxesQuery?.data?.[anchorDimension] || [],
                   rowMeasureTotalsAxesQuery?.totals?.[anchorDimension] || [],
                 );
+
+                let pivotSkeleton = mergedRowTotals;
+                if (rowPage > 1) {
+                  pivotSkeleton = [...lastPivotData, ...mergedRowTotals];
+                }
 
                 let pivotData: PivotDataRow[] = [];
                 let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
@@ -483,12 +510,12 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
                 } else {
                   if (initialTableCellData === null) {
-                    cellData = mergedRowTotals;
+                    cellData = pivotSkeleton;
                   } else {
                     if (initialTableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
-                        data: mergedRowTotals,
+                        data: pivotSkeleton,
                         columnDef,
                         assembled: false,
                         totalColumns,
@@ -501,7 +528,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     anchorDimension,
                     rowDimensionValues || [],
                     columnDimensionAxes?.data || {},
-                    mergedRowTotals,
+                    pivotSkeleton,
                     cellData,
                   );
                   pivotData = structuredClone(tableDataWithCells);

@@ -52,6 +52,10 @@ import type {
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
   RuntimeServiceWatchFilesParams,
+  V1GenerateChartSpecResponse,
+  RuntimeServiceGenerateChartSpecBody,
+  V1GenerateResolverResponse,
+  RuntimeServiceGenerateResolverBody,
   V1GetLogsResponse,
   RuntimeServiceGetLogsParams,
   RuntimeServiceWatchLogs200,
@@ -1296,6 +1300,108 @@ export const createRuntimeServiceWatchFiles = <
   return query;
 };
 
+/**
+ * @summary GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+ */
+export const runtimeServiceGenerateChartSpec = (
+  instanceId: string,
+  runtimeServiceGenerateChartSpecBody: RuntimeServiceGenerateChartSpecBody,
+) => {
+  return httpClient<V1GenerateChartSpecResponse>({
+    url: `/v1/instances/${instanceId}/generate/chart`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateChartSpecBody,
+  });
+};
+
+export type RuntimeServiceGenerateChartSpecMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>
+>;
+export type RuntimeServiceGenerateChartSpecMutationBody =
+  RuntimeServiceGenerateChartSpecBody;
+export type RuntimeServiceGenerateChartSpecMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGenerateChartSpec = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
+    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateChartSpec(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary GenerateResolver generates resolver and resolver properties from a table or a metrics view
+ */
+export const runtimeServiceGenerateResolver = (
+  instanceId: string,
+  runtimeServiceGenerateResolverBody: RuntimeServiceGenerateResolverBody,
+) => {
+  return httpClient<V1GenerateResolverResponse>({
+    url: `/v1/instances/${instanceId}/generate/resolver`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateResolverBody,
+  });
+};
+
+export type RuntimeServiceGenerateResolverMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>
+>;
+export type RuntimeServiceGenerateResolverMutationBody =
+  RuntimeServiceGenerateResolverBody;
+export type RuntimeServiceGenerateResolverMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGenerateResolver = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+    { instanceId: string; data: RuntimeServiceGenerateResolverBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateResolver(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary GetLogs returns recent logs from a controller
  */

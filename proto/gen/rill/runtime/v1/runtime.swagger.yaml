@@ -841,6 +841,74 @@ paths:
           type: boolean
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/generate/chart:
+    post:
+      summary: GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+      operationId: RuntimeService_GenerateChartSpec
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateChartSpecResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/resolver:
+    post:
+      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
+      operationId: RuntimeService_GenerateResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              connector:
+                type: string
+                description: Both connector and table must be specified if metrics_view is not.
+              table:
+                type: string
+              metricsView:
+                type: string
+                description: table and connector should not be provided if metrics_view is provided.
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/logs:
     get:
       summary: GetLogs returns recent logs from a controller
@@ -953,6 +1021,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -987,6 +1059,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1016,6 +1092,10 @@ paths:
           description: Required
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           description: Required
@@ -1622,6 +1702,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1655,6 +1739,10 @@ paths:
         - name: tableName
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           in: query
@@ -1705,6 +1793,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -1734,6 +1824,10 @@ paths:
         - name: tableName
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: limit
           in: query
@@ -1769,6 +1863,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: columnName
           in: query
           required: false
@@ -1802,6 +1900,10 @@ paths:
           description: Required
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           description: Required
@@ -1838,6 +1940,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1866,6 +1972,10 @@ paths:
         - name: tableName
           in: path
           required: true
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: columnName
           in: query
@@ -1907,6 +2017,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               measures:
                 type: array
                 items:
@@ -1966,6 +2078,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -2005,6 +2119,8 @@ paths:
           schema:
             type: object
             properties:
+              connector:
+                type: string
               sql:
                 type: string
               args:
@@ -3143,6 +3259,8 @@ definitions:
       instanceId:
         type: string
         title: Required
+      connector:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3163,6 +3281,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3181,6 +3301,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3203,6 +3325,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3221,6 +3345,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3250,6 +3376,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3266,6 +3394,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3286,6 +3416,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3302,6 +3434,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3341,6 +3475,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -3644,12 +3780,24 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1GenerateChartSpecResponse:
+    type: object
+    properties:
+      vegaLiteSpec:
+        type: string
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
       aiSucceeded:
         type: boolean
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GenerateResolverResponse:
+    type: object
+    properties:
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -5427,6 +5575,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      connector:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5444,6 +5594,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string
@@ -5469,6 +5621,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      connector:
         type: string
       tableName:
         type: string

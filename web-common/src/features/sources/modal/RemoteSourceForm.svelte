@@ -82,7 +82,7 @@
     <div class="pb-2 text-slate-500">
       Need help? Refer to our
       <a
-        href="https://docs.rilldata.com/develop/import-data"
+        href="https://docs.rilldata.com/build/connect"
         rel="noreferrer"
         target="_blank">docs</a
       > for more information.

@@ -1680,9 +1680,9 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   public = false;
 
   /**
-   * @generated from field: string region = 5;
+   * @generated from field: string provisioner = 5;
    */
-  region = "";
+  provisioner = "";
 
   /**
    * @generated from field: string prod_olap_driver = 6;
@@ -1719,6 +1719,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    */
   variables: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: string prod_version = 13;
+   */
+  prodVersion = "";
+
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1731,7 +1736,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -1739,6 +1744,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -1909,9 +1915,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodSlots?: bigint;
 
   /**
-   * @generated from field: optional string region = 8;
+   * @generated from field: optional string provisioner = 8;
    */
-  region?: string;
+  provisioner?: string;
 
   /**
    * @generated from field: optional string new_name = 9;
@@ -1922,6 +1928,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    * @generated from field: optional int64 prod_ttl_seconds = 10;
    */
   prodTtlSeconds?: bigint;
+
+  /**
+   * @generated from field: optional string prod_version = 11;
+   */
+  prodVersion?: string;
 
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
@@ -1938,9 +1949,10 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 8, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 11, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -7256,9 +7268,9 @@ export class Project extends Message<Project> {
   public = false;
 
   /**
-   * @generated from field: string region = 7;
+   * @generated from field: string provisioner = 7;
    */
-  region = "";
+  provisioner = "";
 
   /**
    * @generated from field: string github_url = 8;
@@ -7311,6 +7323,11 @@ export class Project extends Message<Project> {
   annotations: { [key: string]: string } = {};
 
   /**
+   * @generated from field: string prod_version = 21;
+   */
+  prodVersion = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -7334,7 +7351,7 @@ export class Project extends Message<Project> {
     { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -7345,6 +7362,7 @@ export class Project extends Message<Project> {
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 21, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

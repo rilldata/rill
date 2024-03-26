@@ -5,6 +5,7 @@ import { parse } from "yaml";
 import { createRuntimeServiceGetFile } from "../runtime-client";
 import { runtime } from "../runtime-client/runtime-store";
 import { debounce } from "../lib/create-debouncer";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export type DerivedReadables<T> = {
   [K in keyof T]: Readable<T[K]>;
@@ -67,6 +68,7 @@ class FeatureFlags {
             }
             return features;
           },
+          queryClient,
         },
       }).subscribe((features) => {
         if (!Array.isArray(features?.data)) return;

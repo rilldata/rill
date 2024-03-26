@@ -89,6 +89,8 @@ export function getAxisForDimensions(
   whereFilter: V1Expression,
   sortBy: V1MetricsViewAggregationSort[] = [],
   timeRange: TimeRangeString | undefined = undefined,
+  limit = "100",
+  offset = "0",
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
@@ -137,8 +139,8 @@ export function getAxisForDimensions(
         whereFilter,
         config.measureFilter,
         sortByForDimension,
-        "100",
-        "0",
+        limit,
+        offset,
         timeRange,
       );
     }),

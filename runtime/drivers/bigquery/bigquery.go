@@ -22,7 +22,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/deploy/credentials/gcs",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/bigquery",
 	ConfigProperties: []drivers.PropertySpec{
 		{
 			Key:  "google_application_credentials",
@@ -54,7 +54,7 @@ var spec = drivers.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/develop/import-data#configure-credentials-for-gcs",
+			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},
 	},
 	ImplementsSQLStore: true,

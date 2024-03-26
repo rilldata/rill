@@ -55,7 +55,8 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
-	deployCmd.Flags().StringVar(&opts.Region, "region", "", "Deployment region")
+	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
+	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	if !ch.IsDev() {
@@ -85,7 +86,8 @@ type Options struct {
 	Name        string
 	Description string
 	Public      bool
-	Region      string
+	Provisioner string
+	ProdVersion string
 	ProdBranch  string
 	DBDriver    string
 	DBDSN       string
@@ -292,7 +294,8 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
 		Description:      opts.Description,
-		Region:           opts.Region,
+		Provisioner:      opts.Provisioner,
+		ProdVersion:      opts.ProdVersion,
 		ProdOlapDriver:   opts.DBDriver,
 		ProdOlapDsn:      opts.DBDSN,
 		ProdSlots:        int64(opts.Slots),
@@ -690,33 +693,33 @@ Rill projects deploy continuously when you push changes to Github.
 Therefore, your project must be on Github before you deploy it to Rill.
 
 Follow these steps to push your project to Github.
-	
+
 1. Initialize git
 
 	git init
 
 2. Add and commit files
-	
+
 	git add .
 	git commit -m 'initial commit'
 
 3. Create a new GitHub repository on https://github.com/new
 
 4. Link git to the remote repository
-	
+
 	git remote add origin https://github.com/your-account/your-repo.git
-	
+
 5. Rename master branch to main
-	
+
 	git branch -M main
 
 6. Push your repository
-	
+
 	git push -u origin main
-	
+
 7. Deploy Rill to your repository
-	
+
 	rill deploy
-	
+
 `
 )
