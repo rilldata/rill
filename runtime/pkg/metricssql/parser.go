@@ -18,7 +18,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	// need to import parser driver as well
-	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
+	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
 )
 
 var supportedFuncs = map[string]any{
@@ -154,7 +154,7 @@ func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectS
 			}
 			sb.WriteString(expr)
 		}
-	} // todo :: support group by if only dimensions are selected
+	}
 
 	if node.Having != nil {
 		having, err := t.transformHavingClause(ctx, node.Having, false)
@@ -194,6 +194,8 @@ func (t *transformer) transformSelectStmtColumns(ctx context.Context, node *ast.
 	for i, field := range node.Fields.Fields {
 		if i != 0 {
 			sb.WriteString(", ")
+		} else if node.Distinct {
+			sb.WriteString("DISTINCT ")
 		}
 		if field.WildCard != nil {
 			return "", fmt.Errorf("metrics sql: wildcard is not supported")
@@ -256,7 +258,7 @@ func (t *transformer) transformFromClause(ctx context.Context, node *ast.TableRe
 	t.metricsView = mv.GetMetricsView()
 	t.refs = []*runtimev1.ResourceName{resource}
 	t.connector = mv.GetMetricsView().Spec.Connector
-	return t.fromQueryForMetricsView(mv)
+	return t.fromQueryForMetricsView(ctx, mv)
 }
 
 func (t *transformer) transformHavingClause(ctx context.Context, node *ast.HavingClause, updateSelect bool) (string, error) {
@@ -527,15 +529,18 @@ func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) 
 	return sb.String(), nil
 }
 
-func (t *transformer) fromQueryForMetricsView(mv *runtimev1.Resource) (string, error) {
-	// Dialect to use for escaping identifiers. Currently hardcoded to DuckDB.
-	// TODO: Make dynamic based on actual dialect of the OLAP connector used by the referenced metrics view.
-	dialect := drivers.DialectDuckDB
-
+func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1.Resource) (string, error) {
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
 		return "", fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
 	}
+
+	olap, release, err := t.controller.Runtime.OLAP(ctx, t.instanceID, spec.Connector)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+	dialect := olap.Dialect()
 
 	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.userAttributes, t.instanceID, spec, mv.Meta.StateUpdatedOn.AsTime())
 	if err != nil {
