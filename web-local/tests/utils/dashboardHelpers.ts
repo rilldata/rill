@@ -169,12 +169,12 @@ export async function interactWithTimeRangeMenu(
   cb: () => void | Promise<void>,
 ) {
   // Open the menu
-  await page.getByLabel("Select time range").click();
+  await page.getByLabel("Select a time range").click();
   // Run the defined interactions
   await cb();
   // Wait for menu to close
   await expect(
-    page.getByRole("menu", { name: "Time range selector" }),
+    page.getByRole("menu", { name: "Select a time range" }),
   ).not.toBeVisible();
 }
 

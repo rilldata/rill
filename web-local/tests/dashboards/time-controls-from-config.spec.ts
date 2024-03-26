@@ -174,7 +174,7 @@ available_time_ranges:
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     // Wait for time range menu to close
     await expect(
-      page.getByRole("menu", { name: "Time range selector" }),
+      page.getByRole("menu", { name: "Select a time range" }),
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 272 -23 -8%")).toBeVisible();

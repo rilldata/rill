@@ -5,59 +5,43 @@
   } from "@rilldata/web-common/lib/time/grains";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
-  import {
-    DashboardTimeControls,
-    Period,
-    TimeOffsetType,
-  } from "@rilldata/web-common/lib/time/types";
+  import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import Litepicker from "@rilldata/web-common/components/date-picker/Litepicker.svelte";
-  import {
-    parseLocaleStringDate,
-    shiftToUTC,
-  } from "@rilldata/web-common/components/date-picker/util";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
-  import { removeZoneOffset } from "@rilldata/web-common/lib/time/timezone";
+  import DateSelector from "@rilldata/web-common/components/date-picker/DateSelector.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
+  import { DateTime } from "luxon";
+
+  import { ChevronLeft, ChevronRight } from "lucide-svelte";
+
+  const dispatch = createEventDispatcher();
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
-  export let defaultDate: DashboardTimeControls | undefined;
+  export let defaultDate: DashboardTimeControls;
   export let zone: string;
 
-  const dispatch = createEventDispatcher();
+  let selecting: "start" | "end" = "start";
+  let isCustomRangeOpen = false;
+  let error: string | undefined = undefined;
+  let start = DateTime.fromJSDate(defaultDate.start).setZone(zone);
+  let end = DateTime.fromJSDate(defaultDate.end).setZone(zone);
+  let nudgeGrain: "day" | "week" | "month" | "year" = "day";
 
-  let start: string;
-  let end: string;
+  $: disabled = !start || !end || error !== undefined;
 
-  $: if (!start && !end && defaultDate) {
-    start = getDateFromObject(defaultDate.start);
-    end = getDateFromObject(defaultDate.end, true);
+  $: if (start && end) {
+    error = validateTimeRange(start.toJSDate(), end.toJSDate(), minTimeGrain);
   }
 
-  // functions for extracting the right kind of date string out of
-  // a Date object. Used in the input elements.
-  export function getDateFromObject(date: Date, exclusive = false): string {
-    if (exclusive) {
-      date = new Date(date.getTime() - 1);
-    }
-    return date.toLocaleDateString(
-      Intl.DateTimeFormat().resolvedOptions().locale,
-      {
-        timeZone: "UTC",
-      },
-    );
-  }
-
-  export function getDateFromISOString(isoDate: string): string {
-    return isoDate.split("T")[0];
-  }
-
-  export function getISOStringFromDate(
-    date: string,
-    timeZone?: string,
-  ): string {
-    return parseLocaleStringDate(date, timeZone).toISOString();
+  function handleSubmit() {
+    if (!end || !start) return;
+    // Set the time to midnight to match existing behavior
+    dispatch("apply", {
+      startDate: start.set({ hour: 0, minute: 0, second: 0 }).toJSDate(),
+      endDate: end.set({ hour: 0, minute: 0, second: 0 }).toJSDate(),
+    });
   }
 
   function validateTimeRange(
@@ -78,141 +62,136 @@
       return undefined;
     }
   }
-
-  // HAM, you left off here.
-  let error: string | undefined = undefined;
-  $: if (start && end) {
-    error = validateTimeRange(
-      parseLocaleStringDate(start),
-      getOffset(
-        new Date(getISOStringFromDate(end, "UTC")),
-        Period.DAY,
-        TimeOffsetType.ADD,
-      ),
-      minTimeGrain,
-    );
-  }
-
-  $: disabled = !start || !end || !!error;
-
-  $: max = getDateFromISOString(boundaryEnd.toISOString());
-  $: min = getDateFromISOString(boundaryStart.toISOString());
-
-  function applyCustomTimeRange() {
-    let startDate = getISOStringFromDate(start, "UTC");
-    let endDate = getOffset(
-      new Date(getISOStringFromDate(end, "UTC")),
-      Period.DAY,
-      TimeOffsetType.ADD,
-    ).toISOString();
-
-    startDate = removeZoneOffset(new Date(startDate), zone).toISOString();
-    endDate = removeZoneOffset(new Date(endDate), zone).toISOString();
-
-    dispatch("apply", {
-      startDate,
-      endDate,
-    });
-  }
-
-  let startEl, endEl, editingDate, isOpen;
-
-  const handleDatePickerChange = (d) => {
-    start = getDateFromObject(shiftToUTC(d.detail.start));
-    end = getDateFromObject(shiftToUTC(d.detail.end));
-  };
-
-  const handleEditingChange = (d) => {
-    editingDate = d.detail;
-  };
-
-  const handleToggle = (d) => {
-    isOpen = d.detail;
-  };
-
-  let labelClasses = "font-semibold text-[10px]";
-  $: getInputClasses = (v) =>
-    `cursor-pointer w-full ${
-      isOpen && v === editingDate ? "input-outline" : ""
-    } `;
-
-  const handleInputKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.currentTarget.blur();
-    }
-  };
 </script>
 
+<DropdownMenu.Sub bind:open={isCustomRangeOpen}>
+  <DropdownMenu.SubTrigger
+    disabled
+    class="data-[highlighted]:font-bold"
+    on:click={(e) => {
+      e.preventDefault();
+      isCustomRangeOpen = !isCustomRangeOpen;
+    }}
+  >
+    Custom range
+  </DropdownMenu.SubTrigger>
+
+  <DropdownMenu.SubContent align="start" sideOffset={12}>
+    <Calendar bind:start bind:end {zone} bind:selecting />
+  </DropdownMenu.SubContent>
+</DropdownMenu.Sub>
+
 <form
-  class="flex flex-col gap-y-3 mt-3 mb-1 px-3 relative"
+  class="w-full overflow-hidden flex flex-col gap-y-6 p-2"
   id="custom-time-range-form"
-  on:submit|preventDefault={applyCustomTimeRange}
+  on:submit|preventDefault={handleSubmit}
 >
-  <div class="flex flex-row gap-x-3">
-    <div class="flex flex-col gap-y-1 relative">
-      <label class={labelClasses} for="start-date">Start date</label>
-      <input
-        bind:this={startEl}
-        class={getInputClasses(0)}
-        id="start-date"
-        {max}
-        {min}
-        name="start-date"
-        on:blur={() => dispatch("close-calendar")}
-        on:keydown={handleInputKeyDown}
-        type="text"
+  <div class="flex flex-col gap-2 size-full">
+    <div class="date-wrapper">
+      <label for="start-date" class="!font-medium">Start date (Inclusive)</label
+      >
+      <DateSelector
+        selecting={isCustomRangeOpen && selecting === "start"}
+        bind:value={start}
+        maxYear={boundaryEnd.getFullYear()}
+        minYear={boundaryStart.getFullYear()}
+        {zone}
+        label="start"
       />
     </div>
 
-    <div class="flex flex-col gap-y-1 relative">
-      <label class={labelClasses} for="end-date">End date</label>
-      <input
-        bind:this={endEl}
-        id="end-date"
-        {min}
-        {max}
-        name="end-date"
-        class={getInputClasses(1)}
-        on:blur={() => dispatch("close-calendar")}
-        on:keydown={handleInputKeyDown}
-        type="text"
+    <div class="date-wrapper">
+      <label for="end-date" class="!font-medium">End date (Exclusive)</label>
+
+      <DateSelector
+        selecting={isCustomRangeOpen && selecting === "end"}
+        bind:value={end}
+        maxYear={boundaryEnd.getFullYear()}
+        minYear={boundaryStart.getFullYear()}
+        {zone}
+        label="end"
       />
     </div>
   </div>
-
-  <div class="flex mt-3 items-center">
-    {#if error}
-      <div style:font-size="11px" class="text-red-600 mr-2">
-        {error}
+  {#if error}
+    <div style:font-size="11px" class="text-red-600 mr-2">
+      {error}
+    </div>
+  {/if}
+  <div class="flex h-fit w-full justify-between">
+    <div class="flex gap-x-1 items-center">
+      <button
+        aria-label="Nudge backward"
+        on:click|preventDefault={() => {
+          start = start.minus({ [nudgeGrain]: 1 });
+          end = end.minus({ [nudgeGrain]: 1 });
+        }}
+        class="nudge rotate-180 pl-0.5"
+      >
+        <ChevronRight size="18px" />
+      </button>
+      <button
+        aria-label="Nudge forward"
+        class="nudge pl-0.5"
+        on:click|preventDefault={() => {
+          start = start.plus({ [nudgeGrain]: 1 });
+          end = end.plus({ [nudgeGrain]: 1 });
+        }}
+      >
+        <ChevronRight size="18px" />
+      </button>
+      <span>by</span>
+      <div
+        role="radiogroup"
+        class="flex border rounded-full overflow-hidden"
+        aria-label="Select time grain for date shift"
+      >
+        {#each ["day", "week", "month", "year"] as option}
+          <input
+            class="hidden"
+            type="radio"
+            id={option}
+            bind:group={nudgeGrain}
+            value={option}
+          />
+          <label
+            for={option}
+            class="cursor-pointer border-r !font-medium flex items-center px-1 last-of-type:border-r-0 last-of-type:pr-2 first-of-type:pl-2 hover:bg-primary-200"
+            class:!bg-primary-200={nudgeGrain === option}
+          >
+            {option}
+          </label>
+        {/each}
       </div>
-    {/if}
-    <div class="flex-grow" />
+    </div>
+
     <Button {disabled} form="custom-time-range-form" submitForm type="primary">
       Apply
     </Button>
   </div>
-  {#if startEl && endEl}
-    <Litepicker
-      {startEl}
-      {endEl}
-      min={getDateFromObject(boundaryStart)}
-      max={getDateFromObject(boundaryEnd)}
-      defaultStart={start}
-      defaultEnd={end}
-      openOnMount
-      on:change={handleDatePickerChange}
-      on:editing={handleEditingChange}
-      on:toggle={handleToggle}
-    />
-  {/if}
 </form>
 
-<style>
-  .input-outline {
-    outline-offset: 2px;
-    /* FF */
-    outline: Highlight auto 1px;
-    /* Chrome/Safari */
-    outline: -webkit-focus-ring-color auto 1px;
+<style lang="postcss">
+  label {
+    @apply font-semibold;
+  }
+
+  .date-wrapper {
+    @apply flex flex-col w-full gap-1;
+    @apply h-full;
+  }
+
+  .nudge {
+    @apply flex items-center justify-center;
+    @apply border border-gray-300 rounded-sm;
+    @apply shadow-sm w-5 h-5;
+  }
+
+  .nudge:hover {
+    @apply bg-gray-100;
+  }
+
+  .nudge:active {
+    @apply bg-gray-200;
   }
 </style>
