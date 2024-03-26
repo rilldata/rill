@@ -56,9 +56,11 @@
         reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
       recipients:
-        reportSpec.notifySpec?.notifiers?.find((n) => n.connector === "email")?.email?.recipients?.map((email) => ({
-          email: email,
-        })) ?? [],
+        reportSpec.notifySpec?.notifiers
+          ?.find((n) => n.connector === "email")
+          ?.email?.recipients?.map((email) => ({
+            email: email,
+          })) ?? [],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
