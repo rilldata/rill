@@ -1,12 +1,17 @@
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
 import {
+  fetchFileContent,
+  fetchMainEntityFiles,
+} from "@rilldata/web-common/features/entity-management/file-selectors";
+import {
+  fetchResources,
   ResourceKind,
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import {
-  runtimeServiceListResources,
   type V1ParseError,
   V1ReconcileStatus,
   type V1Resource,
@@ -196,11 +201,9 @@ export class FileArtifactsStore {
 
   // Actions
 
-  public async init(instanceId: string) {
-    // TODO: use QueryClient::fetchQuery
-    const resourcesResp = await runtimeServiceListResources(instanceId);
-    if (!resourcesResp.resources?.length) return;
-    for (const resource of resourcesResp.resources) {
+  public async init(queryClient: QueryClient, instanceId: string) {
+    const resources = await fetchResources(queryClient, instanceId);
+    for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
         case ResourceKind.Source:
         case ResourceKind.Model:
@@ -211,12 +214,24 @@ export class FileArtifactsStore {
           break;
       }
     }
-    // TODO: fetch files and add for missing resources
+
+    const files = await fetchMainEntityFiles(queryClient, instanceId);
+    const missingFiles = files.filter((f) => !this.artifacts[f]);
+    await Promise.all(
+      missingFiles.map((filePath) =>
+        fetchFileContent(queryClient, instanceId, filePath).then(
+          (fileContents) => {
+            const artifact = new FileArtifact(filePath);
+            artifact.name.set(parseKindAndNameFromFile(filePath, fileContents));
+          },
+        ),
+      ),
+    );
   }
 
   public fileUpdated(filePath: string) {
     // Handle new file added or exited edited without a valid resource
-    // TODO: fetch file and estimate name & kind
+    // TODO: fetch file and estimate name & kind once we have a structure on asset explorer
     this.artifacts[filePath] ??= new FileArtifact(filePath);
   }
 

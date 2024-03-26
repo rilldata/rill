@@ -8,6 +8,7 @@
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
@@ -21,6 +22,8 @@
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
+
+  const queryClient = useQueryClient();
 
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
@@ -36,7 +39,7 @@
       commitHash: config.build_commit,
     });
 
-    return fileArtifactsStore.init(config.instance_id);
+    return fileArtifactsStore.init(queryClient, config.instance_id);
   });
 
   let showDropOverlay = false;
