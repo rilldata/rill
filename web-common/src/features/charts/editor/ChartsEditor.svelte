@@ -27,16 +27,13 @@
 
   $: filePath = getFilePathFromNameAndType(chartName, EntityType.Chart);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   // get the yaml blob from the file.
   $: yaml = $fileQuery.data?.blob || "";
 
   const queryClient = useQueryClient();
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    getFilePathFromNameAndType(chartName, EntityType.Chart),
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */

@@ -39,11 +39,8 @@
   $: tableVisible = workspaceLayout.table.visible;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelHasError = fileArtifactsStore.getFileHasErrors(
-    queryClient,
-    runtimeInstanceId,
-    modelPath,
-  );
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(modelPath);
+  $: modelHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
 
   let contextMenuOpen = false;
 

@@ -17,6 +17,7 @@
   export let sourceName: string;
   export let yaml: string;
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   let editor: YAMLEditor;
   let view: EditorView;
@@ -39,11 +40,7 @@
     setLineStatuses([], view);
   }
 
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   /**
    * Handle errors.

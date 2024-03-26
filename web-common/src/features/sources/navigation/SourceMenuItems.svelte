@@ -46,6 +46,7 @@
   export let sourceName: string;
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
@@ -60,11 +61,7 @@
   $: source = $sourceQuery.data?.source;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
-  $: sourceHasError = fileArtifactsStore.getFileHasErrors(
-    queryClient,
-    runtimeInstanceId,
-    filePath,
-  );
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;

@@ -16,12 +16,12 @@
 
   let containerWidth: number;
 
-  $: path = getFilePathFromNameAndType(modelName, EntityType.Model);
+  $: filePath = getFilePathFromNameAndType(modelName, EntityType.Model);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
   $: modelQuery = useModel($runtime?.instanceId, modelName);
-  $: modelHasError = fileArtifactsStore.getFileHasErrors(
+  $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime?.instanceId,
-    path,
   );
 
   $: emptyModel = useModelFileIsEmpty($runtime?.instanceId, modelName);

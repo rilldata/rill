@@ -34,10 +34,10 @@
   $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelHasError = fileArtifactsStore.getFileHasErrors(
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(modelPath);
+  $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
-    modelPath,
   );
 
   let rollup: number;

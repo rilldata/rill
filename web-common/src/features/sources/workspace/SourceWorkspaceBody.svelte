@@ -20,6 +20,7 @@
   const sourceStore = useSourceStore(sourceName);
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
@@ -30,11 +31,7 @@
 
   $: yaml = $file.data?.blob || "";
 
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 

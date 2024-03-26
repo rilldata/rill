@@ -4,7 +4,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
-  $: reconcilingItems = fileArtifactsStore.getReconcilingItems();
+  $: reconcilingItems = fileArtifactsStore.getReconcilingResourceNames();
 
   const KindToName: Partial<Record<ResourceKind, string>> = {
     [ResourceKind.Source]: "source",

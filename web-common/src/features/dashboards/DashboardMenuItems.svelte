@@ -31,6 +31,12 @@
 
   export let metricsViewName: string;
 
+  $: filePath = getFileAPIPathFromNameAndType(
+    metricsViewName,
+    EntityType.MetricsDefinition,
+  );
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
   const { customDashboards } = featureFlags;
@@ -38,14 +44,7 @@
   $: instanceId = $runtime.instanceId;
   $: dashboardNames = useDashboardFileNames(instanceId);
   $: dashboardQuery = useDashboard(instanceId, metricsViewName);
-  $: hasErrors = fileArtifactsStore.getFileHasErrors(
-    queryClient,
-    instanceId,
-    getFileAPIPathFromNameAndType(
-      metricsViewName,
-      EntityType.MetricsDefinition,
-    ),
-  );
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
    * Get the name of the dashboard's underlying model (if any).
@@ -85,10 +84,7 @@
   const deleteMetricsDef = async () => {
     await deleteFileArtifact(
       instanceId,
-      getFileAPIPathFromNameAndType(
-        metricsViewName,
-        EntityType.MetricsDefinition,
-      ),
+      filePath,
       EntityType.MetricsDefinition,
       $dashboardNames?.data ?? [],
     );
@@ -110,6 +106,7 @@
     on:click={() => {
       dispatch("generate-chart");
     }}
+    disabled={$hasErrors}
   >
     <Explore slot="icon" />
     <div class="flex gap-x-2 items-center">
@@ -117,7 +114,7 @@
       <WandIcon class="w-3 h-3" />
     </div>
     <svelte:fragment slot="description">
-      {#if hasErrors}
+      {#if $hasErrors}
         Dashboard has errors
       {/if}
     </svelte:fragment>

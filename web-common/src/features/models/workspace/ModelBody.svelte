@@ -48,6 +48,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
@@ -58,11 +59,7 @@
 
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    modelPath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
   $: modelError = $allErrors?.[0]?.message;
 
   $: tableQuery = createQueryServiceTableRows(

@@ -25,16 +25,13 @@
     metricsDefName,
     EntityType.MetricsDefinition,
   );
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
   $: yaml = $fileQuery?.data?.blob;
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   let buttonDisabled = true;
   let buttonStatus;

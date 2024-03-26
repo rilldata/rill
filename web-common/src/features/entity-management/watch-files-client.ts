@@ -42,14 +42,14 @@ function handleWatchFileResponse(
       void queryClient.refetchQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
-      fileArtifactsStore.updateFile(cleanedPath);
+      fileArtifactsStore.fileUpdated(cleanedPath);
       break;
 
     case "FILE_EVENT_DELETE":
       queryClient.removeQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
-      fileArtifactsStore.deleteFile(cleanedPath);
+      fileArtifactsStore.fileDeleted(cleanedPath);
       break;
   }
   // TODO: should this be throttled?

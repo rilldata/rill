@@ -37,6 +37,7 @@
     metricsDefName,
     EntityType.MetricsDefinition,
   );
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
@@ -48,11 +49,7 @@
   /**
    * Handle errors.
    */
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */

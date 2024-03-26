@@ -4,7 +4,7 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { getSubStore } from "@rilldata/web-common/lib/getSubStore";
+import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import {
   runtimeServiceListResources,
   type V1ParseError,
@@ -20,9 +20,11 @@ export class FileArtifact {
 
   public readonly name = writable<V1ResourceName | undefined>(undefined);
 
+  public readonly reconciling = writable<boolean>(false);
+
   /**
    * Last time the state of the resource `kind/name` was updated
-   * used to make sure we do not have unnecessary refreshes
+   * Used to make sure we do not have unnecessary refreshes of components and resource API.
    */
   public lastStateUpdatedOn: string | undefined;
 
@@ -30,7 +32,143 @@ export class FileArtifact {
     this.path = filePath;
   }
 
-  public updateResource(resource: V1Resource) {
+  // actions
+
+  public updateAll(resource: V1Resource) {
+    this.updateNameIfChanged(resource);
+    this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
+    this.reconciling.set(
+      resource.meta?.reconcileStatus ===
+        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+    );
+  }
+
+  public updateReconciling(resource: V1Resource) {
+    this.updateNameIfChanged(resource);
+    this.reconciling.set(
+      resource.meta?.reconcileStatus ===
+        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+    );
+  }
+
+  public updateLastUpdated(resource: V1Resource) {
+    this.updateNameIfChanged(resource);
+    this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
+  }
+
+  public deleteResource() {
+    this.name.set(undefined);
+    this.reconciling.set(false);
+  }
+
+  // selectors
+
+  public getResource(queryClient: QueryClient, instanceId: string) {
+    return derived(this.name, (name, set) =>
+      useResource(
+        instanceId,
+        name?.name as string,
+        name?.kind as ResourceKind,
+        undefined,
+        queryClient,
+      ).subscribe(set),
+    ) as ReturnType<typeof useResource<V1Resource>>;
+  }
+
+  public getAllErrors(
+    queryClient: QueryClient,
+    instanceId: string,
+  ): Readable<V1ParseError[]> {
+    return derived(
+      [
+        useProjectParser(queryClient, instanceId),
+        this.getResource(queryClient, instanceId),
+      ],
+      ([projectParser, resource]) => {
+        if (
+          projectParser.isFetching ||
+          projectParser.isError ||
+          resource.isFetching
+        ) {
+          // TODO: what should the error be for failed get resource API
+          return [];
+        }
+        return [
+          ...(
+            projectParser.data?.projectParser?.state?.parseErrors ?? []
+          ).filter(
+            (e) => e.filePath && removeLeadingSlash(e.filePath) === this.path,
+          ),
+          ...(resource.data?.meta?.reconcileError
+            ? [
+                {
+                  filePath: this.path,
+                  message: resource.data.meta.reconcileError,
+                },
+              ]
+            : []),
+        ];
+      },
+      [],
+    );
+  }
+
+  public getHasErrors(queryClient: QueryClient, instanceId: string) {
+    return derived(
+      this.getAllErrors(queryClient, instanceId),
+      (errors) => errors.length > 0,
+    );
+  }
+
+  public getResourceStatusStore(
+    queryClient: QueryClient,
+    instanceId: string,
+    validator?: (res: V1Resource) => boolean,
+  ) {
+    return derived(
+      [
+        this.getResource(queryClient, instanceId),
+        this.getAllErrors(queryClient, instanceId),
+        useProjectParser(queryClient, instanceId),
+      ],
+      ([resourceResp, errors, projectParserResp]) => {
+        if (projectParserResp.isError) {
+          return {
+            status: ResourceStatus.Errored,
+            error: projectParserResp.error,
+          };
+        }
+
+        if (
+          errors.length ||
+          (resourceResp.isError && !resourceResp.isFetching) ||
+          projectParserResp.isError
+        ) {
+          return {
+            status: ResourceStatus.Errored,
+            error: resourceResp.error ?? projectParserResp.error,
+          };
+        }
+
+        let isBusy: boolean;
+        if (validator && resourceResp.data) {
+          isBusy = !validator(resourceResp.data);
+        } else {
+          isBusy =
+            resourceResp.isFetching ||
+            resourceResp.data?.meta?.reconcileStatus !==
+              V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+        }
+
+        return {
+          status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
+          resource: resourceResp.data,
+        };
+      },
+    );
+  }
+
+  private updateNameIfChanged(resource: V1Resource) {
     const curName = get(this.name);
     if (
       curName?.name !== resource.meta?.name?.name ||
@@ -41,11 +179,6 @@ export class FileArtifact {
         name: resource.meta?.name?.name,
       });
     }
-    this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
-  }
-
-  public deleteResource() {
-    this.name.set(undefined);
   }
 }
 
@@ -64,6 +197,7 @@ export class FileArtifactsStore {
   // Actions
 
   public async init(instanceId: string) {
+    // TODO: use QueryClient::fetchQuery
     const resourcesResp = await runtimeServiceListResources(instanceId);
     if (!resourcesResp.resources?.length) return;
     for (const resource of resourcesResp.resources) {
@@ -73,54 +207,52 @@ export class FileArtifactsStore {
         case ResourceKind.MetricsView:
         case ResourceKind.Chart:
         case ResourceKind.Dashboard:
-          this.setResource(resource);
+          this.updateArtifacts(resource);
           break;
       }
     }
+    // TODO: fetch files and add for missing resources
   }
 
-  public updateFile(filePath: string) {
-    if (get(this.files)[filePath]) return;
+  public fileUpdated(filePath: string) {
+    // Handle new file added or exited edited without a valid resource
+    // TODO: fetch file and estimate name & kind
     this.artifacts[filePath] ??= new FileArtifact(filePath);
-    this.files.update((f) => {
-      f[filePath] = false;
-      return f;
-    });
   }
 
-  public deleteFile(filePath: string) {
+  /**
+   * This is called when an artifact is deleted.
+   */
+  public fileDeleted(filePath: string) {
     delete this.artifacts[filePath];
-    this.files.update((f) => {
-      delete f[filePath];
-      return f;
-    });
   }
 
-  public setResource(resource: V1Resource) {
-    this.updateArtifact(resource);
-    this.updateReconciling(resource);
+  public updateArtifacts(resource: V1Resource) {
+    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath].updateAll(resource);
+    });
   }
 
   public updateReconciling(resource: V1Resource) {
-    this.files.update((f) => {
-      resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
-        f[filePath] =
-          resource.meta?.reconcileStatus ===
-          V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
-      });
-      return f;
-    });
-  }
-
-  public updateArtifact(resource: V1Resource) {
-    resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
+    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
-      this.artifacts[filePath].updateResource(resource);
+      this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
+  public updateLastUpdated(resource: V1Resource) {
+    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath].updateLastUpdated(resource);
+    });
+  }
+
+  /**
+   * This is called when a resource is deleted either because file was deleted or it errored out.
+   */
   public deleteResource(resource: V1Resource) {
-    resource.meta?.filePaths?.map(correctFilePath).forEach((filePath) => {
+    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
       this.artifacts[filePath]?.deleteResource();
     });
   }
@@ -128,114 +260,29 @@ export class FileArtifactsStore {
   // Selectors
 
   public getFileArtifact(filePath: string) {
-    return getSubStore(
-      this.files,
-      this.artifacts,
-      filePath,
-      // Dummy store to not break component code
-      new FileArtifact(filePath),
-    );
+    filePath = removeLeadingSlash(filePath);
+    this.artifacts[filePath] ??= new FileArtifact(filePath);
+    return this.artifacts[filePath];
   }
 
-  public getLastStateUpdatedOn(filePath: string) {
-    return this.artifacts[correctFilePath(filePath)]?.lastStateUpdatedOn;
-  }
-
-  public getResourceNameForFile(
-    filePath: string,
-  ): Readable<V1ResourceName | undefined> {
-    return derived(this.getFileArtifact(filePath), (artifact, set) =>
-      artifact.name.subscribe(set),
-    );
-  }
-
-  public getReconcilingItems() {
-    return derived(this.files, (files) => {
-      const currentlyReconciling = new Array<V1ResourceName>();
-      for (const filePath in files) {
-        const name = get(this.artifacts[filePath]?.name);
-        if (files[filePath] && name) {
-          currentlyReconciling.push(name);
-        }
-      }
-      return currentlyReconciling;
-    });
-  }
-
-  // Complex selectors based on resource API
-
-  public getResourceForFile(
-    queryClient: QueryClient,
-    instanceId: string,
-    filePath: string,
-  ) {
-    return derived(this.getResourceNameForFile(filePath), (resourceName, set) =>
-      useResource(
-        instanceId,
-        resourceName?.name as string,
-        resourceName?.kind as ResourceKind,
-        undefined,
-        queryClient,
-      ).subscribe(set),
-    ) as ReturnType<typeof useResource<V1Resource>>;
-  }
-
-  public getAllErrorsForFile(
-    queryClient: QueryClient,
-    instanceId: string,
-    filePath: string,
-  ): Readable<V1ParseError[]> {
+  /**
+   * Best effort list of all reconciling resources.
+   */
+  public getReconcilingResourceNames() {
+    const artifacts = Object.values(this.artifacts);
     return derived(
-      [
-        useProjectParser(queryClient, instanceId),
-        this.getResourceForFile(queryClient, instanceId, filePath),
-      ],
-      ([projectParser, resource]) => {
-        if (
-          projectParser.isFetching ||
-          projectParser.isError ||
-          resource.isFetching
-        ) {
-          // TODO: what should the error be for failed get resource API
-          return [];
-        }
-        return [
-          ...(
-            projectParser.data?.projectParser?.state?.parseErrors ?? []
-          ).filter(
-            (e) => e.filePath && removeLeadingSlash(e.filePath) === filePath,
-          ),
-          ...(resource.data?.meta?.reconcileError
-            ? [
-                {
-                  filePath,
-                  message: resource.data.meta.reconcileError,
-                },
-              ]
-            : []),
-        ];
+      artifacts.map((a) => a.reconciling),
+      (reconcilingArtifacts) => {
+        const currentlyReconciling = new Array<V1ResourceName>();
+        reconcilingArtifacts.forEach((reconcilingArtifact, i) => {
+          if (reconcilingArtifact) {
+            currentlyReconciling.push(get(artifacts[i].name) as V1ResourceName);
+          }
+        });
+        return currentlyReconciling;
       },
-      [],
-    );
-  }
-
-  public getFileHasErrors(
-    queryClient: QueryClient,
-    instanceId: string,
-    filePath: string,
-  ) {
-    return derived(
-      this.getAllErrorsForFile(queryClient, instanceId, filePath),
-      (errors) => errors.length > 0,
     );
   }
 }
 
 export const fileArtifactsStore = new FileArtifactsStore();
-
-function correctFilePath(filePath: string) {
-  if (filePath.startsWith("/")) {
-    return filePath.substring(1);
-  }
-  return filePath;
-}

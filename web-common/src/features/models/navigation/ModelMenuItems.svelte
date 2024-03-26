@@ -25,6 +25,7 @@
   export let modelName: string;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(modelPath);
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -32,10 +33,9 @@
   const { customDashboards } = featureFlags;
 
   $: modelRoutes = useModelRoutes($runtime.instanceId);
-  $: modelHasError = fileArtifactsStore.getFileHasErrors(
+  $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
-    modelPath,
   );
   $: modelQuery = useModel($runtime.instanceId, modelName);
   $: modelIsIdle =

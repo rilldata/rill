@@ -62,6 +62,7 @@
 
   export let sourceName: string;
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
@@ -179,11 +180,7 @@
     );
   };
 
-  $: hasErrors = fileArtifactsStore.getFileHasErrors(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;

@@ -10,7 +10,8 @@ export function checkSourceImported(
   sourceName: string,
   filePath: string,
 ) {
-  const lastUpdatedOn = fileArtifactsStore.getLastStateUpdatedOn(filePath);
+  const lastUpdatedOn =
+    fileArtifactsStore.getFileArtifact(filePath).lastStateUpdatedOn;
   if (lastUpdatedOn) return; // For now only show for fresh sources
   waitForResourceUpdate(queryClient, get(runtime).instanceId, filePath).then(
     (success) => {
