@@ -164,46 +164,44 @@ func (p *Parser) parseAlert(node *Node) error {
 		return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
 	}
 
-	// Validate email recipients
-	// Backwards compatibility
-	for _, email := range tmp.Email.Recipients {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient email address %q", email)
-		}
+	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	// Validate email recipients
-	for _, email := range tmp.Notify.Email.Recipients {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient email address %q", email)
-		}
-	}
+	isLegacySyntax := len(tmp.Email.Recipients) > 0
 
-	// Validate email.renotify_after
-	// Backwards compatibility
+	// Validate the input
 	var renotifyAfter time.Duration
-	if tmp.Email.RenotifyAfter != "" {
-		renotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
-		if err != nil {
-			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Validate email recipients
+		for _, email := range tmp.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
 		}
-	}
-
-	// Validate notify.renotify_after
-	if tmp.Notify.RenotifyAfter != "" {
-		renotifyAfter, err = parseDuration(tmp.Notify.RenotifyAfter)
-		if err != nil {
-			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+		// Validate email.renotify_after
+		if tmp.Email.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
+			if err != nil {
+				return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+			}
 		}
-	}
-
-	// Validate slack email recipients
-	for _, email := range tmp.Notify.Slack.Emails {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient slack email address %q", email)
+	} else {
+		// Validate email recipients
+		for _, email := range tmp.Notify.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		// Validate notify.renotify_after
+		if tmp.Notify.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.Notify.RenotifyAfter)
+			if err != nil {
+				return fmt.Errorf(`invalid value for property "notify.renotify_after": %w`, err)
+			}
 		}
 	}
 
@@ -238,50 +236,79 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Notification default settings
-	r.AlertSpec.NotifyOnRecover = false
-	r.AlertSpec.NotifyOnFail = true
-	r.AlertSpec.NotifyOnError = false
-	r.AlertSpec.Renotify = false
+	r.AlertSpec.NotifySpec = &runtimev1.AlertNotifySpec{}
+	r.AlertSpec.NotifySpec.NotifyOnRecover = false
+	r.AlertSpec.NotifySpec.NotifyOnFail = true
+	r.AlertSpec.NotifySpec.NotifyOnError = false
+	r.AlertSpec.NotifySpec.Renotify = false
 
-	// Override email notification defaults
-	// Backwards compatibility
-	if tmp.Email.OnRecover != nil {
-		r.AlertSpec.NotifyOnRecover = *tmp.Email.OnRecover
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Override email notification defaults
+		if tmp.Email.OnRecover != nil {
+			r.AlertSpec.NotifySpec.NotifyOnRecover = *tmp.Email.OnRecover
+		}
+		if tmp.Email.OnFail != nil {
+			r.AlertSpec.NotifySpec.NotifyOnFail = *tmp.Email.OnFail
+		}
+		if tmp.Email.OnError != nil {
+			r.AlertSpec.NotifySpec.NotifyOnError = *tmp.Email.OnError
+		}
+		if tmp.Email.Renotify != nil {
+			r.AlertSpec.NotifySpec.Renotify = *tmp.Email.Renotify
+			r.AlertSpec.NotifySpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		}
+		// Email settings
+		r.AlertSpec.NotifySpec.Notifiers = []*runtimev1.NotifierSpec{
+			{
+				Connector: "email",
+				Spec: &runtimev1.NotifierSpec_Email{
+					Email: &runtimev1.EmailNotifierSpec{
+						Recipients: tmp.Email.Recipients,
+					},
+				},
+			},
+		}
+	} else {
+		// Override notification defaults
+		if tmp.Notify.OnRecover != nil {
+			r.AlertSpec.NotifySpec.NotifyOnRecover = *tmp.Notify.OnRecover
+		}
+		if tmp.Notify.OnFail != nil {
+			r.AlertSpec.NotifySpec.NotifyOnFail = *tmp.Notify.OnFail
+		}
+		if tmp.Notify.OnError != nil {
+			r.AlertSpec.NotifySpec.NotifyOnError = *tmp.Notify.OnError
+		}
+		if tmp.Notify.Renotify != nil {
+			r.AlertSpec.NotifySpec.Renotify = *tmp.Notify.Renotify
+			r.AlertSpec.NotifySpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		}
+		// Email settings
+		if len(tmp.Notify.Email.Recipients) > 0 {
+			r.AlertSpec.NotifySpec.Notifiers = append(r.AlertSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
+				Connector: "email",
+				Spec: &runtimev1.NotifierSpec_Email{
+					Email: &runtimev1.EmailNotifierSpec{
+						Recipients: tmp.Notify.Email.Recipients,
+					},
+				},
+			})
+		}
+		// Slack settings
+		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Emails) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
+			r.AlertSpec.NotifySpec.Notifiers = append(r.AlertSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
+				Connector: "slack",
+				Spec: &runtimev1.NotifierSpec_Slack{
+					Slack: &runtimev1.SlackNotifierSpec{
+						Emails:   tmp.Notify.Slack.Emails,
+						Channels: tmp.Notify.Slack.Channels,
+						Webhooks: tmp.Notify.Slack.Webhooks,
+					},
+				},
+			})
+		}
 	}
-	if tmp.Email.OnFail != nil {
-		r.AlertSpec.NotifyOnFail = *tmp.Email.OnFail
-	}
-	if tmp.Email.OnError != nil {
-		r.AlertSpec.NotifyOnError = *tmp.Email.OnError
-	}
-	if tmp.Email.Renotify != nil {
-		r.AlertSpec.Renotify = *tmp.Email.Renotify
-		r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
-	}
-
-	// Override notification defaults
-	if tmp.Notify.OnRecover != nil {
-		r.AlertSpec.NotifyOnRecover = *tmp.Notify.OnRecover
-	}
-	if tmp.Notify.OnFail != nil {
-		r.AlertSpec.NotifyOnFail = *tmp.Notify.OnFail
-	}
-	if tmp.Notify.OnError != nil {
-		r.AlertSpec.NotifyOnError = *tmp.Notify.OnError
-	}
-	if tmp.Notify.Renotify != nil {
-		r.AlertSpec.Renotify = *tmp.Notify.Renotify
-		r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
-	}
-
-	// Email settings
-	r.AlertSpec.EmailRecipients = tmp.Email.Recipients // Backwards compatibility
-	r.AlertSpec.EmailRecipients = append(r.AlertSpec.EmailRecipients, tmp.Notify.Email.Recipients...)
-
-	// Slack settings
-	r.AlertSpec.SlackChannels = tmp.Notify.Slack.Channels
-	r.AlertSpec.SlackEmails = tmp.Notify.Slack.Emails
-	r.AlertSpec.SlackWebhooks = tmp.Notify.Slack.Webhooks
 
 	r.AlertSpec.Annotations = tmp.Annotations
 

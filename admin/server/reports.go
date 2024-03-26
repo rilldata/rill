@@ -246,7 +246,10 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts := recreateReportOptionsFromSpec(spec)
+	opts, err := recreateReportOptionsFromSpec(spec)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to recreate report options: %s", err.Error())
+	}
 
 	found := false
 	for idx, email := range opts.EmailRecipients {
@@ -526,7 +529,7 @@ func randomReportName(title string) string {
 	return name
 }
 
-func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) *adminv1.ReportOptions {
+func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportOptions, error) {
 	annotations := parseReportAnnotations(spec.Annotations)
 
 	opts := &adminv1.ReportOptions{}
@@ -540,11 +543,19 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) *adminv1.ReportOp
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
 	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
-	opts.EmailRecipients = spec.EmailRecipients
-	opts.SlackChannels = spec.SlackChannels
-	opts.SlackEmails = spec.SlackEmails
-	opts.SlackWebhooks = spec.SlackWebhooks
-	return opts
+	for _, notifier := range spec.NotifySpec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			opts.EmailRecipients = notifier.GetEmail().Recipients
+		case "slack":
+			opts.SlackEmails = notifier.GetSlack().Emails
+			opts.SlackChannels = notifier.GetSlack().Channels
+			opts.SlackWebhooks = notifier.GetSlack().Webhooks
+		default:
+			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
+		}
+	}
+	return opts, nil
 }
 
 // reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.

@@ -256,11 +256,12 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
-  repeated string email_recipients = 9;
-  repeated string slack_channels = 10;
-  repeated string slack_emails = 11;
-  repeated string slack_webhooks = 12;
-  map<string, string> annotations = 13;
+  ReportNotifySpec notify_spec = 13;
+  map<string, string> annotations = 14;
+}
+
+message ReportNotifySpec {
+  repeated NotifierSpec notifiers = 1;
 }
 
 message ReportState {
@@ -299,16 +300,35 @@ message AlertSpec {
     string query_for_user_email = 12;
     google.protobuf.Struct query_for_attributes = 13;
   }
-  bool notify_on_recover = 14;
-  bool notify_on_fail = 15;
-  bool notify_on_error = 16;
-  bool renotify = 17;
-  uint32 renotify_after_seconds = 18;
-  repeated string email_recipients = 19;
-  repeated string slack_channels = 20;
-  repeated string slack_emails = 21;
-  repeated string slack_webhooks = 22;
-  map<string, string> annotations = 23;
+  AlertNotifySpec notify_spec = 14;
+  map<string, string> annotations = 15;
+}
+
+message AlertNotifySpec {
+  bool notify_on_recover = 1;
+  bool notify_on_fail = 2;
+  bool notify_on_error = 3;
+  bool renotify = 4;
+  uint32 renotify_after_seconds = 5;
+  repeated NotifierSpec notifiers = 6;
+}
+
+message NotifierSpec {
+  string connector = 1;
+  oneof spec {
+    EmailNotifierSpec email = 2;
+    SlackNotifierSpec slack = 3;
+  }
+}
+
+message EmailNotifierSpec {
+  repeated string recipients = 1;
+}
+
+message SlackNotifierSpec {
+  repeated string emails = 1;
+  repeated string channels = 2;
+  repeated string webhooks = 3;
 }
 
 message AlertState {
@@ -323,7 +343,7 @@ message AlertState {
 message AlertExecution {
   bool adhoc = 1;
   AssertionResult result = 2;
-  bool sent_emails = 3;
+  bool sent_notifications = 3;
   google.protobuf.Timestamp execution_time = 4;
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;

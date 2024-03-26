@@ -1,19 +1,14 @@
 package slack
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"fmt"
-	htemplate "html/template"
 	"text/template"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/slack-go/slack"
 	"go.uber.org/zap"
 )
 
@@ -144,172 +139,6 @@ func (h *handle) AsNotifier() (drivers.Notifier, bool) {
 	return h, true
 }
 
-func (h *handle) SendScheduledReport(s *drivers.ScheduledReport, r drivers.RecipientOpts) error {
-	opts, ok := r.(*RecipientsOpts)
-	if !ok {
-		return fmt.Errorf("invalid recipient type: %T", r)
-	}
-	buf := new(bytes.Buffer)
-	err := h.templates.Lookup("scheduled_report.slack").Execute(buf, s)
-	if err != nil {
-		return fmt.Errorf("slack template error: %w", err)
-	}
-	txt := buf.String()
-
-	if err := h.sendTextToChannels(txt, opts.Channels); err != nil {
-		return err
-	}
-	if err := h.sendTextToEmails(txt, opts.Emails); err != nil {
-		return err
-	}
-	return h.sendTextViaWebhooks(txt, opts.Webhooks)
-}
-
-func (h *handle) SendAlertStatus(s *drivers.AlertStatus, r drivers.RecipientOpts) error {
-	slackSpec, ok := r.(*RecipientsOpts)
-	if !ok {
-		return fmt.Errorf("invalid recipient type: %T", r)
-	}
-	switch s.Status {
-	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
-		return h.sendAlertStatus(slackSpec, &AlertStatusData{
-			Title:               s.Title,
-			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
-			IsPass:              true,
-			IsRecover:           s.IsRecover,
-			OpenLink:            htemplate.URL(s.OpenLink),
-			EditLink:            htemplate.URL(s.EditLink),
-		})
-	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
-		return h.sendAlertFail(slackSpec, &AlertFailData{
-			Title:               s.Title,
-			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
-			FailRow:             s.FailRow,
-			OpenLink:            htemplate.URL(s.OpenLink),
-			EditLink:            htemplate.URL(s.EditLink),
-		})
-	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
-		return h.sendAlertStatus(slackSpec, &AlertStatusData{
-			Title:               s.Title,
-			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
-			IsError:             true,
-			ErrorMessage:        s.ExecutionError,
-			OpenLink:            htemplate.URL(s.EditLink),
-			EditLink:            htemplate.URL(s.EditLink),
-		})
-	default:
-		return fmt.Errorf("unknown assertion status: %v", s.Status)
-	}
-}
-
-func (h *handle) sendAlertStatus(opts *RecipientsOpts, data *AlertStatusData) error {
-	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
-	if data.IsRecover {
-		subject = fmt.Sprintf("Recovered: %s", subject)
-	}
-	data.Subject = subject
-
-	buf := new(bytes.Buffer)
-	err := h.templates.Lookup("alert_status.slack").Execute(buf, data)
-	if err != nil {
-		return fmt.Errorf("slack template error: %w", err)
-	}
-	txt := buf.String()
-
-	if err := h.sendTextToChannels(txt, opts.Channels); err != nil {
-		return err
-	}
-	if err := h.sendTextToEmails(txt, opts.Emails); err != nil {
-		return err
-	}
-	return h.sendTextViaWebhooks(txt, opts.Webhooks)
-}
-
-func (h *handle) sendAlertFail(opts *RecipientsOpts, data *AlertFailData) error {
-	data.Subject = fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
-
-	buf := new(bytes.Buffer)
-	err := h.templates.Lookup("alert_fail.slack").Execute(buf, data)
-	if err != nil {
-		return fmt.Errorf("slack template error: %w", err)
-	}
-	txt := buf.String()
-
-	if err := h.sendTextToChannels(txt, opts.Channels); err != nil {
-		return err
-	}
-	if err := h.sendTextToEmails(txt, opts.Emails); err != nil {
-		return err
-	}
-	return h.sendTextViaWebhooks(txt, opts.Webhooks)
-}
-
-func (h *handle) sendTextToChannels(txt string, channels []string) error {
-	api := slack.New(h.config.BotToken)
-	for _, channel := range channels {
-		_, _, err := api.PostMessage(channel, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-	}
-	return nil
-}
-
-func (h *handle) sendTextToEmails(txt string, emails []string) error {
-	api := slack.New(h.config.BotToken)
-	for _, email := range emails {
-		user, err := api.GetUserByEmail(email)
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-		_, _, err = api.PostMessage(user.ID, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-	}
-	return nil
-}
-
-func (h *handle) sendTextViaWebhooks(txt string, webhooks []string) error {
-	for _, webhook := range webhooks {
-		payload := slack.WebhookMessage{
-			Text: txt,
-		}
-		err := slack.PostWebhook(webhook, &payload)
-		if err != nil {
-			return fmt.Errorf("slack webhook error: %w", err)
-		}
-	}
-	return nil
-}
-
 type configProperties struct {
 	BotToken string `mapstructure:"bot_token"`
-}
-
-type RecipientsOpts struct {
-	Channels []string
-	Emails   []string
-	Webhooks []string
-}
-
-type AlertStatusData struct {
-	Subject             string
-	Title               string
-	ExecutionTimeString string // Will be inferred from ExecutionTime
-	IsPass              bool
-	IsRecover           bool
-	IsError             bool
-	ErrorMessage        string
-	OpenLink            htemplate.URL
-	EditLink            htemplate.URL
-}
-
-type AlertFailData struct {
-	Subject             string
-	Title               string
-	ExecutionTimeString string // Will be inferred from ExecutionTime
-	FailRow             map[string]any
-	OpenLink            htemplate.URL
-	EditLink            htemplate.URL
 }

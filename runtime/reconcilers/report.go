@@ -11,7 +11,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server"
@@ -301,50 +300,54 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	exportURL.RawQuery = exportURLQry.Encode()
 
 	sent := false
-	for _, recipient := range rep.Spec.EmailRecipients {
-		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
-			ToEmail:        recipient,
-			ToName:         "",
-			Title:          rep.Spec.Title,
-			ReportTime:     t,
-			DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-			OpenLink:       meta.OpenURL,
-			DownloadLink:   exportURL.String(),
-			EditLink:       meta.EditURL,
-		})
-		if err != nil {
-			return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
-		}
-		sent = true
-	}
-
-	if rep.Spec.SlackChannels != nil || rep.Spec.SlackEmails != nil {
-		conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, "slack")
-		if err != nil {
-			return sent, err
-		}
-		defer release()
-		n, ok := conn.AsNotifier()
-		if !ok {
-			return sent, fmt.Errorf("slack notifier not available")
-		}
-		err = n.SendScheduledReport(
-			&drivers.ScheduledReport{
-				Title:          rep.Spec.Title,
-				ReportTime:     t,
-				DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-				OpenLink:       meta.OpenURL,
-				DownloadLink:   exportURL.String(),
-				EditLink:       meta.EditURL,
-			},
-			&slack.RecipientsOpts{
-				Channels: rep.Spec.SlackChannels,
-				Emails:   rep.Spec.SlackEmails,
-				Webhooks: rep.Spec.SlackWebhooks,
-			},
-		)
-		if err != nil {
-			return true, fmt.Errorf("failed to send slack notification: %w", err)
+	for _, notifier := range rep.Spec.NotifySpec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			for _, recipient := range notifier.GetEmail().Recipients {
+				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
+					ToEmail:        recipient,
+					ToName:         "",
+					Title:          rep.Spec.Title,
+					ReportTime:     t,
+					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+					OpenLink:       meta.OpenURL,
+					DownloadLink:   exportURL.String(),
+					EditLink:       meta.EditURL,
+				})
+				sent = true
+				if err != nil {
+					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+				}
+			}
+		default:
+			err := func() error {
+				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+				if err != nil {
+					return err
+				}
+				defer release()
+				n, ok := conn.AsNotifier()
+				if !ok {
+					return fmt.Errorf("%s connector not available", notifier.Connector)
+				}
+				msg := &drivers.ScheduledReport{
+					Title:          rep.Spec.Title,
+					ReportTime:     t,
+					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+					OpenLink:       meta.OpenURL,
+					DownloadLink:   exportURL.String(),
+					EditLink:       meta.EditURL,
+				}
+				err = n.SendScheduledReport(msg, notifier.Spec)
+				sent = true
+				if err != nil {
+					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
+				}
+				return nil
+			}()
+			if err != nil {
+				return sent, err
+			}
 		}
 	}
 

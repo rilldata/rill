@@ -8,11 +8,11 @@ import (
 
 // Notifier sends notifications.
 type Notifier interface {
-	SendAlertStatus(s *AlertStatus, r RecipientOpts) error
-	SendScheduledReport(s *ScheduledReport, r RecipientOpts) error
+	SendAlertStatus(s *AlertStatus, spec NotifierSpec) error
+	SendScheduledReport(s *ScheduledReport, spec NotifierSpec) error
 }
 
-type RecipientOpts interface{}
+type NotifierSpec = interface{}
 
 type AlertStatus struct {
 	ToEmail        string

@@ -12,7 +12,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -168,7 +167,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		triggerTime = time.Now()
 	}
 
-	// Run alert queries and send emails
+	// Run alert queries and send notifications
 	executeErr := r.executeAll(ctx, self, a, triggerTime, adhocTrigger)
 
 	// If we were cancelled, exit without updating any other trigger-related state.
@@ -366,7 +365,7 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-// executeAll runs queries and (maybe) sends emails for the alert. It also adds entries to a.State.ExecutionHistory.
+// executeAll runs queries and (maybe) sends notifications for the alert. It also adds entries to a.State.ExecutionHistory.
 // By default, an alert is checked once for the current watermark, but if a.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
 func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) error {
 	// Enforce timeout
@@ -377,7 +376,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Get admin metadata for the alert (if an admin service is not configured, alerts will still work, the emails just won't have open/edit links).
+	// Get admin metadata for the alert (if an admin service is not configured, alerts will still work, the notifications just won't have open/edit links).
 	var adminMeta *drivers.AlertMetadata
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil && !errors.Is(err, runtime.ErrAdminNotConfigured) {
@@ -391,7 +390,7 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		}
 	}
 
-	// Run alert queries and send emails
+	// Run alert queries and send notifications
 	executeErr := r.executeAllWrapped(ctx, self, a, adminMeta, triggerTime, adhocTrigger)
 	if executeErr == nil {
 		return nil
@@ -487,7 +486,7 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	return nil
 }
 
-// executeSingleAlert runs the alert query and maybe sends emails for a single execution time.
+// executeSingleAlert runs the alert query and maybe sends notifications for a single execution time.
 func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time, adhocTrigger bool) error {
 	// Create new execution and save in State.CurrentExecution
 	a.State.CurrentExecution = &runtimev1.AlertExecution{
@@ -578,7 +577,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, nil
 }
 
-// popCurrentExecution moves the current execution into the execution history and sends emails if the execution matched the emailing criteria.
+// popCurrentExecution moves the current execution into the execution history and sends notifications if the execution matched the notification criteria.
 // At a certain limit, it trims old executions from the history to prevent it from growing unboundedly.
 func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata) error {
 	if a.State.CurrentExecution == nil {
@@ -587,14 +586,14 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 
 	current := a.State.CurrentExecution
 
-	// td represents the amount of time since we last sent an email for the current status AND where all intervening executions have returned the same status.
+	// td represents the amount of time since we last sent a notification for the current status AND where all intervening executions have returned the same status.
 	var td *time.Duration
 	if current.ExecutionTime != nil {
 		for _, prev := range a.State.ExecutionHistory {
 			if prev.Result.Status != current.Result.Status {
 				break
 			}
-			if !prev.SentEmails {
+			if !prev.SentNotifications {
 				continue
 			}
 
@@ -623,12 +622,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		// The status has changed since the last execution, so we should notify.
 		// NOTE: This case may also match in an edge case of execution history limits, but that's fine.
 		notify = true
-	} else if a.Spec.Renotify {
-		if a.Spec.RenotifyAfterSeconds == 0 {
+	} else if a.Spec.NotifySpec.Renotify {
+		if a.Spec.NotifySpec.RenotifyAfterSeconds == 0 {
 			// The status has not changed since the last execution and there's no renotify suppression period, so we should notify.
 			notify = true
-		} else if int(td.Seconds()) >= int(a.Spec.RenotifyAfterSeconds) {
-			// The status has not changed since the last email and the last email was sent more than the renotify suppression period ago, so we should notify.
+		} else if int(td.Seconds()) >= int(a.Spec.NotifySpec.RenotifyAfterSeconds) {
+			// The status has not changed since the last notification and the last notification was sent more than the renotify suppression period ago, so we should notify.
 			notify = true
 		}
 	}
@@ -639,12 +638,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		executionTime = current.ExecutionTime.AsTime()
 	}
 
-	// Generate the email message to send (if any)
+	// Generate the notification message to send (if any)
 	var msg *drivers.AlertStatus
 	if notify {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
-			if !a.Spec.NotifyOnRecover {
+			if !a.Spec.NotifySpec.NotifyOnRecover {
 				break
 			}
 
@@ -664,7 +663,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				IsRecover:     true,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
-			if !a.Spec.NotifyOnFail {
+			if !a.Spec.NotifySpec.NotifyOnFail {
 				break
 			}
 
@@ -675,7 +674,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				FailRow:       current.Result.FailRow.AsMap(),
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
-			if !a.Spec.NotifyOnError {
+			if !a.Spec.NotifySpec.NotifyOnError {
 				break
 			}
 
@@ -690,9 +689,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		}
 	}
 
-	// Send the email (if applicable)
-	var emailErr error
-	var sentEmails bool
+	// Send a notification (if applicable)
+	var notificationErr error
+	var sentNotifications bool
 	if msg != nil {
 		if adminMeta != nil {
 			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
@@ -700,46 +699,52 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			msg.EditLink = adminMeta.EditURL
 		}
 
-		for _, recipient := range a.Spec.EmailRecipients {
-			msg.ToEmail = recipient
-			err := r.C.Runtime.Email.SendAlertStatus(msg)
-			if err != nil {
-				emailErr = fmt.Errorf("Failed to send email to %q: %w", recipient, err)
-				break
+		for _, notifier := range a.Spec.NotifySpec.Notifiers {
+			switch notifier.Connector {
+			// TODO: transform email client to notifier
+			case "email":
+				for _, recipient := range notifier.GetEmail().Recipients {
+					msg.ToEmail = recipient
+					err := r.C.Runtime.Email.SendAlertStatus(msg)
+					if err != nil {
+						notificationErr = fmt.Errorf("failed to send email to %q: %w", recipient, err)
+						break
+					}
+				}
+			default:
+				err := func() error {
+					conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+					if err != nil {
+						return err
+					}
+					defer release()
+					n, ok := conn.AsNotifier()
+					if !ok {
+						return fmt.Errorf("%s connector not available", notifier.Connector)
+					}
+					err = n.SendAlertStatus(msg, notifier.Spec)
+					if err != nil {
+						notificationErr = fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
+					}
+					return nil
+				}()
+				if err != nil {
+					return err
+				}
 			}
 		}
-
-		if a.Spec.SlackChannels != nil || a.Spec.SlackEmails != nil {
-			conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, "slack")
-			if err != nil {
-				return err
-			}
-			defer release()
-			n, ok := conn.AsNotifier()
-			if !ok {
-				return fmt.Errorf("slack notifier not available")
-			}
-			err = n.SendAlertStatus(msg, &slack.RecipientsOpts{
-				Channels: a.Spec.SlackChannels,
-				Emails:   a.Spec.SlackEmails,
-				Webhooks: a.Spec.SlackWebhooks,
-			})
-			if err != nil {
-				emailErr = fmt.Errorf("Failed to send slack notification: %w", err)
-			}
-		}
-		sentEmails = true
+		sentNotifications = true
 	}
 
-	// If sending emails failed, add the error as an execution error.
-	if emailErr != nil {
+	// If sending notifications failed, add the error as an execution error.
+	if notificationErr != nil {
 		a.State.CurrentExecution.Result = &runtimev1.AssertionResult{
 			Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
-			ErrorMessage: emailErr.Error(),
+			ErrorMessage: notificationErr.Error(),
 		}
 	}
 
-	a.State.CurrentExecution.SentEmails = sentEmails
+	a.State.CurrentExecution.SentNotifications = sentNotifications
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	a.State.ExecutionHistory = slices.Insert(a.State.ExecutionHistory, 0, a.State.CurrentExecution)
 	a.State.CurrentExecution = nil

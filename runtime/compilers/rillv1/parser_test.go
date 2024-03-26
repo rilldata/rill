@@ -1037,17 +1037,38 @@ export:
 
 email:
   recipients:
-    - benjamin_1@example.com
+    - benjamin@example.com
+
+annotations:
+  foo: bar
+`,
+		`reports/r2.yaml`: `
+kind: report
+title: My Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+
+export:
+  format: csv
+  limit: 10000
+
 
 notify:
   email:
     recipients:
-      - benjamin_2@example.com
+      - user_1@example.com
   slack:
     channels:
       - reports
     emails:
-      - benjamin_3@example.com
+      - user_2@example.com
 
 annotations:
   foo: bar
@@ -1065,14 +1086,33 @@ annotations:
 					Cron:      "0 * * * *",
 					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:       "MetricsViewToplist",
-				QueryArgsJson:   `{"metrics_view":"mv1"}`,
-				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:     10000,
-				EmailRecipients: []string{"benjamin_1@example.com", "benjamin_2@example.com"},
-				SlackChannels:   []string{"reports"},
-				SlackEmails:     []string{"benjamin_3@example.com"},
-				Annotations:     map[string]string{"foo": "bar"},
+				QueryName:     "MetricsViewToplist",
+				QueryArgsJson: `{"metrics_view":"mv1"}`,
+				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:   10000,
+				NotifySpec:    &runtimev1.ReportNotifySpec{Notifiers: []*runtimev1.NotifierSpec{{Connector: "email", Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"benjamin@example.com"}}}}}},
+				Annotations:   map[string]string{"foo": "bar"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				Title: "My Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					RefUpdate: true,
+					Cron:      "0 * * * *",
+					TimeZone:  "America/Los_Angeles",
+				},
+				QueryName:     "MetricsViewToplist",
+				QueryArgsJson: `{"metrics_view":"mv1"}`,
+				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:   10000,
+				NotifySpec: &runtimev1.ReportNotifySpec{Notifiers: []*runtimev1.NotifierSpec{
+					{Connector: "email", Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"user_1@example.com"}}}},
+					{Connector: "slack", Spec: &runtimev1.NotifierSpec_Slack{Slack: &runtimev1.SlackNotifierSpec{Emails: []string{"user_2@example.com"}, Channels: []string{"reports"}}}},
+				}},
+				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
 	}
@@ -1151,13 +1191,14 @@ annotations:
 				QueryName:            "MetricsViewToplist",
 				QueryArgsJson:        `{"metrics_view":"mv1"}`,
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
-				EmailRecipients:      []string{"benjamin@example.com"},
-				NotifyOnRecover:      true,
-				NotifyOnFail:         true,
-				NotifyOnError:        false,
-				Renotify:             true,
-				RenotifyAfterSeconds: 24 * 60 * 60,
-				Annotations:          map[string]string{"foo": "bar"},
+				NotifySpec: &runtimev1.AlertNotifySpec{
+					NotifyOnRecover:      true,
+					NotifyOnFail:         true,
+					Renotify:             true,
+					RenotifyAfterSeconds: 24 * 60 * 60,
+					Notifiers:            []*runtimev1.NotifierSpec{{Connector: "email", Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"benjamin@example.com"}}}}},
+				},
+				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
 	}

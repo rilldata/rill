@@ -274,7 +274,10 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts := recreateAlertOptionsFromSpec(spec)
+	opts, err := recreateAlertOptionsFromSpec(spec)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
+	}
 
 	found := false
 	for idx, email := range opts.EmailRecipients {
@@ -536,16 +539,27 @@ func randomAlertName(title string) string {
 	return name
 }
 
-func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) *adminv1.AlertOptions {
+func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
 	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
 	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.EmailRecipients = spec.EmailRecipients
-	opts.Renotify = spec.Renotify
-	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
-	return opts
+	opts.Renotify = spec.NotifySpec.Renotify
+	opts.RenotifyAfterSeconds = spec.NotifySpec.RenotifyAfterSeconds
+	for _, notifier := range spec.NotifySpec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			opts.EmailRecipients = notifier.GetEmail().Recipients
+		case "slack":
+			opts.SlackEmails = notifier.GetSlack().Emails
+			opts.SlackChannels = notifier.GetSlack().Channels
+			opts.SlackWebhooks = notifier.GetSlack().Webhooks
+		default:
+			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
+		}
+	}
+	return opts, nil
 }
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
@@ -574,8 +588,8 @@ type alertYAML struct {
 		Renotify      bool   `yaml:"renotify"`
 		RenotifyAfter uint32 `yaml:"renotify_after"`
 		Slack         struct {
-			Channels []string `yaml:"channels"`
 			Emails   []string `yaml:"emails"`
+			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
 		}
 		Email struct {
