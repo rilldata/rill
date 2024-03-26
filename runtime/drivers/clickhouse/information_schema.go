@@ -42,7 +42,6 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		q := `
 		SELECT
 			T.TABLE_CATALOG AS DATABASE,
-			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
 			C.COLUMN_NAME AS COLUMNS,
@@ -50,7 +49,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY DATABASE, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
 		rows, err := conn.QueryxContext(ctx, q, database)
@@ -71,10 +70,12 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	q := `
+	var q string
+	var args []any
+	if db == "" && schema == "" {
+		q = `
 		SELECT
 			T.TABLE_CATALOG AS DATABASE,
-			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
 			C.COLUMN_NAME AS COLUMN_NAME,
@@ -82,8 +83,28 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = currentDatabase() AND T.TABLE_NAME = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY DATABASE, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
+		args = append(args, name)
+	} else {
+		q = `
+		SELECT
+			T.TABLE_CATALOG AS DATABASE,
+			T.TABLE_NAME AS NAME,
+			T.TABLE_TYPE AS TABLE_TYPE, 
+			C.COLUMN_NAME AS COLUMN_NAME,
+			C.DATA_TYPE AS COLUMN_TYPE
+		FROM INFORMATION_SCHEMA.TABLES T 
+		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
+		WHERE T.TABLE_SCHEMA = ? AND T.TABLE_NAME = ?
+		ORDER BY DATABASE, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+	`
+		if db == "" {
+			args = append(args, schema, name)
+		} else {
+			args = append(args, db, name)
+		}
+	}
 
 	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
@@ -91,7 +112,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 	defer func() { _ = release() }()
 
-	rows, err := conn.QueryxContext(ctx, q, name)
+	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,13 +135,12 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 
 	for rows.Next() {
 		var database string
-		var schema string
 		var name string
 		var tableType string
 		var columnName string
 		var columnType string
 
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType)
+		err := rows.Scan(&database, &name, &tableType, &columnName, &columnType)
 		if err != nil {
 			return nil, err
 		}
@@ -129,17 +149,16 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var t *drivers.Table
 		if len(res) > 0 {
 			t = res[len(res)-1]
-			if !(t.Database == database && t.DatabaseSchema == schema && t.Name == name) {
+			if !(t.Database == database && t.Name == name) {
 				t = nil
 			}
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database:       database,
-				DatabaseSchema: schema,
-				Name:           name,
-				View:           tableType == "VIEW",
-				Schema:         &runtimev1.StructType{},
+				Database: database,
+				Name:     name,
+				View:     tableType == "VIEW",
+				Schema:   &runtimev1.StructType{},
 			}
 			res = append(res, t)
 		}

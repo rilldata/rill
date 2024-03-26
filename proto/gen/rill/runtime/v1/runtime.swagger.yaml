@@ -5581,6 +5581,8 @@ definitions:
     properties:
       database:
         type: string
+      schema:
+        type: string
       name:
         type: string
   v1TableRowsRequest:

@@ -134,16 +134,34 @@ func addInterval(t time.Time, timeGrain runtimev1.TimeGrain) time.Time {
 	}
 }
 
-func fullyQualifiedTableName(mv *runtimev1.MetricsViewSpec) string {
+func fullMetricsViewTableName(mv *runtimev1.MetricsViewSpec) string {
+	return fullTableName(mv.Database, mv.Schema, mv.Table)
+}
+
+func fullTableName(db, schema, table string) string {
+	// TODO use a good regex solution
+	// Remove this once UI can pass database and schema in all places
+	if strings.ContainsRune(table, '.') && db == "" && schema == "" {
+		parts := strings.Split(table, ".")
+		if len(parts) == 2 {
+			schema = parts[0]
+			table = parts[1]
+		} else if len(parts) == 3 {
+			db = parts[0]
+			schema = parts[1]
+			table = parts[2]
+		}
+	}
+
 	var sb strings.Builder
-	if mv.Database != "" {
-		sb.WriteString(safeName(mv.Database))
+	if db != "" {
+		sb.WriteString(safeName(db))
 		sb.WriteString(".")
 	}
-	if mv.Schema != "" {
-		sb.WriteString(safeName(mv.Schema))
+	if schema != "" {
+		sb.WriteString(safeName(schema))
 		sb.WriteString(".")
 	}
-	sb.WriteString(safeName(mv.Table))
+	sb.WriteString(safeName(table))
 	return sb.String()
 }

@@ -10,7 +10,7 @@
   const { readOnly } = featureFlags;
 
   $: fullyQualifiedTableName = $page.params.name; // `database.table`
-  $: [, table] = fullyQualifiedTableName.split(".");
+  $: table = fullyQualifiedTableName
 
   onMount(() => {
     if ($readOnly) {

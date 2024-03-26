@@ -951,6 +951,8 @@ message TableCardinalityResponse {
 message TableColumnsRequest {
   string instance_id = 1;
   string connector = 4;
+  string database = 5;
+  string schema = 6;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }

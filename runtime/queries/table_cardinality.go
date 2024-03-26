@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -93,18 +92,4 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 func (q *TableCardinality) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return ErrExportNotSupported
-}
-
-func fullTableName(db, schema, table string) string {
-	var sb strings.Builder
-	if db != "" {
-		sb.WriteString(safeName(db))
-		sb.WriteString(".")
-	}
-	if schema != "" {
-		sb.WriteString(safeName(schema))
-		sb.WriteString(".")
-	}
-	sb.WriteString(safeName(table))
-	return sb.String()
 }

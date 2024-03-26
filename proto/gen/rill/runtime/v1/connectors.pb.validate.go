@@ -2220,6 +2220,8 @@ func (m *TableInfo) validate(all bool) error {
 
 	// no validation rules for Database
 
+	// no validation rules for Schema
+
 	// no validation rules for Name
 
 	if len(errors) > 0 {

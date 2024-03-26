@@ -67,7 +67,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	// Get table info
 	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.Schema, req.Table)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "table not found")
+		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
 	}
 
 	// The table may have been created by a model. Search for a model with the same name in the same connector.
@@ -121,7 +121,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, model != nil, tbl.Schema)
 		if err != nil {
 			return nil, err
 		}
@@ -202,6 +202,8 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
 	spec := &runtimev1.MetricsViewSpec{
 		Connector: connector,
+		Database:  db,
+		Schema:    dbSchema,
 		Table:     tblName,
 	}
 	for _, measure := range doc.Measures {
@@ -297,21 +299,23 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
 	doc := &metricsViewYAML{
-		Title:         identifierToTitle(tblName),
+		Title:         identifierToTitle(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(schema),
 		Measures:      generateMetricsViewYAMLSimpleMeasures(schema),
 	}
 
 	if isModel {
-		doc.Model = tblName
+		doc.Model = tbl.Name
 	} else {
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Table = tblName
+		doc.Database = tbl.Database
+		doc.Schema = tbl.DatabaseSchema
+		doc.Table = tbl.Name
 	}
 
 	return marshalMetricsViewYAML(doc, false)

@@ -634,6 +634,7 @@ export interface V1TableRowsRequest {
 
 export interface V1TableInfo {
   database?: string;
+  schema?: string;
   name?: string;
 }
 

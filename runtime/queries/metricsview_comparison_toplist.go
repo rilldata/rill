@@ -543,27 +543,27 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		labelSelectClause := strings.Join(labelCols, ", ")
 		sql = fmt.Sprintf(
 			`SELECT %[8]s FROM (SELECT %[1]s FROM %[2]s %[7]s WHERE %[3]s GROUP BY 1 %[9]s %[4]s %[5]s OFFSET %[6]d)`,
-			selectClause,                // 1
-			fullyQualifiedTableName(mv), // 2
-			baseWhereClause,             // 3
-			orderByClause,               // 4
-			limitClause,                 // 5
-			q.Offset,                    // 6
-			unnestClause,                // 7
-			labelSelectClause,           // 8
-			havingClause,                // 9
+			selectClause,                 // 1
+			fullMetricsViewTableName(mv), // 2
+			baseWhereClause,              // 3
+			orderByClause,                // 4
+			limitClause,                  // 5
+			q.Offset,                     // 6
+			unnestClause,                 // 7
+			labelSelectClause,            // 8
+			havingClause,                 // 9
 		)
 	} else {
 		sql = fmt.Sprintf(
 			`SELECT %[1]s FROM %[2]s %[7]s WHERE %[3]s GROUP BY 1 %[8]s %[4]s %[5]s OFFSET %[6]d`,
-			selectClause,                // 1
-			fullyQualifiedTableName(mv), // 2
-			baseWhereClause,             // 3
-			orderByClause,               // 4
-			limitClause,                 // 5
-			q.Offset,                    // 6
-			unnestClause,                // 7
-			havingClause,                // 8
+			selectClause,                 // 1
+			fullMetricsViewTableName(mv), // 2
+			baseWhereClause,              // 3
+			orderByClause,                // 4
+			limitClause,                  // 5
+			q.Offset,                     // 6
+			unnestClause,                 // 7
+			havingClause,                 // 8
 		)
 	}
 
@@ -885,23 +885,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 						%[8]d
 				) WHERE %[15]s 
 			`,
-				subSelectClause,             // 1
-				colName,                     // 2
-				fullyQualifiedTableName(mv), // 3
-				baseWhereClause,             // 4
-				comparisonWhereClause,       // 5
-				orderByClause,               // 6
-				limitClause,                 // 7
-				q.Offset,                    // 8
-				finalSelectClause,           // 9
-				finalDimName,                // 10
-				joinType,                    // 11
-				baseLimitClause,             // 12
-				comparisonLimitClause,       // 13
-				unnestClause,                // 14
-				havingClause,                // 15
-				subComparisonSelectClause,   // 16
-				joinOnClause,                // 17
+				subSelectClause,              // 1
+				colName,                      // 2
+				fullMetricsViewTableName(mv), // 3
+				baseWhereClause,              // 4
+				comparisonWhereClause,        // 5
+				orderByClause,                // 6
+				limitClause,                  // 7
+				q.Offset,                     // 8
+				finalSelectClause,            // 9
+				finalDimName,                 // 10
+				joinType,                     // 11
+				baseLimitClause,              // 12
+				comparisonLimitClause,        // 13
+				unnestClause,                 // 14
+				havingClause,                 // 15
+				subComparisonSelectClause,    // 16
+				joinOnClause,                 // 17
 			)
 		} else {
 			sql = fmt.Sprintf(`
@@ -920,22 +920,22 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		OFFSET
 			%[8]d
 		`,
-				subSelectClause,             // 1
-				colName,                     // 2
-				fullyQualifiedTableName(mv), // 3
-				baseWhereClause,             // 4
-				comparisonWhereClause,       // 5
-				orderByClause,               // 6
-				limitClause,                 // 7
-				q.Offset,                    // 8
-				finalSelectClause,           // 9
-				finalDimName,                // 10
-				joinType,                    // 11
-				baseLimitClause,             // 12
-				comparisonLimitClause,       // 13
-				unnestClause,                // 14
-				subComparisonSelectClause,   // 15
-				joinOnClause,                // 16
+				subSelectClause,              // 1
+				colName,                      // 2
+				fullMetricsViewTableName(mv), // 3
+				baseWhereClause,              // 4
+				comparisonWhereClause,        // 5
+				orderByClause,                // 6
+				limitClause,                  // 7
+				q.Offset,                     // 8
+				finalSelectClause,            // 9
+				finalDimName,                 // 10
+				joinType,                     // 11
+				baseLimitClause,              // 12
+				comparisonLimitClause,        // 13
+				unnestClause,                 // 14
+				subComparisonSelectClause,    // 15
+				joinOnClause,                 // 16
 			)
 		}
 	} else {
@@ -1010,7 +1010,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			`,
 			subSelectClause,                     // 1
 			colName,                             // 2
-			fullyQualifiedTableName(mv),                  // 3
+			fullMetricsViewTableName(mv),        // 3
 			leftWhereClause,                     // 4
 			rightWhereClause,                    // 5
 			orderByClause,                       // 6

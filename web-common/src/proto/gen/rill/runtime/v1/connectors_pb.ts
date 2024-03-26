@@ -917,6 +917,11 @@ export class TableInfo extends Message<TableInfo> {
   database = "";
 
   /**
+   * @generated from field: string schema = 3;
+   */
+  schema = "";
+
+  /**
    * @generated from field: string name = 2;
    */
   name = "";
@@ -930,6 +935,7 @@ export class TableInfo extends Message<TableInfo> {
   static readonly typeName = "rill.runtime.v1.TableInfo";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

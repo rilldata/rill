@@ -183,6 +183,7 @@ message OLAPListTablesResponse {
 
 message TableInfo {
   string database = 1;
+  string schema = 3;
   string name = 2;
 }
 
