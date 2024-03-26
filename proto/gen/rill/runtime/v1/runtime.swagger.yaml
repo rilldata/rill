@@ -843,6 +843,74 @@ paths:
           type: boolean
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/generate/chart:
+    post:
+      summary: GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+      operationId: RuntimeService_GenerateChartSpec
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateChartSpecResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/resolver:
+    post:
+      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
+      operationId: RuntimeService_GenerateResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              connector:
+                type: string
+                description: Both connector and table must be specified if metrics_view is not.
+              table:
+                type: string
+              metricsView:
+                type: string
+                description: table and connector should not be provided if metrics_view is provided.
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/logs:
     get:
       summary: GetLogs returns recent logs from a controller
@@ -3644,12 +3712,24 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1GenerateChartSpecResponse:
+    type: object
+    properties:
+      vegaLiteSpec:
+        type: string
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
       aiSucceeded:
         type: boolean
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GenerateResolverResponse:
+    type: object
+    properties:
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1GetCatalogEntryResponse:
     type: object
     properties:

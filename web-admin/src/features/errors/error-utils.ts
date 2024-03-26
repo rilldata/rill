@@ -11,18 +11,40 @@ import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import type { RpcStatus } from "../../client";
-import { getAdminServiceGetProjectQueryKey } from "../../client";
+import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
+import {
+  adminServiceGetCurrentUser,
+  getAdminServiceGetCurrentUserQueryKey,
+  getAdminServiceGetProjectQueryKey,
+} from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
-  return (error: AxiosError, query: Query) => {
+  return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
+
+    // If an anonymous user hits a 403 error, redirect to the login page
+    if (error.response?.status === 403) {
+      // Check for a logged-in user
+      const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
+        queryKey: getAdminServiceGetCurrentUserQueryKey(),
+        queryFn: () => adminServiceGetCurrentUser(),
+      });
+      const isLoggedIn = !!userQuery.user;
+
+      // If not logged in, redirect to the login page
+      if (!isLoggedIn) {
+        await goto(
+          `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
+        );
+        return;
+      }
+    }
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      goto(
+      await goto(
         `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
       );
       return;
@@ -40,7 +62,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
       if ((error.response.data as RpcStatus).message === "driver: not found") {
         const [, org, proj] = get(page).url.pathname.split("/");
-        queryClient.resetQueries(getAdminServiceGetProjectQueryKey(org, proj));
+        void queryClient.resetQueries(
+          getAdminServiceGetProjectQueryKey(org, proj),
+        );
         return;
       }
     }

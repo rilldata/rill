@@ -323,6 +323,25 @@ export type RuntimeServiceGetLogsParams = {
   level?: RuntimeServiceGetLogsLevel;
 };
 
+export type RuntimeServiceGenerateResolverBody = {
+  prompt?: string;
+  /** Both connector and table must be specified if metrics_view is not. */
+  connector?: string;
+  table?: string;
+  /** table and connector should not be provided if metrics_view is provided. */
+  metricsView?: string;
+};
+
+export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
+  [key: string]: any;
+};
+
+export type RuntimeServiceGenerateChartSpecBody = {
+  prompt?: string;
+  resolver?: string;
+  resolverProperties?: RuntimeServiceGenerateChartSpecBodyResolverProperties;
+};
+
 export type RuntimeServiceWatchFiles200 = {
   result?: V1WatchFilesResponse;
   error?: RpcStatus;
@@ -538,12 +557,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -571,6 +584,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -660,11 +679,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -676,6 +690,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -766,13 +785,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -794,6 +806,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -855,6 +874,16 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 export interface V1RefreshAndReconcileRequest {
   instanceId?: string;
   path?: string;
@@ -873,6 +902,16 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
 
 /**
  * - CODE_UNSPECIFIED: Unspecified error
@@ -916,26 +955,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -1601,8 +1620,21 @@ export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
 }
 
+export type V1GenerateResolverResponseResolverProperties = {
+  [key: string]: any;
+};
+
+export interface V1GenerateResolverResponse {
+  resolver?: string;
+  resolverProperties?: V1GenerateResolverResponseResolverProperties;
+}
+
 export interface V1GenerateMetricsViewFileResponse {
   aiSucceeded?: boolean;
+}
+
+export interface V1GenerateChartSpecResponse {
+  vegaLiteSpec?: string;
 }
 
 export interface V1GCSObject {
@@ -1735,6 +1767,26 @@ export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
+ * ConnectorSpec represents a connector available in the runtime.
+It should not be confused with a source.
+ */
+export interface V1ConnectorSpec {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
+}
+
+/**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
@@ -1753,26 +1805,6 @@ export interface V1CreateInstanceRequest {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
-}
-
-/**
- * ConnectorSpec represents a connector available in the runtime.
-It should not be confused with a source.
- */
-export interface V1ConnectorSpec {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  properties?: ConnectorSpecProperty[];
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
 }
 
 export interface V1Condition {

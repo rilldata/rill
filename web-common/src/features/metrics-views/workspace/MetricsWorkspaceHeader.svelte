@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     INVALID_NAME_MESSAGE,
     VALID_NAME_PATTERN,
@@ -14,6 +15,7 @@
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
 
   export let metricsDefName;
+  export let showInspectorToggle = true;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -39,7 +41,12 @@
     try {
       const toName = e.target.value;
       const type = EntityType.MetricsDefinition;
-      await renameFileArtifact(runtimeInstanceId, metricsDefName, toName, type);
+      await renameFileArtifact(
+        runtimeInstanceId,
+        getFileAPIPathFromNameAndType(metricsDefName, type),
+        getFileAPIPathFromNameAndType(toName, type),
+        type,
+      );
       goto(`/dashboard/${toName}/edit`, { replaceState: true });
     } catch (err) {
       console.error(err.response.data.message);
@@ -49,6 +56,12 @@
   $: titleInput = metricsDefName;
 </script>
 
-<WorkspaceHeader {...{ titleInput, onChangeCallback }}>
+<WorkspaceHeader
+  {...{
+    titleInput,
+    onChangeCallback,
+    showInspectorToggle,
+  }}
+>
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

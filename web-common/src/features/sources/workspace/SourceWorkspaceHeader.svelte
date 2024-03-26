@@ -103,8 +103,8 @@
       const entityType = EntityType.Table;
       await renameFileArtifact(
         runtimeInstanceId,
-        sourceName,
-        toName,
+        getFilePathFromNameAndType(sourceName, entityType),
+        getFilePathFromNameAndType(toName, entityType),
         entityType,
       );
       goto(getRouteFromName(toName, entityType), {
@@ -205,7 +205,7 @@
         </div>
       {/if}
     </svelte:fragment>
-    <svelte:fragment slot="cta" let:width={headerWidth}>
+    <svelte:fragment let:width={headerWidth} slot="cta">
       <PanelCTA side="right">
         <Button
           disabled={!isSourceUnsaved}
@@ -259,10 +259,10 @@
           </Button>
           <Menu
             dark
+            let:toggleFloatingElement
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
-            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

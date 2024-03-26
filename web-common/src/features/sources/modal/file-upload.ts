@@ -11,7 +11,7 @@ import {
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
 import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
-import { getTableNameFromFile } from "../extract-table-name";
+import { getTableNameFromFile } from "web-common/src/features/sources/extract-file-name";
 import {
   DuplicateActions,
   duplicateSourceAction,
