@@ -326,9 +326,6 @@ func (c *ConnectorConfig) ResolveStrings() map[string]string {
 
 // setPreset sets a preset value if it's not empty.
 func (c *ConnectorConfig) setPreset(k, v string) {
-	if v == "" {
-		return
-	}
 	if c.Preset == nil {
 		c.Preset = make(map[string]string)
 	}
