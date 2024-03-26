@@ -7,11 +7,11 @@ sidebar_position: 40
 
 ## Overview
 
-Alerting is obviously a key element for any BI or analytics workflow. Because Rill's dashboards are typically driven off of raw or near-raw data, we also expose alerting on a wide variety of filters and with depth of high cardnality fields. Alerts can be accessed from any leaderboard to provide the context of the dimension and will then return you to that analysis if the alert is triggered.
+Alerting is obviously a key element for any BI or analytics workflow. Because Rill's dashboards are typically driven off of raw or near-raw data, we also expose alerting on a wide variety of filters and with depth of high cardinality fields.
 
 ## Setting and managing alerts
 
-To set an alert, expand a leaderboard table and select ```Create alert``` on the top right. The Alert modal will open to walk through alerting options:
+To set an alert, click on the bell icon in the top navigation bar in Rill. The Alert modal will open to walk through alerting options:
 
 ### Data Selection
 1. Any existing filters will be carried into the alert and may be adjusted or removed as needed.
