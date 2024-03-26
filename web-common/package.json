@@ -54,7 +54,6 @@
     "d3-time-format": "^4.1.0",
     "date-fns": "^2.30.0",
     "jsdom": "^23.0.1",
-    "litepicker": "^2.0.12",
     "lodash.omitby": "^4.6.0",
     "lucide-svelte": "^0.298.0",
     "luxon": "^3.4.3",
