@@ -188,6 +188,12 @@ service RuntimeService {
     };
   }
 
+  // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+  // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+  rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
+    option (google.api.http) = {get: "/v1/connectors/notifiers"};
+  }
+
   // DEPRECATE:
 
   // Catalog
@@ -702,10 +708,11 @@ message AnalyzedConnector {
   string name = 1;
   ConnectorDriver driver = 2;
   map<string, string> config = 3;
-  map<string, string> default_config = 4;
-  map<string, string> env_config = 5;
-  bool has_anonymous_access = 6;
-  repeated ResourceName used_by = 7;
+  map<string, string> preset_config = 4;
+  map<string, string> project_config = 5;
+  map<string, string> env_config = 6;
+  bool has_anonymous_access = 7;
+  repeated ResourceName used_by = 8;
 }
 
 // Request message for RuntimeService.ListConnectorDrivers
@@ -724,6 +731,17 @@ message AnalyzeConnectorsRequest {
 // Response message for RuntimeService.AnalyzeConnectors
 message AnalyzeConnectorsResponse {
   repeated AnalyzedConnector connectors = 1;
+}
+
+// Request message for RuntimeService.ListNotifierConnectors
+message ListNotifierConnectorsRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.ListNotifierConnectors
+message ListNotifierConnectorsResponse {
+  // Note: The config property of Connector will always be empty for this API.
+  repeated Connector connectors = 1;
 }
 
 // **********

@@ -119,6 +119,28 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/notifiers:
+    get:
+      summary: |-
+        ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+        This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+      operationId: RuntimeService_ListNotifierConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListNotifierConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/connectors/olap/table:
     get:
       summary: OLAPGetTable returns metadata about a table or view in an OLAP
@@ -3084,7 +3106,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      defaultConfig:
+      presetConfig:
+        type: object
+        additionalProperties:
+          type: string
+      projectConfig:
         type: object
         additionalProperties:
           type: string
@@ -3961,6 +3987,16 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListNotifierConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
+        description: 'Note: The config property of Connector will always be empty for this API.'
+    title: Response message for RuntimeService.ListNotifierConnectors
   v1ListResourcesResponse:
     type: object
     properties:

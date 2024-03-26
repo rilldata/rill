@@ -74,7 +74,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("gcs driver can't be shared")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}

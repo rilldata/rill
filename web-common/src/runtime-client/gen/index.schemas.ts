@@ -468,6 +468,10 @@ export type ConnectorServiceOLAPGetTableParams = {
   table?: string;
 };
 
+export type RuntimeServiceListNotifierConnectorsParams = {
+  instanceId?: string;
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -555,12 +559,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -588,6 +586,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -677,12 +681,23 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export type V1SourceSpecProperties = { [key: string]: any };
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
+}
+
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
-
-export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -700,17 +715,6 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
-}
-
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
 }
 
 export interface V1S3Object {
@@ -773,22 +777,11 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  chart?: V1Chart;
-  dashboard?: V1Dashboard;
-  api?: V1API;
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -814,16 +807,27 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export interface V1RenameFileResponse {
@@ -860,16 +864,6 @@ export interface V1RefreshTriggerSpec {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -933,6 +927,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -1185,11 +1189,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1214,6 +1213,23 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -1275,6 +1291,11 @@ It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
 }
 
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
@@ -1294,23 +1315,6 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1505,6 +1509,11 @@ export interface V1Log {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
+}
+
+export interface V1ListNotifierConnectorsResponse {
+  /** Note: The config property of Connector will always be empty for this API. */
+  connectors?: V1Connector[];
 }
 
 export interface V1ListInstancesResponse {
@@ -2040,7 +2049,9 @@ export interface V1AssertionResult {
 
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
-export type V1AnalyzedConnectorDefaultConfig = { [key: string]: string };
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
 
 export type V1AnalyzedConnectorConfig = { [key: string]: string };
 
@@ -2051,7 +2062,8 @@ export interface V1AnalyzedConnector {
   name?: string;
   driver?: V1ConnectorDriver;
   config?: V1AnalyzedConnectorConfig;
-  defaultConfig?: V1AnalyzedConnectorDefaultConfig;
+  presetConfig?: V1AnalyzedConnectorPresetConfig;
+  projectConfig?: V1AnalyzedConnectorProjectConfig;
   envConfig?: V1AnalyzedConnectorEnvConfig;
   hasAnonymousAccess?: boolean;
   usedBy?: V1ResourceName[];

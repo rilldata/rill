@@ -93,7 +93,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("azure driver does not support shared connections")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}

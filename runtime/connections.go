@@ -3,9 +3,9 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -29,7 +29,7 @@ func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (dr
 
 // AcquireHandle returns instance specific handle
 func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
-	driver, cfg, err := r.connectorConfig(ctx, instanceID, connector)
+	cfg, err := r.ConnectorConfig(ctx, instanceID, connector)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,7 +38,7 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
 		return nil, nil, ctx.Err()
 	}
-	return r.getConnection(ctx, instanceID, driver, cfg, false)
+	return r.getConnection(ctx, instanceID, cfg.Driver, cfg.Resolve(), false)
 }
 
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
@@ -180,106 +180,156 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	return store, release, nil
 }
 
-func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) (string, map[string]any, error) {
+func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) (*ConnectorConfig, error) {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
+	res := &ConnectorConfig{}
+
 	// Search for connector definition in instance
-	var connector *runtimev1.Connector
 	for _, c := range inst.Connectors {
 		if c.Name == name {
-			connector = c
+			res.Driver = c.Type
+			res.Preset = c.Config
 			break
 		}
 	}
 
 	// Search for connector definition in rill.yaml
-	if connector == nil {
-		for _, c := range inst.ProjectConnectors {
-			if c.Name == name {
-				connector = c
-				break
-			}
+	for _, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			res.Driver = c.Type
+			res.Project = c.Config
+			break
 		}
 	}
 
 	// Search for implicit connectors (where the name matches a driver name)
-	if connector == nil {
+	if res.Driver == "" {
 		_, ok := drivers.Drivers[name]
 		if ok {
-			connector = &runtimev1.Connector{
-				Type: name,
-				Name: name,
-			}
+			res.Driver = name
 		}
 	}
 
-	// Return if search for connector was unsuccessful
-	if connector == nil {
-		return "", nil, fmt.Errorf("unknown connector %q", name)
+	// Return if search for connector driver was unsuccessful
+	if res.Driver == "" {
+		return nil, fmt.Errorf("unknown connector %q", name)
 	}
 
-	// Build connector config
-	cfg := make(map[string]any)
-
-	// Apply config from definition
-	for key, value := range connector.Config {
-		cfg[strings.ToLower(key)] = value
-	}
-
-	// Instance variables matching the format "connector.name.var" are applied to the connector config
+	// Build res.Env config based on instance variables matching the format "connector.name.var"
 	vars := inst.ResolveVariables()
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for k, v := range vars {
 		if after, found := strings.CutPrefix(k, prefix); found {
-			cfg[strings.ToLower(after)] = v
+			if res.Env == nil {
+				res.Env = make(map[string]string)
+			}
+			res.Env[after] = v
 		}
 	}
 
 	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
 	// NOTE: This switches on connector.Name, not connector.Type, because this only applies to implicit connectors.
-	switch connector.Name {
+	switch name {
 	case "s3", "athena", "redshift":
-		setIfNil(cfg, "aws_access_key_id", vars["aws_access_key_id"])
-		setIfNil(cfg, "aws_secret_access_key", vars["aws_secret_access_key"])
-		setIfNil(cfg, "aws_session_token", vars["aws_session_token"])
+		res.setPreset("aws_access_key_id", vars["aws_access_key_id"])
+		res.setPreset("aws_secret_access_key", vars["aws_secret_access_key"])
+		res.setPreset("aws_session_token", vars["aws_session_token"])
 	case "azure":
-		setIfNil(cfg, "azure_storage_account", vars["azure_storage_account"])
-		setIfNil(cfg, "azure_storage_key", vars["azure_storage_key"])
-		setIfNil(cfg, "azure_storage_sas_token", vars["azure_storage_sas_token"])
-		setIfNil(cfg, "azure_storage_connection_string", vars["azure_storage_connection_string"])
+		res.setPreset("azure_storage_account", vars["azure_storage_account"])
+		res.setPreset("azure_storage_key", vars["azure_storage_key"])
+		res.setPreset("azure_storage_sas_token", vars["azure_storage_sas_token"])
+		res.setPreset("azure_storage_connection_string", vars["azure_storage_connection_string"])
 	case "gcs":
-		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
+		res.setPreset("google_application_credentials", vars["google_application_credentials"])
 	case "bigquery":
-		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
+		res.setPreset("google_application_credentials", vars["google_application_credentials"])
 	case "motherduck":
-		setIfNil(cfg, "token", vars["token"])
-		setIfNil(cfg, "dsn", "")
-	}
-
-	// Apply built-in connector config
-	cfg["allow_host_access"] = r.opts.AllowHostAccess
-
-	// The "local_file" connector needs to know the repo root.
-	// TODO: This is an ugly hack. But how can we get rid of it?
-	if connector.Name == "local_file" {
+		res.setPreset("token", vars["token"])
+		res.setPreset("dsn", "")
+	case "local_file":
+		// The "local_file" connector needs to know the repo root.
+		// TODO: This is an ugly hack. But how can we get rid of it?
 		if inst.RepoConnector != "local_file" { // The RepoConnector shouldn't be named "local_file", but let's still try to avoid infinite recursion
 			repo, release, err := r.Repo(ctx, instanceID)
 			if err != nil {
-				return "", nil, err
+				return nil, err
 			}
-			cfg["dsn"] = repo.Root()
+			res.setPreset("dsn", repo.Root())
 			release()
 		}
 	}
 
-	return connector.Type, cfg, nil
+	// Apply built-in system-wide config
+	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess))
+
+	// Done
+	return res, nil
 }
 
-func setIfNil(m map[string]any, key string, value any) {
-	if _, ok := m[key]; !ok {
-		m[key] = value
+// ConnectorConfig holds and resolves connector configuration.
+// We support three levels of configuration:
+// 1. Preset: provided when creating the instance (or set by the system, such as allow_host_access)
+// 2. Project: defined in the rill.yaml file
+// 3. Env: defined in the instance's variables (in the format "connector.name.var")
+type ConnectorConfig struct {
+	Driver  string
+	Preset  map[string]string
+	Project map[string]string
+	Env     map[string]string
+}
+
+// Resolve returns the final resolved connector configuration.
+// It guarantees that all keys in the result are lowercase.
+func (c *ConnectorConfig) Resolve() map[string]any {
+	n := len(c.Preset) + len(c.Project) + len(c.Env)
+	if n == 0 {
+		return nil
 	}
+
+	cfg := make(map[string]any, n)
+	for k, v := range c.Preset {
+		cfg[strings.ToLower(k)] = v
+	}
+	for k, v := range c.Project {
+		cfg[strings.ToLower(k)] = v
+	}
+	for k, v := range c.Env {
+		cfg[strings.ToLower(k)] = v
+	}
+	return cfg
+}
+
+// ResolveString is similar to Resolve, but it returns a map of strings.
+func (c *ConnectorConfig) ResolveStrings() map[string]string {
+	n := len(c.Preset) + len(c.Project) + len(c.Env)
+	if n == 0 {
+		return nil
+	}
+
+	cfg := make(map[string]string, n)
+	for k, v := range c.Preset {
+		cfg[strings.ToLower(k)] = v
+	}
+	for k, v := range c.Project {
+		cfg[strings.ToLower(k)] = v
+	}
+	for k, v := range c.Env {
+		cfg[strings.ToLower(k)] = v
+	}
+	return cfg
+}
+
+// setPreset sets a preset value if it's not empty.
+func (c *ConnectorConfig) setPreset(k, v string) {
+	if v == "" {
+		return
+	}
+	if c.Preset == nil {
+		c.Preset = make(map[string]string)
+	}
+	c.Preset[k] = v
 }

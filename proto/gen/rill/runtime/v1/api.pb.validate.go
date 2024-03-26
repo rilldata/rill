@@ -6850,7 +6850,9 @@ func (m *AnalyzedConnector) validate(all bool) error {
 
 	// no validation rules for Config
 
-	// no validation rules for DefaultConfig
+	// no validation rules for PresetConfig
+
+	// no validation rules for ProjectConfig
 
 	// no validation rules for EnvConfig
 
@@ -7449,6 +7451,248 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AnalyzeConnectorsResponseValidationError{}
+
+// Validate checks the field values on ListNotifierConnectorsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListNotifierConnectorsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListNotifierConnectorsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListNotifierConnectorsRequestMultiError, or nil if none found.
+func (m *ListNotifierConnectorsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListNotifierConnectorsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return ListNotifierConnectorsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListNotifierConnectorsRequestMultiError is an error wrapping multiple
+// validation errors returned by ListNotifierConnectorsRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListNotifierConnectorsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListNotifierConnectorsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListNotifierConnectorsRequestMultiError) AllErrors() []error { return m }
+
+// ListNotifierConnectorsRequestValidationError is the validation error
+// returned by ListNotifierConnectorsRequest.Validate if the designated
+// constraints aren't met.
+type ListNotifierConnectorsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListNotifierConnectorsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListNotifierConnectorsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListNotifierConnectorsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListNotifierConnectorsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListNotifierConnectorsRequestValidationError) ErrorName() string {
+	return "ListNotifierConnectorsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListNotifierConnectorsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListNotifierConnectorsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListNotifierConnectorsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListNotifierConnectorsRequestValidationError{}
+
+// Validate checks the field values on ListNotifierConnectorsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListNotifierConnectorsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListNotifierConnectorsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListNotifierConnectorsResponseMultiError, or nil if none found.
+func (m *ListNotifierConnectorsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListNotifierConnectorsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListNotifierConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListNotifierConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListNotifierConnectorsResponseValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListNotifierConnectorsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListNotifierConnectorsResponseMultiError is an error wrapping multiple
+// validation errors returned by ListNotifierConnectorsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListNotifierConnectorsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListNotifierConnectorsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListNotifierConnectorsResponseMultiError) AllErrors() []error { return m }
+
+// ListNotifierConnectorsResponseValidationError is the validation error
+// returned by ListNotifierConnectorsResponse.Validate if the designated
+// constraints aren't met.
+type ListNotifierConnectorsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListNotifierConnectorsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListNotifierConnectorsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListNotifierConnectorsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListNotifierConnectorsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListNotifierConnectorsResponseValidationError) ErrorName() string {
+	return "ListNotifierConnectorsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListNotifierConnectorsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListNotifierConnectorsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListNotifierConnectorsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListNotifierConnectorsResponseValidationError{}
 
 // Validate checks the field values on CatalogEntry with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

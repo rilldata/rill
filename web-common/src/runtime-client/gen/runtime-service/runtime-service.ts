@@ -18,6 +18,8 @@ import type {
   RpcStatus,
   V1AnalyzeConnectorsRequest,
   V1ListConnectorDriversResponse,
+  V1ListNotifierConnectorsResponse,
+  RuntimeServiceListNotifierConnectorsParams,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
   V1IssueDevJWTResponse,
@@ -177,6 +179,69 @@ export const createRuntimeServiceListConnectorDrivers = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+ */
+export const runtimeServiceListNotifierConnectors = (
+  params?: RuntimeServiceListNotifierConnectorsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListNotifierConnectorsResponse>({
+    url: `/v1/connectors/notifiers`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceListNotifierConnectorsQueryKey = (
+  params?: RuntimeServiceListNotifierConnectorsParams,
+) => [`/v1/connectors/notifiers`, ...(params ? [params] : [])];
+
+export type RuntimeServiceListNotifierConnectorsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>
+>;
+export type RuntimeServiceListNotifierConnectorsQueryError =
+  ErrorType<RpcStatus>;
+
+export const createRuntimeServiceListNotifierConnectors = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: RuntimeServiceListNotifierConnectorsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListNotifierConnectorsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>
+  > = ({ signal }) => runtimeServiceListNotifierConnectors(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

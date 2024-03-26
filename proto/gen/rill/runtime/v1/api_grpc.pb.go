@@ -45,6 +45,7 @@ const (
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
+	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListCatalogEntries_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
 	RuntimeService_GetCatalogEntry_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
 	RuntimeService_TriggerRefresh_FullMethodName          = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
@@ -115,6 +116,9 @@ type RuntimeServiceClient interface {
 	ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(ctx context.Context, in *AnalyzeConnectorsRequest, opts ...grpc.CallOption) (*AnalyzeConnectorsResponse, error)
+	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -450,6 +454,15 @@ func (c *runtimeServiceClient) AnalyzeConnectors(ctx context.Context, in *Analyz
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error) {
+	out := new(ListNotifierConnectorsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListNotifierConnectors_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error) {
 	out := new(ListCatalogEntriesResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_ListCatalogEntries_FullMethodName, in, out, opts...)
@@ -590,6 +603,9 @@ type RuntimeServiceServer interface {
 	ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error)
+	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -696,6 +712,9 @@ func (UnimplementedRuntimeServiceServer) ListConnectorDrivers(context.Context, *
 }
 func (UnimplementedRuntimeServiceServer) AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeConnectors not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListNotifierConnectors not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
@@ -1214,6 +1233,24 @@ func _RuntimeService_AnalyzeConnectors_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListNotifierConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListNotifierConnectorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListNotifierConnectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListNotifierConnectors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListNotifierConnectors(ctx, req.(*ListNotifierConnectorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListCatalogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCatalogEntriesRequest)
 	if err := dec(in); err != nil {
@@ -1474,6 +1511,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AnalyzeConnectors",
 			Handler:    _RuntimeService_AnalyzeConnectors_Handler,
+		},
+		{
+			MethodName: "ListNotifierConnectors",
+			Handler:    _RuntimeService_ListNotifierConnectors_Handler,
 		},
 		{
 			MethodName: "ListCatalogEntries",

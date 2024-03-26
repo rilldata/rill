@@ -67,12 +67,19 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
+type configProperties struct {
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
 func (d driver) Open(config map[string]any, shared bool, _ *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("athena driver can't be shared")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -181,11 +188,4 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
-}
-
-type configProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }

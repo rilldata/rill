@@ -2977,22 +2977,27 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
   config: { [key: string]: string } = {};
 
   /**
-   * @generated from field: map<string, string> default_config = 4;
+   * @generated from field: map<string, string> preset_config = 4;
    */
-  defaultConfig: { [key: string]: string } = {};
+  presetConfig: { [key: string]: string } = {};
 
   /**
-   * @generated from field: map<string, string> env_config = 5;
+   * @generated from field: map<string, string> project_config = 5;
+   */
+  projectConfig: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: map<string, string> env_config = 6;
    */
   envConfig: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool has_anonymous_access = 6;
+   * @generated from field: bool has_anonymous_access = 7;
    */
   hasAnonymousAccess = false;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.ResourceName used_by = 7;
+   * @generated from field: repeated rill.runtime.v1.ResourceName used_by = 8;
    */
   usedBy: ResourceName[] = [];
 
@@ -3007,10 +3012,11 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "driver", kind: "message", T: ConnectorDriver },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 4, name: "default_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 5, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "used_by", kind: "message", T: ResourceName, repeated: true },
+    { no: 4, name: "preset_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "project_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 6, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzedConnector {
@@ -3177,6 +3183,86 @@ export class AnalyzeConnectorsResponse extends Message<AnalyzeConnectorsResponse
 
   static equals(a: AnalyzeConnectorsResponse | PlainMessage<AnalyzeConnectorsResponse> | undefined, b: AnalyzeConnectorsResponse | PlainMessage<AnalyzeConnectorsResponse> | undefined): boolean {
     return proto3.util.equals(AnalyzeConnectorsResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListNotifierConnectors
+ *
+ * @generated from message rill.runtime.v1.ListNotifierConnectorsRequest
+ */
+export class ListNotifierConnectorsRequest extends Message<ListNotifierConnectorsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ListNotifierConnectorsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListNotifierConnectorsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListNotifierConnectorsRequest {
+    return new ListNotifierConnectorsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListNotifierConnectorsRequest {
+    return new ListNotifierConnectorsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListNotifierConnectorsRequest {
+    return new ListNotifierConnectorsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListNotifierConnectorsRequest | PlainMessage<ListNotifierConnectorsRequest> | undefined, b: ListNotifierConnectorsRequest | PlainMessage<ListNotifierConnectorsRequest> | undefined): boolean {
+    return proto3.util.equals(ListNotifierConnectorsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListNotifierConnectors
+ *
+ * @generated from message rill.runtime.v1.ListNotifierConnectorsResponse
+ */
+export class ListNotifierConnectorsResponse extends Message<ListNotifierConnectorsResponse> {
+  /**
+   * Note: The config property of Connector will always be empty for this API.
+   *
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 1;
+   */
+  connectors: Connector[] = [];
+
+  constructor(data?: PartialMessage<ListNotifierConnectorsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListNotifierConnectorsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connectors", kind: "message", T: Connector, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListNotifierConnectorsResponse {
+    return new ListNotifierConnectorsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListNotifierConnectorsResponse {
+    return new ListNotifierConnectorsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListNotifierConnectorsResponse {
+    return new ListNotifierConnectorsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListNotifierConnectorsResponse | PlainMessage<ListNotifierConnectorsResponse> | undefined, b: ListNotifierConnectorsResponse | PlainMessage<ListNotifierConnectorsResponse> | undefined): boolean {
+    return proto3.util.equals(ListNotifierConnectorsResponse, a, b);
   }
 }
 
