@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import DashboardMenuItems from "@rilldata/web-common/features/dashboards/DashboardMenuItems.svelte";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -68,6 +69,13 @@
     $sourceNames?.data?.length > 0 &&
     $modelNames?.data?.length > 0 &&
     $dashboardNames?.data?.length === 0;
+
+  let showGenerateChartModal = false;
+  let generateChartMetricsView = "";
+  function openGenerateChartModal(metricsView: string) {
+    showGenerateChartModal = true;
+    generateChartMetricsView = metricsView;
+  }
 </script>
 
 <div class="h-fit flex flex-col">
@@ -88,6 +96,7 @@
                 slot="menu-items"
                 metricsViewName={dashboardName}
                 on:rename={() => openRenameMetricsDefModal(dashboardName)}
+                on:generate-chart={() => openGenerateChartModal(dashboardName)}
               />
             </NavigationEntry>
           </li>
@@ -110,5 +119,12 @@
     entityType={EntityType.MetricsDefinition}
     closeModal={() => (showRenameMetricsDefinitionModal = false)}
     currentAssetName={renameMetricsDefName}
+  />
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    metricsView={generateChartMetricsView}
   />
 {/if}

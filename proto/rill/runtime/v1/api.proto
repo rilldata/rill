@@ -3,6 +3,7 @@ package rill.runtime.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
@@ -115,6 +116,22 @@ service RuntimeService {
   rpc GenerateMetricsViewFile(GenerateMetricsViewFileRequest) returns (GenerateMetricsViewFileResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/files/generate-metrics-view",
+      body: "*"
+    };
+  }
+
+  // GenerateResolver generates resolver and resolver properties from a table or a metrics view
+  rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate/resolver",
+      body: "*"
+    };
+  }
+
+  // GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+  rpc GenerateChartSpec(GenerateChartSpecRequest) returns (GenerateChartSpecResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate/chart",
       body: "*"
     };
   }
@@ -495,6 +512,32 @@ message GenerateMetricsViewFileRequest {
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
   bool ai_succeeded = 1;
+}
+
+message GenerateResolverRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string prompt = 2;
+  // Both connector and table must be specified if metrics_view is not.
+  string connector = 3;
+  string table = 4;
+  // table and connector should not be provided if metrics_view is provided.
+  string metrics_view = 5;
+}
+
+message GenerateResolverResponse {
+  string resolver = 1;
+  google.protobuf.Struct resolver_properties = 2;
+}
+
+message GenerateChartSpecRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string prompt = 2;
+  string resolver = 3;
+  google.protobuf.Struct resolver_properties = 4;
+}
+
+message GenerateChartSpecResponse {
+  string vega_lite_spec = 2;
 }
 
 // **********

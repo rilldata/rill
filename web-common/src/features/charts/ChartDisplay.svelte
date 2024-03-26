@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -41,11 +42,13 @@
 </script>
 
 <div class="m-2 w-1/2">
-  {#if error}
-    <p>{error}</p>
-  {:else if !parsedVegaSpec}
-    <p>Chart not available</p>
-  {:else}
-    <VegaLiteRenderer {data} spec={parsedVegaSpec} />
-  {/if}
+  <ChartPromptStatusDisplay {chartName}>
+    {#if error}
+      <p>{error}</p>
+    {:else if !parsedVegaSpec}
+      <p>Chart not available</p>
+    {:else}
+      <VegaLiteRenderer {data} spec={parsedVegaSpec} />
+    {/if}
+  </ChartPromptStatusDisplay>
 </div>
