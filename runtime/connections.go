@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -192,7 +193,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.Connectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Preset = c.Config
+			res.Preset = maps.Clone(c.Config)
 			break
 		}
 	}
@@ -201,7 +202,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Project = c.Config
+			res.Project = maps.Clone(c.Config)
 			break
 		}
 	}

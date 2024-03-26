@@ -170,10 +170,10 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 }
 
 func driverIsNotifier(driver string) bool {
-	_, ok := drivers.Connectors[driver]
+	connector, ok := drivers.Connectors[driver]
 	if !ok {
 		return false
 	}
 
-	return false // TODO: Replace with connector.Spec().ImplementsNotifier when this PR merges: https://github.com/rilldata/rill/pull/4371
+	return connector.Spec().ImplementsAdmin // TODO: Replace with ImplementsNotifier when this PR merges: https://github.com/rilldata/rill/pull/4371
 }
