@@ -1,3 +1,9 @@
+<script lang="ts" context="module">
+  import { writable } from "svelte/store";
+
+  export const hasUnsavedChanges = writable(false);
+</script>
+
 <script lang="ts">
   import {
     acceptCompletion,
@@ -54,8 +60,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
-  import { beforeNavigate, goto } from "$app/navigation";
-  import UnsavedSourceDialog from "../../sources/editor/UnsavedSourceDialog.svelte";
+
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -79,12 +84,12 @@
   const schema: { [table: string]: string[] } = {};
 
   let lastSavedContent = content;
-  let interceptedUrl: string | null = null;
+
   let editor: EditorView;
   let editorContainerComponent: HTMLDivElement;
   let autocompleteCompartment = new Compartment();
 
-  $: hasUnsavedChanges = content !== lastSavedContent;
+  $: hasUnsavedChanges.set(content !== lastSavedContent);
 
   // Autocomplete: source tables
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
@@ -293,11 +298,6 @@
     dispatch("update", { content });
   }
 
-  function revertContent() {
-    updateEditorContents(lastSavedContent);
-    hasUnsavedChanges = false;
-  }
-
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -305,24 +305,9 @@
     }
   }
 
-  beforeNavigate((e) => {
-    if (hasUnsavedChanges && e.to) {
-      interceptedUrl = e.to.url.href;
-      e.cancel();
-    }
-  });
-
-  async function handleConfirm() {
-    revertContent();
-
-    if (interceptedUrl) {
-      await goto(interceptedUrl);
-      interceptedUrl = null;
-    }
-  }
-
-  function handleCancel() {
-    interceptedUrl = null;
+  function revertContent() {
+    updateEditorContents(lastSavedContent);
+    $hasUnsavedChanges = false;
   }
 </script>
 
@@ -348,14 +333,14 @@
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave}
-        <Button disabled={!hasUnsavedChanges} on:click={saveContent}>
+        <Button disabled={!$hasUnsavedChanges} on:click={saveContent}>
           <Check size="14px" />
           Save
         </Button>
 
         <Button
           type="text"
-          disabled={!hasUnsavedChanges}
+          disabled={!$hasUnsavedChanges}
           on:click={revertContent}
         >
           <UndoIcon size="14px" />
@@ -369,14 +354,6 @@
     </div>
   </footer>
 </section>
-
-{#if interceptedUrl}
-  <UnsavedSourceDialog
-    context="model"
-    on:confirm={handleConfirm}
-    on:cancel={handleCancel}
-  />
-{/if}
 
 <style lang="postcss">
   .editor-container {
