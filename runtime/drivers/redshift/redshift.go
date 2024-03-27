@@ -16,10 +16,20 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Amazon Redshift",
-	Description:        "Connect to Amazon Redshift database.",
-	ServiceAccountDocs: "",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Amazon Redshift",
+	Description: "Connect to Amazon Redshift database.",
+	DocsURL:     "",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "aws_access_key_id",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -77,26 +87,24 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "aws_access_key_id",
-			Secret: true,
-		},
-		{
-			Key:    "aws_secret_access_key",
-			Secret: true,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}
+
+type configProperties struct {
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
 
 func (d driver) Open(config map[string]any, shared bool, _ *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("redshift driver can't be shared")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -205,11 +213,4 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsAI implements drivers.Handle.
 func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
-}
-
-type configProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }

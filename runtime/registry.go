@@ -84,7 +84,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 	// For idempotency, it's ok for some steps to fail
 
 	// Get OLAP info for dropOLAP
-	olapDriver, olapCfg, err := r.connectorConfig(ctx, instanceID, inst.ResolveOLAPConnector())
+	olapCfg, err := r.ConnectorConfig(ctx, instanceID, inst.ResolveOLAPConnector())
 	if err != nil {
 		r.logger.Error("delete instance: error getting config", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
@@ -99,14 +99,14 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 	<-completed
 
 	// If dropOLAP isn't set, let it default to true for DuckDB
-	if dropOLAP == nil && olapDriver == "duckdb" {
+	if dropOLAP == nil && olapCfg.Driver == "duckdb" {
 		d := true
 		dropOLAP = &d
 	}
 
 	// Can now drop the OLAP
 	if dropOLAP != nil && *dropOLAP {
-		err = drivers.Drop(olapDriver, olapCfg, r.logger)
+		err = drivers.Drop(olapCfg.Driver, olapCfg.Resolve(), r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
