@@ -17,7 +17,7 @@
   export let sourceName: string;
 
   const queryClient = useQueryClient();
-  const sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(sourceName);
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 

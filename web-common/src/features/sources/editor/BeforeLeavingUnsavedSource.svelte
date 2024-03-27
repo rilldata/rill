@@ -14,7 +14,7 @@ https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037 -->
 
   export let sourceName: string;
 
-  const sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(sourceName);
 
   let interceptedNavigation: string | null = null;
 
