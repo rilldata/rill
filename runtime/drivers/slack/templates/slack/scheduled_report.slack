@@ -7,7 +7,3 @@ Your report for *{{ .ReportTimeString }}* is ready to view.
 Or <{{ .DownloadLink }}|download the {{ .DownloadFormat }} file> directly.
 
 To edit or unsubscribe from this report, <{{ .EditLink }}|click here>.
-
-© 2023 Rill Data, Inc
-18 Bartol St., San Francisco, CA
-<https://www.rilldata.com/contact|Contact us> • <https://bit.ly/3unvA05|Community> • <https://www.rilldata.com/legal/privacy|Privacy Policy>
