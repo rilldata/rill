@@ -61,7 +61,9 @@ export default async function exportPivot({
           }),
           metricsView,
           offset: "0",
-          pivotOn: columns.dimension.map((d) => d.id),
+          pivotOn: columns.dimension.map((d) =>
+            d.type === PivotChipType.Time ? (timeDimension as string) : d.id,
+          ),
           sort: undefined, // future work
           timeRange: {
             start: selectedTimeRange?.start.toISOString(),
