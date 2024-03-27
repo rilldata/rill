@@ -13,11 +13,13 @@
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
+  import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { IconButton } from "@rilldata/web-common/components/button";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { Tag } from "@rilldata/web-common/components/tag";
   import EditAlertDialog from "@rilldata/web-common/features/alerts/EditAlertDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -40,13 +42,13 @@
   $: dashboardTitle =
     $dashboard.data?.metricsView.spec.title || $dashboardName.data;
 
+  $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
+
   $: metricsViewAggregationRequest = JSON.parse(
-    $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
+    alertSpec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
 
-  $: snoozeLabel = humaniseAlertSnoozeOption(
-    $alertQuery.data?.resource?.alert?.spec,
-  );
+  $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
   // Actions
   const queryClient = useQueryClient();
@@ -71,7 +73,7 @@
   }
 </script>
 
-{#if $alertQuery.data?.resource?.alert?.spec}
+{#if alertSpec}
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
@@ -83,9 +85,7 @@
               <AlertOwnerBlock
                 {organization}
                 {project}
-                ownerId={$alertQuery.data.resource.alert.spec.annotations[
-                  "admin_owner_user_id"
-                ]}
+                ownerId={alertSpec.annotations["admin_owner_user_id"]}
               />
             {/if}
           </svelte:fragment>
@@ -93,7 +93,7 @@
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-700 text-lg font-bold">
-          {$alertQuery.data.resource.alert.spec.title}
+          {alertSpec.title}
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
@@ -159,17 +159,31 @@
       filters={metricsViewAggregationRequest?.having}
     />
 
-    <!-- Recipients -->
-    <EmailRecipients
-      emailRecipients={$alertQuery.data.resource.alert.spec.emailRecipients}
-    />
+    <!-- Slack notification -->
+    {#if !!alertSpec.slackChannels.length || !!alertSpec.slackEmails.length}
+      <MetadataList
+        data={[
+          ...(alertSpec.slackChannels ?? []),
+          ...(alertSpec.slackEmails ?? []),
+        ]}
+        label="Slack notifications"
+      />
+    {/if}
+
+    <!-- Email notifications -->
+    {#if alertSpec.emailRecipients.length}
+      <MetadataList
+        data={alertSpec.emailRecipients ?? []}
+        label="Email notifications"
+      />
+    {/if}
   </div>
 {/if}
 
 {#if $alertQuery.data && $dashboard.data?.metricsView.spec}
   <EditAlertDialog
     open={showEditAlertDialog}
-    alertSpec={$alertQuery.data.resource.alert.spec}
+    {alertSpec}
     on:close={() => (showEditAlertDialog = false)}
     metricsViewName={$dashboardName.data}
   />

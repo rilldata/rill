@@ -9,8 +9,6 @@
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
-
-  $: console.log($form);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -48,7 +46,7 @@
       addItemLabel="Add user"
       description="We’ll alert them with direct messages in Slack."
       {formState}
-      id="slackRecipients"
+      id="slackEmails"
       label="Users"
       placeholder="Enter an email address"
     />

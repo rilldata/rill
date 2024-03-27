@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
+  import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -161,8 +161,9 @@
     </div>
 
     <!-- Recipients -->
-    <EmailRecipients
-      emailRecipients={$reportQuery.data.resource.report.spec.emailRecipients}
+    <MetadataList
+      data={$reportQuery.data.resource.report.spec.emailRecipients}
+      label="Recipients"
     />
   </div>
 {/if}

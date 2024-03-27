@@ -75,11 +75,15 @@ export function extractAlertNotification(
   return {
     enableSlackNotification:
       !!alertSpec.slackChannels?.length || !!alertSpec.slackEmails?.length,
-    slackChannels:
-      alertSpec.slackChannels?.map((channel) => ({ channel })) ?? [],
-    slackEmails: alertSpec.slackEmails?.map((email) => ({ email })) ?? [],
+    slackChannels: mapAndAddEmptyEntry(alertSpec.slackChannels, "channel"),
+    slackEmails: mapAndAddEmptyEntry(alertSpec.slackEmails, "email"),
     enableEmailNotification: !!alertSpec.emailRecipients?.length,
-    emailRecipients:
-      alertSpec.emailRecipients?.map((email) => ({ email })) ?? [],
+    emailRecipients: mapAndAddEmptyEntry(alertSpec.emailRecipients, "email"),
   };
+}
+
+function mapAndAddEmptyEntry<R>(entries: string[] | undefined, key: string): R {
+  const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
+  mappedEntries.push({ [key]: "" });
+  return mappedEntries as R;
 }
