@@ -2,9 +2,9 @@ import type { RpcStatus } from "@rilldata/web-admin/client";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
+  MetricsEventScreenName,
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
-import type { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Query } from "@tanstack/query-core";
 import type { AxiosError } from "axios";
 import type {
@@ -108,10 +108,8 @@ export class ErrorEventHandler {
     message: string,
     screenName: MetricsEventScreenName,
   ) {
-    if (this.isDev) {
-      console.log("httpErrorEvent", screenName, api, status, message);
-      return;
-    }
+    if (this.isDev) return;
+
     return this.metricsService.dispatch("httpErrorEvent", [
       this.commonUserMetrics,
       screenName,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -43,6 +44,15 @@
     $sourceNames?.data?.length !== undefined &&
     $sourceNames?.data?.length > 0 &&
     modelNames.length === 0;
+
+  let showGenerateChartModal = false;
+  let generateChartTable = "";
+  let generateChartConnector = "";
+  function openGenerateChartModal(tableName: string, connector: string) {
+    showGenerateChartModal = true;
+    generateChartTable = tableName;
+    generateChartConnector = connector;
+  }
 </script>
 
 <div class="flex flex-col h-fit gap-0">
@@ -70,6 +80,9 @@
               on:rename-asset={() => {
                 openRenameModelModal(modelName);
               }}
+              on:generate-chart={({ detail: { table, connector } }) => {
+                openGenerateChartModal(table, connector);
+              }}
             />
           </NavigationEntry>
         </li>
@@ -89,5 +102,13 @@
     entityType={EntityType.Model}
     closeModal={() => (showRenameModelModal = false)}
     currentAssetName={renameModelName.replace(".sql", "")}
+  />
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    table={generateChartTable}
+    connector={generateChartConnector}
   />
 {/if}
