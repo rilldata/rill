@@ -19,7 +19,7 @@ export default async function exportPivot({
   ctx: StateManagers;
   query: ReturnType<typeof createQueryServiceExport>;
   format: V1ExportFormat;
-  timeDimension: string;
+  timeDimension: string | undefined;
 }) {
   const metricsView = get(ctx.metricsViewName);
   const dashboard = get(ctx.dashboardStore);

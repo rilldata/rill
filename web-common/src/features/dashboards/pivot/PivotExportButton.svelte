@@ -23,8 +23,7 @@
       ctx,
       query: exportDash,
       format,
-      timeDimension: $metricsView.data?.metricsView?.spec
-        ?.timeDimension as string,
+      timeDimension: $metricsView.data?.metricsView?.spec?.timeDimension,
     });
   }
 </script>
