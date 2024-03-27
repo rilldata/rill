@@ -50,7 +50,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM information_schema.tables T 
 		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
 		WHERE T.table_schema = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 
 		rows, err := conn.QueryxContext(ctx, q, database)
@@ -87,7 +87,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		FROM information_schema.tables T 
 		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
 		WHERE T.table_schema = currentDatabase() AND T.table_name = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 		args = append(args, name)
 	} else {
@@ -102,7 +102,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		FROM information_schema.tables T 
 		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
 		WHERE T.table_schema = ? AND T.table_name = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 		if db == "" {
 			args = append(args, schema, name)
