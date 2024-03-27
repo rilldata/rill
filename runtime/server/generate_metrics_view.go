@@ -380,7 +380,7 @@ type metricsViewYAML struct {
 	Title              string                      `yaml:"title,omitempty"`
 	Connector          string                      `yaml:"connector,omitempty"`
 	Database           string                      `yaml:"database,omitempty"`
-	Schema             string                      `yaml:"schema,omitempty"`
+	Schema             string                      `yaml:"db_schema,omitempty"`
 	Table              string                      `yaml:"table,omitempty"`
 	Model              string                      `yaml:"model,omitempty"`
 	TimeDimension      string                      `yaml:"timeseries,omitempty"`
