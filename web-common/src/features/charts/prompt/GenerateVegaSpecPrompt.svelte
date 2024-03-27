@@ -14,8 +14,8 @@
   $: generateVegaConfig = createChartGenerator($runtime.instanceId, chart);
 
   async function createVegaConfig() {
-    await generateVegaConfig(prompt);
     open = false;
+    await generateVegaConfig(prompt);
   }
 </script>
 

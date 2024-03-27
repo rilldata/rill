@@ -76,6 +76,8 @@
 
   $: tableVisible = workspaceLayout.table.visible;
 
+  $: autoSave = workspaceLayout.editor.autoSave;
+
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
@@ -128,9 +130,10 @@
     <WorkspaceEditorContainer>
       <Editor
         content={modelSql}
+        bind:autoSave={$autoSave}
         {selections}
+        on:update={debounceUpdateModelContent}
         focusOnMount={focusEditorOnMount}
-        on:write={debounceUpdateModelContent}
       />
     </WorkspaceEditorContainer>
   {/if}

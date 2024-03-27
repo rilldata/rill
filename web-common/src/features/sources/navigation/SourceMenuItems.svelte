@@ -160,7 +160,7 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-{#if customDashboards}
+{#if $customDashboards}
   <NavigationMenuItem
     disabled={disableCreateDashboard}
     on:click={() => {
