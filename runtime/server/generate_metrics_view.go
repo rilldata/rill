@@ -65,7 +65,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	defer release()
 
 	// Get table info
-	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.Schema, req.Table)
+	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DbSchema, req.Table)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
 	}

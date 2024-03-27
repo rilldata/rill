@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import { BellIcon } from "lucide-svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
@@ -15,8 +15,8 @@
 </script>
 
 <a href={`alerts/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
-  <div class="flex gap-x-2 items-center">
-    <AlertCircleOutline size={"14px"} className="text-slate-500" />
+  <div class="flex gap-x-2 items-center text-slate-500">
+    <BellIcon size="14px" />
     <div
       class="text-gray-700 text-sm font-semibold group-hover:text-primary-600"
     >

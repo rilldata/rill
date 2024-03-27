@@ -182,6 +182,8 @@ Your output should consist of valid SQL in the format below:
 `
 }
 
+var aggregateCorrections = regexp.MustCompile(`(?i)AGGREGATE(.*?)\s*AS\s*`)
+
 // generateResolverForMetricsView uses AI to generate a MetricsSQL resolver
 func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID, userPrompt, metricsView, dialect string, schema *runtimev1.StructType) (string, map[string]interface{}, error) {
 	// Build messages
@@ -214,6 +216,10 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	// Remove the trailing semicolon
 	res.Data = semiColonRegex.ReplaceAllString(res.Data, "")
 
+	// Asking chatgpt to not add aggregations is not always honoured.
+	// It is more consistent to ask it to wrap with AGGREGATE and strip it.
+	res.Data = aggregateCorrections.ReplaceAllString(res.Data, "")
+
 	return "metrics_sql", map[string]interface{}{
 		"sql": res.Data,
 	}, nil
@@ -222,8 +228,9 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 func resolverForMetricsViewSystemPrompt() string {
 	return `
 You are an agent whose only task is to suggest an SQL query to get data based on a table schema.
-Wrap aggregations with "AGGREGATE" and do not add column alias, EG: AGGREGATE(impressions).
+Wrap aggregations with "AGGREGATE", EG: AGGREGATE(impressions).
 Do not use any complex aggregations and do not use WHERE or FILTER.
+Do not add GROUP BY.
 
 Your output should consist of valid SQL in the format below:
 

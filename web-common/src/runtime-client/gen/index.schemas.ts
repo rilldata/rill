@@ -373,7 +373,7 @@ export type RuntimeServiceRenameFileBody = {
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
   database?: string;
-  schema?: string;
+  dbSchema?: string;
   table?: string;
   path?: string;
   useAi?: boolean;
