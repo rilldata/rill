@@ -61,7 +61,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
-	github.com/marcboeker/go-duckdb v1.6.1
+	github.com/marcboeker/go-duckdb v1.6.2
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.17.0
@@ -306,7 +306,5 @@ require (
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
-
-replace github.com/marcboeker/go-duckdb v1.6.1 => github.com/marcboeker/go-duckdb v1.6.2-0.20240306201053-e8cb5bc6a136
 
 exclude modernc.org/sqlite v1.18.1

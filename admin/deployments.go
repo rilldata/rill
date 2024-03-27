@@ -59,7 +59,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		Name: "duckdb",
 		Type: "duckdb",
 		Config: map[string]string{
-			"dsn":                    fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "primary")),
+			"dsn":                    fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main")),
 			"cpu":                    strconv.Itoa(alloc.CPU),
 			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
 			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
