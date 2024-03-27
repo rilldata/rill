@@ -55,7 +55,7 @@
 >
   <div
     id="header"
-    class="border-b w-full flex flex-col bg-slate-50 pl-4 slide"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 pl-4 slide"
     class:left-shift={extraLeftPadding}
   >
     {#if isRillDeveloper}

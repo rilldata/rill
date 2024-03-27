@@ -4,6 +4,7 @@
     return {
       subscribe: store.subscribe,
       toggle: () => store.update((open) => !open),
+      set: store.set,
     };
   })();
 </script>
