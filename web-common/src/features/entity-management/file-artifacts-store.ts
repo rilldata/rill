@@ -189,12 +189,6 @@ export class FileArtifact {
 
 export class FileArtifactsStore {
   /**
-   * Map of all files and whether it is reconciling or not.
-   * If an entry is present here then there should be on in {@link artifacts} as well
-   */
-  public readonly files = writable<Record<string, boolean>>({});
-
-  /**
    * Map of all files and its individual store
    */
   private readonly artifacts: Record<string, FileArtifact> = {};

@@ -1,6 +1,5 @@
 <script lang="ts">
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
@@ -8,7 +7,6 @@
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
@@ -23,8 +21,6 @@
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
 
-  const queryClient = useQueryClient();
-
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
     await initMetrics(config);
@@ -38,8 +34,6 @@
       version: config.version,
       commitHash: config.build_commit,
     });
-
-    return fileArtifactsStore.init(queryClient, config.instance_id);
   });
 
   let showDropOverlay = false;
