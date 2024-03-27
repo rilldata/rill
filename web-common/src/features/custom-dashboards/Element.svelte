@@ -6,7 +6,7 @@
   import ResizeHandle from "./ResizeHandle.svelte";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
-
+  import { goto } from "$app/navigation";
   const zIndex = writable(0);
 
   const options = [0, 0.5, 1];
@@ -87,7 +87,13 @@
   <ContextMenu.Content class="z-[100]">
     <ContextMenu.Item>Copy</ContextMenu.Item>
     <ContextMenu.Item>Delete</ContextMenu.Item>
-    <ContextMenu.Item>Go to {chartName}.yaml</ContextMenu.Item>
+    <ContextMenu.Item
+      on:click={async () => {
+        await goto(`/chart/${chartName}`);
+      }}
+    >
+      Go to {chartName}.yaml
+    </ContextMenu.Item>
     <ContextMenu.Item>Show details</ContextMenu.Item>
   </ContextMenu.Content>
 </ContextMenu.Root>
