@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -15,7 +16,7 @@ import (
 type TableColumns struct {
 	Connector string
 	TableName string
-	Result    []*runtimev1.ProfileColumn
+	Result    *runtimev1.TableColumnsResponse
 }
 
 var _ runtime.Query = &TableColumns{}
@@ -33,9 +34,15 @@ func (q *TableColumns) Deps() []*runtimev1.ResourceName {
 
 func (q *TableColumns) MarshalResult() *runtime.QueryResult {
 	var size int64
-	if len(q.Result) > 0 {
+	if len(q.Result.ProfileColumns) > 0 {
 		// approx
-		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+		size = sizeProtoMessage(q.Result.ProfileColumns[0]) * int64(len(q.Result.ProfileColumns))
+	}
+	if len(q.Result.UnsupportedColumns) > 0 {
+		r, err := json.Marshal(q.Result.UnsupportedColumns)
+		if err == nil { // ignore error
+			size += int64(len(r))
+		}
 	}
 	return &runtime.QueryResult{
 		Value: q.Result,
@@ -44,7 +51,7 @@ func (q *TableColumns) MarshalResult() *runtime.QueryResult {
 }
 
 func (q *TableColumns) UnmarshalResult(v any) error {
-	res, ok := v.([]*runtimev1.ProfileColumn)
+	res, ok := v.(*runtimev1.TableColumnsResponse)
 	if !ok {
 		return fmt.Errorf("TableColumns: mismatched unmarshal input")
 	}
@@ -109,7 +116,9 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 				i++
 			}
 
-			q.Result = pcs[0:i]
+			q.Result = &runtimev1.TableColumnsResponse{
+				ProfileColumns: pcs[0:i],
+			}
 			return nil
 		})
 	case drivers.DialectClickHouse, drivers.DialectDruid:
@@ -118,9 +127,12 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			return err
 		}
 
-		q.Result = make([]*runtimev1.ProfileColumn, len(tbl.Schema.Fields))
+		q.Result = &runtimev1.TableColumnsResponse{
+			ProfileColumns:     make([]*runtimev1.ProfileColumn, len(tbl.Schema.Fields)),
+			UnsupportedColumns: tbl.UnsupportedCols,
+		}
 		for i := 0; i < len(tbl.Schema.Fields); i++ {
-			q.Result[i] = &runtimev1.ProfileColumn{
+			q.Result.ProfileColumns[i] = &runtimev1.ProfileColumn{
 				Name: tbl.Schema.Fields[i].Name,
 				Type: tbl.Schema.Fields[i].Type.Code.String(),
 			}

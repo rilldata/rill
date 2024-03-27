@@ -12607,6 +12607,8 @@ func (m *TableColumnsResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for UnsupportedColumns
+
 	if len(errors) > 0 {
 		return TableColumnsResponseMultiError(errors)
 	}
