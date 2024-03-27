@@ -28,8 +28,8 @@ export class FileArtifact {
   public readonly reconciling = writable<boolean>(false);
 
   /**
-   * Last time the state of the resource `kind/name` was updated
-   * Used to make sure we do not have unnecessary refreshes of components and resource API.
+   * Last time the state of the resource `kind/name` was updated.
+   * This is updated in watch-resources and is used there to avoid unnecessary calls to GetResource API.
    */
   public lastStateUpdatedOn: string | undefined;
 
@@ -187,7 +187,7 @@ export class FileArtifact {
   }
 }
 
-export class FileArtifactsStore {
+export class FileArtifacts {
   /**
    * Map of all files and its individual store
    */
@@ -294,4 +294,4 @@ export class FileArtifactsStore {
   }
 }
 
-export const fileArtifactsStore = new FileArtifactsStore();
+export const fileArtifacts = new FileArtifacts();

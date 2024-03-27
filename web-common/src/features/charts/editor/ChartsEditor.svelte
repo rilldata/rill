@@ -7,7 +7,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -28,7 +28,7 @@
 
   $: filePath = getFilePathFromNameAndType(chartName, EntityType.Chart);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   // get the yaml blob from the file.
   $: yaml = $fileQuery.data?.blob || "";

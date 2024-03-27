@@ -1,6 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { startWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
   import { startWatchResourcesClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
   import { retainFeaturesFlags } from "@rilldata/web-common/features/feature-flags";
@@ -26,7 +26,7 @@
     const stopWatchResourcesClient = startWatchResourcesClient(queryClient);
     const stopJavascriptErrorListeners =
       errorEventHandler?.addJavascriptErrorListeners();
-    void fileArtifactsStore.init(queryClient, "default");
+    void fileArtifacts.init(queryClient, "default");
 
     return () => {
       stopWatchFilesClient();

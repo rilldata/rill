@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import type { SelectionRange } from "@codemirror/state";
@@ -48,7 +48,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(modelPath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 

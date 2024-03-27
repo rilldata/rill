@@ -1,4 +1,4 @@
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
@@ -81,7 +81,7 @@ async function invalidateResource(
   if (!resource.meta) return;
   void refreshResource(queryClient, instanceId, resource);
 
-  const lastStateUpdatedOn = fileArtifactsStore.getFileArtifact(
+  const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
     resource.meta?.filePaths?.[0] ?? "",
   ).lastStateUpdatedOn;
   if (
@@ -90,7 +90,7 @@ async function invalidateResource(
   ) {
     // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
     // So handle the case when it is 1st queued and status != IDLE
-    fileArtifactsStore.updateLastUpdated(resource);
+    fileArtifacts.updateLastUpdated(resource);
     return;
   }
 
@@ -101,7 +101,7 @@ async function invalidateResource(
   )
     return;
 
-  fileArtifactsStore.updateArtifacts(resource);
+  fileArtifacts.updateArtifacts(resource);
   const failed = !!resource.meta.reconcileError;
 
   const name = resource.meta?.name?.name ?? "";
@@ -135,7 +135,7 @@ function invalidateRemovedResource(
       "name.kind": resource.meta?.name?.kind,
     }),
   );
-  fileArtifactsStore.deleteResource(resource);
+  fileArtifacts.deleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
   // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource?.meta?.name?.kind) {
@@ -169,7 +169,7 @@ function shouldSkipResource(
     case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
     case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
       void refreshResource(queryClient, instanceId, res);
-      fileArtifactsStore.updateReconciling(res);
+      fileArtifacts.updateReconciling(res);
       return true;
   }
 

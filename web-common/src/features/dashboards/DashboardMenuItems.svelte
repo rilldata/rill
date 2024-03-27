@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -35,7 +35,7 @@
     metricsViewName,
     EntityType.MetricsDefinition,
   );
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();

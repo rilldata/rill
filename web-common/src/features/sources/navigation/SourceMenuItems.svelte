@@ -9,7 +9,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -46,7 +46,7 @@
   export let sourceName: string;
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 

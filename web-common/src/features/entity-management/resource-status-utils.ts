@@ -1,4 +1,4 @@
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
@@ -17,7 +17,7 @@ export function resourceStatusStore(
   instanceId: string,
   filePath: string,
 ) {
-  const artifact = fileArtifactsStore.getFileArtifact(filePath);
+  const artifact = fileArtifacts.getFileArtifact(filePath);
   const lastUpdatedOn = artifact.lastStateUpdatedOn;
   return derived(
     [

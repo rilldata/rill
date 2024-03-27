@@ -8,7 +8,7 @@
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -29,7 +29,7 @@
     metricViewName,
     EntityType.MetricsDefinition,
   );
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {

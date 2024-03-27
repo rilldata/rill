@@ -8,7 +8,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     resourceIsLoading,
     useAllNames,
@@ -62,7 +62,7 @@
 
   export let sourceName: string;
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 

@@ -4,7 +4,7 @@
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -37,7 +37,7 @@
     metricsDefName,
     EntityType.MetricsDefinition,
   );
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -17,7 +17,7 @@
   let containerWidth: number;
 
   $: filePath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: fileArtifact = fileArtifactsStore.getFileArtifact(filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: modelQuery = useModel($runtime?.instanceId, modelName);
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
