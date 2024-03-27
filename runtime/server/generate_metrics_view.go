@@ -93,7 +93,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Database, tbl.DatabaseSchema, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, model != nil)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
@@ -150,7 +150,9 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, db, dbSchema, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
+	schema := tbl.Schema
+	tblName := tbl.Name
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
@@ -195,15 +197,15 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			doc.Connector = connector
 		}
 		doc.Table = tblName
-		doc.Database = db
-		doc.Schema = dbSchema
+		doc.Database = tbl.Database
+		doc.Schema = tbl.DatabaseSchema
 	}
 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
 	spec := &runtimev1.MetricsViewSpec{
 		Connector: connector,
-		Database:  db,
-		Schema:    dbSchema,
+		Database:  tbl.Database,
+		Schema:    tbl.DatabaseSchema,
 		Table:     tblName,
 	}
 	for _, measure := range doc.Measures {

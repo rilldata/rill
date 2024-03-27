@@ -237,6 +237,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	for i, table := range tables {
 		res[i] = &runtimev1.TableInfo{
 			Database: table.Database,
+			Schema:   table.DatabaseSchema,
 			Name:     table.Name,
 		}
 	}

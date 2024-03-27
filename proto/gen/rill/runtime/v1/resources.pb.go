@@ -1393,9 +1393,9 @@ type MetricsViewSpec struct {
 
 	// Connector containing the table
 	Connector string `protobuf:"bytes,1,opt,name=connector,proto3" json:"connector,omitempty"`
-	// Name of the database of the table (optional)
+	// Name of the database in which the table is located (optional)
 	Database string `protobuf:"bytes,21,opt,name=database,proto3" json:"database,omitempty"`
-	// Name of the schema of the table (optional)
+	// Name of the schema in which the table is located (optional)
 	Schema string `protobuf:"bytes,22,opt,name=schema,proto3" json:"schema,omitempty"`
 	// Name of the table the metrics view is based on
 	Table string `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty"`

@@ -21,9 +21,9 @@ type MetricsViewYAML struct {
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
 	Description        string           `yaml:"description"`
 	Model              string           `yaml:"model"`
-	Table              string           `yaml:"table"`
-	Schema             string           `yaml:"schema"`
 	Database           string           `yaml:"database"`
+	Schema             string           `yaml:"schema"`
+	Table              string           `yaml:"table"`
 	TimeDimension      string           `yaml:"timeseries"`
 	Watermark          string           `yaml:"watermark"`
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
