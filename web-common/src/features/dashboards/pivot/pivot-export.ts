@@ -40,7 +40,7 @@ export default async function exportPivot({
       format,
       query: {
         metricsViewAggregationRequest: {
-          dimensions: rows.dimension.map((d) =>
+          dimensions: [...rows.dimension, ...columns.dimension].map((d) =>
             d.type === PivotChipType.Time
               ? {
                   name: timeDimension,
