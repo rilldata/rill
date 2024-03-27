@@ -186,7 +186,7 @@ func supportedColumns(ctx context.Context, olap drivers.OLAPStore, tblName strin
 	}
 	var columns []string
 	for _, field := range tbl.Schema.Fields {
-		columns = append(columns, field.Name)
+		columns = append(columns, safeName(field.Name))
 	}
 	return columns, nil
 }
