@@ -129,6 +129,12 @@ export function createMetricsViewSchema(
       createQueryServiceMetricsViewSchema(
         runtime.instanceId,
         metricsViewName,
+        {},
+        {
+          query: {
+            queryClient: ctx.queryClient,
+          },
+        },
       ).subscribe(set),
   );
 }
