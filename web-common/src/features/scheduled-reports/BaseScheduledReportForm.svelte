@@ -1,6 +1,6 @@
 <script lang="ts">
+  import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
-  import RecipientsInputArray from "@rilldata/web-common/features/scheduled-reports/RecipientsInputArray.svelte";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import InputV2 from "../../components/forms/InputV2.svelte";
   import Select from "../../components/forms/Select.svelte";
@@ -88,9 +88,14 @@
     optional
     placeholder="1000"
   />
-  <RecipientsInputArray
+  <InputArray
+    accessorKey="email"
+    addItemLabel="Add email"
     {formState}
     hint="Recipients will receive different views based on their security policy.
         Recipients without project access can't view the report."
+    id="recipients"
+    label="Recipients"
+    placeholder="Enter an email address"
   />
 </form>

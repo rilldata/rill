@@ -42,7 +42,7 @@
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
-  const formState = createForm({
+  const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
       measure: $dashboardStore.leaderboardMeasureName ?? "",
@@ -57,7 +57,18 @@
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
       snooze: SnoozeOptions[0].value, // Defaults to `Off`
-      recipients: [
+      enableSlackNotification: true,
+      slackChannels: [
+        {
+          channel: "",
+        },
+      ],
+      slackEmails: [
+        { email: $user.data?.user?.email ? $user.data.user.email : "" },
+        { email: "" },
+      ],
+      enableEmailNotification: true,
+      emailRecipients: [
         { email: $user.data?.user?.email ? $user.data.user.email : "" },
         { email: "" },
       ],
@@ -85,9 +96,15 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              emailRecipients: values.recipients
-                .map((r) => r.email)
-                .filter(Boolean),
+              slackChannels: values.enableSlackNotification
+                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
+                : undefined,
+              slackEmails: values.enableSlackNotification
+                ? values.slackEmails.map((c) => c.email).filter(Boolean)
+                : undefined,
+              emailRecipients: values.enableEmailNotification
+                ? values.emailRecipients.map((r) => r.email).filter(Boolean)
+                : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },

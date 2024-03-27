@@ -2,6 +2,7 @@ import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  type V1AlertSpec,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
@@ -56,5 +57,29 @@ export function extractAlertFormValues(
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
     timeRange,
+  };
+}
+
+export type AlertNotificationValues = Pick<
+  AlertFormValues,
+  | "enableSlackNotification"
+  | "slackChannels"
+  | "slackEmails"
+  | "enableEmailNotification"
+  | "emailRecipients"
+>;
+
+export function extractAlertNotification(
+  alertSpec: V1AlertSpec,
+): AlertNotificationValues {
+  return {
+    enableSlackNotification:
+      !!alertSpec.slackChannels?.length || !!alertSpec.slackEmails?.length,
+    slackChannels:
+      alertSpec.slackChannels?.map((channel) => ({ channel })) ?? [],
+    slackEmails: alertSpec.slackEmails?.map((email) => ({ email })) ?? [],
+    enableEmailNotification: !!alertSpec.emailRecipients?.length,
+    emailRecipients:
+      alertSpec.emailRecipients?.map((email) => ({ email })) ?? [],
   };
 }

@@ -3,8 +3,10 @@
   import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import AlertPreview from "@rilldata/web-common/features/alerts/criteria-tab/AlertPreview.svelte";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { createForm } from "svelte-forms-lib";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
 </script>

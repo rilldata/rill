@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
-  import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+  import {
+    extractAlertFormValues,
+    extractAlertNotification,
+  } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     useMetricsView,
     useMetricsViewTimeRange,
@@ -23,6 +26,7 @@
   import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
     alertFormValidationSchema,
+    type AlertFormValues,
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
@@ -48,12 +52,12 @@
     { query: { queryClient } },
   );
 
-  const formState = createForm({
+  const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
-      recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
+      ...extractAlertNotification(alertSpec),
       ...extractAlertFormValues(
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
@@ -75,7 +79,7 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              emailRecipients: values.recipients
+              emailRecipients: values.emailRecipients
                 .map((r) => r.email)
                 .filter(Boolean),
               renotify: !!values.snooze,
