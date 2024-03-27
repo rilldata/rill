@@ -27,14 +27,19 @@
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
-
+  import Viz from "@rilldata/web-common/components/icons/Viz.svelte";
+  import Split from "@rilldata/web-common/components/icons/Split.svelte";
+  import Code from "@rilldata/web-common/components/icons/Code.svelte";
   import Toggle from "@rilldata/web-common/features/custom-dashboards/Toggle.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import { slide } from "svelte/transition";
+  import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
 
   const updateFile = createRuntimeServicePutFile();
 
-  let editing = true;
-  let showGrid = false;
-  let singlePanel = false;
+  let showGrid = true;
   let editorWidth = 400;
   let startingWidth = 400;
   let startingX = 0;
@@ -149,19 +154,44 @@
   async function handlePreviewUpdate(
     e: CustomEvent<{
       index: number;
-      change: "dimension" | "position";
-      vector: Vector;
+      position: Vector;
+      dimensions: Vector;
     }>,
   ) {
     const components = [...(parsedYaml?.components ?? [])];
 
-    if (e.detail.change === "dimension") {
-      components[e.detail.index].width = e.detail.vector[0];
-      components[e.detail.index].height = e.detail.vector[1];
-    } else {
-      components[e.detail.index].x = e.detail.vector[0];
-      components[e.detail.index].y = e.detail.vector[1];
-    }
+    // if (e.detail.change === "dimension") {
+    components[e.detail.index].width = e.detail.dimensions[0];
+    components[e.detail.index].height = e.detail.dimensions[1];
+    // } else {
+    components[e.detail.index].x = e.detail.position[0];
+    components[e.detail.index].y = e.detail.position[1];
+    // }
+
+    const stringified = stringify({ ...parsedYaml, components });
+
+    await updateChart(new CustomEvent("update", { detail: stringified }));
+  }
+
+  const viewOptions = [
+    { view: "code", icon: Code },
+    { view: "split", icon: Split },
+    { view: "viz", icon: Viz },
+  ];
+
+  let selectedView = "split";
+
+  let snap = false;
+
+  async function addChart(e: CustomEvent<{ chartName: string }>) {
+    const components = [...(parsedYaml?.components ?? [])];
+    components.push({
+      chart: e.detail.chartName,
+      height: 4,
+      width: 4,
+      x: 0,
+      y: 0,
+    });
 
     const stringified = stringify({ ...parsedYaml, components });
 
@@ -180,24 +210,57 @@
     showInspectorToggle={false}
     {onChangeCallback}
   >
-    <div slot="workspace-controls" class="flex gap-x-4">
-      {#if !singlePanel || !editing}
-        <Toggle bind:bool={showGrid} text={["Show grid", "Hide grid"]} />
+    <div slot="workspace-controls" class="flex gap-x-4 items-center">
+      <div
+        class="flex border-primary-300 rounded-sm border w-fit h-7 items-center justify-center"
+      >
+        {#each viewOptions as { view, icon: Icon }}
+          <input
+            type="radio"
+            id={view}
+            name="view"
+            value={view}
+            class="hidden"
+            checked={view === "code"}
+            bind:group={selectedView}
+          />
+          <label
+            for={view}
+            class="cursor-pointer w-7 aspect-square flex items-center justify-center border-r h-full border-primary-300 last:border-r-0"
+            class:bg-primary-200={selectedView === view}
+          >
+            <Icon size="15px" class="fill-primary-600" />
+          </label>
+        {/each}
+      </div>
+
+      <div
+        class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
+      >
+        <Switch small id="snap" bind:checked={snap} />
+        <Label for="snap" class="font-normal text-xs">Snap on change</Label>
+      </div>
+
+      {#if selectedView === "split" || selectedView === "viz"}
+        <div
+          class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
+        >
+          <Switch small id="grid" bind:checked={showGrid} />
+          <Label for="grid" class="font-normal text-xs">Grid</Label>
+        </div>
       {/if}
 
-      {#if singlePanel}
-        <Toggle bind:bool={editing} text={["Preview", "Edit"]} />
-      {/if}
-
-      <Toggle bind:bool={singlePanel} text={["Two panel", "One panel"]} />
+      <AddChartMenu on:add-chart={addChart} />
+      <Button>Preview</Button>
     </div>
   </WorkspaceHeader>
 
   <div class="flex w-full h-full flex-row overflow-hidden" slot="body">
-    {#if !singlePanel || (singlePanel && editing)}
+    {#if selectedView == "code" || selectedView == "split"}
       <div
-        class="relative h-full flex-shrink-0 border-r border-gray-400 w-full"
-        class:width={!singlePanel}
+        transition:slide={{ duration: 400, axis: "x" }}
+        class="relative h-full flex-shrink-0 w-full"
+        class:width={selectedView === "split"}
         style:--width="{editorWidth}px"
       >
         <button class="resizer" on:mousedown={handleStartResize} />
@@ -205,8 +268,9 @@
       </div>
     {/if}
 
-    {#if !singlePanel || (singlePanel && !editing)}
+    {#if selectedView == "viz" || selectedView == "split"}
       <CustomDashboard
+        {snap}
         {gap}
         {charts}
         {columns}
