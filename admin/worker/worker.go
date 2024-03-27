@@ -57,7 +57,9 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
 	})
 	group.Go(func() error {
-		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, "CRON_TZ=America/Los_Angeles 0 0 * * 1") // Run the scaling job at 00:00 on every Monday.
+		// return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, "CRON_TZ=America/Los_Angeles 0 0 * * 1") // Run the scaling job at 00:00 on every Monday.
+		// TODO: The following line is only for testing purpose to run scaler frequently for debugging, remove it before any commits.
+		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, "CRON_TZ=America/Los_Angeles * * * * *") // Run the scaling job at 00:00 on every Monday.
 	})
 
 	// NOTE: Add new scheduled jobs here
@@ -110,9 +112,7 @@ func (w *Worker) scheduleCron(ctx context.Context, name string, fn func(context.
 			return nil
 		case <-time.After(waitDuration):
 			err := w.runJob(ctx, name, fn)
-			if err != nil {
-				return err
-			}
+			w.logger.Error("Failed to run the cronjob", zap.String("cronjob_name", name), zap.Error(err))
 		}
 	}
 }

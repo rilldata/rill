@@ -38,7 +38,9 @@ type AutoscalerSlotsRecommendation struct {
 // AutoscalerSlotsRecommendations invokes the "autoscaler-slots-recommendations" API endpoint to get a list of recommendations for the number of slots to use for projects.
 func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offset int) ([]AutoscalerSlotsRecommendation, error) {
 	// Create the URL for the request
-	uri, err := url.Parse(c.RuntimeHost)
+	// uri, err := url.Parse(c.RuntimeHost)
+	// TODO: FIX ME, RuntimeHost seems point to grpc, hardcode down below for local testing
+	uri, err := url.Parse("http://localhost:8081")
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +65,9 @@ func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offs
 
 	// Set the access token in the request headers
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
+
+	// TODO: Temporary display curl command for debugging purpose, remove it before any commits.
+	fmt.Printf("\n\n\ncurl -X GET '%s' -H 'Authorization: Bearer %s'\n\n\n", apiURL, c.AccessToken)
 
 	// Send the request
 	client := http.DefaultClient

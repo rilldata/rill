@@ -16,6 +16,7 @@ const scaleThreshold = 0.10
 func (w *Worker) runAutoscaler(ctx context.Context) error {
 	recs, ok, err := w.allRecommendations(ctx)
 	if err != nil {
+		w.logger.Error("failed to autoscale: unable to fetch recommended slots", zap.Error(err))
 		return err
 	}
 	if !ok {
@@ -61,7 +62,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			break
 		}
 
-		w.logger.Debug("succeeded in autoscaling:", zap.String("project_id", updatedProject.Name), zap.Int("project_slots", updatedProject.ProdSlots))
+		w.logger.Info("succeeded in autoscaling:", zap.String("project_id", updatedProject.Name), zap.Int("project_slots", updatedProject.ProdSlots))
 	}
 
 	return nil
