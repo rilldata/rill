@@ -1188,7 +1188,7 @@ type TableInfo struct {
 
 	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	Name     string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// hasUnsupportedDataTypes indicates if the underlying table has any column with an unsupported OLAP engine datatype
+	// has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
 	HasUnsupportedDataTypes bool `protobuf:"varint,3,opt,name=has_unsupported_data_types,json=hasUnsupportedDataTypes,proto3" json:"has_unsupported_data_types,omitempty"`
 }
 

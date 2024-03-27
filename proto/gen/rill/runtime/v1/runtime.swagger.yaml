@@ -5576,7 +5576,7 @@ definitions:
         type: string
       hasUnsupportedDataTypes:
         type: boolean
-        title: hasUnsupportedDataTypes indicates if the underlying table has any column with an unsupported OLAP engine datatype
+        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   v1TableRowsRequest:
     type: object
     properties:

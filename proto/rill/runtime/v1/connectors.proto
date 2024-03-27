@@ -184,7 +184,7 @@ message OLAPListTablesResponse {
 message TableInfo {
   string database = 1;
   string name = 2;
-  // hasUnsupportedDataTypes indicates if the underlying table has any column with an unsupported OLAP engine datatype
+  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   bool has_unsupported_data_types = 3;
 }
 
