@@ -567,6 +567,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -594,12 +600,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -644,10 +644,16 @@ export interface V1TableInfo {
   database?: string;
   dbSchema?: string;
   name?: string;
+  hasUnsupportedDataTypes?: boolean;
 }
+
+export type V1TableColumnsResponseUnsupportedColumns = {
+  [key: string]: string;
+};
 
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
+  unsupportedColumns?: V1TableColumnsResponseUnsupportedColumns;
 }
 
 export interface V1TableColumnsRequest {
@@ -891,16 +897,6 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RefreshAndReconcileRequest {
   instanceId?: string;
   path?: string;
@@ -919,16 +915,6 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
 
 /**
  * - CODE_UNSPECIFIED: Unspecified error
@@ -972,6 +958,26 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -1138,8 +1144,13 @@ export interface V1OLAPListTablesResponse {
   tables?: V1TableInfo[];
 }
 
+export type V1OLAPGetTableResponseUnsupportedColumns = {
+  [key: string]: string;
+};
+
 export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
+  unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
   view?: boolean;
 }
 

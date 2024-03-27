@@ -2224,6 +2224,8 @@ func (m *TableInfo) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for HasUnsupportedDataTypes
+
 	if len(errors) > 0 {
 		return TableInfoMultiError(errors)
 	}
@@ -2463,6 +2465,8 @@ func (m *OLAPGetTableResponse) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for UnsupportedColumns
 
 	// no validation rules for View
 

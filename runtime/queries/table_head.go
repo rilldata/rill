@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -67,7 +68,11 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	query := q.buildTableHeadSQL()
+	query, err := q.buildTableHeadSQL(ctx, olap)
+	if err != nil {
+		return err
+	}
+
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            query,
 		Priority:         priority,
@@ -99,7 +104,10 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			filename := q.TableName
-			sql := q.buildTableHeadSQL()
+			sql, err := q.buildTableHeadSQL(ctx, olap)
+			if err != nil {
+				return err
+			}
 			args := []interface{}{}
 			if err := DuckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
@@ -153,16 +161,34 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-func (q *TableHead) buildTableHeadSQL() string {
+func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStore) (string, error) {
+	columns, err := supportedColumns(ctx, olap, q.DatabaseName, q.SchemaName, q.TableName)
+	if err != nil {
+		return "", err
+	}
+
 	limitClause := ""
 	if q.Limit > 0 {
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
 	sql := fmt.Sprintf(
-		`SELECT * FROM %s%s`,
+		`SELECT %s FROM %s%s`,
+		strings.Join(columns, ","),
 		fullTableName(q.DatabaseName, q.SchemaName, q.TableName),
 		limitClause,
 	)
-	return sql
+	return sql, nil
+}
+
+func supportedColumns(ctx context.Context, olap drivers.OLAPStore, db, schema, tblName string) ([]string, error) {
+	tbl, err := olap.InformationSchema().Lookup(ctx, db, schema, tblName)
+	if err != nil {
+		return nil, err
+	}
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, safeName(field.Name))
+	}
+	return columns, nil
 }

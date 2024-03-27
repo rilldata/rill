@@ -917,7 +917,7 @@ export class TableInfo extends Message<TableInfo> {
   database = "";
 
   /**
-   * @generated from field: string db_schema = 3;
+   * @generated from field: string db_schema = 4;
    */
   dbSchema = "";
 
@@ -925,6 +925,13 @@ export class TableInfo extends Message<TableInfo> {
    * @generated from field: string name = 2;
    */
   name = "";
+
+  /**
+   * has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+   *
+   * @generated from field: bool has_unsupported_data_types = 3;
+   */
+  hasUnsupportedDataTypes = false;
 
   constructor(data?: PartialMessage<TableInfo>) {
     super();
@@ -935,8 +942,9 @@ export class TableInfo extends Message<TableInfo> {
   static readonly typeName = "rill.runtime.v1.TableInfo";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {
@@ -1027,6 +1035,13 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
   schema?: StructType;
 
   /**
+   * unsupported_columns are columns having datatypes which are not supported by Rill
+   *
+   * @generated from field: map<string, string> unsupported_columns = 3;
+   */
+  unsupportedColumns: { [key: string]: string } = {};
+
+  /**
    * @generated from field: bool view = 2;
    */
   view = false;
@@ -1040,6 +1055,7 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
   static readonly typeName = "rill.runtime.v1.OLAPGetTableResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

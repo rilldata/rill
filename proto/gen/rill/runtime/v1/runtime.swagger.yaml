@@ -4786,6 +4786,11 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+      unsupportedColumns:
+        type: object
+        additionalProperties:
+          type: string
+        title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
   v1OLAPListTablesResponse:
@@ -5608,6 +5613,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ProfileColumn'
+      unsupportedColumns:
+        type: object
+        additionalProperties:
+          type: string
   v1TableInfo:
     type: object
     properties:
@@ -5617,6 +5626,9 @@ definitions:
         type: string
       name:
         type: string
+      hasUnsupportedDataTypes:
+        type: boolean
+        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   v1TableRowsRequest:
     type: object
     properties:

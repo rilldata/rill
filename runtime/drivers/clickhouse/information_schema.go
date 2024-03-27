@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -172,7 +173,14 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		// parse column type
 		colType, err := databaseTypeToPB(columnType, false)
 		if err != nil {
-			return nil, err
+			if !errors.Is(err, errUnsupportedType) {
+				return nil, err
+			}
+			if t.UnsupportedCols == nil {
+				t.UnsupportedCols = make(map[string]string)
+			}
+			t.UnsupportedCols[columnName] = columnType
+			continue
 		}
 
 		// append column

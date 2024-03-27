@@ -74,9 +74,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 		return nil, err
 	}
 
-	return &runtimev1.TableColumnsResponse{
-		ProfileColumns: q.Result,
-	}, nil
+	return q.Result, nil
 }
 
 func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest) (*runtimev1.TableRowsResponse, error) {
