@@ -15,6 +15,8 @@
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import CreateAlert from "../alerts/CreateAlert.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -51,7 +53,7 @@
   {:else}
     <div />
   {/if}
-  <div class="flex gap-x-4 items-center">
+  <div class="flex gap-x-2 items-center">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
@@ -59,11 +61,14 @@
       <ShareProjectButton {organization} {project} />
     {/if}
     {#if onDashboardPage}
-      <LastRefreshedDate {dashboard} />
-      {#if $user.isSuccess && $user.data.user}
-        <Bookmarks />
-      {/if}
-      <ShareDashboardButton />
+      <StateManagersProvider metricsViewName={dashboard}>
+        <LastRefreshedDate {dashboard} />
+        {#if $user.isSuccess && $user.data.user}
+          <CreateAlert />
+          <Bookmarks />
+        {/if}
+        <ShareDashboardButton />
+      </StateManagersProvider>
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

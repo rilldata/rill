@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -63,6 +64,7 @@
     bind:this={editor}
     bind:view
     content={yaml}
+    extensions={[customYAMLwithJSONandSQL]}
     on:update={(e) => debounceUpdateChartContent(e.detail.content)}
   />
 </ChartsEditorContainer>
