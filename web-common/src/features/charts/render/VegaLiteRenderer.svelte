@@ -8,6 +8,7 @@
   let options: EmbedOptions = {
     config: getRillTheme(),
     renderer: "svg",
+    actions: false,
   };
 
   let viewVL: View;

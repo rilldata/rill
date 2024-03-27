@@ -14,7 +14,8 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import TDDArea from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDArea.svelte";
+  import ChartTypeSelection from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelection.svelte";
+  import CustomChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/CustomChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import {
@@ -54,6 +55,7 @@
   let mouseoverValue: DomainCoordinates | undefined = undefined;
   let startValue: Date;
   let endValue: Date;
+  let chartType: string;
 
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
@@ -219,6 +221,7 @@
   <div class="flex pl-1">
     {#if expandedMeasureName}
       <BackToOverview {metricViewName} />
+      <ChartTypeSelection bind:chartType />
     {:else}
       <SearchableFilterButton
         label="Measures"
@@ -293,8 +296,13 @@
 
           {#if $timeSeriesDataStore?.isError}
             <div class="p-5"><CrossIcon /></div>
-          {:else if formattedData?.length && expandedMeasureName}
-            <TDDArea totalsData={formattedData} {dimensionData} />
+          {:else if formattedData?.length && expandedMeasureName && chartType != "default"}
+            <CustomChart
+              {chartType}
+              {expandedMeasureName}
+              totalsData={formattedData}
+              {dimensionData}
+            />
           {:else if formattedData && interval}
             <MeasureChart
               bind:mouseoverValue

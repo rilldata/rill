@@ -1,4 +1,4 @@
-interface DataItem {
+export interface DataItem {
   [key: string]: string | number | Date;
 }
 
@@ -81,10 +81,10 @@ export function suggestChartTypes(
   quantitativeFields: string[],
 ): string[] {
   const chartTypes: string[] = [];
-  if (timeFields.length > 0) {
+  if (quantitativeFields.length && timeFields.length) {
     chartTypes.push("line", "area", "bar");
   }
-  if (nominalFields.length > 0) {
+  if (quantitativeFields.length && nominalFields.length) {
     chartTypes.push("stacked area", "grouped bar", "stacked bar");
   }
   return chartTypes;
