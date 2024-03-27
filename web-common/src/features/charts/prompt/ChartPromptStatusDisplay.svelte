@@ -4,6 +4,8 @@
     chartPromptsStore,
     ChartPromptStatus,
   } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   export let chartName: string;
 
@@ -22,7 +24,7 @@
   </div>
 {:else if $chartPrompt && $chartPrompt.status !== ChartPromptStatus.Idle}
   <div class="flex flex-row gap-x-2">
-    <CancelCircle size="16px" />
+    <Spinner size="16px" status={EntityStatus.Running} />
     <div class="flex flex-col gap-y-2">
       <div>
         Generating {$chartPrompt.status === ChartPromptStatus.GeneratingData

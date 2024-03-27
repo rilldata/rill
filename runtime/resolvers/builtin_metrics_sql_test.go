@@ -37,17 +37,17 @@ measures:
 		wantErr string
 	}{
 		{
-			args:  map[string]any{"sql": "SELECT AGGREGATE(count) FROM bar"},
+			args:  map[string]any{"sql": "SELECT count FROM bar"},
 			attrs: map[string]any{},
 			want:  `[{"count":1}]`,
 		},
 		{
-			args:  map[string]any{"sql": "SELECT AGGREGATE(count) FROM bar"},
+			args:  map[string]any{"sql": "SELECT count FROM bar"},
 			attrs: map[string]any{"admin": true},
 			want:  `[{"count":1}]`,
 		},
 		{
-			args:    map[string]any{"sql": "SELECT AGGREGATE(count) FROM bar"},
+			args:    map[string]any{"sql": "SELECT count FROM bar"},
 			attrs:   map[string]any{"admin": false},
 			wantErr: `must be an admin to run arbitrary SQL queries`,
 		},

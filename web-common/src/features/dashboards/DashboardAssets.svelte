@@ -276,7 +276,7 @@
                   <MetricsIcon slot="icon" />
                   Edit metrics
                 </NavigationMenuItem>
-                {#if customDashboards}
+                {#if $customDashboards}
                   <NavigationMenuItem
                     on:click={() => openGenerateChartModal(dashboardName)}
                   >

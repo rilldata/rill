@@ -3,77 +3,12 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
-	"regexp"
-	"strings"
 	"testing"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
-
-func TestCompiler(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-
-	type result struct {
-		sql  string
-		deps []*runtimev1.ResourceName
-	}
-	tests := []struct {
-		name string
-		sql  string
-		want result
-	}{
-		{
-			"simple",
-			"select pub,dom,AGGREGATE(measure_0) from ad_bids_metrics GROUP BY ALL",
-			result{
-				sql:  "SELECT \"publisher\" AS pub, \"domain\" AS dom, count(*) AS measure_0 FROM \"ad_bids\" GROUP BY ALL",
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
-			},
-		},
-		{
-			"simple quoted",
-			"select pub,  dom,   AGGREGATE( measure_0) from \"ad_bids_metrics\" GROUP BY pub, dom",
-			result{
-				sql:  "SELECT \"publisher\" AS pub, \"domain\" AS dom, count(*) AS measure_0 FROM \"ad_bids\" GROUP BY pub, dom",
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}},
-			},
-		},
-		{
-			"aggregate and spaces with policy",
-			`SELECT publisher,domain,AGGREGATE("bid's number"),AGGREGATE("total volume"),AGGREGATE("total click""s") From ad_bids_mini_metrics_with_policy`,
-			result{
-				sql:  `SELECT upper(publisher) AS publisher, "domain" AS domain, count(*) AS "bid's number", sum(volume) AS "total volume", sum(clicks) AS "total click""s" FROM (SELECT * FROM "ad_bids_mini") `,
-				deps: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_mini_metrics_with_policy"}},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &metricsSQLCompiler{
-				instanceID: instanceID,
-				ctrl:       ctrl,
-				sql:        tt.sql,
-			}
-
-			got, _, deps, err := c.compile(context.Background())
-			require.NoError(t, err)
-
-			require.Subset(t, deps, tt.want.deps)
-			require.Subset(t, tt.want.deps, deps)
-
-			got = regexp.MustCompile(`\s+`).ReplaceAllString(strings.ReplaceAll(strings.ReplaceAll(got, "\n", " "), "\t", " "), " ")
-			tt.want.sql = regexp.MustCompile(`\s+`).ReplaceAllString(strings.ReplaceAll(strings.ReplaceAll(tt.want.sql, "\n", " "), "\t", " "), " ")
-			if got != tt.want.sql {
-				t.Errorf("parsedSQL() = %q, want %q", got, tt.want.sql)
-			}
-		})
-	}
-}
 
 func TestSimpleMetricsSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
