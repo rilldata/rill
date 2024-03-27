@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -38,9 +39,13 @@ type AutoscalerSlotsRecommendation struct {
 // AutoscalerSlotsRecommendations invokes the "autoscaler-slots-recommendations" API endpoint to get a list of recommendations for the number of slots to use for projects.
 func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offset int) ([]AutoscalerSlotsRecommendation, error) {
 	// Create the URL for the request
-	// uri, err := url.Parse(c.RuntimeHost)
-	// TODO: FIX ME, RuntimeHost seems point to grpc, hardcode down below for local testing
-	uri, err := url.Parse("http://localhost:8081")
+	var runtimeHost string
+	if strings.Contains(c.RuntimeHost, "localhost") {
+		runtimeHost = "http://localhost:8081"
+	} else {
+		runtimeHost = c.RuntimeHost
+	}
+	uri, err := url.Parse(runtimeHost)
 	if err != nil {
 		return nil, err
 	}
