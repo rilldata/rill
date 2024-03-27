@@ -14,7 +14,7 @@
 
   export let fullyQualifiedTableName: string;
 
-  $: tableName = fullyQualifiedTableName;
+  $: tableName = fullyQualifiedTableName.split(".")[1];
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
