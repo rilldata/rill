@@ -191,7 +191,7 @@ func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
 		Pixels:              2.0,
 	}
 	ctx := context.Background()
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	require.NoError(t, err)
 	defer release()
 	values, err := q.CreateTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")
@@ -214,7 +214,7 @@ func TestTimeseries_SparkOnly(t *testing.T) {
 		Pixels: 2.0,
 	}
 	ctx := context.Background()
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	require.NoError(t, err)
 	defer release()
 	values, err := q.CreateTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")

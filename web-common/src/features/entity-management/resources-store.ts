@@ -3,18 +3,18 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  runtimeServiceListResources,
-  V1ReconcileStatus,
-} from "@rilldata/web-common/runtime-client";
 import type {
   V1ParseError,
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@tanstack/svelte-query";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, Readable, writable } from "svelte/store";
+import {
+  V1ReconcileStatus,
+  runtimeServiceListResources,
+} from "@rilldata/web-common/runtime-client";
+import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
+import { Readable, derived, get, writable } from "svelte/store";
+import { removeLeadingSlash } from "./entity-mappers";
 
 /**
  * Global resources store that maps file name to a resource.
@@ -63,7 +63,7 @@ const resourcesStoreReducers = {
   setResource(resource: V1Resource) {
     update((state) => {
       for (const filePath of resource.meta.filePaths) {
-        state.resources[filePath] = resource.meta.name;
+        state.resources[removeLeadingSlash(filePath)] = resource.meta.name;
       }
       return state;
     });
@@ -166,7 +166,7 @@ export function getAllErrorsForFile(
       }
       return [
         ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
-          (e) => e.filePath === filePath,
+          (e) => e.filePath && removeLeadingSlash(e.filePath) === filePath,
         ),
         ...(resource.data?.meta?.reconcileError
           ? [

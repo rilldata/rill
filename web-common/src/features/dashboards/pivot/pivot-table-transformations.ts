@@ -1,3 +1,4 @@
+import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
@@ -50,6 +51,8 @@ export function reduceTableCellDataIntoRows(
   cellData: V1MetricsViewAggregationResponseDataItem[],
 ) {
   const colDimensionNames = config.colDimensionNames;
+  const rowPage = config.pivot.rowPage;
+  const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
   /**
    * Create a map of row dimension values to their index in the row dimension axes.
@@ -78,7 +81,7 @@ export function reduceTableCellDataIntoRows(
       if (rowIndex === undefined) {
         return;
       }
-      const row = tableData[rowIndex];
+      const row = tableData[rowOffset + rowIndex];
 
       if (row) {
         accessors.forEach((accessor, i) => {
@@ -136,4 +139,28 @@ export function getTotalsRow(
   }
 
   return totalsRow;
+}
+
+export function mergeRowTotals(
+  rowValues: string[],
+  sortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
+  unsortedRowValues: string[],
+  unsortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
+): V1MetricsViewAggregationResponseDataItem[] {
+  if (unsortedRowValues.length === 0) {
+    return sortedRowTotals;
+  }
+
+  const unsortedRowValuesMap = createIndexMap(unsortedRowValues);
+
+  const orderedRowTotals = rowValues.map((rowValue) => {
+    const unsortedRowIndex = unsortedRowValuesMap.get(rowValue);
+    if (unsortedRowIndex === undefined) {
+      console.error("Row value not found in unsorted row values", rowValue);
+    }
+    const rowTotal = unsortedRowTotals[unsortedRowIndex as number];
+    return rowTotal;
+  });
+
+  return orderedRowTotals;
 }

@@ -5,15 +5,18 @@
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
     useSource,
-    useSourceFileNames,
     useSourceFromYaml,
+    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -37,10 +40,11 @@
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let sourceName: string;
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
-  export let toggleMenu: () => void;
+
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
@@ -48,6 +52,8 @@
   $: runtimeInstanceId = $runtime.instanceId;
 
   const dispatch = createEventDispatcher();
+
+  const { customDashboards } = featureFlags;
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   let source: V1SourceV2 | undefined;
@@ -66,7 +72,7 @@
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: sourceRoutes = useSourceRoutes($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
@@ -79,11 +85,10 @@
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
       runtimeInstanceId,
-      tableName,
+      getFileAPIPathFromNameAndType(tableName, EntityType.Table),
       EntityType.Table,
-      $sourceNames.data ?? [],
+      $sourceRoutes.data ?? [],
     );
-    toggleMenu();
   };
 
   const handleCreateModel = async () => {
@@ -96,7 +101,7 @@
         embedded ? `"${path}"` : sourceName,
       );
 
-      behaviourEvent.fireNavigationEvent(
+      await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
@@ -136,19 +141,14 @@
   }
 </script>
 
-<MenuItem icon on:select={() => handleCreateModel()}>
+<NavigationMenuItem on:click={() => handleCreateModel()}>
   <Model slot="icon" />
   Create new model
-</MenuItem>
+</NavigationMenuItem>
 
-<MenuItem
+<NavigationMenuItem
   disabled={disableCreateDashboard}
-  icon
-  on:select={() => {
-    void createDashboardFromTable();
-    toggleMenu();
-  }}
-  propogateSelect={false}
+  on:click={createDashboardFromTable}
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -162,40 +162,57 @@
       Source is being ingested
     {/if}
   </svelte:fragment>
-</MenuItem>
-
-<MenuItem icon on:select={() => onRefreshSource(sourceName)}>
-  <svelte:fragment slot="icon">
-    <RefreshIcon />
-  </svelte:fragment>
-  Refresh source
-</MenuItem>
-
-{#if isLocalFileConnector}
-  <MenuItem icon on:select={() => onReplaceSource(sourceName)}>
-    <svelte:fragment slot="icon">
-      <Import />
+</NavigationMenuItem>
+{#if $customDashboards}
+  <NavigationMenuItem
+    disabled={disableCreateDashboard}
+    on:click={() => {
+      dispatch("generate-chart", {
+        table: source?.state?.table,
+        connector: source?.state?.connector,
+      });
+    }}
+  >
+    <Explore slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate chart with AI
+      <WandIcon class="w-3 h-3" />
+    </div>
+    <svelte:fragment slot="description">
+      {#if $sourceHasError}
+        Source has errors
+      {:else if !sourceIsIdle}
+        Source is being ingested
+      {/if}
     </svelte:fragment>
-    Replace source with uploaded file
-  </MenuItem>
+  </NavigationMenuItem>
 {/if}
 
-<Divider />
-<MenuItem
-  icon
-  on:select={() => {
+<NavigationMenuItem on:click={() => onRefreshSource(sourceName)}>
+  <RefreshIcon slot="icon" />
+  Refresh source
+</NavigationMenuItem>
+
+{#if isLocalFileConnector}
+  <NavigationMenuItem on:click={() => onReplaceSource(sourceName)}>
+    <Import slot="icon" />
+    Replace source with uploaded file
+  </NavigationMenuItem>
+{/if}
+
+<NavigationMenuSeparator />
+
+<NavigationMenuItem
+  on:click={() => {
     dispatch("rename-asset");
   }}
 >
   <EditIcon slot="icon" />
   Rename...
-</MenuItem>
+</NavigationMenuItem>
+
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<MenuItem
-  icon
-  on:select={() => handleDeleteSource(sourceName)}
-  propogateSelect={false}
->
+<NavigationMenuItem on:click={() => handleDeleteSource(sourceName)}>
   <Cancel slot="icon" />
   Delete
-</MenuItem>
+</NavigationMenuItem>

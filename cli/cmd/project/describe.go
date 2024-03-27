@@ -22,18 +22,16 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Retrieve detailed state for a resource",
 		Long:  "Retrieve detailed state for a specific resource (source, model, dashboard, ...)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ch.Config
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) == 3 {
 				project = args[0]
 			}
-			if !cmd.Flags().Changed("project") && len(args) == 2 && cfg.Interactive {
-				project, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+			if !cmd.Flags().Changed("project") && len(args) == 2 && ch.Interactive {
+				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
@@ -43,7 +41,7 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 			name := args[len(args)-1]
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             project,
 			})
 			if err != nil {

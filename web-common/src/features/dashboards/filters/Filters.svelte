@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
@@ -9,7 +10,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let readOnly = false;
 
@@ -37,7 +37,7 @@
   $: dimensions = $metricsView.data?.dimensions ?? [];
   $: dimensionIdMap = getMapFromArray(
     dimensions,
-    (dimension) => dimension.name as string,
+    (dimension) => (dimension.name || dimension.column) as string,
   );
 
   $: measures = $metricsView.data?.measures ?? [];
@@ -96,15 +96,17 @@
       </div>
     {:else}
       {#each allDimensionFilters as { name, label, selectedValues } (name)}
-        {@const dimension = dimensions.find((d) => d.name === name)}
+        {@const dimension = dimensions.find(
+          (d) => d.name === name || d.column === name,
+        )}
+        {@const dimensionName = dimension?.name || dimension?.column}
         <div animate:flip={{ duration: 200 }}>
-          {#if dimension?.column}
+          {#if dimensionName}
             <DimensionFilter
               {name}
               {label}
               {selectedValues}
-              column={dimension.column}
-              {readOnly}
+              column={dimensionName}
               on:remove={() => removeDimensionFilter(name)}
               on:apply={(event) =>
                 toggleDimensionValueSelection(name, event.detail, true)}
@@ -119,7 +121,6 @@
             {label}
             {dimensionName}
             {expr}
-            {readOnly}
             on:remove={() => removeMeasureFilter(dimensionName, name)}
             on:apply={({ detail: { dimension, oldDimension, expr } }) =>
               handleMeasureFilterApply(dimension, name, oldDimension, expr)}

@@ -22,6 +22,8 @@
   const OVERSCAN = 80;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
+  // Distance threshold (in pixels) for triggering data fetch
+  const ROW_THRESHOLD = 200;
 
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
@@ -54,10 +56,12 @@
   let containerRefElement: HTMLDivElement;
   let stickyRows = [0];
 
+  $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
+  $: rowPage = $dashboardStore?.pivot?.rowPage;
   $: headerGroups = $table.getHeaderGroups();
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
   $: rows = $table.getRowModel().rows;
@@ -104,6 +108,22 @@
     }
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
+
+  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+    if (containerRefElement) {
+      const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
+      const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+
+      // Fetch more data when scrolling near the bottom end
+      if (
+        bottomEndDistance < ROW_THRESHOLD &&
+        !$pivotDataStore.isFetching &&
+        !reachedEndForRows
+      ) {
+        metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
+      }
+    }
+  };
 </script>
 
 <div
@@ -111,6 +131,7 @@
   style:--header-length="{totalHeaderHeight}px"
   class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
+  on:scroll={() => handleScroll(containerRefElement)}
 >
   <div style:height="{totalRowSize + totalHeaderHeight}px">
     <table>
@@ -135,7 +156,7 @@
                       {#if sortDirection}
                         <span
                           class="transition-transform -mr-1"
-                          class:-rotate-180={sortDirection === "desc"}
+                          class:-rotate-180={sortDirection === "asc"}
                         >
                           <ArrowDown />
                         </span>
@@ -248,6 +269,9 @@
   tr > .with-row-dimension:first-of-type {
     @apply sticky left-0 z-0;
     @apply bg-white;
+    @apply truncate;
+    /* re-evaluate this when adding resizing and virtualization */
+    max-width: 500px;
   }
 
   tr > td:first-of-type:not(:last-of-type) > .cell {

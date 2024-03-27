@@ -13,11 +13,7 @@ A container GraphicContext for the time series in a metrics dashboard.
   const paddingForFullWidth = 80;
 </script>
 
-<div
-  class="grid w-max pr-2"
-  style:grid-template-columns="{MEASURE_CONFIG.bigNumber.widthWithChart}px
-  max-content"
->
+<div class="w-fit max-w-full h-fit pr-2 flex flex-col max-h-full pb-4">
   <GraphicContext
     bottom={4}
     height={enableFullWidth

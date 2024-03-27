@@ -13,23 +13,18 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "List superusers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res, err := client.ListSuperusers(ctx, &adminv1.ListSuperusersRequest{})
 			if err != nil {
 				return err
 			}
 
-			err = cmdutil.PrintUsers(ch.Printer, res.Users)
-			if err != nil {
-				return err
-			}
+			ch.PrintUsers(res.Users)
 
 			return nil
 		},

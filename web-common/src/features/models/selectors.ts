@@ -1,3 +1,4 @@
+import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
@@ -5,6 +6,7 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1ListFilesResponse,
   createRuntimeServiceGetFile,
@@ -29,6 +31,12 @@ export function useModelNames(instanceId: string) {
 
 export function useModelFileNames(instanceId: string) {
   return useMainEntityFiles(instanceId, "models");
+}
+
+export function useModelRoutes(instanceId: string) {
+  return useMainEntityFiles(instanceId, "models", (name) =>
+    getRouteFromName(name, EntityType.Model),
+  );
 }
 
 export function useModel(instanceId: string, name: string) {
@@ -78,7 +86,7 @@ export async function getModelNames(
 }
 
 export function useModelFileIsEmpty(instanceId, modelName) {
-  return createRuntimeServiceGetFile(instanceId, `/models/${modelName}.sql`, {
+  return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
     query: {
       select(data) {
         return data?.blob?.length === 0;

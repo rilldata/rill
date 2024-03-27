@@ -50,7 +50,7 @@ jobs:
       - name: Set up go for E2E
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: 1.22
       - name: go build cache
         uses: actions/cache@v3
         with:
@@ -65,7 +65,7 @@ jobs:
         run: npm install
 
       - name: Build and embed static UI
-        run: make cli
+        run: PLAYWRIGHT_TEST=true make cli
 
       - name: Install browser for UI tests
         run: npx playwright install
@@ -81,8 +81,7 @@ jobs:
           path: web-local/playwright-report/
           retention-days: 30
 
-      - name: Build & Test the web admin
+      - name: Build web admin
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
           npm run build -w web-admin
-          npm run test -w web-admin

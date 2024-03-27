@@ -63,7 +63,7 @@ func (q *MetricsViewTotals) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
 	if err != nil {
 		return err
 	}

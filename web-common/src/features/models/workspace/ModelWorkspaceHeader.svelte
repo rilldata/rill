@@ -9,19 +9,22 @@
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
-  import type { LayoutElement } from "../../../layout/workspace/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
+    getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
-  import { isDuplicateName } from "../../entity-management/name-utils";
+  import {
+    INVALID_NAME_MESSAGE,
+    VALID_NAME_PATTERN,
+    isDuplicateName,
+  } from "../../entity-management/name-utils";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   export let modelName: string;
 
@@ -31,9 +34,10 @@
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  const outputLayout = getContext(
-    "rill:app:output-layout",
-  ) as Writable<LayoutElement>;
+  $: workspaceLayout = $workspaces;
+
+  $: tableVisible = workspaceLayout.table.visible;
+
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelHasError = getFileHasErrors(
     queryClient,
@@ -48,45 +52,52 @@
     modelName,
   );
 
-  function formatModelName(str) {
-    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
+  function formatModelName(str: string) {
+    return str.replace(/\.sql/, "");
   }
 
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+  async function onChangeCallback(
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) {
+    if (!e.currentTarget.value.match(VALID_NAME_PATTERN)) {
       notifications.send({
-        message:
-          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
+        message: INVALID_NAME_MESSAGE,
       });
-      e.target.value = modelName; // resets the input
+      e.currentTarget.value = modelName; // resets the input
       return;
     }
     if (
-      isDuplicateName(e.target.value, modelName, $allNamesQuery?.data ?? [])
+      isDuplicateName(
+        e.currentTarget.value,
+        modelName,
+        $allNamesQuery?.data ?? [],
+      )
     ) {
       notifications.send({
-        message: `Name ${e.target.value} is already in use`,
+        message: `Name ${e.currentTarget.value} is already in use`,
       });
-      e.target.value = modelName; // resets the input
+      e.currentTarget.value = modelName; // resets the input
       return;
     }
 
     try {
-      const toName = e.target.value;
+      const toName = e.currentTarget.value;
       const entityType = EntityType.Model;
       await renameFileArtifact(
         runtimeInstanceId,
-        modelName,
-        toName,
+        getFileAPIPathFromNameAndType(modelName, entityType),
+        getFileAPIPathFromNameAndType(toName, entityType),
         entityType,
       );
-      goto(getRouteFromName(toName, entityType), {
+      await goto(getRouteFromName(toName, entityType), {
         replaceState: true,
       });
     } catch (err) {
       console.error(err.response.data.message);
     }
-  };
+  }
 
   $: titleInput = modelName;
 </script>
@@ -95,22 +106,16 @@
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
 >
   <svelte:fragment slot="workspace-controls">
-    <IconButton
-      on:click={() => {
-        outputLayout.update((state) => {
-          state.visible = !state.visible;
-          return state;
-        });
-      }}
+    <IconButton on:click={workspaceLayout.table.toggle}
       ><span class="text-gray-500"><HideBottomPane size="18px" /></span>
       <svelte:fragment slot="tooltip-content">
-        <SlidingWords active={$outputLayout?.visible} reverse
+        <SlidingWords active={$tableVisible} reverse
           >results preview</SlidingWords
         >
       </svelte:fragment>
     </IconButton>
   </svelte:fragment>
-  <svelte:fragment slot="cta" let:width>
+  <svelte:fragment let:width slot="cta">
     {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs

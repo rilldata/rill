@@ -34,6 +34,7 @@ type ColumnTimeseriesResult struct {
 }
 
 type ColumnTimeseries struct {
+	Connector           string                                            `json:"connector"`
 	TableName           string                                            `json:"table_name"`
 	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                            `json:"timestamp_column_name"`
@@ -85,7 +86,7 @@ func (q *ColumnTimeseries) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

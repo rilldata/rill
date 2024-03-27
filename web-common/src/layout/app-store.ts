@@ -1,7 +1,7 @@
+import { page } from "$app/stores";
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { derived, writable } from "svelte/store";
-import { page } from "$app/stores";
 import {
   MetricsEventScreenName,
   ScreenToEntityMap,
@@ -23,7 +23,10 @@ interface AppStore {
 }
 
 export const appScreen = derived(page, ($page) => {
-  let activeEntity;
+  let activeEntity: {
+    name: string;
+    type: MetricsEventScreenName;
+  };
   switch ($page.route.id) {
     case "/(application)":
       activeEntity = {
@@ -53,6 +56,18 @@ export const appScreen = derived(page, ($page) => {
       activeEntity = {
         name: $page?.params?.name,
         type: MetricsEventScreenName.MetricsDefinition,
+      };
+      break;
+    case "/(application)/chart/[name]":
+      activeEntity = {
+        name: $page?.params?.name,
+        type: MetricsEventScreenName.Chart,
+      };
+      break;
+    case "/(application)/custom-dashboard/[name]":
+      activeEntity = {
+        name: $page?.params?.name,
+        type: MetricsEventScreenName.CustomDashboard,
       };
       break;
     case "/(application)/welcome":

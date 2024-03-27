@@ -1,0 +1,10 @@
+kind : api
+
+metrics_sql: | 
+  select 
+    publisher,
+    domain, 
+    "total impressions", 
+    "total volume" 
+  FROM 
+    ad_bids_mini_metrics_with_policy 

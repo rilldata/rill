@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/apache/arrow/go/v14/arrow"
@@ -201,76 +202,55 @@ func (f *fileIterator) Next() ([]string, error) {
 		zap.Int("batches", len(f.batches)), zap.Int("parallel_fetch_limit", f.parallelFetchLimit))
 
 	// Fetch batches async
-	fetchGrp, ctx := errgroup.WithContext(f.ctx)
-	fetchGrp.SetLimit(f.parallelFetchLimit)
-	fetchResultChan := make(chan fetchResult)
-
-	// Write batches into a file async
-	writeGrp, _ := errgroup.WithContext(f.ctx)
-	writeGrp.Go(func() error {
-		batchesLeft := len(f.batches)
-		for {
-			select {
-			case result, ok := <-fetchResultChan:
-				if !ok {
-					return nil
-				}
-				batch := result.batch
-				writeStart := time.Now()
-				for _, rec := range *result.records {
-					if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
-						writer.NewBufferedRowGroup()
-					}
-					if err := writer.WriteBuffered(rec); err != nil {
-						return err
-					}
-					fileInfo, err := os.Stat(fw.Name())
-					if err == nil { // ignore error
-						if fileInfo.Size() > f.limitInBytes {
-							return drivers.ErrStorageLimitExceeded
-						}
-					}
-				}
-				batchesLeft--
-				f.logger.Debug(
-					"wrote an arrow batch to a parquet file",
-					zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
-					zap.Int("row_count", batch.GetRowCount()),
-					zap.Duration("write_duration", time.Since(writeStart)),
-				)
-				f.totalRecords += int64(result.batch.GetRowCount())
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		}
-	})
+	errGrp, _ := errgroup.WithContext(f.ctx)
+	errGrp.SetLimit(f.parallelFetchLimit)
+	// mutex to protect file writes
+	var mu sync.Mutex
+	batchesLeft := len(f.batches)
 
 	for _, batch := range f.batches {
 		b := batch
-		fetchGrp.Go(func() error {
+		errGrp.Go(func() error {
 			fetchStart := time.Now()
 			records, err := b.Fetch()
 			if err != nil {
 				return err
 			}
-			fetchResultChan <- fetchResult{records: records, batch: b}
 			f.logger.Debug(
 				"fetched an arrow batch",
 				zap.Duration("duration", time.Since(fetchStart)),
 				zap.Int("row_count", b.GetRowCount()),
 			)
+			mu.Lock()
+			defer mu.Unlock()
+			writeStart := time.Now()
+			for _, rec := range *records {
+				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
+					writer.NewBufferedRowGroup()
+				}
+				if err := writer.WriteBuffered(rec); err != nil {
+					return err
+				}
+				fileInfo, err := os.Stat(fw.Name())
+				if err == nil { // ignore error
+					if fileInfo.Size() > f.limitInBytes {
+						return drivers.ErrStorageLimitExceeded
+					}
+				}
+			}
+			batchesLeft--
+			f.logger.Debug(
+				"wrote an arrow batch to a parquet file",
+				zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
+				zap.Int("row_count", b.GetRowCount()),
+				zap.Duration("write_duration", time.Since(writeStart)),
+			)
+			f.totalRecords += int64(b.GetRowCount())
 			return nil
 		})
 	}
 
-	err = fetchGrp.Wait()
-	close(fetchResultChan)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := writeGrp.Wait(); err != nil {
+	if err := errGrp.Wait(); err != nil {
 		return nil, err
 	}
 
@@ -304,11 +284,6 @@ func (f *fileIterator) Format() string {
 }
 
 var _ drivers.FileIterator = &fileIterator{}
-
-type fetchResult struct {
-	records *[]arrow.Record
-	batch   *sf.ArrowBatch
-}
 
 type sourceProperties struct {
 	SQL string `mapstructure:"sql"`

@@ -18,6 +18,7 @@ import type {
   ScrubRange,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
   V1MetricsView,
@@ -151,6 +152,7 @@ function syncDimensions(
     !dimensionsMap.has(metricsExplorer.selectedDimensionName)
   ) {
     metricsExplorer.selectedDimensionName = undefined;
+    metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
   if (metricsExplorer.allDimensionsVisible) {
@@ -232,11 +234,23 @@ const metricViewReducers = {
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
+      if (mode) {
+        metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
+      } else if (metricsExplorer.selectedDimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else if (metricsExplorer.expandedMeasureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 
   setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
       const dimensions: PivotChipData[] = [];
 
       value.forEach((val) => {
@@ -261,6 +275,8 @@ const metricViewReducers = {
 
   setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
       const dimensions: PivotChipData[] = [];
       const measures: PivotChipData[] = [];
 
@@ -289,6 +305,7 @@ const metricViewReducers = {
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
       if (value.type === PivotChipType.Measure) {
         metricsExplorer.pivot.columns.measure.push(value);
       } else {
@@ -309,7 +326,7 @@ const metricViewReducers = {
 
   setPivotSort(name: string, sorting: SortingState) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting };
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
     });
   },
 
@@ -318,6 +335,15 @@ const metricViewReducers = {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         columnPage: pageNumber,
+      };
+    });
+  },
+
+  setPivotRowPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        rowPage: pageNumber,
       };
     });
   },
@@ -332,6 +358,7 @@ const metricViewReducers = {
         expanded: {},
         sorting: [],
         columnPage: 1,
+        rowPage: 1,
       };
     });
   },
@@ -339,6 +366,12 @@ const metricViewReducers = {
   setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
+      if (measureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
 
       // If going into TDD view and already having a comparison dimension,
       // then set the pinIndex
@@ -373,6 +406,11 @@ const metricViewReducers = {
   setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
+      if (dimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 

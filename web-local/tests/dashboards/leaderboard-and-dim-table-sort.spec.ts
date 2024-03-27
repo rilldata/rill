@@ -1,5 +1,5 @@
-import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { expect, Locator } from "@playwright/test";
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { test } from "../utils/test";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
@@ -40,13 +40,32 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("button", { name: "null 32.9k" }),
     );
 
+    const timeRangeMenu = page.getByRole("button", {
+      name: "Select time range",
+    });
+    const contextColumnMenu = page.getByRole("button", {
+      name: "Select a context column",
+    });
+
+    async function openTimeRangeMenu() {
+      await timeRangeMenu.click();
+      await page
+        .getByRole("menu", { name: "Time range selector" })
+        .waitFor({ state: "visible" });
+    }
+
+    async function openContextColumnMenu() {
+      await contextColumnMenu.click();
+      await page.getByRole("menu").waitFor({ state: "visible" });
+    }
+
     // add pct of total context column
-    await page.getByRole("button", { name: "Select a context column" }).click();
+    await openContextColumnMenu();
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
 
     await assertAAboveB(
       page.getByRole("button", { name: "Microsoft 10.4k 10%" }),
-      page.getByRole("button", { name: "null 32.9k 32%" }),
+      page.getByRole("button", { name: "null 32.9k 33%" }),
     );
 
     //toggle sort by pct of total
@@ -54,7 +73,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       .locator("svelte-virtual-list-row")
       .filter({
         hasText:
-          "Domain # % news.google.com 12.9k 12% sports.yahoo.com 12.9k 12% instagram.com 13",
+          "Domain # % news.google.com 12.9k 13% sports.yahoo.com 12.9k 13% instagram.com 13",
       })
       .getByRole("button", {
         name: "Toggle sort leaderboards by context column",
@@ -62,15 +81,16 @@ test.describe("leaderboard and dimension table sorting", () => {
       .click();
 
     await assertAAboveB(
-      page.getByRole("button", { name: "facebook.com 15.6k 15%" }),
-      page.getByRole("button", { name: "news.google.com 12.9k 12%" }),
+      page.getByRole("button", { name: "facebook.com 15.6k 16%" }),
+      page.getByRole("button", { name: "news.google.com 12.9k 13%" }),
     );
 
     // add time comparison and select Pct change
     await page.getByRole("button", { name: "No comparison" }).click();
     await page.getByRole("menuitem", { name: "Time" }).click();
+    await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "Select time range" }).click();
+    await openTimeRangeMenu();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
 
     // need a slight delay for the time range to update
@@ -78,7 +98,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     // in the context column dropdown
     await page.waitForTimeout(1000);
 
-    await page.getByRole("button", { name: "Select a context column" }).click();
+    await openContextColumnMenu();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
 
     // need a slight delay for the rankings to update
@@ -103,12 +123,12 @@ test.describe("leaderboard and dimension table sorting", () => {
       });
 
     await assertAAboveB(
-      page.getByRole("button", { name: "news.yahoo.com 89 15%" }),
+      page.getByRole("button", { name: "news.yahoo.com 89 16%" }),
       page.getByRole("button", { name: "sports.yahoo.com 67 -27%" }),
     );
 
     // select absolute change
-    await page.getByRole("button", { name: "Select a context column" }).click();
+    await openContextColumnMenu();
     await page.getByRole("menuitem", { name: "Absolute change" }).click();
 
     await assertAAboveB(
@@ -199,7 +219,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     await assertAAboveB(
       page
         .locator("div")
-        .filter({ hasText: /^4%$/ })
+        .filter({ hasText: /^5%$/ })
         .getByRole("button", { name: "Filter dimension value" }),
       page
         .locator("div")
@@ -216,7 +236,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" }),
       page
         .locator("div")
-        .filter({ hasText: /^4%$/ })
+        .filter({ hasText: /^5%$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     );
 

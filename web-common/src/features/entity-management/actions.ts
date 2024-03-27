@@ -1,31 +1,30 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
+import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { appScreen } from "@rilldata/web-common/layout/app-store";
-import { currentHref } from "@rilldata/web-common/layout/navigation/stores";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { get } from "svelte/store";
-import {
-  getFileAPIPathFromNameAndType,
-  getLabel,
-  getRouteFromName,
-} from "./entity-mappers";
+import { getLabel, removeLeadingSlash } from "./entity-mappers";
 import { getNextEntityName } from "./name-utils";
 import type { EntityType } from "./types";
 
 export async function renameFileArtifact(
   instanceId: string,
-  fromName: string,
-  toName: string,
+  fromPath: string,
+  toPath: string,
   type: EntityType,
 ) {
   await runtimeServiceRenameFile(instanceId, {
-    fromPath: getFileAPIPathFromNameAndType(fromName, type),
-    toPath: getFileAPIPathFromNameAndType(toName, type),
+    fromPath,
+    toPath,
   });
+
+  const fromName = extractFileName(fromPath);
+  const toName = extractFileName(toPath);
 
   httpRequestQueue.removeByName(fromName);
   notifications.send({
@@ -35,14 +34,14 @@ export async function renameFileArtifact(
 
 export async function deleteFileArtifact(
   instanceId: string,
-  name: string,
+  filePath: string,
   type: EntityType,
-  names: Array<string>,
+  allPaths: Array<string>,
   showNotification = true,
 ) {
-  const path = getFileAPIPathFromNameAndType(name, type);
+  const name = extractFileName(filePath);
   try {
-    await runtimeServiceDeleteFile(instanceId, path);
+    await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
 
     httpRequestQueue.removeByName(name);
     if (showNotification) {
@@ -50,10 +49,7 @@ export async function deleteFileArtifact(
     }
 
     if (get(appScreen)?.name === name) {
-      const route = getRouteFromName(getNextEntityName(names, name), type);
-      /** set the href store so the menu selection has an immediate visual update. */
-      currentHref.set(route);
-      goto(route);
+      await goto(getNextEntityName(allPaths, name));
     }
   } catch (err) {
     console.error(err);

@@ -35,6 +35,8 @@ type MetricsViewAggregation struct {
 	PivotOn            []string                                     `json:"pivot_on,omitempty"`
 	SecurityAttributes map[string]any                               `json:"security_attributes,omitempty"`
 
+	Exporting bool
+
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
 
@@ -73,7 +75,13 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
 	}
@@ -81,12 +89,6 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
-	if err != nil {
-		return err
 	}
 
 	if mv.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
@@ -162,7 +164,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 				})
 			}()
 
-			schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createPivotSQL(temporaryTableName), nil)
+			schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createPivotSQL(temporaryTableName, mv), nil)
 			if err != nil {
 				return err
 			}
@@ -187,10 +189,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer rows.Close()
 
-	return q.pivotDruid(ctx, rows)
+	return q.pivotDruid(ctx, rows, mv)
 }
 
-func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result) error {
+func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec) error {
 	pivotDB, err := sqlx.Connect("duckdb", "")
 	if err != nil {
 		return err
@@ -278,7 +280,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 
 		ctx, cancelFunc := context.WithTimeout(ctx, defaultExecutionTimeout)
 		defer cancelFunc()
-		pivotRows, err := pivotDB.QueryxContext(ctx, q.createPivotSQL(temporaryTableName))
+		pivotRows, err := pivotDB.QueryxContext(ctx, q.createPivotSQL(temporaryTableName, mv))
 		if err != nil {
 			return err
 		}
@@ -303,11 +305,21 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 	}()
 }
 
-func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string) string {
+func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
 	measureCols := make([]string, 0, len(q.Measures))
 	for _, m := range q.Measures {
 		sn := safeName(m.Name)
-		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, sn))
+		alias := sn
+		if q.Exporting {
+			for _, measure := range mv.Measures {
+				if strings.EqualFold(measure.Name, m.Name) {
+					if measure.Label != "" {
+						alias = safeName(measure.Label)
+					}
+				}
+			}
+		}
+		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, alias))
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
@@ -370,6 +382,7 @@ func toData(rows *sqlx.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, 
 }
 
 func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	q.Exporting = true
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -393,11 +406,11 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, q.Result.Data, w)
+		return WriteCSV(meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, q.Result.Data, w)
+		return WriteXLSX(meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, q.Result.Data, w)
+		return WriteParquet(meta, q.Result.Data, w)
 	}
 
 	return nil
@@ -499,7 +512,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
-		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &whereArgs)
+		clause, err := timeRangeClause(q.TimeRange, mv, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
 		}
@@ -590,10 +603,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	} else {
 		/*
 			Example:
-			SELECT t.d1, t.d2, t.d3, t2.m1 (SELECT d1, d2, d3, m1 FROM t WHERE ...  GROUP BY d1, d2, d3 HAVING m1 > 10 ) t LEFT JOIN (
-				SELECT d1, d2, d3, m1 FROM t WHERE ... AND (d4 = 'Safari') GROUP BY d1, d2, d3 HAVING m1 > 10
-			)  t2 ON (COALESCE(t.d1, 'val') = COALESCE(t2.d1, 'val') and COALESCE(t.d2, 'val') = COALESCE(t2.d2, 'val') and ...)
-			WHERE t2.m1 > 10
+			SELECT d1, d2, d3, m1 FROM (
+				SELECT t.d1, t.d2, t.d3, t2.m1 (
+					SELECT t.d1, t.d2, t.d3, t2.m1 FROM (
+						SELECT d1, d2, d3, m1 FROM t WHERE ...  GROUP BY d1, d2, d3 HAVING m1 > 10 ) t
+					) t
+					LEFT JOIN (
+						SELECT d1, d2, d3, m1 FROM t WHERE ... AND (d4 = 'Safari') GROUP BY d1, d2, d3 HAVING m1 > 10
+					)  t2 ON (COALESCE(t.d1, 'val') = COALESCE(t2.d1, 'val') and COALESCE(t.d2, 'val') = COALESCE(t2.d2, 'val') and ...
+				)
+			)
+			WHERE m1 > 10 -- mimicing FILTER behavior for empty sets produced by HAVING
+			GROUP BY d1, d2, d3 -- GROUP BY is required for Apache Druid
 			ORDER BY ...
 			LIMIT 100
 			OFFSET 0
@@ -623,18 +644,21 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
 	joinConditions := make([]string, 0, len(q.Dimensions))
 	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
+	finalProjection := make([]string, 0, len(q.Dimensions)+1)
 
 	selfJoinTableAlias := tempName("self_join")
 	nonNullValue := tempName("non_null")
 	for _, d := range q.Dimensions {
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", safeName(mv.Table), safeName(d.Name), selfJoinTableAlias, nonNullValue))
 		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(d.Name)))
 	}
 	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("ANY_VALUE(%[1]s.%[2]s) as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+		finalProjection = append(finalProjection, fmt.Sprintf("ANY_VALUE(%[1]s) as %[1]s", safeName(q.Measures[0].Name)))
 	} else {
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(q.Measures[0].Name)))
 	}
+	selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
 
 	measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
 	if err != nil {
@@ -661,7 +685,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	}
 
 	sql := fmt.Sprintf(`
-					SELECT * FROM (
+					SELECT %[16]s FROM (
 						SELECT %[1]s FROM (
 							SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
 						) %[2]s 
@@ -691,6 +715,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 		orderClause,                           // 13
 		extraWhere,                            // 14
 		druidGroupBy,                          // 15
+		strings.Join(finalProjection, ","),    // 16
 	)
 
 	args = args[:0]

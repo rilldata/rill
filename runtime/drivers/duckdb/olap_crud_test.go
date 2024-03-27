@@ -154,7 +154,8 @@ func Test_connection_DropTable(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-drop", false, "select 1")
 	require.NoError(t, err)
 
-	err = c.DropTable(context.Background(), "test-drop", false)
+	// Note: true since at lot of places we look at information_schema lookup on main db to determine whether tbl is a view or table
+	err = c.DropTable(context.Background(), "test-drop", true)
 	require.NoError(t, err)
 
 	_, err = os.ReadDir(filepath.Join(temp, "test-drop"))
@@ -524,6 +525,6 @@ func verifyCount(t *testing.T, c *connection, table string, expected int) {
 	require.True(t, res.Next())
 	var count int
 	require.NoError(t, res.Scan(&count))
-	require.Equal(t, 1, count)
+	require.Equal(t, expected, count)
 	require.NoError(t, res.Close())
 }

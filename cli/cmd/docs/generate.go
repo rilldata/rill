@@ -9,20 +9,17 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
 func GenerateCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
-	cfg := ch.Config
-
 	docsCmd := &cobra.Command{
 		Use:    "generate",
 		Short:  "Generate CLI documentation",
 		Args:   cobra.ExactArgs(1),
-		Hidden: !cfg.IsDev(),
+		Hidden: !ch.IsDev(),
 		Run: func(cmd *cobra.Command, args []string) {
 			dir := args[0]
 			rootCmd.DisableAutoGenTag = true
@@ -36,17 +33,11 @@ func GenerateCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
 }
 
 func genMarkdownTree(cmd *cobra.Command, dir string) error {
-	identity := func(s string) string {
-		parts := strings.Split(s, "_")
-		last := &parts[len(parts)-1]
-		*last = (*last)[:len(*last)-3]
-		return filepath.Join(parts...)
-	}
 	emptyStr := func(s string) string { return "" }
-	return genMarkdownTreeCustom(cmd, dir, emptyStr, identity)
+	return genMarkdownTreeCustom(cmd, dir, emptyStr)
 }
 
-func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {
+func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string) error {
 	if cmd.Hidden {
 		return nil
 	}
@@ -61,7 +52,7 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 			sd = filepath.Join(dir, cmd.Name())
 		}
 
-		if err := genMarkdownTreeCustom(c, sd, filePrepender, linkHandler); err != nil {
+		if err := genMarkdownTreeCustom(c, sd, filePrepender); err != nil {
 			return err
 		}
 	}
@@ -94,10 +85,10 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 		return err
 	}
 
-	return genMarkdownCustom(cmd, f, linkHandler)
+	return genMarkdownCustom(cmd, f)
 }
 
-func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {
+func genMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	cmd.InitDefaultHelpCmd()
 	cmd.InitDefaultHelpFlag()
 
@@ -136,7 +127,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}
 
-	if err := printOptions(buf, cmd, name); err != nil {
+	if err := printOptions(buf, cmd); err != nil {
 		return err
 	}
 	if hasSeeAlso(cmd) {
@@ -199,7 +190,7 @@ func hasSeeAlso(cmd *cobra.Command) bool {
 	return false
 }
 
-func printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error {
+func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
 	flags := cmd.NonInheritedFlags()
 	flags.SetOutput(buf)
 	if flags.HasAvailableFlags() {

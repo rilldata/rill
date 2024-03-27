@@ -34,10 +34,12 @@
 
   .ui-copy-muted {
     @apply text-gray-600 dark:text-gray-200;
+   
   }
 
-  .ui-copy-primary {
-    @apply text-primary-700 dark:text-primary-200;
+  .ui-header-primary {
+    @apply text-slate-600 dark:text-slate-100;
+    @apply hover:text-primary-700 group-hover:text-primary-700;
   }
 
   .ui-copy-strong {
@@ -233,4 +235,14 @@ body {
 
 a {
   @apply text-primary-500 hover:text-primary-600 font-medium;
+}
+
+.slide {
+  transition-property: padding-left;
+  transition-duration: 400ms;
+  transition-timing-function: ease-in-out;
+}
+
+.left-shift {
+  @apply pl-8;
 }

@@ -44,7 +44,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	// we first ingest data in a temporary table in the main db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
 	// whether table goes in main db or in separate table specific db
-	tmpTable := fmt.Sprintf("__%s_tmp_postgres", sinkCfg.Table)
+	tmpTable := fmt.Sprintf("__%s_tmp_motherduck", sinkCfg.Table)
 	defer func() {
 		// ensure temporary table is cleaned
 		err := t.to.Exec(context.Background(), &drivers.Statement{
@@ -79,7 +79,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			token = os.Getenv("motherduck_token")
 		}
 		if token == "" {
-			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/deploy/credentials/motherduck")
+			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
 		}
 
 		// load motherduck extension; connect to motherduck service

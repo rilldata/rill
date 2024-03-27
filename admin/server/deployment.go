@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -75,38 +74,6 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 	}
 
 	return &adminv1.TriggerRefreshSourcesResponse{}, nil
-}
-
-func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Request) {
-	orgName := r.URL.Query().Get("organization")
-	projectName := r.URL.Query().Get("project")
-	if orgName == "" || projectName == "" {
-		http.Error(w, "organization or project not specified", http.StatusBadRequest)
-		return
-	}
-
-	proj, err := s.admin.DB.FindProjectByName(r.Context(), orgName, projectName)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if proj.ProdDeploymentID == nil {
-		http.Error(w, "project does not have a deployment", http.StatusBadRequest)
-		return
-	}
-
-	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.ProdDeploymentID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = s.admin.TriggerRefreshSources(r.Context(), depl, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 }
 
 func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
@@ -221,7 +188,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		}
 	}
 
-	ttlDuration := runtimeAccessTokenTTL
+	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
@@ -238,6 +205,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadProfiling,
 				runtimeauth.ReadRepo,
+				runtimeauth.ReadAPI,
 			},
 		},
 		Attributes: attr,
@@ -267,8 +235,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.state", req.State),
 	)
 
-	if req.Resource == "" {
-		return nil, status.Error(codes.InvalidArgument, "resource must be specified")
+	if !req.Navigation && req.Resource == "" {
+		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -325,7 +293,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 	}
 
-	ttlDuration := runtimeAccessTokenTTL
+	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
@@ -342,6 +310,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadProfiling,
 				runtimeauth.ReadRepo,
+				runtimeauth.ReadAPI,
 			},
 		},
 		Attributes: attr,
@@ -352,19 +321,33 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	s.admin.Used.Deployment(prodDepl.ID)
 
-	if req.Kind == "" {
-		req.Kind = runtime.ResourceKindMetricsView
-	}
-
-	iFrameURL, err := urlutil.WithQuery(urlutil.MustJoinURL(s.opts.FrontendURL, "/-/embed"), map[string]string{
+	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
-		"kind":         req.Kind,
-		"resource":     req.Resource,
-		"state":        "",
-		"theme":        req.Query["theme"],
-	})
+	}
+	if req.Kind == "" {
+		iframeQuery["kind"] = runtime.ResourceKindMetricsView
+	} else {
+		iframeQuery["kind"] = req.Kind
+	}
+	if req.Resource != "" {
+		iframeQuery["resource"] = req.Resource
+	}
+	if req.Theme != "" {
+		iframeQuery["theme"] = req.Theme
+	}
+	if req.Navigation {
+		iframeQuery["navigation"] = "true"
+	}
+	if req.State != "" {
+		iframeQuery["state"] = req.State
+	}
+	for k, v := range req.Query {
+		iframeQuery[k] = v
+	}
+
+	iFrameURL, err := urlutil.WithQuery(urlutil.MustJoinURL(s.opts.FrontendURL, "/-/embed"), iframeQuery)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not construct iframe url: %s", err.Error())
 	}

@@ -58,11 +58,9 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex = selectedValues
-    .map((label) => {
-      return rows.findIndex((row) => row[dimensionColumnName] === label);
-    })
-    .filter((i) => i >= 0);
+  $: selectedIndex = selectedValues.map((label) => {
+    return rows.findIndex((row) => row[dimensionColumnName] === label);
+  });
 
   let rowScrollOffset = 0;
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
@@ -117,18 +115,7 @@ TableCells – the cell contents.
       config,
     );
 
-    const measureColumnSizeSum = estimateColumnSize
-      .slice(1)
-      .reduce((a, b) => a + b, 0);
-
-    // Dimension column should expand to cover whole container
-    // if not manually resized
-    if (manualDimensionColumnWidth === null) {
-      estimateColumnSize[0] = Math.max(
-        containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
-        estimateColumnSize[0],
-      );
-    } else {
+    if (manualDimensionColumnWidth !== null) {
       estimateColumnSize[0] = manualDimensionColumnWidth;
     }
   }
@@ -147,10 +134,10 @@ TableCells – the cell contents.
   });
 
   $: virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
-  $: virtualWidth = $rowVirtualizer?.getTotalSize() ?? 0;
+  $: virtualHeight = $rowVirtualizer?.getTotalSize() ?? 0;
 
   $: virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
-  $: virtualHeight = $columnVirtualizer?.getTotalSize() ?? 0;
+  $: virtualWidth = $columnVirtualizer?.getTotalSize() ?? 0;
 
   let activeIndex;
   function setActiveIndex(event) {
@@ -207,7 +194,7 @@ TableCells – the cell contents.
     }}
     style:width="100%"
     style:height="100%"
-    class="overflow-auto grid"
+    class="overflow-auto grid max-w-fit"
     style:grid-template-columns="max-content auto"
     on:scroll={() => {
       /** capture to suppress cell tooltips. Otherwise,

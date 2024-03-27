@@ -2,13 +2,21 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { slide } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let formState: any; // svelte-forms-lib's FormState
   export let index: number;
 
-  const metricsView = useMetricsView(getStateManagers());
+  const { form, errors, validateField } = formState;
+
+  $: metricsView = useMetricsView(
+    $runtime.instanceId,
+    $form["metricsViewName"],
+  );
 
   $: measure = $metricsView.data?.measures?.find(
     (m) => m.name === $form["measure"],
@@ -20,7 +28,14 @@
     },
   ];
 
-  const { form, errors } = formState;
+  // Debounce the update of value. This avoid constant refetches
+  let value: string = $form["criteria"][index].value;
+  const valueUpdater = debounce(() => {
+    $form["criteria"][index].value = value;
+    validateField("criteria");
+  }, 500);
+
+  $: groupErr = parseCriteriaError($errors["criteria"], index);
 </script>
 
 <div class="grid grid-cols-2 flex-wrap gap-2">
@@ -41,14 +56,21 @@
   <Select
     id="compareWith"
     label=""
-    options={[{ value: "value" }, { value: "measure" }]}
+    options={[{ value: "Value" }]}
     placeholder="compare with"
-    value={"value"}
+    value={"Value"}
   />
   <InputV2
-    bind:value={$form["criteria"][index]["value"]}
-    error={$errors["criteria"][index]["value"]}
+    alwaysShowError
+    bind:value
+    error={$errors["criteria"][index]?.value}
     id="value"
+    on:input={valueUpdater}
     placeholder={"0"}
   />
 </div>
+{#if groupErr}
+  <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
+    {groupErr}
+  </div>
+{/if}

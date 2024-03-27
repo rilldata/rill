@@ -3,23 +3,22 @@
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
-  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
+  import { addSourceModal } from "../sources/modal/add-source-visibility";
 
-  let showAddSourceModal = false;
-  const openShowAddSourceModal = () => {
-    showAddSourceModal = true;
-    behaviourEvent?.fireSplashEvent(
+  async function openShowAddSourceModal() {
+    addSourceModal.open();
+    await behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.SourceModal,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
     );
-  };
+  }
 </script>
 
 <section class="flex flex-col gap-y-6 items-center text-center">
@@ -48,8 +47,4 @@
       Add data
     </div>
   </button>
-  <AddSourceModal
-    open={showAddSourceModal}
-    on:close={() => (showAddSourceModal = false)}
-  />
 </section>

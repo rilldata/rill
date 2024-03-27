@@ -1,5 +1,6 @@
 <script>
   import { page } from "$app/stores";
+  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -14,11 +15,14 @@
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import CreateAlert from "../alerts/CreateAlert.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  $: dashboard = $page.params.dashboard;
 
   $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
@@ -32,15 +36,15 @@
 >
   <Tooltip distance={2}>
     <a
-      href="/"
       class="inline-flex items-center hover:bg-gray-200 grid place-items-center rounded"
+      href="/"
+      style:height="36px"
+      style:margin-bottom="4px"
       style:margin-left="8px"
       style:margin-top="4px"
-      style:margin-bottom="4px"
-      style:height="36px"
       style:width="36px"
     >
-      <Home size="20px" color="black" />
+      <Home color="black" size="20px" />
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
@@ -49,7 +53,7 @@
   {:else}
     <div />
   {/if}
-  <div class="flex gap-x-4 items-center">
+  <div class="flex gap-x-2 items-center">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
@@ -57,8 +61,14 @@
       <ShareProjectButton {organization} {project} />
     {/if}
     {#if onDashboardPage}
-      <LastRefreshedDate />
-      <ShareDashboardButton />
+      <StateManagersProvider metricsViewName={dashboard}>
+        <LastRefreshedDate {dashboard} />
+        {#if $user.isSuccess && $user.data.user}
+          <CreateAlert />
+          <Bookmarks />
+        {/if}
+        <ShareDashboardButton />
+      </StateManagersProvider>
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

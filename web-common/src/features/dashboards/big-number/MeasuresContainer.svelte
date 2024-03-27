@@ -5,13 +5,12 @@
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
 
   export let metricViewName;
   export let exploreContainerWidth;
@@ -47,9 +46,7 @@
   $: metricsView = useMetricsView(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-  $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
+  let metricsContainerHeight: number;
 
   let measuresWrapper;
   let measuresHeight: number[] = [];
@@ -168,9 +165,10 @@
 
 <svelte:window on:resize={() => calculateGridColumns()} />
 <div
+  class="overflow-y-scroll"
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:width={containerWidths[numColumns]}
-  use:listenToNodeResize
+  bind:clientHeight={metricsContainerHeight}
 >
   <div
     bind:this={measuresWrapper}
@@ -178,7 +176,7 @@
     style:column-gap="{COLUMN_GAP}px"
   >
     <div class="bg-white sticky top-0">
-      <SeachableFilterButton
+      <SearchableFilterButton
         label="Measures"
         on:deselect-all={setAllMeasuresNotVisible}
         on:item-clicked={toggleMeasureVisibility}

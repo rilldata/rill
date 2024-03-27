@@ -20,6 +20,7 @@ import { useDashboardFileNames } from "../../dashboards/selectors";
 import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
 import { EntityType } from "../../entity-management/types";
+import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -52,6 +53,8 @@ export function useCreateDashboardFromTableUIAction(
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
+  const isAiEnabled = get(featureFlags.ai);
+
   // Get the list of existing dashboards to generate a unique name
   // We call here to avoid: `Error: Function called outside component initialization`
   const dashboardNames = useDashboardFileNames(instanceId);
@@ -91,7 +94,7 @@ export function useCreateDashboardFromTableUIAction(
         {
           table: tableName,
           path: newFilePath,
-          useAi: true,
+          useAi: isAiEnabled, // AI isn't enabled during e2e tests
         },
         abortController.signal,
       );
@@ -149,6 +152,8 @@ export async function createDashboardFromTableInMetricsEditor(
   modelName: string,
   metricsViewName: string,
 ) {
+  const isAiEnabled = get(featureFlags.ai);
+
   const tableName = modelName;
   let isAICancelled = false;
   const abortController = new AbortController();
@@ -177,7 +182,7 @@ export async function createDashboardFromTableInMetricsEditor(
       {
         table: tableName,
         path: filePath,
-        useAi: true,
+        useAi: isAiEnabled, // AI isn't enabled during e2e tests
       },
       abortController.signal,
     );

@@ -609,7 +609,7 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*s
 	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	olap, release, err := rt.OLAP(testCtx(), instanceID)
+	olap, release, err := rt.OLAP(testCtx(), instanceID, "")
 	require.NoError(t, err)
 	defer release()
 	res, err := olap.Execute(testCtx(), &drivers.Statement{Query: "SELECT count(*) FROM test"})

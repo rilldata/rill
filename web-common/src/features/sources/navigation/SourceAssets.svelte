@@ -1,13 +1,14 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { flip } from "svelte/animate";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
-  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { appScreen } from "../../../layout/app-store";
-  import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
@@ -20,29 +21,31 @@
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { EntityType } from "../../entity-management/types";
   import { createModelFromSource } from "../createModel";
-  import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
+  import { addSourceModal } from "../modal/add-source-visibility";
+
+  let showTables = true;
+  let showRenameTableModal = false;
+  let renameTableName: null | string = null;
 
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
-  let showTables = true;
+  $: hasNoAssets = $sourceNames.data?.length === 0;
 
-  let showAddSourceModal = false;
+  async function openShowAddSourceModal() {
+    addSourceModal.open();
 
-  const openShowAddSourceModal = () => {
-    showAddSourceModal = true;
-
-    behaviourEvent?.fireSourceTriggerEvent(
+    await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      $appScreen,
+      $appScreen.type,
       MetricsEventSpace.LeftPanel,
     );
-  };
+  }
 
-  const queryHandler = async (tableName: string) => {
+  async function queryHandler(tableName: string) {
     await createModelFromSource(
       $runtime.instanceId,
       $modelNames?.data ?? [],
@@ -50,77 +53,84 @@
       tableName,
     );
     // TODO: fire telemetry
-  };
+  }
 
-  let showRenameTableModal = false;
-  let renameTableName: null | string = null;
-  const openRenameTableModal = (tableName: string) => {
+  function openRenameTableModal(tableName: string) {
     showRenameTableModal = true;
     renameTableName = tableName;
-  };
+  }
 
-  $: hasNoAssets = $sourceNames.data?.length === 0;
+  let showGenerateChartModal = false;
+  let generateChartTable = "";
+  let generateChartConnector = "";
+  function openGenerateChartModal(tableName: string, connector: string) {
+    showGenerateChartModal = true;
+    generateChartTable = tableName;
+    generateChartConnector = connector;
+  }
 </script>
 
-<NavigationHeader bind:show={showTables} toggleText="sources"
-  >Sources</NavigationHeader
->
+<div class="h-fit flex flex-col">
+  <NavigationHeader bind:show={showTables}>Sources</NavigationHeader>
 
-{#if showTables}
-  <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-    {#if $sourceNames?.data}
-      {#each $sourceNames.data as sourceName (sourceName)}
-        <div
-          animate:flip={{ duration: 200 }}
-          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
-        >
-          <NavigationEntry
-            name={sourceName}
-            href={`/source/${sourceName}`}
-            open={$page.url.pathname === `/source/${sourceName}`}
-            immediatelyNavigate={false}
-            on:command-click={() => queryHandler(sourceName)}
+  {#if showTables}
+    <ol transition:slide={{ duration }}>
+      {#if $sourceNames?.data}
+        {#each $sourceNames.data as sourceName (sourceName)}
+          <li
+            animate:flip={{ duration: 200 }}
+            transition:slide={{ duration }}
+            aria-label={sourceName}
           >
-            <svelte:fragment slot="more">
-              <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+            <NavigationEntry
+              expandable
+              name={sourceName}
+              href={`/source/${sourceName}`}
+              open={$page.url.pathname === `/source/${sourceName}`}
+              on:command-click={() => queryHandler(sourceName)}
+            >
+              <div slot="more" transition:slide={{ duration }}>
                 <ColumnProfile indentLevel={1} objectName={sourceName} />
               </div>
-            </svelte:fragment>
 
-            <svelte:fragment slot="tooltip-content">
-              <SourceTooltip {sourceName} connector="" />
-            </svelte:fragment>
+              <SourceTooltip slot="tooltip-content" {sourceName} connector="" />
 
-            <svelte:fragment slot="menu-items" let:toggleMenu>
               <SourceMenuItems
+                slot="menu-items"
                 {sourceName}
-                {toggleMenu}
                 on:rename-asset={() => {
                   openRenameTableModal(sourceName);
                 }}
+                on:generate-chart={({ detail: { table, connector } }) => {
+                  openGenerateChartModal(table, connector);
+                }}
               />
-            </svelte:fragment>
-          </NavigationEntry>
-        </div>
-      {/each}
-    {/if}
-    <AddAssetButton
-      id="add-table"
-      label="Add source"
-      bold={hasNoAssets}
-      on:click={openShowAddSourceModal}
-    />
-  </div>
-{/if}
+            </NavigationEntry>
+          </li>
+        {/each}
+      {/if}
+      <AddAssetButton
+        id="add-table"
+        label="Add source"
+        bold={hasNoAssets}
+        on:click={openShowAddSourceModal}
+      />
+    </ol>
+  {/if}
+</div>
 
-<AddSourceModal
-  on:close={() => (showAddSourceModal = false)}
-  open={showAddSourceModal}
-/>
 {#if showRenameTableModal && renameTableName !== null}
   <RenameAssetModal
     entityType={EntityType.Table}
     closeModal={() => (showRenameTableModal = false)}
     currentAssetName={renameTableName}
+  />
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    table={generateChartTable}
+    connector={generateChartConnector}
   />
 {/if}

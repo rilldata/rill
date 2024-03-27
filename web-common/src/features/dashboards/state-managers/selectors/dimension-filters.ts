@@ -94,6 +94,7 @@ export type DimensionFilterItem = {
   name: string;
   label: string;
   selectedValues: string[];
+  isInclude: boolean;
 };
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
@@ -121,6 +122,7 @@ export function getDimensionFilters(
       name: ident,
       label: getDimensionDisplayName(dim),
       selectedValues: getValuesInExpression(e),
+      isInclude: e.cond?.op === V1Operation.OPERATION_IN,
     });
   });
 
@@ -148,6 +150,7 @@ export const getAllDimensionFilterItems = (
           dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
         selectedValues: [],
+        isInclude: true,
       });
     }
 

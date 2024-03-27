@@ -18,7 +18,7 @@
     "@rgossiaux/svelte-headlessui": "^2.0.0",
     "@rilldata/svelte-query": "^4.29.20-0.0.3",
     "@sveltejs/adapter-static": "^1.0.0",
-    "@sveltejs/kit": "^1.20.4",
+    "@sveltejs/kit": "1.30.0",
     "@tanstack/svelte-query": "npm:@rilldata/svelte-query@4.29.20-0.0.3",
     "@tanstack/svelte-table": "^8.11.8",
     "autoprefixer": "^10.4.13",

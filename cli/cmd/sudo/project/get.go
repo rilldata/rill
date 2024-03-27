@@ -17,13 +17,11 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Get project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := ch.Config
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				OrganizationName: args[0],
 				Name:             args[1],
@@ -42,9 +40,10 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
 			fmt.Printf("Created on: %s\n", project.CreatedOn.AsTime().Format(time.RFC3339Nano))
 			fmt.Printf("Public: %t\n", project.Public)
-			fmt.Printf("Region: %s\n", project.Region)
+			fmt.Printf("Provisioner: %s\n", project.Provisioner)
 			fmt.Printf("Github URL: %s\n", project.GithubUrl)
 			fmt.Printf("Subpath: %s\n", project.Subpath)
+			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Prod branch: %s\n", project.ProdBranch)
 			fmt.Printf("Prod OLAP driver: %s\n", project.ProdOlapDriver)
 			fmt.Printf("Prod OLAP DSN: %s\n", project.ProdOlapDsn)

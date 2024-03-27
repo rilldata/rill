@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetricsView,
     useModelHasTimeSeries,
@@ -19,7 +18,6 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     metricsExplorerStore,
     useDashboardStore,
@@ -37,7 +35,6 @@
 
   const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
-  const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange | undefined;
@@ -77,11 +74,11 @@
       localUserPreferences.set({ timeZone: "UTC" });
     }
 
-    baseTimeRange = $dashboardStore.selectedTimeRange?.start &&
-      $dashboardStore.selectedTimeRange?.end && {
-        name: $dashboardStore.selectedTimeRange?.name,
-        start: $dashboardStore.selectedTimeRange.start,
-        end: $dashboardStore.selectedTimeRange.end,
+    baseTimeRange = $timeControlsStore.selectedTimeRange?.start &&
+      $timeControlsStore.selectedTimeRange?.end && {
+        name: $timeControlsStore.selectedTimeRange?.name,
+        start: $timeControlsStore.selectedTimeRange.start,
+        end: $timeControlsStore.selectedTimeRange.end,
       };
   }
 
@@ -168,8 +165,6 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    cancelDashboardQueries(queryClient, metricViewName);
-
     metricsExplorerStore.selectTimeRange(
       metricViewName,
       timeRange,

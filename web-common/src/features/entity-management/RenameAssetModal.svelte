@@ -9,8 +9,16 @@
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
-  import { getLabel, getRouteFromName } from "./entity-mappers";
-  import { isDuplicateName } from "./name-utils";
+  import {
+    getFileAPIPathFromNameAndType,
+    getLabel,
+    getRouteFromName,
+  } from "./entity-mappers";
+  import {
+    INVALID_NAME_MESSAGE,
+    VALID_NAME_PATTERN,
+    isDuplicateName,
+  } from "./name-utils";
 
   export let closeModal: () => void;
   export let entityType: EntityType;
@@ -28,10 +36,7 @@
     validationSchema: yup.object({
       newName: yup
         .string()
-        .matches(
-          /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-          "Name must start with a letter or underscore and contain only letters, numbers, and underscores",
-        )
+        .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         .required("Enter a name!")
         .notOneOf([currentAssetName], `That's the current name!`),
     }),
@@ -49,8 +54,8 @@
       try {
         await renameFileArtifact(
           runtimeInstanceId,
-          currentAssetName,
-          values.newName,
+          getFileAPIPathFromNameAndType(currentAssetName, entityType),
+          getFileAPIPathFromNameAndType(values.newName, entityType),
           entityType,
         );
         goto(getRouteFromName(values.newName, entityType), {

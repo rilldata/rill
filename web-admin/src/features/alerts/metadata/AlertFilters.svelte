@@ -6,8 +6,8 @@
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { fly } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { fly } from "svelte/transition";
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
@@ -19,9 +19,8 @@
     $dashboard.data?.metricsView?.state?.validSpec?.dimensions ?? [];
   $: dimensionIdMap = getMapFromArray(
     dimensions,
-    (dimension) => dimension.name as string,
+    (dimension) => dimension.name,
   );
-
   $: currentDimensionFilters = getDimensionFilters(dimensionIdMap, filters);
 </script>
 
@@ -29,13 +28,14 @@
   <MetadataLabel>Filters ({filtersLength})</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength && currentDimensionFilters.length}
-      {#each currentDimensionFilters as { name, label, selectedValues } (name)}
+      {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
         {@const dimension = dimensions.find((d) => d.name === name)}
         <div animate:flip={{ duration: 200 }}>
           {#if dimension?.column}
             <DimensionFilterReadOnlyChip
               label={label ?? name}
               values={selectedValues}
+              {isInclude}
             />
           {/if}
         </div>

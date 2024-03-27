@@ -117,7 +117,11 @@ test.describe("dashboard", () => {
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
 
     // Change the metric trend granularity
-    await page.getByRole("button", { name: "Metric trends by day" }).click();
+
+    const timeGrainSelector = page.getByRole("button", {
+      name: "Select a time grain",
+    });
+    await timeGrainSelector.click();
     await page.getByRole("menuitem", { name: "day" }).click();
 
     // Change the time range
@@ -138,7 +142,7 @@ test.describe("dashboard", () => {
     );
 
     // Check that the total records are 272 and have comparisons
-    await expect(page.getByText("272 -23 -7%")).toBeVisible();
+    await expect(page.getByText("272 -23 -8%")).toBeVisible();
 
     // Check the row viewer accordion is updated
     await expect(page.getByText("Model Data 272 of 100k rows")).toBeVisible();
@@ -360,9 +364,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
 
     // Assert that time dimension is now week
-    await expect(
-      page.getByRole("button", { name: "Metric trends by week" }),
-    ).toBeVisible();
+    await expect(timeGrainSelector).toHaveText("Metric trends by week");
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
@@ -462,7 +464,9 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Select a measure to filter by" })
+      .click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     // Check domain and sample value in leaderboard

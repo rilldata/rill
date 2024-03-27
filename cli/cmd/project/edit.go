@@ -9,11 +9,10 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodBranch, path, region string
+	var name, description, prodVersion, prodBranch, path, provisioner string
 	var public bool
 	var slots int
 	var prodTTL int64
-	cfg := ch.Config
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -22,18 +21,17 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				names, err := projectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
@@ -46,22 +44,26 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             name,
 			}
-			promptFlagValues := cfg.Interactive
+			promptFlagValues := ch.Interactive
 			if cmd.Flags().Changed("prod-slots") {
 				promptFlagValues = false
 				prodSlots := int64(slots)
 				req.ProdSlots = &prodSlots
 			}
-			if cmd.Flags().Changed("region") {
+			if cmd.Flags().Changed("provisioner") {
 				promptFlagValues = false
-				req.Region = &region
+				req.Provisioner = &provisioner
 			}
 			if cmd.Flags().Changed("description") {
 				promptFlagValues = false
 				req.Description = &description
+			}
+			if cmd.Flags().Changed("prod-version") {
+				promptFlagValues = false
+				req.ProdVersion = &prodVersion
 			}
 			if cmd.Flags().Changed("prod-branch") {
 				promptFlagValues = false
@@ -78,7 +80,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if promptFlagValues {
-				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
+				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
 				if err != nil {
 					return err
 				}
@@ -107,8 +109,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.PrintlnSuccess("Updated project")
-			return ch.Printer.PrintResource(toRow(updatedProj.Project))
+			ch.PrintfSuccess("Updated project\n")
+			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
+
+			return nil
 		},
 	}
 
@@ -118,10 +122,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
+	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
-	editCmd.Flags().StringVar(&region, "region", "", "Deployment region (default: current region)")
-	if !cfg.IsDev() {
+	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version (default: current version)")
+	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
+	if !ch.IsDev() {
 		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
 		}
