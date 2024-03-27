@@ -27,10 +27,7 @@
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
-  import Viz from "@rilldata/web-common/components/icons/Viz.svelte";
-  import Split from "@rilldata/web-common/components/icons/Split.svelte";
-  import Code from "@rilldata/web-common/components/icons/Code.svelte";
-  import Toggle from "@rilldata/web-common/features/custom-dashboards/Toggle.svelte";
+  import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
@@ -173,12 +170,6 @@
     await updateChart(new CustomEvent("update", { detail: stringified }));
   }
 
-  const viewOptions = [
-    { view: "code", icon: Code },
-    { view: "split", icon: Split },
-    { view: "viz", icon: Viz },
-  ];
-
   let selectedView = "split";
 
   let snap = false;
@@ -211,28 +202,7 @@
     {onChangeCallback}
   >
     <div slot="workspace-controls" class="flex gap-x-4 items-center">
-      <div
-        class="flex border-primary-300 rounded-sm border w-fit h-7 items-center justify-center"
-      >
-        {#each viewOptions as { view, icon: Icon }}
-          <input
-            type="radio"
-            id={view}
-            name="view"
-            value={view}
-            class="hidden"
-            checked={view === "code"}
-            bind:group={selectedView}
-          />
-          <label
-            for={view}
-            class="cursor-pointer w-7 aspect-square flex items-center justify-center border-r h-full border-primary-300 last:border-r-0"
-            class:bg-primary-200={selectedView === view}
-          >
-            <Icon size="15px" class="fill-primary-600" />
-          </label>
-        {/each}
-      </div>
+      <ViewSelector bind:selectedView />
 
       <div
         class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"

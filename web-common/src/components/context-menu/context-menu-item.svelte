@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
-  import { cn, flyAndScale } from "@rilldata/web-common/lib/shadcn";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   type $$Props = ContextMenuPrimitive.ItemProps & {
     inset?: boolean;
