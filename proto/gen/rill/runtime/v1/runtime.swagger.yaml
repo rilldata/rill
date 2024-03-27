@@ -1077,6 +1077,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: schema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1843,6 +1851,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: schema
+          in: query
+          required: false
+          type: string
         - name: limit
           in: query
           required: false
@@ -1955,6 +1971,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: schema
           in: query
           required: false
           type: string
@@ -5543,6 +5567,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      schema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5562,6 +5590,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      schema:
         type: string
       tableName:
         type: string
@@ -5591,6 +5623,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      schema:
         type: string
       tableName:
         type: string

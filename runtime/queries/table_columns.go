@@ -14,9 +14,9 @@ import (
 
 type TableColumns struct {
 	Connector    string
-	TableName    string
-	SchemaName   string
 	DatabaseName string
+	SchemaName   string
+	TableName    string
 	Result       []*runtimev1.ProfileColumn
 }
 
@@ -67,7 +67,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
 			err = olap.Exec(ctx, &drivers.Statement{
-				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
+				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, fullTableName(q.DatabaseName, q.SchemaName, q.TableName)),
 				Priority:         priority,
 				ExecutionTimeout: defaultExecutionTimeout,
 			})

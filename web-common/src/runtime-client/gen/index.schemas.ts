@@ -116,6 +116,8 @@ export type QueryServiceColumnTimeRangeParams = {
 
 export type QueryServiceTableCardinalityParams = {
   connector?: string;
+  database?: string;
+  schema?: string;
   priority?: number;
 };
 
@@ -133,6 +135,8 @@ export type QueryServiceColumnRugHistogramParams = {
 
 export type QueryServiceTableRowsParams = {
   connector?: string;
+  database?: string;
+  schema?: string;
   limit?: number;
   priority?: number;
 };
@@ -271,6 +275,8 @@ export type QueryServiceColumnDescriptiveStatisticsParams = {
 
 export type QueryServiceTableColumnsParams = {
   connector?: string;
+  database?: string;
+  schema?: string;
   priority?: number;
 };
 
@@ -627,6 +633,8 @@ export interface V1TableRowsResponse {
 export interface V1TableRowsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  schema?: string;
   tableName?: string;
   limit?: number;
   priority?: number;
@@ -645,6 +653,8 @@ export interface V1TableColumnsResponse {
 export interface V1TableColumnsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  schema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -656,6 +666,8 @@ export interface V1TableCardinalityResponse {
 export interface V1TableCardinalityRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  schema?: string;
   tableName?: string;
   priority?: number;
 }

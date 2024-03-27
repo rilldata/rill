@@ -4619,6 +4619,16 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 5;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string schema = 6;
+   */
+  schema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -4640,6 +4650,8 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -4715,6 +4727,16 @@ export class TableColumnsRequest extends Message<TableColumnsRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 5;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string schema = 6;
+   */
+  schema = "";
+
+  /**
    * @generated from field: string table_name = 2;
    */
   tableName = "";
@@ -4734,6 +4756,8 @@ export class TableColumnsRequest extends Message<TableColumnsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -4862,6 +4886,16 @@ export class TableRowsRequest extends Message<TableRowsRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string schema = 7;
+   */
+  schema = "";
+
+  /**
    * @generated from field: string table_name = 2;
    */
   tableName = "";
@@ -4886,6 +4920,8 @@ export class TableRowsRequest extends Message<TableRowsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

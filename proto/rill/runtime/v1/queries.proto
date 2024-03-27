@@ -938,6 +938,8 @@ message TimeSeriesValue {
 message TableCardinalityRequest {
   string instance_id = 1;
   string connector = 4;
+  string database = 5;
+  string schema = 6;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
@@ -973,6 +975,8 @@ message ProfileColumn {
 message TableRowsRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string schema = 7;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 limit = 3 [(validate.rules).int32.gte = 0];
   int32 priority = 4;

@@ -84,6 +84,8 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 
 	var q string
 	var args []any
+	// table_catalog and table_schema both means the name of the database in which the table is located in clickhouse.
+	// we use either db or schema to set table_schema
 	if db == "" && schema == "" {
 		q = `
 		SELECT
