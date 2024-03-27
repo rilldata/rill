@@ -5,7 +5,7 @@
   type $$Props = ContextMenuPrimitive.ItemProps & {
     inset?: boolean;
   };
-  type $$Events = ContextMenuPrimitive.ItemEvents;
+  // type $$Events = ContextMenuPrimitive.ItemEvents;
 
   let className: $$Props["class"] = undefined;
   export let inset: $$Props["inset"] = undefined;

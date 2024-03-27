@@ -4,7 +4,7 @@
   import Check from "svelte-radix/Check.svelte";
 
   type $$Props = ContextMenuPrimitive.CheckboxItemProps;
-  type $$Events = ContextMenuPrimitive.CheckboxItemEvents;
+  // type $$Events = ContextMenuPrimitive.CheckboxItemEvents;
 
   let className: $$Props["class"] = undefined;
   export { className as class };

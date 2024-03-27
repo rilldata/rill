@@ -5,7 +5,7 @@
   import DotFilled from "svelte-radix/DotFilled.svelte";
 
   type $$Props = ContextMenuPrimitive.RadioItemProps;
-  type $$Events = ContextMenuPrimitive.RadioItemEvents;
+  // type $$Events = ContextMenuPrimitive.RadioItemEvents;
 
   let className: $$Props["class"] = undefined;
   export let value: $$Props["value"];

@@ -1,6 +1,6 @@
 <script lang="ts">
   export let size = "1em";
-  export let color = "currentColor";
+  // export let color = "currentColor";
 
   let className: string | undefined = undefined;
   export { className as class };
