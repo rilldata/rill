@@ -19,16 +19,17 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	q := `
 		SELECT
-			T.TABLE_CATALOG AS DATABASE,
-			T.TABLE_SCHEMA AS SCHEMA,
-			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
-			C.COLUMN_NAME AS COLUMNS,
-			C.DATA_TYPE AS COLUMN_TYPE
-		FROM INFORMATION_SCHEMA.TABLES T 
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = currentDatabase()
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+			T.table_catalog AS DATABASE,
+			T.table_schema AS SCHEMA,
+			T.table_name AS NAME,
+			T.table_type AS TABLE_TYPE, 
+			C.column_name AS COLUMNS,
+			C.data_type AS COLUMN_TYPE,
+			C.ordinal_position as ORDINAL_POSITION
+		FROM information_schema.tables T 
+		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
+		WHERE T.table_schema = currentDatabase()
+		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 
 	conn, release, err := i.c.acquireMetaConn(ctx)
@@ -54,16 +55,17 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
 	q := `
 		SELECT
-			T.TABLE_CATALOG AS DATABASE,
-			T.TABLE_SCHEMA AS SCHEMA,
-			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
-			C.COLUMN_NAME AS COLUMN_NAME,
-			C.DATA_TYPE AS COLUMN_TYPE
-		FROM INFORMATION_SCHEMA.TABLES T 
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = currentDatabase() AND T.TABLE_NAME = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+			T.table_catalog AS DATABASE,
+			T.table_schema AS SCHEMA,
+			T.table_name AS NAME,
+			T.table_type AS TABLE_TYPE, 
+			C.column_name AS COLUMNS,
+			C.data_type AS COLUMN_TYPE,
+			C.ordinal_position as ORDINAL_POSITION
+		FROM information_schema.tables T 
+		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
+		WHERE T.table_schema = currentDatabase() AND T.table_name = ?
+		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 
 	conn, release, err := i.c.acquireMetaConn(ctx)
@@ -100,8 +102,9 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var tableType string
 		var columnName string
 		var columnType string
+		var oridinalPosition int
 
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType)
+		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType, &oridinalPosition)
 		if err != nil {
 			return nil, err
 		}
