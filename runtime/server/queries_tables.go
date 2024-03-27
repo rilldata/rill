@@ -30,7 +30,7 @@ func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardi
 	q := &queries.TableCardinality{
 		Connector:    req.Connector,
 		DatabaseName: req.Database,
-		SchemaName:   req.Schema,
+		SchemaName:   req.DbSchema,
 		TableName:    req.TableName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -65,7 +65,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 	q := &queries.TableColumns{
 		Connector:    req.Connector,
 		DatabaseName: req.Database,
-		SchemaName:   req.Schema,
+		SchemaName:   req.DbSchema,
 		TableName:    req.TableName,
 	}
 
@@ -102,7 +102,7 @@ func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest)
 	q := &queries.TableHead{
 		Connector:    req.Connector,
 		DatabaseName: req.Database,
-		SchemaName:   req.Schema,
+		SchemaName:   req.DbSchema,
 		TableName:    req.TableName,
 		Limit:        limit,
 	}

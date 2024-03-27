@@ -63,7 +63,10 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	defer func() { _ = release() }()
 
 	if db == "" {
-		db = "current_database()"
+		row := conn.QueryRowxContext(ctx, "SELECT current_database()")
+		if err := row.Scan(&db); err != nil {
+			return nil, err
+		}
 	}
 	if schema == "" {
 		schema = "main"

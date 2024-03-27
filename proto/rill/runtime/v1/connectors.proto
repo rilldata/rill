@@ -183,7 +183,7 @@ message OLAPListTablesResponse {
 
 message TableInfo {
   string database = 1;
-  string schema = 3;
+  string db_schema = 3;
   string name = 2;
 }
 
@@ -191,7 +191,7 @@ message OLAPGetTableRequest {
   string instance_id = 1;
   string connector = 2;
   string database = 4;
-  string schema = 5;
+  string db_schema = 5;
   string table = 3;
 }
 

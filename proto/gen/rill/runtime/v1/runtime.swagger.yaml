@@ -124,7 +124,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: schema
+        - name: dbSchema
           in: query
           required: false
           type: string
@@ -1081,7 +1081,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: schema
+        - name: dbSchema
           in: query
           required: false
           type: string
@@ -1855,7 +1855,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: schema
+        - name: dbSchema
           in: query
           required: false
           type: string
@@ -1978,7 +1978,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: schema
+        - name: dbSchema
           in: query
           required: false
           type: string
@@ -4378,10 +4378,10 @@ definitions:
         title: Connector containing the table
       database:
         type: string
-        title: Name of the database of the table (optional)
-      schema:
+        title: Name of the database where table is located (optional)
+      dbSchema:
         type: string
-        title: Name of the schema of the table (optional)
+        title: Name of the database schema where table is located (optional)
       table:
         type: string
         title: Name of the table the metrics view is based on
@@ -5569,7 +5569,7 @@ definitions:
         type: string
       database:
         type: string
-      schema:
+      dbSchema:
         type: string
       tableName:
         type: string
@@ -5593,7 +5593,7 @@ definitions:
         type: string
       database:
         type: string
-      schema:
+      dbSchema:
         type: string
       tableName:
         type: string
@@ -5613,7 +5613,7 @@ definitions:
     properties:
       database:
         type: string
-      schema:
+      dbSchema:
         type: string
       name:
         type: string
@@ -5626,7 +5626,7 @@ definitions:
         type: string
       database:
         type: string
-      schema:
+      dbSchema:
         type: string
       tableName:
         type: string

@@ -4624,9 +4624,9 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
   database = "";
 
   /**
-   * @generated from field: string schema = 6;
+   * @generated from field: string db_schema = 6;
    */
-  schema = "";
+  dbSchema = "";
 
   /**
    * Required
@@ -4651,7 +4651,7 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -4732,9 +4732,9 @@ export class TableColumnsRequest extends Message<TableColumnsRequest> {
   database = "";
 
   /**
-   * @generated from field: string schema = 6;
+   * @generated from field: string db_schema = 6;
    */
-  schema = "";
+  dbSchema = "";
 
   /**
    * @generated from field: string table_name = 2;
@@ -4757,7 +4757,7 @@ export class TableColumnsRequest extends Message<TableColumnsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -4891,9 +4891,9 @@ export class TableRowsRequest extends Message<TableRowsRequest> {
   database = "";
 
   /**
-   * @generated from field: string schema = 7;
+   * @generated from field: string db_schema = 7;
    */
-  schema = "";
+  dbSchema = "";
 
   /**
    * @generated from field: string table_name = 2;
@@ -4921,7 +4921,7 @@ export class TableRowsRequest extends Message<TableRowsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

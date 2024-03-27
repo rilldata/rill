@@ -205,7 +205,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	spec := &runtimev1.MetricsViewSpec{
 		Connector: connector,
 		Database:  tbl.Database,
-		Schema:    tbl.DatabaseSchema,
+		DbSchema:  tbl.DatabaseSchema,
 		Table:     tblName,
 	}
 	for _, measure := range doc.Measures {

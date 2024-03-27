@@ -204,7 +204,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap 
 		return "", nil
 	}
 
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.Schema, mv.Table)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DbSchema, mv.Table)
 	if err != nil {
 		return "", err
 	}
