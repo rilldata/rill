@@ -91,11 +91,12 @@ type InformationSchema interface {
 
 // Table represents a table in an information schema.
 type Table struct {
-	Database       string
-	DatabaseSchema string
-	Name           string
-	View           bool
-	Schema         *runtimev1.StructType
+	Database        string
+	DatabaseSchema  string
+	Name            string
+	View            bool
+	Schema          *runtimev1.StructType
+	UnsupportedCols map[string]string
 }
 
 // IngestionSummary is details about ingestion
