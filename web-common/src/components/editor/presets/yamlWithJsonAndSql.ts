@@ -1,8 +1,8 @@
 import { jsonLanguage } from "@codemirror/lang-json";
-import { SQLite } from "@codemirror/lang-sql";
 import { yamlLanguage } from "@codemirror/lang-yaml";
 import { LRLanguage } from "@codemirror/language";
 import { parseMixed } from "@lezer/common";
+import { DuckDBSQL } from "./duckDBDialect";
 
 const activateOnNodes = new Set(["BlockLiteralContent"]);
 
@@ -19,7 +19,7 @@ const wrap = parseMixed((node) => {
 
   if (blockLiteralCount === 1) {
     return {
-      parser: SQLite.language.parser,
+      parser: DuckDBSQL.language.parser,
     };
   } else if (blockLiteralCount === 2) {
     return {
