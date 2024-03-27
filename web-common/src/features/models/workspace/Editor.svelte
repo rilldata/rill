@@ -20,7 +20,6 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
-    SQLDialect,
     keywordCompletionSource,
     schemaCompletionSource,
     sql,
@@ -56,16 +55,17 @@
   } from "@codemirror/view";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
+  import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
 
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
 
   export let content: string;
   export let selections: SelectionRange[] = [];
@@ -74,12 +74,6 @@
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
-
-  // Autocomplete: SQL dialect
-  const DuckDBSQL: SQLDialect = SQLDialect.define({
-    keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
-  });
 
   const schema: { [table: string]: string[] } = {};
 
