@@ -6,7 +6,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -25,6 +25,7 @@
   export let modelName: string;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
+  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -32,10 +33,9 @@
   const { customDashboards } = featureFlags;
 
   $: modelRoutes = useModelRoutes($runtime.instanceId);
-  $: modelHasError = fileArtifactsStore.getFileHasErrors(
+  $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
-    modelPath,
   );
   $: modelQuery = useModel($runtime.instanceId, modelName);
   $: modelIsIdle =
@@ -79,7 +79,7 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-{#if customDashboards}
+{#if $customDashboards}
   <NavigationMenuItem
     disabled={disableCreateDashboard}
     on:click={() => {

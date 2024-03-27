@@ -7,7 +7,7 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -50,16 +50,14 @@
   // let folder: string;
   $: [fileName] = splitFolderAndName(filePath);
 
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
   const queryClient = useQueryClient();
 
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceQuery = fileArtifactsStore.getResourceForFile(
-    queryClient,
-    runtimeInstanceId,
-    filePath,
-  );
+  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   $: file = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
 
   let source: V1SourceV2 | undefined;
@@ -151,11 +149,7 @@
     );
   };
 
-  $: hasErrors = fileArtifactsStore.getFileHasErrors(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;

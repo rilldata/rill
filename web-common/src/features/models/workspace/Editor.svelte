@@ -1,3 +1,9 @@
+<script lang="ts" context="module">
+  import { writable } from "svelte/store";
+
+  export const hasUnsavedChanges = writable(false);
+</script>
+
 <script lang="ts">
   import {
     acceptCompletion,
@@ -14,7 +20,6 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
-    SQLDialect,
     keywordCompletionSource,
     schemaCompletionSource,
     sql,
@@ -50,36 +55,35 @@
   } from "@codemirror/view";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
+  import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
 
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
+
   export let content: string;
-  export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
   export let focusOnMount = false;
+  export let autoSave = true;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  let latestContent = content;
+  const schema: { [table: string]: string[] } = {};
+
+  let lastSavedContent = content;
 
   let editor: EditorView;
-  let editorContainer;
-  let editorContainerComponent;
-
-  // AUTOCOMPLETE
-
+  let editorContainerComponent: HTMLDivElement;
   let autocompleteCompartment = new Compartment();
 
-  // Autocomplete: SQL dialect
-  const DuckDBSQL: SQLDialect = SQLDialect.define({
-    keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
-  });
-
-  const schema: { [table: string]: string[] } = {};
+  $: hasUnsavedChanges.set(content !== lastSavedContent);
 
   // Autocomplete: source tables
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
@@ -104,6 +108,12 @@
         ?.map((c) => c.name as string);
     }
   }
+
+  // reactive statements to dynamically update the editor when inputs change
+  $: updateEditorContents(content);
+  $: defaultTable = getTableNameFromFromClause(content, schema);
+  $: updateAutocompleteSources(schema, defaultTable);
+  $: underlineSelection(selections || []);
 
   function getTableNameFromFromClause(
     sql: string,
@@ -168,7 +178,7 @@
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        doc: latestContent,
+        doc: content,
         extensions: [
           editorTheme(),
           lineNumbers(),
@@ -220,11 +230,9 @@
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              latestContent = v.state.doc.toString();
+              content = v.state.doc.toString();
 
-              dispatch("write", {
-                content: latestContent,
-              });
+              if (autoSave) saveContent();
             }
           }),
         ],
@@ -279,23 +287,33 @@
     }
   }
 
-  // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(content);
-  $: defaultTable = getTableNameFromFromClause(content, schema);
-  $: updateAutocompleteSources(schema, defaultTable);
-  $: underlineSelection(selections || []);
+  function saveContent() {
+    lastSavedContent = content;
+    dispatch("update", { content });
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      saveContent();
+    }
+  }
+
+  function revertContent() {
+    updateEditorContents(lastSavedContent);
+    $hasUnsavedChanges = false;
+  }
 </script>
 
-<div class="h-full w-full overflow-x-auto" bind:clientHeight={editorHeight}>
-  <div
-    bind:this={editorContainer}
-    class="editor-container h-full w-full overflow-x-auto"
-  >
+<svelte:window on:keydown={handleKeydown} />
+
+<section>
+  <div class="editor-container">
     <div
+      class="size-full"
       role="textbox"
       tabindex="0"
       bind:this={editorContainerComponent}
-      class="w-full overflow-x-auto h-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();
@@ -305,16 +323,43 @@
       }}
     />
   </div>
-</div>
 
-<style>
+  <footer>
+    <div class="flex gap-x-3">
+      {#if !autoSave}
+        <Button disabled={!$hasUnsavedChanges} on:click={saveContent}>
+          <Check size="14px" />
+          Save
+        </Button>
+
+        <Button
+          type="text"
+          disabled={!$hasUnsavedChanges}
+          on:click={revertContent}
+        >
+          <UndoIcon size="14px" />
+          Revert changes
+        </Button>
+      {/if}
+    </div>
+    <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
+      <Switch small id="auto-save" bind:checked={autoSave} />
+      <Label for="auto-save" class="font-normal text-xs">Auto-save</Label>
+    </div>
+  </footer>
+</section>
+
+<style lang="postcss">
   .editor-container {
-    padding: 0.5rem;
-    background-color: white;
-    border-radius: 0.25rem;
-    /* min-height: 400px; */
-    min-height: 100%;
-    display: grid;
-    align-items: stretch;
+    @apply size-full overflow-auto p-2 pb-0;
+  }
+
+  footer {
+    @apply justify-between items-center flex flex-none absolute bottom-0 z-40;
+    @apply h-10 p-2 w-full rounded-b-sm border-t bg-white;
+  }
+
+  section {
+    @apply size-full flex-col rounded-sm bg-white flex overflow-hidden relative;
   }
 </style>

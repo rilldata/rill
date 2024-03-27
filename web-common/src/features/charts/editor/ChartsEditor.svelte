@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import {
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -27,16 +28,13 @@
 
   $: filePath = getFilePathFromNameAndType(chartName, EntityType.Chart);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   // get the yaml blob from the file.
   $: yaml = $fileQuery.data?.blob || "";
 
   const queryClient = useQueryClient();
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    getFilePathFromNameAndType(chartName, EntityType.Chart),
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
@@ -63,6 +61,7 @@
     bind:this={editor}
     bind:view
     content={yaml}
+    extensions={[customYAMLwithJSONandSQL]}
     on:update={(e) => debounceUpdateChartContent(e.detail.content)}
   />
 </ChartsEditorContainer>

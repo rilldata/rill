@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useModel,
@@ -34,10 +34,10 @@
   $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelHasError = fileArtifactsStore.getFileHasErrors(
+  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
+  $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
-    modelPath,
   );
 
   let rollup: number;

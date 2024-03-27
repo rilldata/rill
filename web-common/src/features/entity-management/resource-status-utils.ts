@@ -1,24 +1,13 @@
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  V1ReconcileStatus,
-  V1Resource,
-} from "@rilldata/web-common/runtime-client";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, Readable } from "svelte/store";
+import { derived } from "svelte/store";
 
 export enum ResourceStatus {
   Idle,
   Busy,
   Errored,
 }
-
-export type ResourceStatusState = {
-  status: ResourceStatus;
-  error?: ErrorType<unknown>;
-  resource?: V1Resource;
-};
 
 /**
  * Used while saving to wait until either a resource is created or parse has errored.
@@ -28,11 +17,12 @@ export function resourceStatusStore(
   instanceId: string,
   filePath: string,
 ) {
-  const lastUpdatedOn = fileArtifactsStore.getLastStateUpdatedOn(filePath);
+  const artifact = fileArtifacts.getFileArtifact(filePath);
+  const lastUpdatedOn = artifact.lastStateUpdatedOn;
   return derived(
     [
-      fileArtifactsStore.getResourceForFile(queryClient, instanceId, filePath),
-      fileArtifactsStore.getAllErrorsForFile(queryClient, instanceId, filePath),
+      artifact.getResource(queryClient, instanceId),
+      artifact.getAllErrors(queryClient, instanceId),
     ],
     ([res, errors]) => {
       if (res.isFetching) return { status: ResourceStatus.Busy };
@@ -64,6 +54,7 @@ export function resourceStatusStore(
   );
 }
 
+// TODO: have a cleaner method and add to FileArtifact
 export function waitForResourceUpdate(
   queryClient: QueryClient,
   instanceId: string,
@@ -103,56 +94,4 @@ export function waitForResourceUpdate(
       }
     });
   });
-}
-
-/**
- * Assumes the initial resource has been created after a new entity creation.
- */
-export function getResourceStatusStore(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-  validator?: (res: V1Resource) => boolean,
-) {
-  return derived(
-    [
-      fileArtifactsStore.getResourceForFile(queryClient, instanceId, filePath),
-      fileArtifactsStore.getAllErrorsForFile(queryClient, instanceId, filePath),
-      useProjectParser(queryClient, instanceId),
-    ],
-    ([resourceResp, errors, projectParserResp]) => {
-      if (projectParserResp.isError) {
-        return {
-          status: ResourceStatus.Errored,
-          error: projectParserResp.error,
-        };
-      }
-
-      if (
-        errors.length ||
-        (resourceResp.isError && !resourceResp.isFetching) ||
-        projectParserResp.isError
-      ) {
-        return {
-          status: ResourceStatus.Errored,
-          error: resourceResp.error ?? projectParserResp.error,
-        };
-      }
-
-      let isBusy: boolean;
-      if (validator && resourceResp.data) {
-        isBusy = !validator(resourceResp.data);
-      } else {
-        isBusy =
-          resourceResp.isFetching ||
-          resourceResp.data?.meta?.reconcileStatus !==
-            V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-      }
-
-      return {
-        status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
-        resource: resourceResp.data,
-      };
-    },
-  ) as Readable<ResourceStatusState>;
 }

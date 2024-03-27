@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setLineStatuses } from "../../../components/editor/line-status";
@@ -14,6 +14,7 @@
 
   export let filePath: string;
   export let yaml: string;
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   let editor: YAMLEditor;
   let view: EditorView;
@@ -36,11 +37,7 @@
     setLineStatuses([], view);
   }
 
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   /**
    * Handle errors.

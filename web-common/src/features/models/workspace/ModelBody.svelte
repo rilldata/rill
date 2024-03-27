@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import type { SelectionRange } from "@codemirror/state";
@@ -48,6 +48,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
@@ -58,11 +59,7 @@
 
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    modelPath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
   $: modelError = $allErrors?.[0]?.message;
 
   $: tableQuery = createQueryServiceTableRows(
@@ -78,6 +75,8 @@
   $: workspaceLayout = $workspaces;
 
   $: tableVisible = workspaceLayout.table.visible;
+
+  $: autoSave = workspaceLayout.editor.autoSave;
 
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
@@ -131,9 +130,10 @@
     <WorkspaceEditorContainer>
       <Editor
         content={modelSql}
+        bind:autoSave={$autoSave}
         {selections}
+        on:update={debounceUpdateModelContent}
         focusOnMount={focusEditorOnMount}
-        on:write={debounceUpdateModelContent}
       />
     </WorkspaceEditorContainer>
   {/if}

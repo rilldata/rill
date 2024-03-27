@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
@@ -17,6 +17,8 @@
   const queryClient = useQueryClient();
   const sourceStore = useSourceStore(filePath);
 
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
   $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
       // this will ensure that any changes done outside our app is pulled in.
@@ -26,17 +28,9 @@
 
   $: yaml = $file.data?.blob || "";
 
-  $: allErrors = fileArtifactsStore.getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
-  $: sourceQuery = fileArtifactsStore.getResourceForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: sourceQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,

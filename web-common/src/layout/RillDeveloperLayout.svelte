@@ -1,6 +1,5 @@
 <script lang="ts">
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
@@ -35,8 +34,6 @@
       version: config.version,
       commitHash: config.build_commit,
     });
-
-    return fileArtifactsStore.init(config.instance_id);
   });
 
   let showDropOverlay = false;
