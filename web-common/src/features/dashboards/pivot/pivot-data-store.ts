@@ -30,6 +30,7 @@ import {
 } from "./pivot-queries";
 import {
   getTotalsRow,
+  getTotalsRowSkeleton,
   mergeRowTotals,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
@@ -372,6 +373,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             "5000", // Using 5000 for cache hit
           );
         }
+
+        const displayTotalsRow =
+          rowDimensionNames.length && measureNames.length;
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
           measureNames.length
@@ -398,16 +402,23 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               (totalsRowResponse !== null && totalsRowResponse?.isFetching) ||
               rowDimensionAxes?.isFetching
             ) {
+              const skeletonTotalsRowData = getTotalsRowSkeleton(
+                config,
+                columnDimensionAxes?.data,
+              );
               return axesSet({
                 isFetching: true,
                 data: lastPivotData,
                 columnDef: lastPivotColumnDef,
                 assembled: false,
                 totalColumns: lastTotalColumns,
+                totalsRowData: displayTotalsRow
+                  ? skeletonTotalsRowData
+                  : undefined,
               });
             }
 
-            const totalsRow = getTotalsRow(
+            const totalsRowData = getTotalsRow(
               config,
               columnDimensionAxes?.data,
               totalsRowResponse?.data?.data,
@@ -420,15 +431,16 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             if (rowDimensionValues.length === 0 && rowPage > 1) {
               return axesSet({
                 isFetching: false,
-                data: [totalsRow, ...lastPivotData],
+                data: lastPivotData,
                 columnDef: lastPivotColumnDef,
                 assembled: true,
                 totalColumns: lastTotalColumns,
+                totalsRowData,
                 reachedEndForRowData: true,
               });
             }
 
-            const totalColumns = getTotalColumnCount(totalsRow);
+            const totalColumns = getTotalColumnCount(totalsRowData);
 
             const axesRowTotals =
               rowDimensionAxes?.totals?.[anchorDimension] || [];
@@ -452,13 +464,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               const slicedAxesDataForDef = sliceColumnAxesDataForDef(
                 config,
                 columnDimensionAxes?.data,
-                totalsRow,
+                totalsRowData,
               );
 
               columnDef = getColumnDefForPivot(
                 config,
                 slicedAxesDataForDef,
-                totalsRow,
+                totalsRowData,
               );
 
               initialTableCellQuery = createTableCellQuery(
@@ -466,14 +478,14 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 config,
                 rowDimensionNames[0],
                 columnDimensionAxes?.data,
-                totalsRow,
+                totalsRowData,
                 rowDimensionValues,
               );
             } else {
               columnDef = getColumnDefForPivot(
                 config,
                 columnDimensionAxes?.data,
-                totalsRow,
+                totalsRowData,
               );
             }
             /**
@@ -489,6 +501,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     columnDef,
                     assembled: false,
                     totalColumns,
+                    totalsRowData: displayTotalsRow ? totalsRowData : undefined,
                   });
                 }
 
@@ -519,6 +532,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                         columnDef,
                         assembled: false,
                         totalColumns,
+                        totalsRowData: displayTotalsRow
+                          ? totalsRowData
+                          : undefined,
                       });
                     }
                     cellData = initialTableCellData.data?.data || [];
@@ -539,7 +555,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   config,
                   pivotData,
                   columnDimensionAxes?.data,
-                  totalsRow,
+                  totalsRowData,
                 );
 
                 /**
@@ -567,17 +583,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
-                    let assembledTableData = tableDataExpanded;
-                    if (rowDimensionNames.length && measureNames.length) {
-                      assembledTableData = [totalsRow, ...tableDataExpanded];
-                    }
-
                     return {
                       isFetching: false,
-                      data: assembledTableData,
+                      data: tableDataExpanded,
                       columnDef,
                       assembled: true,
                       totalColumns,
+                      totalsRowData: displayTotalsRow
+                        ? totalsRowData
+                        : undefined,
                     };
                   },
                 ).subscribe(cellSet);
