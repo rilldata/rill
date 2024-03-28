@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 )
 
@@ -62,6 +63,18 @@ func (p *Parser) parseModel(node *Node) error {
 		// Parse the SQL
 		ast, err := duckdbsql.Parse(node.SQL)
 		if err != nil {
+			var posError duckdbsql.PositionError
+			if errors.As(err, &posError) {
+				return pathError{
+					path: node.SQLPath,
+					err: locationError{
+						err: posError.Err(),
+						location: &runtimev1.CharLocation{
+							Line: uint32(findLineNumber(node.SQL, posError.Position)),
+						},
+					},
+				}
+			}
 			return pathError{path: node.SQLPath, err: newDuckDBError(err)}
 		}
 
@@ -104,4 +117,24 @@ func (p *Parser) parseModel(node *Node) error {
 	}
 
 	return nil
+}
+
+// findLineNumber returns the line number of the pos in the given text.
+// Lines are counted starting from 1, and positions start from 0.
+func findLineNumber(text string, pos int) int {
+	if pos < 0 || pos >= len(text) {
+		return -1
+	}
+
+	lineNumber := 1
+	for i, char := range text {
+		if i == pos {
+			break
+		}
+		if char == '\n' {
+			lineNumber++
+		}
+	}
+
+	return lineNumber
 }

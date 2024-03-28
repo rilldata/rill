@@ -331,6 +331,16 @@ func createStandaloneValue(val any) (astNode, error) {
 			val = forceConvertToNum[int64](vt)
 			t = "BIGINT"
 		}
+	case json.Number:
+		i, err := vt.Int64()
+		if err == nil {
+			return createStandaloneValue(i)
+		}
+		f, err := vt.Float64()
+		if err == nil {
+			return createStandaloneValue(f)
+		}
+		return nil, err
 	case string:
 		t = "VARCHAR"
 		val = fmt.Sprintf(`"%s"`, vt)

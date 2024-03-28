@@ -270,7 +270,7 @@ func (m byteMapper) value(p any) (any, error) {
 type dateMapper struct{}
 
 func (m dateMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}, nil
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}, nil
 }
 
 func (m dateMapper) dest(reflect.Type) (any, error) {

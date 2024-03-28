@@ -66,7 +66,7 @@ func TestServer_TableColumns_DuplicateNames(t *testing.T) {
 	require.Equal(t, "a", cr.GetProfileColumns()[0].Name)
 	require.Equal(t, "INTEGER", cr.GetProfileColumns()[0].Type)
 
-	require.Equal(t, "a:1", cr.GetProfileColumns()[1].Name)
+	require.Equal(t, "a_1", cr.GetProfileColumns()[1].Name)
 	require.Equal(t, "INTEGER", cr.GetProfileColumns()[1].Type)
 }
 

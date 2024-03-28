@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"strings"
 )
 
 func TestQuery(t *testing.T) {
@@ -201,7 +201,11 @@ func TestClose(t *testing.T) {
 	})
 
 	err := g.Wait()
-	require.Equal(t, errors.New("sql: database is closed"), err)
+
+	require.Error(t, err)
+	isConnErr := strings.Contains(err.Error(), "database/sql/driver: could not connect to database")
+	isClosedErr := strings.Contains(err.Error(), "sql: database is closed")
+	require.True(t, isConnErr || isClosedErr, "Error should be either connection error or database closed error")
 
 	x := <-results
 	require.Greater(t, x, 0)

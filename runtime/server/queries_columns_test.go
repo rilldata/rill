@@ -176,7 +176,7 @@ func TestServer_ColumnTimeGrain(t *testing.T) {
 	_, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		// "val" is a numeric column, so this should fail
-		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
+		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(STRING_LITERAL, INTEGER)'")
 	}
 	res, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
@@ -191,7 +191,7 @@ func TestServer_ColumnTimeGrain_EmptyModel(t *testing.T) {
 	_, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		// "val" is a numeric column, so this should fail
-		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
+		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(STRING_LITERAL, INTEGER)'")
 	}
 	res, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
