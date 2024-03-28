@@ -46,11 +46,10 @@ export default async function exportPivot({
                   name: timeDimension,
                   timeGrain: d.id as V1TimeGrain,
                   timeZone: dashboard.selectedTimezone,
-                  alias: d.title,
+                  alias: `Time ${d.title}`,
                 }
               : {
                   name: d.id,
-                  alias: d.title,
                 },
           ),
           where: sanitiseExpression(dashboard.whereFilter, measureFilters),
