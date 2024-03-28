@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -20,6 +20,7 @@
   $: sourceStore = useSourceStore(sourceName);
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
@@ -30,11 +31,7 @@
 
   $: yaml = $file.data?.blob || "";
 
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 

@@ -7,7 +7,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -28,16 +28,13 @@
 
   $: filePath = getFilePathFromNameAndType(chartName, EntityType.Chart);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   // get the yaml blob from the file.
   $: yaml = $fileQuery.data?.blob || "";
 
   const queryClient = useQueryClient();
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    getFilePathFromNameAndType(chartName, EntityType.Chart),
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */

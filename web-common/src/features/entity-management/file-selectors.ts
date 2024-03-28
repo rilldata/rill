@@ -1,4 +1,11 @@
-import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServiceListFiles,
+  getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceListFilesQueryKey,
+  runtimeServiceGetFile,
+  runtimeServiceListFiles,
+} from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 /**
  * In dev mode we still need to get the files for left nav.
@@ -58,4 +65,43 @@ export function useMainEntityFiles(
       },
     },
   );
+}
+
+export async function fetchMainEntityFiles(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
+      glob: ".{yaml,sql}",
+    }),
+    queryFn: () =>
+      runtimeServiceListFiles(instanceId, {
+        glob: ".{yaml,sql}",
+      }),
+  });
+  return resp.paths ?? [];
+}
+
+export async function fetchFileContent(
+  queryClient: QueryClient,
+  instanceId: string,
+  filePath: string,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, filePath),
+    queryFn: () => runtimeServiceGetFile(instanceId, filePath),
+  });
+  return resp.blob ?? "";
+}
+
+const FILE_PATH_SPLIT_REGEX = /\//;
+export function splitFolderAndName(
+  filePath: string,
+): [folder: string, fileName: string] {
+  const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
+  return [
+    filePath.substring(0, filePath.length - fileName.length - 1),
+    fileName,
+  ];
 }
