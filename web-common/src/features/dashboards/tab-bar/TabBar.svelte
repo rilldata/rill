@@ -47,15 +47,17 @@
       selectedTab.label === "Pivot",
     );
 
-    behaviourEvent.fireNavigationEvent(
-      $metricsViewName,
-      BehaviourEventMedium.Tab,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      selectedTab.label === "Pivot"
-        ? MetricsEventScreenName.Pivot
-        : MetricsEventScreenName.Explore,
-    );
+    if (behaviourEvent) {
+      behaviourEvent.fireNavigationEvent(
+        $metricsViewName,
+        BehaviourEventMedium.Tab,
+        MetricsEventSpace.Workspace,
+        MetricsEventScreenName.Dashboard,
+        selectedTab.label === "Pivot"
+          ? MetricsEventScreenName.Pivot
+          : MetricsEventScreenName.Explore,
+      );
+    }
   }
 </script>
 
