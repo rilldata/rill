@@ -19,7 +19,6 @@ import type {
 } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const useMetricsView = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
@@ -133,7 +132,7 @@ export function createMetricsViewSchema(
         {},
         {
           query: {
-            queryClient: queryClient,
+            queryClient: ctx.queryClient,
           },
         },
       ).subscribe(set),
