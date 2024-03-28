@@ -41,7 +41,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     const timeRangeMenu = page.getByRole("button", {
-      name: "Select time range",
+      name: "Select a time range",
     });
     const contextColumnMenu = page.getByRole("button", {
       name: "Select a context column",
@@ -50,7 +50,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     async function openTimeRangeMenu() {
       await timeRangeMenu.click();
       await page
-        .getByRole("menu", { name: "Time range selector" })
+        .getByRole("menu", { name: "Select a time range" })
         .waitFor({ state: "visible" });
     }
 

@@ -218,14 +218,25 @@ test.describe("dashboard", () => {
     // Switch to a custom time range
     await interactWithTimeRangeMenu(page, async () => {
       const timeRangeMenu = page.getByRole("menu", {
-        name: "Time range selector",
+        name: "Select a time range",
       });
 
       await timeRangeMenu
-        .getByRole("menuitem", { name: "Custom range" })
+        .getByRole("combobox", { name: "Select a start month" })
         .click();
-      await timeRangeMenu.getByLabel("Start date").fill("2022-02-01");
-      await timeRangeMenu.getByLabel("Start date").blur();
+      await timeRangeMenu.getByRole("option", { name: "February" }).click();
+      await timeRangeMenu
+        .getByRole("combobox", { name: "Select a start year" })
+        .click();
+      await timeRangeMenu.getByRole("option", { name: "2022" }).click();
+
+      await timeRangeMenu
+        .getByRole("combobox", { name: "Select a start day" })
+        .click();
+      await timeRangeMenu
+        .getByRole("option", { name: "1", exact: true })
+        .click();
+
       await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
     });
 
