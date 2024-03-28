@@ -19,6 +19,7 @@ import type {
 } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const useMetricsView = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
@@ -113,7 +114,7 @@ export function createTimeRangeSummary(
         {
           query: {
             queryClient: ctx.queryClient,
-            enabled: !!metricsView.data?.timeDimension,
+            enabled: !metricsView.error && !!metricsView.data?.timeDimension,
           },
         },
       ).subscribe(set),
@@ -132,7 +133,7 @@ export function createMetricsViewSchema(
         {},
         {
           query: {
-            queryClient: ctx.queryClient,
+            queryClient: queryClient,
           },
         },
       ).subscribe(set),

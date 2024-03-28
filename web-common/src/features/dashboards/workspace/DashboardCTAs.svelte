@@ -53,9 +53,9 @@
 </script>
 
 <div class="flex gap-2 flex-shrink-0">
-  {#if $dashboardPolicyCheck.data}
-    <ViewAsButton />
-  {/if}
+  <!-- {#if $dashboardPolicyCheck.data} -->
+  <ViewAsButton />
+  <!-- {/if} -->
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
