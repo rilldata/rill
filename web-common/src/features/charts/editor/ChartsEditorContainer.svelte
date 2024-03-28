@@ -14,7 +14,7 @@ It will show an error message if passed in.
   export let height = "calc(100vh - var(--header-height))";
 </script>
 
-<div class="flex flex-col w-1/2 h-full content-stretch" style:height>
+<div class="flex flex-col h-full content-stretch w-full" style:height>
   <div class="grow bg-white overflow-y-auto">
     <div
       class="border-white w-full overflow-y-auto"

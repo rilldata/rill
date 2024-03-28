@@ -3538,10 +3538,9 @@ type DashboardSpec struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Title       string                `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	GridColumns int64                 `protobuf:"varint,2,opt,name=grid_columns,json=gridColumns,proto3" json:"grid_columns,omitempty"`
-	GridRows    int64                 `protobuf:"varint,3,opt,name=grid_rows,json=gridRows,proto3" json:"grid_rows,omitempty"`
-	Components  []*DashboardComponent `protobuf:"bytes,4,rep,name=components,proto3" json:"components,omitempty"`
+	Title      string                `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Grid       *Grid                 `protobuf:"bytes,2,opt,name=grid,proto3" json:"grid,omitempty"`
+	Components []*DashboardComponent `protobuf:"bytes,4,rep,name=components,proto3" json:"components,omitempty"`
 }
 
 func (x *DashboardSpec) Reset() {
@@ -3583,18 +3582,11 @@ func (x *DashboardSpec) GetTitle() string {
 	return ""
 }
 
-func (x *DashboardSpec) GetGridColumns() int64 {
+func (x *DashboardSpec) GetGrid() *Grid {
 	if x != nil {
-		return x.GridColumns
+		return x.Grid
 	}
-	return 0
-}
-
-func (x *DashboardSpec) GetGridRows() int64 {
-	if x != nil {
-		return x.GridRows
-	}
-	return 0
+	return nil
 }
 
 func (x *DashboardSpec) GetComponents() []*DashboardComponent {
@@ -3602,6 +3594,61 @@ func (x *DashboardSpec) GetComponents() []*DashboardComponent {
 		return x.Components
 	}
 	return nil
+}
+
+type Grid struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Columns uint32 `protobuf:"varint,1,opt,name=columns,proto3" json:"columns,omitempty"`
+	Gap     uint32 `protobuf:"varint,2,opt,name=gap,proto3" json:"gap,omitempty"`
+}
+
+func (x *Grid) Reset() {
+	*x = Grid{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Grid) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Grid) ProtoMessage() {}
+
+func (x *Grid) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Grid.ProtoReflect.Descriptor instead.
+func (*Grid) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *Grid) GetColumns() uint32 {
+	if x != nil {
+		return x.Columns
+	}
+	return 0
+}
+
+func (x *Grid) GetGap() uint32 {
+	if x != nil {
+		return x.Gap
+	}
+	return 0
 }
 
 type DashboardState struct {
@@ -3613,7 +3660,7 @@ type DashboardState struct {
 func (x *DashboardState) Reset() {
 	*x = DashboardState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3626,7 +3673,7 @@ func (x *DashboardState) String() string {
 func (*DashboardState) ProtoMessage() {}
 
 func (x *DashboardState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3639,7 +3686,7 @@ func (x *DashboardState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DashboardState.ProtoReflect.Descriptor instead.
 func (*DashboardState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{45}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{46}
 }
 
 type DashboardComponent struct {
@@ -3647,15 +3694,17 @@ type DashboardComponent struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Chart   string `protobuf:"bytes,1,opt,name=chart,proto3" json:"chart,omitempty"`
-	Columns int64  `protobuf:"varint,2,opt,name=columns,proto3" json:"columns,omitempty"`
-	Rows    int64  `protobuf:"varint,3,opt,name=rows,proto3" json:"rows,omitempty"`
+	Chart  string `protobuf:"bytes,1,opt,name=chart,proto3" json:"chart,omitempty"`
+	X      uint32 `protobuf:"varint,2,opt,name=x,proto3" json:"x,omitempty"`
+	Y      uint32 `protobuf:"varint,3,opt,name=y,proto3" json:"y,omitempty"`
+	Width  uint32 `protobuf:"varint,4,opt,name=width,proto3" json:"width,omitempty"`
+	Height uint32 `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
 }
 
 func (x *DashboardComponent) Reset() {
 	*x = DashboardComponent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3668,7 +3717,7 @@ func (x *DashboardComponent) String() string {
 func (*DashboardComponent) ProtoMessage() {}
 
 func (x *DashboardComponent) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3681,7 +3730,7 @@ func (x *DashboardComponent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DashboardComponent.ProtoReflect.Descriptor instead.
 func (*DashboardComponent) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{46}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *DashboardComponent) GetChart() string {
@@ -3691,16 +3740,30 @@ func (x *DashboardComponent) GetChart() string {
 	return ""
 }
 
-func (x *DashboardComponent) GetColumns() int64 {
+func (x *DashboardComponent) GetX() uint32 {
 	if x != nil {
-		return x.Columns
+		return x.X
 	}
 	return 0
 }
 
-func (x *DashboardComponent) GetRows() int64 {
+func (x *DashboardComponent) GetY() uint32 {
 	if x != nil {
-		return x.Rows
+		return x.Y
+	}
+	return 0
+}
+
+func (x *DashboardComponent) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *DashboardComponent) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
 	}
 	return 0
 }
@@ -3718,7 +3781,7 @@ type API struct {
 func (x *API) Reset() {
 	*x = API{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3731,7 +3794,7 @@ func (x *API) String() string {
 func (*API) ProtoMessage() {}
 
 func (x *API) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3744,7 +3807,7 @@ func (x *API) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use API.ProtoReflect.Descriptor instead.
 func (*API) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{47}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *API) GetSpec() *APISpec {
@@ -3773,7 +3836,7 @@ type APISpec struct {
 func (x *APISpec) Reset() {
 	*x = APISpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3786,7 +3849,7 @@ func (x *APISpec) String() string {
 func (*APISpec) ProtoMessage() {}
 
 func (x *APISpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3799,7 +3862,7 @@ func (x *APISpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APISpec.ProtoReflect.Descriptor instead.
 func (*APISpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{48}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *APISpec) GetResolver() string {
@@ -3825,7 +3888,7 @@ type APIState struct {
 func (x *APIState) Reset() {
 	*x = APIState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3838,7 +3901,7 @@ func (x *APIState) String() string {
 func (*APIState) ProtoMessage() {}
 
 func (x *APIState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3851,7 +3914,7 @@ func (x *APIState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APIState.ProtoReflect.Descriptor instead.
 func (*APIState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{49}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{50}
 }
 
 type Schedule struct {
@@ -3869,7 +3932,7 @@ type Schedule struct {
 func (x *Schedule) Reset() {
 	*x = Schedule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3882,7 +3945,7 @@ func (x *Schedule) String() string {
 func (*Schedule) ProtoMessage() {}
 
 func (x *Schedule) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3895,7 +3958,7 @@ func (x *Schedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Schedule.ProtoReflect.Descriptor instead.
 func (*Schedule) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{50}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *Schedule) GetRefUpdate() bool {
@@ -3947,7 +4010,7 @@ type ParseError struct {
 func (x *ParseError) Reset() {
 	*x = ParseError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3960,7 +4023,7 @@ func (x *ParseError) String() string {
 func (*ParseError) ProtoMessage() {}
 
 func (x *ParseError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3973,7 +4036,7 @@ func (x *ParseError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseError.ProtoReflect.Descriptor instead.
 func (*ParseError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{51}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ParseError) GetMessage() string {
@@ -4016,7 +4079,7 @@ type ValidationError struct {
 func (x *ValidationError) Reset() {
 	*x = ValidationError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4029,7 +4092,7 @@ func (x *ValidationError) String() string {
 func (*ValidationError) ProtoMessage() {}
 
 func (x *ValidationError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4042,7 +4105,7 @@ func (x *ValidationError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationError.ProtoReflect.Descriptor instead.
 func (*ValidationError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{52}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ValidationError) GetMessage() string {
@@ -4071,7 +4134,7 @@ type DependencyError struct {
 func (x *DependencyError) Reset() {
 	*x = DependencyError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4084,7 +4147,7 @@ func (x *DependencyError) String() string {
 func (*DependencyError) ProtoMessage() {}
 
 func (x *DependencyError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4097,7 +4160,7 @@ func (x *DependencyError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependencyError.ProtoReflect.Descriptor instead.
 func (*DependencyError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{53}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *DependencyError) GetMessage() string {
@@ -4125,7 +4188,7 @@ type ExecutionError struct {
 func (x *ExecutionError) Reset() {
 	*x = ExecutionError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4138,7 +4201,7 @@ func (x *ExecutionError) String() string {
 func (*ExecutionError) ProtoMessage() {}
 
 func (x *ExecutionError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4151,7 +4214,7 @@ func (x *ExecutionError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecutionError.ProtoReflect.Descriptor instead.
 func (*ExecutionError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{54}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ExecutionError) GetMessage() string {
@@ -4172,7 +4235,7 @@ type CharLocation struct {
 func (x *CharLocation) Reset() {
 	*x = CharLocation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4185,7 +4248,7 @@ func (x *CharLocation) String() string {
 func (*CharLocation) ProtoMessage() {}
 
 func (x *CharLocation) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4198,7 +4261,7 @@ func (x *CharLocation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CharLocation.ProtoReflect.Descriptor instead.
 func (*CharLocation) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{55}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *CharLocation) GetLine() uint32 {
@@ -4225,7 +4288,7 @@ type MetricsViewSpec_DimensionV2 struct {
 func (x *MetricsViewSpec_DimensionV2) Reset() {
 	*x = MetricsViewSpec_DimensionV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4238,7 +4301,7 @@ func (x *MetricsViewSpec_DimensionV2) String() string {
 func (*MetricsViewSpec_DimensionV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_DimensionV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4314,7 +4377,7 @@ type MetricsViewSpec_MeasureV2 struct {
 func (x *MetricsViewSpec_MeasureV2) Reset() {
 	*x = MetricsViewSpec_MeasureV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4327,7 +4390,7 @@ func (x *MetricsViewSpec_MeasureV2) String() string {
 func (*MetricsViewSpec_MeasureV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_MeasureV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4410,7 +4473,7 @@ type MetricsViewSpec_SecurityV2 struct {
 func (x *MetricsViewSpec_SecurityV2) Reset() {
 	*x = MetricsViewSpec_SecurityV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4423,7 +4486,7 @@ func (x *MetricsViewSpec_SecurityV2) String() string {
 func (*MetricsViewSpec_SecurityV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_SecurityV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4480,7 +4543,7 @@ type MetricsViewSpec_AvailableComparisonOffset struct {
 func (x *MetricsViewSpec_AvailableComparisonOffset) Reset() {
 	*x = MetricsViewSpec_AvailableComparisonOffset{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4493,7 +4556,7 @@ func (x *MetricsViewSpec_AvailableComparisonOffset) String() string {
 func (*MetricsViewSpec_AvailableComparisonOffset) ProtoMessage() {}
 
 func (x *MetricsViewSpec_AvailableComparisonOffset) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4536,7 +4599,7 @@ type MetricsViewSpec_AvailableTimeRange struct {
 func (x *MetricsViewSpec_AvailableTimeRange) Reset() {
 	*x = MetricsViewSpec_AvailableTimeRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4549,7 +4612,7 @@ func (x *MetricsViewSpec_AvailableTimeRange) String() string {
 func (*MetricsViewSpec_AvailableTimeRange) ProtoMessage() {}
 
 func (x *MetricsViewSpec_AvailableTimeRange) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4592,7 +4655,7 @@ type MetricsViewSpec_SecurityV2_FieldConditionV2 struct {
 func (x *MetricsViewSpec_SecurityV2_FieldConditionV2) Reset() {
 	*x = MetricsViewSpec_SecurityV2_FieldConditionV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[62]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4605,7 +4668,7 @@ func (x *MetricsViewSpec_SecurityV2_FieldConditionV2) String() string {
 func (*MetricsViewSpec_SecurityV2_FieldConditionV2) ProtoMessage() {}
 
 func (x *MetricsViewSpec_SecurityV2_FieldConditionV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[62]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5342,104 +5405,107 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
 	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f,
 	0x61, 0x72, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22,
-	0xaa, 0x01, 0x0a, 0x0d, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x53, 0x70, 0x65,
+	0x95, 0x01, 0x0a, 0x0d, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x53, 0x70, 0x65,
 	0x63, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x67, 0x72, 0x69, 0x64, 0x5f,
-	0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0b, 0x67,
-	0x72, 0x69, 0x64, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x67, 0x72,
-	0x69, 0x64, 0x5f, 0x72, 0x6f, 0x77, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x67,
-	0x72, 0x69, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x12, 0x43, 0x0a, 0x0a, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
-	0x6e, 0x65, 0x6e, 0x74, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x72, 0x69,
-	0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61,
-	0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
-	0x52, 0x0a, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x73, 0x22, 0x10, 0x0a, 0x0e,
-	0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22, 0x58,
-	0x0a, 0x12, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x43, 0x6f, 0x6d, 0x70, 0x6f,
-	0x6e, 0x65, 0x6e, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x68, 0x61, 0x72, 0x74, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x63, 0x68, 0x61, 0x72, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f,
-	0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x07, 0x63, 0x6f, 0x6c,
-	0x75, 0x6d, 0x6e, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x77, 0x73, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x03, 0x52, 0x04, 0x72, 0x6f, 0x77, 0x73, 0x22, 0x64, 0x0a, 0x03, 0x41, 0x50, 0x49, 0x12,
-	0x2c, 0x0a, 0x04, 0x73, 0x70, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e,
-	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x41, 0x50, 0x49, 0x53, 0x70, 0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63, 0x12, 0x2f, 0x0a,
-	0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72,
-	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41,
-	0x50, 0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x6f,
-	0x0a, 0x07, 0x41, 0x50, 0x49, 0x53, 0x70, 0x65, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x73,
-	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x65, 0x73,
-	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x12, 0x48, 0x0a, 0x13, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65,
-	0x72, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x12, 0x72, 0x65, 0x73,
-	0x6f, 0x6c, 0x76, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x22,
-	0x0a, 0x0a, 0x08, 0x41, 0x50, 0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22, 0x9b, 0x01, 0x0a, 0x08,
-	0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x72, 0x65, 0x66, 0x5f,
-	0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x72, 0x65,
-	0x66, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x69, 0x73, 0x61, 0x62,
-	0x6c, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c,
-	0x65, 0x12, 0x12, 0x0a, 0x04, 0x63, 0x72, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x63, 0x72, 0x6f, 0x6e, 0x12, 0x25, 0x0a, 0x0e, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x72, 0x5f,
-	0x73, 0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0d, 0x74,
-	0x69, 0x63, 0x6b, 0x65, 0x72, 0x53, 0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73, 0x12, 0x1b, 0x0a, 0x09,
-	0x74, 0x69, 0x6d, 0x65, 0x5f, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x08, 0x74, 0x69, 0x6d, 0x65, 0x5a, 0x6f, 0x6e, 0x65, 0x22, 0xa5, 0x01, 0x0a, 0x0a, 0x50, 0x61,
-	0x72, 0x73, 0x65, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61,
-	0x67, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x50, 0x61, 0x74, 0x68, 0x12,
-	0x44, 0x0a, 0x0e, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
-	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x68, 0x61, 0x72, 0x4c, 0x6f,
-	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0d, 0x73, 0x74, 0x61, 0x72, 0x74, 0x4c, 0x6f, 0x63,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1a, 0x0a, 0x08, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61,
-	0x6c, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61,
-	0x6c, 0x22, 0x50, 0x0a, 0x0f, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45,
-	0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x23,
-	0x0a, 0x0d, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x79, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18,
-	0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x79, 0x50,
-	0x61, 0x74, 0x68, 0x22, 0x4b, 0x0a, 0x0f, 0x44, 0x65, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x6e, 0x63,
-	0x79, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
-	0x12, 0x1e, 0x0a, 0x0a, 0x64, 0x65, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x6e, 0x63, 0x79, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x64, 0x65, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x6e, 0x63, 0x79,
-	0x22, 0x2a, 0x0a, 0x0e, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x72, 0x72,
-	0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x22, 0x0a, 0x0c,
-	0x43, 0x68, 0x61, 0x72, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04,
-	0x6c, 0x69, 0x6e, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x6c, 0x69, 0x6e, 0x65,
-	0x2a, 0x8a, 0x01, 0x0a, 0x0f, 0x52, 0x65, 0x63, 0x6f, 0x6e, 0x63, 0x69, 0x6c, 0x65, 0x53, 0x74,
-	0x61, 0x74, 0x75, 0x73, 0x12, 0x20, 0x0a, 0x1c, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c,
-	0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49,
-	0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x19, 0x0a, 0x15, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43,
-	0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x49, 0x44, 0x4c, 0x45, 0x10,
-	0x01, 0x12, 0x1c, 0x0a, 0x18, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53,
-	0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12,
-	0x1c, 0x0a, 0x18, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41,
-	0x54, 0x55, 0x53, 0x5f, 0x52, 0x55, 0x4e, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x03, 0x2a, 0x85, 0x01,
-	0x0a, 0x0f, 0x41, 0x73, 0x73, 0x65, 0x72, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x12, 0x20, 0x0a, 0x1c, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53,
-	0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
-	0x44, 0x10, 0x00, 0x12, 0x19, 0x0a, 0x15, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e,
-	0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x50, 0x41, 0x53, 0x53, 0x10, 0x01, 0x12, 0x19,
+	0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x29, 0x0a, 0x04, 0x67, 0x72, 0x69, 0x64, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x72, 0x69, 0x64, 0x52, 0x04, 0x67, 0x72,
+	0x69, 0x64, 0x12, 0x43, 0x0a, 0x0a, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x73,
+	0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61,
+	0x72, 0x64, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x52, 0x0a, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x73, 0x22, 0x32, 0x0a, 0x04, 0x47, 0x72, 0x69, 0x64, 0x12,
+	0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d,
+	0x52, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x12, 0x10, 0x0a, 0x03, 0x67, 0x61, 0x70,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x03, 0x67, 0x61, 0x70, 0x22, 0x10, 0x0a, 0x0e, 0x44,
+	0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22, 0x74, 0x0a,
+	0x12, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x68, 0x61, 0x72, 0x74, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x05, 0x63, 0x68, 0x61, 0x72, 0x74, 0x12, 0x0c, 0x0a, 0x01, 0x78, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0d, 0x52, 0x01, 0x78, 0x12, 0x0c, 0x0a, 0x01, 0x79, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x01, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x77, 0x69, 0x64, 0x74, 0x68, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x0d, 0x52, 0x05, 0x77, 0x69, 0x64, 0x74, 0x68, 0x12, 0x16, 0x0a, 0x06, 0x68,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x06, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x22, 0x64, 0x0a, 0x03, 0x41, 0x50, 0x49, 0x12, 0x2c, 0x0a, 0x04, 0x73, 0x70,
+	0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
+	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x50, 0x49, 0x53, 0x70,
+	0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63, 0x12, 0x2f, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x50, 0x49, 0x53, 0x74, 0x61,
+	0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x6f, 0x0a, 0x07, 0x41, 0x50, 0x49,
+	0x53, 0x70, 0x65, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72,
+	0x12, 0x48, 0x0a, 0x13, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72, 0x5f, 0x70, 0x72, 0x6f,
+	0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x12, 0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x72,
+	0x50, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x22, 0x0a, 0x0a, 0x08, 0x41, 0x50,
+	0x49, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22, 0x9b, 0x01, 0x0a, 0x08, 0x53, 0x63, 0x68, 0x65, 0x64,
+	0x75, 0x6c, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x72, 0x65, 0x66, 0x5f, 0x75, 0x70, 0x64, 0x61, 0x74,
+	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x72, 0x65, 0x66, 0x55, 0x70, 0x64, 0x61,
+	0x74, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x18, 0x05, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x07, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x12, 0x0a, 0x04,
+	0x63, 0x72, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x63, 0x72, 0x6f, 0x6e,
+	0x12, 0x25, 0x0a, 0x0e, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x72, 0x5f, 0x73, 0x65, 0x63, 0x6f, 0x6e,
+	0x64, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0d, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x72,
+	0x53, 0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x5f,
+	0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x74, 0x69, 0x6d, 0x65,
+	0x5a, 0x6f, 0x6e, 0x65, 0x22, 0xa5, 0x01, 0x0a, 0x0a, 0x50, 0x61, 0x72, 0x73, 0x65, 0x45, 0x72,
+	0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x1b, 0x0a,
+	0x09, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x50, 0x61, 0x74, 0x68, 0x12, 0x44, 0x0a, 0x0e, 0x73, 0x74,
+	0x61, 0x72, 0x74, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x68, 0x61, 0x72, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x52, 0x0d, 0x73, 0x74, 0x61, 0x72, 0x74, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x1a, 0x0a, 0x08, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x08, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x22, 0x50, 0x0a, 0x0f,
+	0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12,
+	0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x70, 0x72, 0x6f,
+	0x70, 0x65, 0x72, 0x74, 0x79, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09,
+	0x52, 0x0c, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x79, 0x50, 0x61, 0x74, 0x68, 0x22, 0x4b,
+	0x0a, 0x0f, 0x44, 0x65, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x6e, 0x63, 0x79, 0x45, 0x72, 0x72, 0x6f,
+	0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x64,
+	0x65, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x6e, 0x63, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0a, 0x64, 0x65, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x6e, 0x63, 0x79, 0x22, 0x2a, 0x0a, 0x0e, 0x45,
+	0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a,
+	0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
+	0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x22, 0x0a, 0x0c, 0x43, 0x68, 0x61, 0x72, 0x4c,
+	0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6e, 0x65, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x6c, 0x69, 0x6e, 0x65, 0x2a, 0x8a, 0x01, 0x0a, 0x0f,
+	0x52, 0x65, 0x63, 0x6f, 0x6e, 0x63, 0x69, 0x6c, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12,
+	0x20, 0x0a, 0x1c, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41,
+	0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
+	0x00, 0x12, 0x19, 0x0a, 0x15, 0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53,
+	0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x49, 0x44, 0x4c, 0x45, 0x10, 0x01, 0x12, 0x1c, 0x0a, 0x18,
+	0x52, 0x45, 0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53,
+	0x5f, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x1c, 0x0a, 0x18, 0x52, 0x45,
+	0x43, 0x4f, 0x4e, 0x43, 0x49, 0x4c, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x52,
+	0x55, 0x4e, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x03, 0x2a, 0x85, 0x01, 0x0a, 0x0f, 0x41, 0x73, 0x73,
+	0x65, 0x72, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x20, 0x0a, 0x1c,
+	0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53,
+	0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x19,
 	0x0a, 0x15, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54,
-	0x55, 0x53, 0x5f, 0x46, 0x41, 0x49, 0x4c, 0x10, 0x02, 0x12, 0x1a, 0x0a, 0x16, 0x41, 0x53, 0x53,
-	0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x45, 0x52,
-	0x52, 0x4f, 0x52, 0x10, 0x03, 0x42, 0xc1, 0x01, 0x0a, 0x13, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69,
-	0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0e, 0x52,
-	0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
-	0x3c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c,
-	0x64, 0x61, 0x74, 0x61, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
-	0x67, 0x65, 0x6e, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
-	0x2f, 0x76, 0x31, 0x3b, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03,
-	0x52, 0x52, 0x58, 0xaa, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69,
-	0x6d, 0x65, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e,
-	0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1b, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52,
-	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74,
-	0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x52, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x55, 0x53, 0x5f, 0x50, 0x41, 0x53, 0x53, 0x10, 0x01, 0x12, 0x19, 0x0a, 0x15, 0x41, 0x53, 0x53,
+	0x45, 0x52, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x46, 0x41,
+	0x49, 0x4c, 0x10, 0x02, 0x12, 0x1a, 0x0a, 0x16, 0x41, 0x53, 0x53, 0x45, 0x52, 0x54, 0x49, 0x4f,
+	0x4e, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x45, 0x52, 0x52, 0x4f, 0x52, 0x10, 0x03,
+	0x42, 0xc1, 0x01, 0x0a, 0x13, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72,
+	0x63, 0x65, 0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3c, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61, 0x2f,
+	0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x72,
+	0x69, 0x6c, 0x6c, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x76, 0x31, 0x3b, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x52, 0x58, 0xaa, 0x02,
+	0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x56, 0x31,
+	0xca, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c,
+	0x56, 0x31, 0xe2, 0x02, 0x1b, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0xea, 0x02, 0x11, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
+	0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5455,7 +5521,7 @@ func file_rill_runtime_v1_resources_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_resources_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 64)
+var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
 var file_rill_runtime_v1_resources_proto_goTypes = []interface{}{
 	(ReconcileStatus)(0),                                // 0: rill.runtime.v1.ReconcileStatus
 	(AssertionStatus)(0),                                // 1: rill.runtime.v1.AssertionStatus
@@ -5506,30 +5572,31 @@ var file_rill_runtime_v1_resources_proto_goTypes = []interface{}{
 	(*ChartState)(nil),                                  // 46: rill.runtime.v1.ChartState
 	(*Dashboard)(nil),                                   // 47: rill.runtime.v1.Dashboard
 	(*DashboardSpec)(nil),                               // 48: rill.runtime.v1.DashboardSpec
-	(*DashboardState)(nil),                              // 49: rill.runtime.v1.DashboardState
-	(*DashboardComponent)(nil),                          // 50: rill.runtime.v1.DashboardComponent
-	(*API)(nil),                                         // 51: rill.runtime.v1.API
-	(*APISpec)(nil),                                     // 52: rill.runtime.v1.APISpec
-	(*APIState)(nil),                                    // 53: rill.runtime.v1.APIState
-	(*Schedule)(nil),                                    // 54: rill.runtime.v1.Schedule
-	(*ParseError)(nil),                                  // 55: rill.runtime.v1.ParseError
-	(*ValidationError)(nil),                             // 56: rill.runtime.v1.ValidationError
-	(*DependencyError)(nil),                             // 57: rill.runtime.v1.DependencyError
-	(*ExecutionError)(nil),                              // 58: rill.runtime.v1.ExecutionError
-	(*CharLocation)(nil),                                // 59: rill.runtime.v1.CharLocation
-	(*MetricsViewSpec_DimensionV2)(nil),                 // 60: rill.runtime.v1.MetricsViewSpec.DimensionV2
-	(*MetricsViewSpec_MeasureV2)(nil),                   // 61: rill.runtime.v1.MetricsViewSpec.MeasureV2
-	(*MetricsViewSpec_SecurityV2)(nil),                  // 62: rill.runtime.v1.MetricsViewSpec.SecurityV2
-	(*MetricsViewSpec_AvailableComparisonOffset)(nil),   // 63: rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
-	(*MetricsViewSpec_AvailableTimeRange)(nil),          // 64: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
-	(*MetricsViewSpec_SecurityV2_FieldConditionV2)(nil), // 65: rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	nil,                           // 66: rill.runtime.v1.ReportSpec.AnnotationsEntry
-	nil,                           // 67: rill.runtime.v1.AlertSpec.AnnotationsEntry
-	(*timestamppb.Timestamp)(nil), // 68: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),       // 69: google.protobuf.Struct
-	(TimeGrain)(0),                // 70: rill.runtime.v1.TimeGrain
-	(ExportFormat)(0),             // 71: rill.runtime.v1.ExportFormat
-	(*Color)(nil),                 // 72: rill.runtime.v1.Color
+	(*Grid)(nil),                                        // 49: rill.runtime.v1.Grid
+	(*DashboardState)(nil),                              // 50: rill.runtime.v1.DashboardState
+	(*DashboardComponent)(nil),                          // 51: rill.runtime.v1.DashboardComponent
+	(*API)(nil),                                         // 52: rill.runtime.v1.API
+	(*APISpec)(nil),                                     // 53: rill.runtime.v1.APISpec
+	(*APIState)(nil),                                    // 54: rill.runtime.v1.APIState
+	(*Schedule)(nil),                                    // 55: rill.runtime.v1.Schedule
+	(*ParseError)(nil),                                  // 56: rill.runtime.v1.ParseError
+	(*ValidationError)(nil),                             // 57: rill.runtime.v1.ValidationError
+	(*DependencyError)(nil),                             // 58: rill.runtime.v1.DependencyError
+	(*ExecutionError)(nil),                              // 59: rill.runtime.v1.ExecutionError
+	(*CharLocation)(nil),                                // 60: rill.runtime.v1.CharLocation
+	(*MetricsViewSpec_DimensionV2)(nil),                 // 61: rill.runtime.v1.MetricsViewSpec.DimensionV2
+	(*MetricsViewSpec_MeasureV2)(nil),                   // 62: rill.runtime.v1.MetricsViewSpec.MeasureV2
+	(*MetricsViewSpec_SecurityV2)(nil),                  // 63: rill.runtime.v1.MetricsViewSpec.SecurityV2
+	(*MetricsViewSpec_AvailableComparisonOffset)(nil),   // 64: rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
+	(*MetricsViewSpec_AvailableTimeRange)(nil),          // 65: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
+	(*MetricsViewSpec_SecurityV2_FieldConditionV2)(nil), // 66: rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	nil,                           // 67: rill.runtime.v1.ReportSpec.AnnotationsEntry
+	nil,                           // 68: rill.runtime.v1.AlertSpec.AnnotationsEntry
+	(*timestamppb.Timestamp)(nil), // 69: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),       // 70: google.protobuf.Struct
+	(TimeGrain)(0),                // 71: rill.runtime.v1.TimeGrain
+	(ExportFormat)(0),             // 72: rill.runtime.v1.ExportFormat
+	(*Color)(nil),                 // 73: rill.runtime.v1.Color
 }
 var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	5,   // 0: rill.runtime.v1.Resource.meta:type_name -> rill.runtime.v1.ResourceMeta
@@ -5546,65 +5613,65 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	41,  // 11: rill.runtime.v1.Resource.theme:type_name -> rill.runtime.v1.Theme
 	44,  // 12: rill.runtime.v1.Resource.chart:type_name -> rill.runtime.v1.Chart
 	47,  // 13: rill.runtime.v1.Resource.dashboard:type_name -> rill.runtime.v1.Dashboard
-	51,  // 14: rill.runtime.v1.Resource.api:type_name -> rill.runtime.v1.API
+	52,  // 14: rill.runtime.v1.Resource.api:type_name -> rill.runtime.v1.API
 	6,   // 15: rill.runtime.v1.ResourceMeta.name:type_name -> rill.runtime.v1.ResourceName
 	6,   // 16: rill.runtime.v1.ResourceMeta.refs:type_name -> rill.runtime.v1.ResourceName
 	6,   // 17: rill.runtime.v1.ResourceMeta.owner:type_name -> rill.runtime.v1.ResourceName
-	68,  // 18: rill.runtime.v1.ResourceMeta.created_on:type_name -> google.protobuf.Timestamp
-	68,  // 19: rill.runtime.v1.ResourceMeta.spec_updated_on:type_name -> google.protobuf.Timestamp
-	68,  // 20: rill.runtime.v1.ResourceMeta.state_updated_on:type_name -> google.protobuf.Timestamp
-	68,  // 21: rill.runtime.v1.ResourceMeta.deleted_on:type_name -> google.protobuf.Timestamp
+	69,  // 18: rill.runtime.v1.ResourceMeta.created_on:type_name -> google.protobuf.Timestamp
+	69,  // 19: rill.runtime.v1.ResourceMeta.spec_updated_on:type_name -> google.protobuf.Timestamp
+	69,  // 20: rill.runtime.v1.ResourceMeta.state_updated_on:type_name -> google.protobuf.Timestamp
+	69,  // 21: rill.runtime.v1.ResourceMeta.deleted_on:type_name -> google.protobuf.Timestamp
 	0,   // 22: rill.runtime.v1.ResourceMeta.reconcile_status:type_name -> rill.runtime.v1.ReconcileStatus
-	68,  // 23: rill.runtime.v1.ResourceMeta.reconcile_on:type_name -> google.protobuf.Timestamp
+	69,  // 23: rill.runtime.v1.ResourceMeta.reconcile_on:type_name -> google.protobuf.Timestamp
 	6,   // 24: rill.runtime.v1.ResourceMeta.renamed_from:type_name -> rill.runtime.v1.ResourceName
 	8,   // 25: rill.runtime.v1.ProjectParser.spec:type_name -> rill.runtime.v1.ProjectParserSpec
 	9,   // 26: rill.runtime.v1.ProjectParser.state:type_name -> rill.runtime.v1.ProjectParserState
-	55,  // 27: rill.runtime.v1.ProjectParserState.parse_errors:type_name -> rill.runtime.v1.ParseError
+	56,  // 27: rill.runtime.v1.ProjectParserState.parse_errors:type_name -> rill.runtime.v1.ParseError
 	11,  // 28: rill.runtime.v1.SourceV2.spec:type_name -> rill.runtime.v1.SourceSpec
 	12,  // 29: rill.runtime.v1.SourceV2.state:type_name -> rill.runtime.v1.SourceState
-	69,  // 30: rill.runtime.v1.SourceSpec.properties:type_name -> google.protobuf.Struct
-	54,  // 31: rill.runtime.v1.SourceSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	68,  // 32: rill.runtime.v1.SourceState.refreshed_on:type_name -> google.protobuf.Timestamp
+	70,  // 30: rill.runtime.v1.SourceSpec.properties:type_name -> google.protobuf.Struct
+	55,  // 31: rill.runtime.v1.SourceSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	69,  // 32: rill.runtime.v1.SourceState.refreshed_on:type_name -> google.protobuf.Timestamp
 	14,  // 33: rill.runtime.v1.ModelV2.spec:type_name -> rill.runtime.v1.ModelSpec
 	15,  // 34: rill.runtime.v1.ModelV2.state:type_name -> rill.runtime.v1.ModelState
-	54,  // 35: rill.runtime.v1.ModelSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	68,  // 36: rill.runtime.v1.ModelState.refreshed_on:type_name -> google.protobuf.Timestamp
+	55,  // 35: rill.runtime.v1.ModelSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	69,  // 36: rill.runtime.v1.ModelState.refreshed_on:type_name -> google.protobuf.Timestamp
 	17,  // 37: rill.runtime.v1.MetricsViewV2.spec:type_name -> rill.runtime.v1.MetricsViewSpec
 	18,  // 38: rill.runtime.v1.MetricsViewV2.state:type_name -> rill.runtime.v1.MetricsViewState
-	60,  // 39: rill.runtime.v1.MetricsViewSpec.dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionV2
-	61,  // 40: rill.runtime.v1.MetricsViewSpec.measures:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureV2
-	70,  // 41: rill.runtime.v1.MetricsViewSpec.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
-	62,  // 42: rill.runtime.v1.MetricsViewSpec.security:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2
+	61,  // 39: rill.runtime.v1.MetricsViewSpec.dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionV2
+	62,  // 40: rill.runtime.v1.MetricsViewSpec.measures:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureV2
+	71,  // 41: rill.runtime.v1.MetricsViewSpec.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
+	63,  // 42: rill.runtime.v1.MetricsViewSpec.security:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2
 	2,   // 43: rill.runtime.v1.MetricsViewSpec.default_comparison_mode:type_name -> rill.runtime.v1.MetricsViewSpec.ComparisonMode
-	64,  // 44: rill.runtime.v1.MetricsViewSpec.available_time_ranges:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
+	65,  // 44: rill.runtime.v1.MetricsViewSpec.available_time_ranges:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableTimeRange
 	17,  // 45: rill.runtime.v1.MetricsViewState.valid_spec:type_name -> rill.runtime.v1.MetricsViewSpec
 	20,  // 46: rill.runtime.v1.Migration.spec:type_name -> rill.runtime.v1.MigrationSpec
 	21,  // 47: rill.runtime.v1.Migration.state:type_name -> rill.runtime.v1.MigrationState
 	23,  // 48: rill.runtime.v1.Report.spec:type_name -> rill.runtime.v1.ReportSpec
 	24,  // 49: rill.runtime.v1.Report.state:type_name -> rill.runtime.v1.ReportState
-	54,  // 50: rill.runtime.v1.ReportSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	71,  // 51: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
-	66,  // 52: rill.runtime.v1.ReportSpec.annotations:type_name -> rill.runtime.v1.ReportSpec.AnnotationsEntry
-	68,  // 53: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
+	55,  // 50: rill.runtime.v1.ReportSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	72,  // 51: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
+	67,  // 52: rill.runtime.v1.ReportSpec.annotations:type_name -> rill.runtime.v1.ReportSpec.AnnotationsEntry
+	69,  // 53: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
 	25,  // 54: rill.runtime.v1.ReportState.current_execution:type_name -> rill.runtime.v1.ReportExecution
 	25,  // 55: rill.runtime.v1.ReportState.execution_history:type_name -> rill.runtime.v1.ReportExecution
-	68,  // 56: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
-	68,  // 57: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
-	68,  // 58: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
+	69,  // 56: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
+	69,  // 57: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
+	69,  // 58: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
 	27,  // 59: rill.runtime.v1.Alert.spec:type_name -> rill.runtime.v1.AlertSpec
 	28,  // 60: rill.runtime.v1.Alert.state:type_name -> rill.runtime.v1.AlertState
-	54,  // 61: rill.runtime.v1.AlertSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	69,  // 62: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
-	67,  // 63: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
-	68,  // 64: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
+	55,  // 61: rill.runtime.v1.AlertSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	70,  // 62: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
+	68,  // 63: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
+	69,  // 64: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
 	29,  // 65: rill.runtime.v1.AlertState.current_execution:type_name -> rill.runtime.v1.AlertExecution
 	29,  // 66: rill.runtime.v1.AlertState.execution_history:type_name -> rill.runtime.v1.AlertExecution
 	30,  // 67: rill.runtime.v1.AlertExecution.result:type_name -> rill.runtime.v1.AssertionResult
-	68,  // 68: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
-	68,  // 69: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
-	68,  // 70: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
+	69,  // 68: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
+	69,  // 69: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
+	69,  // 70: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
 	1,   // 71: rill.runtime.v1.AssertionResult.status:type_name -> rill.runtime.v1.AssertionStatus
-	69,  // 72: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
+	70,  // 72: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
 	32,  // 73: rill.runtime.v1.PullTrigger.spec:type_name -> rill.runtime.v1.PullTriggerSpec
 	33,  // 74: rill.runtime.v1.PullTrigger.state:type_name -> rill.runtime.v1.PullTriggerState
 	35,  // 75: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
@@ -5617,26 +5684,27 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	3,   // 82: rill.runtime.v1.BucketExtractPolicy.files_strategy:type_name -> rill.runtime.v1.BucketExtractPolicy.Strategy
 	42,  // 83: rill.runtime.v1.Theme.spec:type_name -> rill.runtime.v1.ThemeSpec
 	43,  // 84: rill.runtime.v1.Theme.state:type_name -> rill.runtime.v1.ThemeState
-	72,  // 85: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
-	72,  // 86: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
+	73,  // 85: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
+	73,  // 86: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
 	45,  // 87: rill.runtime.v1.Chart.spec:type_name -> rill.runtime.v1.ChartSpec
 	46,  // 88: rill.runtime.v1.Chart.state:type_name -> rill.runtime.v1.ChartState
-	69,  // 89: rill.runtime.v1.ChartSpec.resolver_properties:type_name -> google.protobuf.Struct
+	70,  // 89: rill.runtime.v1.ChartSpec.resolver_properties:type_name -> google.protobuf.Struct
 	48,  // 90: rill.runtime.v1.Dashboard.spec:type_name -> rill.runtime.v1.DashboardSpec
-	49,  // 91: rill.runtime.v1.Dashboard.state:type_name -> rill.runtime.v1.DashboardState
-	50,  // 92: rill.runtime.v1.DashboardSpec.components:type_name -> rill.runtime.v1.DashboardComponent
-	52,  // 93: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
-	53,  // 94: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
-	69,  // 95: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
-	59,  // 96: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
-	65,  // 97: rill.runtime.v1.MetricsViewSpec.SecurityV2.include:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	65,  // 98: rill.runtime.v1.MetricsViewSpec.SecurityV2.exclude:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	63,  // 99: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange.comparison_offsets:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
-	100, // [100:100] is the sub-list for method output_type
-	100, // [100:100] is the sub-list for method input_type
-	100, // [100:100] is the sub-list for extension type_name
-	100, // [100:100] is the sub-list for extension extendee
-	0,   // [0:100] is the sub-list for field type_name
+	50,  // 91: rill.runtime.v1.Dashboard.state:type_name -> rill.runtime.v1.DashboardState
+	49,  // 92: rill.runtime.v1.DashboardSpec.grid:type_name -> rill.runtime.v1.Grid
+	51,  // 93: rill.runtime.v1.DashboardSpec.components:type_name -> rill.runtime.v1.DashboardComponent
+	53,  // 94: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
+	54,  // 95: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
+	70,  // 96: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
+	60,  // 97: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
+	66,  // 98: rill.runtime.v1.MetricsViewSpec.SecurityV2.include:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	66,  // 99: rill.runtime.v1.MetricsViewSpec.SecurityV2.exclude:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	64,  // 100: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange.comparison_offsets:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
+	101, // [101:101] is the sub-list for method output_type
+	101, // [101:101] is the sub-list for method input_type
+	101, // [101:101] is the sub-list for extension type_name
+	101, // [101:101] is the sub-list for extension extendee
+	0,   // [0:101] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_resources_proto_init() }
@@ -6189,7 +6257,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DashboardState); i {
+			switch v := v.(*Grid); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6201,7 +6269,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DashboardComponent); i {
+			switch v := v.(*DashboardState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6213,7 +6281,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*API); i {
+			switch v := v.(*DashboardComponent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6225,7 +6293,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*APISpec); i {
+			switch v := v.(*API); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6237,7 +6305,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*APIState); i {
+			switch v := v.(*APISpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6249,7 +6317,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Schedule); i {
+			switch v := v.(*APIState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6261,7 +6329,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ParseError); i {
+			switch v := v.(*Schedule); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6273,7 +6341,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ValidationError); i {
+			switch v := v.(*ParseError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6285,7 +6353,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DependencyError); i {
+			switch v := v.(*ValidationError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6297,7 +6365,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ExecutionError); i {
+			switch v := v.(*DependencyError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6309,7 +6377,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CharLocation); i {
+			switch v := v.(*ExecutionError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6321,7 +6389,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricsViewSpec_DimensionV2); i {
+			switch v := v.(*CharLocation); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6333,7 +6401,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricsViewSpec_MeasureV2); i {
+			switch v := v.(*MetricsViewSpec_DimensionV2); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6345,7 +6413,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[58].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricsViewSpec_SecurityV2); i {
+			switch v := v.(*MetricsViewSpec_MeasureV2); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6357,7 +6425,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[59].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricsViewSpec_AvailableComparisonOffset); i {
+			switch v := v.(*MetricsViewSpec_SecurityV2); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6369,7 +6437,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[60].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricsViewSpec_AvailableTimeRange); i {
+			switch v := v.(*MetricsViewSpec_AvailableComparisonOffset); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6381,6 +6449,18 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[61].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MetricsViewSpec_AvailableTimeRange); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_resources_proto_msgTypes[62].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSpec_SecurityV2_FieldConditionV2); i {
 			case 0:
 				return &v.state
@@ -6423,7 +6503,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_resources_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   64,
+			NumMessages:   65,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

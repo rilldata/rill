@@ -1267,13 +1267,13 @@ vega_lite: |%s
 		`dashboards/d1.yaml`: `
 kind: dashboard
 grid:
-  rows: 3
+  gap: 3
   columns: 4
 components:
   - chart: c1
   - chart: c2
-    rows: 1
-    columns: 2
+    width: 1
+    height: 2
 `,
 	})
 
@@ -1306,11 +1306,10 @@ components:
 				{Kind: ResourceKindChart, Name: "c2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
-				GridColumns: 3,
-				GridRows:    4,
+				Grid: &runtimev1.Grid{Gap: 3, Columns: 4},
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
-					{Chart: "c2", Rows: 1, Columns: 2},
+					{Chart: "c2", Width: 1, Height: 2},
 				},
 			},
 		},

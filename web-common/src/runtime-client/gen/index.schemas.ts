@@ -791,24 +791,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  chart?: V1Chart;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -842,6 +824,24 @@ export interface V1ReportState {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export interface V1RenameFileResponse {
@@ -1605,6 +1605,11 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
+export interface V1Grid {
+  columns?: number;
+  gap?: number;
+}
+
 export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
@@ -1743,14 +1748,15 @@ export interface V1DashboardState {
 
 export interface V1DashboardComponent {
   chart?: string;
-  columns?: string;
-  rows?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface V1DashboardSpec {
   title?: string;
-  gridColumns?: string;
-  gridRows?: string;
+  grid?: V1Grid;
   components?: V1DashboardComponent[];
 }
 
@@ -2138,7 +2144,7 @@ export interface Runtimev1CharLocation {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
