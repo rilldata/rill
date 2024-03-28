@@ -88,7 +88,7 @@ email:
 						NotifyOnError:        false,
 						Renotify:             false,
 						RenotifyAfterSeconds: 0,
-						Notifiers:            []*runtimev1.NotifierSpec{{Connector: "email", Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"somebody@example.com"}}}}},
+						Notifiers:            []*runtimev1.NotifierSpec{{Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"somebody@example.com"}}}}},
 					},
 				},
 				State: &runtimev1.AlertState{
@@ -244,7 +244,7 @@ notify:
 						NotifyOnError:        false,
 						Renotify:             false,
 						RenotifyAfterSeconds: 0,
-						Notifiers:            []*runtimev1.NotifierSpec{{Connector: "email", Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"somebody@example.com"}}}}},
+						Notifiers:            []*runtimev1.NotifierSpec{{Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"somebody@example.com"}}}}},
 					},
 				},
 				State: &runtimev1.AlertState{
