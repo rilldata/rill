@@ -49,7 +49,7 @@
 >
   <div class="grow bg-white overflow-y-auto">
     <div
-      class="border-white w-full overflow-y-auto"
+      class="border-white w-full overflow-y-auto h-full"
       class:border-b-hidden={error}
       class:border-red-500={error}
     >

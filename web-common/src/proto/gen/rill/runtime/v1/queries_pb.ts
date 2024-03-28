@@ -4764,6 +4764,11 @@ export class TableColumnsResponse extends Message<TableColumnsResponse> {
    */
   profileColumns: ProfileColumn[] = [];
 
+  /**
+   * @generated from field: map<string, string> unsupported_columns = 2;
+   */
+  unsupportedColumns: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<TableColumnsResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4773,6 +4778,7 @@ export class TableColumnsResponse extends Message<TableColumnsResponse> {
   static readonly typeName = "rill.runtime.v1.TableColumnsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "profile_columns", kind: "message", T: ProfileColumn, repeated: true },
+    { no: 2, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableColumnsResponse {

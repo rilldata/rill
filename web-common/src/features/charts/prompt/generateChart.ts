@@ -1,5 +1,8 @@
 import { goto } from "$app/navigation";
-import { getChartYaml } from "@rilldata/web-common/features/charts/chartYaml";
+import {
+  getChartYaml,
+  parseChartYaml,
+} from "@rilldata/web-common/features/charts/chartYaml";
 import {
   chartPromptsStore,
   ChartPromptStatus,
@@ -13,7 +16,9 @@ import { EntityType } from "@rilldata/web-common/features/entity-management/type
 import {
   createRuntimeServiceGenerateChartSpec,
   createRuntimeServiceGenerateResolver,
+  createRuntimeServiceGetFile,
   runtimeServicePutFile,
+  type V1ChartSpec,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -21,26 +26,26 @@ export function createChartGenerator(instanceId: string, chart: string) {
   const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
   const chartQuery = useChart(instanceId, chart);
   const chartPath = getFilePathFromNameAndType(chart, EntityType.Chart);
+  const chartContent = createRuntimeServiceGetFile(instanceId, chartPath);
 
   return async (prompt: string) => {
     try {
-      const chartSpec = get(chartQuery).data?.chart?.spec;
+      const [resolver, resolverProperties] = tryParseChart(
+        get(chartQuery).data?.chart?.spec,
+        get(chartContent).data?.blob,
+      );
       chartPromptsStore.startPrompt(chart, chart, prompt);
       const resp = await get(generateVegaConfig).mutateAsync({
         instanceId,
         data: {
           prompt,
-          resolver: chartSpec?.resolver,
-          resolverProperties: chartSpec?.resolverProperties,
+          resolver,
+          resolverProperties,
         },
       });
       chartPromptsStore.updatePromptStatus(chart, ChartPromptStatus.Idle);
       await runtimeServicePutFile(instanceId, chartPath, {
-        blob: getChartYaml(
-          resp.vegaLiteSpec,
-          chartSpec?.resolver,
-          chartSpec?.resolverProperties,
-        ),
+        blob: getChartYaml(resp.vegaLiteSpec, resolver, resolverProperties),
       });
     } catch (e) {
       chartPromptsStore.setPromptError(
@@ -128,4 +133,23 @@ export function createFullChartGenerator(instanceId: string) {
       );
     }
   };
+}
+
+function tryParseChart(
+  chartSpec: V1ChartSpec | undefined,
+  chartContent: string | undefined,
+): [resolver: string, resolverProperties: Record<string, string>] {
+  if (!chartSpec?.resolver && chartContent) {
+    try {
+      chartSpec = parseChartYaml(chartContent);
+    } catch (err) {
+      throw new Error(
+        "Failed to parse yaml. Please fix it before trying to generate chart spec.",
+      );
+    }
+  }
+  if (chartSpec?.resolver) {
+    return [chartSpec.resolver, chartSpec.resolverProperties ?? {}];
+  }
+  throw new Error("Chart is invalid");
 }

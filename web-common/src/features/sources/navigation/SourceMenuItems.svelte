@@ -9,7 +9,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -46,6 +46,7 @@
   export let sourceName: string;
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
@@ -60,11 +61,7 @@
   $: source = $sourceQuery.data?.source;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
-  $: sourceHasError = getFileHasErrors(
-    queryClient,
-    runtimeInstanceId,
-    filePath,
-  );
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -163,7 +160,7 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-{#if customDashboards}
+{#if $customDashboards}
   <NavigationMenuItem
     disabled={disableCreateDashboard}
     on:click={() => {
