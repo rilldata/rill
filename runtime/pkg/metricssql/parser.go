@@ -67,11 +67,9 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 	}
 
 	t := &transformer{
-		controller:       c.controller,
-		instanceID:       c.instanceID,
-		userAttributes:   c.userAttributes,
-		dimExprToCol:     make(map[string]string),
-		measureExprToCol: make(map[string]string),
+		controller:     c.controller,
+		instanceID:     c.instanceID,
+		userAttributes: c.userAttributes,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
 	if err != nil {
@@ -91,11 +89,6 @@ type transformer struct {
 	connector     string
 	dimsToExpr    map[string]string
 	measureToExpr map[string]string
-
-	// resolved dimension expression to dimension name
-	dimExprToCol map[string]string
-	// resolved measure expression to measure name
-	measureExprToCol map[string]string
 }
 
 func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectStmt) (string, error) {
