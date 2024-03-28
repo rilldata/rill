@@ -314,10 +314,9 @@ message AlertNotifySpec {
 }
 
 message NotifierSpec {
-  string connector = 1;
   oneof spec {
-    EmailNotifierSpec email = 2;
-    SlackNotifierSpec slack = 3;
+    EmailNotifierSpec email = 1;
+    SlackNotifierSpec slack = 2;
   }
 }
 

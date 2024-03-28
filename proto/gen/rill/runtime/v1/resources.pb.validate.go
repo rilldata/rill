@@ -4857,8 +4857,6 @@ func (m *NotifierSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Connector
-
 	switch v := m.Spec.(type) {
 	case *NotifierSpec_Email:
 		if v == nil {

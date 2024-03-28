@@ -57,7 +57,7 @@
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
       recipients:
         reportSpec.notifySpec?.notifiers
-          ?.find((n) => n.connector === "email")
+          ?.find((n) => n.email)
           ?.email?.recipients?.map((email) => ({
             email: email,
           })) ?? [],

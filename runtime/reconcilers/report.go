@@ -301,8 +301,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	sent := false
 	for _, notifier := range rep.Spec.NotifySpec.Notifiers {
-		switch notifier.Connector {
-		case "email":
+		switch notifier.Spec.(type) {
+		case *runtimev1.NotifierSpec_Email:
 			for _, recipient := range notifier.GetEmail().Recipients {
 				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 					ToEmail:        recipient,
@@ -321,14 +321,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 		default:
 			err := func() error {
-				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+				connectorName, err := drivers.NotifierConnectorName(notifier.Spec)
+				if err != nil {
+					return err
+				}
+				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)
 				if err != nil {
 					return err
 				}
 				defer release()
 				n, ok := conn.AsNotifier()
 				if !ok {
-					return fmt.Errorf("%s connector not available", notifier.Connector)
+					return fmt.Errorf("%s connector not available", connectorName)
 				}
 				msg := &drivers.ScheduledReport{
 					Title:          rep.Spec.Title,
@@ -341,7 +345,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				err = n.SendScheduledReport(msg, notifier.Spec)
 				sent = true
 				if err != nil {
-					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
+					return fmt.Errorf("failed to send %s notification: %w", connectorName, err)
 				}
 				return nil
 			}()

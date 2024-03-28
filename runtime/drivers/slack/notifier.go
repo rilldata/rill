@@ -70,7 +70,7 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, spec drivers.NotifierSp
 }
 
 func (h *handle) validateSlackSpec(spec drivers.NotifierSpec) (*runtimev1.SlackNotifierSpec, error) {
-	notifierSpec, ok := spec.(*SlackNotifierProps)
+	notifierSpec, ok := spec.(*runtimev1.NotifierSpec_Slack)
 	if !ok {
 		return nil, fmt.Errorf("invalid notifier spec type: %T", spec)
 	}
@@ -161,8 +161,6 @@ func (h *handle) sendTextViaWebhooks(txt string, webhooks []string) error {
 	}
 	return nil
 }
-
-type SlackNotifierProps = runtimev1.NotifierSpec_Slack
 
 type AlertStatusData struct {
 	Subject             string

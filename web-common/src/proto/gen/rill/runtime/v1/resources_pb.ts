@@ -2190,22 +2190,17 @@ export class AlertNotifySpec extends Message<AlertNotifySpec> {
  */
 export class NotifierSpec extends Message<NotifierSpec> {
   /**
-   * @generated from field: string connector = 1;
-   */
-  connector = "";
-
-  /**
    * @generated from oneof rill.runtime.v1.NotifierSpec.spec
    */
   spec: {
     /**
-     * @generated from field: rill.runtime.v1.EmailNotifierSpec email = 2;
+     * @generated from field: rill.runtime.v1.EmailNotifierSpec email = 1;
      */
     value: EmailNotifierSpec;
     case: "email";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.SlackNotifierSpec slack = 3;
+     * @generated from field: rill.runtime.v1.SlackNotifierSpec slack = 2;
      */
     value: SlackNotifierSpec;
     case: "slack";
@@ -2219,9 +2214,8 @@ export class NotifierSpec extends Message<NotifierSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.NotifierSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "email", kind: "message", T: EmailNotifierSpec, oneof: "spec" },
-    { no: 3, name: "slack", kind: "message", T: SlackNotifierSpec, oneof: "spec" },
+    { no: 1, name: "email", kind: "message", T: EmailNotifierSpec, oneof: "spec" },
+    { no: 2, name: "slack", kind: "message", T: SlackNotifierSpec, oneof: "spec" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): NotifierSpec {

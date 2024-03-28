@@ -166,7 +166,6 @@ func (p *Parser) parseReport(node *Node) error {
 		// Email settings
 		r.ReportSpec.NotifySpec.Notifiers = []*runtimev1.NotifierSpec{
 			{
-				Connector: "email",
 				Spec: &runtimev1.NotifierSpec_Email{
 					Email: &runtimev1.EmailNotifierSpec{
 						Recipients: tmp.Email.Recipients,
@@ -178,7 +177,6 @@ func (p *Parser) parseReport(node *Node) error {
 		// Email settings
 		if len(tmp.Notify.Email.Recipients) > 0 {
 			r.ReportSpec.NotifySpec.Notifiers = append(r.ReportSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
-				Connector: "email",
 				Spec: &runtimev1.NotifierSpec_Email{
 					Email: &runtimev1.EmailNotifierSpec{
 						Recipients: tmp.Notify.Email.Recipients,
@@ -189,7 +187,6 @@ func (p *Parser) parseReport(node *Node) error {
 		// Slack settings
 		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Emails) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
 			r.ReportSpec.NotifySpec.Notifiers = append(r.ReportSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
-				Connector: "slack",
 				Spec: &runtimev1.NotifierSpec_Slack{
 					Slack: &runtimev1.SlackNotifierSpec{
 						Emails:   tmp.Notify.Slack.Emails,

@@ -4703,8 +4703,6 @@ definitions:
   v1NotifierSpec:
     type: object
     properties:
-      connector:
-        type: string
       email:
         $ref: '#/definitions/v1EmailNotifierSpec'
       slack:

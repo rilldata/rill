@@ -163,7 +163,7 @@
     <!-- Recipients -->
     <EmailRecipients
       emailRecipients={$reportQuery.data.resource.report.spec.notifySpec.notifiers.find(
-        (n) => n.connector === "email",
+        (n) => n.email,
       )?.email?.recipients ?? []}
     />
   </div>

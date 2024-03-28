@@ -54,7 +54,7 @@
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients:
         alertSpec?.notifySpec?.notifiers
-          ?.find((n) => n.connector === "email")
+          ?.find((n) => n.email)
           ?.email?.recipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertFormValues(

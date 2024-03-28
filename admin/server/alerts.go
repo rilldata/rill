@@ -548,15 +548,15 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	opts.Renotify = spec.NotifySpec.Renotify
 	opts.RenotifyAfterSeconds = spec.NotifySpec.RenotifyAfterSeconds
 	for _, notifier := range spec.NotifySpec.Notifiers {
-		switch notifier.Connector {
-		case "email":
+		switch notifier.Spec.(type) {
+		case *runtimev1.NotifierSpec_Email:
 			opts.EmailRecipients = notifier.GetEmail().Recipients
-		case "slack":
+		case *runtimev1.NotifierSpec_Slack:
 			opts.SlackEmails = notifier.GetSlack().Emails
 			opts.SlackChannels = notifier.GetSlack().Channels
 			opts.SlackWebhooks = notifier.GetSlack().Webhooks
 		default:
-			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
+			return nil, fmt.Errorf("unknown notifier spec: %T", notifier.Spec)
 		}
 	}
 	return opts, nil

@@ -393,14 +393,14 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Res
 
 	// Allow if the user is a recipient
 	for _, notifier := range report.Spec.NotifySpec.Notifiers {
-		switch notifier.Connector {
-		case "email":
+		switch notifier.Spec.(type) {
+		case *runtimev1.NotifierSpec_Email:
 			for _, recipient := range notifier.GetEmail().Recipients {
 				if recipient == email {
 					return r, true, nil
 				}
 			}
-		case "slack":
+		case *runtimev1.NotifierSpec_Slack:
 			for _, recipient := range notifier.GetSlack().Emails {
 				if recipient == email {
 					return r, true, nil

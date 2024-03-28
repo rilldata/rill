@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -34,4 +35,15 @@ type ScheduledReport struct {
 	OpenLink       string
 	DownloadLink   string
 	EditLink       string
+}
+
+func NotifierConnectorName(spec NotifierSpec) (string, error) {
+	switch spec := spec.(type) {
+	case *runtimev1.NotifierSpec_Email:
+		return "email", nil
+	case *runtimev1.NotifierSpec_Slack:
+		return "slack", nil
+	default:
+		return "", fmt.Errorf("unknown notifier spec type: %T", spec)
+	}
 }

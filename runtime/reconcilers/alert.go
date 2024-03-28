@@ -700,9 +700,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		}
 
 		for _, notifier := range a.Spec.NotifySpec.Notifiers {
-			switch notifier.Connector {
+			switch notifier.Spec.(type) {
 			// TODO: transform email client to notifier
-			case "email":
+			case *runtimev1.NotifierSpec_Email:
 				for _, recipient := range notifier.GetEmail().Recipients {
 					msg.ToEmail = recipient
 					err := r.C.Runtime.Email.SendAlertStatus(msg)
@@ -713,18 +713,22 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				}
 			default:
 				err := func() error {
-					conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+					connectorName, err := drivers.NotifierConnectorName(notifier.Spec)
+					if err != nil {
+						return err
+					}
+					conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)
 					if err != nil {
 						return err
 					}
 					defer release()
 					n, ok := conn.AsNotifier()
 					if !ok {
-						return fmt.Errorf("%s connector not available", notifier.Connector)
+						return fmt.Errorf("%s connector not available", connectorName)
 					}
 					err = n.SendAlertStatus(msg, notifier.Spec)
 					if err != nil {
-						notificationErr = fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
+						notificationErr = fmt.Errorf("failed to send %s notification: %w", connectorName, err)
 					}
 					return nil
 				}()

@@ -809,6 +809,13 @@ export interface V1Resource {
   api?: V1API;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportNotifySpec {
@@ -834,13 +841,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1064,6 +1064,12 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
+}
+
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -1089,12 +1095,6 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
   external?: boolean;
-}
-
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1161,7 +1161,6 @@ export interface V1NumericSummary {
 }
 
 export interface V1NotifierSpec {
-  connector?: string;
   email?: V1EmailNotifierSpec;
   slack?: V1SlackNotifierSpec;
 }
