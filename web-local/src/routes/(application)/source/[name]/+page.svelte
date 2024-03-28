@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceWorkspace } from "@rilldata/web-common/features/sources";
@@ -13,6 +13,7 @@
   const { readOnly } = featureFlags;
 
   $: sourceName = $page.params.name;
+  $: filePath = getFileAPIPathFromNameAndType(sourceName, EntityType.Table);
 
   onMount(() => {
     if ($readOnly) {
@@ -20,25 +21,21 @@
     }
   });
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-    {
-      query: {
-        onError: (err) => {
-          if (err.response?.status && err.response?.data?.message) {
-            throw error(err.response.status, err.response.data.message);
-          } else {
-            console.error(err);
-            throw error(500, err.message);
-          }
-        },
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+    query: {
+      onError: (err) => {
+        if (err.response?.status && err.response?.data?.message) {
+          throw error(err.response.status, err.response.data.message);
+        } else {
+          console.error(err);
+          throw error(500, err.message);
+        }
       },
     },
-  );
+  });
 
   // Initialize the source store
-  $: sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(filePath);
   $: if ($fileQuery.isSuccess && $fileQuery.data.blob) {
     sourceStore.set({ clientYAML: $fileQuery.data.blob });
   }
@@ -48,4 +45,4 @@
   <title>Rill Developer | {sourceName}</title>
 </svelte:head>
 
-<SourceWorkspace {sourceName} />
+<SourceWorkspace {filePath} />

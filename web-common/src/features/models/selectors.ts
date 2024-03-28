@@ -84,10 +84,10 @@ export async function getModelNames(
     .map((path) => path.replace("/models/", "").replace(".sql", ""))
     // sort alphabetically case-insensitive
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-  return modelNames;
+  return modelNames ?? [];
 }
 
-export function useModelFileIsEmpty(instanceId, modelName) {
+export function useModelFileIsEmpty(instanceId: string, modelName: string) {
   return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
     query: {
       select(data) {

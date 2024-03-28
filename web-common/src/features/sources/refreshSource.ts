@@ -1,5 +1,3 @@
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   openFileUploadDialog,
   uploadFile,
@@ -12,6 +10,7 @@ import {
 
 export async function refreshSource(
   connector: string,
+  filePath: string,
   sourceName: string,
   instanceId: string,
 ) {
@@ -20,59 +19,30 @@ export async function refreshSource(
   }
 
   // different logic for the file connector
-
-  const files = await openFileUploadDialog(false);
-  if (!files.length) return Promise.reject();
-
-  const filePath = await uploadFile(instanceId, files[0]);
-  if (filePath === null) {
-    return Promise.reject();
-  }
-  const yaml = compileCreateSourceYAML(
-    {
-      sourceName,
-      path: filePath,
-    },
-    "local_file",
-  );
-  return runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(sourceName, EntityType.Table),
-    {
-      blob: yaml,
-    },
-  );
+  return replaceSourceWithUploadedFile(instanceId, filePath);
 }
 
 export async function replaceSourceWithUploadedFile(
   instanceId: string,
-  sourceName: string,
+  filePath: string,
 ) {
-  const artifactPath = getFileAPIPathFromNameAndType(
-    sourceName,
-    EntityType.Table,
-  );
-
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
 
-  const filePath = await uploadFile(instanceId, files[0]);
-  if (filePath === null) {
+  const dataFilePath = await uploadFile(instanceId, files[0]);
+  if (dataFilePath === null) {
     return Promise.reject();
   }
 
   const yaml = compileCreateSourceYAML(
     {
-      sourceName,
-      path: filePath,
+      path: dataFilePath,
     },
     "local_file",
   );
 
   // Create source
-  const resp = await runtimeServicePutFile(instanceId, artifactPath, {
+  return runtimeServicePutFile(instanceId, filePath, {
     blob: yaml,
   });
-
-  return resp;
 }

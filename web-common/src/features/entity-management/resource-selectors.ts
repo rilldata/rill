@@ -120,6 +120,22 @@ export function useAllNames(instanceId: string) {
     },
   );
 }
+export async function fetchAllNames(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const resourcesResp = await queryClient.fetchQuery<V1ListResourcesResponse>({
+    queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, {}),
+    queryFn: () => {
+      return runtimeServiceListResources(instanceId, {});
+    },
+  });
+  // CAST SAFETY: must be a string[], because we filter
+  // out undefined values
+  return (resourcesResp.resources
+    ?.map((res) => res?.meta?.name?.name)
+    .filter((name) => name !== undefined) ?? []) as string[];
+}
 
 export function createSchemaForTable(
   instanceId: string,

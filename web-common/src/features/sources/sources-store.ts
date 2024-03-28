@@ -24,12 +24,12 @@ function createSourceStore(): Writable<SourceStore> {
   return writable({ clientYAML: "" });
 }
 
-export function useSourceStore(sourceName: string): Writable<SourceStore> {
-  if (!sourceStores[sourceName]) {
-    sourceStores[sourceName] = createSourceStore();
+export function useSourceStore(filePath: string): Writable<SourceStore> {
+  if (!sourceStores[filePath]) {
+    sourceStores[filePath] = createSourceStore();
   }
 
-  return sourceStores[sourceName];
+  return sourceStores[filePath];
 }
 
 export const sourceImportedName = writable<string | null>(null);

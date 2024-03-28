@@ -5,15 +5,15 @@
   import SourceWorkspaceBody from "./SourceWorkspaceBody.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  export let sourceName: string;
+  export let filePath: string;
 </script>
 
-{#key sourceName}
-  <BeforeLeavingUnsavedSource {sourceName}>
+{#key filePath}
+  <BeforeLeavingUnsavedSource {filePath}>
     <WorkspaceContainer>
-      <SourceWorkspaceHeader {sourceName} slot="header" />
-      <SourceWorkspaceBody {sourceName} slot="body" />
-      <SourceInspector {sourceName} slot="inspector" />
+      <SourceWorkspaceHeader {filePath} slot="header" />
+      <SourceWorkspaceBody {filePath} slot="body" />
+      <SourceInspector {filePath} slot="inspector" />
     </WorkspaceContainer>
   </BeforeLeavingUnsavedSource>
 {/key}
