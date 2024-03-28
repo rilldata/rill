@@ -306,25 +306,62 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 }
 
 func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
-	measureCols := make([]string, 0, len(q.Measures))
-	for _, m := range q.Measures {
-		sn := safeName(m.Name)
-		alias := sn
-		if q.Exporting {
-			for _, measure := range mv.Measures {
-				if strings.EqualFold(measure.Name, m.Name) {
-					if measure.Label != "" {
-						alias = safeName(measure.Label)
-					}
-				}
+	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
+	aliasesMap := make(map[string]string)
+	if q.Exporting {
+		for _, e := range mv.Measures {
+			aliasesMap[e.Name] = e.Name
+			if e.Label != "" {
+				aliasesMap[e.Name] = e.Label
 			}
 		}
-		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, alias))
+
+		for _, e := range mv.Dimensions {
+			aliasesMap[e.Name] = e.Name
+			if e.Label != "" {
+				aliasesMap[e.Name] = e.Label
+			}
+		}
+
+		for _, d := range q.Dimensions {
+			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", safeName(d.Name), safeName(aliasesMap[d.Name])))
+			} else {
+				alias := d.Name
+				if d.Alias != "" {
+					alias = d.Alias
+				}
+				selectCols = append(selectCols, safeName(alias))
+			}
+		}
+		for _, m := range q.Measures {
+			selectCols = append(selectCols, fmt.Sprintf("%s AS %s", safeName(m.Name), safeName(aliasesMap[m.Name])))
+		}
+	}
+	measureCols := make([]string, 0, len(q.Measures))
+	for _, m := range q.Measures {
+		alias := safeName(m.Name)
+		if q.Exporting {
+			alias = safeName(aliasesMap[m.Name])
+		}
+		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", alias, alias))
+	}
+
+	pivots := make([]string, len(q.PivotOn))
+	for i, p := range q.PivotOn {
+		pivots[i] = p
+		if q.Exporting {
+			pivots[i] = aliasesMap[p]
+		}
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
 		sortCriterion := safeName(s.Name)
+		if q.Exporting {
+			sortCriterion = safeName(aliasesMap[s.Name])
+		}
+
 		if s.Desc {
 			sortCriterion += " DESC"
 		}
@@ -346,13 +383,18 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	}
 
 	//	PIVOT t ON year USING LAST(ap) ap;
-	return fmt.Sprintf("PIVOT %[1]s ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
+	selectList := "*"
+	if q.Exporting {
+		selectList = strings.Join(selectCols, ",")
+	}
+	return fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
 		temporaryTableName,              // 1
 		strings.Join(q.PivotOn, ", "),   // 2
 		strings.Join(measureCols, ", "), // 3
 		orderClause,                     // 4
 		limitClause,                     // 5
 		q.Offset,                        // 6
+		selectList,                      // 7
 	)
 }
 

@@ -14,6 +14,8 @@ dimensions:
     name: dom
     property: domain
     description: ""
+  - name: nolabel_pub
+    property: publisher
   - label: Domain Parts
     name: domain_parts
     expression: "string_split(domain, '.')"
@@ -34,3 +36,8 @@ measures:
     expression: avg(bid_price)
     description: ""
     format_preset: ""
+  - name: m1 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+
