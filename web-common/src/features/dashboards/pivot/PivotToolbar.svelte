@@ -5,6 +5,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getStateManagers } from "../state-managers/state-managers";
+  import PivotExportButton from "./PivotExportButton.svelte";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -80,4 +81,6 @@
   {#if isFetching}
     <Spinner size="18px" status={EntityStatus.Running} />
   {/if}
+  <div class="grow" />
+  <PivotExportButton />
 </div>
