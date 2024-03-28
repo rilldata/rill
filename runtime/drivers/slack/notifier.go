@@ -12,30 +12,30 @@ import (
 )
 
 func (h *handle) SendScheduledReport(s *drivers.ScheduledReport, spec drivers.NotifierSpec) error {
-	slackSpec, err := h.validateSlackSpec(spec)
-	if err != nil {
-		return err
+	slackSpec, ok := spec.(*runtimev1.NotifierSpec_Slack)
+	if !ok {
+		return fmt.Errorf("invalid notifier spec type: %T", spec)
 	}
 	buf := new(bytes.Buffer)
-	err = h.templates.Lookup("scheduled_report.slack").Execute(buf, s)
+	err := h.templates.Lookup("scheduled_report.slack").Execute(buf, s)
 	if err != nil {
 		return fmt.Errorf("slack template error: %w", err)
 	}
 	txt := buf.String()
 
-	if err := h.sendTextToChannels(txt, slackSpec.Channels); err != nil {
+	if err := h.sendTextToChannels(txt, slackSpec.Slack.Channels); err != nil {
 		return err
 	}
-	if err := h.sendTextToEmails(txt, slackSpec.Emails); err != nil {
+	if err := h.sendTextToEmails(txt, slackSpec.Slack.Emails); err != nil {
 		return err
 	}
-	return h.sendTextViaWebhooks(txt, slackSpec.Webhooks)
+	return h.sendTextViaWebhooks(txt, slackSpec.Slack.Webhooks)
 }
 
 func (h *handle) SendAlertStatus(s *drivers.AlertStatus, spec drivers.NotifierSpec) error {
-	slackSpec, err := h.validateSlackSpec(spec)
-	if err != nil {
-		return err
+	slackSpec, ok := spec.(*runtimev1.NotifierSpec_Slack)
+	if !ok {
+		return fmt.Errorf("invalid notifier spec type: %T", spec)
 	}
 	switch s.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
@@ -46,7 +46,7 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, spec drivers.NotifierSp
 			IsRecover:           s.IsRecover,
 			OpenLink:            htemplate.URL(s.OpenLink),
 			EditLink:            htemplate.URL(s.EditLink),
-		}, slackSpec)
+		}, slackSpec.Slack)
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 		return h.sendAlertFail(&AlertFailData{
 			Title:               s.Title,
@@ -54,7 +54,7 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, spec drivers.NotifierSp
 			FailRow:             s.FailRow,
 			OpenLink:            htemplate.URL(s.OpenLink),
 			EditLink:            htemplate.URL(s.EditLink),
-		}, slackSpec)
+		}, slackSpec.Slack)
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return h.sendAlertStatus(&AlertStatusData{
 			Title:               s.Title,
@@ -63,22 +63,10 @@ func (h *handle) SendAlertStatus(s *drivers.AlertStatus, spec drivers.NotifierSp
 			ErrorMessage:        s.ExecutionError,
 			OpenLink:            htemplate.URL(s.EditLink),
 			EditLink:            htemplate.URL(s.EditLink),
-		}, slackSpec)
+		}, slackSpec.Slack)
 	default:
 		return fmt.Errorf("unknown assertion status: %v", s.Status)
 	}
-}
-
-func (h *handle) validateSlackSpec(spec drivers.NotifierSpec) (*runtimev1.SlackNotifierSpec, error) {
-	notifierSpec, ok := spec.(*runtimev1.NotifierSpec_Slack)
-	if !ok {
-		return nil, fmt.Errorf("invalid notifier spec type: %T", spec)
-	}
-	slackSpec := notifierSpec.Slack
-	if len(slackSpec.Channels) == 0 && len(slackSpec.Emails) == 0 && len(slackSpec.Webhooks) == 0 {
-		return nil, fmt.Errorf("no slack recipients specified")
-	}
-	return slackSpec, nil
 }
 
 func (h *handle) sendAlertStatus(data *AlertStatusData, spec *runtimev1.SlackNotifierSpec) error {
