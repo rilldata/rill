@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -320,7 +321,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				}
 			}
 		default:
-			err := func() error {
+			err := func() (outErr error) {
 				connectorName, err := drivers.NotifierConnectorName(notifier.Spec)
 				if err != nil {
 					return err
@@ -342,6 +343,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					DownloadLink:   exportURL.String(),
 					EditLink:       meta.EditURL,
 				}
+				start := time.Now()
+				defer func() {
+					totalLatency := time.Since(start).Milliseconds()
+
+					if r.C.Activity != nil {
+						r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
+							attribute.Bool("failed", outErr != nil),
+							attribute.String("notifier", connectorName),
+							attribute.String("notification_type", "scheduled_report"),
+						)
+					}
+				}()
 				err = n.SendScheduledReport(msg, notifier.Spec)
 				sent = true
 				if err != nil {

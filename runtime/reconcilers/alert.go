@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -712,7 +713,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					}
 				}
 			default:
-				err := func() error {
+				err := func() (outErr error) {
 					connectorName, err := drivers.NotifierConnectorName(notifier.Spec)
 					if err != nil {
 						return err
@@ -726,6 +727,18 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if !ok {
 						return fmt.Errorf("%s connector not available", connectorName)
 					}
+					start := time.Now()
+					defer func() {
+						totalLatency := time.Since(start).Milliseconds()
+
+						if r.C.Activity != nil {
+							r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
+								attribute.Bool("failed", outErr != nil),
+								attribute.String("notifier", connectorName),
+								attribute.String("notification_type", "alert_status"),
+							)
+						}
+					}()
 					err = n.SendAlertStatus(msg, notifier.Spec)
 					if err != nil {
 						notificationErr = fmt.Errorf("failed to send %s notification: %w", connectorName, err)
