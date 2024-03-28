@@ -1,14 +1,19 @@
 <script lang="ts">
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  import {
+    CompareWithOptions,
+    CriteriaOperationOptions,
+  } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import type { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
 
   const { form, errors, validateField } = formState;
@@ -32,7 +37,7 @@
   let value: string = $form["criteria"][index].value;
   const valueUpdater = debounce(() => {
     $form["criteria"][index].value = value;
-    validateField("criteria");
+    void validateField("criteria");
   }, 500);
 
   $: groupErr = parseCriteriaError($errors["criteria"], index);
@@ -56,14 +61,14 @@
   <Select
     id="compareWith"
     label=""
-    options={[{ value: "Value" }]}
+    options={CompareWithOptions}
     placeholder="compare with"
-    value={"Value"}
+    value={$form["criteria"][index].compareWith}
   />
   <InputV2
     alwaysShowError
     bind:value
-    error={$errors["criteria"][index]?.value}
+    error=""
     id="value"
     on:input={valueUpdater}
     placeholder={"0"}

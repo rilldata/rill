@@ -93,7 +93,7 @@
           data: {
             options: {
               title: values.name,
-              queryName: "MetricsViewAggregation",
+              queryName: "MetricsViewComparison",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
               ),
