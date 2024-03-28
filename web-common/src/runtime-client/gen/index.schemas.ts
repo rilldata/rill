@@ -713,6 +713,12 @@ export interface V1Source {
   timeoutSeconds?: number;
 }
 
+export interface V1SlackNotifierSpec {
+  emails?: string[];
+  channels?: string[];
+  webhooks?: string[];
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -809,7 +815,18 @@ export interface V1Resource {
   api?: V1API;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
+
+export interface V1ReportNotifySpec {
+  notifiers?: V1NotifierSpec[];
+}
 
 export interface V1ReportSpec {
   trigger?: boolean;
@@ -820,7 +837,7 @@ export interface V1ReportSpec {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  emailRecipients?: string[];
+  notifySpec?: V1ReportNotifySpec;
   annotations?: V1ReportSpecAnnotations;
 }
 
@@ -830,13 +847,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1060,6 +1070,12 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
+}
+
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -1085,12 +1101,6 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
   external?: boolean;
-}
-
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1159,6 +1169,11 @@ export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
   numericOutliers?: V1NumericOutliers;
+}
+
+export interface V1NotifierSpec {
+  email?: V1EmailNotifierSpec;
+  slack?: V1SlackNotifierSpec;
 }
 
 export interface V1ModelState {
@@ -1234,23 +1249,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1311,14 +1309,26 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewTimeSeriesRequest {
@@ -1376,6 +1386,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1402,13 +1419,6 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
@@ -1419,6 +1429,11 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1705,6 +1720,10 @@ export interface V1Example {
   name?: string;
   title?: string;
   description?: string;
+}
+
+export interface V1EmailNotifierSpec {
+  recipients?: string[];
 }
 
 export interface V1EditInstanceResponse {
@@ -2052,18 +2071,18 @@ export interface V1AssertionResult {
   errorMessage?: string;
 }
 
-export interface V1AlertState {
-  specHash?: string;
-  refsHash?: string;
-  nextRunOn?: string;
-  currentExecution?: V1AlertExecution;
-  executionHistory?: V1AlertExecution[];
-  executionCount?: number;
-}
-
 export type V1AlertSpecAnnotations = { [key: string]: string };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: any };
+
+export interface V1AlertNotifySpec {
+  notifyOnRecover?: boolean;
+  notifyOnFail?: boolean;
+  notifyOnError?: boolean;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  notifiers?: V1NotifierSpec[];
+}
 
 export interface V1AlertSpec {
   trigger?: boolean;
@@ -2080,22 +2099,26 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
-  emailRecipients?: string[];
-  emailOnRecover?: boolean;
-  emailOnFail?: boolean;
-  emailOnError?: boolean;
-  emailRenotify?: boolean;
-  emailRenotifyAfterSeconds?: number;
+  notifySpec?: V1AlertNotifySpec;
   annotations?: V1AlertSpecAnnotations;
 }
 
 export interface V1AlertExecution {
   adhoc?: boolean;
   result?: V1AssertionResult;
-  sentEmails?: boolean;
+  sentNotifications?: boolean;
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1AlertState {
+  specHash?: string;
+  refsHash?: string;
+  nextRunOn?: string;
+  currentExecution?: V1AlertExecution;
+  executionHistory?: V1AlertExecution[];
+  executionCount?: number;
 }
 
 export interface V1Alert {
@@ -2138,7 +2161,7 @@ export interface Runtimev1CharLocation {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

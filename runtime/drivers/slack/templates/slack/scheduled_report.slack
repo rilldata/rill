@@ -1,0 +1,9 @@
+*{{ .Title }}*
+
+Your report for *{{ .ReportTimeString }}* is ready to view.
+
+<{{ .OpenLink }}|Open in browser> to see the full details.
+
+Or <{{ .DownloadLink }}|download the {{ .DownloadFormat }} file> directly.
+
+To edit or unsubscribe from this report, <{{ .EditLink }}|click here>.

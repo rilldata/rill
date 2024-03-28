@@ -196,6 +196,11 @@ func (h *Handle) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Handle.
+func (h *Handle) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
 // If onlyClone is false, it's a cheap operation on anything but the first call.
 // After it returns successfully, h.repoPath is safe to access.

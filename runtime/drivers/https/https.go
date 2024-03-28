@@ -165,6 +165,11 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 // FilePaths implements drivers.FileStore
 func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
 	conf, err := parseSourceProperties(src)

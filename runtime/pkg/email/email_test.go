@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +56,7 @@ func TestAlertFail(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &AlertStatus{
+	opts := &drivers.AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
 		Title:         "Foobar",
@@ -83,7 +84,7 @@ func TestAlertRecover(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &AlertStatus{
+	opts := &drivers.AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
 		Title:         "Foobar",
@@ -108,7 +109,7 @@ func TestAlertError(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &AlertStatus{
+	opts := &drivers.AlertStatus{
 		ToEmail:        uuid.New().String(),
 		ToName:         uuid.New().String(),
 		Title:          "Foobar",

@@ -395,6 +395,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first

@@ -34,6 +34,23 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
+	Notify struct {
+		OnRecover     *bool  `yaml:"on_recover"`
+		OnFail        *bool  `yaml:"on_fail"`
+		OnError       *bool  `yaml:"on_error"`
+		Renotify      *bool  `yaml:"renotify"`
+		RenotifyAfter string `yaml:"renotify_after"`
+		Email         struct {
+			Recipients []string `yaml:"recipients"`
+		} `yaml:"email"`
+		Slack struct {
+			Channels []string `yaml:"channels"`
+			Emails   []string `yaml:"emails"`
+			Webhooks []string `yaml:"webhooks"`
+		} `yaml:"slack"`
+	} `yaml:"notify"`
+	Annotations map[string]string `yaml:"annotations"`
+	// Backwards compatibility
 	Email struct {
 		Recipients    []string `yaml:"recipients"`
 		OnRecover     *bool    `yaml:"on_recover"`
@@ -42,7 +59,6 @@ type AlertYAML struct {
 		Renotify      *bool    `yaml:"renotify"`
 		RenotifyAfter string   `yaml:"renotify_after"`
 	} `yaml:"email"`
-	Annotations map[string]string `yaml:"annotations"`
 }
 
 // parseAlert parses an alert definition and adds the resulting resource to p.Resources.
@@ -148,20 +164,44 @@ func (p *Parser) parseAlert(node *Node) error {
 		return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
 	}
 
-	// Validate recipients
-	for _, email := range tmp.Email.Recipients {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient email address %q", email)
-		}
+	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	// Validate email.renotify_after
-	var emailRenotifyAfter time.Duration
-	if tmp.Email.RenotifyAfter != "" {
-		emailRenotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
-		if err != nil {
-			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+	isLegacySyntax := len(tmp.Email.Recipients) > 0
+
+	// Validate the input
+	var renotifyAfter time.Duration
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Validate email recipients
+		for _, email := range tmp.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		// Validate email.renotify_after
+		if tmp.Email.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
+			if err != nil {
+				return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+			}
+		}
+	} else {
+		// Validate email recipients
+		for _, email := range tmp.Notify.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		// Validate notify.renotify_after
+		if tmp.Notify.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.Notify.RenotifyAfter)
+			if err != nil {
+				return fmt.Errorf(`invalid value for property "notify.renotify_after": %w`, err)
+			}
 		}
 	}
 
@@ -195,27 +235,76 @@ func (p *Parser) parseAlert(node *Node) error {
 		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
 	}
 
-	r.AlertSpec.EmailRecipients = tmp.Email.Recipients
+	// Notification default settings
+	r.AlertSpec.NotifySpec = &runtimev1.AlertNotifySpec{}
+	r.AlertSpec.NotifySpec.NotifyOnRecover = false
+	r.AlertSpec.NotifySpec.NotifyOnFail = true
+	r.AlertSpec.NotifySpec.NotifyOnError = false
+	r.AlertSpec.NotifySpec.Renotify = false
 
-	// Email notification default settings
-	r.AlertSpec.EmailOnRecover = false
-	r.AlertSpec.EmailOnFail = true
-	r.AlertSpec.EmailOnError = false
-	r.AlertSpec.EmailRenotify = false
-
-	// Override email notification defaults
-	if tmp.Email.OnRecover != nil {
-		r.AlertSpec.EmailOnRecover = *tmp.Email.OnRecover
-	}
-	if tmp.Email.OnFail != nil {
-		r.AlertSpec.EmailOnFail = *tmp.Email.OnFail
-	}
-	if tmp.Email.OnError != nil {
-		r.AlertSpec.EmailOnError = *tmp.Email.OnError
-	}
-	if tmp.Email.Renotify != nil {
-		r.AlertSpec.EmailRenotify = *tmp.Email.Renotify
-		r.AlertSpec.EmailRenotifyAfterSeconds = uint32(emailRenotifyAfter.Seconds())
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Override email notification defaults
+		if tmp.Email.OnRecover != nil {
+			r.AlertSpec.NotifySpec.NotifyOnRecover = *tmp.Email.OnRecover
+		}
+		if tmp.Email.OnFail != nil {
+			r.AlertSpec.NotifySpec.NotifyOnFail = *tmp.Email.OnFail
+		}
+		if tmp.Email.OnError != nil {
+			r.AlertSpec.NotifySpec.NotifyOnError = *tmp.Email.OnError
+		}
+		if tmp.Email.Renotify != nil {
+			r.AlertSpec.NotifySpec.Renotify = *tmp.Email.Renotify
+			r.AlertSpec.NotifySpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		}
+		// Email settings
+		r.AlertSpec.NotifySpec.Notifiers = []*runtimev1.NotifierSpec{
+			{
+				Spec: &runtimev1.NotifierSpec_Email{
+					Email: &runtimev1.EmailNotifierSpec{
+						Recipients: tmp.Email.Recipients,
+					},
+				},
+			},
+		}
+	} else {
+		// Override notification defaults
+		if tmp.Notify.OnRecover != nil {
+			r.AlertSpec.NotifySpec.NotifyOnRecover = *tmp.Notify.OnRecover
+		}
+		if tmp.Notify.OnFail != nil {
+			r.AlertSpec.NotifySpec.NotifyOnFail = *tmp.Notify.OnFail
+		}
+		if tmp.Notify.OnError != nil {
+			r.AlertSpec.NotifySpec.NotifyOnError = *tmp.Notify.OnError
+		}
+		if tmp.Notify.Renotify != nil {
+			r.AlertSpec.NotifySpec.Renotify = *tmp.Notify.Renotify
+			r.AlertSpec.NotifySpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		}
+		// Email settings
+		if len(tmp.Notify.Email.Recipients) > 0 {
+			r.AlertSpec.NotifySpec.Notifiers = append(r.AlertSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
+				Spec: &runtimev1.NotifierSpec_Email{
+					Email: &runtimev1.EmailNotifierSpec{
+						Recipients: tmp.Notify.Email.Recipients,
+					},
+				},
+			})
+		}
+		// Slack settings
+		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Emails) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
+			r.AlertSpec.NotifySpec.Notifiers = append(r.AlertSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
+				Spec: &runtimev1.NotifierSpec_Slack{
+					Slack: &runtimev1.SlackNotifierSpec{
+						Emails:   tmp.Notify.Slack.Emails,
+						Channels: tmp.Notify.Slack.Channels,
+						Webhooks: tmp.Notify.Slack.Webhooks,
+					},
+				},
+			})
+		}
 	}
 
 	r.AlertSpec.Annotations = tmp.Annotations

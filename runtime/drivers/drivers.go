@@ -134,6 +134,8 @@ type Handle interface {
 	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.
 	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).
 	AsTransporter(from Handle, to Handle) (Transporter, bool)
+
+	AsNotifier() (Notifier, bool)
 }
 
 // PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.

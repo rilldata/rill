@@ -162,7 +162,9 @@
 
     <!-- Recipients -->
     <EmailRecipients
-      emailRecipients={$reportQuery.data.resource.report.spec.emailRecipients}
+      emailRecipients={$reportQuery.data.resource.report.spec.notifySpec.notifiers.find(
+        (n) => n.email,
+      )?.email?.recipients ?? []}
     />
   </div>
 {/if}

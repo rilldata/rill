@@ -160,6 +160,11 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 func (c *connection) EstimateSize() (int64, bool) {
 	return 0, false
 }

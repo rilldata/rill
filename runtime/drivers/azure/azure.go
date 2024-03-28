@@ -216,6 +216,11 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier() (drivers.Notifier, bool) {
+	return nil, false
+}
+
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
 func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
 	conf, err := parseSourceProperties(props)

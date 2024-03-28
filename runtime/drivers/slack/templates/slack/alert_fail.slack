@@ -1,0 +1,13 @@
+*{{ .Title }}*
+
+Your alert triggered for {{ .ExecutionTimeString }}.
+
+The first row that matched your alert criteria is:
+
+{{ range $key, $value := .FailRow }}
+• *{{ $key }}*: {{ $value }}
+{{ end }}
+
+<{{ .OpenLink }}|Open in browser>
+
+To edit or unsubscribe from this alert, <{{ .EditLink }}|click here>.

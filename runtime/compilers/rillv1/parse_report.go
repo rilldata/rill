@@ -29,6 +29,16 @@ type ReportYAML struct {
 	Email struct {
 		Recipients []string `yaml:"recipients"`
 	} `yaml:"email"`
+	Notify struct {
+		Email struct {
+			Recipients []string `yaml:"recipients"`
+		} `yaml:"email"`
+		Slack struct {
+			Channels []string `yaml:"channels"`
+			Emails   []string `yaml:"emails"`
+			Webhooks []string `yaml:"webhooks"`
+		} `yaml:"slack"`
+	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
 }
 
@@ -96,14 +106,37 @@ func (p *Parser) parseReport(node *Node) error {
 		return fmt.Errorf(`missing required property "export.format"`)
 	}
 
-	// Validate recipients
-	if len(tmp.Email.Recipients) == 0 {
-		return fmt.Errorf(`missing required property "recipients"`)
+	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
-	for _, email := range tmp.Email.Recipients {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient email address %q", email)
+
+	isLegacySyntax := len(tmp.Email.Recipients) > 0
+
+	// Validate recipients
+	if isLegacySyntax {
+		// Backward compatibility
+		for _, email := range tmp.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+	} else {
+		if len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 &&
+			len(tmp.Notify.Slack.Emails) == 0 && len(tmp.Notify.Slack.Webhooks) == 0 {
+			return fmt.Errorf(`missing notification recipients`)
+		}
+		for _, email := range tmp.Notify.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		for _, email := range tmp.Notify.Slack.Emails {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
 		}
 	}
 
@@ -125,7 +158,46 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
-	r.ReportSpec.EmailRecipients = tmp.Email.Recipients
+
+	r.ReportSpec.NotifySpec = &runtimev1.ReportNotifySpec{}
+
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Email settings
+		r.ReportSpec.NotifySpec.Notifiers = []*runtimev1.NotifierSpec{
+			{
+				Spec: &runtimev1.NotifierSpec_Email{
+					Email: &runtimev1.EmailNotifierSpec{
+						Recipients: tmp.Email.Recipients,
+					},
+				},
+			},
+		}
+	} else {
+		// Email settings
+		if len(tmp.Notify.Email.Recipients) > 0 {
+			r.ReportSpec.NotifySpec.Notifiers = append(r.ReportSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
+				Spec: &runtimev1.NotifierSpec_Email{
+					Email: &runtimev1.EmailNotifierSpec{
+						Recipients: tmp.Notify.Email.Recipients,
+					},
+				},
+			})
+		}
+		// Slack settings
+		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Emails) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
+			r.ReportSpec.NotifySpec.Notifiers = append(r.ReportSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
+				Spec: &runtimev1.NotifierSpec_Slack{
+					Slack: &runtimev1.SlackNotifierSpec{
+						Emails:   tmp.Notify.Slack.Emails,
+						Channels: tmp.Notify.Slack.Channels,
+						Webhooks: tmp.Notify.Slack.Webhooks,
+					},
+				},
+			})
+		}
+	}
+
 	r.ReportSpec.Annotations = tmp.Annotations
 
 	return nil

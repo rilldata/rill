@@ -1745,12 +1745,12 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated string email_recipients = 9;
+   * @generated from field: rill.runtime.v1.ReportNotifySpec notify_spec = 13;
    */
-  emailRecipients: string[] = [];
+  notifySpec?: ReportNotifySpec;
 
   /**
-   * @generated from field: map<string, string> annotations = 10;
+   * @generated from field: map<string, string> annotations = 14;
    */
   annotations: { [key: string]: string } = {};
 
@@ -1770,8 +1770,8 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 9, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 13, name: "notify_spec", kind: "message", T: ReportNotifySpec },
+    { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
@@ -1788,6 +1788,43 @@ export class ReportSpec extends Message<ReportSpec> {
 
   static equals(a: ReportSpec | PlainMessage<ReportSpec> | undefined, b: ReportSpec | PlainMessage<ReportSpec> | undefined): boolean {
     return proto3.util.equals(ReportSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ReportNotifySpec
+ */
+export class ReportNotifySpec extends Message<ReportNotifySpec> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.NotifierSpec notifiers = 1;
+   */
+  notifiers: NotifierSpec[] = [];
+
+  constructor(data?: PartialMessage<ReportNotifySpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReportNotifySpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "notifiers", kind: "message", T: NotifierSpec, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportNotifySpec {
+    return new ReportNotifySpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReportNotifySpec {
+    return new ReportNotifySpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReportNotifySpec {
+    return new ReportNotifySpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReportNotifySpec | PlainMessage<ReportNotifySpec> | undefined, b: ReportNotifySpec | PlainMessage<ReportNotifySpec> | undefined): boolean {
+    return proto3.util.equals(ReportNotifySpec, a, b);
   }
 }
 
@@ -2030,37 +2067,12 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * @generated from field: repeated string email_recipients = 14;
+   * @generated from field: rill.runtime.v1.AlertNotifySpec notify_spec = 14;
    */
-  emailRecipients: string[] = [];
+  notifySpec?: AlertNotifySpec;
 
   /**
-   * @generated from field: bool email_on_recover = 15;
-   */
-  emailOnRecover = false;
-
-  /**
-   * @generated from field: bool email_on_fail = 16;
-   */
-  emailOnFail = false;
-
-  /**
-   * @generated from field: bool email_on_error = 17;
-   */
-  emailOnError = false;
-
-  /**
-   * @generated from field: bool email_renotify = 18;
-   */
-  emailRenotify = false;
-
-  /**
-   * @generated from field: uint32 email_renotify_after_seconds = 19;
-   */
-  emailRenotifyAfterSeconds = 0;
-
-  /**
-   * @generated from field: map<string, string> annotations = 20;
+   * @generated from field: map<string, string> annotations = 15;
    */
   annotations: { [key: string]: string } = {};
 
@@ -2085,13 +2097,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
-    { no: 14, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 15, name: "email_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 16, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 18, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 19, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 14, name: "notify_spec", kind: "message", T: AlertNotifySpec },
+    { no: 15, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {
@@ -2108,6 +2115,209 @@ export class AlertSpec extends Message<AlertSpec> {
 
   static equals(a: AlertSpec | PlainMessage<AlertSpec> | undefined, b: AlertSpec | PlainMessage<AlertSpec> | undefined): boolean {
     return proto3.util.equals(AlertSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AlertNotifySpec
+ */
+export class AlertNotifySpec extends Message<AlertNotifySpec> {
+  /**
+   * @generated from field: bool notify_on_recover = 1;
+   */
+  notifyOnRecover = false;
+
+  /**
+   * @generated from field: bool notify_on_fail = 2;
+   */
+  notifyOnFail = false;
+
+  /**
+   * @generated from field: bool notify_on_error = 3;
+   */
+  notifyOnError = false;
+
+  /**
+   * @generated from field: bool renotify = 4;
+   */
+  renotify = false;
+
+  /**
+   * @generated from field: uint32 renotify_after_seconds = 5;
+   */
+  renotifyAfterSeconds = 0;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.NotifierSpec notifiers = 6;
+   */
+  notifiers: NotifierSpec[] = [];
+
+  constructor(data?: PartialMessage<AlertNotifySpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AlertNotifySpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "notifiers", kind: "message", T: NotifierSpec, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertNotifySpec {
+    return new AlertNotifySpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AlertNotifySpec {
+    return new AlertNotifySpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AlertNotifySpec {
+    return new AlertNotifySpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AlertNotifySpec | PlainMessage<AlertNotifySpec> | undefined, b: AlertNotifySpec | PlainMessage<AlertNotifySpec> | undefined): boolean {
+    return proto3.util.equals(AlertNotifySpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.NotifierSpec
+ */
+export class NotifierSpec extends Message<NotifierSpec> {
+  /**
+   * @generated from oneof rill.runtime.v1.NotifierSpec.spec
+   */
+  spec: {
+    /**
+     * @generated from field: rill.runtime.v1.EmailNotifierSpec email = 1;
+     */
+    value: EmailNotifierSpec;
+    case: "email";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SlackNotifierSpec slack = 2;
+     */
+    value: SlackNotifierSpec;
+    case: "slack";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<NotifierSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.NotifierSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "message", T: EmailNotifierSpec, oneof: "spec" },
+    { no: 2, name: "slack", kind: "message", T: SlackNotifierSpec, oneof: "spec" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): NotifierSpec {
+    return new NotifierSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): NotifierSpec {
+    return new NotifierSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): NotifierSpec {
+    return new NotifierSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: NotifierSpec | PlainMessage<NotifierSpec> | undefined, b: NotifierSpec | PlainMessage<NotifierSpec> | undefined): boolean {
+    return proto3.util.equals(NotifierSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.EmailNotifierSpec
+ */
+export class EmailNotifierSpec extends Message<EmailNotifierSpec> {
+  /**
+   * @generated from field: repeated string recipients = 1;
+   */
+  recipients: string[] = [];
+
+  constructor(data?: PartialMessage<EmailNotifierSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EmailNotifierSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EmailNotifierSpec {
+    return new EmailNotifierSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EmailNotifierSpec {
+    return new EmailNotifierSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EmailNotifierSpec {
+    return new EmailNotifierSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EmailNotifierSpec | PlainMessage<EmailNotifierSpec> | undefined, b: EmailNotifierSpec | PlainMessage<EmailNotifierSpec> | undefined): boolean {
+    return proto3.util.equals(EmailNotifierSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SlackNotifierSpec
+ */
+export class SlackNotifierSpec extends Message<SlackNotifierSpec> {
+  /**
+   * @generated from field: repeated string emails = 1;
+   */
+  emails: string[] = [];
+
+  /**
+   * @generated from field: repeated string channels = 2;
+   */
+  channels: string[] = [];
+
+  /**
+   * @generated from field: repeated string webhooks = 3;
+   */
+  webhooks: string[] = [];
+
+  constructor(data?: PartialMessage<SlackNotifierSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SlackNotifierSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SlackNotifierSpec {
+    return new SlackNotifierSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SlackNotifierSpec {
+    return new SlackNotifierSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SlackNotifierSpec {
+    return new SlackNotifierSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SlackNotifierSpec | PlainMessage<SlackNotifierSpec> | undefined, b: SlackNotifierSpec | PlainMessage<SlackNotifierSpec> | undefined): boolean {
+    return proto3.util.equals(SlackNotifierSpec, a, b);
   }
 }
 
@@ -2193,9 +2403,9 @@ export class AlertExecution extends Message<AlertExecution> {
   result?: AssertionResult;
 
   /**
-   * @generated from field: bool sent_emails = 3;
+   * @generated from field: bool sent_notifications = 3;
    */
-  sentEmails = false;
+  sentNotifications = false;
 
   /**
    * @generated from field: google.protobuf.Timestamp execution_time = 4;
@@ -2222,7 +2432,7 @@ export class AlertExecution extends Message<AlertExecution> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "result", kind: "message", T: AssertionResult },
-    { no: 3, name: "sent_emails", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "sent_notifications", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "execution_time", kind: "message", T: Timestamp },
     { no: 5, name: "started_on", kind: "message", T: Timestamp },
     { no: 6, name: "finished_on", kind: "message", T: Timestamp },
