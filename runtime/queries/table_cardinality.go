@@ -12,9 +12,11 @@ import (
 )
 
 type TableCardinality struct {
-	Connector string
-	TableName string
-	Result    int64
+	Connector    string
+	DatabaseName string
+	SchemaName   string
+	TableName    string
+	Result       int64
 }
 
 var _ runtime.Query = &TableCardinality{}
@@ -48,7 +50,7 @@ func (q *TableCardinality) UnmarshalResult(v any) error {
 
 func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	countSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s",
-		safeName(q.TableName),
+		fullTableName(q.DatabaseName, q.SchemaName, q.TableName),
 	)
 
 	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)

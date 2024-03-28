@@ -116,6 +116,8 @@ export type QueryServiceColumnTimeRangeParams = {
 
 export type QueryServiceTableCardinalityParams = {
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   priority?: number;
 };
 
@@ -133,6 +135,8 @@ export type QueryServiceColumnRugHistogramParams = {
 
 export type QueryServiceTableRowsParams = {
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   limit?: number;
   priority?: number;
 };
@@ -271,6 +275,8 @@ export type QueryServiceColumnDescriptiveStatisticsParams = {
 
 export type QueryServiceTableColumnsParams = {
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   priority?: number;
 };
 
@@ -366,6 +372,8 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   table?: string;
   path?: string;
   useAi?: boolean;
@@ -467,6 +475,8 @@ export type ConnectorServiceScanConnectorsParams = { instanceId?: string };
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   table?: string;
 };
 
@@ -623,6 +633,8 @@ export interface V1TableRowsResponse {
 export interface V1TableRowsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   tableName?: string;
   limit?: number;
   priority?: number;
@@ -630,6 +642,7 @@ export interface V1TableRowsRequest {
 
 export interface V1TableInfo {
   database?: string;
+  dbSchema?: string;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
 }
@@ -646,6 +659,8 @@ export interface V1TableColumnsResponse {
 export interface V1TableColumnsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -657,6 +672,8 @@ export interface V1TableCardinalityResponse {
 export interface V1TableCardinalityRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -1262,6 +1279,8 @@ export interface V1MetricsViewTimeRangeResponse {
 
 export interface V1MetricsViewSpec {
   connector?: string;
+  database?: string;
+  dbSchema?: string;
   table?: string;
   title?: string;
   description?: string;

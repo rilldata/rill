@@ -77,14 +77,14 @@ func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
 	})
 	require.NoError(t, err)
 
-	table, err := olap.InformationSchema().Lookup(ctx, "foo")
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", table.Name)
 
-	_, err = olap.InformationSchema().Lookup(ctx, "bad")
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "bad")
 	require.Equal(t, drivers.ErrNotFound, err)
 
-	table, err = olap.InformationSchema().Lookup(ctx, "model")
+	table, err = olap.InformationSchema().Lookup(ctx, "", "", "model")
 	require.NoError(t, err)
 	require.Equal(t, "model", table.Name)
 }

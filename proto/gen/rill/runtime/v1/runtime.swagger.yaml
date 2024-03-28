@@ -120,6 +120,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: dbSchema
+          in: query
+          required: false
+          type: string
         - name: table
           in: query
           required: false
@@ -711,6 +719,10 @@ paths:
             properties:
               connector:
                 type: string
+              database:
+                type: string
+              dbSchema:
+                type: string
               table:
                 type: string
               path:
@@ -1062,6 +1074,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: dbSchema
           in: query
           required: false
           type: string
@@ -1831,6 +1851,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: dbSchema
+          in: query
+          required: false
+          type: string
         - name: limit
           in: query
           required: false
@@ -1943,6 +1971,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: dbSchema
           in: query
           required: false
           type: string
@@ -4340,6 +4376,12 @@ definitions:
       connector:
         type: string
         title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      dbSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
       table:
         type: string
         title: Name of the table the metrics view is based on
@@ -5530,6 +5572,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      dbSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5549,6 +5595,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      dbSchema:
         type: string
       tableName:
         type: string
@@ -5572,6 +5622,8 @@ definitions:
     properties:
       database:
         type: string
+      dbSchema:
+        type: string
       name:
         type: string
       hasUnsupportedDataTypes:
@@ -5583,6 +5635,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      dbSchema:
         type: string
       tableName:
         type: string

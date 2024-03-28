@@ -12235,6 +12235,10 @@ func (m *TableCardinalityRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DbSchema
+
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := TableCardinalityRequestValidationError{
 			field:  "TableName",
@@ -12457,6 +12461,10 @@ func (m *TableColumnsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DbSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := TableColumnsRequestValidationError{
@@ -12820,6 +12828,10 @@ func (m *TableRowsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DbSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := TableRowsRequestValidationError{

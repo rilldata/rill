@@ -237,6 +237,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	for i, table := range tables {
 		res[i] = &runtimev1.TableInfo{
 			Database:                table.Database,
+			DbSchema:                table.DatabaseSchema,
 			Name:                    table.Name,
 			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
 		}
@@ -253,7 +254,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	}
 	defer release()
 
-	table, err := olap.InformationSchema().Lookup(ctx, req.Table)
+	table, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DbSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}

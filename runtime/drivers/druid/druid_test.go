@@ -211,10 +211,10 @@ func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 
 func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	table, err := olap.InformationSchema().Lookup(ctx, testTable)
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", testTable)
 	require.NoError(t, err)
 	require.Equal(t, testTable, table.Name)
 
-	_, err = olap.InformationSchema().Lookup(ctx, "foo")
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "foo")
 	require.Equal(t, drivers.ErrNotFound, err)
 }

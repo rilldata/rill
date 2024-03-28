@@ -69,7 +69,7 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 
 	if req.Table != "" && req.Connector != "" {
 		// Get table info
-		tbl, err := olap.InformationSchema().Lookup(ctx, req.Table)
+		tbl, err := olap.InformationSchema().Lookup(ctx, "", "", req.Table)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, "table not found")
 		}
