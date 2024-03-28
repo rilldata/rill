@@ -125,7 +125,7 @@
     });
   }
 
-  const sourceStore = useSourceStore(filePath);
+  $: sourceStore = useSourceStore(filePath);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,

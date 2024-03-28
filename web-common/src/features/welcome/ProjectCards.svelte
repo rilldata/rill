@@ -43,7 +43,7 @@
   const unpackExampleProject = createRuntimeServiceUnpackExample();
 
   async function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
-    behaviourEvent?.fireSplashEvent(
+    await behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.ExampleAdd,
       BehaviourEventMedium.Card,
       MetricsEventSpace.Workspace,
@@ -58,7 +58,7 @@
         force: true,
       },
     });
-    goto(firstPage);
+    await goto(firstPage);
   }
 </script>
 
@@ -69,8 +69,8 @@
     {#each EXAMPLES as example}
       <Card
         bgClasses={example.image}
-        on:click={() => {
-          startWithExampleProject(example);
+        on:click={async () => {
+          await startWithExampleProject(example);
         }}
       >
         <CardTitle>{example.title}</CardTitle>

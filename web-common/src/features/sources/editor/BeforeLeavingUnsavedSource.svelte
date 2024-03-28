@@ -12,7 +12,7 @@ https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037 -->
 
   export let filePath: string;
 
-  const sourceStore = useSourceStore(filePath);
+  $: sourceStore = useSourceStore(filePath);
 
   let interceptedNavigation: string | null = null;
 
@@ -47,18 +47,18 @@ https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037 -->
   }
 
   beforeNavigate(({ to, cancel }) => {
-    const toHref = to?.url.href;
-
-    if ((!isSourceUnsaved || interceptedNavigation) && toHref) {
-      emitNavigationTelemetry(toHref, "source").catch(console.error);
+    if (!isSourceUnsaved || interceptedNavigation) {
+      emitNavigationTelemetry(to?.url.href ?? "", "source").catch(
+        console.error,
+      );
       return;
     }
 
     // The current source is unsaved AND the confirmation dialog has not yet been shown
     cancel();
 
-    if (toHref) {
-      interceptedNavigation = toHref;
+    if (to) {
+      interceptedNavigation = to.url.href;
     }
   });
 </script>

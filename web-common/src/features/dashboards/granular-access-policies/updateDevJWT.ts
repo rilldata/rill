@@ -14,29 +14,37 @@ export async function updateDevJWT(
   mockUser: MockUser | null,
 ) {
   selectedMockUserStore.set(mockUser);
-  let jwt: string = null;
 
-  if (mockUser !== null) {
+  if (mockUser === null) {
+    selectedMockUserJWT.set(null);
+    runtime.update((runtimeState) => {
+      runtimeState.jwt = undefined;
+      return runtimeState;
+    });
+  } else {
     try {
-      const jwtResp = await runtimeServiceIssueDevJWT({
+      const { jwt } = await runtimeServiceIssueDevJWT({
         name: mockUser?.name ? mockUser.name : "Mock User",
         email: mockUser?.email,
         groups: mockUser?.groups ? mockUser.groups : [],
         admin: !!mockUser?.admin,
       });
-      jwt = jwtResp.jwt;
+
+      if (!jwt) throw new Error("No JWT returned");
+
+      selectedMockUserJWT.set(jwt);
+
+      runtime.update((runtimeState) => {
+        runtimeState.jwt = {
+          token: jwt,
+          receivedAt: Date.now(),
+        };
+        return runtimeState;
+      });
     } catch (e) {
       // no-op
     }
   }
 
-  selectedMockUserJWT.set(jwt);
-  runtime.update((runtimeState) => {
-    runtimeState.jwt = {
-      token: jwt,
-      receivedAt: Date.now(),
-    };
-    return runtimeState;
-  });
   return invalidateAllMetricsViews(queryClient, get(runtime).instanceId);
 }

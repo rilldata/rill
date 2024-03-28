@@ -20,7 +20,7 @@
   let view: EditorView;
 
   const queryClient = useQueryClient();
-  const sourceStore = useSourceStore(filePath);
+  $: sourceStore = useSourceStore(filePath);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,

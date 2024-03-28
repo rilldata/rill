@@ -6,7 +6,7 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
     formatConnectorType,
@@ -33,15 +33,12 @@
   import { useSourceStore } from "../sources-store";
 
   export let filePath: string;
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: sourceQuery = fileArtifactsStore.getResourceForFile(
-    queryClient,
-    runtimeInstanceId,
-    filePath,
-  );
+  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
   $: tableName = source?.state?.table ?? "";
@@ -111,7 +108,7 @@
         : undefined;
   }
 
-  const sourceStore = useSourceStore(tableName);
+  $: sourceStore = useSourceStore(tableName);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,

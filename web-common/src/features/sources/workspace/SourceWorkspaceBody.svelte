@@ -15,7 +15,8 @@
   export let filePath: string;
 
   const queryClient = useQueryClient();
-  const sourceStore = useSourceStore(filePath);
+
+  $: sourceStore = useSourceStore(filePath);
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 

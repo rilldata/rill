@@ -13,10 +13,7 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import {
-  getFilePathFromNameAndType,
-  getRouteFromName,
-} from "../entity-management/entity-mappers";
+import { getRouteFromName } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
