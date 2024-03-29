@@ -113,7 +113,7 @@ export function createTimeRangeSummary(
         {
           query: {
             queryClient: ctx.queryClient,
-            enabled: !!metricsView.data?.timeDimension,
+            enabled: !metricsView.error && !!metricsView.data?.timeDimension,
           },
         },
       ).subscribe(set),
@@ -129,6 +129,12 @@ export function createMetricsViewSchema(
       createQueryServiceMetricsViewSchema(
         runtime.instanceId,
         metricsViewName,
+        {},
+        {
+          query: {
+            queryClient: ctx.queryClient,
+          },
+        },
       ).subscribe(set),
   );
 }

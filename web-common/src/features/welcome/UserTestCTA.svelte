@@ -1,5 +1,5 @@
 <div
-  class="w-full px-8 py-4 bg-white rounded-md shadow flex-col justify-start items-center gap-2 inline-flex text-center text-slate-600 text-sm leading-tight"
+  class="w-full px-8 py-4 bg-white rounded-md shadow flex-col items-center gap-2 inline-flex text-center text-slate-600 text-sm leading-tight"
 >
   <div class="font-semibold">
     Earn $200 as a Rill user research participant!

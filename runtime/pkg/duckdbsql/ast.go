@@ -1,6 +1,7 @@
 package duckdbsql
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -38,7 +39,13 @@ func Parse(sql string) (*AST, error) {
 	}
 
 	nativeAst := astNode{}
-	err = json.Unmarshal(sqlAst, &nativeAst)
+
+	decoder := json.NewDecoder(bytes.NewReader(sqlAst))
+	// DuckDB uses uint64 for query_location and
+	// inner queries may have query_location equals to max value of uint64 that cannot fit into float64
+	decoder.UseNumber()
+
+	err = decoder.Decode(&nativeAst)
 	if err != nil {
 		return nil, err
 	}

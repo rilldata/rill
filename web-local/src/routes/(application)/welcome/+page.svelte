@@ -8,9 +8,8 @@
   onMount(async () => {
     const initialized = await isProjectInitialized($runtime.instanceId);
 
-    if (initialized) {
-      await goto("/");
-    }
+    if (!initialized) return;
+    await goto("/");
   });
 </script>
 

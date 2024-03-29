@@ -10,7 +10,7 @@ BasicLayout is the backbone of the Rill application.
   $: showNavigation = $page.route.id !== "/(application)/welcome";
 </script>
 
-<main class="flex">
+<main class="flex overflow-hidden h-screen w-screen">
   {#if showNavigation}
     <Navigation />
   {/if}

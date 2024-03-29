@@ -149,8 +149,9 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	res := make([]*runtimev1.TableInfo, len(tables))
 	for i, table := range tables {
 		res[i] = &runtimev1.TableInfo{
-			Database: table.Database,
-			Name:     table.Name,
+			Database:                table.Database,
+			Name:                    table.Name,
+			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{
@@ -171,8 +172,9 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	}
 
 	return &runtimev1.OLAPGetTableResponse{
-		Schema: table.Schema,
-		View:   table.View,
+		Schema:             table.Schema,
+		UnsupportedColumns: table.UnsupportedCols,
+		View:               table.View,
 	}, nil
 }
 

@@ -177,6 +177,8 @@ message OLAPListTablesResponse {
 message TableInfo {
   string database = 1;
   string name = 2;
+  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+  bool has_unsupported_data_types = 3;
 }
 
 message OLAPGetTableRequest {
@@ -187,6 +189,8 @@ message OLAPGetTableRequest {
 
 message OLAPGetTableResponse {
   StructType schema = 1;
+  // unsupported_columns are columns having datatypes which are not supported by Rill
+  map<string, string> unsupported_columns = 3;
   bool view = 2;
 }
 
