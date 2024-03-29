@@ -163,11 +163,13 @@ export function transformAggregateDimensionData(
     dimensionValues.length,
   ).fill([]);
 
+  const hasResponse = response && response.length > 0;
+
   const headers = timeSeriesData.map((d) => d.ts);
   if (!headers.length) return emptyData;
 
   const emptyMeasuresObj = measures.reduce((acc, measure) => {
-    acc[measure] = null;
+    acc[measure] = hasResponse ? null : undefined;
     return acc;
   }, {});
 

@@ -28,6 +28,7 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   V1Expression,
   V1TimeGrain,
+  V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -229,6 +230,7 @@ export function getDimensionValueTimeSeries(
       set,
     ) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
+      const topListValues = dimensionValues?.values || [];
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
@@ -236,12 +238,16 @@ export function getDimensionValueTimeSeries(
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
-      if (!isValidMeasureList || !dimensionName || timeSeriesData?.isFetching)
+      if (
+        !topListValues.length ||
+        !isValidMeasureList ||
+        !dimensionName ||
+        timeSeriesData?.isFetching
+      )
         return;
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
-      const topListValues = dimensionValues?.values || [];
       const updatedFilter =
         filterExpressions(dimensionValues?.filter, () => true) ??
         createAndExpression([]);
@@ -262,7 +268,10 @@ export function getDimensionValueTimeSeries(
           timeStart: timeStore?.adjustedStart,
           timeEnd: timeStore?.adjustedEnd,
           sort: [
-            { desc: false, name: dimensionName },
+            {
+              desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
+              name: measures[0],
+            },
             { desc: false, name: timeDimension },
           ],
           limit: "10000",
@@ -278,110 +287,39 @@ export function getDimensionValueTimeSeries(
       );
 
       return derived(aggQueryForTopList, (aggTimeSeriesData) => {
-        if (aggTimeSeriesData?.isFetching || !aggTimeSeriesData?.data?.data) {
-          return topListValues?.map((value) => {
-            return {
-              value,
-              isFetching: true,
-              strokeClass: "stroke-" + LINE_COLORS[0],
-              fillClass: CHECKMARK_COLORS[0]
-                ? "fill-" + CHECKMARK_COLORS[0]
-                : "",
-              data: [],
-            };
-          });
-        } else {
-          const transformedData = transformAggregateDimensionData(
-            timeDimension,
-            dimensionName,
-            measures,
-            topListValues,
-            timeSeriesData?.data?.data || [],
-            aggTimeSeriesData?.data?.data,
+        let transformedData: V1TimeSeriesValue[][] = [];
+        transformedData = transformAggregateDimensionData(
+          timeDimension,
+          dimensionName,
+          measures,
+          topListValues,
+          timeSeriesData?.data?.data || [],
+          aggTimeSeriesData?.data?.data || [],
+        );
+
+        return topListValues?.map((value, i) => {
+          const prepData = prepareTimeSeries(
+            transformedData[i],
+            undefined,
+            TIME_GRAIN[timeGrain]?.duration,
+            timeZone,
           );
-          return topListValues?.map((value, i) => {
-            const prepData = prepareTimeSeries(
-              transformedData[i],
-              undefined,
-              TIME_GRAIN[timeGrain]?.duration,
-              timeZone,
-            );
 
-            let total;
-            if (surface === "table") {
-              total = dimensionValues?.totals?.[i];
-            }
+          let total;
+          if (surface === "table") {
+            total = dimensionValues?.totals?.[i];
+          }
 
-            return {
-              value,
-              total,
-              strokeClass: "stroke-" + LINE_COLORS[i],
-              fillClass: CHECKMARK_COLORS[i]
-                ? "fill-" + CHECKMARK_COLORS[i]
-                : "",
-              data: prepData,
-              isFetching: aggTimeSeriesData.isFetching,
-            };
-          });
-        }
+          return {
+            value,
+            total,
+            strokeClass: "stroke-" + LINE_COLORS[i],
+            fillClass: CHECKMARK_COLORS[i] ? "fill-" + CHECKMARK_COLORS[i] : "",
+            data: prepData,
+            isFetching: aggTimeSeriesData.isFetching,
+          };
+        });
       }).subscribe(set);
-      // return derived(
-      //   (dimensionValues?.values ?? [])?.map((value, i) => {
-      //     return derived(
-      //       [
-      //         writable(value),
-      //         createQueryServiceMetricsViewTimeSeries(
-      //           runtime.instanceId,
-      //           metricViewName,
-      //           {
-      //             measureNames: measures,
-      //             where: sanitiseExpression(updatedFilter, undefined),
-      //             timeStart: start,
-      //             timeEnd: end,
-      //             timeGranularity: interval,
-      //             timeZone: zone,
-      //           },
-      //           {
-      //             query: {
-      //               enabled: !!timeStore.ready && !!ctx.dashboardStore,
-      //               queryClient: ctx.queryClient,
-      //             },
-      //           },
-      //         ),
-      //       ],
-      //       ([value, timeseries]) => {
-      //         let prepData = timeseries?.data?.data;
-      //         if (!timeseries?.isFetching) {
-      //           prepData = prepareTimeSeries(
-      //             timeseries?.data?.data,
-      //             undefined,
-      //             TIME_GRAIN[interval]?.duration,
-      //             zone,
-      //           );
-      //         }
-
-      //         let total;
-      //         if (surface === "table") {
-      //           total = dimensionValues?.totals[i];
-      //         }
-      //         return {
-      //           value,
-      //           total,
-      //           strokeClass: "stroke-" + LINE_COLORS[i],
-      //           fillClass: CHECKMARK_COLORS[i]
-      //             ? "fill-" + CHECKMARK_COLORS[i]
-      //             : "",
-      //           data: prepData,
-      //           isFetching: timeseries.isFetching,
-      //         };
-      //       },
-      //     );
-      //   }),
-
-      //   (combos) => {
-      //     return combos;
-      //   },
-      // ).subscribe(set);
     },
   );
 }
