@@ -34,6 +34,8 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.Table),
 		attribute.String("args.path", req.Path),
 		attribute.Bool("args.use_ai", req.UseAi),
@@ -319,8 +321,12 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefau
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Database = tbl.Database
-		doc.DatabaseSchema = tbl.DatabaseSchema
+		if tbl.Database != "" && !tbl.IsDefaultDatabase {
+			doc.Database = tbl.Database
+		}
+		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
+			doc.DatabaseSchema = tbl.DatabaseSchema
+		}
 		doc.Table = tbl.Name
 	}
 
