@@ -47,7 +47,7 @@ func (d driver) Open(driverConfig map[string]any, shared bool, client *activity.
 	}
 
 	cfg := &config{ScanAllDatabases: true}
-	err := mapstructure.Decode(driverConfig, &cfg)
+	err := mapstructure.WeakDecode(driverConfig, &cfg)
 	if err != nil {
 		return nil, err
 	}
