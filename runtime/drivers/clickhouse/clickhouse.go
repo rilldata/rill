@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
@@ -32,30 +31,18 @@ type driver struct{}
 
 var maxOpenConnections = 20
 
-type config struct {
-	// DSN is the connection string
-	DSN string `mapstructure:"dsn"`
-	// ScanAllDatabases indictaes whether we should scan all databases or just the current database (Default : true)
-	ScanAllDatabases bool `mapstructure:"scan_all_databases"`
-}
-
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(driverConfig map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("clickhouse driver can't be shared")
 	}
-
-	cfg := &config{ScanAllDatabases: true}
-	err := mapstructure.WeakDecode(driverConfig, &cfg)
-	if err != nil {
-		return nil, err
-	}
-	if cfg.DSN == "" {
+	dsn, ok := config["dsn"].(string)
+	if !ok {
 		return nil, fmt.Errorf("require dsn to open clickhouse connection")
 	}
 
-	db, err := sqlx.Open("clickhouse", cfg.DSN)
+	db, err := sqlx.Open("clickhouse", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -70,12 +57,11 @@ func (d driver) Open(driverConfig map[string]any, shared bool, client *activity.
 	}
 
 	conn := &connection{
-		db:           db,
-		driverConfig: driverConfig,
-		config:       cfg,
-		logger:       logger,
-		metaSem:      semaphore.NewWeighted(1),
-		olapSem:      priorityqueue.NewSemaphore(maxOpenConnections - 1),
+		db:      db,
+		config:  config,
+		logger:  logger,
+		metaSem: semaphore.NewWeighted(1),
+		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
 	}
 	return conn, nil
 }
@@ -97,11 +83,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db *sqlx.DB
-	// driverConfig is input config passed during Open
-	driverConfig map[string]any
-	// config is parsed configs
-	config   *config
+	db       *sqlx.DB
+	config   map[string]any
 	logger   *zap.Logger
 	activity *activity.Client
 
@@ -123,7 +106,7 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	return c.config
 }
 
 // Close implements drivers.Connection.

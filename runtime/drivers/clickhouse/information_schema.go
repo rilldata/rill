@@ -35,26 +35,22 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		return nil, err
 	}
 
-	if i.c.config.ScanAllDatabases {
-		rows, err := conn.QueryxContext(ctx, "SHOW DATABASES")
-		if err != nil {
+	rows, err := conn.QueryxContext(ctx, "SHOW DATABASES")
+	if err != nil {
+		return nil, err
+	}
+	var db string
+	for rows.Next() {
+		if err := rows.Scan(&db); err != nil {
+			rows.Close()
 			return nil, err
 		}
-		var db string
-		for rows.Next() {
-			if err := rows.Scan(&db); err != nil {
-				rows.Close()
-				return nil, err
-			}
-			if slices.Contains(ignoreDatabases, db) {
-				continue
-			}
-			databases = append(databases, db)
+		if slices.Contains(ignoreDatabases, db) {
+			continue
 		}
-		rows.Close()
-	} else {
-		databases = append(databases, defaultDatabase)
+		databases = append(databases, db)
 	}
+	rows.Close()
 
 	var res []*drivers.Table
 	for _, database := range databases {
