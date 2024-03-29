@@ -182,7 +182,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
 			safeName(q.ColumnName),
-			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
