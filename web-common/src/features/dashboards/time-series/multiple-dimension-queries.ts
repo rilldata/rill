@@ -7,7 +7,7 @@ import {
   matchExpressionByName,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { Readable, derived, writable } from "svelte/store";
+import { Readable, derived } from "svelte/store";
 
 import {
   CHECKMARK_COLORS,
@@ -117,15 +117,10 @@ export function getDimensionValuesForComparison(
             isInTimeDimensionView ? 11 : 7,
           );
         }
-        return derived(
-          [writable(comparisonValues), writable(dashboardStore?.whereFilter)],
-          ([values, filter]) => {
-            return {
-              values,
-              filter,
-            };
-          },
-        ).subscribe(set);
+        return set({
+          values: comparisonValues,
+          filter: dashboardStore?.whereFilter,
+        });
       } else if (surface === "table") {
         let sortBy = isInTimeDimensionView
           ? dashboardStore.expandedMeasureName
