@@ -65,7 +65,7 @@
               >
                 <svelte:fragment slot="icon">
                   {#if table.hasUnsupportedDataTypes}
-                    <Tooltip distance={8} location="right">
+                    <Tooltip distance={8} alignment="start">
                       <WarningIcon />
                       <TooltipContent slot="tooltip-content">
                         This table contains unsupported data types.<br />
