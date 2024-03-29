@@ -340,6 +340,7 @@ func TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t *testing.T) {
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(q.Result.Results))
 	require.Equal(t, parseTime(t, "2023-10-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
@@ -388,6 +389,7 @@ func TestTimeseries_FirstMonthOfYear_March(t *testing.T) {
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(q.Result.Results))
 	require.Equal(t, parseTime(t, "2023-03-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
@@ -420,6 +422,7 @@ func TestTimeseries_FirstMonthOfYear_December_InDecember(t *testing.T) {
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(q.Result.Results))
 	require.Equal(t, parseTime(t, "2023-12-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 

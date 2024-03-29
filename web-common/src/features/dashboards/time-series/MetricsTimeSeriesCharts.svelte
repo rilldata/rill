@@ -257,7 +257,7 @@
 
   <!-- bignumbers and line charts -->
   {#if renderedMeasures}
-    <div class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit">
+    <div class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit pb-4">
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->

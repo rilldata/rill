@@ -2,6 +2,8 @@ import {
   createConnectorServiceOLAPGetTable,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
+  getRuntimeServiceListResourcesQueryKey,
+  runtimeServiceListResources,
   V1ListResourcesResponse,
   V1ReconcileStatus,
   V1Resource,
@@ -21,6 +23,17 @@ export enum ResourceKind {
   Dashboard = "rill.runtime.v1.Dashboard",
 }
 export const SingletonProjectParserName = "parser";
+export const ResourceShortNameToKind: Record<string, ResourceKind> = {
+  source: ResourceKind.Source,
+  model: ResourceKind.Model,
+  metricsview: ResourceKind.MetricsView,
+  metrics_view: ResourceKind.MetricsView,
+  chart: ResourceKind.Chart,
+  dashboard: ResourceKind.Dashboard,
+  report: ResourceKind.Report,
+  alert: ResourceKind.Alert,
+  theme: ResourceKind.Theme,
+};
 
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
 export function prettyResourceKind(kind: string) {
@@ -140,4 +153,15 @@ export function resourceIsLoading(resource?: V1Resource) {
     !!resource &&
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
   );
+}
+
+export async function fetchResources(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    queryFn: () => runtimeServiceListResources(instanceId, {}),
+  });
+  return resp.resources ?? [];
 }

@@ -208,7 +208,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	case "CHAR":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "TIMESTAMP WITH TIME ZONE":
+	case "TIMESTAMPTZ":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "TIME WITH TIME ZONE":
 		t.Code = runtimev1.Type_CODE_TIME

@@ -4,7 +4,7 @@
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -37,6 +37,7 @@
     metricsDefName,
     EntityType.MetricsDefinition,
   );
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
@@ -48,11 +49,7 @@
   /**
    * Handle errors.
    */
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */

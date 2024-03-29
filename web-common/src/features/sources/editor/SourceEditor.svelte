@@ -2,7 +2,7 @@
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -17,6 +17,7 @@
   export let sourceName: string;
   export let yaml: string;
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   let editor: YAMLEditor;
   let view: EditorView;
@@ -39,11 +40,7 @@
     setLineStatuses([], view);
   }
 
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    filePath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   /**
    * Handle errors.
