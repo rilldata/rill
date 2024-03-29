@@ -27,10 +27,12 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   V1Expression,
+  V1MetricsViewAggregationResponse,
   V1TimeGrain,
   V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
   getFilterForComparedDimension,
   prepareTimeSeries,
@@ -44,6 +46,12 @@ export interface DimensionDataItem {
   fillClass: string;
   data: TimeSeriesDatum[];
   isFetching: boolean;
+}
+
+interface DimensionTopList {
+  values: string[];
+  filter: V1Expression;
+  totals?: number[];
 }
 
 /***
@@ -63,11 +71,7 @@ export function getDimensionValuesForComparison(
   ctx: StateManagers,
   measures: string[],
   surface: "chart" | "table",
-): Readable<{
-  values: string[];
-  filter: V1Expression;
-  totals?: number[];
-}> {
+): Readable<DimensionTopList> {
   return derived(
     [
       ctx.runtime,
@@ -200,53 +204,27 @@ export function getDimensionValuesForComparison(
   );
 }
 
-/***
- * Fetches the timeseries data for a given dimension
- * for a infered set of dimension values and measures
- */
-export function getDimensionValueTimeSeries(
+function getAggregationQueryForTopList(
   ctx: StateManagers,
   measures: string[],
-  surface: "chart" | "table",
-): Readable<DimensionDataItem[]> {
+  dimensionValues: DimensionTopList,
+): CreateQueryResult<V1MetricsViewAggregationResponse> {
   return derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      createMetricsViewTimeSeries(ctx, measures, false),
-      getDimensionValuesForComparison(ctx, measures, surface),
     ],
-    (
-      [
-        runtime,
-        metricViewName,
-        dashboardStore,
-        timeStore,
-        timeSeriesData,
-        dimensionValues,
-      ],
-      set,
-    ) => {
+    ([runtime, metricViewName, dashboardStore, timeStore], set) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
-      const topListValues = dimensionValues?.values || [];
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
       const timeDimension = timeStore?.timeDimension;
-      const isValidMeasureList =
-        measures?.length > 0 && measures?.every((m) => m !== undefined);
+      const topListValues = dimensionValues?.values || [];
 
-      if (
-        !topListValues.length ||
-        !isValidMeasureList ||
-        !dimensionName ||
-        timeSeriesData?.isFetching
-      )
-        return;
-      if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
-        return;
+      if (!topListValues.length || !dimensionName) return;
 
       const updatedFilter =
         filterExpressions(dimensionValues?.filter, () => true) ??
@@ -255,7 +233,7 @@ export function getDimensionValueTimeSeries(
         createInExpression(dimensionName, topListValues),
       );
 
-      const aggQueryForTopList = createQueryServiceMetricsViewAggregation(
+      return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricViewName,
         {
@@ -284,6 +262,51 @@ export function getDimensionValueTimeSeries(
             queryClient: ctx.queryClient,
           },
         },
+      ).subscribe(set);
+    },
+  );
+}
+
+/***
+ * Fetches the timeseries data for a given dimension
+ * for a infered set of dimension values and measures
+ */
+export function getDimensionValueTimeSeries(
+  ctx: StateManagers,
+  measures: string[],
+  surface: "chart" | "table",
+): Readable<DimensionDataItem[]> {
+  return derived(
+    [
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      createMetricsViewTimeSeries(ctx, measures, false),
+      getDimensionValuesForComparison(ctx, measures, surface),
+    ],
+    ([dashboardStore, timeStore, timeSeriesData, dimensionValues], set) => {
+      const dimensionName = dashboardStore?.selectedComparisonDimension;
+      const topListValues = dimensionValues?.values || [];
+      const timeGrain =
+        timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
+      const timeZone = dashboardStore?.selectedTimezone;
+      const timeDimension = timeStore?.timeDimension;
+      const isValidMeasureList =
+        measures?.length > 0 && measures?.every((m) => m !== undefined);
+
+      if (
+        !topListValues.length ||
+        !isValidMeasureList ||
+        !dimensionName ||
+        timeSeriesData?.isFetching
+      )
+        return;
+      if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
+        return;
+
+      const aggQueryForTopList = getAggregationQueryForTopList(
+        ctx,
+        measures,
+        dimensionValues,
       );
 
       return derived(aggQueryForTopList, (aggTimeSeriesData) => {

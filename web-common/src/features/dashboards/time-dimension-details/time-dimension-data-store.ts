@@ -400,7 +400,6 @@ export function createTimeDimensionDataStore(
       )
         return { isFetching: true };
 
-      console.log(tableDimensionData);
       const measureName = dashboardStore?.expandedMeasureName;
 
       if (!measureName) {
