@@ -10,7 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var ignoreDatabases = []string{"INFORMATION_SCHEMA", "information_schema", "system"}
+var ignoreSchemas = []string{"INFORMATION_SCHEMA", "information_schema", "system"}
 
 type informationSchema struct {
 	c *connection
@@ -27,11 +27,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	}
 	defer func() { _ = release() }()
 
-	var databases []string
-	var defaultDatabase string
+	var databaseSchemas []string
+	var defaultSchema string
 
 	row := conn.QueryRowxContext(ctx, "SELECT currentDatabase()")
-	if err := row.Scan(&defaultDatabase); err != nil {
+	if err := row.Scan(&defaultSchema); err != nil {
 		return nil, err
 	}
 
@@ -39,24 +39,24 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	if err != nil {
 		return nil, err
 	}
-	var db string
+	var schema string
 	for rows.Next() {
-		if err := rows.Scan(&db); err != nil {
+		if err := rows.Scan(&schema); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		if slices.Contains(ignoreDatabases, db) {
+		if slices.Contains(ignoreSchemas, schema) {
 			continue
 		}
-		databases = append(databases, db)
+		databaseSchemas = append(databaseSchemas, schema)
 	}
 	rows.Close()
 
 	var res []*drivers.Table
-	for _, database := range databases {
+	for _, databaseSchema := range databaseSchemas {
 		q := `
 		SELECT
-			T.table_catalog AS DATABASE,
+			T.table_schema AS SCHEMA,
 			T.table_name AS NAME,
 			T.table_type AS TABLE_TYPE, 
 			C.column_name AS COLUMNS,
@@ -65,15 +65,15 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM information_schema.tables T 
 		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
 		WHERE T.table_schema = ?
-		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 
-		rows, err := conn.QueryxContext(ctx, q, database)
+		rows, err := conn.QueryxContext(ctx, q, databaseSchema)
 		if err != nil {
 			return nil, err
 		}
 
-		tables, err := i.scanTables(rows, database == defaultDatabase)
+		tables, err := i.scanTables(rows, databaseSchema == defaultSchema)
 		if err != nil {
 			rows.Close()
 			return nil, err
@@ -94,13 +94,13 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 
 	var q string
 	var args []any
-	// table_catalog and table_schema both means the name of the database in which the table is located in clickhouse.
-	// we use either db or schema arg to set table_schema
-	var isDefaultDatabase bool
-	if db == "" {
+	// table_catalog and table_schema both means the name of the database in which the table is located in clickhouse
+	// we map it to our internal schema field
+	var isDefaultSchema bool
+	if schema == "" {
 		q = `
 		SELECT
-			T.table_catalog AS DATABASE,
+			T.table_schema AS SCHEMA,
 			T.table_name AS NAME,
 			T.table_type AS TABLE_TYPE, 
 			C.column_name AS COLUMNS,
@@ -109,14 +109,14 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		FROM information_schema.tables T 
 		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
 		WHERE T.table_schema = currentDatabase() AND T.table_name = ?
-		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 		args = append(args, name)
-		isDefaultDatabase = true
+		isDefaultSchema = true
 	} else {
 		q = `
 		SELECT
-			T.table_catalog AS DATABASE,
+			T.table_schema AS SCHEMA,
 			T.table_name AS NAME,
 			T.table_type AS TABLE_TYPE, 
 			C.column_name AS COLUMNS,
@@ -125,17 +125,17 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		FROM information_schema.tables T 
 		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
 		WHERE T.table_schema = ? AND T.table_name = ?
-		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
-		args = append(args, db, name)
+		args = append(args, schema, name)
 
 		// get current database
 		row := conn.QueryRowContext(ctx, "SELECT currentDatabase()")
-		var currentDatabase string
-		if err := row.Scan(&currentDatabase); err != nil {
+		var currentSchema string
+		if err := row.Scan(&currentSchema); err != nil {
 			return nil, err
 		}
-		isDefaultDatabase = db == currentDatabase
+		isDefaultSchema = schema == currentSchema
 	}
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
@@ -144,7 +144,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 	defer rows.Close()
 
-	tables, err := i.scanTables(rows, isDefaultDatabase)
+	tables, err := i.scanTables(rows, isDefaultSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -156,18 +156,18 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
-func (i informationSchema) scanTables(rows *sqlx.Rows, isDefaultDatabase bool) ([]*drivers.Table, error) {
+func (i informationSchema) scanTables(rows *sqlx.Rows, isDefaultDatabaseSchema bool) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
 	for rows.Next() {
-		var database string
+		var databaseSchema string
 		var name string
 		var tableType string
 		var columnName string
 		var columnType string
 		var oridinalPosition int
 
-		err := rows.Scan(&database, &name, &tableType, &columnName, &columnType, &oridinalPosition)
+		err := rows.Scan(&databaseSchema, &name, &tableType, &columnName, &columnType, &oridinalPosition)
 		if err != nil {
 			return nil, err
 		}
@@ -176,17 +176,17 @@ func (i informationSchema) scanTables(rows *sqlx.Rows, isDefaultDatabase bool) (
 		var t *drivers.Table
 		if len(res) > 0 {
 			t = res[len(res)-1]
-			if !(t.Database == database && t.Name == name) {
+			if !(t.DatabaseSchema == databaseSchema && t.Name == name) {
 				t = nil
 			}
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database:          database,
-				Name:              name,
-				View:              tableType == "VIEW",
-				Schema:            &runtimev1.StructType{},
-				IsDefaultDatabase: isDefaultDatabase,
+				DatabaseSchema:          databaseSchema,
+				Name:                    name,
+				View:                    tableType == "VIEW",
+				Schema:                  &runtimev1.StructType{},
+				IsDefaultDatabaseSchema: isDefaultDatabaseSchema,
 			}
 			res = append(res, t)
 		}
