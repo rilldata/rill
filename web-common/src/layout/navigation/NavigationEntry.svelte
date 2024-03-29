@@ -1,14 +1,14 @@
 <script lang="ts">
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
   import ExpanderButton from "@rilldata/web-common/components/column-profile/ExpanderButton.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import { createCommandClickAction } from "../../lib/actions/command-click-action";
   import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { emitNavigationTelemetry } from "./navigation-utils";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let name: string;
   export let href: string;
@@ -68,15 +68,15 @@
     on:shift-click={shiftClickHandler}
     on:click={handleClick}
   >
-    <Tooltip location="right" alignment="start" distance={48} activeDelay={0}>
+    <Tooltip distance={8}>
+      <div class="truncate">
+        {name}
+      </div>
       {#if $$slots["icon"]}
         <span class="text-gray-400" style:width="1em" style:height="1em">
           <slot name="icon" />
         </span>
       {/if}
-      <div class="w-full truncate">
-        {name}
-      </div>
       <svelte:fragment slot="tooltip-content">
         {#if $$slots["tooltip-content"]}
           <TooltipContent><slot name="tooltip-content" /></TooltipContent>
@@ -135,7 +135,7 @@
 
   .clickable-text {
     @apply text-left size-full overflow-hidden pl-6 flex items-center;
-    @apply text-gray-900 gap-x-1;
+    @apply text-gray-900 gap-x-2;
   }
 
   .expandable {
