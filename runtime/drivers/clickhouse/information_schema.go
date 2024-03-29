@@ -47,14 +47,13 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
-		rows.Close()
 		return nil, err
 	}
 
-	rows.Close()
 	res = append(res, tables...)
 	return res, nil
 }

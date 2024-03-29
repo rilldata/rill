@@ -80,7 +80,7 @@ func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPSt
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s",
 		safeName(q.ColumnName),
-		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		drivers.DialectDuckDB.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -149,7 +149,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
 			safeName(q.ColumnName),
-			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -231,7 +231,7 @@ func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OL
 	sql := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
 		safeName(q.ColumnName),
-		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		drivers.DialectClickHouse.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
