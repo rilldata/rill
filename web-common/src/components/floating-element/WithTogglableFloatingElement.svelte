@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
-  import Portal from "../Portal.svelte";
   import { FloatingElement } from "./index";
   import type { FloatingElementRelationship } from "./types";
 
@@ -20,7 +19,7 @@
    * Since this element is not strictly within the parent of the menu (which is in a Portal),
    * we will need to check to see if this element was also clicked before firing the outside click callback.
    */
-  const triggerElementStore = writable(undefined);
+  const triggerElementStore = writable<Element | undefined>(undefined);
   $: triggerElementStore.set(parent?.children?.[0]);
   setContext("rill:menu:menuTrigger", triggerElementStore);
 
@@ -30,7 +29,7 @@
     if (!active) dispatch("close");
   }
 
-  let parent;
+  let parent: HTMLDivElement | null = null;
 
   function handleClose() {
     active = false;
@@ -43,27 +42,23 @@
 
 <div class:inline bind:this={parent}>
   <slot {active} {handleClose} {toggleFloatingElement} />
-  {#if active && !suppress}
-    <Portal>
-      <div style="z-index: 50;">
-        <FloatingElement
-          target={parent}
-          {relationship}
-          {location}
-          {alignment}
-          {distance}
-          {pad}
-          {overflowFlipY}
-          {mousePos}
-        >
-          <slot
-            name="floating-element"
-            {active}
-            {handleClose}
-            {toggleFloatingElement}
-          />
-        </FloatingElement>
-      </div>
-    </Portal>
+  {#if parent && active && !suppress}
+    <FloatingElement
+      target={parent}
+      {relationship}
+      {location}
+      {alignment}
+      {distance}
+      {pad}
+      {overflowFlipY}
+      {mousePos}
+    >
+      <slot
+        name="floating-element"
+        {active}
+        {handleClose}
+        {toggleFloatingElement}
+      />
+    </FloatingElement>
   {/if}
 </div>

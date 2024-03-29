@@ -43,7 +43,7 @@ export async function waitForProfiling(
 }
 
 export function getEntityLink(page: Page, name: string) {
-  return page.getByRole("link", { name, exact: true });
+  return page.getByRole("listitem", { name, exact: true });
 }
 
 /**
@@ -89,13 +89,13 @@ export async function renameEntityUsingMenu(
 
   // wait for rename modal to open
   await page
-    .locator(".portal h1", {
+    .locator("#rill-portal h1", {
       hasText: "Rename",
     })
     .waitFor();
 
   // type new name and submit
-  await page.locator(".portal input").fill(toName);
+  await page.locator("#rill-portal input").fill(toName);
   await Promise.all([
     page.waitForResponse(/rename/),
     clickModalButton(page, "Change Name"),

@@ -35,6 +35,28 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 	return nil
 }
 
+// hasStreamingRef returns true if one or more of the refs have data that may be updated outside of a reconcile.
+func hasStreamingRef(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) bool {
+	for _, ref := range refs {
+		// Currently only metrics views can be streaming.
+		if ref.Kind != runtime.ResourceKindMetricsView {
+			continue
+		}
+
+		res, err := c.Get(ctx, ref, false)
+		if err != nil {
+			// Broken refs are not streaming.
+			continue
+		}
+		mv := res.GetMetricsView()
+
+		if mv.State.Streaming {
+			return true
+		}
+	}
+	return false
+}
+
 // nextRefreshTime returns the earliest time AFTER t that the schedule should trigger.
 func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, error) {
 	if schedule == nil || schedule.Disable {
@@ -152,14 +174,14 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 func logTableNameAndType(ctx context.Context, c *runtime.Controller, connector, name string) {
 	olap, release, err := c.AcquireOLAP(ctx, connector)
 	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed to acquire OLAP", zap.Error(err))
+		c.Logger.Warn("LogTableNameAndType: failed to acquire OLAP", zap.Error(err))
 		return
 	}
 	defer release()
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name=? ORDER BY column_name ASC", Args: []any{name}})
 	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed information_schema.columns", zap.Error(err))
+		c.Logger.Warn("LogTableNameAndType: failed information_schema.columns", zap.Error(err))
 		return
 	}
 	defer res.Close()
@@ -169,7 +191,7 @@ func logTableNameAndType(ctx context.Context, c *runtime.Controller, connector, 
 	for res.Next() {
 		err = res.Scan(&col, &typ)
 		if err != nil {
-			c.Logger.Error("LogTableNameAndType: failed scan", zap.Error(err))
+			c.Logger.Warn("LogTableNameAndType: failed scan", zap.Error(err))
 			return
 		}
 		colTyp = append(colTyp, fmt.Sprintf("%s:%s", col, typ))

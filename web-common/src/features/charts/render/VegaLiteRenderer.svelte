@@ -1,8 +1,14 @@
 <script lang="ts">
-  import { VegaLite, View } from "svelte-vega";
+  import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
+  import { VegaLite, View, type EmbedOptions } from "svelte-vega";
 
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
+
+  let options: EmbedOptions = {
+    config: getRillTheme(),
+    renderer: "svg",
+  };
 
   let viewVL: View;
   $: error = "";
@@ -15,7 +21,7 @@
 {#if error}
   <p>{error}</p>
 {:else}
-  <VegaLite {data} {spec} bind:view={viewVL} on:onError={onError} />
+  <VegaLite {data} {spec} {options} bind:view={viewVL} on:onError={onError} />
 {/if}
 
 <style>

@@ -2,10 +2,13 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -15,21 +18,24 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { useModel, useModelFileNames } from "../selectors";
+  import { useModel, useModelRoutes } from "../selectors";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let modelName: string;
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
-  export let toggleMenu: () => void;
+
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
+  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  $: modelNames = useModelFileNames($runtime.instanceId);
-  $: modelHasError = getFileHasErrors(
+  const { customDashboards } = featureFlags;
+
+  $: modelRoutes = useModelRoutes($runtime.instanceId);
+  $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
-    modelPath,
   );
   $: modelQuery = useModel($runtime.instanceId, modelName);
   $: modelIsIdle =
@@ -45,26 +51,20 @@
   );
 
   const handleDeleteModel = async (modelName: string) => {
-    if ($modelNames.data) {
+    if ($modelRoutes.data) {
       await deleteFileArtifact(
         $runtime.instanceId,
-        modelName,
+        getFileAPIPathFromNameAndType(modelName, EntityType.Model),
         EntityType.Model,
-        $modelNames.data,
+        $modelRoutes.data,
       );
     }
-    toggleMenu();
   };
 </script>
 
-<MenuItem
+<NavigationMenuItem
   disabled={disableCreateDashboard}
-  icon
-  on:select={() => {
-    void createDashboardFromTable();
-    toggleMenu();
-  }}
-  propogateSelect={false}
+  on:click={createDashboardFromTable}
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
@@ -78,22 +78,43 @@
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>
-</MenuItem>
-<Divider />
-<MenuItem
-  icon
-  on:select={() => {
+</NavigationMenuItem>
+{#if $customDashboards}
+  <NavigationMenuItem
+    disabled={disableCreateDashboard}
+    on:click={() => {
+      dispatch("generate-chart", {
+        table: $modelQuery.data?.model?.state?.table,
+        connector: $modelQuery.data?.model?.state?.connector,
+      });
+    }}
+  >
+    <Explore slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate chart with AI
+      <WandIcon class="w-3 h-3" />
+    </div>
+    <svelte:fragment slot="description">
+      {#if $modelHasError}
+        Model has errors
+      {:else if !modelIsIdle}
+        Dependencies are being reconciled.
+      {/if}
+    </svelte:fragment>
+  </NavigationMenuItem>
+{/if}
+
+<NavigationMenuSeparator />
+
+<NavigationMenuItem
+  on:click={() => {
     dispatch("rename-asset");
   }}
 >
   <EditIcon slot="icon" />
   Rename...
-</MenuItem>
-<MenuItem
-  icon
-  on:select={() => handleDeleteModel(modelName)}
-  propogateSelect={false}
->
+</NavigationMenuItem>
+<NavigationMenuItem on:click={() => handleDeleteModel(modelName)}>
   <Cancel slot="icon" />
   Delete
-</MenuItem>
+</NavigationMenuItem>

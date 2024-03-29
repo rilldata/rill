@@ -511,7 +511,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
-    d3format: "Week %W",
+    d3format: "%b %d",
     formatDate: {
       year: "numeric",
       month: "short",

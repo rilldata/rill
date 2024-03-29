@@ -8,11 +8,11 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     resourceIsLoading,
     useAllNames,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -62,6 +62,7 @@
 
   export let sourceName: string;
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
@@ -103,8 +104,8 @@
       const entityType = EntityType.Table;
       await renameFileArtifact(
         runtimeInstanceId,
-        sourceName,
-        toName,
+        getFilePathFromNameAndType(sourceName, entityType),
+        getFilePathFromNameAndType(toName, entityType),
         entityType,
       );
       goto(getRouteFromName(toName, entityType), {
@@ -158,7 +159,7 @@
     });
   }
 
-  const sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(sourceName);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
@@ -179,7 +180,7 @@
     );
   };
 
-  $: hasErrors = getFileHasErrors(queryClient, $runtime.instanceId, filePath);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;
@@ -205,7 +206,7 @@
         </div>
       {/if}
     </svelte:fragment>
-    <svelte:fragment slot="cta" let:width={headerWidth}>
+    <svelte:fragment let:width={headerWidth} slot="cta">
       <PanelCTA side="right">
         <Button
           disabled={!isSourceUnsaved}
@@ -259,10 +260,10 @@
           </Button>
           <Menu
             dark
+            let:toggleFloatingElement
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
-            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

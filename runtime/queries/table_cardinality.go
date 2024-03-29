@@ -12,6 +12,7 @@ import (
 )
 
 type TableCardinality struct {
+	Connector string
 	TableName string
 	Result    int64
 }
@@ -50,7 +51,7 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		safeName(q.TableName),
 	)
 
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}

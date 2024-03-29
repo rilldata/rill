@@ -2,9 +2,9 @@ kind : api
 
 metrics_sql: | 
   select 
-  publisher, 
-  domain, 
-  AGGREGATE("total impressions") AS total_imp, 
-  AGGREGATE("total volume") as total_vol 
-  FROM ad_bids_mini_metrics_with_policy 
-  GROUP BY ALL
+    publisher,
+    domain, 
+    "total impressions", 
+    "total volume" 
+  FROM 
+    ad_bids_mini_metrics_with_policy 

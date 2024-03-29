@@ -18,7 +18,7 @@ func TestResourceWatermark_MetricsView(t *testing.T) {
 
 	rt, instanceID := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, instanceID, map[string]string{
-		"/models/foo.sql": fmt.Sprintf(`SELECT '%s'::TIMESTAMP as time`, ts.Format(time.RFC3339)),
+		"/models/foo.sql": fmt.Sprintf(`SELECT '%s'::TIMESTAMP as time`, ts.Add(-time.Second).Format(time.RFC3339)),
 		"/dashboards/bare.yaml": `
 model: foo
 measures:

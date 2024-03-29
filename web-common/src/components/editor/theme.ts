@@ -5,6 +5,7 @@ export const editorTheme = () =>
       overflowX: "hidden",
       width: "100%",
       height: "100%",
+      fontWeight: "500",
       "&.cm-focused": {
         outline: "none",
       },
@@ -94,8 +95,11 @@ export const editorTheme = () =>
     // strings
     // note: we have to code .cm-line as well since CodeMirror does not seem to always wrap
     // strings in a classed span.
-    ".ͼe, .cm-line": {
+    ".cm-line": {
       color: "hsl(175, 77%, 26%)",
+    },
+    ".ͼe, .ͼl": {
+      color: "#00c",
     },
     // decimal / number
     ".ͼd": {

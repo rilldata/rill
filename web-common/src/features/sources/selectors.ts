@@ -13,7 +13,10 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
+import {
+  getFilePathFromNameAndType,
+  getRouteFromName,
+} from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
@@ -23,7 +26,9 @@ export type SourceFromYaml = {
 };
 
 export function useSources(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Source);
+  return useFilteredResources(instanceId, ResourceKind.Source, (data) =>
+    data.resources?.filter((r) => !!r.source?.state?.table),
+  );
 }
 
 export function useSourceNames(instanceId: string) {
@@ -32,6 +37,12 @@ export function useSourceNames(instanceId: string) {
 
 export function useSourceFileNames(instanceId: string) {
   return useMainEntityFiles(instanceId, "sources");
+}
+
+export function useSourceRoutes(instanceId: string) {
+  return useMainEntityFiles(instanceId, "sources", (name) =>
+    getRouteFromName(name, EntityType.Table),
+  );
 }
 
 export function useSource(instanceId: string, name: string) {

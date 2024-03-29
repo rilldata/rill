@@ -13,10 +13,10 @@ display:contents. This is useful when nesting a floating element within a toolti
     mouseLocationToBoundingRect,
     placeElement,
   } from "../../lib/place-element";
-  import Portal from "../Portal.svelte";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
   import type { FloatingElementRelationship } from "./types";
 
-  export let target;
+  export let target: HTMLElement;
   export let relationship: FloatingElementRelationship = "parent"; // parent, mouse {x, y}
   export let location = "bottom";
   export let alignment = "middle";
@@ -139,15 +139,14 @@ display:contents. This is useful when nesting a floating element within a toolti
 
 <svelte:window bind:scrollX bind:scrollY bind:innerHeight bind:innerWidth />
 
-<Portal>
-  <div
-    transition:fade={{ duration: 25 }}
-    bind:this={child}
-    class="absolute"
-    style:z-index="200"
-    style:left="{left}px"
-    style:top="{top}px"
-  >
-    <slot />
-  </div>
-</Portal>
+<div
+  use:portal
+  transition:fade={{ duration: 25 }}
+  bind:this={child}
+  class="absolute"
+  style:z-index="200"
+  style:left="{left}px"
+  style:top="{top}px"
+>
+  <slot />
+</div>

@@ -42,11 +42,24 @@
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
+  // Set defaults depending on UI state
+  // if in TDD take active measure and comparison dimension
+  // If expanded leaderboard, take first dimension and active dimensions
+  let dimension = "";
+  if ($dashboardStore.expandedMeasureName) {
+    dimension = $dashboardStore.selectedComparisonDimension ?? "";
+  } else {
+    dimension = $dashboardStore.selectedDimensionName ?? "";
+  }
+
   const formState = createForm({
     initialValues: {
       name: "",
-      measure: $dashboardStore.leaderboardMeasureName ?? "",
-      splitByDimension: $dashboardStore.selectedDimensionName ?? "",
+      measure:
+        $dashboardStore.expandedMeasureName ??
+        $dashboardStore.leaderboardMeasureName ??
+        "",
+      splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [
         {
@@ -80,7 +93,6 @@
           data: {
             options: {
               title: values.name,
-              intervalDuration: values.evaluationInterval,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),

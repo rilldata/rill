@@ -231,7 +231,7 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 
 	// Delete the underlying table
-	olap, release, err := rt.OLAP(context.Background(), id)
+	olap, release, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE foo;"})
 	require.NoError(t, err)
@@ -462,7 +462,7 @@ select 1
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 
-	olap, done, err := rt.OLAP(context.Background(), id)
+	olap, done, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	defer done()
 

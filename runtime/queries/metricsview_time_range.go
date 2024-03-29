@@ -65,7 +65,7 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
 	if err != nil {
 		return err
 	}

@@ -20,11 +20,12 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			return deploy.DeployFlow(cmd.Context(), ch, &deploy.Options{
-				GitPath:  "https://github.com/rilldata/rill-examples.git",
-				SubPath:  "rill-openrtb-prog-ads",
-				Name:     "rill-openrtb-prog-ads",
-				DBDriver: "duckdb",
-				Slots:    2,
+				GitPath:     "https://github.com/rilldata/rill-examples.git",
+				SubPath:     "rill-openrtb-prog-ads",
+				Name:        "rill-openrtb-prog-ads",
+				ProdVersion: "latest",
+				DBDriver:    "duckdb",
+				Slots:       2,
 			})
 		},
 	}

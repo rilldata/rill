@@ -4,10 +4,7 @@
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
-  import {
-    humaniseAlertRunDuration,
-    humaniseAlertSnoozeOption,
-  } from "@rilldata/web-admin/features/alerts/metadata/utils";
+  import { humaniseAlertSnoozeOption } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
     useAlertDashboardName,
@@ -47,9 +44,6 @@
     $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
 
-  $: runInterval = humaniseAlertRunDuration(
-    $alertQuery.data?.resource?.alert?.spec,
-  );
   $: snoozeLabel = humaniseAlertSnoozeOption(
     $alertQuery.data?.resource?.alert?.spec,
   );
@@ -136,7 +130,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by dimension</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions[0]?.name}
+          {metricsViewAggregationRequest?.dimensions[0]?.name ?? "None"}
         </MetadataValue>
       </div>
 
@@ -144,12 +138,6 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Schedule</MetadataLabel>
         <MetadataValue>Whenever your data refreshes</MetadataValue>
-      </div>
-
-      <!-- Split by time grain -->
-      <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Evaluation interval</MetadataLabel>
-        <MetadataValue>{runInterval}</MetadataValue>
       </div>
 
       <!-- Snooze -->

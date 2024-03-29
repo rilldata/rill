@@ -1,12 +1,14 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import { flip } from "svelte/animate";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -42,59 +44,71 @@
     $sourceNames?.data?.length !== undefined &&
     $sourceNames?.data?.length > 0 &&
     modelNames.length === 0;
+
+  let showGenerateChartModal = false;
+  let generateChartTable = "";
+  let generateChartConnector = "";
+  function openGenerateChartModal(tableName: string, connector: string) {
+    showGenerateChartModal = true;
+    generateChartTable = tableName;
+    generateChartConnector = connector;
+  }
 </script>
 
-<NavigationHeader bind:show={showModels} toggleText="models"
-  >Models</NavigationHeader
->
+<div class="flex flex-col h-fit gap-0">
+  <NavigationHeader bind:show={showModels}>Models</NavigationHeader>
 
-{#if showModels}
-  <div
-    class="pb-3 justify-self-end"
-    transition:slide|global={{ duration: LIST_SLIDE_DURATION }}
-    id="assets-model-list"
-  >
-    {#each modelNames as modelName (modelName)}
-      <NavigationEntry
-        name={modelName}
-        href={`/model/${modelName}`}
-        open={$page.url.pathname === `/model/${modelName}`}
-      >
-        <svelte:fragment slot="more">
-          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-            <ColumnProfile indentLevel={1} objectName={modelName} />
-          </div>
-        </svelte:fragment>
+  {#if showModels}
+    <ol transition:slide={{ duration }} id="assets-model-list">
+      {#each modelNames as modelName (modelName)}
+        <li animate:flip={{ duration }} aria-label={modelName}>
+          <NavigationEntry
+            expandable
+            name={modelName}
+            href={`/model/${modelName}`}
+            open={$page.url.pathname === `/model/${modelName}`}
+          >
+            <div transition:slide={{ duration }} slot="more">
+              <ColumnProfile indentLevel={1} objectName={modelName} />
+            </div>
 
-        <svelte:fragment slot="tooltip-content">
-          <ModelTooltip {modelName} />
-        </svelte:fragment>
+            <ModelTooltip slot="tooltip-content" {modelName} />
 
-        <svelte:fragment slot="menu-items" let:toggleMenu>
-          <ModelMenuItems
-            {modelName}
-            {toggleMenu}
-            on:rename-asset={() => {
-              openRenameModelModal(modelName);
-            }}
-          />
-        </svelte:fragment>
-      </NavigationEntry>
-    {/each}
-
-    <AddAssetButton
-      id="create-model-button"
-      label="Add model"
-      bold={hasSourceButNoModels}
-      on:click={handleAddModel}
-    />
-  </div>
-{/if}
+            <ModelMenuItems
+              slot="menu-items"
+              {modelName}
+              on:rename-asset={() => {
+                openRenameModelModal(modelName);
+              }}
+              on:generate-chart={({ detail: { table, connector } }) => {
+                openGenerateChartModal(table, connector);
+              }}
+            />
+          </NavigationEntry>
+        </li>
+      {/each}
+      <AddAssetButton
+        id="create-model-button"
+        label="Add model"
+        bold={hasSourceButNoModels}
+        on:click={handleAddModel}
+      />
+    </ol>
+  {/if}
+</div>
 
 {#if showRenameModelModal && renameModelName !== null}
   <RenameAssetModal
     entityType={EntityType.Model}
     closeModal={() => (showRenameModelModal = false)}
     currentAssetName={renameModelName.replace(".sql", "")}
+  />
+{/if}
+
+{#if showGenerateChartModal}
+  <GenerateChartYAMLPrompt
+    bind:open={showGenerateChartModal}
+    table={generateChartTable}
+    connector={generateChartConnector}
   />
 {/if}

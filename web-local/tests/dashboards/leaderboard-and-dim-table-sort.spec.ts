@@ -1,5 +1,5 @@
-import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { expect, Locator } from "@playwright/test";
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { test } from "../utils/test";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
@@ -49,7 +49,9 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     async function openTimeRangeMenu() {
       await timeRangeMenu.click();
-      await page.getByRole("menu").waitFor({ state: "visible" });
+      await page
+        .getByRole("menu", { name: "Time range selector" })
+        .waitFor({ state: "visible" });
     }
 
     async function openContextColumnMenu() {
@@ -86,6 +88,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     // add time comparison and select Pct change
     await page.getByRole("button", { name: "No comparison" }).click();
     await page.getByRole("menuitem", { name: "Time" }).click();
+    await page.keyboard.press("Escape");
 
     await openTimeRangeMenu();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();

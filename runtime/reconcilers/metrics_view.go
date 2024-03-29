@@ -65,24 +65,42 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
-	// NOTE: Not checking refs here since refs may still be valid even if they have errors (in case of staged changes).
-	// Instead, we just validate against the table name.
+	// NOTE: In other reconcilers, state like spec_hash and refreshed_on is used to avoid redundant reconciles.
+	// We don't do that here because none of the operations below are particularly expensive.
+	// So it doesn't really matter if they run a bit more often than necessary ¯\_(ツ)_/¯.
 
+	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
+
+	// Validate the metrics view and update ValidSpec
 	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
-
 	if ctx.Err() != nil {
 		return runtime.ReconcileResult{Err: errors.Join(validateErr, ctx.Err())}
 	}
-
 	if validateErr == nil {
 		mv.State.ValidSpec = mv.Spec
 	} else {
 		mv.State.ValidSpec = nil
 	}
 
+	// Set the "streaming" state (see docstring in the proto for details).
+	mv.State.Streaming = false
+	if validateErr == nil {
+		// Find out if the metrics view has a ref to a source or model in the same project.
+		hasInternalRef := false
+		for _, ref := range self.Meta.Refs {
+			if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
+				hasInternalRef = true
+			}
+		}
+
+		// If not, we assume the metrics view is based on an externally managed table and set the streaming state to true.
+		mv.State.Streaming = !hasInternalRef
+	}
+
+	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}

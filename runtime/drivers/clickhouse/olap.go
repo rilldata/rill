@@ -464,7 +464,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// All other complex types have details in parentheses after the type name.
 	base, args, ok := splitBaseAndArgs(dbt)
 	if !ok {
-		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+		return nil, errUnsupportedType
 	}
 
 	switch base {
@@ -496,7 +496,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "MAP":
 		fieldStrs := strings.Split(args, ",")
 		if len(fieldStrs) != 2 {
-			return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+			return nil, errUnsupportedType
 		}
 
 		keyType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
@@ -518,7 +518,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		// Representing enums as strings
 		t.Code = runtimev1.Type_CODE_STRING
 	default:
-		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+		return nil, errUnsupportedType
 	}
 
 	return t, nil
@@ -539,3 +539,5 @@ func splitBaseAndArgs(s string) (string, string, bool) {
 
 	return base, rest, true
 }
+
+var errUnsupportedType = errors.New("encountered unsupported clickhouse type")

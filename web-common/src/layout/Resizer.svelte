@@ -31,19 +31,21 @@
     window.addEventListener("mouseup", onMouseUp);
   }
 
-  function onMouseMove(event: MouseEvent) {
+  function onMouseMove(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
     let delta = 0;
     if (direction === "EW") {
       if (side === "left") {
-        delta = start - event.clientX;
+        delta = start - e.clientX;
       } else {
-        delta = event.clientX - start;
+        delta = e.clientX - start;
       }
     } else {
       if (side === "top") {
-        delta = start - event.clientY;
+        delta = start - e.clientY;
       } else {
-        delta = event.clientY - start;
+        delta = e.clientY - start;
       }
     }
     dimension = Math.min(max, Math.max(min, startingDimension + delta));
@@ -62,7 +64,7 @@
 
 <button
   class="{direction} {side}"
-  on:mousedown={handleMousedown}
+  on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick={handleDoubleClick}
 >
   <slot />
