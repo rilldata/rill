@@ -705,13 +705,21 @@ message ConnectorDriver {
 
 // AnalyzedConnector contains information about a connector that is referenced in the project files.
 message AnalyzedConnector {
+  // Connector name
   string name = 1;
+  // Connector driver metadata
   ConnectorDriver driver = 2;
+  // Combined config properties for the connector
   map<string, string> config = 3;
+  // Config properties preset by the runtime or when the instance was created
   map<string, string> preset_config = 4;
+  // Config properties set in project YAML files
   map<string, string> project_config = 5;
+  // Config properties set as dynamic variables
   map<string, string> env_config = 6;
+  // True if the connector can be accessed without credentials
   bool has_anonymous_access = 7;
+  // List of resources that appear to use the connector
   repeated ResourceName used_by = 8;
 }
 
@@ -740,7 +748,7 @@ message ListNotifierConnectorsRequest {
 
 // Response message for RuntimeService.ListNotifierConnectors
 message ListNotifierConnectorsResponse {
-  // Note: The config property of Connector will always be empty for this API.
+  // Note: In this list, the Connector.config property will always be empty.
   repeated Connector connectors = 1;
 }
 

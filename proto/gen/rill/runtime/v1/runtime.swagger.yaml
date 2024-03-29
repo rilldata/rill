@@ -3100,31 +3100,39 @@ definitions:
     properties:
       name:
         type: string
+        title: Connector name
       driver:
         $ref: '#/definitions/v1ConnectorDriver'
+        title: Connector driver metadata
       config:
         type: object
         additionalProperties:
           type: string
+        title: Combined config properties for the connector
       presetConfig:
         type: object
         additionalProperties:
           type: string
+        title: Config properties preset by the runtime or when the instance was created
       projectConfig:
         type: object
         additionalProperties:
           type: string
+        title: Config properties set in project YAML files
       envConfig:
         type: object
         additionalProperties:
           type: string
+        title: Config properties set as dynamic variables
       hasAnonymousAccess:
         type: boolean
+        title: True if the connector can be accessed without credentials
       usedBy:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
+        title: List of resources that appear to use the connector
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
   v1AssertionResult:
     type: object
@@ -3995,7 +4003,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Connector'
-        description: 'Note: The config property of Connector will always be empty for this API.'
+        description: 'Note: In this list, the Connector.config property will always be empty.'
     title: Response message for RuntimeService.ListNotifierConnectors
   v1ListResourcesResponse:
     type: object

@@ -2962,41 +2962,57 @@ proto3.util.setEnumType(ConnectorDriver_Property_Type, "rill.runtime.v1.Connecto
  */
 export class AnalyzedConnector extends Message<AnalyzedConnector> {
   /**
+   * Connector name
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Connector driver metadata
+   *
    * @generated from field: rill.runtime.v1.ConnectorDriver driver = 2;
    */
   driver?: ConnectorDriver;
 
   /**
+   * Combined config properties for the connector
+   *
    * @generated from field: map<string, string> config = 3;
    */
   config: { [key: string]: string } = {};
 
   /**
+   * Config properties preset by the runtime or when the instance was created
+   *
    * @generated from field: map<string, string> preset_config = 4;
    */
   presetConfig: { [key: string]: string } = {};
 
   /**
+   * Config properties set in project YAML files
+   *
    * @generated from field: map<string, string> project_config = 5;
    */
   projectConfig: { [key: string]: string } = {};
 
   /**
+   * Config properties set as dynamic variables
+   *
    * @generated from field: map<string, string> env_config = 6;
    */
   envConfig: { [key: string]: string } = {};
 
   /**
+   * True if the connector can be accessed without credentials
+   *
    * @generated from field: bool has_anonymous_access = 7;
    */
   hasAnonymousAccess = false;
 
   /**
+   * List of resources that appear to use the connector
+   *
    * @generated from field: repeated rill.runtime.v1.ResourceName used_by = 8;
    */
   usedBy: ResourceName[] = [];
@@ -3232,7 +3248,7 @@ export class ListNotifierConnectorsRequest extends Message<ListNotifierConnector
  */
 export class ListNotifierConnectorsResponse extends Message<ListNotifierConnectorsResponse> {
   /**
-   * Note: The config property of Connector will always be empty for this API.
+   * Note: In this list, the Connector.config property will always be empty.
    *
    * @generated from field: repeated rill.runtime.v1.Connector connectors = 1;
    */

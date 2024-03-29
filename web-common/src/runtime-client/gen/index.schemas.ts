@@ -1512,7 +1512,7 @@ export interface V1ListResourcesResponse {
 }
 
 export interface V1ListNotifierConnectorsResponse {
-  /** Note: The config property of Connector will always be empty for this API. */
+  /** Note: In this list, the Connector.config property will always be empty. */
   connectors?: V1Connector[];
 }
 

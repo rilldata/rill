@@ -193,7 +193,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.Connectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Preset = maps.Clone(c.Config)
+			res.Preset = maps.Clone(c.Config) // Cloning because Preset may be mutated later, but the inst object is shared.
 			break
 		}
 	}
@@ -202,7 +202,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Project = maps.Clone(c.Config)
+			res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
 			break
 		}
 	}

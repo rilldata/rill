@@ -3698,14 +3698,22 @@ type AnalyzedConnector struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name               string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Driver             *ConnectorDriver  `protobuf:"bytes,2,opt,name=driver,proto3" json:"driver,omitempty"`
-	Config             map[string]string `protobuf:"bytes,3,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	PresetConfig       map[string]string `protobuf:"bytes,4,rep,name=preset_config,json=presetConfig,proto3" json:"preset_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	ProjectConfig      map[string]string `protobuf:"bytes,5,rep,name=project_config,json=projectConfig,proto3" json:"project_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	EnvConfig          map[string]string `protobuf:"bytes,6,rep,name=env_config,json=envConfig,proto3" json:"env_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	HasAnonymousAccess bool              `protobuf:"varint,7,opt,name=has_anonymous_access,json=hasAnonymousAccess,proto3" json:"has_anonymous_access,omitempty"`
-	UsedBy             []*ResourceName   `protobuf:"bytes,8,rep,name=used_by,json=usedBy,proto3" json:"used_by,omitempty"`
+	// Connector name
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Connector driver metadata
+	Driver *ConnectorDriver `protobuf:"bytes,2,opt,name=driver,proto3" json:"driver,omitempty"`
+	// Combined config properties for the connector
+	Config map[string]string `protobuf:"bytes,3,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Config properties preset by the runtime or when the instance was created
+	PresetConfig map[string]string `protobuf:"bytes,4,rep,name=preset_config,json=presetConfig,proto3" json:"preset_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Config properties set in project YAML files
+	ProjectConfig map[string]string `protobuf:"bytes,5,rep,name=project_config,json=projectConfig,proto3" json:"project_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Config properties set as dynamic variables
+	EnvConfig map[string]string `protobuf:"bytes,6,rep,name=env_config,json=envConfig,proto3" json:"env_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// True if the connector can be accessed without credentials
+	HasAnonymousAccess bool `protobuf:"varint,7,opt,name=has_anonymous_access,json=hasAnonymousAccess,proto3" json:"has_anonymous_access,omitempty"`
+	// List of resources that appear to use the connector
+	UsedBy []*ResourceName `protobuf:"bytes,8,rep,name=used_by,json=usedBy,proto3" json:"used_by,omitempty"`
 }
 
 func (x *AnalyzedConnector) Reset() {
@@ -4033,7 +4041,7 @@ type ListNotifierConnectorsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Note: The config property of Connector will always be empty for this API.
+	// Note: In this list, the Connector.config property will always be empty.
 	Connectors []*Connector `protobuf:"bytes,1,rep,name=connectors,proto3" json:"connectors,omitempty"`
 }
 
