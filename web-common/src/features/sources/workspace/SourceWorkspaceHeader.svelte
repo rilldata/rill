@@ -12,6 +12,7 @@
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
@@ -46,9 +47,7 @@
 
   export let filePath: string;
 
-  // let fileName: string;
-  // let folder: string;
-  $: [fileName] = splitFolderAndName(filePath);
+  $: sourceName = extractFileName(filePath);
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
@@ -157,7 +156,7 @@
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader {...{ titleInput: fileName, onChangeCallback }}>
+  <WorkspaceHeader {...{ titleInput: sourceName, onChangeCallback }}>
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...

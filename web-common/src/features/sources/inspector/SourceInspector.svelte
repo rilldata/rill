@@ -112,7 +112,7 @@
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    tableName,
+    filePath,
     $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;

@@ -82,7 +82,7 @@
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
       runtimeInstanceId,
-      getFileAPIPathFromNameAndType(tableName, EntityType.Table),
+      filePath,
       EntityType.Table,
       $sourceRoutes.data ?? [],
     );
@@ -128,7 +128,7 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName,
+    filePath,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
