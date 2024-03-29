@@ -47,13 +47,17 @@ export function createDashboardStateSync(
         metricsViewSpecRes.isFetching ||
         timeRangeRes.isFetching ||
         metricsViewSchemaRes.isFetching ||
-        initialUrlStateRes?.isFetching ||
-        // requests errored out
+        initialUrlStateRes?.isFetching
+      ) {
+        return { isFetching: true, error: false };
+      }
+
+      if (
         !metricsViewSpecRes.data ||
         (!!metricsViewSpecRes.data.timeDimension && !timeRangeRes.data) ||
         !metricsViewSchemaRes.data?.schema
       ) {
-        return false;
+        return { isFetching: false, error: true };
       }
 
       const metricViewName = get(ctx.metricsViewName);
@@ -81,7 +85,7 @@ export function createDashboardStateSync(
           metricsExplorerStore.sync(metricViewName, metricsViewSpecRes.data);
         }
       }
-      return true;
+      return { isFetching: false, error: false };
     },
   );
 }
