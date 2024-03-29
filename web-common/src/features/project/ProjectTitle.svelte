@@ -21,7 +21,7 @@
 >
   <!-- the pl-[.875rem] is a fix to move this new element over a pinch.-->
   <h1
-    class="grid grid-flow-col justify-start gap-x-3 p-4 pl-[.75rem] items-center content-center"
+    class="grid grid-flow-col justify-start gap-x-3 py-4 pl-[.75rem] items-center content-center"
   >
     {#if mounted && $projectTitle.isSuccess}
       <a href="/">
@@ -41,7 +41,7 @@
     {/if}
     <Tooltip distance={8}>
       <a
-        class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
+        class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-9"
         href="/"
       >
         {$projectTitle.data || "Untitled Rill Project"}

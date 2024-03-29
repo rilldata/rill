@@ -2,7 +2,7 @@
   export const navigationOpen = (() => {
     const store = writable(true);
     return {
-      subscribe: store.subscribe,
+      ...store,
       toggle: () => store.update((open) => !open),
     };
   })();
@@ -118,7 +118,7 @@
   }
 
   .inner {
-    @apply h-full;
+    @apply h-full overflow-hidden flex flex-col;
     will-change: width;
   }
 
@@ -127,8 +127,7 @@
   }
 
   .scroll-container {
-    @apply grow;
-    @apply overflow-y-scroll overflow-x-hidden;
+    @apply overflow-y-auto overflow-x-hidden;
     @apply transition-colors h-full bg-white pb-8;
   }
 

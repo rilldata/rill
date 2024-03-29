@@ -103,7 +103,7 @@
         : undefined;
   }
 
-  const sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(sourceName);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,

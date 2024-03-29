@@ -1,6 +1,5 @@
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { waitForResourceUpdate } from "@rilldata/web-common/features/entity-management/resource-status-utils";
-import { getLastStateUpdatedOnByKindAndName } from "@rilldata/web-common/features/entity-management/resources-store";
 import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -11,20 +10,14 @@ export function checkSourceImported(
   sourceName: string,
   filePath: string,
 ) {
-  const lastUpdatedOn = getLastStateUpdatedOnByKindAndName(
-    ResourceKind.Source,
-    sourceName,
-  );
+  const lastUpdatedOn =
+    fileArtifacts.getFileArtifact(filePath).lastStateUpdatedOn;
   if (lastUpdatedOn) return; // For now only show for fresh sources
-  waitForResourceUpdate(
-    queryClient,
-    get(runtime).instanceId,
-    filePath,
-    ResourceKind.Source,
-    sourceName,
-  ).then((success) => {
-    if (!success) return;
-    sourceImportedName.set(sourceName);
-    // TODO: telemetry
-  });
+  waitForResourceUpdate(queryClient, get(runtime).instanceId, filePath).then(
+    (success) => {
+      if (!success) return;
+      sourceImportedName.set(sourceName);
+      // TODO: telemetry
+    },
+  );
 }

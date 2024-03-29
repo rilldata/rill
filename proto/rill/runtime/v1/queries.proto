@@ -957,6 +957,7 @@ message TableColumnsRequest {
 
 message TableColumnsResponse {
   repeated ProfileColumn profile_columns = 1;
+  map<string, string> unsupported_columns = 2;
 }
 
 message ProfileColumn {

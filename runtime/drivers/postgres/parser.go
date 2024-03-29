@@ -117,7 +117,8 @@ func (m *byteMapper) value(pgxVal any) (any, error) {
 type dateMapper struct{}
 
 func (m *dateMapper) runtimeType() *runtimev1.Type {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}
+	// Use runtimev1.Type_CODE_DATE once DATE is supported by DuckDB appender
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}
 }
 
 func (m *dateMapper) value(pgxVal any) (any, error) {
@@ -207,7 +208,8 @@ func (m *int64Mapper) value(pgxVal any) (any, error) {
 type timeMapper struct{}
 
 func (m *timeMapper) runtimeType() *runtimev1.Type {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIME}
+	// Use runtimev1.Type_CODE_TIME once DATE is supported by DuckDB appender
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}
 }
 
 func (m *timeMapper) value(pgxVal any) (any, error) {
