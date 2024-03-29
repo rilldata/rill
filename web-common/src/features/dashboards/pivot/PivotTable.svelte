@@ -59,7 +59,7 @@
           expanded: pivotConfig.expanded,
           sorting: pivotConfig.sorting,
         },
-        onExpandedChange: (e) => handleExpandedChange(e),
+        onExpandedChange,
         getSubRows: (row) => row.subRows,
         onSortingChange: handleSorting,
         getExpandedRowModel: getExpandedRowModel(),
@@ -143,9 +143,10 @@
       ]
     : [0, 0];
 
-  function handleExpandedChange(updater: Updater<ExpandedState>) {
+  function onExpandedChange(updater: Updater<ExpandedState>) {
     // Something is off with tanstack's types
     //@ts-expect-error-free
+    //eslint-disable-next-line
     expanded = updater(expanded);
     metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
   }

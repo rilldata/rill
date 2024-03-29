@@ -1,4 +1,3 @@
-import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   addZoneOffset,
