@@ -68,7 +68,7 @@
     on:shift-click={shiftClickHandler}
     on:click={handleClick}
   >
-    <Tooltip location="right" alignment="start" distance={48} activeDelay={0}>
+    <Tooltip distance={8}>
       <div class="truncate">
         {name}
       </div>
