@@ -200,8 +200,6 @@ export function transformAggregateDimensionData(
     const rowIndex = dimensionValuesMap.get(key);
     const colIndex = headersMap.get(ts);
 
-    console.log(rowIndex, colIndex);
-
     if (rowIndex !== undefined && colIndex !== undefined) {
       data[rowIndex][colIndex] = timeSeriesCell;
     }
