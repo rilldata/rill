@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Row } from "@tanstack/svelte-table";
+  import type { Row, Cell } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import { pivotFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -9,7 +9,10 @@
   export let hasDimension: boolean;
   export let totals = false;
 
-  $: cells = row.getVisibleCells();
+  $: cells = row.getVisibleCells() as Cell<
+    PivotDataRow,
+    string | number | undefined
+  >[];
   $: rowHeader = cells[0].getValue() as string | null;
   $: canExpand = row.getCanExpand();
   $: expanded = row.getIsExpanded();
