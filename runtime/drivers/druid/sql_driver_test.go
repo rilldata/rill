@@ -155,6 +155,20 @@ func Ignore_TestDriver_error(t *testing.T) {
 	require.True(t, strings.HasPrefix(err.Error(), `"error":"druidException"`))
 }
 
+func TestDriver_correctURL(t *testing.T) {
+	s, err := correctURL("https://localhost/druid/sql/v2/avatica-protobuf")
+	require.NoError(t, err)
+	require.Equal(t, "https://localhost/druid/v2/sql", s)
+
+	s, err = correctURL("https://localhost/druid/sql/v2/avatica-protobuf?authentication=BASIC&avaticaUser=user1&avaticaPassword=pass%40rd")
+	require.NoError(t, err)
+	require.Equal(t, "https://user1:pass%40rd@localhost/druid/v2/sql", s)
+
+	s, err = correctURL("https://localhost:8888/druid/sql/v2/avatica-protobuf?authentication=BASIC&avaticaUser=user1&avaticaPassword=pass%40rd")
+	require.NoError(t, err)
+	require.Equal(t, "https://user1:pass%40rd@localhost:8888/druid/v2/sql", s)
+}
+
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
 	for rows.Next() {

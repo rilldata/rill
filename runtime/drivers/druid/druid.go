@@ -3,6 +3,8 @@ package druid
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -34,8 +36,8 @@ type driver struct{}
 
 var _ drivers.Driver = &driver{}
 
-// Open connects to Druid using Avatica.
-// Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
+// Opens a connection to Apache Druid using HTTP API.
+// Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
 func (d *driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
@@ -43,6 +45,11 @@ func (d *driver) Open(config map[string]any, shared bool, client *activity.Clien
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open druid connection")
+	}
+
+	dsn, err := correctURL(dsn)
+	if err != nil {
+		return nil, err
 	}
 
 	db, err := sqlx.Open("druid", dsn)
@@ -168,4 +175,24 @@ func (c *connection) EstimateSize() (int64, bool) {
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
+}
+
+func correctURL(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(u.Path, "avatica-protobuf") {
+		avaticaUser := url.QueryEscape(u.Query().Get("avaticaUser"))
+		avaticaPassword := url.QueryEscape(u.Query().Get("avaticaPassword"))
+
+		if avaticaUser != "" {
+			dsn = u.Scheme + "://" + avaticaUser + ":" + avaticaPassword + "@" + u.Host + "/druid/v2/sql"
+		} else {
+			dsn = u.Scheme + "://" + u.Host + "/druid/v2/sql"
+
+		}
+	}
+	return dsn, nil
 }
