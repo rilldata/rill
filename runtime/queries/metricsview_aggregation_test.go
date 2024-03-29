@@ -71,7 +71,7 @@ func TestMetricsViewsAggregation(t *testing.T) {
 
 			{
 				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			},
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -124,7 +124,7 @@ func TestMetricsViewsAggregation(t *testing.T) {
 	require.Equal(t, "Yahoo,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
 }
 
-func TestMetricsViewsAggregation_export(t *testing.T) {
+func TestMetricsViewsAggregation_export_day(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	limit := int64(10)
@@ -137,7 +137,7 @@ func TestMetricsViewsAggregation_export(t *testing.T) {
 
 			{
 				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			},
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -164,25 +164,50 @@ func TestMetricsViewsAggregation_export(t *testing.T) {
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Facebook,2022-02-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Facebook,2022-03-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Google,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Google,2022-02-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Google,2022-03-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Microsoft,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Microsoft,2022-02-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Microsoft,2022-03-01", fieldsToString(rows[i], "pub", "timestamp"))
-	i++
-	require.Equal(t, "Yahoo,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+}
+
+func TestMetricsViewsAggregation_export_hour(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "timestamp",
+			},
+		},
+
+		Limit:     &limit,
+		Exporting: true,
+	}
+
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	i := 0
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 }
 
 func TestMetricsViewsAggregation_no_limit(t *testing.T) {
