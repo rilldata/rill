@@ -271,8 +271,8 @@ export function getDimensionValueTimeSeries(
         },
       );
 
-      return derived(aggQueryForTopList, (topListData) => {
-        if (topListData?.isFetching || !topListData?.data?.data) {
+      return derived(aggQueryForTopList, (aggTimeSeriesData) => {
+        if (aggTimeSeriesData?.isFetching || !aggTimeSeriesData?.data?.data) {
           return topListValues?.map((value) => {
             return {
               value,
@@ -285,13 +285,11 @@ export function getDimensionValueTimeSeries(
             };
           });
         } else {
-          console.log("topListData", topListData?.data?.data);
-
           const transformedData = transformAggregateDimensionData(
             timeDimension,
             dimensionName,
             topListValues,
-            topListData?.data?.data,
+            aggTimeSeriesData?.data?.data,
           );
           console.log("transformedData", transformedData);
           return topListValues?.map((value, i) => {
@@ -315,7 +313,7 @@ export function getDimensionValueTimeSeries(
                 ? "fill-" + CHECKMARK_COLORS[i]
                 : "",
               data: prepData,
-              isFetching: topListData.isFetching,
+              isFetching: aggTimeSeriesData.isFetching,
             };
           });
         }
