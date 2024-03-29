@@ -274,7 +274,7 @@ export function getDimensionValueTimeSeries(
             },
             { desc: false, name: timeDimension },
           ],
-          limit: "10000",
+          limit: "15000",
           offset: "0",
         },
         {
