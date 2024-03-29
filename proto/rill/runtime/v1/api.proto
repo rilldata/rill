@@ -182,16 +182,13 @@ service RuntimeService {
 
   // AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
   rpc AnalyzeConnectors(AnalyzeConnectorsRequest) returns (AnalyzeConnectorsResponse) {
-    option (google.api.http) = {
-      post: "/v1/connectors/analyze",
-      body: "*"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/analyze"};
   }
 
   // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
   // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
   rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
-    option (google.api.http) = {get: "/v1/connectors/notifiers"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
   // DEPRECATE:

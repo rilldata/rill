@@ -81,27 +81,6 @@ paths:
           type: string
       tags:
         - ConnectorService
-  /v1/connectors/analyze:
-    post:
-      summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
-      operationId: RuntimeService_AnalyzeConnectors
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1AnalyzeConnectorsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1AnalyzeConnectorsRequest'
-      tags:
-        - RuntimeService
   /v1/connectors/meta:
     get:
       summary: |-
@@ -117,28 +96,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - RuntimeService
-  /v1/connectors/notifiers:
-    get:
-      summary: |-
-        ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
-        This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
-      operationId: RuntimeService_ListNotifierConnectors
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListNotifierConnectorsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/connectors/olap/table:
@@ -584,6 +541,48 @@ paths:
           required: true
           type: string
         - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/connectors/analyze:
+    get:
+      summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+      operationId: RuntimeService_AnalyzeConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AnalyzeConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/connectors/notifiers:
+    get:
+      summary: |-
+        ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+        This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+      operationId: RuntimeService_ListNotifierConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListNotifierConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
           in: path
           required: true
           type: string
@@ -3080,12 +3079,6 @@ definitions:
       executionCount:
         type: integer
         format: int64
-  v1AnalyzeConnectorsRequest:
-    type: object
-    properties:
-      instanceId:
-        type: string
-    title: Request message for RuntimeService.AnalyzeConnectors
   v1AnalyzeConnectorsResponse:
     type: object
     properties:
