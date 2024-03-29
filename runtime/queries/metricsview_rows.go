@@ -310,7 +310,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 
 	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s %s %s OFFSET %d",
 		strings.Join(selectColumns, ","),
-		fullMetricsViewTableName(mv),
+		dialect.EscapeMetricsViewTable(mv),
 		whereClause,
 		orderClause,
 		limitClause,

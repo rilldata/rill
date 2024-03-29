@@ -94,7 +94,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,
-		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -218,7 +218,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	      `,
 		selectColumn,
 		sanitizedColumnName,
-		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		bucketSize,
 		*min,
 		*max,
@@ -347,7 +347,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		`,
 		selectColumn,
 		sanitizedColumnName,
-		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		bucketCount,
 		startTick,
 		endTick,
@@ -400,7 +400,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 			FROM %[1]s
 			WHERE %[2]s IS NOT NULL
 		`,
-		fullTableName(database, databaseSchema, tableName),
+		olap.Dialect().EscapeTable(database, databaseSchema, tableName),
 		selectColumn,
 	)
 

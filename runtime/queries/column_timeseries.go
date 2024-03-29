@@ -279,7 +279,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			series AS (
 				SELECT
 					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-				FROM ` + fullTableName(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
+				FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
@@ -328,7 +328,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			series AS (
 			SELECT
 				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-			FROM ` + fullTableName(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
+			FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
@@ -582,7 +582,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLAPStore, priority int) (int64, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", fullTableName(q.Database, q.DatabaseSchema, q.TableName)),
+		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 		Priority: priority,
 	})
 	if err != nil {

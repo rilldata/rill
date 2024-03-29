@@ -60,9 +60,9 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	var requestSQL string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		requestSQL = fmt.Sprintf("SELECT approx_count_distinct(%s) AS count FROM %s", safeName(q.ColumnName), fullTableName(q.Database, q.DatabaseSchema, q.TableName))
+		requestSQL = fmt.Sprintf("SELECT approx_count_distinct(%s) AS count FROM %s", safeName(q.ColumnName), olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
-		requestSQL = fmt.Sprintf("SELECT uniq(%s) AS count FROM %s", safeName(q.ColumnName), fullTableName(q.Database, q.DatabaseSchema, q.TableName))
+		requestSQL = fmt.Sprintf("SELECT uniq(%s) AS count FROM %s", safeName(q.ColumnName), olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

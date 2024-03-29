@@ -14,11 +14,11 @@ import (
 )
 
 type TableColumns struct {
-	Connector    string
-	DatabaseName string
-	SchemaName   string
-	TableName    string
-	Result       *runtimev1.TableColumnsResponse
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	Result         *runtimev1.TableColumnsResponse
 }
 
 var _ runtime.Query = &TableColumns{}
@@ -74,7 +74,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
 			err = olap.Exec(ctx, &drivers.Statement{
-				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM %s LIMIT 1)`, temporaryTableName, fullTableName(q.DatabaseName, q.SchemaName, q.TableName)),
+				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM %s LIMIT 1)`, temporaryTableName, olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 				Priority:         priority,
 				ExecutionTimeout: defaultExecutionTimeout,
 			})
@@ -124,7 +124,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			return nil
 		})
 	case drivers.DialectClickHouse, drivers.DialectDruid:
-		tbl, err := olap.InformationSchema().Lookup(ctx, q.DatabaseName, q.SchemaName, q.TableName)
+		tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 		if err != nil {
 			return err
 		}

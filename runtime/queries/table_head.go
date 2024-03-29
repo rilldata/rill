@@ -13,13 +13,13 @@ import (
 )
 
 type TableHead struct {
-	Connector    string
-	DatabaseName string
-	SchemaName   string
-	TableName    string
-	Limit        int
-	Result       []*structpb.Struct
-	Schema       *runtimev1.StructType
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	Limit          int
+	Result         []*structpb.Struct
+	Schema         *runtimev1.StructType
 }
 
 var _ runtime.Query = &TableHead{}
@@ -162,7 +162,7 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStore) (string, error) {
-	columns, err := supportedColumns(ctx, olap, q.DatabaseName, q.SchemaName, q.TableName)
+	columns, err := supportedColumns(ctx, olap, q.Database, q.DatabaseSchema, q.TableName)
 	if err != nil {
 		return "", err
 	}
@@ -175,7 +175,7 @@ func (q *TableHead) buildTableHeadSQL(ctx context.Context, olap drivers.OLAPStor
 	sql := fmt.Sprintf(
 		`SELECT %s FROM %s%s`,
 		strings.Join(columns, ","),
-		fullTableName(q.DatabaseName, q.SchemaName, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		limitClause,
 	)
 	return sql, nil

@@ -272,7 +272,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 
 	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY 1 %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
-		fullMetricsViewTableName(mv),
+		dialect.EscapeMetricsViewTable(mv),
 		unnestClause,
 		whereClause,
 		havingClause,

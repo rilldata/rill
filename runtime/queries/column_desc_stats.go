@@ -75,7 +75,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			sanitizedColumnName,
 			sanitizedColumnName,
-			fullTableName(q.Database, q.DatabaseSchema, q.TableName))
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
 		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
 			"min(%s)::DOUBLE as min, "+
@@ -93,7 +93,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			sanitizedColumnName,
 			sanitizedColumnName,
-			fullTableName(q.Database, q.DatabaseSchema, q.TableName))
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

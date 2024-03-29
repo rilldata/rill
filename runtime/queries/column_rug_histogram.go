@@ -134,7 +134,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 `,
 		selectColumn,
 		sanitizedColumnName,
-		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		outlierPseudoBucketSize,
 		*min,
 		*max,

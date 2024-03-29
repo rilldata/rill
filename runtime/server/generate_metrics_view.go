@@ -153,12 +153,10 @@ type generateMetricsViewYAMLWithres struct {
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
 func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
-	schema := tbl.Schema
-	tblName := tbl.Name
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
-		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tblName, schema)},
+		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -190,15 +188,15 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
-	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(schema)
-	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(schema)
+	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
+	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
 	if isModel {
-		doc.Model = tblName
+		doc.Model = tbl.Name
 	} else {
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Table = tblName
+		doc.Table = tbl.Name
 		if tbl.Database != "" && !tbl.IsDefaultDatabase {
 			doc.Database = tbl.Database
 		}
@@ -212,7 +210,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		Connector:      connector,
 		Database:       tbl.Database,
 		DatabaseSchema: tbl.DatabaseSchema,
-		Table:          tblName,
+		Table:          tbl.Name,
 	}
 	for _, measure := range doc.Measures {
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{

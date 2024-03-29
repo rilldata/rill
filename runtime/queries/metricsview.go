@@ -289,7 +289,7 @@ func dimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, fullTableName(db, dbSchema, table), colName, unnestColName)
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, dialect.EscapeTable(db, dbSchema, table), colName, unnestColName)
 	}
 
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) tbl(%s)`, dim.Expression, unnestColName)

@@ -133,21 +133,3 @@ func addInterval(t time.Time, timeGrain runtimev1.TimeGrain) time.Time {
 		return t
 	}
 }
-
-func fullMetricsViewTableName(mv *runtimev1.MetricsViewSpec) string {
-	return fullTableName(mv.Database, mv.DatabaseSchema, mv.Table)
-}
-
-func fullTableName(db, schema, table string) string {
-	var sb strings.Builder
-	if db != "" {
-		sb.WriteString(safeName(db))
-		sb.WriteString(".")
-	}
-	if schema != "" {
-		sb.WriteString(safeName(schema))
-		sb.WriteString(".")
-	}
-	sb.WriteString(safeName(table))
-	return sb.String()
-}
