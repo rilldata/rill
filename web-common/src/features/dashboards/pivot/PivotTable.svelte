@@ -102,7 +102,7 @@
 
   $: firstColumnWidth = calculatedFirstColumnWidth;
   $: measureGroups = headerGroups[headerGroups.length - 2]?.headers?.slice(
-    1,
+    hasDimension ? 1 : 0,
   ) ?? [null];
   $: measureGroupsLength = measureGroups.length;
 

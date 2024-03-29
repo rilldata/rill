@@ -115,6 +115,7 @@ function createColumnDefinitionForDimensions(
       const headColumn = {
         header: sanitizeHeaderValue(label || name),
         columns: acc,
+        accessorFn: () => "measure",
       };
 
       return [headColumn];
@@ -231,6 +232,7 @@ export function getColumnDefForPivot(
 
   const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
     return {
+      accessorKey: m.name,
       // Using this property to pass the format to the cell
       cell: m.format,
       header: m.label || m.name,

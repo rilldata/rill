@@ -44,20 +44,18 @@
     </td>
   {/if}
 
-  {#each cells as cell, i (cell.id)}
-    {#if !(hasDimension && i === 0)}
-      {@const value = cell.getValue()}
-      {@const format = String(cell.column.columnDef.cell)}
-      <td class:border-r={!((i + 1) % measureCount)}>
-        <div class="cell ui-copy-number">
-          {#if value === undefined || value === null}
-            <span class="no-data">no data</span>
-          {:else}
-            {pivotFormatter(value, format)}
-          {/if}
-        </div>
-      </td>
-    {/if}
+  {#each hasDimension ? cells.slice(1) : cells as cell, i (cell.id)}
+    {@const value = cell.getValue()}
+    {@const format = String(cell.column.columnDef.cell)}
+    <td class:border-r={i && (i + 1) % measureCount === 0}>
+      <div class="cell ui-copy-number">
+        {#if value === undefined || value === null}
+          <span class="no-data">no data</span>
+        {:else}
+          {pivotFormatter(value, format)}
+        {/if}
+      </div>
+    </td>
   {/each}
 </tr>
 
