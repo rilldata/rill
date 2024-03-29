@@ -20,7 +20,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import {
+  createMetricsViewTimeSeries,
+  type TimeSeriesDatum,
+} from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   V1Expression,
@@ -211,34 +214,37 @@ export function getDimensionValueTimeSeries(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      createMetricsViewTimeSeries(ctx, measures, false),
       getDimensionValuesForComparison(ctx, measures, surface),
     ],
     (
-      [runtime, metricViewName, dashboardStore, timeStore, dimensionValues],
+      [
+        runtime,
+        metricViewName,
+        dashboardStore,
+        timeStore,
+        timeSeriesData,
+        dimensionValues,
+      ],
       set,
     ) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
-
-      const start = timeStore?.adjustedStart;
-      const end = timeStore?.adjustedEnd;
       const timeGrain =
-        (timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain) ||
-        V1TimeGrain.TIME_GRAIN_DAY;
+        timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
       const timeDimension = timeStore?.timeDimension;
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
-      if (!isValidMeasureList || !dimensionName) return;
+      if (!isValidMeasureList || !dimensionName || timeSeriesData?.isFetching)
+        return;
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
       const topListValues = dimensionValues?.values || [];
-      // create a copy
       const updatedFilter =
         filterExpressions(dimensionValues?.filter, () => true) ??
         createAndExpression([]);
-      // add the value to "in" expression
       updatedFilter.cond?.exprs?.push(
         createInExpression(dimensionName, topListValues),
       );
@@ -253,8 +259,8 @@ export function getDimensionValueTimeSeries(
             { name: timeDimension, timeGrain, timeZone },
           ],
           where: sanitiseExpression(updatedFilter, undefined),
-          timeStart: start,
-          timeEnd: end,
+          timeStart: timeStore?.adjustedStart,
+          timeEnd: timeStore?.adjustedEnd,
           sort: [
             { desc: false, name: dimensionName },
             { desc: false, name: timeDimension },
@@ -288,10 +294,11 @@ export function getDimensionValueTimeSeries(
           const transformedData = transformAggregateDimensionData(
             timeDimension,
             dimensionName,
+            measures,
             topListValues,
+            timeSeriesData?.data?.data || [],
             aggTimeSeriesData?.data?.data,
           );
-          console.log("transformedData", transformedData);
           return topListValues?.map((value, i) => {
             const prepData = prepareTimeSeries(
               transformedData[i],

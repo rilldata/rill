@@ -1,3 +1,4 @@
+import type { GraphicScale } from "@rilldata/web-common/components/data-graphic/state/types";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { createIndexMap } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
@@ -11,13 +12,12 @@ import type {
   V1MetricsViewAggregationResponseDataItem,
   V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
+import type { DateTimeUnit } from "luxon";
 import { removeZoneOffset } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
-import type { GraphicScale } from "@rilldata/web-common/components/data-graphic/state/types";
 import type { TimeSeriesDatum } from "./timeseries-data-store";
-import type { DateTimeUnit } from "luxon";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -154,12 +154,39 @@ export function getFilterForComparedDimension(
 export function transformAggregateDimensionData(
   timeDimension: string,
   dimensionName: string,
-  values: string[],
+  measures: string[],
+  dimensionValues: string[],
+  timeSeriesData: V1TimeSeriesValue[],
   response: V1MetricsViewAggregationResponseDataItem[],
 ) {
-  const aggregatedMap: Record<string, V1TimeSeriesValue[]> = {};
+  const emptyData: V1TimeSeriesValue[][] = new Array<V1TimeSeriesValue[]>(
+    dimensionValues.length,
+  ).fill([]);
 
-  const valuesMap = createIndexMap(values);
+  const headers = timeSeriesData.map((d) => d.ts);
+  if (!headers.length) return emptyData;
+
+  const emptyMeasuresObj = measures.reduce((acc, measure) => {
+    acc[measure] = null;
+    return acc;
+  }, {});
+
+  const emptyRow = headers.map((h) => ({
+    ts: h,
+    bin: 0,
+    records: emptyMeasuresObj,
+  }));
+
+  const data: V1TimeSeriesValue[][] = new Array(dimensionValues.length)
+    .fill(null)
+    // Create a deep copy of each row for each element
+    .map(() =>
+      emptyRow.map((row) => ({ ...row, records: { ...row.records } })),
+    );
+
+  // const dimensionTimeSeriesMap: Record<string, V1TimeSeriesValue[]> = {};
+  const dimensionValuesMap = createIndexMap(dimensionValues);
+  const headersMap = createIndexMap(headers);
 
   // The response has the values alphabetically and time sorted
   for (const cell of response) {
@@ -170,21 +197,14 @@ export function transformAggregateDimensionData(
       records: { ...rest },
     };
 
-    if (!(key in aggregatedMap)) {
-      aggregatedMap[key] = [timeSeriesCell];
-    } else {
-      aggregatedMap[key].push(timeSeriesCell);
-    }
-  }
+    const rowIndex = dimensionValuesMap.get(key);
+    const colIndex = headersMap.get(ts);
 
-  const data: V1TimeSeriesValue[][] = new Array(values.length).fill([]);
+    console.log(rowIndex, colIndex);
 
-  for (const value of values) {
-    const rowIndex = valuesMap.get(value);
-    if (rowIndex === undefined) {
-      return data;
+    if (rowIndex !== undefined && colIndex !== undefined) {
+      data[rowIndex][colIndex] = timeSeriesCell;
     }
-    data[rowIndex] = aggregatedMap[value];
   }
 
   return data;
