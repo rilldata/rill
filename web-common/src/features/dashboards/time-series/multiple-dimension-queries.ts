@@ -34,6 +34,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
+  createBatches,
   getFilterForComparedDimension,
   prepareTimeSeries,
   transformAggregateDimensionData,
@@ -181,22 +182,35 @@ export function getDimensionValuesForComparison(
               (d) => d[columnName],
             ) as string[];
 
-            const computedFilter = getFilterForComparedDimension(
-              dimensionName,
-              dashboardStore?.whereFilter,
-              topListValues,
-            );
-
             return {
               totals: totalValues,
-              values: computedFilter?.includedValues,
-              filter: computedFilter?.updatedFilter,
+              values: topListValues?.slice(0, 250),
+              filter: getFilterForComparedDimension(
+                dimensionName,
+                dashboardStore?.whereFilter,
+              ),
             };
           },
         ).subscribe(set);
       }
     },
   );
+}
+
+function batchAggregationQueries(
+  ctx: StateManagers,
+  measures: string[],
+  dimensionValues: DimensionTopList,
+) {
+  const batches = createBatches(dimensionValues.values, 50);
+  const queries = batches.map((batch) =>
+    getAggregationQueryForTopList(ctx, measures, {
+      values: batch,
+      filter: dimensionValues.filter,
+    }),
+  );
+
+  return { batchedTopList: batches, batchedQueries: queries };
 }
 
 function getAggregationQueryForTopList(
@@ -247,7 +261,7 @@ function getAggregationQueryForTopList(
             },
             { desc: false, name: timeDimension },
           ],
-          limit: "15000",
+          limit: "10000",
           offset: "0",
         },
         {
@@ -298,23 +312,29 @@ export function getDimensionValueTimeSeries(
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
-      const aggQueryForTopList = getAggregationQueryForTopList(
+      const { batchedTopList, batchedQueries } = batchAggregationQueries(
         ctx,
         measures,
         dimensionValues,
       );
 
-      return derived(aggQueryForTopList, (aggTimeSeriesData) => {
+      return derived(batchedQueries, (batchedAggTimeSeriesData) => {
         let transformedData: V1TimeSeriesValue[][] = [];
-        transformedData = transformAggregateDimensionData(
-          timeDimension,
-          dimensionName,
-          measures,
-          topListValues,
-          timeSeriesData?.data?.data || [],
-          aggTimeSeriesData?.data?.data || [],
-        );
 
+        batchedAggTimeSeriesData.forEach((aggTimeSeriesData, i) => {
+          transformedData = transformedData.concat(
+            transformAggregateDimensionData(
+              timeDimension,
+              dimensionName,
+              measures,
+              batchedTopList[i],
+              timeSeriesData?.data?.data || [],
+              aggTimeSeriesData?.data?.data || [],
+            ),
+          );
+        });
+
+        const isFetching = batchedAggTimeSeriesData.some((d) => d.isFetching);
         return topListValues?.map((value, i) => {
           const prepData = prepareTimeSeries(
             transformedData[i],
@@ -334,7 +354,7 @@ export function getDimensionValueTimeSeries(
             strokeClass: "stroke-" + LINE_COLORS[i],
             fillClass: CHECKMARK_COLORS[i] ? "fill-" + CHECKMARK_COLORS[i] : "",
             data: prepData,
-            isFetching: aggTimeSeriesData.isFetching,
+            isFetching,
           };
         });
       }).subscribe(set);

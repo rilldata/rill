@@ -136,10 +136,7 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 export function getFilterForComparedDimension(
   dimensionName: string,
   filters: V1Expression,
-  topListValues: string[],
 ) {
-  const includedValues = topListValues?.slice(0, 250);
-
   let updatedFilter = filterExpressions(
     filters,
     (e) => !matchExpressionByName(e, dimensionName),
@@ -147,8 +144,7 @@ export function getFilterForComparedDimension(
   if (!updatedFilter) {
     updatedFilter = createAndExpression([]);
   }
-
-  return { includedValues, updatedFilter };
+  return updatedFilter;
 }
 
 export function transformAggregateDimensionData(
@@ -208,4 +204,12 @@ export function transformAggregateDimensionData(
   }
 
   return data;
+}
+
+export function createBatches<T>(array: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < array.length; i += batchSize) {
+    batches.push(array.slice(i, i + batchSize));
+  }
+  return batches;
 }
