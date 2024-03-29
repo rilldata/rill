@@ -435,7 +435,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 columnDef: lastPivotColumnDef,
                 assembled: true,
                 totalColumns: lastTotalColumns,
-                totalsRowData,
+                totalsRowData: displayTotalsRow ? totalsRowData : undefined,
                 reachedEndForRowData: true,
               });
             }
