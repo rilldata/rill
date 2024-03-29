@@ -3,9 +3,11 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
+    ExpandedState,
+    SortingState,
     TableOptions,
+    Updater,
     createSvelteTable,
-    flexRender,
     getCoreRowModel,
     getExpandedRowModel,
   } from "@tanstack/svelte-table";
@@ -18,6 +20,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { isTimeDimension } from "./pivot-utils";
   import { getPivotConfig } from "./pivot-data-store";
+  import PivotExpandableRow from "./PivotExpandableRow.svelte";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -56,7 +59,7 @@
           expanded: pivotConfig.expanded,
           sorting: pivotConfig.sorting,
         },
-        onExpandedChange: handleExpandedChange,
+        onExpandedChange: (e) => handleExpandedChange(e),
         getSubRows: (row) => row.subRows,
         onSortingChange: handleSorting,
         getExpandedRowModel: getExpandedRowModel(),
@@ -73,9 +76,10 @@
 
   let containerRefElement: HTMLDivElement;
   let stickyRows = [0];
+  let rowScrollOffset = 0;
 
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
-  $: assembled = $pivotDataStore.assembled;
+
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
@@ -85,7 +89,9 @@
   $: rows = $table.getRowModel().rows;
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
   $: headers = headerGroups[0].headers;
-  $: firstColumnName = headers[0]?.column.columnDef.id;
+  $: firstColumnName = hasDimension
+    ? String(headers[0]?.column.columnDef.header)
+    : null;
 
   $: hasDimension = $rowPills.dimension.length > 0;
   $: timeDimension = $config.time.timeDimension;
@@ -108,7 +114,7 @@
   $: totalMeasureWidth = measureLengths.reduce((acc, val) => acc + val, 0);
   $: totalLength = measureGroupsLength * totalMeasureWidth;
 
-  $: totalsRow = rows[0].getVisibleCells();
+  $: totalsRow = rows[0];
 
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
@@ -126,7 +132,6 @@
   $: virtualRows = $virtualizer.getVirtualItems();
   $: totalRowSize = $virtualizer.getTotalSize();
 
-  let rowScrollOffset = 0;
   $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
 
   // In this virtualization model, we create buffer rows before and after our real data
@@ -138,12 +143,14 @@
       ]
     : [0, 0];
 
-  function handleExpandedChange(updater) {
+  function handleExpandedChange(updater: Updater<ExpandedState>) {
+    // Something is off with tanstack's types
+    //@ts-expect-error-free
     expanded = updater(expanded);
     metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
   }
 
-  function handleSorting(updater) {
+  function handleSorting(updater: Updater<SortingState>) {
     if (updater instanceof Function) {
       sorting = updater(sorting);
     } else {
@@ -152,7 +159,7 @@
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
 
-  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+  function handleScroll(containerRefElement?: HTMLDivElement | null) {
     if (containerRefElement) {
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
@@ -166,7 +173,7 @@
         metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
       }
     }
-  };
+  }
 
   function calculateFirstColumnWidth(firstColumnName: string) {
     const rows = $pivotDataStore.data;
@@ -210,6 +217,8 @@
 
     return [...first, ...middle, ...last];
   }
+
+  // $: console.log(rows[0].getVisibleCells());
 </script>
 
 <div
@@ -222,12 +231,14 @@
   on:scroll={() => handleScroll(containerRefElement)}
 >
   <table style:width="{totalLength}px">
-    <colgroup>
-      <col
-        style:width="{firstColumnWidth}px"
-        style:max-width="{firstColumnWidth}px"
-      />
-    </colgroup>
+    {#if firstColumnName && firstColumnWidth}
+      <colgroup>
+        <col
+          style:width="{firstColumnWidth}px"
+          style:max-width="{firstColumnWidth}px"
+        />
+      </colgroup>
+    {/if}
 
     {#each measureGroups as _}
       <colgroup>
@@ -278,74 +289,21 @@
         </tr>
       {/each}
 
-      <tr style:height="{ROW_HEIGHT}px">
-        {#each totalsRow as cell, i (cell.id)}
-          {@const result =
-            typeof cell.column.columnDef.cell === "function"
-              ? cell.column.columnDef.cell(cell.getContext())
-              : cell.column.columnDef.cell}
-          <td
-            class="bg-slate-100 font-semibold ui-copy-number"
-            class:border-r={i % measureCount === 0 && i}
-          >
-            <div class="cell">
-              {#if result?.component && result?.props}
-                <svelte:component
-                  this={result.component}
-                  {...result.props}
-                  {assembled}
-                />
-              {:else if typeof result === "string" || typeof result === "number"}
-                {result}
-              {:else}
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              {/if}
-            </div>
-          </td>
-        {/each}
-      </tr>
+      <PivotExpandableRow
+        row={totalsRow}
+        {measureCount}
+        {hasDimension}
+        totals
+      />
     </thead>
     <tbody>
       <tr style:height="{before}px" />
-      {#each virtualRows.slice(1) as row (row.index)}
-        {@const cells = rows[row.index].getVisibleCells()}
-        <tr>
-          {#each cells as cell, i (cell.id)}
-            {@const result =
-              typeof cell.column.columnDef.cell === "function"
-                ? cell.column.columnDef.cell(cell.getContext())
-                : cell.column.columnDef.cell}
-            <td
-              class="ui-copy-number"
-              class:border-r={i % measureCount === 0 && i}
-            >
-              <div class="cell">
-                {#if result?.component && result?.props}
-                  <svelte:component
-                    this={result.component}
-                    {...result.props}
-                    {assembled}
-                  />
-                {:else if typeof result === "string" || typeof result === "number"}
-                  {result}
-                {:else}
-                  <svelte:component
-                    this={flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
-                    )}
-                  />
-                {/if}
-              </div>
-            </td>
-          {/each}
-        </tr>
+
+      {#each virtualRows.slice(1) as virtualRow (rows[virtualRow.index].id)}
+        {@const row = rows[virtualRow.index]}
+        <PivotExpandableRow {row} {measureCount} {hasDimension} />
       {/each}
+
       <tr style:height="{after}px" />
     </tbody>
   </table>
@@ -387,17 +345,12 @@
     height: var(--header-height);
   }
 
-  th,
-  td {
+  th {
     @apply p-0 m-0 text-xs;
   }
 
   th {
     @apply border-r border-b relative;
-  }
-
-  td {
-    @apply text-right;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
@@ -409,31 +362,12 @@
     @apply text-right;
   }
 
-  .with-row-dimension tr > td:first-of-type,
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-10;
     @apply bg-white;
   }
 
-  tr > td:first-of-type:not(:last-of-type) {
-    @apply border-r font-medium;
-  }
-
-  .cell {
-    @apply p-1 px-2 truncate;
-  }
-
-  tbody > tr:first-of-type > td:first-of-type > .cell {
-    @apply font-bold;
-  }
-
-  td:last-of-type,
   th:last-of-type {
     @apply border-r-0;
-  }
-
-  tr:hover,
-  tr:hover .cell {
-    @apply bg-slate-100;
   }
 </style>

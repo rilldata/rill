@@ -154,3 +154,18 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   return (value: number | T) =>
     typeof value === "number" ? humanizer(value, formatPreset) : value;
 }
+
+export function pivotFormatter<T extends null | undefined = never>(
+  value: number | string | T,
+  format: string | undefined,
+): string | number | T {
+  if (!format) return value;
+
+  try {
+    return d3format(format)(value);
+  } catch {
+    return typeof value === "number"
+      ? humanizeDataType(value, format as FormatPreset)
+      : value;
+  }
+}

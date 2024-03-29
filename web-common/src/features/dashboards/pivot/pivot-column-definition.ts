@@ -6,10 +6,7 @@ import {
 } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
-import PivotExpandableCell from "./PivotExpandableCell.svelte";
-import PivotMeasureCell from "./PivotMeasureCell.svelte";
 import {
-  cellComponent,
   createIndexMap,
   getAccessorForCell,
   getTimeGrainFromDimension,
@@ -136,12 +133,11 @@ function createColumnDefinitionForDimensions(
  * time dimension values if present.
  */
 function formatRowDimensionValue(
+  dimension: string,
   value: string,
-  depth: number,
+
   timeConfig: PivotTimeConfig,
-  rowDimensionNames: string[],
 ) {
-  const dimension = rowDimensionNames?.[depth];
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
     if (value === "Total") return "Total";
     const timeGrain = getTimeGrainFromDimension(dimension);
@@ -180,8 +176,8 @@ export function getColumnDefForPivot(
 
     return {
       label: measure?.label || m,
-      formatter: createMeasureValueFormatter<null | undefined>(measure),
       name: m,
+      format: measure.formatD3 || measure.formatPreset,
     };
   });
 
@@ -224,31 +220,21 @@ export function getColumnDefForPivot(
     rowDimensionsForColumnDef.map((d) => {
       return {
         id: d.name,
-        accessorFn: (row) => row[d.name],
+        accessorFn: (row) => {
+          const value = row[d.name];
+          return isNotPivotDataRow(value)
+            ? formatRowDimensionValue(d.name, String(value), config.time)
+            : value;
+        },
         header: nestedLabel,
-        cell: ({ row, getValue }) =>
-          cellComponent(PivotExpandableCell, {
-            value: formatRowDimensionValue(
-              getValue() as string,
-              row.depth,
-              config.time,
-              rowDimensionNames,
-            ),
-            row,
-          }),
       };
     });
 
   const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
     return {
-      accessorKey: m.name,
+      // Using this property to pass the format to the cell
+      cell: m.format,
       header: m.label || m.name,
-      cell: (info) => {
-        const value = m.formatter(info.getValue() as number | null | undefined);
-
-        if (value == null) return cellComponent(PivotMeasureCell, {});
-        return value;
-      },
     };
   });
 
@@ -261,4 +247,14 @@ export function getColumnDefForPivot(
   );
 
   return [...rowDefinitions, ...groupedColDef];
+}
+
+function isNotPivotDataRow(
+  value: unknown,
+): value is string | number | undefined {
+  return (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    value === undefined
+  );
 }
