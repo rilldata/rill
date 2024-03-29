@@ -12,10 +12,12 @@ import (
 )
 
 type ColumnNullCount struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Result     float64
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         float64
 }
 
 var _ runtime.Query = &ColumnNullCount{}
@@ -59,7 +61,7 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	nullCountSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL",
-		safeName(q.TableName),
+		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
 		safeName(q.ColumnName),
 	)
 

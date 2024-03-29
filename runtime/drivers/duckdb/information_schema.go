@@ -114,11 +114,13 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 
 		t := &drivers.Table{
-			Database:       database,
-			DatabaseSchema: schema,
-			Name:           name,
-			View:           tableType == "VIEW",
-			Schema:         &runtimev1.StructType{},
+			Database:                database,
+			DatabaseSchema:          schema,
+			Name:                    name,
+			View:                    tableType == "VIEW",
+			Schema:                  &runtimev1.StructType{},
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: true,
 		}
 
 		// should NEVER happen, but just to be safe

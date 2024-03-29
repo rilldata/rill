@@ -2220,7 +2220,7 @@ func (m *TableInfo) validate(all bool) error {
 
 	// no validation rules for Database
 
-	// no validation rules for DbSchema
+	// no validation rules for DatabaseSchema
 
 	// no validation rules for Name
 
@@ -2331,7 +2331,7 @@ func (m *OLAPGetTableRequest) validate(all bool) error {
 
 	// no validation rules for Database
 
-	// no validation rules for DbSchema
+	// no validation rules for DatabaseSchema
 
 	// no validation rules for Table
 

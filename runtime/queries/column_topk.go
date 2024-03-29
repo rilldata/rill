@@ -12,12 +12,14 @@ import (
 )
 
 type ColumnTopK struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Agg        string
-	K          int
-	Result     *runtimev1.TopK
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Agg            string
+	K              int
+	Result         *runtimev1.TopK
 }
 
 var _ runtime.Query = &ColumnTopK{}
@@ -66,7 +68,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	qry := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
 		safeName(q.ColumnName),
 		q.Agg,
-		safeName(q.TableName),
+		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
 		safeName(q.ColumnName),
 		q.K,
 	)

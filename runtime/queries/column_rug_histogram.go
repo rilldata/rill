@@ -11,10 +11,12 @@ import (
 )
 
 type ColumnRugHistogram struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Result     []*runtimev1.NumericOutliers_Outlier
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         []*runtimev1.NumericOutliers_Outlier
 }
 
 var _ runtime.Query = &ColumnRugHistogram{}
@@ -62,7 +64,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
 	}
@@ -132,7 +134,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 `,
 		selectColumn,
 		sanitizedColumnName,
-		safeName(q.TableName),
+		fullTableName(q.Database, q.DatabaseSchema, q.TableName),
 		outlierPseudoBucketSize,
 		*min,
 		*max,

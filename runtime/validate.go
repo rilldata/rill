@@ -61,7 +61,7 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 	res := &ValidateMetricsViewResult{}
 
 	// Check underlying table exists
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DbSchema, mv.Table)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))

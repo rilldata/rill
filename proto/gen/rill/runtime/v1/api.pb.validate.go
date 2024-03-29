@@ -4200,7 +4200,7 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for Database
 
-	// no validation rules for DbSchema
+	// no validation rules for DatabaseSchema
 
 	// no validation rules for Table
 

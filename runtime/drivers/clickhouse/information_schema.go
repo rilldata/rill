@@ -3,12 +3,14 @@ package clickhouse
 import (
 	"context"
 	"errors"
-	"strings"
+	"slices"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
+
+var ignoreDatabases = []string{"INFORMATION_SCHEMA", "information_schema", "system"}
 
 type informationSchema struct {
 	c *connection
@@ -26,16 +28,32 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	defer func() { _ = release() }()
 
 	var databases []string
-	dbs, ok := i.c.config["databases"].(string)
-	if ok {
-		databases = strings.Split(dbs, ",")
-	} else {
-		row := conn.QueryRowxContext(ctx, "SELECT currentDatabase()")
-		var db string
-		if err := row.Scan(&db); err != nil {
+	var defaultDatabase string
+
+	row := conn.QueryRowxContext(ctx, "SELECT currentDatabase()")
+	if err := row.Scan(&defaultDatabase); err != nil {
+		return nil, err
+	}
+
+	if i.c.config.ScanAllDatabases {
+		rows, err := conn.QueryxContext(ctx, "SHOW DATABASES")
+		if err != nil {
 			return nil, err
 		}
-		databases = append(databases, db)
+		var db string
+		for rows.Next() {
+			if err := rows.Scan(&db); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			if slices.Contains(ignoreDatabases, db) {
+				continue
+			}
+			databases = append(databases, db)
+		}
+		rows.Close()
+	} else {
+		databases = append(databases, defaultDatabase)
 	}
 
 	var res []*drivers.Table
@@ -59,7 +77,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			return nil, err
 		}
 
-		tables, err := i.scanTables(rows)
+		tables, err := i.scanTables(rows, database == defaultDatabase)
 		if err != nil {
 			rows.Close()
 			return nil, err
@@ -72,11 +90,18 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
 	var q string
 	var args []any
 	// table_catalog and table_schema both means the name of the database in which the table is located in clickhouse.
 	// we use either db or schema arg to set table_schema
-	if db == "" && schema == "" {
+	var isDefaultDatabase bool
+	if db == "" {
 		q = `
 		SELECT
 			T.table_catalog AS DATABASE,
@@ -91,6 +116,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 		args = append(args, name)
+		isDefaultDatabase = true
 	} else {
 		q = `
 		SELECT
@@ -105,18 +131,16 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		WHERE T.table_schema = ? AND T.table_name = ?
 		ORDER BY DATABASE, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
-		if db == "" {
-			args = append(args, schema, name)
-		} else {
-			args = append(args, db, name)
-		}
-	}
+		args = append(args, db, name)
 
-	conn, release, err := i.c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
+		// get current database
+		row := conn.QueryRowContext(ctx, "SELECT currentDatabase()")
+		var currentDatabase string
+		if err := row.Scan(&currentDatabase); err != nil {
+			return nil, err
+		}
+		isDefaultDatabase = db == currentDatabase
 	}
-	defer func() { _ = release() }()
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
@@ -124,7 +148,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 	defer rows.Close()
 
-	tables, err := i.scanTables(rows)
+	tables, err := i.scanTables(rows, isDefaultDatabase)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +160,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
-func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
+func (i informationSchema) scanTables(rows *sqlx.Rows, isDefaultDatabase bool) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
 	for rows.Next() {
@@ -162,10 +186,11 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database: database,
-				Name:     name,
-				View:     tableType == "VIEW",
-				Schema:   &runtimev1.StructType{},
+				Database:          database,
+				Name:              name,
+				View:              tableType == "VIEW",
+				Schema:            &runtimev1.StructType{},
+				IsDefaultDatabase: isDefaultDatabase,
 			}
 			res = append(res, t)
 		}

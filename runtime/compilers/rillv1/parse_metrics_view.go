@@ -22,7 +22,7 @@ type MetricsViewYAML struct {
 	Description        string           `yaml:"description"`
 	Model              string           `yaml:"model"`
 	Database           string           `yaml:"database"`
-	DBSchema           string           `yaml:"db_schema"`
+	DatabaseSchema     string           `yaml:"database_schema"`
 	Table              string           `yaml:"table"`
 	TimeDimension      string           `yaml:"timeseries"`
 	Watermark          string           `yaml:"watermark"`
@@ -418,7 +418,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Connector = node.Connector
 	spec.Table = table
-	spec.DbSchema = tmp.DBSchema
+	spec.DatabaseSchema = tmp.DatabaseSchema
 	spec.Database = tmp.Database
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description

@@ -433,7 +433,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -588,7 +588,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	var selectCols []string
 	var comparisonSelectCols []string
-	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 	comparisonSelectCols = append(comparisonSelectCols, dimSel)
 

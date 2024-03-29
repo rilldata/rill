@@ -65,7 +65,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	defer release()
 
 	// Get table info
-	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DbSchema, req.Table)
+	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
 	}
@@ -197,16 +197,20 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			doc.Connector = connector
 		}
 		doc.Table = tblName
-		doc.Database = tbl.Database
-		doc.Schema = tbl.DatabaseSchema
+		if tbl.Database != "" && !tbl.IsDefaultDatabase {
+			doc.Database = tbl.Database
+		}
+		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
+			doc.DatabaseSchema = tbl.DatabaseSchema
+		}
 	}
 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
 	spec := &runtimev1.MetricsViewSpec{
-		Connector: connector,
-		Database:  tbl.Database,
-		DbSchema:  tbl.DatabaseSchema,
-		Table:     tblName,
+		Connector:      connector,
+		Database:       tbl.Database,
+		DatabaseSchema: tbl.DatabaseSchema,
+		Table:          tblName,
 	}
 	for _, measure := range doc.Measures {
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
@@ -316,7 +320,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefau
 			doc.Connector = connector
 		}
 		doc.Database = tbl.Database
-		doc.Schema = tbl.DatabaseSchema
+		doc.DatabaseSchema = tbl.DatabaseSchema
 		doc.Table = tbl.Name
 	}
 
@@ -380,7 +384,7 @@ type metricsViewYAML struct {
 	Title              string                      `yaml:"title,omitempty"`
 	Connector          string                      `yaml:"connector,omitempty"`
 	Database           string                      `yaml:"database,omitempty"`
-	Schema             string                      `yaml:"db_schema,omitempty"`
+	DatabaseSchema     string                      `yaml:"database_schema,omitempty"`
 	Table              string                      `yaml:"table,omitempty"`
 	Model              string                      `yaml:"model,omitempty"`
 	TimeDimension      string                      `yaml:"timeseries,omitempty"`

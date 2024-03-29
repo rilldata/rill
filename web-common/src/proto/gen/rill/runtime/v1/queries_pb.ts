@@ -2731,6 +2731,16 @@ export class ColumnRollupIntervalRequest extends Message<ColumnRollupIntervalReq
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -2759,6 +2769,8 @@ export class ColumnRollupIntervalRequest extends Message<ColumnRollupIntervalReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -2851,6 +2863,16 @@ export class ColumnTopKRequest extends Message<ColumnTopKRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 8;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 9;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -2893,6 +2915,8 @@ export class ColumnTopKRequest extends Message<ColumnTopKRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "agg", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3105,6 +3129,16 @@ export class ColumnNullCountRequest extends Message<ColumnNullCountRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -3133,6 +3167,8 @@ export class ColumnNullCountRequest extends Message<ColumnNullCountRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -3209,6 +3245,16 @@ export class ColumnDescriptiveStatisticsRequest extends Message<ColumnDescriptiv
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -3237,6 +3283,8 @@ export class ColumnDescriptiveStatisticsRequest extends Message<ColumnDescriptiv
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -3643,6 +3691,16 @@ export class ColumnTimeGrainRequest extends Message<ColumnTimeGrainRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -3671,6 +3729,8 @@ export class ColumnTimeGrainRequest extends Message<ColumnTimeGrainRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -3745,6 +3805,16 @@ export class ColumnNumericHistogramRequest extends Message<ColumnNumericHistogra
   connector = "";
 
   /**
+   * @generated from field: string database = 7;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 8;
+   */
+  databaseSchema = "";
+
+  /**
    * @generated from field: string table_name = 2;
    */
   tableName = "";
@@ -3774,6 +3844,8 @@ export class ColumnNumericHistogramRequest extends Message<ColumnNumericHistogra
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "histogram_method", kind: "enum", T: proto3.getEnumType(HistogramMethod) },
@@ -3849,6 +3921,16 @@ export class ColumnRugHistogramRequest extends Message<ColumnRugHistogramRequest
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * @generated from field: string table_name = 2;
    */
   tableName = "";
@@ -3873,6 +3955,8 @@ export class ColumnRugHistogramRequest extends Message<ColumnRugHistogramRequest
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -3947,6 +4031,16 @@ export class ColumnTimeRangeRequest extends Message<ColumnTimeRangeRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * @generated from field: string table_name = 2;
    */
   tableName = "";
@@ -3971,6 +4065,8 @@ export class ColumnTimeRangeRequest extends Message<ColumnTimeRangeRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -4151,6 +4247,16 @@ export class ColumnCardinalityRequest extends Message<ColumnCardinalityRequest> 
   connector = "";
 
   /**
+   * @generated from field: string database = 6;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 7;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -4179,6 +4285,8 @@ export class ColumnCardinalityRequest extends Message<ColumnCardinalityRequest> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -4255,6 +4363,16 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 12;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 13;
+   */
+  databaseSchema = "";
+
+  /**
    * Required
    *
    * @generated from field: string table_name = 2;
@@ -4318,6 +4436,8 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measures", kind: "message", T: ColumnTimeSeriesRequest_BasicMeasure, repeated: true },
     { no: 4, name: "timestamp_column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4624,9 +4744,9 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
   database = "";
 
   /**
-   * @generated from field: string db_schema = 6;
+   * @generated from field: string database_schema = 6;
    */
-  dbSchema = "";
+  databaseSchema = "";
 
   /**
    * Required
@@ -4651,7 +4771,7 @@ export class TableCardinalityRequest extends Message<TableCardinalityRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -4732,9 +4852,9 @@ export class TableColumnsRequest extends Message<TableColumnsRequest> {
   database = "";
 
   /**
-   * @generated from field: string db_schema = 6;
+   * @generated from field: string database_schema = 6;
    */
-  dbSchema = "";
+  databaseSchema = "";
 
   /**
    * @generated from field: string table_name = 2;
@@ -4757,7 +4877,7 @@ export class TableColumnsRequest extends Message<TableColumnsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -4897,9 +5017,9 @@ export class TableRowsRequest extends Message<TableRowsRequest> {
   database = "";
 
   /**
-   * @generated from field: string db_schema = 7;
+   * @generated from field: string database_schema = 7;
    */
-  dbSchema = "";
+  databaseSchema = "";
 
   /**
    * @generated from field: string table_name = 2;
@@ -4927,7 +5047,7 @@ export class TableRowsRequest extends Message<TableRowsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

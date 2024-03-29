@@ -182,7 +182,7 @@ message MetricsViewSpec {
   // Name of the database where table is located (optional)
   string database = 21;
   // Name of the database schema where table is located (optional)
-  string db_schema = 22;
+  string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
   // User friendly label for the dashboard

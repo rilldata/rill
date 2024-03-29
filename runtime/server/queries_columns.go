@@ -39,11 +39,13 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 	}
 
 	q := &queries.ColumnTopK{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
-		Agg:        agg,
-		K:          k,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
+		Agg:            agg,
+		K:              k,
 	}
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -76,9 +78,11 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 	}
 
 	q := &queries.ColumnNullCount{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -107,9 +111,11 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 	}
 
 	q := &queries.ColumnDescriptiveStatistics{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -172,9 +178,11 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 	}
 
 	q := &queries.ColumnTimeGrain{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -202,10 +210,12 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 	}
 
 	q := &queries.ColumnNumericHistogram{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
-		Method:     req.HistogramMethod,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
+		Method:         req.HistogramMethod,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -241,9 +251,11 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 	}
 
 	q := &queries.ColumnRugHistogram{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -276,9 +288,11 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 	}
 
 	q := &queries.ColumnTimeRange{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -305,9 +319,11 @@ func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCar
 	}
 
 	q := &queries.ColumnCardinality{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

@@ -917,9 +917,9 @@ export class TableInfo extends Message<TableInfo> {
   database = "";
 
   /**
-   * @generated from field: string db_schema = 4;
+   * @generated from field: string database_schema = 4;
    */
-  dbSchema = "";
+  databaseSchema = "";
 
   /**
    * @generated from field: string name = 2;
@@ -942,7 +942,7 @@ export class TableInfo extends Message<TableInfo> {
   static readonly typeName = "rill.runtime.v1.TableInfo";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -984,9 +984,9 @@ export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
   database = "";
 
   /**
-   * @generated from field: string db_schema = 5;
+   * @generated from field: string database_schema = 5;
    */
-  dbSchema = "";
+  databaseSchema = "";
 
   /**
    * @generated from field: string table = 3;
@@ -1004,7 +1004,7 @@ export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

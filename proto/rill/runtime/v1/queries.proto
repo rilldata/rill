@@ -662,6 +662,8 @@ message MetricsViewSchemaResponse {
 message ColumnRollupIntervalRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -681,6 +683,8 @@ message ColumnRollupIntervalResponse {
 message ColumnTopKRequest {
   string instance_id = 1;
   string connector = 7;
+  string database = 8;
+  string database_schema = 9;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -715,6 +719,8 @@ message TopK {
 message ColumnNullCountRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -730,6 +736,8 @@ message ColumnNullCountResponse {
 message ColumnDescriptiveStatisticsRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -787,6 +795,8 @@ message NumericOutliers {
 message ColumnTimeGrainRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -801,6 +811,8 @@ message ColumnTimeGrainResponse {
 message ColumnNumericHistogramRequest {
   string instance_id = 1;
   string connector = 6;
+  string database = 7;
+  string database_schema = 8;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
   HistogramMethod histogram_method = 4;
@@ -820,6 +832,8 @@ enum HistogramMethod {
 message ColumnRugHistogramRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
@@ -832,6 +846,8 @@ message ColumnRugHistogramResponse {
 message ColumnTimeRangeRequest {
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
@@ -859,6 +875,8 @@ message ColumnCardinalityRequest {
   // Required
   string instance_id = 1;
   string connector = 5;
+  string database = 6;
+  string database_schema = 7;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Required
@@ -874,6 +892,8 @@ message ColumnCardinalityResponse {
 message ColumnTimeSeriesRequest {
   string instance_id = 1;
   string connector = 11;
+  string database = 12;
+  string database_schema = 13;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   // Optional. Defaults to [count(*)]
@@ -939,7 +959,7 @@ message TableCardinalityRequest {
   string instance_id = 1;
   string connector = 4;
   string database = 5;
-  string db_schema = 6;
+  string database_schema = 6;
   // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
@@ -954,7 +974,7 @@ message TableColumnsRequest {
   string instance_id = 1;
   string connector = 4;
   string database = 5;
-  string db_schema = 6;
+  string database_schema = 6;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
@@ -977,7 +997,7 @@ message TableRowsRequest {
   string instance_id = 1;
   string connector = 5;
   string database = 6;
-  string db_schema = 7;
+  string database_schema = 7;
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 limit = 3 [(validate.rules).int32.gte = 0];
   int32 priority = 4;

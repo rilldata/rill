@@ -936,9 +936,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Name of the database schema where table is located (optional)
    *
-   * @generated from field: string db_schema = 22;
+   * @generated from field: string database_schema = 22;
    */
-  dbSchema = "";
+  databaseSchema = "";
 
   /**
    * Name of the table the metrics view is based on
@@ -1083,7 +1083,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 22, name: "db_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },

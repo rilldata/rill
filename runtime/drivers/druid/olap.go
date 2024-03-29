@@ -245,10 +245,12 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database:       database,
-				DatabaseSchema: schema,
-				Name:           name,
-				Schema:         &runtimev1.StructType{},
+				Database:                database,
+				DatabaseSchema:          schema,
+				Name:                    name,
+				Schema:                  &runtimev1.StructType{},
+				IsDefaultDatabase:       true,
+				IsDefaultDatabaseSchema: true,
 			}
 			res = append(res, t)
 		}

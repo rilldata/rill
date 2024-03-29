@@ -12,10 +12,12 @@ import (
 )
 
 type ColumnTimeGrain struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Result     runtimev1.TimeGrain
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         runtimev1.TimeGrain
 }
 
 var _ runtime.Query = &ColumnTimeGrain{}
@@ -108,7 +110,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		FROM time_grains
 		`,
 			safeName(q.ColumnName),
-			safeName(q.TableName),
+			fullTableName(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
 	case drivers.DialectClickHouse:
@@ -154,7 +156,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		FROM time_grains
 		`,
 			safeName(q.ColumnName),
-			safeName(q.TableName),
+			fullTableName(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
 	default:

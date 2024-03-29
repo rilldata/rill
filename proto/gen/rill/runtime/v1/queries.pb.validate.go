@@ -7938,6 +7938,10 @@ func (m *ColumnRollupIntervalRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnRollupIntervalRequestValidationError{
 			field:  "TableName",
@@ -8231,6 +8235,10 @@ func (m *ColumnTopKRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnTopKRequestValidationError{
@@ -8789,6 +8797,10 @@ func (m *ColumnNullCountRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnNullCountRequestValidationError{
 			field:  "TableName",
@@ -9023,6 +9035,10 @@ func (m *ColumnDescriptiveStatisticsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnDescriptiveStatisticsRequestValidationError{
@@ -9904,6 +9920,10 @@ func (m *ColumnTimeGrainRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnTimeGrainRequestValidationError{
 			field:  "TableName",
@@ -10137,6 +10157,10 @@ func (m *ColumnNumericHistogramRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnNumericHistogramRequestValidationError{
@@ -10403,6 +10427,10 @@ func (m *ColumnRugHistogramRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnRugHistogramRequestValidationError{
 			field:  "TableName",
@@ -10663,6 +10691,10 @@ func (m *ColumnTimeRangeRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnTimeRangeRequestValidationError{
@@ -11112,6 +11144,10 @@ func (m *ColumnCardinalityRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnCardinalityRequestValidationError{
 			field:  "TableName",
@@ -11372,6 +11408,10 @@ func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := ColumnTimeSeriesRequestValidationError{
@@ -12237,7 +12277,7 @@ func (m *TableCardinalityRequest) validate(all bool) error {
 
 	// no validation rules for Database
 
-	// no validation rules for DbSchema
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := TableCardinalityRequestValidationError{
@@ -12464,7 +12504,7 @@ func (m *TableColumnsRequest) validate(all bool) error {
 
 	// no validation rules for Database
 
-	// no validation rules for DbSchema
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := TableColumnsRequestValidationError{
@@ -12831,7 +12871,7 @@ func (m *TableRowsRequest) validate(all bool) error {
 
 	// no validation rules for Database
 
-	// no validation rules for DbSchema
+	// no validation rules for DatabaseSchema
 
 	if utf8.RuneCountInString(m.GetTableName()) < 1 {
 		err := TableRowsRequestValidationError{

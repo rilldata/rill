@@ -35,6 +35,8 @@ type ColumnTimeseriesResult struct {
 
 type ColumnTimeseries struct {
 	Connector           string                                            `json:"connector"`
+	Database            string                                            `json:"database"`
+	DatabaseSchema      string                                            `json:"database_schema"`
 	TableName           string                                            `json:"table_name"`
 	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                            `json:"timestamp_column_name"`
@@ -277,7 +279,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			series AS (
 				SELECT
 					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-				FROM ` + safeName(q.TableName) + ` ` + filter + `
+				FROM ` + fullTableName(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
@@ -326,7 +328,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			series AS (
 			SELECT
 				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-			FROM ` + safeName(q.TableName) + ` ` + filter + `
+			FROM ` + fullTableName(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
@@ -441,7 +443,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 ) ([]*runtimev1.TimeSeriesValue, error) {
 	safeTimestampColumnName := safeName(timestampColumnName)
 
-	rowCount, err := q.resolveRowCount(ctx, tableName, olap, priority)
+	rowCount, err := q.resolveRowCount(ctx, olap, priority)
 	if err != nil {
 		return nil, err
 	}
@@ -578,9 +580,9 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	return results, nil
 }
 
-func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, tableName string, olap drivers.OLAPStore, priority int) (int64, error) {
+func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLAPStore, priority int) (int64, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", safeName(tableName)),
+		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", fullTableName(q.Database, q.DatabaseSchema, q.TableName)),
 		Priority: priority,
 	})
 	if err != nil {

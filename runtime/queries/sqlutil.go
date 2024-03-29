@@ -135,7 +135,7 @@ func addInterval(t time.Time, timeGrain runtimev1.TimeGrain) time.Time {
 }
 
 func fullMetricsViewTableName(mv *runtimev1.MetricsViewSpec) string {
-	return fullTableName(mv.Database, mv.DbSchema, mv.Table)
+	return fullTableName(mv.Database, mv.DatabaseSchema, mv.Table)
 }
 
 func fullTableName(db, schema, table string) string {

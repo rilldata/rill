@@ -11,10 +11,12 @@ import (
 )
 
 type ColumnDescriptiveStatistics struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Result     *runtimev1.NumericStatistics
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         *runtimev1.NumericStatistics
 }
 
 var _ runtime.Query = &ColumnDescriptiveStatistics{}
@@ -73,7 +75,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			sanitizedColumnName,
 			sanitizedColumnName,
-			safeName(q.TableName))
+			fullTableName(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
 		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
 			"min(%s)::DOUBLE as min, "+
@@ -91,7 +93,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			sanitizedColumnName,
 			sanitizedColumnName,
-			safeName(q.TableName))
+			fullTableName(q.Database, q.DatabaseSchema, q.TableName))
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
