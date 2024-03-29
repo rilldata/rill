@@ -27,7 +27,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 
 	ctx := context.Background()
 	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		testcontainers.WithImage("clickhouse/clickhouse-server:22.7"),
 		clickhouse.WithUsername("clickhouse"),
 		clickhouse.WithPassword("clickhouse"),
 		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
