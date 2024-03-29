@@ -140,7 +140,7 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", m.Expression, fullyQualifiedTableName(t)),
+		Query:  fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", m.Expression, olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	return err
@@ -151,18 +151,4 @@ func safeSQLName(name string) string {
 		return name
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
-}
-
-func fullyQualifiedTableName(t *drivers.Table) string {
-	var sb strings.Builder
-	if t.Database != "" {
-		sb.WriteString(safeSQLName(t.Database))
-		sb.WriteString(".")
-	}
-	if t.DatabaseSchema != "" {
-		sb.WriteString(safeSQLName(t.DatabaseSchema))
-		sb.WriteString(".")
-	}
-	sb.WriteString(safeSQLName(t.Name))
-	return sb.String()
 }
