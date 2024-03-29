@@ -3,9 +3,6 @@
   import { flip } from "svelte/animate";
   import { writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import WarningIcon from "../../components/icons/WarningIcon.svelte";
-  import Tooltip from "../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
@@ -16,6 +13,7 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import TableMenuItems from "./TableMenuItems.svelte";
+  import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
   import { useTables } from "./selectors";
 
   let showTables = true;
@@ -64,14 +62,12 @@
                   `/table/${fullyQualifiedTableName}`}
               >
                 <svelte:fragment slot="icon">
-                  {#if table.hasUnsupportedDataTypes}
-                    <Tooltip distance={8} alignment="start">
-                      <WarningIcon />
-                      <TooltipContent slot="tooltip-content">
-                        This table contains unsupported data types.<br />
-                        The affected columns will not be available for querying.
-                      </TooltipContent>
-                    </Tooltip>
+                  {#if connectorInstanceId && olapConnector && table.name && table.hasUnsupportedDataTypes}
+                    <UnsupportedTypesIndicator
+                      instanceId={connectorInstanceId}
+                      connector={olapConnector}
+                      tableName={table.name}
+                    />
                   {/if}
                 </svelte:fragment>
                 <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
