@@ -29,7 +29,7 @@ func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
 
 	ctx := context.Background()
 	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:22.7"),
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
 		clickhouse.WithUsername("clickhouse"),
 		clickhouse.WithPassword("clickhouse"),
 		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
