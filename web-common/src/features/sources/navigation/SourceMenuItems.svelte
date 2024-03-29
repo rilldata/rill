@@ -5,10 +5,7 @@
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -79,7 +76,7 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  const handleDeleteSource = async (tableName: string) => {
+  const handleDeleteSource = async () => {
     await deleteFileArtifact(
       runtimeInstanceId,
       filePath,
@@ -119,7 +116,7 @@
       return;
     }
     try {
-      await refreshSource(connector, tableName, runtimeInstanceId);
+      await refreshSource(connector, tableName, sourceName, runtimeInstanceId);
     } catch (err) {
       // no-op
     }
@@ -209,7 +206,7 @@
 </NavigationMenuItem>
 
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<NavigationMenuItem on:click={() => handleDeleteSource(sourceName)}>
+<NavigationMenuItem on:click={handleDeleteSource}>
   <Cancel slot="icon" />
   Delete
 </NavigationMenuItem>

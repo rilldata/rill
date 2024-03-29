@@ -8,7 +8,6 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
