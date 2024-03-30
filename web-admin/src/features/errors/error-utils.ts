@@ -15,9 +15,9 @@ import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
-  getAdminServiceGetProjectQueryKey,
 } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
+import { getProjectRuntimeQueryKey } from "../projects/selectors";
 import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
@@ -59,12 +59,11 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       ) {
         return;
       }
+
       // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
       if ((error.response.data as RpcStatus).message === "driver: not found") {
         const [, org, proj] = get(page).url.pathname.split("/");
-        void queryClient.resetQueries(
-          getAdminServiceGetProjectQueryKey(org, proj),
-        );
+        void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
         return;
       }
     }
