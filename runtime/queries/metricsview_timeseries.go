@@ -359,7 +359,7 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(mv *runtimev1.MetricsViewSpec, tsA
 		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
-		drivers.DialectDruid.EscapeMetricsViewTable(mv),
+		escapeMetricsViewTable(drivers.DialectDruid, mv),
 		whereClause,
 		havingClause,
 	)
@@ -395,7 +395,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
 			strings.Join(selectCols, ", "), // 4
-			drivers.DialectClickHouse.EscapeMetricsViewTable(mv), // 5
+			escapeMetricsViewTable(drivers.DialectClickHouse, mv), // 5
 			whereClause,  // 6
 			timezone,     // 7
 			havingClause, // 8
@@ -415,7 +415,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
 			strings.Join(selectCols, ", "), // 4
-			drivers.DialectClickHouse.EscapeMetricsViewTable(mv), // 5
+			escapeMetricsViewTable(drivers.DialectClickHouse, mv), // 5
 			whereClause,  // 6
 			timezone,     // 7
 			shift,        // 8
@@ -457,7 +457,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				safeName(mv.TimeDimension),     // 2
 				tsAlias,                        // 3
 				strings.Join(selectCols, ", "), // 4
-				drivers.DialectDuckDB.EscapeMetricsViewTable(mv), // 5
+				escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
 				whereClause,  // 6
 				timezone,     // 7
 				havingClause, // 8
@@ -477,7 +477,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				safeName(mv.TimeDimension),     // 2
 				tsAlias,                        // 3
 				strings.Join(selectCols, ", "), // 4
-				drivers.DialectDuckDB.EscapeMetricsViewTable(mv), // 5
+				escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
 				whereClause,  // 6
 				timezone,     // 7
 				havingClause, // 8
@@ -498,7 +498,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
 			strings.Join(selectCols, ", "), // 4
-			drivers.DialectDuckDB.EscapeMetricsViewTable(mv), // 5
+			escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
 			whereClause,  // 6
 			timezone,     // 7
 			shift,        // 8

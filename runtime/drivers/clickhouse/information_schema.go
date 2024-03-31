@@ -24,7 +24,6 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	}
 	defer func() { _ = release() }()
 
-	var res []*drivers.Table
 	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
@@ -54,8 +53,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		return nil, err
 	}
 
-	res = append(res, tables...)
-	return res, nil
+	return tables, nil
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {

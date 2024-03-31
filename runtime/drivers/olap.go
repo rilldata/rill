@@ -139,10 +139,6 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
 }
 
-func (d Dialect) EscapeMetricsViewTable(mv *runtimev1.MetricsViewSpec) string {
-	return d.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
-}
-
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	var sb strings.Builder
