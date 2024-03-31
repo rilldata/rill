@@ -417,9 +417,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec := r.MetricsViewSpec
 
 	spec.Connector = node.Connector
-	spec.Table = table
-	spec.DatabaseSchema = tmp.DatabaseSchema
 	spec.Database = tmp.Database
+	spec.DatabaseSchema = tmp.DatabaseSchema
+	spec.Table = table
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension

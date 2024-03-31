@@ -133,10 +133,10 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		if t == nil {
 			t = &drivers.Table{
 				DatabaseSchema:          databaseSchema,
+				IsDefaultDatabaseSchema: isDefaultSchema,
 				Name:                    name,
 				View:                    tableType == "VIEW",
 				Schema:                  &runtimev1.StructType{},
-				IsDefaultDatabaseSchema: isDefaultSchema,
 			}
 			res = append(res, t)
 		}
