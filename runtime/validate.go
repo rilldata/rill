@@ -173,7 +173,7 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 		DryRun: true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to validate dims and metrics: %s", err)
+		return fmt.Errorf("failed to validate dims and metrics: %w", err)
 	}
 	return nil
 }
