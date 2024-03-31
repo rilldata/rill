@@ -159,7 +159,8 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 	if len(dimExprs) == 0 && len(metricExprs) == 0 {
 		// No metric and dimension, nothing to check
 		return nil
-	} else if len(dimExprs) == 0 {
+	}
+	if len(dimExprs) == 0 {
 		// Only metrics
 		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), safeSQLName(t.Name))
 	} else if len(metricExprs) == 0 {
