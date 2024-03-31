@@ -50,6 +50,7 @@ export function dimensionTableSortedQueryBody(
       sortingSelectors.sortedAscending(dashData),
       filters,
       resolvedMeasureFilter.filter,
+      250
     );
   };
 }
@@ -102,6 +103,7 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortedAscending(dashData),
       getFiltersForOtherDimensions(dashData)(dimensionName),
       resolvedMeasureFilter.filter,
+      8
     );
 }
 
