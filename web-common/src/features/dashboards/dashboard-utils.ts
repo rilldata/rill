@@ -38,6 +38,7 @@ export function prepareSortedQueryBody(
   sortAscending: boolean,
   whereFilterForDimension: V1Expression,
   havingFilterForDimension: V1Expression | undefined,
+  limit: number,
 ): QueryServiceMetricsViewComparisonBody {
   let comparisonTimeRange = {
     start: timeControls.comparisonTimeStart,
@@ -93,7 +94,7 @@ export function prepareSortedQueryBody(
       whereFilterForDimension,
       havingFilterForDimension,
     ),
-    limit: "250",
+    limit: limit.toString(),
     offset: "0",
   };
 }
