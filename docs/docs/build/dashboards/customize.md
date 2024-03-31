@@ -37,8 +37,8 @@ One of the more important configurations, available time ranges allow you to cha
   - PT1H
   - P7D
   - P4W
-  - rill-TD // Today
-  - rill-WTD // Week-To-date
+  - rill-TD ## Today
+  - rill-WTD ## Week-To-date
 ```
 
 **`available_time_zones`**

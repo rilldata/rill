@@ -1,5 +1,6 @@
 import { Readable, derived } from "svelte/store";
 import {
+  V1TableInfo,
   createConnectorServiceOLAPListTables,
   createRuntimeServiceGetInstance,
 } from "../../runtime-client";
@@ -20,11 +21,11 @@ export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
   });
 }
 
-export function useTableNames(
+export function useTables(
   runtimeInstanceId: string,
   connectorInstanceId: string | undefined,
   olapConnector: string | undefined,
-): Readable<string[]> {
+): Readable<V1TableInfo[]> {
   return derived(
     [
       useFilteredResourceNames(runtimeInstanceId, ResourceKind.Source),
@@ -60,10 +61,7 @@ export function useTableNames(
           !modelNames.includes(table.name as string),
       );
 
-      // Return the fully qualified table names
-      return (
-        filteredTables?.map((table) => table.database + "." + table.name) || []
-      );
+      return filteredTables;
     },
   );
 }

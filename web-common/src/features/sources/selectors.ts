@@ -26,7 +26,9 @@ export type SourceFromYaml = {
 };
 
 export function useSources(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Source);
+  return useFilteredResources(instanceId, ResourceKind.Source, (data) =>
+    data.resources?.filter((r) => !!r.source?.state?.table),
+  );
 }
 
 export function useSourceNames(instanceId: string) {

@@ -15,6 +15,7 @@
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
 
   export let metricsDefName;
+  export let showInspectorToggle = true;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -55,6 +56,12 @@
   $: titleInput = metricsDefName;
 </script>
 
-<WorkspaceHeader {...{ titleInput, onChangeCallback }}>
+<WorkspaceHeader
+  {...{
+    titleInput,
+    onChangeCallback,
+    showInspectorToggle,
+  }}
+>
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>
