@@ -148,32 +148,39 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 	var dimExprs []string
 	var groupIndexes []string
 	for idx, d := range mv.Dimensions {
-		if d.Expression != "" {
-			dimExprs = append(dimExprs, d.Expression) // note the = instead of :=
-		} else {
-			dimExprs = append(dimExprs, "\""+d.Column+"\"")
-		}
+		dimExprs = append(dimExprs, extractDimExpr(d))
 		groupIndexes = append(groupIndexes, strconv.Itoa(idx+1))
 	}
-
 	var metricExprs []string
 	for _, m := range mv.Measures {
 		metricExprs = append(metricExprs, m.Expression) // note the = instead of :=
 	}
-
+	var query string
+	if len(dimExprs) == 0 && len(metricExprs) == 0 {
+		// No metric and dimension, nothing to check
+		return nil
+	} else if len(dimExprs) == 0 {
+		// Only metrics
+		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), safeSQLName(t.Name))
+	} else if len(metricExprs) == 0 {
+		// No metrics
+		query = fmt.Sprintf("SELECT (%s) FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+	} else {
+		query = fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+	}
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), safeSQLName(t.Name), strings.Join(groupIndexes, ",")),
+		Query:  query,
 		DryRun: true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to quick validate: %s", err)
+		return fmt.Errorf("failed to validate dims and metrics: %s", err)
 	}
 	return nil
 }
 
 func validateDimensionExpr(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", extractDimExpr(d), safeSQLName(t.Name)),
 		DryRun: true,
 	})
 	if err != nil {
@@ -195,4 +202,12 @@ func safeSQLName(name string) string {
 		return name
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+}
+
+func extractDimExpr(d *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if d.Column != "" {
+		return "\"" + d.Column + "\""
+	} else {
+		return d.Expression
+	}
 }
