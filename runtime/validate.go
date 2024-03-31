@@ -208,7 +208,6 @@ func safeSQLName(name string) string {
 func extractDimExpr(d *runtimev1.MetricsViewSpec_DimensionV2) string {
 	if d.Column != "" {
 		return "\"" + d.Column + "\""
-	} else {
-		return d.Expression
 	}
+	return d.Expression
 }
