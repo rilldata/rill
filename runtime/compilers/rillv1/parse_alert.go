@@ -45,8 +45,8 @@ type AlertYAML struct {
 			Recipients []string `yaml:"recipients"`
 		} `yaml:"email"`
 		Slack struct {
-			Channels []string `yaml:"channels"`
 			Users    []string `yaml:"users"`
+			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
 	} `yaml:"notify"`

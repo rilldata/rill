@@ -704,9 +704,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			switch notifier.Connector {
 			// TODO: transform email client to notifier
 			case "email":
-				recipients := notifier.Properties.AsMap()["recipients"].([]any)
+				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
 				for _, recipient := range recipients {
-					msg.ToEmail = recipient.(string)
+					msg.ToEmail = recipient
 					err := r.C.Runtime.Email.SendAlertStatus(msg)
 					if err != nil {
 						notificationErr = fmt.Errorf("failed to send email to %q: %w", recipient, err)

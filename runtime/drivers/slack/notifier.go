@@ -131,6 +131,10 @@ func (n *notifier) sendAlertFail(data *AlertFailData) error {
 }
 
 func (n *notifier) sendTextToChannels(txt string) error {
+	if len(n.channels) == 0 {
+		return nil
+	}
+
 	api, err := n.api()
 	if err != nil {
 		return err
@@ -145,6 +149,10 @@ func (n *notifier) sendTextToChannels(txt string) error {
 }
 
 func (n *notifier) sendTextToUsers(txt string) error {
+	if len(n.users) == 0 {
+		return nil
+	}
+
 	api, err := n.api()
 	if err != nil {
 		return err
