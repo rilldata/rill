@@ -67,7 +67,6 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Provisioner:          targetProject.Provisioner,
 			Annotations:          targetProject.Annotations,
 		})
-
 		if err != nil {
 			w.logger.Error("failed to autoscale:", zap.String("project_id", rec.ProjectID), zap.Error(err))
 			continue
