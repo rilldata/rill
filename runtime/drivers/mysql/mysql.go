@@ -148,6 +148,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier() (drivers.Notifier, bool) {
+func (c *connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
 	return nil, false
 }

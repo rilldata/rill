@@ -256,12 +256,8 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
-  ReportNotifySpec notify_spec = 13;
-  map<string, string> annotations = 14;
-}
-
-message ReportNotifySpec {
-  repeated NotifierSpec notifiers = 1;
+  repeated Notifier notifiers = 9;
+  map<string, string> annotations = 10;
 }
 
 message ReportState {
@@ -300,34 +296,18 @@ message AlertSpec {
     string query_for_user_email = 12;
     google.protobuf.Struct query_for_attributes = 13;
   }
-  AlertNotifySpec notify_spec = 14;
-  map<string, string> annotations = 15;
+  bool notify_on_recover = 14;
+  bool notify_on_fail = 15;
+  bool notify_on_error = 16;
+  bool renotify = 17;
+  uint32 renotify_after_seconds = 18;
+  repeated Notifier notifiers = 19;
+  map<string, string> annotations = 20;
 }
 
-message AlertNotifySpec {
-  bool notify_on_recover = 1;
-  bool notify_on_fail = 2;
-  bool notify_on_error = 3;
-  bool renotify = 4;
-  uint32 renotify_after_seconds = 5;
-  repeated NotifierSpec notifiers = 6;
-}
-
-message NotifierSpec {
-  oneof spec {
-    EmailNotifierSpec email = 1;
-    SlackNotifierSpec slack = 2;
-  }
-}
-
-message EmailNotifierSpec {
-  repeated string recipients = 1;
-}
-
-message SlackNotifierSpec {
-  repeated string emails = 1;
-  repeated string channels = 2;
-  repeated string webhooks = 3;
+message Notifier {
+  string connector = 1;
+  google.protobuf.Struct properties = 2;
 }
 
 message AlertState {

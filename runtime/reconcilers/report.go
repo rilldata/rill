@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server"
 	"go.opentelemetry.io/otel/attribute"
@@ -301,10 +302,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	exportURL.RawQuery = exportURLQry.Encode()
 
 	sent := false
-	for _, notifier := range rep.Spec.NotifySpec.Notifiers {
-		switch notifier.Spec.(type) {
-		case *runtimev1.NotifierSpec_Email:
-			for _, recipient := range notifier.GetEmail().Recipients {
+	for _, notifier := range rep.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+			for _, recipient := range recipients {
 				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 					ToEmail:        recipient,
 					ToName:         "",
@@ -322,18 +324,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 		default:
 			err := func() (outErr error) {
-				connectorName, err := drivers.NotifierConnectorName(notifier.Spec)
-				if err != nil {
-					return err
-				}
-				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)
+				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
 				if err != nil {
 					return err
 				}
 				defer release()
-				n, ok := conn.AsNotifier()
+				n, ok := conn.AsNotifier(notifier.Properties.AsMap())
 				if !ok {
-					return fmt.Errorf("%s connector not available", connectorName)
+					return fmt.Errorf("%s connector not available", notifier.Connector)
 				}
 				msg := &drivers.ScheduledReport{
 					Title:          rep.Spec.Title,
@@ -350,15 +348,15 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					if r.C.Activity != nil {
 						r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
 							attribute.Bool("failed", outErr != nil),
-							attribute.String("notifier", connectorName),
+							attribute.String("connector", notifier.Connector),
 							attribute.String("notification_type", "scheduled_report"),
 						)
 					}
 				}()
-				err = n.SendScheduledReport(msg, notifier.Spec)
+				err = n.SendScheduledReport(msg)
 				sent = true
 				if err != nil {
-					return fmt.Errorf("failed to send %s notification: %w", connectorName, err)
+					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
 				}
 				return nil
 			}()

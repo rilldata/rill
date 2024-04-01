@@ -557,6 +557,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -584,12 +590,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -679,6 +679,11 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -692,11 +697,6 @@ export interface V1SourceSpec {
   trigger?: boolean;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
@@ -705,12 +705,6 @@ export interface V1Source {
   properties?: V1SourceProperties;
   schema?: V1StructType;
   timeoutSeconds?: number;
-}
-
-export interface V1SlackNotifierSpec {
-  emails?: string[];
-  channels?: string[];
-  webhooks?: string[];
 }
 
 export interface V1Schedule {
@@ -818,10 +812,6 @@ export interface V1ReportState {
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
-export interface V1ReportNotifySpec {
-  notifiers?: V1NotifierSpec[];
-}
-
 export interface V1ReportSpec {
   trigger?: boolean;
   title?: string;
@@ -831,7 +821,7 @@ export interface V1ReportSpec {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  notifySpec?: V1ReportNotifySpec;
+  notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
 }
 
@@ -884,16 +874,6 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RefreshAndReconcileRequest {
   instanceId?: string;
   path?: string;
@@ -912,16 +892,6 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
 
 /**
  * - CODE_UNSPECIFIED: Unspecified error
@@ -965,6 +935,26 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -1064,12 +1054,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
-}
-
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -1095,6 +1079,12 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
   external?: boolean;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1160,9 +1150,11 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
-export interface V1NotifierSpec {
-  email?: V1EmailNotifierSpec;
-  slack?: V1SlackNotifierSpec;
+export type V1NotifierProperties = { [key: string]: any };
+
+export interface V1Notifier {
+  connector?: string;
+  properties?: V1NotifierProperties;
 }
 
 export interface V1ModelState {
@@ -1238,6 +1230,23 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1298,26 +1307,14 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewTimeSeriesRequest {
@@ -1375,13 +1372,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1408,6 +1398,13 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
@@ -1418,11 +1415,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1709,10 +1701,6 @@ export interface V1Example {
   name?: string;
   title?: string;
   description?: string;
-}
-
-export interface V1EmailNotifierSpec {
-  recipients?: string[];
 }
 
 export interface V1EditInstanceResponse {
@@ -2060,18 +2048,18 @@ export interface V1AssertionResult {
   errorMessage?: string;
 }
 
+export interface V1AlertState {
+  specHash?: string;
+  refsHash?: string;
+  nextRunOn?: string;
+  currentExecution?: V1AlertExecution;
+  executionHistory?: V1AlertExecution[];
+  executionCount?: number;
+}
+
 export type V1AlertSpecAnnotations = { [key: string]: string };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: any };
-
-export interface V1AlertNotifySpec {
-  notifyOnRecover?: boolean;
-  notifyOnFail?: boolean;
-  notifyOnError?: boolean;
-  renotify?: boolean;
-  renotifyAfterSeconds?: number;
-  notifiers?: V1NotifierSpec[];
-}
 
 export interface V1AlertSpec {
   trigger?: boolean;
@@ -2088,7 +2076,12 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
-  notifySpec?: V1AlertNotifySpec;
+  notifyOnRecover?: boolean;
+  notifyOnFail?: boolean;
+  notifyOnError?: boolean;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  notifiers?: V1Notifier[];
   annotations?: V1AlertSpecAnnotations;
 }
 
@@ -2099,15 +2092,6 @@ export interface V1AlertExecution {
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1AlertState {
-  specHash?: string;
-  refsHash?: string;
-  nextRunOn?: string;
-  currentExecution?: V1AlertExecution;
-  executionHistory?: V1AlertExecution[];
-  executionCount?: number;
 }
 
 export interface V1Alert {

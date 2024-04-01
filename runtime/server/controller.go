@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -392,17 +393,19 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Res
 	}
 
 	// Allow if the user is a recipient
-	for _, notifier := range report.Spec.NotifySpec.Notifiers {
-		switch notifier.Spec.(type) {
-		case *runtimev1.NotifierSpec_Email:
-			for _, recipient := range notifier.GetEmail().Recipients {
+	for _, notifier := range report.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+			for _, recipient := range recipients {
 				if recipient == email {
 					return r, true, nil
 				}
 			}
-		case *runtimev1.NotifierSpec_Slack:
-			for _, recipient := range notifier.GetSlack().Emails {
-				if recipient == email {
+		case "slack":
+			users := pbutil.ToSliceString(notifier.Properties.AsMap()["users"].([]any))
+			for _, user := range users {
+				if user == email {
 					return r, true, nil
 				}
 			}

@@ -1067,7 +1067,7 @@ notify:
   slack:
     channels:
       - reports
-    emails:
+    users:
       - user_2@example.com
 
 annotations:
@@ -1090,8 +1090,11 @@ annotations:
 				QueryArgsJson: `{"metrics_view":"mv1"}`,
 				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportLimit:   10000,
-				NotifySpec:    &runtimev1.ReportNotifySpec{Notifiers: []*runtimev1.NotifierSpec{{Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"benjamin@example.com"}}}}}},
-				Annotations:   map[string]string{"foo": "bar"},
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}})),
+				}},
+				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
 		{
@@ -1108,10 +1111,10 @@ annotations:
 				QueryArgsJson: `{"metrics_view":"mv1"}`,
 				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportLimit:   10000,
-				NotifySpec: &runtimev1.ReportNotifySpec{Notifiers: []*runtimev1.NotifierSpec{
-					{Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"user_1@example.com"}}}},
-					{Spec: &runtimev1.NotifierSpec_Slack{Slack: &runtimev1.SlackNotifierSpec{Emails: []string{"user_2@example.com"}, Channels: []string{"reports"}}}},
-				}},
+				Notifiers: []*runtimev1.Notifier{
+					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
+					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},
+				},
 				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
@@ -1152,10 +1155,11 @@ query:
   for:
     user_email: benjamin@example.com
 
+on_recover: true
+renotify: true
+renotify_after: 24h
+
 notify:
-  on_recover: true
-  renotify: true
-  renotify_after: 24h
   email:
     recipients:
       - benjamin@example.com
@@ -1191,14 +1195,12 @@ annotations:
 				QueryName:            "MetricsViewToplist",
 				QueryArgsJson:        `{"metrics_view":"mv1"}`,
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
-				NotifySpec: &runtimev1.AlertNotifySpec{
-					NotifyOnRecover:      true,
-					NotifyOnFail:         true,
-					Renotify:             true,
-					RenotifyAfterSeconds: 24 * 60 * 60,
-					Notifiers:            []*runtimev1.NotifierSpec{{Spec: &runtimev1.NotifierSpec_Email{Email: &runtimev1.EmailNotifierSpec{Recipients: []string{"benjamin@example.com"}}}}},
-				},
-				Annotations: map[string]string{"foo": "bar"},
+				NotifyOnRecover:      true,
+				NotifyOnFail:         true,
+				Renotify:             true,
+				RenotifyAfterSeconds: 24 * 60 * 60,
+				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
+				Annotations:          map[string]string{"foo": "bar"},
 			},
 		},
 	}
@@ -1442,7 +1444,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
-				require.Equal(t, want.ReportSpec, got.ReportSpec, "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
 				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)

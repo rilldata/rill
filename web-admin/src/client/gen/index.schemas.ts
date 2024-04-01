@@ -448,8 +448,8 @@ export interface V1ReportOptions {
   exportFormat?: V1ExportFormat;
   openProjectSubpath?: string;
   emailRecipients?: string[];
+  slackUsers?: string[];
   slackChannels?: string[];
-  slackEmails?: string[];
   slackWebhooks?: string[];
 }
 
@@ -870,8 +870,8 @@ export interface V1AlertOptions {
   renotify?: boolean;
   renotifyAfterSeconds?: number;
   emailRecipients?: string[];
+  slackUsers?: string[];
   slackChannels?: string[];
-  slackEmails?: string[];
   slackWebhooks?: string[];
 }
 

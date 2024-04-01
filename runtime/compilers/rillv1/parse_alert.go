@@ -9,6 +9,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -34,18 +35,18 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
-	Notify struct {
-		OnRecover     *bool  `yaml:"on_recover"`
-		OnFail        *bool  `yaml:"on_fail"`
-		OnError       *bool  `yaml:"on_error"`
-		Renotify      *bool  `yaml:"renotify"`
-		RenotifyAfter string `yaml:"renotify_after"`
-		Email         struct {
+	OnRecover     *bool  `yaml:"on_recover"`
+	OnFail        *bool  `yaml:"on_fail"`
+	OnError       *bool  `yaml:"on_error"`
+	Renotify      *bool  `yaml:"renotify"`
+	RenotifyAfter string `yaml:"renotify_after"`
+	Notify        struct {
+		Email struct {
 			Recipients []string `yaml:"recipients"`
 		} `yaml:"email"`
 		Slack struct {
 			Channels []string `yaml:"channels"`
-			Emails   []string `yaml:"emails"`
+			Users    []string `yaml:"users"`
 			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
 	} `yaml:"notify"`
@@ -197,8 +198,8 @@ func (p *Parser) parseAlert(node *Node) error {
 			}
 		}
 		// Validate notify.renotify_after
-		if tmp.Notify.RenotifyAfter != "" {
-			renotifyAfter, err = parseDuration(tmp.Notify.RenotifyAfter)
+		if tmp.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.RenotifyAfter)
 			if err != nil {
 				return fmt.Errorf(`invalid value for property "notify.renotify_after": %w`, err)
 			}
@@ -236,73 +237,81 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Notification default settings
-	r.AlertSpec.NotifySpec = &runtimev1.AlertNotifySpec{}
-	r.AlertSpec.NotifySpec.NotifyOnRecover = false
-	r.AlertSpec.NotifySpec.NotifyOnFail = true
-	r.AlertSpec.NotifySpec.NotifyOnError = false
-	r.AlertSpec.NotifySpec.Renotify = false
+	r.AlertSpec.NotifyOnRecover = false
+	r.AlertSpec.NotifyOnFail = true
+	r.AlertSpec.NotifyOnError = false
+	r.AlertSpec.Renotify = false
 
 	if isLegacySyntax {
 		// Backwards compatibility
 		// Override email notification defaults
 		if tmp.Email.OnRecover != nil {
-			r.AlertSpec.NotifySpec.NotifyOnRecover = *tmp.Email.OnRecover
+			r.AlertSpec.NotifyOnRecover = *tmp.Email.OnRecover
 		}
 		if tmp.Email.OnFail != nil {
-			r.AlertSpec.NotifySpec.NotifyOnFail = *tmp.Email.OnFail
+			r.AlertSpec.NotifyOnFail = *tmp.Email.OnFail
 		}
 		if tmp.Email.OnError != nil {
-			r.AlertSpec.NotifySpec.NotifyOnError = *tmp.Email.OnError
+			r.AlertSpec.NotifyOnError = *tmp.Email.OnError
 		}
 		if tmp.Email.Renotify != nil {
-			r.AlertSpec.NotifySpec.Renotify = *tmp.Email.Renotify
-			r.AlertSpec.NotifySpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+			r.AlertSpec.Renotify = *tmp.Email.Renotify
+			r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
 		}
 		// Email settings
-		r.AlertSpec.NotifySpec.Notifiers = []*runtimev1.NotifierSpec{
+		notifier, err := structpb.NewStruct(map[string]any{
+			"recipients": pbutil.ToSliceAny(tmp.Email.Recipients),
+		})
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
+		r.AlertSpec.Notifiers = []*runtimev1.Notifier{
 			{
-				Spec: &runtimev1.NotifierSpec_Email{
-					Email: &runtimev1.EmailNotifierSpec{
-						Recipients: tmp.Email.Recipients,
-					},
-				},
+				Connector:  "email",
+				Properties: notifier,
 			},
 		}
 	} else {
 		// Override notification defaults
-		if tmp.Notify.OnRecover != nil {
-			r.AlertSpec.NotifySpec.NotifyOnRecover = *tmp.Notify.OnRecover
+		if tmp.OnRecover != nil {
+			r.AlertSpec.NotifyOnRecover = *tmp.OnRecover
 		}
-		if tmp.Notify.OnFail != nil {
-			r.AlertSpec.NotifySpec.NotifyOnFail = *tmp.Notify.OnFail
+		if tmp.OnFail != nil {
+			r.AlertSpec.NotifyOnFail = *tmp.OnFail
 		}
-		if tmp.Notify.OnError != nil {
-			r.AlertSpec.NotifySpec.NotifyOnError = *tmp.Notify.OnError
+		if tmp.OnError != nil {
+			r.AlertSpec.NotifyOnError = *tmp.OnError
 		}
-		if tmp.Notify.Renotify != nil {
-			r.AlertSpec.NotifySpec.Renotify = *tmp.Notify.Renotify
-			r.AlertSpec.NotifySpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		if tmp.Renotify != nil {
+			r.AlertSpec.Renotify = *tmp.Renotify
+			r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
 		}
 		// Email settings
 		if len(tmp.Notify.Email.Recipients) > 0 {
-			r.AlertSpec.NotifySpec.Notifiers = append(r.AlertSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
-				Spec: &runtimev1.NotifierSpec_Email{
-					Email: &runtimev1.EmailNotifierSpec{
-						Recipients: tmp.Notify.Email.Recipients,
-					},
-				},
+			props, err := structpb.NewStruct(map[string]any{
+				"recipients": pbutil.ToSliceAny(tmp.Notify.Email.Recipients),
+			})
+			if err != nil {
+				return fmt.Errorf("encountered invalid property type: %w", err)
+			}
+			r.AlertSpec.Notifiers = append(r.AlertSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  "email",
+				Properties: props,
 			})
 		}
 		// Slack settings
-		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Emails) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
-			r.AlertSpec.NotifySpec.Notifiers = append(r.AlertSpec.NotifySpec.Notifiers, &runtimev1.NotifierSpec{
-				Spec: &runtimev1.NotifierSpec_Slack{
-					Slack: &runtimev1.SlackNotifierSpec{
-						Emails:   tmp.Notify.Slack.Emails,
-						Channels: tmp.Notify.Slack.Channels,
-						Webhooks: tmp.Notify.Slack.Webhooks,
-					},
-				},
+		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
+			props, err := structpb.NewStruct(map[string]any{
+				"users":    pbutil.ToSliceAny(tmp.Notify.Slack.Users),
+				"channels": pbutil.ToSliceAny(tmp.Notify.Slack.Channels),
+				"webhooks": pbutil.ToSliceAny(tmp.Notify.Slack.Webhooks),
+			})
+			if err != nil {
+				return fmt.Errorf("encountered invalid property type: %w", err)
+			}
+			r.AlertSpec.Notifiers = append(r.AlertSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  "slack",
+				Properties: props,
 			})
 		}
 	}

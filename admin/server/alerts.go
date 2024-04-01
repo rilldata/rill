@@ -19,6 +19,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -287,9 +288,9 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 			break
 		}
 	}
-	for idx, email := range opts.SlackEmails {
+	for idx, email := range opts.SlackUsers {
 		if strings.EqualFold(user.Email, email) {
-			opts.SlackEmails = slices.Delete(opts.SlackEmails, idx, idx+1)
+			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
 			found = true
 			break
 		}
@@ -299,7 +300,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
-	if len(opts.EmailRecipients) == 0 && len(opts.SlackEmails) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
+	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -464,7 +465,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Notify.RenotifyAfter = opts.RenotifyAfterSeconds
 	res.Notify.Email.Emails = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
-	res.Notify.Slack.Emails = opts.SlackEmails
+	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
@@ -496,7 +497,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Notify.RenotifyAfter = opts.RenotifyAfterSeconds
 	res.Notify.Email.Emails = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
-	res.Notify.Slack.Emails = opts.SlackEmails
+	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	return yaml.Marshal(res)
 }
@@ -545,18 +546,19 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.Renotify = spec.NotifySpec.Renotify
-	opts.RenotifyAfterSeconds = spec.NotifySpec.RenotifyAfterSeconds
-	for _, notifier := range spec.NotifySpec.Notifiers {
-		switch notifier.Spec.(type) {
-		case *runtimev1.NotifierSpec_Email:
-			opts.EmailRecipients = notifier.GetEmail().Recipients
-		case *runtimev1.NotifierSpec_Slack:
-			opts.SlackEmails = notifier.GetSlack().Emails
-			opts.SlackChannels = notifier.GetSlack().Channels
-			opts.SlackWebhooks = notifier.GetSlack().Webhooks
+	opts.Renotify = spec.Renotify
+	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
+	for _, notifier := range spec.Notifiers {
+		props := notifier.Properties.AsMap()
+		switch notifier.Connector {
+		case "email":
+			opts.EmailRecipients = pbutil.ToSliceString(props["recipients"].([]any))
+		case "slack":
+			opts.SlackUsers = pbutil.ToSliceString(props["users"].([]any))
+			opts.SlackChannels = pbutil.ToSliceString(props["channels"].([]any))
+			opts.SlackWebhooks = pbutil.ToSliceString(props["webhooks"].([]any))
 		default:
-			return nil, fmt.Errorf("unknown notifier spec: %T", notifier.Spec)
+			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
 		}
 	}
 	return opts, nil
@@ -588,7 +590,7 @@ type alertYAML struct {
 		Renotify      bool   `yaml:"renotify"`
 		RenotifyAfter uint32 `yaml:"renotify_after"`
 		Slack         struct {
-			Emails   []string `yaml:"emails"`
+			Users    []string `yaml:"users"`
 			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
 		}

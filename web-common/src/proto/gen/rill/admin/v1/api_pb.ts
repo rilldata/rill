@@ -8079,14 +8079,14 @@ export class ReportOptions extends Message<ReportOptions> {
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: repeated string slack_channels = 10;
+   * @generated from field: repeated string slack_users = 10;
    */
-  slackChannels: string[] = [];
+  slackUsers: string[] = [];
 
   /**
-   * @generated from field: repeated string slack_emails = 11;
+   * @generated from field: repeated string slack_channels = 11;
    */
-  slackEmails: string[] = [];
+  slackChannels: string[] = [];
 
   /**
    * @generated from field: repeated string slack_webhooks = 12;
@@ -8110,8 +8110,8 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 7, name: "open_project_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
@@ -8177,14 +8177,14 @@ export class AlertOptions extends Message<AlertOptions> {
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: repeated string slack_channels = 9;
+   * @generated from field: repeated string slack_users = 9;
    */
-  slackChannels: string[] = [];
+  slackUsers: string[] = [];
 
   /**
-   * @generated from field: repeated string slack_emails = 10;
+   * @generated from field: repeated string slack_channels = 10;
    */
-  slackEmails: string[] = [];
+  slackChannels: string[] = [];
 
   /**
    * @generated from field: repeated string slack_webhooks = 11;
@@ -8207,8 +8207,8 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 9, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 10, name: "slack_emails", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 

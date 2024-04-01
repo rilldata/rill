@@ -2982,25 +2982,6 @@ definitions:
       finishedOn:
         type: string
         format: date-time
-  v1AlertNotifySpec:
-    type: object
-    properties:
-      notifyOnRecover:
-        type: boolean
-      notifyOnFail:
-        type: boolean
-      notifyOnError:
-        type: boolean
-      renotify:
-        type: boolean
-      renotifyAfterSeconds:
-        type: integer
-        format: int64
-      notifiers:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1NotifierSpec'
   v1AlertSpec:
     type: object
     properties:
@@ -3033,8 +3014,22 @@ definitions:
         type: string
       queryForAttributes:
         type: object
-      notifySpec:
-        $ref: '#/definitions/v1AlertNotifySpec'
+      notifyOnRecover:
+        type: boolean
+      notifyOnFail:
+        type: boolean
+      notifyOnError:
+        type: boolean
+      renotify:
+        type: boolean
+      renotifyAfterSeconds:
+        type: integer
+        format: int64
+      notifiers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -3638,13 +3633,6 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.EditInstance
-  v1EmailNotifierSpec:
-    type: object
-    properties:
-      recipients:
-        type: array
-        items:
-          type: string
   v1Example:
     type: object
     properties:
@@ -4700,13 +4688,13 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
-  v1NotifierSpec:
+  v1Notifier:
     type: object
     properties:
-      email:
-        $ref: '#/definitions/v1EmailNotifierSpec'
-      slack:
-        $ref: '#/definitions/v1SlackNotifierSpec'
+      connector:
+        type: string
+      properties:
+        type: object
   v1NumericHistogramBins:
     type: object
     properties:
@@ -5234,14 +5222,6 @@ definitions:
       finishedOn:
         type: string
         format: date-time
-  v1ReportNotifySpec:
-    type: object
-    properties:
-      notifiers:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1NotifierSpec'
   v1ReportSpec:
     type: object
     properties:
@@ -5263,8 +5243,11 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      notifySpec:
-        $ref: '#/definitions/v1ReportNotifySpec'
+      notifiers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -5457,21 +5440,6 @@ definitions:
         format: int64
       timeZone:
         type: string
-  v1SlackNotifierSpec:
-    type: object
-    properties:
-      emails:
-        type: array
-        items:
-          type: string
-      channels:
-        type: array
-        items:
-          type: string
-      webhooks:
-        type: array
-        items:
-          type: string
   v1Source:
     type: object
     properties:

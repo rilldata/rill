@@ -135,7 +135,7 @@ type Handle interface {
 	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).
 	AsTransporter(from Handle, to Handle) (Transporter, bool)
 
-	AsNotifier() (Notifier, bool)
+	AsNotifier(properties map[string]any) (Notifier, bool)
 }
 
 // PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.

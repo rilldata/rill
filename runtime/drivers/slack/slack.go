@@ -2,7 +2,6 @@ package slack
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"text/template"
 
@@ -11,9 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
-
-//go:embed templates/slack/*
-var templatesFS embed.FS
 
 var spec = drivers.Spec{
 	DisplayName: "Slack",
@@ -135,8 +131,8 @@ func (h *handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bo
 	return nil, false
 }
 
-func (h *handle) AsNotifier() (drivers.Notifier, bool) {
-	return h, true
+func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, bool) {
+	return newNotifier(h.config.BotToken, properties), true
 }
 
 type configProperties struct {

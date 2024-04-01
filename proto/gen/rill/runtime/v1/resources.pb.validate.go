@@ -3662,33 +3662,38 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for ExportFormat
 
-	if all {
-		switch v := interface{}(m.GetNotifySpec()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ReportSpecValidationError{
-					field:  "NotifySpec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+	for idx, item := range m.GetNotifiers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ReportSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ReportSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-		case interface{ Validate() error }:
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ReportSpecValidationError{
-					field:  "NotifySpec",
+				return ReportSpecValidationError{
+					field:  fmt.Sprintf("Notifiers[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
-				})
+				}
 			}
 		}
-	} else if v, ok := interface{}(m.GetNotifySpec()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ReportSpecValidationError{
-				field:  "NotifySpec",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
+
 	}
 
 	// no validation rules for Annotations
@@ -3769,140 +3774,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ReportSpecValidationError{}
-
-// Validate checks the field values on ReportNotifySpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ReportNotifySpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ReportNotifySpec with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ReportNotifySpecMultiError, or nil if none found.
-func (m *ReportNotifySpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ReportNotifySpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetNotifiers() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ReportNotifySpecValidationError{
-						field:  fmt.Sprintf("Notifiers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ReportNotifySpecValidationError{
-						field:  fmt.Sprintf("Notifiers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ReportNotifySpecValidationError{
-					field:  fmt.Sprintf("Notifiers[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return ReportNotifySpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// ReportNotifySpecMultiError is an error wrapping multiple validation errors
-// returned by ReportNotifySpec.ValidateAll() if the designated constraints
-// aren't met.
-type ReportNotifySpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ReportNotifySpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ReportNotifySpecMultiError) AllErrors() []error { return m }
-
-// ReportNotifySpecValidationError is the validation error returned by
-// ReportNotifySpec.Validate if the designated constraints aren't met.
-type ReportNotifySpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ReportNotifySpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ReportNotifySpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ReportNotifySpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ReportNotifySpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ReportNotifySpecValidationError) ErrorName() string { return "ReportNotifySpecValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ReportNotifySpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sReportNotifySpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ReportNotifySpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ReportNotifySpecValidationError{}
 
 // Validate checks the field values on ReportState with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -4513,33 +4384,48 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
-	if all {
-		switch v := interface{}(m.GetNotifySpec()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AlertSpecValidationError{
-					field:  "NotifySpec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+	// no validation rules for NotifyOnRecover
+
+	// no validation rules for NotifyOnFail
+
+	// no validation rules for NotifyOnError
+
+	// no validation rules for Renotify
+
+	// no validation rules for RenotifyAfterSeconds
+
+	for idx, item := range m.GetNotifiers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AlertSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AlertSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-		case interface{ Validate() error }:
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				errors = append(errors, AlertSpecValidationError{
-					field:  "NotifySpec",
+				return AlertSpecValidationError{
+					field:  fmt.Sprintf("Notifiers[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
-				})
+				}
 			}
 		}
-	} else if v, ok := interface{}(m.GetNotifySpec()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AlertSpecValidationError{
-				field:  "NotifySpec",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
+
 	}
 
 	// no validation rules for Annotations
@@ -4691,272 +4577,72 @@ var _ interface {
 	ErrorName() string
 } = AlertSpecValidationError{}
 
-// Validate checks the field values on AlertNotifySpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *AlertNotifySpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AlertNotifySpec with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AlertNotifySpecMultiError, or nil if none found.
-func (m *AlertNotifySpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AlertNotifySpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for NotifyOnRecover
-
-	// no validation rules for NotifyOnFail
-
-	// no validation rules for NotifyOnError
-
-	// no validation rules for Renotify
-
-	// no validation rules for RenotifyAfterSeconds
-
-	for idx, item := range m.GetNotifiers() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, AlertNotifySpecValidationError{
-						field:  fmt.Sprintf("Notifiers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, AlertNotifySpecValidationError{
-						field:  fmt.Sprintf("Notifiers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return AlertNotifySpecValidationError{
-					field:  fmt.Sprintf("Notifiers[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return AlertNotifySpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// AlertNotifySpecMultiError is an error wrapping multiple validation errors
-// returned by AlertNotifySpec.ValidateAll() if the designated constraints
-// aren't met.
-type AlertNotifySpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AlertNotifySpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AlertNotifySpecMultiError) AllErrors() []error { return m }
-
-// AlertNotifySpecValidationError is the validation error returned by
-// AlertNotifySpec.Validate if the designated constraints aren't met.
-type AlertNotifySpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e AlertNotifySpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e AlertNotifySpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e AlertNotifySpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e AlertNotifySpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e AlertNotifySpecValidationError) ErrorName() string { return "AlertNotifySpecValidationError" }
-
-// Error satisfies the builtin error interface
-func (e AlertNotifySpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sAlertNotifySpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = AlertNotifySpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = AlertNotifySpecValidationError{}
-
-// Validate checks the field values on NotifierSpec with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
+// Validate checks the field values on Notifier with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *NotifierSpec) Validate() error {
+func (m *Notifier) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on NotifierSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in NotifierSpecMultiError, or
-// nil if none found.
-func (m *NotifierSpec) ValidateAll() error {
+// ValidateAll checks the field values on Notifier with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in NotifierMultiError, or nil
+// if none found.
+func (m *Notifier) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *NotifierSpec) validate(all bool) error {
+func (m *Notifier) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	switch v := m.Spec.(type) {
-	case *NotifierSpec_Email:
-		if v == nil {
-			err := NotifierSpecValidationError{
-				field:  "Spec",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	// no validation rules for Connector
 
-		if all {
-			switch v := interface{}(m.GetEmail()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NotifierSpecValidationError{
-						field:  "Email",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NotifierSpecValidationError{
-						field:  "Email",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetEmail()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NotifierSpecValidationError{
-					field:  "Email",
+	if all {
+		switch v := interface{}(m.GetProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, NotifierValidationError{
+					field:  "Properties",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
 			}
-		}
-
-	case *NotifierSpec_Slack:
-		if v == nil {
-			err := NotifierSpecValidationError{
-				field:  "Spec",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetSlack()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NotifierSpecValidationError{
-						field:  "Slack",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NotifierSpecValidationError{
-						field:  "Slack",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetSlack()).(interface{ Validate() error }); ok {
+		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				return NotifierSpecValidationError{
-					field:  "Slack",
+				errors = append(errors, NotifierValidationError{
+					field:  "Properties",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
 			}
 		}
-
-	default:
-		_ = v // ensures v is used
+	} else if v, ok := interface{}(m.GetProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return NotifierValidationError{
+				field:  "Properties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
-		return NotifierSpecMultiError(errors)
+		return NotifierMultiError(errors)
 	}
 
 	return nil
 }
 
-// NotifierSpecMultiError is an error wrapping multiple validation errors
-// returned by NotifierSpec.ValidateAll() if the designated constraints aren't met.
-type NotifierSpecMultiError []error
+// NotifierMultiError is an error wrapping multiple validation errors returned
+// by Notifier.ValidateAll() if the designated constraints aren't met.
+type NotifierMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m NotifierSpecMultiError) Error() string {
+func (m NotifierMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4965,11 +4651,11 @@ func (m NotifierSpecMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m NotifierSpecMultiError) AllErrors() []error { return m }
+func (m NotifierMultiError) AllErrors() []error { return m }
 
-// NotifierSpecValidationError is the validation error returned by
-// NotifierSpec.Validate if the designated constraints aren't met.
-type NotifierSpecValidationError struct {
+// NotifierValidationError is the validation error returned by
+// Notifier.Validate if the designated constraints aren't met.
+type NotifierValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4977,22 +4663,22 @@ type NotifierSpecValidationError struct {
 }
 
 // Field function returns field value.
-func (e NotifierSpecValidationError) Field() string { return e.field }
+func (e NotifierValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e NotifierSpecValidationError) Reason() string { return e.reason }
+func (e NotifierValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e NotifierSpecValidationError) Cause() error { return e.cause }
+func (e NotifierValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e NotifierSpecValidationError) Key() bool { return e.key }
+func (e NotifierValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e NotifierSpecValidationError) ErrorName() string { return "NotifierSpecValidationError" }
+func (e NotifierValidationError) ErrorName() string { return "NotifierValidationError" }
 
 // Error satisfies the builtin error interface
-func (e NotifierSpecValidationError) Error() string {
+func (e NotifierValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5004,14 +4690,14 @@ func (e NotifierSpecValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sNotifierSpec.%s: %s%s",
+		"invalid %sNotifier.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = NotifierSpecValidationError{}
+var _ error = NotifierValidationError{}
 
 var _ interface {
 	Field() string
@@ -5019,211 +4705,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = NotifierSpecValidationError{}
-
-// Validate checks the field values on EmailNotifierSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *EmailNotifierSpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EmailNotifierSpec with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// EmailNotifierSpecMultiError, or nil if none found.
-func (m *EmailNotifierSpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EmailNotifierSpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return EmailNotifierSpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// EmailNotifierSpecMultiError is an error wrapping multiple validation errors
-// returned by EmailNotifierSpec.ValidateAll() if the designated constraints
-// aren't met.
-type EmailNotifierSpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EmailNotifierSpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EmailNotifierSpecMultiError) AllErrors() []error { return m }
-
-// EmailNotifierSpecValidationError is the validation error returned by
-// EmailNotifierSpec.Validate if the designated constraints aren't met.
-type EmailNotifierSpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e EmailNotifierSpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e EmailNotifierSpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e EmailNotifierSpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e EmailNotifierSpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e EmailNotifierSpecValidationError) ErrorName() string {
-	return "EmailNotifierSpecValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e EmailNotifierSpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sEmailNotifierSpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = EmailNotifierSpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = EmailNotifierSpecValidationError{}
-
-// Validate checks the field values on SlackNotifierSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *SlackNotifierSpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SlackNotifierSpec with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// SlackNotifierSpecMultiError, or nil if none found.
-func (m *SlackNotifierSpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SlackNotifierSpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return SlackNotifierSpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// SlackNotifierSpecMultiError is an error wrapping multiple validation errors
-// returned by SlackNotifierSpec.ValidateAll() if the designated constraints
-// aren't met.
-type SlackNotifierSpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SlackNotifierSpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SlackNotifierSpecMultiError) AllErrors() []error { return m }
-
-// SlackNotifierSpecValidationError is the validation error returned by
-// SlackNotifierSpec.Validate if the designated constraints aren't met.
-type SlackNotifierSpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e SlackNotifierSpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e SlackNotifierSpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e SlackNotifierSpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e SlackNotifierSpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e SlackNotifierSpecValidationError) ErrorName() string {
-	return "SlackNotifierSpecValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e SlackNotifierSpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sSlackNotifierSpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = SlackNotifierSpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = SlackNotifierSpecValidationError{}
+} = NotifierValidationError{}
 
 // Validate checks the field values on AlertState with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

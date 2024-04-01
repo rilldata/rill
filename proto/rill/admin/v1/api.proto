@@ -1476,8 +1476,8 @@ message ReportOptions {
   rill.runtime.v1.ExportFormat export_format = 6;
   string open_project_subpath = 7;
   repeated string email_recipients = 8;
-  repeated string slack_channels = 10;
-  repeated string slack_emails = 11;
+  repeated string slack_users = 10;
+  repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
 }
 
@@ -1490,7 +1490,7 @@ message AlertOptions {
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;
   repeated string email_recipients = 8;
-  repeated string slack_channels = 9;
-  repeated string slack_emails = 10;
+  repeated string slack_users = 9;
+  repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
 }

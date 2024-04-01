@@ -197,7 +197,7 @@ func (h *Handle) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Handle.
-func (h *Handle) AsNotifier() (drivers.Notifier, bool) {
+func (h *Handle) AsNotifier(map[string]any) (drivers.Notifier, bool) {
 	return nil, false
 }
 

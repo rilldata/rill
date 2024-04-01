@@ -16,9 +16,9 @@ Although Rill does not support reading data from Slack, Slack support is impleme
 with a corresponding bonus like passing a token as an environment variable.
 
 Slack connector can send notifications to channels, direct messages, and via webhooks. 
-All of these methods require a Slack application to be added to your workspace. 
-Rill Data has a Slack application named "Rill Data" (__coming soon__), 
-but one can also [create](https://api.slack.com/start/quickstart) their own Slack application and use it to send notifications.
+All of these methods require a Slack application to be created and configured with the necessary scopes.
+Follow the [Slack documentation](https://api.slack.com/start/quickstart) to create a Slack application and configure it 
+depending on notification type you want to use: channels, direct messages, or webhooks.
 
 ### Slack channels
 
@@ -61,11 +61,14 @@ notify:
       - recipient@example.com
       ...
   slack:
-    emails:
+    users:
       - recipient@example.com
       ...
     channels:
       - alerts
+      ...
+    webhooks:
+      - https://hooks.slack.com/services/...
       ...
 ```
 ### Alerts
@@ -80,11 +83,14 @@ notify:
       - recipient@example.com
       ...
   slack:
-    emails:
+    users:
       - recipient@example.com
       ...
     channels:
       - alerts
+      ...
+    webhooks:
+      - https://hooks.slack.com/services/...
       ...
 ```
 

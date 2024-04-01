@@ -208,7 +208,7 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 }
 
 // AsNotifier implements drivers.Handle.
-func (c *Connection) AsNotifier() (drivers.Notifier, bool) {
+func (c *Connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
 	return nil, false
 }
 

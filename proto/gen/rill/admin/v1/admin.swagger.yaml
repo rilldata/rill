@@ -2235,11 +2235,11 @@ definitions:
         type: array
         items:
           type: string
-      slackChannels:
+      slackUsers:
         type: array
         items:
           type: string
-      slackEmails:
+      slackChannels:
         type: array
         items:
           type: string
@@ -2878,11 +2878,11 @@ definitions:
         type: array
         items:
           type: string
-      slackChannels:
+      slackUsers:
         type: array
         items:
           type: string
-      slackEmails:
+      slackChannels:
         type: array
         items:
           type: string

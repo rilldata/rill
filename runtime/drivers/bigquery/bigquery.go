@@ -217,7 +217,7 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier() (drivers.Notifier, bool) {
+func (c *Connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
 	return nil, false
 }
 

@@ -623,11 +623,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		// The status has changed since the last execution, so we should notify.
 		// NOTE: This case may also match in an edge case of execution history limits, but that's fine.
 		notify = true
-	} else if a.Spec.NotifySpec.Renotify {
-		if a.Spec.NotifySpec.RenotifyAfterSeconds == 0 {
+	} else if a.Spec.Renotify {
+		if a.Spec.RenotifyAfterSeconds == 0 {
 			// The status has not changed since the last execution and there's no renotify suppression period, so we should notify.
 			notify = true
-		} else if int(td.Seconds()) >= int(a.Spec.NotifySpec.RenotifyAfterSeconds) {
+		} else if int(td.Seconds()) >= int(a.Spec.RenotifyAfterSeconds) {
 			// The status has not changed since the last notification and the last notification was sent more than the renotify suppression period ago, so we should notify.
 			notify = true
 		}
@@ -644,7 +644,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	if notify {
 		switch current.Result.Status {
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
-			if !a.Spec.NotifySpec.NotifyOnRecover {
+			if !a.Spec.NotifyOnRecover {
 				break
 			}
 
@@ -664,7 +664,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				IsRecover:     true,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
-			if !a.Spec.NotifySpec.NotifyOnFail {
+			if !a.Spec.NotifyOnFail {
 				break
 			}
 
@@ -675,7 +675,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				FailRow:       current.Result.FailRow.AsMap(),
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
-			if !a.Spec.NotifySpec.NotifyOnError {
+			if !a.Spec.NotifyOnError {
 				break
 			}
 
@@ -700,12 +700,13 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			msg.EditLink = adminMeta.EditURL
 		}
 
-		for _, notifier := range a.Spec.NotifySpec.Notifiers {
-			switch notifier.Spec.(type) {
+		for _, notifier := range a.Spec.Notifiers {
+			switch notifier.Connector {
 			// TODO: transform email client to notifier
-			case *runtimev1.NotifierSpec_Email:
-				for _, recipient := range notifier.GetEmail().Recipients {
-					msg.ToEmail = recipient
+			case "email":
+				recipients := notifier.Properties.AsMap()["recipients"].([]any)
+				for _, recipient := range recipients {
+					msg.ToEmail = recipient.(string)
 					err := r.C.Runtime.Email.SendAlertStatus(msg)
 					if err != nil {
 						notificationErr = fmt.Errorf("failed to send email to %q: %w", recipient, err)
@@ -714,18 +715,14 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				}
 			default:
 				err := func() (outErr error) {
-					connectorName, err := drivers.NotifierConnectorName(notifier.Spec)
-					if err != nil {
-						return err
-					}
-					conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)
+					conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
 					if err != nil {
 						return err
 					}
 					defer release()
-					n, ok := conn.AsNotifier()
+					n, ok := conn.AsNotifier(notifier.Properties.AsMap())
 					if !ok {
-						return fmt.Errorf("%s connector not available", connectorName)
+						return fmt.Errorf("%s connector not available", notifier.Connector)
 					}
 					start := time.Now()
 					defer func() {
@@ -734,14 +731,14 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						if r.C.Activity != nil {
 							r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
 								attribute.Bool("failed", outErr != nil),
-								attribute.String("notifier", connectorName),
+								attribute.String("connector", notifier.Connector),
 								attribute.String("notification_type", "alert_status"),
 							)
 						}
 					}()
-					err = n.SendAlertStatus(msg, notifier.Spec)
+					err = n.SendAlertStatus(msg)
 					if err != nil {
-						notificationErr = fmt.Errorf("failed to send %s notification: %w", connectorName, err)
+						notificationErr = fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
 					}
 					return nil
 				}()
