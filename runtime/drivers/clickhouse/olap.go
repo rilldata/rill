@@ -55,6 +55,11 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
 	if err != nil {
 		return err
