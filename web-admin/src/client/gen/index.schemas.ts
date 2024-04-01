@@ -673,6 +673,14 @@ export interface V1GetIFrameResponse {
   ttlSeconds?: number;
 }
 
+export interface V1GetGithubUserStatusResponse {
+  hasAccess?: boolean;
+  grantAccessUrl?: string;
+  accessToken?: string;
+  account?: string;
+  organizations?: string[];
+}
+
 export interface V1GetGithubRepoStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;

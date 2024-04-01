@@ -32,6 +32,86 @@ const (
 	githubcookieFieldRemote = "github_remote"
 )
 
+func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithubUserStatusRequest) (*adminv1.GetGithubUserStatusResponse, error) {
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	userNotFound := false
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		userNotFound = true
+	}
+	if userNotFound || user.GithubUsername == "" {
+		// If user is not present or we don't have user's github username we navigate user to installtion assuming they never installed
+		// github app
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, nil)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
+		}
+
+		return &adminv1.GetGithubUserStatusResponse{
+			HasAccess:      false,
+			GrantAccessUrl: grantAccessURL,
+		}, nil
+	}
+	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
+	if err != nil {
+		// token not valid or expired, take auth again
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubAuth, nil)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
+		}
+
+		return &adminv1.GetGithubUserStatusResponse{
+			HasAccess:      false,
+			GrantAccessUrl: grantAccessURL,
+		}, nil
+	}
+
+	user, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  refreshToken,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	client := github.NewTokenClient(ctx, token)
+	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
+	}
+
+	// Check whether we have the access to the org
+	var orgNames []string
+	for _, org := range orgs {
+		// the name of org is in a field login ¯\_(ツ)_/¯
+		org, _, err := s.admin.Github.AppClient().Organizations.Get(ctx, org.GetLogin())
+		if err == nil { // keep it simple and consider all errors as access not present
+			orgNames = append(orgNames, org.GetLogin())
+		}
+	}
+
+	return &adminv1.GetGithubUserStatusResponse{
+		HasAccess:      true,
+		GrantAccessUrl: "",
+		AccessToken:    token,
+		Account:        user.GithubUsername,
+		Organizations:  orgNames,
+	}, nil
+}
+
 func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithubRepoStatusRequest) (*adminv1.GetGithubRepoStatusResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.github_url", req.GithubUrl),
@@ -230,7 +310,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code to get an auth token and create a github client with user auth
-	githubClient, err := s.userAuthGithubClient(ctx, code)
+	githubClient, refreshToken, err := s.userAuthGithubClient(ctx, code)
 	if err != nil {
 		http.Error(w, "unauthorised user", http.StatusUnauthorized)
 		return
@@ -255,6 +335,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      githubUser.GetLogin(),
+		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
@@ -404,7 +485,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code to get an auth token and create a github client with user auth
-	c, err := s.userAuthGithubClient(ctx, code)
+	c, refreshToken, err := s.userAuthGithubClient(ctx, code)
 	if err != nil {
 		// todo :: check for unauthorised user error
 		http.Error(w, fmt.Sprintf("internal error %s", err.Error()), http.StatusInternalServerError)
@@ -434,6 +515,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      gitUser.GetLogin(),
+		GithubRefreshToken:  refreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
@@ -543,7 +625,7 @@ func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
-func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github.Client, error) {
+func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github.Client, string, error) {
 	oauthConf := &oauth2.Config{
 		ClientID:     s.opts.GithubClientID,
 		ClientSecret: s.opts.GithubClientSecret,
@@ -552,11 +634,11 @@ func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github
 
 	token, err := oauthConf.Exchange(ctx, code)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	oauthClient := oauthConf.Client(ctx, token)
-	return github.NewClient(oauthClient), nil
+	return github.NewClient(oauthClient), token.RefreshToken, nil
 }
 
 // isCollaborator checks if the user is a collaborator of the repository identified by owner and repo
@@ -604,4 +686,24 @@ func (s *Server) checkGithubRateLimit(route string) middleware.CheckFunc {
 		}
 		return nil
 	}
+}
+
+func (s *Server) userAccessToken(ctx context.Context, refreshToken string) (string, string, error) {
+	if refreshToken == "" {
+		return "", "", errors.New("refresh token is empty")
+	}
+
+	oauthConf := &oauth2.Config{
+		ClientID:     s.opts.GithubClientID,
+		ClientSecret: s.opts.GithubClientSecret,
+		Endpoint:     githuboauth.Endpoint,
+	}
+
+	src := oauthConf.TokenSource(ctx, &oauth2.Token{RefreshToken: refreshToken})
+	oauthToken, err := src.Token()
+	if err != nil {
+		return "", "", err
+	}
+
+	return oauthToken.AccessToken, oauthToken.RefreshToken, nil
 }
