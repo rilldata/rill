@@ -31,5 +31,5 @@ export const SnoozeOptions = [
 ];
 
 export function getSnoozeValueFromAlertSpec(alertSpec: V1AlertSpec): string {
-  return alertSpec?.notifySpec?.renotifyAfterSeconds?.toString() || "0";
+  return alertSpec?.renotifyAfterSeconds?.toString() || "0";
 }
