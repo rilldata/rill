@@ -443,9 +443,22 @@ func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Reso
 	}
 
 	// Allow if the user is an email recipient
-	for _, recipient := range alert.Spec.EmailRecipients {
-		if recipient == email {
-			return r, true, nil
+	for _, notifier := range alert.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			users := pbutil.ToSliceString(notifier.Properties.AsMap()["users"].([]any))
+			for _, user := range users {
+				if user == email {
+					return r, true, nil
+				}
+			}
 		}
 	}
 
