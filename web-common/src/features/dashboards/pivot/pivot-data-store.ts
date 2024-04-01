@@ -168,6 +168,7 @@ export function createTableCellQuery(
   totalsRow: PivotDataRow,
   rowDimensionValues: string[],
 ) {
+  if (!rowDimensionValues.length) return readable(null);
   let allDimensions = config.colDimensionNames;
   if (anchorDimension) {
     allDimensions = config.colDimensionNames.concat([anchorDimension]);
@@ -374,8 +375,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           );
         }
 
-        const displayTotalsRow =
-          rowDimensionNames.length && measureNames.length;
+        const displayTotalsRow = Boolean(
+          rowDimensionNames.length && measureNames.length,
+        );
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
           measureNames.length
@@ -427,18 +429,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
             const rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
-
-            if (rowDimensionValues.length === 0 && rowPage > 1) {
-              return axesSet({
-                isFetching: false,
-                data: lastPivotData,
-                columnDef: lastPivotColumnDef,
-                assembled: true,
-                totalColumns: lastTotalColumns,
-                totalsRowData: displayTotalsRow ? totalsRowData : undefined,
-                reachedEndForRowData: true,
-              });
-            }
 
             const totalColumns = getTotalColumnCount(totalsRowData);
 
@@ -583,12 +573,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
+                    const reachedEndForRowData =
+                      rowDimensionValues.length === 0 && rowPage > 1;
                     return {
                       isFetching: false,
                       data: tableDataExpanded,
                       columnDef,
                       assembled: true,
                       totalColumns,
+                      reachedEndForRowData,
                       totalsRowData: displayTotalsRow
                         ? totalsRowData
                         : undefined,
