@@ -274,7 +274,6 @@ export function addExpandedDataToPivot(
   columnDimensionAxes: Record<string, string[]>,
   expandedRowMeasureValues: ExpandedRowMeasureValues[],
 ): PivotDataRow[] {
-  console.log(tableData, expandedRowMeasureValues);
   const pivotData = tableData;
   const numRowDimensions = rowDimensions.length;
 
