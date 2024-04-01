@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
@@ -27,22 +28,35 @@ var spec = drivers.Spec{
 	// custom instructions for how to connect Clickhouse as the OLAP driver.
 }
 
+var maxOpenConnections = 20
+
 type driver struct{}
 
-var maxOpenConnections = 20
+type configProperties struct {
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
+	LogQueries bool `mapstructure:"log_queries"`
+}
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(confMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("clickhouse driver can't be shared")
 	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open clickhouse connection")
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(confMap, conf)
+	if err != nil {
+		return nil, err
 	}
 
-	db, err := sqlx.Open("clickhouse", dsn)
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("no DSN provided to open the connection")
+	}
+
+	db, err := sqlx.Open("clickhouse", conf.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +72,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 
 	conn := &connection{
 		db:      db,
-		config:  config,
+		config:  conf,
 		logger:  logger,
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
@@ -84,7 +98,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	db       *sqlx.DB
-	config   map[string]any
+	config   *configProperties
 	logger   *zap.Logger
 	activity *activity.Client
 
@@ -106,7 +120,9 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.config, m)
+	return m
 }
 
 // Close implements drivers.Connection.

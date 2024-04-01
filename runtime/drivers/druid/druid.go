@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
@@ -32,18 +33,31 @@ func init() {
 
 type driver struct{}
 
+type configProperties struct {
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
+	LogQueries bool `mapstructure:"log_queries"`
+}
+
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(confMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open druid connection")
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(confMap, conf)
+	if err != nil {
+		return nil, err
 	}
 
-	db, err := sqlx.Open("avatica", dsn)
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("no DSN provided to open the connection")
+	}
+
+	db, err := sqlx.Open("avatica", conf.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +72,8 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 
 	conn := &connection{
 		db:     db,
-		config: config,
+		config: conf,
+		logger: logger,
 	}
 	return conn, nil
 }
@@ -81,7 +96,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	db     *sqlx.DB
-	config map[string]any
+	config *configProperties
+	logger *zap.Logger
 }
 
 // Driver implements drivers.Connection.
@@ -91,7 +107,9 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.config, m)
+	return m
 }
 
 // Close implements drivers.Connection.
