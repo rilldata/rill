@@ -210,7 +210,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap 
 	}
 
 	// Create name stem
-	stem := fmt.Sprintf("%s__%s", mv.TimeDimension, strings.ToLower(convertToDateTruncSpecifier(q.TimeGranularity)))
+	stem := fmt.Sprintf("%s__%s", mv.TimeDimension, strings.ToLower(olap.Dialect().ConvertToDateTruncSpecifier(q.TimeGranularity)))
 
 	// Try new candidate names until we find an available one (capping the search at 10 names)
 	for i := 0; i < 10; i++ {
@@ -302,7 +302,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 			timezone = q.TimeZone
 		}
 		args = append([]any{timezone, timezone}, args...)
-		rollup := fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ))) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+		rollup := fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ))) AS %s", dialect.ConvertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
 
 		// Prepend the rollup column
 		selectColumns = append([]string{rollup}, selectColumns...)

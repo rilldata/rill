@@ -70,6 +70,22 @@ func (d driver) Open(confMap map[string]any, shared bool, client *activity.Clien
 		return nil, fmt.Errorf("connection: %w", err)
 	}
 
+	// group by positional args are supported post 22.7 and we use them heavily in our queries
+	row := db.QueryRow(`
+	WITH
+    	splitByChar('.', version()) AS parts,
+    	toInt32(parts[1]) AS major,
+    	toInt32(parts[2]) AS minor
+	SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
+`)
+	var isSupported bool
+	if err := row.Scan(&isSupported); err != nil {
+		return nil, err
+	}
+	if !isSupported {
+		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
+	}
+
 	conn := &connection{
 		db:      db,
 		config:  conf,
