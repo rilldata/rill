@@ -631,10 +631,16 @@ export interface V1TableRowsRequest {
 export interface V1TableInfo {
   database?: string;
   name?: string;
+  hasUnsupportedDataTypes?: boolean;
 }
+
+export type V1TableColumnsResponseUnsupportedColumns = {
+  [key: string]: string;
+};
 
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
+  unsupportedColumns?: V1TableColumnsResponseUnsupportedColumns;
 }
 
 export interface V1TableColumnsRequest {
@@ -1121,8 +1127,13 @@ export interface V1OLAPListTablesResponse {
   tables?: V1TableInfo[];
 }
 
+export type V1OLAPGetTableResponseUnsupportedColumns = {
+  [key: string]: string;
+};
+
 export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
+  unsupportedColumns?: V1OLAPGetTableResponseUnsupportedColumns;
   view?: boolean;
 }
 

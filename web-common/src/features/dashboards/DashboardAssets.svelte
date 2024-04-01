@@ -1,94 +1,39 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
-  import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
-  import {
-    useDashboardFileNames,
-    useDashboardRoutes,
-    useValidDashboards,
-  } from "@rilldata/web-common/features/dashboards/selectors";
-  import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    FileArtifactsData,
-    fileArtifactsStore,
-  } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import DashboardMenuItems from "@rilldata/web-common/features/dashboards/DashboardMenuItems.svelte";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
-  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
-  import {
-    createRuntimeServicePutFile,
-    runtimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
-  import { WandIcon } from "lucide-svelte";
+  import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
-  import { behaviourEvent } from "../../metrics/initMetrics";
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
-  import { ResourceKind } from "../entity-management/resource-selectors";
 
   $: instanceId = $runtime.instanceId;
 
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
-  $: dashboardRoutes = useDashboardRoutes(instanceId);
-  $: dashboards = useValidDashboards(instanceId);
-
-  const MetricsSourceSelectionError = (
-    errors: Array<V1ReconcileError> | undefined,
-  ): string => {
-    return (
-      errors?.find((error) => error?.propertyPath?.length === 0)?.message ?? ""
-    );
-  };
 
   const createDashboard = createRuntimeServicePutFile();
 
-  const { readOnly, customDashboards } = featureFlags;
+  const { readOnly } = featureFlags;
 
   let showMetricsDefs = true;
 
   let showRenameMetricsDefinitionModal = false;
   let renameMetricsDefName: string | null = null;
-
-  async function getDashboardArtifact(
-    instanceId: string,
-    metricViewName: string,
-  ) {
-    const filePath = getFilePathFromNameAndType(
-      metricViewName,
-      EntityType.MetricsDefinition,
-    );
-    const resp = await runtimeServiceGetFile(instanceId, filePath);
-    const metricYAMLString = resp.blob as string;
-    fileArtifactsStore.setJSONRep(filePath, metricYAMLString);
-  }
 
   const openRenameMetricsDefModal = (metricsDefName: string) => {
     showRenameMetricsDefinitionModal = true;
@@ -116,101 +61,6 @@
     await goto(`/dashboard/${newDashboardName}`);
   };
 
-  /**
-   * Get the name of the dashboard's underlying model (if any).
-   * Note that not all dashboards have an underlying model. Some dashboards are
-   * underpinned by a source/table.
-   */
-  function getReferenceModelNameForDashboard(
-    dashboardName: string,
-  ): string | undefined {
-    // Get the dashboard resource from the dashboard list
-    const dashboard = $dashboards.data?.filter(
-      (dashboard) => dashboard.meta?.name?.name === dashboardName,
-    )[0];
-
-    // Get the model reference (if any) from the dashboard resource
-    const modelRef = dashboard?.meta?.refs?.filter(
-      (ref) => ref?.kind === ResourceKind.Model,
-    )[0];
-
-    // Return the model name (if any)
-    if (!modelRef) return undefined;
-    return modelRef?.name;
-  }
-
-  const editModel = async (modelName: string) => {
-    const previousActiveEntity = $appScreen?.type;
-    await goto(`/model/${modelName}`);
-    await behaviourEvent.fireNavigationEvent(
-      modelName,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
-      MetricsEventScreenName.Model,
-    );
-  };
-
-  const editMetrics = async (dashboardName: string) => {
-    await goto(`/dashboard/${dashboardName}/edit`);
-
-    const previousActiveEntity = $appScreen?.type;
-    await behaviourEvent.fireNavigationEvent(
-      dashboardName,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
-      MetricsEventScreenName.MetricsDefinition,
-    );
-  };
-
-  const deleteMetricsDef = async (dashboardName: string) => {
-    await getDashboardArtifact(instanceId, dashboardName);
-
-    const dashboardData = getDashboardData(
-      $fileArtifactsStore.entities,
-      dashboardName,
-    );
-    await deleteFileArtifact(
-      instanceId,
-      getFileAPIPathFromNameAndType(
-        dashboardName,
-        EntityType.MetricsDefinition,
-      ),
-      EntityType.MetricsDefinition,
-      $dashboardRoutes?.data ?? [],
-    );
-
-    // redirect to model when metric is deleted
-    const sourceModelName = dashboardData?.jsonRepresentation?.model as string;
-    if ($appScreen?.name === dashboardName) {
-      if (sourceModelName) {
-        await goto(`/model/${sourceModelName}`);
-
-        await behaviourEvent.fireNavigationEvent(
-          sourceModelName,
-          BehaviourEventMedium.Menu,
-          MetricsEventSpace.LeftPanel,
-          MetricsEventScreenName.MetricsDefinition,
-          MetricsEventScreenName.Model,
-        );
-      } else {
-        await goto("/");
-      }
-    }
-  };
-
-  const getDashboardData = (
-    entities: Record<string, FileArtifactsData>,
-    name: string,
-  ) => {
-    const dashboardPath = getFilePathFromNameAndType(
-      name,
-      EntityType.MetricsDefinition,
-    );
-    return entities[dashboardPath];
-  };
-
   $: canAddDashboard = $readOnly === false;
 
   $: hasSourceAndModelButNoDashboards =
@@ -234,12 +84,6 @@
     <ol transition:slide={{ duration }} id="assets-metrics-list">
       {#if $dashboardNames.data}
         {#each $dashboardNames.data as dashboardName (dashboardName)}
-          {@const dashboardData = getDashboardData(
-            $fileArtifactsStore.entities,
-            dashboardName,
-          )}
-          {@const referenceModelName =
-            getReferenceModelNameForDashboard(dashboardName)}
           <li animate:flip={{ duration }} aria-label={dashboardName}>
             <NavigationEntry
               showContextMenu={!$readOnly}
@@ -248,64 +92,12 @@
               open={$page.url.pathname === `/dashboard/${dashboardName}` ||
                 $page.url.pathname === `/dashboard/${dashboardName}/edit`}
             >
-              <svelte:fragment slot="menu-items">
-                {@const selectionError = MetricsSourceSelectionError(
-                  dashboardData?.errors,
-                )}
-                {@const hasSourceError =
-                  selectionError !== SourceModelValidationStatus.OK &&
-                  selectionError !== ""}
-                {#if referenceModelName}
-                  <NavigationMenuItem
-                    disabled={hasSourceError}
-                    on:click={() => editModel(referenceModelName)}
-                  >
-                    <Model slot="icon" />
-                    Edit model
-                    <svelte:fragment slot="description">
-                      {#if hasSourceError}
-                        {selectionError}
-                      {/if}
-                    </svelte:fragment>
-                  </NavigationMenuItem>
-                {/if}
-                <NavigationMenuItem
-                  disabled={hasSourceError}
-                  on:click={() => editMetrics(dashboardName)}
-                >
-                  <MetricsIcon slot="icon" />
-                  Edit metrics
-                </NavigationMenuItem>
-                {#if $customDashboards}
-                  <NavigationMenuItem
-                    on:click={() => openGenerateChartModal(dashboardName)}
-                  >
-                    <Explore slot="icon" />
-                    <div class="flex gap-x-2 items-center">
-                      Generate chart with AI
-                      <WandIcon class="w-3 h-3" />
-                    </div>
-                    <svelte:fragment slot="description">
-                      {#if hasSourceError}
-                        Dashboard has errors
-                      {/if}
-                    </svelte:fragment>
-                  </NavigationMenuItem>
-                {/if}
-                <NavigationMenuSeparator />
-                <NavigationMenuItem
-                  on:click={() => openRenameMetricsDefModal(dashboardName)}
-                >
-                  <EditIcon slot="icon" />
-                  Rename...
-                </NavigationMenuItem>
-                <NavigationMenuItem
-                  on:click={() => deleteMetricsDef(dashboardName)}
-                >
-                  <Cancel slot="icon" />
-                  Delete
-                </NavigationMenuItem>
-              </svelte:fragment>
+              <DashboardMenuItems
+                slot="menu-items"
+                metricsViewName={dashboardName}
+                on:rename={() => openRenameMetricsDefModal(dashboardName)}
+                on:generate-chart={() => openGenerateChartModal(dashboardName)}
+              />
             </NavigationEntry>
           </li>
         {/each}

@@ -208,6 +208,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				Records: records,
 			})
 		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
 		meta := structTypeToMetricsViewColumn(rows.Schema)
 		rows.Close()
 
@@ -229,7 +233,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 }
 
 func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
-	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	dateTruncSpecifier := dialect.ConvertToDateTruncSpecifier(timeRange.Interval)
 	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter := ""
 
@@ -238,12 +242,12 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 	var offset uint32
 	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
 		offset = 8 - q.FirstDayOfWeek
-		unit = "DAY"
+		unit = "day"
 	} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
 		offset = 13 - q.FirstMonthOfYear
-		unit = "MONTH"
+		unit = "month"
 	} else {
-		unit = "DAY" // never mind since offset is zero
+		unit = "day" // never mind since offset is zero
 	}
 	timeSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(?::DATETIME64, ?))))`
 	// start and end are not null else we would have an empty time range but column can still have null values
@@ -264,7 +268,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			),
 			number_range AS (
 				SELECT 
-					arrayJoin(range(interval)) AS number 
+					arrayJoin(range(interval::UInt64)) AS number 
 				FROM time_range
 			),
 			-- generate a time series column that has the intended range
@@ -295,7 +299,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 }
 
 func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
-	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	dateTruncSpecifier := drivers.DialectDuckDB.ConvertToDateTruncSpecifier(timeRange.Interval)
 	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter := ""
 
@@ -315,12 +319,16 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			-- generate a time series column that has the intended range
 			WITH template as (
 				SELECT
-					range as ` + tsAlias + `
-				FROM
-					range(
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
-					INTERVAL '1 ` + dateTruncSpecifier + `')
+					unnest(list_prepend(
+						-- prepend the first value in case a range is empty
+						date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+						-- take a tail of a range considering the first value is prepended
+						range(
+							date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+							date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+							INTERVAL '1 ` + dateTruncSpecifier + `'
+						)[1:]
+					)) as ` + tsAlias + `
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
@@ -341,6 +349,8 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 				ORDER BY template.` + tsAlias + `
 			) GROUP BY 1 ORDER BY 1
 		)`, []any{
+			timezone,
+			timeRange.Start.AsTime(),
 			timezone,
 			timeRange.Start.AsTime(),
 			timezone,

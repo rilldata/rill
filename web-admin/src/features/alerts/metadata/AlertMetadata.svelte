@@ -130,7 +130,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by dimension</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions[0]?.name}
+          {metricsViewAggregationRequest?.dimensions[0]?.name ?? "None"}
         </MetadataValue>
       </div>
 

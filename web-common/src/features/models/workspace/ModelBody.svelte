@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import type { SelectionRange } from "@codemirror/state";
@@ -8,7 +9,6 @@
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import {
@@ -48,6 +48,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
@@ -58,11 +59,7 @@
 
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    modelPath,
-  );
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
   $: modelError = $allErrors?.[0]?.message;
 
   $: tableQuery = createQueryServiceTableRows(

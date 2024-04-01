@@ -263,7 +263,7 @@ FRO m1
 			StartLocation: &runtimev1.CharLocation{Line: 4},
 		},
 		{
-			Message:       "syntax error at or near",
+			Message:       "syntax error at or near \"m1\"",
 			FilePath:      "/models/m1.sql",
 			StartLocation: &runtimev1.CharLocation{Line: 5},
 		},
