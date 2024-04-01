@@ -42,6 +42,7 @@ const (
 	astKeyScale            string = "scale"
 	astKeyCastType         string = "cast_type"
 	astKeySource           string = "source"
+	astKeyPosition         string = "position"
 )
 
 func toBoolean(a astNode, k string) bool {

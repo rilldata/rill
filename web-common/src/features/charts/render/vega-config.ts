@@ -7,13 +7,21 @@ import type { Config } from "vega-lite";
 
 const BarFill = "var(--color-primary-400)";
 const CategoryColors = [
+  "#75DAFF",
   "#5FA9B9",
-  "#875FB9",
   "#306B59",
+  "#3125AE",
+  "#757EFF",
+  "#875FB9",
+  "#F0A76A",
+  "#948476",
   "#594159",
-  "#E29FE3",
+  "#5774A1",
   "#B7DAF0",
+  "#E29FE3",
   "#FFCBDF",
+  "#BFF7E3",
+  "#FFFACB",
 ];
 
 const defaultMarkColor = MainLineColor;

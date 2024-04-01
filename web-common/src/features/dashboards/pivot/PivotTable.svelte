@@ -34,21 +34,27 @@
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDashboardStore, pivotDataStore],
-    ([pivotConfig, pivotData]) => ({
-      data: pivotData.data,
-      columns: pivotData.columnDef,
-      state: {
-        expanded: pivotConfig.expanded,
-        sorting: pivotConfig.sorting,
-      },
-      onExpandedChange: handleExpandedChange,
-      getSubRows: (row) => row.subRows,
-      onSortingChange: handleSorting,
-      getExpandedRowModel: getExpandedRowModel(),
-      getCoreRowModel: getCoreRowModel(),
-      enableSortingRemoval: false,
-      enableExpanding: true,
-    }),
+    ([pivotConfig, pivotData]) => {
+      let tableData = pivotData.data;
+      if (pivotData.totalsRowData) {
+        tableData = [pivotData.totalsRowData, ...pivotData.data];
+      }
+      return {
+        data: tableData,
+        columns: pivotData.columnDef,
+        state: {
+          expanded: pivotConfig.expanded,
+          sorting: pivotConfig.sorting,
+        },
+        onExpandedChange: handleExpandedChange,
+        getSubRows: (row) => row.subRows,
+        onSortingChange: handleSorting,
+        getExpandedRowModel: getExpandedRowModel(),
+        getCoreRowModel: getCoreRowModel(),
+        enableSortingRemoval: false,
+        enableExpanding: true,
+      };
+    },
   );
 
   const table = createSvelteTable(options);
