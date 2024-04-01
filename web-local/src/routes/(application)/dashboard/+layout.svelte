@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
@@ -16,9 +15,11 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
+  import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import MockUserHasNoAccess from "@rilldata/web-common/features/dashboards/granular-access-policies/MockUserHasNoAccess.svelte";
 
   const queryClient = useQueryClient();
 
@@ -63,7 +64,7 @@
         $resourceStatusStore?.error?.response?.status !== 404
       ) {
         // On all other errors, redirect to the `/edit` page
-        goto(`/dashboard/${metricViewName}/edit`);
+        goto(`/dashboard/${metricViewName}/edit`).catch(console.error);
       } else {
         showErrorPage = true;
       }
@@ -74,12 +75,16 @@
         !$resourceStatusStore.resource?.metricsView?.state?.validSpec?.measures
           ?.length
       ) {
-        goto(`/dashboard/${metricViewName}/edit`);
+        goto(`/dashboard/${metricViewName}/edit`).catch(console.error);
       }
     }
   }
 
   resetSelectedMockUserAfterNavigate(queryClient);
+
+  $: mockUserHasNoAccess =
+    $selectedMockUserStore && $dashboard.error?.response?.status === 404;
+  $: dashboard = useDashboard($runtime.instanceId, metricViewName);
 </script>
 
 <svelte:head>
@@ -92,7 +97,11 @@
       <DashboardStateProvider {metricViewName}>
         <DashboardURLStateProvider {metricViewName}>
           <DashboardThemeProvider>
-            <Dashboard {metricViewName} />
+            {#if mockUserHasNoAccess}
+              <MockUserHasNoAccess />
+            {:else}
+              <slot />
+            {/if}
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
       </DashboardStateProvider>

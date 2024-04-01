@@ -1,8 +1,6 @@
 <script lang="ts">
   import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Tab from "./Tab.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -11,48 +9,41 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  // import { featureFlags } from "../../feature-flags";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
 
-  // const { pivot: pivotAllowed } = featureFlags;
-
-  const StateManagers = getStateManagers();
-
-  const {
-    metricsViewName,
-    selectors: {
-      pivot: { showPivot },
-    },
-  } = StateManagers;
+  $: viewing = $page.params.view;
+  $: metricsViewName = $page.params.name;
 
   const tabs = [
     {
       label: "Explore",
+      route: undefined,
       Icon: Chart,
     },
     {
       label: "Pivot",
+      route: "pivot",
       Icon: Pivot,
       beta: true,
     },
   ];
 
-  $: currentTabIndex = $showPivot ? 1 : 0;
+  async function handleTabChange(route: string | undefined) {
+    if (viewing === route) return;
 
-  function handleTabChange(index: number) {
-    if (currentTabIndex === index) return;
-    const selectedTab = tabs[index];
-
-    metricsExplorerStore.setPivotMode(
-      $metricsViewName,
-      selectedTab.label === "Pivot",
+    await goto(
+      route
+        ? `/dashboard/${metricsViewName}/${route}`
+        : `/dashboard/${metricsViewName}/`,
     );
 
-    behaviourEvent.fireNavigationEvent(
-      $metricsViewName,
+    await behaviourEvent.fireNavigationEvent(
+      metricsViewName,
       BehaviourEventMedium.Tab,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard,
-      selectedTab.label === "Pivot"
+      route === "pivot"
         ? MetricsEventScreenName.Pivot
         : MetricsEventScreenName.Explore,
     );
@@ -61,9 +52,9 @@
 
 <div class="mr-4">
   <div class="flex gap-x-2">
-    {#each tabs as { label, Icon, beta }, i (label)}
-      {@const selected = currentTabIndex === i}
-      <Tab {selected} on:click={() => handleTabChange(i)}>
+    {#each tabs as { label, Icon, beta, route } (label)}
+      {@const selected = viewing === route}
+      <Tab {selected} on:click={() => handleTabChange(route)}>
         <Icon />
         <div class="flex gap-x-1 items-center group">
           {label}

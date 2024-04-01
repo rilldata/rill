@@ -89,8 +89,9 @@
               showContextMenu={!$readOnly}
               name={dashboardName}
               href={`/dashboard/${dashboardName}`}
-              open={$page.url.pathname === `/dashboard/${dashboardName}` ||
-                $page.url.pathname === `/dashboard/${dashboardName}/edit`}
+              open={$page.url.pathname.startsWith(
+                `/dashboard/${dashboardName}`,
+              )}
             >
               <DashboardMenuItems
                 slot="menu-items"
