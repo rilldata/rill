@@ -1,16 +1,23 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+  import { page } from "$app/stores";
+  import { allSelectedDimensions } from "../workspace/dashboard-store";
 
-  const {
-    selectors: {
-      dimensions: { visibleDimensions },
-    },
-    metricsViewName,
-  } = getStateManagers();
+  export let dimensions: MetricsViewSpecDimensionV2[];
+
+  $: metricsViewName = $page.params.name;
+
+  $: hiddenDimensions = allSelectedDimensions.get(metricsViewName);
+
+  $: visibleDimensions = dimensions.filter(
+    (d) => !$hiddenDimensions.has(d.name ?? ""),
+  );
+
+  // $: console.log($hiddenDimensions);
 
   /** Functionality for resizing the virtual leaderboard */
   let columns = 3;
@@ -35,6 +42,11 @@
   onDestroy(() => {
     observer?.disconnect();
   });
+
+  function toggleDimension(e: CustomEvent<{ index: number; name: string }>) {
+    const { name } = e.detail;
+    hiddenDimensions.toggle(name);
+  }
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -45,14 +57,21 @@
   style:min-width="365px"
 >
   <div class="pl-1 pb-3">
-    <LeaderboardControls metricViewName={$metricsViewName} />
+    <LeaderboardControls
+      {dimensions}
+      {metricsViewName}
+      on:item-clicked={toggleDimension}
+      selectedDimensions={dimensions.map(
+        (d) => !$hiddenDimensions.has(d.name ?? ""),
+      )}
+    />
   </div>
   <div class="grow overflow-hidden">
-    {#if $visibleDimensions.length > 0}
+    {#if visibleDimensions.length > 0}
       <VirtualizedGrid
         {columns}
         height="100%"
-        items={$visibleDimensions}
+        items={visibleDimensions}
         let:item
       >
         <!-- the single virtual element -->

@@ -21,8 +21,10 @@
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName: string;
+  export let dimensions: MetricsViewSpecDimensionV2[];
 
   const { cloudDataViewer, readOnly } = featureFlags;
 
@@ -118,7 +120,7 @@
           {:else if selectedDimensionName}
             <DimensionDisplay />
           {:else}
-            <LeaderboardDisplay />
+            <LeaderboardDisplay {dimensions} />
           {/if}
         </div>
       {/if}

@@ -17,6 +17,9 @@
   import { createModel } from "../createModel";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+
+  export let assets: V1Resource[];
 
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: useModelNames = useModelFileNames($runtime.instanceId);
@@ -60,7 +63,8 @@
 
   {#if showModels}
     <ol transition:slide={{ duration }} id="assets-model-list">
-      {#each modelNames as modelName (modelName)}
+      {#each assets as asset (asset.meta?.name?.name)}
+        {@const modelName = asset.meta?.name?.name}
         <li animate:flip={{ duration }} aria-label={modelName}>
           <NavigationEntry
             expandable

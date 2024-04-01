@@ -24,6 +24,7 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
   import { addSourceModal } from "../modal/add-source-visibility";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   let showTables = true;
   let showRenameTableModal = false;
