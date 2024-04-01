@@ -9,7 +9,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { matchSorter } from "match-sorter";
   import { createEventDispatcher } from "svelte";
-  import { V1User, createAdminServiceSearchProjectUsers } from "../../client";
+  import {
+    type V1User,
+    createAdminServiceSearchProjectUsers,
+  } from "../../client";
   import { errorStore } from "../../features/errors/error-store";
   import { setViewedAsUser } from "./setViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";

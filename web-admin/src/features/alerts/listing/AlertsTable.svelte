@@ -3,7 +3,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { ColumnDef, flexRender } from "@tanstack/svelte-table";
+  import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
   import { useAlerts } from "../../alerts/selectors";
   import AlertsError from "./AlertsError.svelte";
