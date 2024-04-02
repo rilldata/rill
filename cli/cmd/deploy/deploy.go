@@ -157,8 +157,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		var remote *gitutil.Remote
 		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
-			// It's not a valid remote for Github. We still navigate user to login and then ask user to chhose either to create repo manually
-			// or let rill create one for them.
+			// It's not a valid remote for Github. We still navigate user to login and then ask user to chhose either to create repo manually or let rill create one for them.
 			if !ch.IsAuthenticated() {
 				err := loginWithTelemetry(ctx, ch, "")
 				if err != nil {
@@ -426,7 +425,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			// Ready to check again.
 		}
 
-		// Poll for access to the Github URL
+		// Poll for access to the Github's user account
 		pollRes, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 		if err != nil {
 			return err
@@ -439,7 +438,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		// Emit success telemetry
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
 
-		var githubRepository *github.Repository
 		repoOwner := pollRes.Account
 		if len(pollRes.Organizations) > 0 {
 			repoOwners := []string{pollRes.Account}
@@ -447,9 +445,8 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			ch.Print("\nYou have also access to organization(s)\n\n")
 			repoOwner = cmdutil.SelectPrompt("Please chhose where to create the repository", repoOwners, pollRes.Account)
 		}
-		// check for name conlict
-		// verify creation
-		githubRepository, err = createGithubRepository(ctx, ch, pollRes, localGitPath, repoOwner)
+		// create and verify
+		githubRepository, err := createGithubRepository(ctx, ch, pollRes, localGitPath, repoOwner)
 		if err != nil {
 			return err
 		}
@@ -471,6 +468,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			return fmt.Errorf("failed to get worktree: %w", err)
 		}
 
+		// git add .
 		if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
 			return fmt.Errorf("failed to add files to git: %w", err)
 		}
@@ -545,10 +543,9 @@ func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *ad
 			// Ready to check again.
 		}
 		_, _, err := githubClient.Repositories.Get(ctx, repoOwner, repoName)
-		if err != nil {
-			continue
+		if err == nil {
+			break
 		}
-		break
 	}
 
 	return githubRepo, nil

@@ -40,17 +40,14 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
-	userNotFound := false
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.NotFound, err.Error())
 		}
-
-		userNotFound = true
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if userNotFound || user.GithubUsername == "" {
-		// If user is not present or we don't have user's github username we navigate user to installtion assuming they never installed
-		// github app
+	if user.GithubUsername == "" {
+		// If we don't have user's github username we navigate user to installtion assuming they never installed github app
 		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
@@ -91,7 +88,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, user.GithubUsername)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, fmt.Errorf("failed to get user installation: %w", err)
 	}
 
 	gitClient, err := s.admin.Github.InstallationClient(*installation.ID)
@@ -104,7 +101,6 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
 	}
 
-	// Check whether we have the access to the org
 	var orgNames []string
 	for _, org := range orgs {
 		orgNames = append(orgNames, org.GetLogin())
