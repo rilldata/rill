@@ -1,17 +1,19 @@
 import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
-import type {
-  CompareWith,
-  CriteriaOperations,
+import {
+  type CompareWith,
+  type CriteriaOperations,
+  IsCompareCriteriaOperation,
 } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
 import {
   createAndExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
-  V1Expression,
-  V1MetricsViewComparisonRequest,
-  V1Operation,
-  V1TimeRange,
+import {
+  type V1Expression,
+  V1MetricsViewComparisonMeasureType,
+  type V1MetricsViewComparisonRequest,
+  type V1Operation,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 
@@ -35,11 +37,18 @@ export type AlertFormValues = {
   metricsViewName: string;
   whereFilter: V1Expression;
   timeRange: V1TimeRange;
+  comparisonTimeRange: V1TimeRange | undefined;
 };
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
 ): V1MetricsViewComparisonRequest {
+  const addComparison =
+    !!formValues.comparisonTimeRange &&
+    !!formValues.criteria.find(
+      (c) => c.operation in IsCompareCriteriaOperation,
+    );
+
   return {
     metricsViewName: formValues.metricsViewName,
     measures: [{ name: formValues.measure }],
@@ -58,6 +67,40 @@ export function getAlertQueryArgsFromFormValues(
     timeRange: {
       isoDuration: formValues.timeRange.isoDuration,
     },
+    ...(addComparison
+      ? {
+          comparisonTimeRange: {
+            // Use time range to add duration and offset in case comparison is not enabled
+            isoDuration:
+              formValues.comparisonTimeRange?.isoDuration ??
+              formValues.timeRange.isoDuration,
+            isoOffset:
+              formValues.comparisonTimeRange?.isoOffset ??
+              formValues.timeRange.isoDuration,
+          },
+        }
+      : {}),
+    sort: [
+      {
+        name: formValues.measure,
+        sortType:
+          V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+      },
+    ],
+    aliases: addComparison
+      ? [
+          {
+            name: formValues.measure,
+            type: V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+            alias: formValues.measure + "__delta_abs",
+          },
+          {
+            name: formValues.measure,
+            type: V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+            alias: formValues.measure + "__delta_rel",
+          },
+        ]
+      : [],
   };
 }
 

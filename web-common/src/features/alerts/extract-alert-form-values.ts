@@ -3,9 +3,8 @@ import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewAggregationDimension,
-  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
+  type V1MetricsViewComparisonRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1Operation,
@@ -17,6 +16,7 @@ export type AlertFormValuesSubset = Pick<
   | "metricsViewName"
   | "whereFilter"
   | "timeRange"
+  | "comparisonTimeRange"
   | "measure"
   | "splitByDimension"
   | "criteria"
@@ -30,10 +30,6 @@ export function extractAlertFormValues(
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
-  const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
-  const dimensions =
-    queryArgs.dimensions as V1MetricsViewAggregationDimension[];
-
   const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
     isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
   };
@@ -42,8 +38,8 @@ export function extractAlertFormValues(
   }
 
   return {
-    measure: measures[0]?.name ?? "",
-    splitByDimension: dimensions[0]?.name ?? "",
+    measure: queryArgs.measures?.[0]?.name ?? "",
+    splitByDimension: queryArgs.dimensions?.[0]?.name ?? "",
 
     criteria:
       queryArgs.having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
@@ -53,5 +49,36 @@ export function extractAlertFormValues(
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
     timeRange,
+    comparisonTimeRange: undefined,
+  };
+}
+
+export function extractAlertFormValueFromComparison(
+  queryArgs: V1MetricsViewComparisonRequest,
+  metricsViewSpec: V1MetricsViewSpec,
+  allTimeRange: V1MetricsViewTimeRangeResponse,
+) {
+  if (!queryArgs) return {} as AlertFormValuesSubset;
+
+  const timeRange = queryArgs.timeRange ?? {
+    isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
+  };
+  if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
+    timeRange.end = allTimeRange.timeRangeSummary?.max;
+  }
+
+  return {
+    measure: queryArgs.measures?.[0]?.name ?? "",
+    splitByDimension: queryArgs.dimension?.name ?? "",
+
+    criteria:
+      queryArgs.having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
+    criteriaOperation: queryArgs.having?.cond?.op ?? V1Operation.OPERATION_AND,
+
+    // These are not part of the form, but are used to track the state of the form
+    metricsViewName: queryArgs.metricsViewName as string,
+    whereFilter: queryArgs.where ?? createAndExpression([]),
+    timeRange,
+    comparisonTimeRange: queryArgs.comparisonTimeRange,
   };
 }

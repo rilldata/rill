@@ -191,6 +191,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Having:              req.Having,
 		Exact:               req.Exact,
 		Filter:              req.Filter,
+		Aliases:             req.Aliases,
 		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

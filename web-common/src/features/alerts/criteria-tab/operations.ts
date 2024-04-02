@@ -2,9 +2,8 @@ import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 export enum CriteriaOperations {
   GreaterThan = "GreaterThan",
-  LessThan = "LessThan",
-  // For backwards compatibility but not available as option
   GreaterThanOrEquals = "GreaterThanOrEquals",
+  LessThan = "LessThan",
   LessThanOrEquals = "LessThanOrEquals",
   IncreasesBy = "IncreasesBy",
   DecreasesBy = "DecreasesBy",
@@ -12,6 +11,13 @@ export enum CriteriaOperations {
   ShareOfTotalsGreaterThan = "ShareOfTotalsGreaterThan",
   ShareOfTotalsLessThan = "ShareOfTotalsLessThan",
 }
+export const IsCompareCriteriaOperation: Partial<
+  Record<CriteriaOperations, boolean>
+> = {
+  [CriteriaOperations.IncreasesBy]: true,
+  [CriteriaOperations.DecreasesBy]: true,
+  [CriteriaOperations.ChangesBy]: true,
+};
 
 export enum CompareWith {
   Value = "Value",
@@ -35,8 +41,16 @@ export const CriteriaOperationOptions = [
     label: "is greater than",
   },
   {
+    value: CriteriaOperations.GreaterThanOrEquals,
+    label: "is greater than or equals",
+  },
+  {
     value: CriteriaOperations.LessThan,
     label: "is less than",
+  },
+  {
+    value: CriteriaOperations.LessThanOrEquals,
+    label: "is less than or equals",
   },
   {
     value: CriteriaOperations.IncreasesBy,

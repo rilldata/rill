@@ -59,11 +59,11 @@
     placeholder="Operator"
   />
   <Select
+    bind:value={$form["criteria"][index].compareWith}
     id="compareWith"
     label=""
     options={CompareWithOptions}
     placeholder="compare with"
-    value={$form["criteria"][index].compareWith}
   />
   <InputV2
     alwaysShowError

@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
-  import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+  import {
+    extractAlertFormValueFromComparison,
+    extractAlertFormValues,
+  } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     useMetricsView,
     useMetricsViewTimeRange,
@@ -16,6 +19,7 @@
     V1MetricsViewAggregationRequest,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    type V1MetricsViewComparisonRequest,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { ResourceKind } from "../entity-management/resource-selectors";
@@ -23,6 +27,7 @@
   import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
     alertFormValidationSchema,
+    AlertFormValues,
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
@@ -37,9 +42,9 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: alertName = $page.params.alert;
-  const queryArgsJson = JSON.parse(
-    alertSpec.queryArgsJson as string,
-  ) as V1MetricsViewAggregationRequest;
+  const queryArgsJson = JSON.parse(alertSpec.queryArgsJson as string) as
+    | V1MetricsViewAggregationRequest
+    | V1MetricsViewComparisonRequest;
 
   $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);
   $: timeRange = useMetricsViewTimeRange(
@@ -54,12 +59,18 @@
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
-      ...extractAlertFormValues(
-        queryArgsJson,
-        $metricsViewSpec?.data ?? {},
-        $timeRange?.data ?? {},
-      ),
-    },
+      ...("metricsView" in queryArgsJson
+        ? extractAlertFormValues(
+            queryArgsJson,
+            $metricsViewSpec?.data ?? {},
+            $timeRange?.data ?? {},
+          )
+        : extractAlertFormValueFromComparison(
+            queryArgsJson,
+            $metricsViewSpec?.data ?? {},
+            $timeRange?.data ?? {},
+          )),
+    } as AlertFormValues,
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {
       try {
