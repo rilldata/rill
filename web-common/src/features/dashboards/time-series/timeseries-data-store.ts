@@ -45,7 +45,7 @@ export type TimeSeriesDataState = {
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
-function createMetricsViewTimeSeries(
+export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
