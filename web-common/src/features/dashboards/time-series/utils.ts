@@ -147,6 +147,13 @@ export function getFilterForComparedDimension(
   return updatedFilter;
 }
 
+/**
+ * This function transforms aggregation response data into time series
+ * response data. The aggregation API do not null fill missing data.
+ * We use the timeseries response data to create headers and null fill
+ * missing data. This also converts Aggregation API's cell level data to
+ * row level data
+ */
 export function transformAggregateDimensionData(
   timeDimension: string,
   dimensionName: string,
@@ -154,7 +161,7 @@ export function transformAggregateDimensionData(
   dimensionValues: string[],
   timeSeriesData: V1TimeSeriesValue[],
   response: V1MetricsViewAggregationResponseDataItem[],
-) {
+): V1TimeSeriesValue[][] {
   const emptyData: V1TimeSeriesValue[][] = new Array<V1TimeSeriesValue[]>(
     dimensionValues.length,
   ).fill([]);

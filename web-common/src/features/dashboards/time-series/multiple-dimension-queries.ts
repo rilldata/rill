@@ -40,6 +40,8 @@ import {
   transformAggregateDimensionData,
 } from "./utils";
 
+const MAX_TDD_VALUES_LENGTH = 250;
+const BATCH_SIZE = 50;
 export interface DimensionDataItem {
   value: string | null;
   total?: number;
@@ -154,7 +156,7 @@ export function getDimensionValuesForComparison(
                   name: sortBy,
                 },
               ],
-              limit: "250",
+              limit: MAX_TDD_VALUES_LENGTH.toString(),
               offset: "0",
             },
             {
@@ -184,7 +186,7 @@ export function getDimensionValuesForComparison(
 
             return {
               totals: totalValues,
-              values: topListValues?.slice(0, 250),
+              values: topListValues?.slice(0, MAX_TDD_VALUES_LENGTH),
               filter: getFilterForComparedDimension(
                 dimensionName,
                 dashboardStore?.whereFilter,
@@ -202,7 +204,7 @@ function batchAggregationQueries(
   measures: string[],
   dimensionValues: DimensionTopList,
 ) {
-  const batches = createBatches(dimensionValues.values, 50);
+  const batches = createBatches(dimensionValues.values, BATCH_SIZE);
   const queries = batches.map((batch) =>
     getAggregationQueryForTopList(ctx, measures, {
       values: batch,
