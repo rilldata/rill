@@ -3,7 +3,7 @@
  * the `ErrorBoundary` component catches and routes to the `ErrorPage`.
  */
 
-import { derived, writable, Writable } from "svelte/store";
+import { derived, writable, type Writable } from "svelte/store";
 
 export interface ErrorStoreState {
   statusCode: number | null;
