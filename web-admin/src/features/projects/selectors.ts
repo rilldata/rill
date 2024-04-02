@@ -12,9 +12,30 @@ export function getProjectPermissions(orgName: string, projName: string) {
   });
 }
 
+/**
+ * Function: getProjectRuntimeQueryKey
+ *
+ * This function generates a unique query key for `GetProject` requests related to the project *runtime*.
+ * This is a workaround to manage a side effect of calling `GetProject` for project *status*:
+ * - a new JWT is returned
+ * - the Runtime Store is updated, and all dependent stores are refreshed
+ * - certain outstanding queries are cancelled and refetched (BAD!)
+ *
+ * By using a unique query key, requests and responses for the project runtime are managed separately
+ * from those for the project status.
+ *
+ * Note: A better solution for the future would be to break the Runtime Store into more granular
+ * stores. Then, we can update the JWT independently from the runtime's instanceID. This will prevent
+ * unnecessary query cancellations and refetches.
+ */
+export function getProjectRuntimeQueryKey(orgName: string, projName: string) {
+  return ["projectRuntime", orgName, projName];
+}
+
 export function useProjectRuntime(orgName: string, projName: string) {
   return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
+      queryKey: getProjectRuntimeQueryKey(orgName, projName),
       // Proactively refetch the JWT before it expires
       refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2,
       select: (data) => {

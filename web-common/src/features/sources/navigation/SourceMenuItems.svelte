@@ -5,10 +5,7 @@
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -79,10 +76,10 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  const handleDeleteSource = async (tableName: string) => {
+  const handleDeleteSource = async () => {
     await deleteFileArtifact(
       runtimeInstanceId,
-      getFileAPIPathFromNameAndType(tableName, EntityType.Table),
+      filePath,
       EntityType.Table,
       $sourceRoutes.data ?? [],
     );
@@ -110,7 +107,7 @@
     }
   };
 
-  const onRefreshSource = async (tableName: string) => {
+  const onRefreshSource = async () => {
     const connector: string | undefined =
       source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
@@ -119,7 +116,7 @@
       return;
     }
     try {
-      await refreshSource(connector, tableName, runtimeInstanceId);
+      await refreshSource(connector, filePath, sourceName, runtimeInstanceId);
     } catch (err) {
       // no-op
     }
@@ -128,17 +125,17 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName,
+    filePath,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
-  async function onReplaceSource(sourceName: string) {
+  async function onReplaceSource() {
     await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
     overlay.set(null);
   }
 </script>
 
-<NavigationMenuItem on:click={() => handleCreateModel()}>
+<NavigationMenuItem on:click={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
@@ -185,13 +182,13 @@
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={() => onRefreshSource(sourceName)}>
+<NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
 </NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <NavigationMenuItem on:click={() => onReplaceSource(sourceName)}>
+  <NavigationMenuItem on:click={onReplaceSource}>
     <Import slot="icon" />
     Replace source with uploaded file
   </NavigationMenuItem>
@@ -209,7 +206,7 @@
 </NavigationMenuItem>
 
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<NavigationMenuItem on:click={() => handleDeleteSource(sourceName)}>
+<NavigationMenuItem on:click={handleDeleteSource}>
   <Cancel slot="icon" />
   Delete
 </NavigationMenuItem>

@@ -107,6 +107,34 @@ export function reduceTableCellDataIntoRows(
   return tableData;
 }
 
+export function getTotalsRowSkeleton(
+  config: PivotDataStoreConfig,
+  columnDimensionAxes: Record<string, string[]> = {},
+) {
+  const { rowDimensionNames, measureNames } = config;
+  const anchorDimensionName = rowDimensionNames[0];
+
+  let totalsRow: PivotDataRow = {};
+  if (measureNames.length) {
+    const totalsRowTable = reduceTableCellDataIntoRows(
+      config,
+      "",
+      [],
+      columnDimensionAxes || {},
+      [],
+      [],
+    );
+
+    totalsRow = totalsRowTable[0] || {};
+
+    if (anchorDimensionName) {
+      totalsRow[anchorDimensionName] = "Total";
+    }
+  }
+
+  return totalsRow;
+}
+
 export function getTotalsRow(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},

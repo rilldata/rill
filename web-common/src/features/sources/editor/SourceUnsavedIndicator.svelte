@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { cubicOut } from "svelte/easing";
   import { scale } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -6,12 +8,14 @@
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
+  // TODO: refactor this once we have moved everything and WorkspaceHeader is
+  $: filePath = getFileAPIPathFromNameAndType(sourceName, EntityType.Table);
 
-  $: sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(filePath);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    sourceName,
+    filePath,
     $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;

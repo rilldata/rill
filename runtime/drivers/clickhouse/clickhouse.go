@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
@@ -27,22 +28,35 @@ var spec = drivers.Spec{
 	// custom instructions for how to connect Clickhouse as the OLAP driver.
 }
 
+var maxOpenConnections = 20
+
 type driver struct{}
 
-var maxOpenConnections = 20
+type configProperties struct {
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
+	LogQueries bool `mapstructure:"log_queries"`
+}
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(confMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("clickhouse driver can't be shared")
 	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open clickhouse connection")
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(confMap, conf)
+	if err != nil {
+		return nil, err
 	}
 
-	db, err := sqlx.Open("clickhouse", dsn)
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("no DSN provided to open the connection")
+	}
+
+	db, err := sqlx.Open("clickhouse", conf.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +70,25 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("connection: %w", err)
 	}
 
+	// group by positional args are supported post 22.7 and we use them heavily in our queries
+	row := db.QueryRow(`
+	WITH
+    	splitByChar('.', version()) AS parts,
+    	toInt32(parts[1]) AS major,
+    	toInt32(parts[2]) AS minor
+	SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
+`)
+	var isSupported bool
+	if err := row.Scan(&isSupported); err != nil {
+		return nil, err
+	}
+	if !isSupported {
+		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
+	}
+
 	conn := &connection{
 		db:      db,
-		config:  config,
+		config:  conf,
 		logger:  logger,
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
@@ -84,7 +114,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	db       *sqlx.DB
-	config   map[string]any
+	config   *configProperties
 	logger   *zap.Logger
 	activity *activity.Client
 
@@ -106,7 +136,9 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.config, m)
+	return m
 }
 
 // Close implements drivers.Connection.

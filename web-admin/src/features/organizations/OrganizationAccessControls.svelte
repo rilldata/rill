@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceGetOrganization,
-    V1OrganizationPermissions,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
 

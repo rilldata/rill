@@ -6,7 +6,7 @@
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/table-core/src/types";
+  import type { ColumnDef } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
 
   export let alert: string;
