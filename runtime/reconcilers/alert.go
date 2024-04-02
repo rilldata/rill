@@ -852,7 +852,7 @@ func extractQueryResultFirstRow(q runtime.Query) (map[string]any, bool, error) {
 		if q.Result != nil && len(q.Result.Rows) > 0 {
 			row := q.Result.Rows[0]
 			res := make(map[string]any)
-			res[q.DimensionName] = row.DimensionValue
+			res[q.DimensionName] = row.DimensionValue.AsInterface()
 			for _, v := range row.MeasureValues {
 				res[v.MeasureName] = v.BaseValue.AsInterface()
 				if v.ComparisonValue != nil {

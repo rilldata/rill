@@ -4,6 +4,7 @@
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
+  import { extractFromQuery } from "@rilldata/web-admin/features/alerts/metadata/extractFromQuery";
   import { humaniseAlertSnoozeOption } from "@rilldata/web-admin/features/alerts/metadata/utils";
   import {
     useAlert,
@@ -20,10 +21,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import EditAlertDialog from "@rilldata/web-common/features/alerts/EditAlertDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import {
-    getRuntimeServiceListResourcesQueryKey,
-    type V1MetricsViewAggregationRequest,
-  } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -40,9 +38,8 @@
   $: dashboardTitle =
     $dashboard.data?.metricsView.spec.title || $dashboardName.data;
 
-  $: metricsViewAggregationRequest = JSON.parse(
-    $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
-  ) as V1MetricsViewAggregationRequest;
+  $: query = extractFromQuery($alertQuery.data?.resource?.alert?.spec);
+  $: console.log(query);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(
     $alertQuery.data?.resource?.alert?.spec,
@@ -130,7 +127,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Split by dimension</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions[0]?.name ?? "None"}
+          {query.dimension ?? "None"}
         </MetadataValue>
       </div>
 
@@ -148,15 +145,12 @@
     </div>
 
     <!-- Filters -->
-    <AlertFilters
-      metricsViewName={$dashboardName.data}
-      filters={metricsViewAggregationRequest?.where}
-    />
+    <AlertFilters metricsViewName={$dashboardName.data} filters={query.where} />
 
     <!-- Criteria -->
     <AlertFilterCriteria
       metricsViewName={$dashboardName.data}
-      filters={metricsViewAggregationRequest?.having}
+      filters={query.having}
     />
 
     <!-- Recipients -->

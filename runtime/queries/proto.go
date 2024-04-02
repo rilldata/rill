@@ -53,6 +53,7 @@ func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, erro
 			Where:               req.Where,
 			Having:              req.Having,
 			Filter:              req.Filter,
+			Aliases:             req.Aliases,
 			Exact:               req.Exact,
 			SecurityAttributes:  attrs,
 		}, nil
@@ -105,6 +106,9 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 		}
 		if executionTime != nil {
 			req.TimeRange = overrideTimeRange(req.TimeRange, *executionTime)
+			if req.ComparisonTimeRange != nil {
+				req.ComparisonTimeRange = overrideTimeRange(req.ComparisonTimeRange, *executionTime)
+			}
 		}
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", qryName)

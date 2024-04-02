@@ -121,6 +121,7 @@ function getAlertPreviewQueryOptions(
 }
 
 export function getAlertCriteriaData(
+  queryClient: QueryClient,
   formValues: AlertFormValues,
 ): CreateQueryResult<{
   rows: Record<string, any>[];
@@ -167,6 +168,7 @@ export function getAlertCriteriaData(
                 metricsViewSchemaResp.data as V1StructType,
                 data,
               ),
+            queryClient,
           },
         },
       ).subscribe(set),

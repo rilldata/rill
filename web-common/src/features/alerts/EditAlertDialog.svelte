@@ -115,11 +115,20 @@
   });
   const { form } = formState;
   $: if ($metricsViewSpec?.data && $timeRange?.data) {
-    const formValues = extractAlertFormValues(
-      queryArgsJson,
-      $metricsViewSpec.data,
-      $timeRange.data,
-    );
+    let formValues: Record<string, any>;
+    if ("metricsView" in queryArgsJson) {
+      formValues = extractAlertFormValues(
+        queryArgsJson,
+        $metricsViewSpec.data,
+        $timeRange.data,
+      );
+    } else {
+      formValues = extractAlertFormValueFromComparison(
+        queryArgsJson,
+        $metricsViewSpec.data,
+        $timeRange.data,
+      );
+    }
     for (const fk in formValues) {
       $form[fk] = formValues[fk];
     }
