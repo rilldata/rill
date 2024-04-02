@@ -187,7 +187,7 @@ you can exit the command and create a repository manually.
 			}
 			// ideally this should be clubbed with login similar to main github flow to reduce switch between CLI and browser
 			// but it is not possible right now since we need an input from user for the org where they want to create the repo.
-			if err = createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
+			if err := createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
 				return err
 			}
 			// In the rest of the flow we still check for the github access.
@@ -413,7 +413,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			// Open browser if possible
 			_ = browser.Open(res.GrantAccessUrl)
 		}
-
 	}
 
 	// Poll for permission granted
@@ -477,7 +476,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		}
 
 		// git commit -m
-		_, err = wt.Commit("Auto comitted by Rill", &git.CommitOptions{All: true})
+		_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
 		if err != nil {
 			if !errors.Is(err, git.ErrEmptyCommit) {
 				return fmt.Errorf("failed to commit files to git: %w", err)
@@ -500,7 +499,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	}
 }
 
-func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *adminv1.GetGithubUserStatusResponse, localGitPath string, repoOwner string) (*github.Repository, error) {
+func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *adminv1.GetGithubUserStatusResponse, localGitPath, repoOwner string) (*github.Repository, error) {
 	githubClient := github.NewTokenClient(ctx, pollRes.AccessToken)
 
 	defaultBranch := "main"
@@ -518,7 +517,7 @@ func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *ad
 		}
 
 		if strings.Contains(err.Error(), "authentication") || strings.Contains(err.Error(), "credentials") {
-			// The users who installed app before we started including repo:write permissions need to accept permissions 
+			// The users who installed app before we started including repo:write permissions need to accept permissions
 			// and then only we can create repositories.
 			return nil, fmt.Errorf("rill app does not have permissions to create github repository. Visit `https://github.com/settings/installations` to accept new permissions or reinstall app and try again")
 		}
