@@ -41,8 +41,8 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
