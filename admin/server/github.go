@@ -75,6 +75,8 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		}, nil
 	}
 
+	// refresh token changes after using it for getting a new token
+	// so saving the updated refresh token
 	user, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
@@ -87,8 +89,17 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
-	client := github.NewTokenClient(ctx, token)
-	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, user.GithubUsername)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	gitClient, err := s.admin.Github.InstallationClient(*installation.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get installation client: %w", err)
+	}
+
+	orgs, _, err := gitClient.Organizations.List(ctx, user.GithubUsername, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
 	}
@@ -96,11 +107,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	// Check whether we have the access to the org
 	var orgNames []string
 	for _, org := range orgs {
-		// the name of org is in a field login ¯\_(ツ)_/¯
-		org, _, err := s.admin.Github.AppClient().Organizations.Get(ctx, org.GetLogin())
-		if err == nil { // keep it simple and consider all errors as access not present
-			orgNames = append(orgNames, org.GetLogin())
-		}
+		orgNames = append(orgNames, org.GetLogin())
 	}
 
 	return &adminv1.GetGithubUserStatusResponse{
