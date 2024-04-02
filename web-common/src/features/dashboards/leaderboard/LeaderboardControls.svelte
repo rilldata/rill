@@ -14,7 +14,8 @@
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
-
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   export let metricsViewName: string;
   export let selectedDimensions: boolean[];
   export let dimensions: MetricsViewSpecMeasureV2[];
@@ -28,13 +29,22 @@
 
   $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
 
+  $: selectedMeasure = $page.data.sortMeasure;
+
   $: measures = $metricsView.data?.measures;
+
+  $: console.log($page);
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsViewName];
 
-  function handleMeasureUpdate(event: CustomEvent) {
-    setLeaderboardMeasureName(event.detail.key);
+  $: searchParams = $page.url.searchParams;
+
+  async function handleMeasureUpdate(event: CustomEvent) {
+    const newParams = new URLSearchParams(searchParams);
+
+    newParams.set("measure", event.detail.key);
+    await goto(`?${newParams.toString()}`);
   }
 
   function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
@@ -87,6 +97,8 @@
       };
     }) || [];
 
+  $: console.log({ options });
+
   /** set the selection only if measures is not undefined */
   $: selection = unformattedMeasure && measureKeyAndMain(unformattedMeasure);
 
@@ -136,7 +148,7 @@
       <SelectMenu
         fixedText="Showing"
         {options}
-        selections={[selection.key]}
+        selections={[selectedMeasure]}
         on:select={handleMeasureUpdate}
         ariaLabel="Select a measure to filter by"
       />

@@ -30,6 +30,9 @@ import type {
 import { prepareSortedQueryBody } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { DateTime } from "luxon";
+import { getRange } from "@rilldata/web-common/lib/time/ranges/get-range";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.js";
+import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges/index.js";
 
 export const ssr = false;
 
@@ -54,21 +57,42 @@ export async function load({ parent, params, url }) {
     throw error(404, "Metrics view not found");
   }
 
+  const { min, max } = parentData.timeRange;
+
   const availableTimeZones = ["UTC"].concat(spec.availableTimeZones ?? []);
 
   const searchParams = new URLSearchParams(url.searchParams);
 
-  const { timeStart, timeEnd, timeGrain, timeZone } =
+  const queryMeasure = searchParams.get("measure");
+
+  const { queryStart, queryEnd, queryGrain, queryZone } =
     getTimeRangeParams(searchParams);
 
   const measures = spec.measures ?? [];
   const dimensions = spec.dimensions ?? [];
-  const timeGranularity =
-    timeGrain ?? spec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
+  const timeGrain =
+    queryGrain ?? spec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
   const measureNames = measures
     .map((m) => m.name)
     .filter((name): name is string => !!name);
-  const defaultMeasures = spec.defaultMeasures ?? [];
+  const sortMeasure =
+    queryMeasure ?? spec.defaultMeasures[0] ?? measureNames[0];
+  const defaultTimeRange = ISODurationToTimePreset(spec.defaultTimeRange);
+  const timeZone = queryZone ?? availableTimeZones[0];
+  console.log("HUH???", spec.defaultMeasures, measureNames, sortMeasure);
+  const range = getRange({
+    min,
+    max,
+    period: defaultTimeRange,
+    zone: timeZone,
+    queryStart,
+    queryEnd,
+  });
+
+  const timeStart = range.start.toISO() ?? min;
+  const timeEnd = range.end.toISO() ?? max;
+
+  console.log({ timeStart, timeEnd });
 
   const where: V1Expression = {};
 
@@ -111,11 +135,11 @@ export async function load({ parent, params, url }) {
     const luxonStart = DateTime.fromISO(timeStart);
 
     const numberOfPeriods = luxonEnd
-      .diff(luxonStart, grainMap[timeGranularity])
-      .toObject()[grainMap[timeGranularity]];
+      .diff(luxonStart, grainMap[timeGrain])
+      .toObject()[grainMap[timeGrain]];
 
     adjustedEnd = luxonStart
-      .plus({ [grainMap[timeGranularity]]: Math.ceil(numberOfPeriods) + 1 })
+      .plus({ [grainMap[timeGrain]]: Math.ceil(numberOfPeriods) + 1 })
       .setZone(timeZone)
       .toISO();
   }
@@ -123,7 +147,7 @@ export async function load({ parent, params, url }) {
   const body: QueryServiceMetricsViewTimeSeriesBody = {
     measureNames,
     timeZone: "UTC",
-    timeGranularity,
+    timeGranularity: timeGrain,
     where,
     timeStart,
     timeEnd: adjustedEnd ?? undefined,
@@ -171,7 +195,7 @@ export async function load({ parent, params, url }) {
           timeStart,
           timeEnd,
         },
-        measureNames[0],
+        sortMeasure,
         SortType.PERCENT,
         false,
         localWhere,
@@ -235,6 +259,7 @@ export async function load({ parent, params, url }) {
     );
   });
 
+  console.log("yeah");
   return {
     metricsView: spec,
     dimensions: state.validSpec?.dimensions ?? [],
@@ -245,7 +270,8 @@ export async function load({ parent, params, url }) {
     timeEnd,
     totals: await totals,
     leaderBoards,
-    timeGrain: timeGranularity,
+    timeGrain,
+    sortMeasure,
     smallestTimeGrain: spec.smallestTimeGrain,
     availableTimeRanges: spec.availableTimeRanges,
   };
@@ -260,23 +286,22 @@ const grainMap = {
 };
 
 function getTimeRangeParams(searchParams: URLSearchParams) {
-  const timeZone =
-    (() => {
-      const zone = searchParams.get("timeZone");
-      searchParams.delete("timeZone");
-      return zone;
-    })() ?? "UTC";
+  const timeZone = (() => {
+    const zone = searchParams.get("timeZone");
+    searchParams.delete("timeZone");
+    return zone ?? null;
+  })();
 
   const timeStart = (() => {
     const start = searchParams.get("start");
     searchParams.delete("start");
-    return start ?? undefined;
+    return start ?? null;
   })();
 
   const timeEnd = (() => {
     const end = searchParams.get("end");
     searchParams.delete("end");
-    return end ?? undefined;
+    return end ?? null;
   })();
 
   const timeGrain = (() => {
@@ -288,10 +313,10 @@ function getTimeRangeParams(searchParams: URLSearchParams) {
   })();
 
   return {
-    timeStart,
-    timeEnd,
-    timeGrain,
-    timeZone,
+    queryStart: timeStart,
+    queryEnd: timeEnd,
+    queryGrain: timeGrain,
+    queryZone: timeZone,
   };
 }
 
