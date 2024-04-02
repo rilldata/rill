@@ -18,7 +18,7 @@
   }
 </script>
 
-<DropdownMenu.Content class="min-w-44" align="start">
+<DropdownMenu.Content class="min-w-44 max-h-96 overflow-y-auto" align="start">
   {#each options as option, i (option.key)}
     {@const selected = selections.includes(option.key)}
     <DropdownMenu.CheckboxItem

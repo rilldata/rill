@@ -10,13 +10,13 @@ import TabItem from '@theme/TabItem';
 
 ## Overview
 
-Rill's strategy for fast dashboards is twofold:
+Rill's strategy for fast dashboards is two-fold:
 
-1) Define metrics & dimensions up front use these definitions to automatically aggregate and prune the raw tables. This modest modeling pain yields a massive gain: the data footprint is typically 10-100X smaller than the underlying raw sources.
+1) *Define metrics & dimensions up front*, and use these definitions to automatically aggregate and prune the raw tables. This modest modeling pain yields a massive gain: the data footprint of aggregated metrics is typically 10-100X smaller than the underlying raw events in data lakes or warehouses.
 
-2) Avoid lowest common denominator of database performance. Instead, orchestrate data out of warehouses and lakehouses into OLAP databases
+2) *Use an integrated OLAP database* to drive dashboards, by orchestrating (and aggregating, per above) data out of a cloud data warehouses, lakehouse, or object store.
 
-The decoupling of databases and BI tools served a purpose at one phase in the evolution of data stacks, but the cost and performance trade-offs have begun to shift in favor of consolidated analytics offerings.
+The decoupling of BI applications and database servers served a purpose at one phase in the evolution of data stacks, but the cost and performance trade-offs have begun to shift in favor of consolidated analytics offerings.
 
 ## Architecture
 
