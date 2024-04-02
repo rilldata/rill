@@ -79,7 +79,7 @@ export async function load({ parent, params, url }) {
     queryMeasure ?? spec.defaultMeasures[0] ?? measureNames[0];
   const defaultTimeRange = ISODurationToTimePreset(spec.defaultTimeRange);
   const timeZone = queryZone ?? availableTimeZones[0];
-  console.log("HUH???", spec.defaultMeasures, measureNames, sortMeasure);
+
   const range = getRange({
     min,
     max,
@@ -91,8 +91,6 @@ export async function load({ parent, params, url }) {
 
   const timeStart = range.start.toISO() ?? min;
   const timeEnd = range.end.toISO() ?? max;
-
-  console.log({ timeStart, timeEnd });
 
   const where: V1Expression = {};
 

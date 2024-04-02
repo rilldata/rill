@@ -76,7 +76,7 @@
   >
     <Tooltip distance={8}>
       <div class="truncate">
-        {name}
+        {$lastVisitedURL}
       </div>
       {#if $$slots["icon"]}
         <span class="text-gray-400" style:width="1em" style:height="1em">

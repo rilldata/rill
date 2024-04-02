@@ -13,7 +13,7 @@
   export let dimensions: MetricsViewSpecDimensionV2[];
   export let leaderBoards: Record<
     string,
-    Promise<V1MetricsViewComparisonResponse>
+    Promise<void | V1MetricsViewComparisonResponse>
   >;
 
   $: metricsViewName = $page.params.name;
