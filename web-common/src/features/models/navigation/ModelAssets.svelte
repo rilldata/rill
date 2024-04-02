@@ -69,7 +69,7 @@
           <NavigationEntry
             expandable
             name={modelName}
-            href={`/model/${modelName}`}
+            context="model"
             open={$page.url.pathname === `/model/${modelName}`}
           >
             <div transition:slide={{ duration }} slot="more">

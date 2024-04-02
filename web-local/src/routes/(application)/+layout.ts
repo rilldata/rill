@@ -14,22 +14,25 @@ export const load = async () => {
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceListResources>>
-  > = ({ signal }) => runtimeServiceListResources("default", {}, signal);
+  > = ({ signal }) => runtimeServiceListResources(instanceId, {}, signal);
 
   const instanceQuery: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetInstance>>
-  > = ({ signal }) => runtimeServiceGetInstance("default", signal);
+  > = ({ signal }) => runtimeServiceGetInstance(instanceId, signal);
+
+  const instanceData = await queryClient.fetchQuery({
+    queryFn: instanceQuery,
+    queryKey: getRuntimeServiceListInstancesQueryKey(),
+  });
 
   return {
     ...(await queryClient.fetchQuery({
       queryFn,
       queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
     })),
-    instance: (
-      await queryClient.fetchQuery({
-        queryFn: instanceQuery,
-        queryKey: getRuntimeServiceListInstancesQueryKey(),
-      })
-    ).instance,
+    instance: {
+      ...instanceData.instance,
+      instanceId: instanceData.instance?.instanceId ?? "default",
+    },
   };
 };

@@ -3,11 +3,18 @@
   import { onDestroy, onMount } from "svelte";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+  import type {
+    MetricsViewSpecDimensionV2,
+    V1MetricsViewComparisonResponse,
+  } from "@rilldata/web-common/runtime-client";
   import { page } from "$app/stores";
   import { allSelectedDimensions } from "../workspace/dashboard-store";
 
   export let dimensions: MetricsViewSpecDimensionV2[];
+  export let leaderBoards: Record<
+    string,
+    Promise<V1MetricsViewComparisonResponse>
+  >;
 
   $: metricsViewName = $page.params.name;
 
@@ -75,7 +82,7 @@
         let:item
       >
         <!-- the single virtual element -->
-        <Leaderboard dimensionName={item.name} />
+        <Leaderboard dimensionName={item.name} data={leaderBoards[item.name]} />
       </VirtualizedGrid>
     {/if}
   </div>

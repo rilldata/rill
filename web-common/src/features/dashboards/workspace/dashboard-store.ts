@@ -64,7 +64,6 @@ class AllSelectedDimensions {
   private map = new Map<DashboardName, HiddenDimensionsStore>();
 
   get(dashboardName: DashboardName) {
-    console.log("get", dashboardName);
     let set = this.map.get(dashboardName);
     if (!set) {
       set = new HiddenDimensionsStore(dashboardName);

@@ -30,8 +30,6 @@ props as needed.
   export let tooltipText: string;
   export let label: string;
 
-  $: console.log({ selectableItems, selectedItems });
-
   $: {
     if (
       selectableItems?.length > 0 &&

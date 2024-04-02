@@ -18,7 +18,7 @@
     }
   });
 
-  $: yaml = data.file.blob || "";
+  $: yaml = data.file?.blob || "";
 
   $: initLocalUserPreferenceStore(metricViewName);
 </script>

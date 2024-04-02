@@ -86,7 +86,7 @@
             <NavigationEntry
               expandable
               name={sourceName}
-              href={`/source/${sourceName}`}
+              context="source"
               open={$page.url.pathname === `/source/${sourceName}`}
               on:command-click={() => queryHandler(sourceName)}
             >

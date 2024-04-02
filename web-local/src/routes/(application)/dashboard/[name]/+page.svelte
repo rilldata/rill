@@ -8,6 +8,8 @@
   // import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useQueryClient } from "@tanstack/svelte-query";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
+  import { beforeNavigate } from "$app/navigation";
+  import { lastVisitedURLs } from "@rilldata/web-common/layout/navigation/last-visited-urls.js";
 
   const queryClient = useQueryClient();
 
@@ -18,6 +20,13 @@
   $: metricViewName = $page.params.name;
 
   resetSelectedMockUserAfterNavigate(queryClient);
+
+  beforeNavigate(() => {
+    lastVisitedURLs.update(
+      `/dashboard/${metricViewName}`,
+      $page.url.pathname + $page.url.search,
+    );
+  });
 </script>
 
 <svelte:head>
@@ -30,7 +39,12 @@
     <DashboardStateProvider {metricViewName}>
       <!-- <DashboardURLStateProvider {metricViewName}> -->
       <DashboardThemeProvider>
-        <Dashboard {metricViewName} dimensions={data.dimensions} />
+        <Dashboard
+          {metricViewName}
+          dimensions={data.dimensions}
+          totals={data.totals}
+          leaderBoards={data.leaderBoards}
+        />
       </DashboardThemeProvider>
       <!-- </DashboardURLStateProvider> -->
     </DashboardStateProvider>
