@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Table } from "@tanstack/table-core/src/types";
+  import type { Table } from "@tanstack/svelte-table";
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
 
@@ -7,7 +7,7 @@
 
   let maxWidth = maxWidthOverride ?? "max-w-[800px]";
 
-  const table = getContext("table") as Readable<Table<unknown>>;
+  const table = getContext<Readable<Table<unknown>>>("table");
 
   // Number of alerts
   $: numAlerts = $table.getRowModel().rows.length;
