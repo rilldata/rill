@@ -9,6 +9,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -197,11 +198,11 @@ func (p *Parser) parseAlert(node *Node) error {
 				return fmt.Errorf("invalid recipient email address %q", email)
 			}
 		}
-		// Validate notify.renotify_after
+		// Validate renotify_after
 		if tmp.RenotifyAfter != "" {
 			renotifyAfter, err = parseDuration(tmp.RenotifyAfter)
 			if err != nil {
-				return fmt.Errorf(`invalid value for property "notify.renotify_after": %w`, err)
+				return fmt.Errorf(`invalid value for property "renotify_after": %w`, err)
 			}
 		}
 	}
@@ -302,9 +303,9 @@ func (p *Parser) parseAlert(node *Node) error {
 		// Slack settings
 		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
 			props, err := structpb.NewStruct(map[string]any{
-				"users":    pbutil.ToSliceAny(tmp.Notify.Slack.Users),
-				"channels": pbutil.ToSliceAny(tmp.Notify.Slack.Channels),
-				"webhooks": pbutil.ToSliceAny(tmp.Notify.Slack.Webhooks),
+				slack.UsersField:    pbutil.ToSliceAny(tmp.Notify.Slack.Users),
+				slack.ChannelsField: pbutil.ToSliceAny(tmp.Notify.Slack.Channels),
+				slack.WebhooksField: pbutil.ToSliceAny(tmp.Notify.Slack.Webhooks),
 			})
 			if err != nil {
 				return fmt.Errorf("encountered invalid property type: %w", err)

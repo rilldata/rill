@@ -14,6 +14,15 @@ import (
 	"github.com/slack-go/slack"
 )
 
+const (
+	UsersField    = "users"
+	ChannelsField = "channels"
+	WebhooksField = "webhooks"
+)
+
+//go:embed templates/slack/*
+var templatesFS embed.FS
+
 type notifier struct {
 	token     string
 	users     []string
@@ -22,13 +31,10 @@ type notifier struct {
 	templates *template.Template
 }
 
-//go:embed templates/slack/*
-var templatesFS embed.FS
-
 func newNotifier(token string, props map[string]any) *notifier {
-	channels := pbutil.ToSliceString(props["channels"].([]any))
-	users := pbutil.ToSliceString(props["users"].([]any))
-	webhooks := pbutil.ToSliceString(props["webhooks"].([]any))
+	users := pbutil.ToSliceString(props[UsersField].([]any))
+	channels := pbutil.ToSliceString(props[ChannelsField].([]any))
+	webhooks := pbutil.ToSliceString(props[WebhooksField].([]any))
 	return &notifier{
 		token:     token,
 		users:     users,

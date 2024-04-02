@@ -17,6 +17,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
@@ -550,9 +551,9 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 		case "email":
 			opts.EmailRecipients = pbutil.ToSliceString(props["recipients"].([]any))
 		case "slack":
-			opts.SlackUsers = pbutil.ToSliceString(props["users"].([]any))
-			opts.SlackChannels = pbutil.ToSliceString(props["channels"].([]any))
-			opts.SlackWebhooks = pbutil.ToSliceString(props["webhooks"].([]any))
+			opts.SlackUsers = pbutil.ToSliceString(props[slack.UsersField].([]any))
+			opts.SlackChannels = pbutil.ToSliceString(props[slack.ChannelsField].([]any))
+			opts.SlackWebhooks = pbutil.ToSliceString(props[slack.WebhooksField].([]any))
 		default:
 			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
 		}
