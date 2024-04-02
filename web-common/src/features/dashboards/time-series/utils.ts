@@ -189,11 +189,9 @@ export function transformAggregateDimensionData(
       emptyRow.map((row) => ({ ...row, records: { ...row.records } })),
     );
 
-  // const dimensionTimeSeriesMap: Record<string, V1TimeSeriesValue[]> = {};
   const dimensionValuesMap = createIndexMap(dimensionValues);
   const headersMap = createIndexMap(headers);
 
-  // The response has the values alphabetically and time sorted
   for (const cell of response) {
     const { [dimensionName]: key, [timeDimension]: ts, ...rest } = cell;
     const timeSeriesCell: V1TimeSeriesValue = {
