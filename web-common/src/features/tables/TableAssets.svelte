@@ -7,31 +7,35 @@
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import { debounce } from "../../lib/create-debouncer";
-  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import {
+    V1TableInfo,
+    createRuntimeServiceGetInstance,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import TableMenuItems from "./TableMenuItems.svelte";
-  import { useTableNames } from "./selectors";
+  import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
+  import { useTables } from "./selectors";
 
   let showTables = true;
 
-  // Debounce table names to prevent flickering
-  const debouncedTableNames = writable<string[]>([]);
-  const setDebouncedTableNames = debounce(
-    (tableNames: string[]) => debouncedTableNames.set(tableNames),
+  // Debounce to prevent flickering
+  const debouncedTables = writable<V1TableInfo[]>([]);
+  const setDebouncedTables = debounce(
+    (tables: V1TableInfo[]) => debouncedTables.set(tables),
     200,
   );
 
-  $: if ($tableNames) {
-    setDebouncedTableNames($tableNames);
+  $: if ($tables) {
+    setDebouncedTables($tables);
   }
 
-  $: hasAssets = $debouncedTableNames.length > 0;
+  $: hasAssets = $debouncedTables.length > 0;
 
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: connectorInstanceId = $instance.data?.instance?.instanceId;
   $: olapConnector = $instance.data?.instance?.olapConnector;
 
-  $: tableNames = useTableNames(
+  $: tables = useTables(
     $runtime.instanceId,
     connectorInstanceId,
     olapConnector,
@@ -44,8 +48,9 @@
 
     {#if showTables}
       <ol transition:slide={{ duration }}>
-        {#if $debouncedTableNames.length > 0}
-          {#each $debouncedTableNames as fullyQualifiedTableName (fullyQualifiedTableName)}
+        {#if $debouncedTables.length > 0}
+          {#each $debouncedTables as table (table)}
+            {@const fullyQualifiedTableName = table.database + "." + table.name}
             <li
               animate:flip={{ duration }}
               aria-label={fullyQualifiedTableName}
@@ -56,6 +61,15 @@
                 open={$page.url.pathname ===
                   `/table/${fullyQualifiedTableName}`}
               >
+                <svelte:fragment slot="icon">
+                  {#if connectorInstanceId && olapConnector && table.name && table.hasUnsupportedDataTypes}
+                    <UnsupportedTypesIndicator
+                      instanceId={connectorInstanceId}
+                      connector={olapConnector}
+                      tableName={table.name}
+                    />
+                  {/if}
+                </svelte:fragment>
                 <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
               </NavigationEntry>
             </li>
