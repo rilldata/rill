@@ -107,7 +107,7 @@
     }
   };
 
-  const onRefreshSource = async (tableName: string) => {
+  const onRefreshSource = async () => {
     const connector: string | undefined =
       source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
@@ -116,7 +116,7 @@
       return;
     }
     try {
-      await refreshSource(connector, tableName, sourceName, runtimeInstanceId);
+      await refreshSource(connector, filePath, sourceName, runtimeInstanceId);
     } catch (err) {
       // no-op
     }
@@ -129,13 +129,13 @@
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
-  async function onReplaceSource(sourceName: string) {
+  async function onReplaceSource() {
     await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
     overlay.set(null);
   }
 </script>
 
-<NavigationMenuItem on:click={() => handleCreateModel()}>
+<NavigationMenuItem on:click={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
@@ -182,13 +182,13 @@
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={() => onRefreshSource(sourceName)}>
+<NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
 </NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <NavigationMenuItem on:click={() => onReplaceSource(sourceName)}>
+  <NavigationMenuItem on:click={onReplaceSource}>
     <Import slot="icon" />
     Replace source with uploaded file
   </NavigationMenuItem>

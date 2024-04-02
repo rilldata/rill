@@ -108,7 +108,7 @@
         : undefined;
   }
 
-  $: sourceStore = useSourceStore(tableName);
+  $: sourceStore = useSourceStore(filePath);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,

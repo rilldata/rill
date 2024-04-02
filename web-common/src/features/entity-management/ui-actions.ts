@@ -10,6 +10,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
 import type { QueryClient } from "@tanstack/query-core";
 
 export async function handleEntityRename(
@@ -21,6 +22,7 @@ export async function handleEntityRename(
 ) {
   const target = e.target as HTMLInputElement;
   const [folder, fileName] = splitFolderAndName(filePath);
+  const extension = extractFileExtension(filePath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
     notifications.send({
@@ -43,7 +45,7 @@ export async function handleEntityRename(
     await renameFileArtifact(
       instanceId,
       filePath,
-      (folder ? `${folder}/` : "") + toName,
+      (folder ? `${folder}/` : "") + toName + extension,
       entityType,
     );
     // TODO: replace once we have asset explorer
