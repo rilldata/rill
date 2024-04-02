@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import type { SelectionRange } from "@codemirror/state";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
@@ -26,8 +28,6 @@
   import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -140,9 +140,9 @@
 
   {#if $tableVisible}
     <WorkspaceTableContainer fade={Boolean(modelError || runtimeError)}>
-      {#if !$modelEmpty?.data}
+      {#if !$modelEmpty?.data && $modelQuery?.data?.model?.state?.table}
         <ConnectedPreviewTable
-          objectName={$modelQuery?.data?.model?.state?.table}
+          table={$modelQuery?.data?.model?.state?.table}
           loading={resourceIsLoading($modelQuery?.data)}
           {limit}
         />

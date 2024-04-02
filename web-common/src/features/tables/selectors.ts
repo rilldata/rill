@@ -65,3 +65,11 @@ export function useTables(
     },
   );
 }
+
+export function makeFullyQualifiedTableName(
+  database: string,
+  databaseSchema: string,
+  table: string,
+) {
+  return [database, databaseSchema, table].filter(Boolean).join(".");
+}

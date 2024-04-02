@@ -14,7 +14,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import TableMenuItems from "./TableMenuItems.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
-  import { useTables } from "./selectors";
+  import { makeFullyQualifiedTableName, useTables } from "./selectors";
 
   let showTables = true;
 
@@ -40,33 +40,56 @@
     connectorInstanceId,
     olapConnector,
   );
+
+  function getTableRouteForOLAPConnector(
+    olapConnector: string,
+    tableInfo: V1TableInfo,
+  ): string {
+    switch (olapConnector) {
+      case "clickhouse":
+        return `/connector/clickhouse/${tableInfo.databaseSchema}/${tableInfo.name}`;
+      case "druid":
+        return `/connector/druid/${tableInfo.databaseSchema}/${tableInfo.name}`;
+      case "duckdb":
+        return `/connector/duckdb/${tableInfo.database}/${tableInfo.databaseSchema}/${tableInfo.name}`;
+      default:
+        throw new Error(`Unsupported OLAP connector: ${olapConnector}`);
+    }
+  }
 </script>
 
-{#if hasAssets}
+{#if connectorInstanceId && olapConnector && hasAssets}
   <div class="h-fit flex flex-col">
     <NavigationHeader bind:show={showTables}>Tables</NavigationHeader>
 
     {#if showTables}
       <ol transition:slide={{ duration }}>
         {#if $debouncedTables.length > 0}
-          {#each $debouncedTables as table (table)}
-            {@const fullyQualifiedTableName = table.database + "." + table.name}
+          {#each $debouncedTables as tableInfo (tableInfo)}
+            {@const fullyQualifiedTableName = makeFullyQualifiedTableName(
+              tableInfo.database ?? "",
+              tableInfo.databaseSchema ?? "",
+              tableInfo.name ?? "",
+            )}
+            {@const tableRoute = getTableRouteForOLAPConnector(
+              olapConnector,
+              tableInfo,
+            )}
             <li
               animate:flip={{ duration }}
               aria-label={fullyQualifiedTableName}
             >
               <NavigationEntry
                 name={fullyQualifiedTableName}
-                href={`/table/${fullyQualifiedTableName}`}
-                open={$page.url.pathname ===
-                  `/table/${fullyQualifiedTableName}`}
+                href={tableRoute}
+                open={$page.url.pathname === tableRoute}
               >
                 <svelte:fragment slot="icon">
-                  {#if connectorInstanceId && olapConnector && table.name && table.hasUnsupportedDataTypes}
+                  {#if tableInfo.hasUnsupportedDataTypes}
                     <UnsupportedTypesIndicator
                       instanceId={connectorInstanceId}
                       connector={olapConnector}
-                      tableName={table.name}
+                      {tableInfo}
                     />
                   {/if}
                 </svelte:fragment>

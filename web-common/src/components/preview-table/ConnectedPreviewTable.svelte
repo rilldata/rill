@@ -8,14 +8,23 @@
   import { onMount } from "svelte";
   import { runtime } from "../../runtime-client/runtime-store";
 
-  export let objectName: string | undefined;
+  export let connector: string | undefined = "duckdb";
+  export let database: string | undefined = undefined;
+  export let databaseSchema: string | undefined = undefined;
+  export let table: string;
   export let limit = 150;
   export let loading = false;
 
+  $: instanceId = $runtime.instanceId;
+
   $: profileColumnsQuery =
-    objectName === undefined
+    table === undefined
       ? undefined
-      : createQueryServiceTableColumns($runtime?.instanceId, objectName, {});
+      : createQueryServiceTableColumns(instanceId, table, {
+          ...(connector !== undefined && { connector }),
+          ...(database !== undefined && { database }),
+          ...(databaseSchema !== undefined && { databaseSchema }),
+        });
 
   $: profileColumns =
     profileColumnsQuery === undefined
@@ -23,9 +32,12 @@
       : $profileColumnsQuery?.data?.profileColumns ?? profileColumns; // Retain old profileColumns
 
   $: tableQuery =
-    objectName === undefined
+    table === undefined
       ? undefined
-      : createQueryServiceTableRows($runtime?.instanceId, objectName, {
+      : createQueryServiceTableRows(instanceId, table, {
+          ...(connector !== undefined && { connector }),
+          ...(database !== undefined && { database }),
+          ...(databaseSchema !== undefined && { databaseSchema }),
           limit,
         });
 

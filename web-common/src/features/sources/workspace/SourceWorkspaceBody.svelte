@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -51,7 +51,7 @@
   <WorkspaceTableContainer fade={isSourceUnsaved}>
     {#if !$allErrors?.length}
       <ConnectedPreviewTable
-        objectName={$sourceQuery?.data?.source?.state?.table}
+        table={$sourceQuery?.data?.source?.state?.table}
         loading={resourceIsLoading($sourceQuery?.data)}
       />
     {:else if $allErrors[0].message}
