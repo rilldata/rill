@@ -12,6 +12,7 @@ import {
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
@@ -387,6 +388,12 @@ const metricViewReducers = {
   setPinIndex(name: string, index: number) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.tdd.pinIndex = index;
+    });
+  },
+
+  setTDDChartType(name: string, type: TDDChart) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.tdd.chartType = type;
     });
   },
 
