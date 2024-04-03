@@ -84,7 +84,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 		var count int
 		err = res.Rows.Scan(&count)
 		require.NoError(t, err)
-		require.Equal(t, count, 1)
+		require.Equal(t, 1, count)
 	}
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())

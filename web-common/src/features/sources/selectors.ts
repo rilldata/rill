@@ -13,7 +13,7 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
+import { getRouteFromName } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
@@ -23,7 +23,9 @@ export type SourceFromYaml = {
 };
 
 export function useSources(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Source);
+  return useFilteredResources(instanceId, ResourceKind.Source, (data) =>
+    data.resources?.filter((r) => !!r.source?.state?.table),
+  );
 }
 
 export function useSourceNames(instanceId: string) {
@@ -32,6 +34,12 @@ export function useSourceNames(instanceId: string) {
 
 export function useSourceFileNames(instanceId: string) {
   return useMainEntityFiles(instanceId, "sources");
+}
+
+export function useSourceRoutes(instanceId: string) {
+  return useMainEntityFiles(instanceId, "sources", (name) =>
+    getRouteFromName(name, EntityType.Table),
+  );
 }
 
 export function useSource(instanceId: string, name: string) {
@@ -48,44 +56,33 @@ export function useSourceFromYaml(instanceId: string, filePath: string) {
 
 export function useIsSourceUnsaved(
   instanceId: string,
-  sourceName: string,
+  filePath: string,
   // Include clientYAML in the function call to force the selector to recompute when it changes
   clientYAML: string,
 ) {
-  return createRuntimeServiceGetFile(
-    instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-    {
-      query: {
-        select: (data) => {
-          const serverYAML = data.blob;
-          return clientYAML !== serverYAML;
-        },
+  return createRuntimeServiceGetFile(instanceId, filePath, {
+    query: {
+      select: (data) => {
+        const serverYAML = data.blob;
+        return clientYAML !== serverYAML;
       },
     },
-  );
+  });
 }
 /**
  * This client-side YAML parsing is a rudimentary hack to check if the source is a local file.
  */
-export function useIsLocalFileConnector(
-  instanceId: string,
-  sourceName: string,
-) {
-  return createRuntimeServiceGetFile(
-    instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-    {
-      query: {
-        select: (data) => {
-          const serverYAML = data.blob;
-          const yaml = parse(serverYAML);
-          // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
-          return yaml?.type === "duckdb" && yaml?.sql?.includes("'data/");
-        },
+export function useIsLocalFileConnector(instanceId: string, filePath: string) {
+  return createRuntimeServiceGetFile(instanceId, filePath, {
+    query: {
+      select: (data) => {
+        const serverYAML = data.blob;
+        const yaml = parse(serverYAML);
+        // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
+        return yaml?.type === "duckdb" && yaml?.sql?.includes("'data/");
       },
     },
-  );
+  });
 }
 
 export type TableColumnsWithName = {

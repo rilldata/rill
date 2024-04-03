@@ -5,17 +5,17 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../entity-management/types";
 
+  const dashboardStoreReady = createDashboardStateSync(getStateManagers());
+
   export let metricViewName: string;
 
   $: initLocalUserPreferenceStore(metricViewName);
-
-  const dashboardStoreReady = createDashboardStateSync(getStateManagers());
 </script>
 
-{#if $dashboardStoreReady}
-  <slot />
-{:else}
-  <div class="grid place-items-center mt-40">
+{#if $dashboardStoreReady.isFetching}
+  <div class="grid place-items-center size-full">
     <Spinner status={EntityStatus.Running} size="40px" />
   </div>
+{:else}
+  <slot />
 {/if}

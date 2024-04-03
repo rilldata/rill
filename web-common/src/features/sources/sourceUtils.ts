@@ -1,10 +1,13 @@
 import type {
-  V1ConnectorSpec,
+  V1ConnectorDriver,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
-import { extractFileExtension, sanitizeEntityName } from "./extract-table-name";
+import {
+  extractFileExtension,
+  sanitizeEntityName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
@@ -74,7 +77,7 @@ function extensionContainsParts(
   return false;
 }
 
-export function inferSourceName(connector: V1ConnectorSpec, path: string) {
+export function inferSourceName(connector: V1ConnectorDriver, path: string) {
   if (
     !path ||
     path.endsWith("/") ||

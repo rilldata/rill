@@ -84,14 +84,14 @@ paths:
   /v1/connectors/meta:
     get:
       summary: |-
-        ListConnectors returns a description of all the connectors implemented in the runtime,
-        including their schema and validation rules
-      operationId: RuntimeService_ListConnectors
+        ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+        including their configuration specs and the capabilities they support.
+      operationId: RuntimeService_ListConnectorDrivers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListConnectorsResponse'
+            $ref: '#/definitions/v1ListConnectorDriversResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -121,29 +121,6 @@ paths:
           required: false
           type: string
         - name: table
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/connectors/scan:
-    get:
-      summary: |-
-        ScanConnectors scans the artifacts for connectors and returns information about
-        the connectors referenced in the artifacts. The information includes name,type and
-        credentials for the connector.
-      operationId: ConnectorService_ScanConnectors
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ScanConnectorsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
           in: query
           required: false
           type: string
@@ -569,6 +546,48 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/connectors/analyze:
+    get:
+      summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+      operationId: RuntimeService_AnalyzeConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AnalyzeConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/connectors/notifiers:
+    get:
+      summary: |-
+        ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+        This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+      operationId: RuntimeService_ListNotifierConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListNotifierConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -841,6 +860,74 @@ paths:
           in: query
           required: false
           type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/chart:
+    post:
+      summary: GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+      operationId: RuntimeService_GenerateChartSpec
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateChartSpecResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/generate/resolver:
+    post:
+      summary: GenerateResolver generates resolver and resolver properties from a table or a metrics view
+      operationId: RuntimeService_GenerateResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              prompt:
+                type: string
+              connector:
+                type: string
+                description: Both connector and table must be specified if metrics_view is not.
+              table:
+                type: string
+              metricsView:
+                type: string
+                description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -2545,44 +2632,51 @@ definitions:
       sqlName:
         type: string
         title: Optional. Defaults to 'measure_{i}', ie measure_0
-  ConnectorSpecProperty:
+  ConnectorDriverProperty:
     type: object
     properties:
       key:
         type: string
         title: The property key
+      type:
+        $ref: '#/definitions/ConnectorDriverPropertyType'
+        title: The type expected for this property
+      required:
+        type: boolean
+        title: Required is true if the field must be set
       displayName:
         type: string
         title: Pretty name for the property
       description:
         type: string
         title: Human readable description of the field
-      placeholder:
+      docsUrl:
         type: string
-        title: Placeholder value for use in UIs
-      type:
-        $ref: '#/definitions/ConnectorSpecPropertyType'
-        title: The type expected for this property
-      nullable:
-        type: boolean
-        title: Nullable is true if the field is optional
+        title: Link to documentation for this property
       hint:
         type: string
         title: Additional textual explanation for use in UIs
-      href:
+      default:
         type: string
-        title: Link to documentation for this property
-    title: Property represents one of the connector's config properties
-  ConnectorSpecPropertyType:
+        title: Default value for the property
+      placeholder:
+        type: string
+        title: Placeholder value for use in UIs
+      secret:
+        type: boolean
+        title: If true, the property is a secret and should not be displayed in UIs
+    title: Property represents the spec of one of the driver's config properties
+  ConnectorDriverPropertyType:
     type: string
     enum:
       - TYPE_UNSPECIFIED
-      - TYPE_STRING
       - TYPE_NUMBER
       - TYPE_BOOLEAN
+      - TYPE_STRING
+      - TYPE_FILE
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
-    title: Type represents the field type
+    title: Type of the property
   MetricsViewDimension:
     type: object
     properties:
@@ -2985,6 +3079,54 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1AnalyzeConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AnalyzedConnector'
+    title: Response message for RuntimeService.AnalyzeConnectors
+  v1AnalyzedConnector:
+    type: object
+    properties:
+      name:
+        type: string
+        title: Connector name
+      driver:
+        $ref: '#/definitions/v1ConnectorDriver'
+        title: Connector driver metadata
+      config:
+        type: object
+        additionalProperties:
+          type: string
+        title: Combined config properties for the connector
+      presetConfig:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config properties preset by the runtime or when the instance was created
+      projectConfig:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config properties set in project YAML files
+      envConfig:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config properties set as dynamic variables
+      hasAnonymousAccess:
+        type: boolean
+        title: True if the connector can be accessed without credentials
+      usedBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        title: List of resources that appear to use the connector
+    description: AnalyzedConnector contains information about a connector that is referenced in the project files.
   v1AssertionResult:
     type: object
     properties:
@@ -3408,27 +3550,50 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
-  v1ConnectorSpec:
+  v1ConnectorDriver:
     type: object
     properties:
       name:
         type: string
-        title: Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
+        title: Name is the name of the connector
+      configProperties:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ConnectorDriverProperty'
+        title: Properties for configuring the connector
+      sourceProperties:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ConnectorDriverProperty'
+        title: Properties that can be provided to the connector when using it as a source
       displayName:
         type: string
         title: Pretty display name for use in UIs
       description:
         type: string
         title: Human readable description of the connector
-      properties:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/ConnectorSpecProperty'
-        title: Properties accepted by the connector
-    description: |-
-      ConnectorSpec represents a connector available in the runtime.
-      It should not be confused with a source.
+      implementsRegistry:
+        type: boolean
+        title: Capabilities supported by the connector
+      implementsCatalog:
+        type: boolean
+      implementsRepo:
+        type: boolean
+      implementsAdmin:
+        type: boolean
+      implementsAi:
+        type: boolean
+      implementsSqlStore:
+        type: boolean
+      implementsOlap:
+        type: boolean
+      implementsObjectStore:
+        type: boolean
+      implementsFileStore:
+        type: boolean
+    description: ConnectorDriver represents a connector driver available in the runtime.
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -3644,12 +3809,24 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1GenerateChartSpecResponse:
+    type: object
+    properties:
+      vegaLiteSpec:
+        type: string
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
       aiSucceeded:
         type: boolean
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GenerateResolverResponse:
+    type: object
+    properties:
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -3785,15 +3962,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1CatalogEntry'
     title: Response message for RuntimeService.ListCatalogEntries
-  v1ListConnectorsResponse:
+  v1ListConnectorDriversResponse:
     type: object
     properties:
       connectors:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ConnectorSpec'
-    title: Response message for RuntimeService.ListConnectors
+          $ref: '#/definitions/v1ConnectorDriver'
+    title: Response message for RuntimeService.ListConnectorDrivers
   v1ListExamplesResponse:
     type: object
     properties:
@@ -3822,6 +3999,16 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListNotifierConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
+        description: 'Note: In this list, the Connector.config property will always be empty.'
+    title: Response message for RuntimeService.ListNotifierConnectors
   v1ListResourcesResponse:
     type: object
     properties:
@@ -4675,6 +4862,11 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+      unsupportedColumns:
+        type: object
+        additionalProperties:
+          type: string
+        title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
   v1OLAPListTablesResponse:
@@ -5330,24 +5522,6 @@ definitions:
         format: int64
       isDir:
         type: boolean
-  v1ScanConnectorsResponse:
-    type: object
-    properties:
-      connectors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ScannedConnector'
-  v1ScannedConnector:
-    type: object
-    properties:
-      name:
-        type: string
-      type:
-        type: string
-      hasAnonymousAccess:
-        type: boolean
-        title: reports whether access is present without any credentials
   v1Schedule:
     type: object
     properties:
@@ -5489,6 +5663,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ProfileColumn'
+      unsupportedColumns:
+        type: object
+        additionalProperties:
+          type: string
   v1TableInfo:
     type: object
     properties:
@@ -5496,6 +5674,9 @@ definitions:
         type: string
       name:
         type: string
+      hasUnsupportedDataTypes:
+        type: boolean
+        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   v1TableRowsRequest:
     type: object
     properties:

@@ -1,3 +1,4 @@
+import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
@@ -5,6 +6,7 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1ListFilesResponse,
   createRuntimeServiceGetFile,
@@ -20,7 +22,9 @@ import {
 } from "../sources/selectors";
 
 export function useModels(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Model);
+  return useFilteredResources(instanceId, ResourceKind.Model, (data) =>
+    data.resources?.filter((r) => !!r.model?.state?.table),
+  );
 }
 
 export function useModelNames(instanceId: string) {
@@ -29,6 +33,12 @@ export function useModelNames(instanceId: string) {
 
 export function useModelFileNames(instanceId: string) {
   return useMainEntityFiles(instanceId, "models");
+}
+
+export function useModelRoutes(instanceId: string) {
+  return useMainEntityFiles(instanceId, "models", (name) =>
+    getRouteFromName(name, EntityType.Model),
+  );
 }
 
 export function useModel(instanceId: string, name: string) {
@@ -74,10 +84,10 @@ export async function getModelNames(
     .map((path) => path.replace("/models/", "").replace(".sql", ""))
     // sort alphabetically case-insensitive
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-  return modelNames;
+  return modelNames ?? [];
 }
 
-export function useModelFileIsEmpty(instanceId, modelName) {
+export function useModelFileIsEmpty(instanceId: string, modelName: string) {
   return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
     query: {
       select(data) {

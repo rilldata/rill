@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Local file",
 	Description: "Import Locally Stored File.",
-	SourceProperties: []drivers.PropertySchema{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,
@@ -41,22 +41,30 @@ var spec = drivers.Spec{
 			Placeholder: "csv",
 		},
 	},
+	ImplementsFileStore: true,
 }
 
 type driver struct {
 	name string
 }
 
+type configProperties struct {
+	DSN             string `mapstructure:"dsn"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
 func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("file driver can't be shared")
 	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open file connection")
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
 	}
 
-	path, err := fileutil.ExpandHome(dsn)
+	path, err := fileutil.ExpandHome(conf.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +77,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	c := &connection{
 		logger:       logger,
 		root:         absPath,
-		driverConfig: config,
+		driverConfig: conf,
 		driverName:   d.name,
 		shared:       shared,
 	}
@@ -114,7 +122,7 @@ type connection struct {
 	logger *zap.Logger
 	// root should be absolute path
 	root         string
-	driverConfig map[string]any
+	driverConfig *configProperties
 	driverName   string
 	shared       bool
 
@@ -125,7 +133,9 @@ type connection struct {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.driverConfig, m)
+	return m
 }
 
 // Close implements drivers.Connection.

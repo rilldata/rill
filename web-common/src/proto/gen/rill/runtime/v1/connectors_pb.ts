@@ -921,6 +921,13 @@ export class TableInfo extends Message<TableInfo> {
    */
   name = "";
 
+  /**
+   * has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+   *
+   * @generated from field: bool has_unsupported_data_types = 3;
+   */
+  hasUnsupportedDataTypes = false;
+
   constructor(data?: PartialMessage<TableInfo>) {
     super();
     proto3.util.initPartial(data, this);
@@ -931,6 +938,7 @@ export class TableInfo extends Message<TableInfo> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {
@@ -1009,6 +1017,13 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
   schema?: StructType;
 
   /**
+   * unsupported_columns are columns having datatypes which are not supported by Rill
+   *
+   * @generated from field: map<string, string> unsupported_columns = 3;
+   */
+  unsupportedColumns: { [key: string]: string } = {};
+
+  /**
    * @generated from field: bool view = 2;
    */
   view = false;
@@ -1022,6 +1037,7 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
   static readonly typeName = "rill.runtime.v1.OLAPGetTableResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1241,131 +1257,6 @@ export class BigQueryListTablesResponse extends Message<BigQueryListTablesRespon
 
   static equals(a: BigQueryListTablesResponse | PlainMessage<BigQueryListTablesResponse> | undefined, b: BigQueryListTablesResponse | PlainMessage<BigQueryListTablesResponse> | undefined): boolean {
     return proto3.util.equals(BigQueryListTablesResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.ScanConnectorsRequest
- */
-export class ScanConnectorsRequest extends Message<ScanConnectorsRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  constructor(data?: PartialMessage<ScanConnectorsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ScanConnectorsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ScanConnectorsRequest {
-    return new ScanConnectorsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ScanConnectorsRequest {
-    return new ScanConnectorsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ScanConnectorsRequest {
-    return new ScanConnectorsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ScanConnectorsRequest | PlainMessage<ScanConnectorsRequest> | undefined, b: ScanConnectorsRequest | PlainMessage<ScanConnectorsRequest> | undefined): boolean {
-    return proto3.util.equals(ScanConnectorsRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.ScanConnectorsResponse
- */
-export class ScanConnectorsResponse extends Message<ScanConnectorsResponse> {
-  /**
-   * @generated from field: repeated rill.runtime.v1.ScannedConnector connectors = 1;
-   */
-  connectors: ScannedConnector[] = [];
-
-  constructor(data?: PartialMessage<ScanConnectorsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ScanConnectorsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "connectors", kind: "message", T: ScannedConnector, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ScanConnectorsResponse {
-    return new ScanConnectorsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ScanConnectorsResponse {
-    return new ScanConnectorsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ScanConnectorsResponse {
-    return new ScanConnectorsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ScanConnectorsResponse | PlainMessage<ScanConnectorsResponse> | undefined, b: ScanConnectorsResponse | PlainMessage<ScanConnectorsResponse> | undefined): boolean {
-    return proto3.util.equals(ScanConnectorsResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.ScannedConnector
- */
-export class ScannedConnector extends Message<ScannedConnector> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * @generated from field: string type = 2;
-   */
-  type = "";
-
-  /**
-   * reports whether access is present without any credentials
-   *
-   * @generated from field: bool has_anonymous_access = 3;
-   */
-  hasAnonymousAccess = false;
-
-  constructor(data?: PartialMessage<ScannedConnector>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ScannedConnector";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ScannedConnector {
-    return new ScannedConnector().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ScannedConnector {
-    return new ScannedConnector().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ScannedConnector {
-    return new ScannedConnector().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ScannedConnector | PlainMessage<ScannedConnector> | undefined, b: ScannedConnector | PlainMessage<ScannedConnector> | undefined): boolean {
-    return proto3.util.equals(ScannedConnector, a, b);
   }
 }
 

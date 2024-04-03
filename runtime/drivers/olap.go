@@ -91,11 +91,12 @@ type InformationSchema interface {
 
 // Table represents a table in an information schema.
 type Table struct {
-	Database       string
-	DatabaseSchema string
-	Name           string
-	View           bool
-	Schema         *runtimev1.StructType
+	Database        string
+	DatabaseSchema  string
+	Name            string
+	View            bool
+	Schema          *runtimev1.StructType
+	UnsupportedCols map[string]string
 }
 
 // IngestionSummary is details about ingestion
@@ -134,4 +135,33 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 		return ident
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
+}
+
+func (d Dialect) ConvertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
+	var str string
+	switch specifier {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		str = "MILLISECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		str = "SECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		str = "MINUTE"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		str = "HOUR"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		str = "DAY"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		str = "WEEK"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		str = "MONTH"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		str = "QUARTER"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		str = "YEAR"
+	}
+
+	if d == DialectClickHouse {
+		return strings.ToLower(str)
+	}
+	return str
 }

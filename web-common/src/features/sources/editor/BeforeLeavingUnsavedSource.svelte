@@ -7,29 +7,24 @@ https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037 -->
   import { emitNavigationTelemetry } from "../../../layout/navigation/navigation-utils";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import { useSourceStore } from "../sources-store";
   import UnsavedSourceDialog from "./UnsavedSourceDialog.svelte";
 
-  export let sourceName: string;
+  export let filePath: string;
 
-  const sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(filePath);
 
   let interceptedNavigation: string | null = null;
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    sourceName,
+    filePath,
     $sourceStore.clientYAML,
   );
 
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
-  $: file = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-  );
+  $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
   function handleCancel() {
     interceptedNavigation = null;
@@ -52,18 +47,18 @@ https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037 -->
   }
 
   beforeNavigate(({ to, cancel }) => {
-    const toHref = to?.url.href;
-
-    if ((!isSourceUnsaved || interceptedNavigation) && toHref) {
-      emitNavigationTelemetry(toHref, "source").catch(console.error);
+    if (!isSourceUnsaved || interceptedNavigation) {
+      emitNavigationTelemetry(to?.url.href ?? "", "source").catch(
+        console.error,
+      );
       return;
     }
 
     // The current source is unsaved AND the confirmation dialog has not yet been shown
     cancel();
 
-    if (toHref) {
-      interceptedNavigation = toHref;
+    if (to) {
+      interceptedNavigation = to.url.href;
     }
   });
 </script>

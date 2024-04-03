@@ -5,9 +5,9 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import {
-    ConnectorSpecPropertyType,
+    ConnectorDriverPropertyType,
     RpcStatus,
-    V1ConnectorSpec,
+    V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -18,7 +18,7 @@
   import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
-  export let connector: V1ConnectorSpec;
+  export let connector: V1ConnectorDriver;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -49,16 +49,16 @@
 
   // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
   const connectorProperties = [
-    ...(connector.properties?.slice(0, 1) ?? []),
+    ...(connector.sourceProperties?.slice(0, 1) ?? []),
     {
       key: "sourceName",
       displayName: "Source name",
       description: "The name of the source",
       placeholder: "my_new_source",
-      type: ConnectorSpecPropertyType.TYPE_STRING,
-      nullable: false,
+      type: ConnectorDriverPropertyType.TYPE_STRING,
+      required: true,
     },
-    ...(connector.properties?.slice(1) ?? []),
+    ...(connector.sourceProperties?.slice(1) ?? []),
   ];
 
   function onStringInputChange(event: Event) {
@@ -99,9 +99,9 @@
 
     {#each connectorProperties as property}
       {@const label =
-        property.displayName + (property.nullable ? " (optional)" : "")}
+        property.displayName + (property.required ? "" : " (optional)")}
       <div class="py-1.5">
-        {#if property.type === ConnectorSpecPropertyType.TYPE_STRING && property.key !== undefined}
+        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING && property.key !== undefined}
           <Input
             id={toYupFriendlyKey(property.key)}
             {label}
@@ -112,7 +112,7 @@
             on:input={onStringInputChange}
             on:change={handleChange}
           />
-        {:else if property.type === ConnectorSpecPropertyType.TYPE_BOOLEAN && property.key !== undefined}
+        {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN && property.key !== undefined}
           <label for={property.key} class="flex items-center">
             <input
               id={property.key}
@@ -122,11 +122,11 @@
             />
             <span class="ml-2 text-sm">{label}</span>
           </label>
-        {:else if property.type === ConnectorSpecPropertyType.TYPE_INFORMATIONAL}
+        {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
           <InformationalField
             description={property.description}
             hint={property.hint}
-            href={property.href}
+            href={property.docsUrl}
           />
         {/if}
       </div>

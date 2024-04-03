@@ -6,13 +6,14 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
     useSource,
-    useSourceFileNames,
     useSourceFromYaml,
+    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -42,6 +43,7 @@
   export let sourceName: string;
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
@@ -49,16 +51,14 @@
 
   const dispatch = createEventDispatcher();
 
+  const { customDashboards } = featureFlags;
+
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
-  $: sourceHasError = getFileHasErrors(
-    queryClient,
-    runtimeInstanceId,
-    filePath,
-  );
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -66,7 +66,7 @@
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: sourceRoutes = useSourceRoutes($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
@@ -76,12 +76,12 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  const handleDeleteSource = async (tableName: string) => {
+  const handleDeleteSource = async () => {
     await deleteFileArtifact(
       runtimeInstanceId,
-      tableName,
+      filePath,
       EntityType.Table,
-      $sourceNames.data ?? [],
+      $sourceRoutes.data ?? [],
     );
   };
 
@@ -107,7 +107,7 @@
     }
   };
 
-  const onRefreshSource = async (tableName: string) => {
+  const onRefreshSource = async () => {
     const connector: string | undefined =
       source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
@@ -116,7 +116,7 @@
       return;
     }
     try {
-      await refreshSource(connector, tableName, runtimeInstanceId);
+      await refreshSource(connector, filePath, sourceName, runtimeInstanceId);
     } catch (err) {
       // no-op
     }
@@ -125,17 +125,17 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName,
+    filePath,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
-  async function onReplaceSource(sourceName: string) {
+  async function onReplaceSource() {
     await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
     overlay.set(null);
   }
 </script>
 
-<NavigationMenuItem on:click={() => handleCreateModel()}>
+<NavigationMenuItem on:click={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
@@ -157,14 +157,38 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
+{#if $customDashboards}
+  <NavigationMenuItem
+    disabled={disableCreateDashboard}
+    on:click={() => {
+      dispatch("generate-chart", {
+        table: source?.state?.table,
+        connector: source?.state?.connector,
+      });
+    }}
+  >
+    <Explore slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate chart with AI
+      <WandIcon class="w-3 h-3" />
+    </div>
+    <svelte:fragment slot="description">
+      {#if $sourceHasError}
+        Source has errors
+      {:else if !sourceIsIdle}
+        Source is being ingested
+      {/if}
+    </svelte:fragment>
+  </NavigationMenuItem>
+{/if}
 
-<NavigationMenuItem on:click={() => onRefreshSource(sourceName)}>
+<NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
 </NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <NavigationMenuItem on:click={() => onReplaceSource(sourceName)}>
+  <NavigationMenuItem on:click={onReplaceSource}>
     <Import slot="icon" />
     Replace source with uploaded file
   </NavigationMenuItem>
@@ -182,7 +206,7 @@
 </NavigationMenuItem>
 
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<NavigationMenuItem on:click={() => handleDeleteSource(sourceName)}>
+<NavigationMenuItem on:click={handleDeleteSource}>
   <Cancel slot="icon" />
   Delete
 </NavigationMenuItem>

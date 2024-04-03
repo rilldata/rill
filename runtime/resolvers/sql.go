@@ -60,12 +60,17 @@ func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRef
 		return nil, err
 	}
 
+	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
 	}
 
-	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, opts.UserAttributes, opts.ForExport)
+	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +150,9 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 	}
 
 	return &runtime.ResolverResult{
-		Data:  data,
-		Cache: cache,
+		Data:   data,
+		Schema: res.Schema,
+		Cache:  cache,
 	}, nil
 }
 
@@ -225,11 +231,13 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 }
 
 // buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.
-func buildSQL(sqlTemplate string, dialect drivers.Dialect, args, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
+func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
 	// Resolve the SQL template
 	var refs []*runtimev1.ResourceName
 	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
-		User: userAttributes,
+		Environment: inst.Environment,
+		User:        userAttributes,
+		Variables:   inst.ResolveVariables(),
 		ExtraProps: map[string]any{
 			"args":   args,
 			"export": forExport,

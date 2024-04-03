@@ -1,4 +1,11 @@
-import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServiceListFiles,
+  getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceListFilesQueryKey,
+  runtimeServiceGetFile,
+  runtimeServiceListFiles,
+} from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 /**
  * In dev mode we still need to get the files for left nav.
@@ -7,6 +14,7 @@ import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-clie
 export function useMainEntityFiles(
   instanceId: string,
   prefix: "sources" | "models" | "dashboards" | "charts" | "custom-dashboards",
+  transform = (name: string) => name,
 ) {
   let extension: string;
   switch (prefix) {
@@ -40,7 +48,9 @@ export function useMainEntityFiles(
             })
             .map((filePath) => {
               // Remove the directory and extension from the filePath to get the file name
-              return filePath.replace(`/${prefix}/`, "").replace(extension, "");
+              return transform(
+                filePath.replace(`/${prefix}/`, "").replace(extension, ""),
+              );
             })
             // Sort the file names alphabetically in a case-insensitive manner
             .sort((fileNameA, fileNameB) =>
@@ -55,4 +65,43 @@ export function useMainEntityFiles(
       },
     },
   );
+}
+
+export async function fetchMainEntityFiles(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
+      glob: ".{yaml,sql}",
+    }),
+    queryFn: () =>
+      runtimeServiceListFiles(instanceId, {
+        glob: ".{yaml,sql}",
+      }),
+  });
+  return resp.paths ?? [];
+}
+
+export async function fetchFileContent(
+  queryClient: QueryClient,
+  instanceId: string,
+  filePath: string,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, filePath),
+    queryFn: () => runtimeServiceGetFile(instanceId, filePath),
+  });
+  return resp.blob ?? "";
+}
+
+const FILE_PATH_SPLIT_REGEX = /\//;
+export function splitFolderAndName(
+  filePath: string,
+): [folder: string, fileName: string] {
+  const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
+  return [
+    filePath.substring(0, filePath.length - fileName.length - 1),
+    fileName,
+  ];
 }

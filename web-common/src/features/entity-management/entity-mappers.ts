@@ -1,3 +1,4 @@
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 
 export function getFilePathFromPagePath(path: string): string {
@@ -104,3 +105,11 @@ export function getLabel(entityType: EntityType) {
 export function removeLeadingSlash(path: string): string {
   return path.replace(/^\//, "");
 }
+
+export const FolderToResourceKind: Record<string, ResourceKind> = {
+  sources: ResourceKind.Source,
+  models: ResourceKind.Model,
+  dashboards: ResourceKind.MetricsView,
+  charts: ResourceKind.Chart,
+  "custom-dashboards": ResourceKind.Dashboard,
+};

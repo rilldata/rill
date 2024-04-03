@@ -1,3 +1,5 @@
+import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { useMainEntityFiles } from "../entity-management/file-selectors";
 import {
   ResourceKind,
@@ -10,4 +12,10 @@ export function useCustomDashboardFileNames(instanceId: string) {
 
 export function useCustomDashboard(instanceId: string, name: string) {
   return useResource(instanceId, name, ResourceKind.Dashboard);
+}
+
+export function useCustomDashboardRoutes(instanceId: string) {
+  return useMainEntityFiles(instanceId, "custom-dashboards", (name) =>
+    getRouteFromName(name, EntityType.Dashboard),
+  );
 }

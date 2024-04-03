@@ -20,7 +20,7 @@ func TestMetricsViewSchema(t *testing.T) {
 	)
 	require.NoError(t, err)
 	types := res.Schema.Fields
-	require.Len(t, types, 7)
+	require.Len(t, types, 10)
 
 	i := 0
 	require.Equal(t, types[i].Name, "pub")
@@ -28,6 +28,14 @@ func TestMetricsViewSchema(t *testing.T) {
 
 	i++
 	require.Equal(t, types[i].Name, "dom")
+	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_STRING)
+
+	i++
+	require.Equal(t, types[i].Name, "nolabel_pub")
+	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_STRING)
+
+	i++
+	require.Equal(t, types[i].Name, "space_label")
 	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_STRING)
 
 	i++
@@ -49,4 +57,9 @@ func TestMetricsViewSchema(t *testing.T) {
 	i++
 	require.Equal(t, types[i].Name, "measure_1")
 	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_FLOAT64)
+
+	i++
+	require.Equal(t, types[i].Name, "m1")
+	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_FLOAT64)
+
 }
