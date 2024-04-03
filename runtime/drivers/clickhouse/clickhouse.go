@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
+
 	// import clickhouse driver
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 )
