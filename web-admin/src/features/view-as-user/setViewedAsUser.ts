@@ -1,7 +1,7 @@
 import {
   adminServiceGetDeploymentCredentials,
   getAdminServiceGetDeploymentCredentialsQueryKey,
-  V1GetDeploymentCredentialsResponse,
+  type V1GetDeploymentCredentialsResponse,
   type V1User,
 } from "@rilldata/web-admin/client";
 import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";

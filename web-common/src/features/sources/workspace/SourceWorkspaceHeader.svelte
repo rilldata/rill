@@ -5,15 +5,13 @@
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    resourceIsLoading,
-    useAllNames,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
@@ -37,31 +35,19 @@
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { renameFileArtifact } from "../../entity-management/actions";
-  import {
-    getFilePathFromNameAndType,
-    getRouteFromName,
-  } from "../../entity-management/entity-mappers";
-  import {
-    INVALID_NAME_MESSAGE,
-    VALID_NAME_PATTERN,
-    isDuplicateName,
-  } from "../../entity-management/name-utils";
   import { createModelFromSourceV2 } from "../createModel";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
-  import {
-    useIsLocalFileConnector,
-    useIsSourceUnsaved,
-    useSource,
-  } from "../selectors";
+  import { useIsLocalFileConnector, useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
-  export let sourceName: string;
-  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  export let filePath: string;
+
+  $: sourceName = extractFileName(filePath);
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -69,7 +55,7 @@
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   $: file = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
 
   let source: V1SourceV2 | undefined;
@@ -79,60 +65,38 @@
   let connector: string | undefined;
   $: connector = source?.state?.connector;
 
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(VALID_NAME_PATTERN)) {
-      notifications.send({
-        message: INVALID_NAME_MESSAGE,
-      });
-      e.target.value = sourceName; // resets the input
-      return;
-    }
-    if (
-      isDuplicateName(e.target.value, sourceName, $allNamesQuery?.data ?? [])
-    ) {
-      notifications.send({
-        message: `Name ${e.target.value} is already in use`,
-      });
-      e.target.value = sourceName; // resets the input
-      return;
-    }
-
-    try {
-      const toName = e.target.value;
-      const entityType = EntityType.Table;
-      await renameFileArtifact(
-        runtimeInstanceId,
-        getFilePathFromNameAndType(sourceName, entityType),
-        getFilePathFromNameAndType(toName, entityType),
-        entityType,
-      );
-      goto(getRouteFromName(toName, entityType), {
-        replaceState: true,
-      });
-    } catch (err) {
-      console.error(err.response.data.message);
-    }
+  const onChangeCallback = (e) => {
+    return handleEntityRename(
+      queryClient,
+      runtimeInstanceId,
+      e,
+      filePath,
+      EntityType.Table,
+    );
   };
 
   function onRevertChanges() {
     sourceStore.set({ clientYAML: $file.data?.blob || "" });
   }
 
-  const onSaveAndRefreshClick = async (tableName: string) => {
-    overlay.set({ title: `Importing ${tableName}.yaml` });
-    await saveAndRefresh(tableName, $sourceStore.clientYAML);
-    checkSourceImported(queryClient, sourceName, filePath);
+  const onSaveAndRefreshClick = async () => {
+    overlay.set({ title: `Importing ${filePath}` });
+    await saveAndRefresh(filePath, $sourceStore.clientYAML);
+    checkSourceImported(queryClient, filePath);
     overlay.set(null);
   };
 
-  const onRefreshClick = async (tableName: string) => {
+  const onRefreshClick = async () => {
     // no-op if connector is undefined
     if (connector === undefined) return;
 
     try {
-      await refreshSource(connector, tableName, runtimeInstanceId);
+      await refreshSource(
+        connector,
+        filePath,
+        $sourceQuery.data?.meta?.name?.name ?? "",
+        runtimeInstanceId,
+      );
     } catch (err) {
       // no-op
     }
@@ -140,12 +104,12 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName,
+    filePath,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
-  async function onReplaceSource(sourceName: string) {
-    await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
+  async function onReplaceSource() {
+    await replaceSourceWithUploadedFile(runtimeInstanceId, filePath);
   }
 
   function formatRefreshedOn(refreshedOn: string) {
@@ -159,17 +123,20 @@
     });
   }
 
-  $: sourceStore = useSourceStore(sourceName);
+  $: sourceStore = useSourceStore(filePath);
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    sourceName,
+    filePath,
     $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   const handleCreateModelFromSource = async () => {
-    const modelName = await createModelFromSourceV2(queryClient, sourceName);
+    const modelName = await createModelFromSourceV2(
+      queryClient,
+      source?.state?.table ?? "",
+    );
     goto(`/model/${modelName}`);
     behaviourEvent.fireNavigationEvent(
       modelName,
@@ -231,10 +198,10 @@
             label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
             on:click={() =>
               isSourceUnsaved
-                ? onSaveAndRefreshClick(sourceName)
+                ? onSaveAndRefreshClick()
                 : isLocalFileConnector
                   ? toggleFloatingElement()
-                  : onRefreshClick(sourceName)}
+                  : onRefreshClick()}
             type={isSourceUnsaved ? "primary" : "secondary"}
           >
             <IconSpaceFixer
@@ -268,7 +235,7 @@
             <MenuItem
               on:select={() => {
                 toggleFloatingElement();
-                onRefreshClick(sourceName);
+                onRefreshClick();
               }}
             >
               Refresh source
@@ -276,7 +243,7 @@
             <MenuItem
               on:select={() => {
                 toggleFloatingElement();
-                onReplaceSource(sourceName);
+                onReplaceSource();
               }}
             >
               Replace source with uploaded file

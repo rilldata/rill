@@ -84,7 +84,6 @@ export async function submitRemoteSourceForm(
   );
   checkSourceImported(
     queryClient,
-    values.sourceName,
     getFilePathFromNameAndType(values.sourceName, EntityType.Table),
   );
 

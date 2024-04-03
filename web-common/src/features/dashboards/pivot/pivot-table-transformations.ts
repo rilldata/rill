@@ -49,10 +49,11 @@ export function reduceTableCellDataIntoRows(
   columnDimensionAxes: Record<string, string[]>,
   tableData: PivotDataRow[],
   cellData: V1MetricsViewAggregationResponseDataItem[],
+  isExpanded = false,
 ) {
   const colDimensionNames = config.colDimensionNames;
   const rowPage = config.pivot.rowPage;
-  const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
+  const rowOffset = isExpanded ? 0 : (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
   /**
    * Create a map of row dimension values to their index in the row dimension axes.

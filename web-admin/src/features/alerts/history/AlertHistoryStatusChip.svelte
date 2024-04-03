@@ -2,7 +2,7 @@
   import { Tag } from "@rilldata/web-common/components/tag";
   import type { Color } from "@rilldata/web-common/components/tag/Tag.svelte";
   import {
-    V1AlertExecution,
+    type V1AlertExecution,
     V1AssertionStatus,
     type V1AssertionResult,
   } from "@rilldata/web-common/runtime-client";
