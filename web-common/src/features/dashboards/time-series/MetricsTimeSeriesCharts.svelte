@@ -78,7 +78,8 @@
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
-
+  $: isAllTime =
+    $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
@@ -128,10 +129,9 @@
       $dashboardStore.selectedTimezone,
     );
 
-    const slicedData =
-      $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
-        ? formattedData?.slice(1)
-        : formattedData?.slice(1, -1);
+    const slicedData = isAllTime
+      ? formattedData?.slice(1)
+      : formattedData?.slice(1, -1);
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
@@ -188,9 +188,7 @@
         mouseoverValue.x,
         "center",
         "ts_position",
-        $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
-          ? formattedData?.slice(1)
-          : formattedData?.slice(1, -1),
+        isAllTime ? formattedData?.slice(1) : formattedData?.slice(1, -1),
       );
 
       if ($chartInteractionColumn?.hover !== columnNum)
@@ -303,6 +301,8 @@
               {expandedMeasureName}
               totalsData={formattedData}
               {dimensionData}
+              xMin={startValue}
+              xMax={endValue}
             />
           {:else if formattedData && interval}
             <MeasureChart

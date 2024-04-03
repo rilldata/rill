@@ -16,7 +16,7 @@ export function buildVegaLiteSpec(
   quantitativeFields: string[],
   nominalFields: string[] = [],
 ): TopLevelSpec {
-  const baseSpec: TopLevelSpec = {
+  const baseSpec: Partial<TopLevelSpec> = {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     description: `A ${chartType} chart.`,
     width: "container",
@@ -32,7 +32,12 @@ export function buildVegaLiteSpec(
   switch (chartType) {
     case "bar":
     case "stacked bar":
-      baseSpec.mark = { type: "bar", width: { band: 0.5 } };
+      baseSpec.mark = {
+        type: "bar",
+        width: { band: 0.75 },
+        clip: true,
+        bandPosition: 0,
+      };
       baseSpec.encoding = {
         x: { field: timeFields[0], type: "temporal" },
         y: { field: quantitativeFields[0], type: "quantitative" },
@@ -56,7 +61,7 @@ export function buildVegaLiteSpec(
       break;
 
     case "area":
-      baseSpec.mark = "area";
+      baseSpec.mark = { type: "area", clip: true };
       baseSpec.encoding = {
         x: { field: timeFields[0], type: "temporal" },
         y: { field: quantitativeFields[0], type: "quantitative" },
@@ -66,7 +71,7 @@ export function buildVegaLiteSpec(
     case "stacked area":
       baseSpec.layer = [
         {
-          mark: "area",
+          mark: { type: "area", clip: true },
           encoding: {
             x: { field: timeFields[0], type: "temporal" },
             y: {
@@ -77,7 +82,7 @@ export function buildVegaLiteSpec(
             color: { field: nominalFields[0], type: "nominal", legend: null },
             opacity: {
               condition: { param: "hover", empty: false, value: 1 },
-              value: 0.8,
+              value: 0.7,
             },
           },
           params: [
@@ -88,7 +93,7 @@ export function buildVegaLiteSpec(
           ],
         },
         {
-          mark: { type: "line", strokeWidth: 1 },
+          mark: { type: "line", strokeWidth: 1, clip: true },
           encoding: {
             x: { field: timeFields[0], type: "temporal" },
             y: {
@@ -103,7 +108,7 @@ export function buildVegaLiteSpec(
       break;
 
     case "line":
-      baseSpec.mark = "line";
+      baseSpec.mark = { type: "line", clip: true };
       baseSpec.encoding = {
         x: { field: timeFields[0], type: "temporal" },
         y: { field: quantitativeFields[0], type: "quantitative" },
@@ -117,5 +122,5 @@ export function buildVegaLiteSpec(
       throw new Error(`Chart type "${chartType}" not supported.`);
   }
 
-  return baseSpec;
+  return baseSpec as TopLevelSpec;
 }

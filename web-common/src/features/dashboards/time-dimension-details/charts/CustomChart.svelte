@@ -8,20 +8,24 @@
   export let dimensionData;
   export let expandedMeasureName: string;
   export let chartType: string;
+  export let xMin: Date;
+  export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
 
   let vegaSpec;
   let data = totalsData;
 
+  $: console.log(expandedMeasureName);
+
   $: if (chartType === "bar") {
-    vegaSpec = buildVegaLiteSpec("bar", ["ts"], [expandedMeasureName]);
+    vegaSpec = buildVegaLiteSpec("bar", ["ts_position"], [expandedMeasureName]);
   } else if (chartType === "stacked bar") {
     data = dimensionData.length
       ? reduceDimensionData(dimensionData)
       : totalsData;
     vegaSpec = buildVegaLiteSpec(
       "bar",
-      ["ts"],
+      ["ts_position"],
       [expandedMeasureName],
       ["dimension"],
     );
@@ -31,7 +35,7 @@
       : totalsData;
     vegaSpec = buildVegaLiteSpec(
       "stacked area",
-      ["ts"],
+      ["ts_position"],
       [expandedMeasureName],
       ["dimension"],
     );
@@ -40,9 +44,17 @@
   $: sanitizedVegaSpec = sanitizeSpecForTDD(
     vegaSpec,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
+    xMin,
+    xMax,
+    chartType,
+  );
+
+  $: console.log(
+    "sanitizedVegaSpec",
+    JSON.stringify(sanitizedVegaSpec, null, 2),
   );
 </script>
 
-{#if sanitizedVegaSpec}
+{#if sanitizedVegaSpec && data}
   <VegaLiteRenderer data={{ table: data }} spec={sanitizedVegaSpec} />
 {/if}
