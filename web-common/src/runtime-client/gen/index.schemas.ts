@@ -462,8 +462,6 @@ export type RuntimeServiceIssueDevJWTParams = {
   admin?: boolean;
 };
 
-export type ConnectorServiceScanConnectorsParams = { instanceId?: string };
-
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
@@ -721,16 +719,6 @@ export interface V1Schedule {
   timeZone?: string;
 }
 
-export interface V1ScannedConnector {
-  name?: string;
-  type?: string;
-  hasAnonymousAccess?: boolean;
-}
-
-export interface V1ScanConnectorsResponse {
-  connectors?: V1ScannedConnector[];
-}
-
 export interface V1S3Object {
   name?: string;
   modifiedOn?: string;
@@ -791,22 +779,11 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  chart?: V1Chart;
-  dashboard?: V1Dashboard;
-  api?: V1API;
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -832,16 +809,27 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  chart?: V1Chart;
+  dashboard?: V1Dashboard;
+  api?: V1API;
 }
 
 export interface V1RenameFileResponse {
@@ -1060,6 +1048,12 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
+}
+
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -1085,12 +1079,6 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
   external?: boolean;
-}
-
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1256,6 +1244,21 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  where?: V1Expression;
+  having?: V1Expression;
+  timeZone?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1319,21 +1322,6 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  having?: V1Expression;
-  timeZone?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1415,6 +1403,25 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1445,25 +1452,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewAggregationRequest {
@@ -1530,6 +1518,11 @@ export interface V1ListResourcesResponse {
   resources?: V1Resource[];
 }
 
+export interface V1ListNotifierConnectorsResponse {
+  /** Note: In this list, the Connector.config property will always be empty. */
+  connectors?: V1Connector[];
+}
+
 export interface V1ListInstancesResponse {
   instances?: V1Instance[];
   nextPageToken?: string;
@@ -1543,8 +1536,8 @@ export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
 
-export interface V1ListConnectorsResponse {
-  connectors?: V1ConnectorSpec[];
+export interface V1ListConnectorDriversResponse {
+  connectors?: V1ConnectorDriver[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -1772,26 +1765,6 @@ export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
- * ConnectorSpec represents a connector available in the runtime.
-It should not be confused with a source.
- */
-export interface V1ConnectorSpec {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  properties?: ConnectorSpecProperty[];
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
-
-export interface V1Connector {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorConfig;
-}
-
-/**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
@@ -1810,6 +1783,35 @@ export interface V1CreateInstanceRequest {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
+}
+
+/**
+ * ConnectorDriver represents a connector driver available in the runtime.
+ */
+export interface V1ConnectorDriver {
+  name?: string;
+  configProperties?: ConnectorDriverProperty[];
+  sourceProperties?: ConnectorDriverProperty[];
+  displayName?: string;
+  description?: string;
+  implementsRegistry?: boolean;
+  implementsCatalog?: boolean;
+  implementsRepo?: boolean;
+  implementsAdmin?: boolean;
+  implementsAi?: boolean;
+  implementsSqlStore?: boolean;
+  implementsOlap?: boolean;
+  implementsObjectStore?: boolean;
+  implementsFileStore?: boolean;
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
 }
 
 export interface V1Condition {
@@ -2007,10 +2009,6 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -2021,6 +2019,10 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2050,6 +2052,32 @@ export interface V1AssertionResult {
   status?: V1AssertionStatus;
   failRow?: V1AssertionResultFailRow;
   errorMessage?: string;
+}
+
+export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
+
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
+
+export type V1AnalyzedConnectorConfig = { [key: string]: string };
+
+/**
+ * AnalyzedConnector contains information about a connector that is referenced in the project files.
+ */
+export interface V1AnalyzedConnector {
+  name?: string;
+  driver?: V1ConnectorDriver;
+  config?: V1AnalyzedConnectorConfig;
+  presetConfig?: V1AnalyzedConnectorPresetConfig;
+  projectConfig?: V1AnalyzedConnectorProjectConfig;
+  envConfig?: V1AnalyzedConnectorEnvConfig;
+  hasAnonymousAccess?: boolean;
+  usedBy?: V1ResourceName[];
+}
+
+export interface V1AnalyzeConnectorsResponse {
+  connectors?: V1AnalyzedConnector[];
 }
 
 export interface V1AlertState {
@@ -2289,27 +2317,30 @@ export interface MetricsViewDimension {
   column?: string;
 }
 
-export type ConnectorSpecPropertyType =
-  (typeof ConnectorSpecPropertyType)[keyof typeof ConnectorSpecPropertyType];
+export type ConnectorDriverPropertyType =
+  (typeof ConnectorDriverPropertyType)[keyof typeof ConnectorDriverPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorSpecPropertyType = {
+export const ConnectorDriverPropertyType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
-  TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
   TYPE_BOOLEAN: "TYPE_BOOLEAN",
+  TYPE_STRING: "TYPE_STRING",
+  TYPE_FILE: "TYPE_FILE",
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
-export interface ConnectorSpecProperty {
+export interface ConnectorDriverProperty {
   key?: string;
+  type?: ConnectorDriverPropertyType;
+  required?: boolean;
   displayName?: string;
   description?: string;
-  placeholder?: string;
-  type?: ConnectorSpecPropertyType;
-  nullable?: boolean;
+  docsUrl?: string;
   hint?: string;
-  href?: string;
+  default?: string;
+  placeholder?: string;
+  secret?: boolean;
 }
 
 export interface ColumnTimeSeriesRequestBasicMeasure {

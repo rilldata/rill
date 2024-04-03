@@ -16,6 +16,9 @@ dimensions:
     description: ""
   - name: nolabel_pub
     property: publisher
+  - label: Space Label
+    name: space_label
+    expression: "publisher"
   - label: Domain Parts
     name: domain_parts
     expression: "string_split(domain, '.')"

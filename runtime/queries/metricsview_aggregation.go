@@ -322,6 +322,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 				aliasesMap[e.Name] = e.Label
 			}
 		}
+		aliasesMap[mv.TimeDimension] = mv.TimeDimension
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -351,7 +352,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	for i, p := range q.PivotOn {
 		pivots[i] = p
 		if q.Exporting {
-			pivots[i] = aliasesMap[p]
+			pivots[i] = safeName(aliasesMap[p])
 		}
 	}
 
@@ -389,7 +390,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	}
 	return fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
 		temporaryTableName,              // 1
-		strings.Join(q.PivotOn, ", "),   // 2
+		strings.Join(pivots, ", "),      // 2
 		strings.Join(measureCols, ", "), // 3
 		orderClause,                     // 4
 		limitClause,                     // 5
@@ -554,6 +555,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
+		if dialect == drivers.DialectDuckDB {
+			timeCol = fmt.Sprintf("%s::TIMESTAMP", timeCol)
+		}
 		clause, err := timeRangeClause(q.TimeRange, mv, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
@@ -776,6 +780,9 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 	var col string
 	if dim.Name == mv.TimeDimension {
 		col = safeName(dim.Name)
+		if dialect == drivers.DialectDuckDB {
+			col = fmt.Sprintf("%s::TIMESTAMP", col)
+		}
 	} else {
 		d, err := metricsViewDimension(mv, dim.Name)
 		if err != nil {
