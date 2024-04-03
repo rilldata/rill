@@ -168,7 +168,6 @@ export function getDefaultMetricsExplorerEntity(
     showTimeComparison: false,
     dimensionSearchText: "",
     temporaryFilterName: null,
-    pinIndex: -1,
     tdd: {
       chartType: TDDChart.DEFAULT,
       pinIndex: -1,
