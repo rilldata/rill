@@ -95,8 +95,6 @@ linters-settings:
       - filepathJoin
       - hugeParam
       - octalLiteral
-      # Pending https://github.com/go-critic/go-critic/pull/1281
-      - timeCmpSimplify
   gomnd:
     settings:
       mnd:
