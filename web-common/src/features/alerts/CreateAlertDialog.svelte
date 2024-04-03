@@ -46,7 +46,7 @@
   // if in TDD take active measure and comparison dimension
   // If expanded leaderboard, take first dimension and active dimensions
   let dimension = "";
-  if ($dashboardStore.expandedMeasureName) {
+  if ($dashboardStore.tdd.expandedMeasureName) {
     dimension = $dashboardStore.selectedComparisonDimension ?? "";
   } else {
     dimension = $dashboardStore.selectedDimensionName ?? "";
@@ -56,7 +56,7 @@
     initialValues: {
       name: "",
       measure:
-        $dashboardStore.expandedMeasureName ??
+        $dashboardStore.tdd.expandedMeasureName ??
         $dashboardStore.leaderboardMeasureName ??
         "",
       splitByDimension: dimension,

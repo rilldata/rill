@@ -43,7 +43,7 @@ export default async function exportTDD({
           where: sanitiseExpression(dashboard.whereFilter, measureFilters),
           instanceId: get(runtime).instanceId,
           limit: undefined, // the backend handles export limits
-          measures: [{ name: dashboard.expandedMeasureName }],
+          measures: [{ name: dashboard.tdd.expandedMeasureName }],
           metricsView,
           offset: "0",
           pivotOn: [timeDimension], // spreads the time dimension across columns

@@ -1,3 +1,16 @@
+export enum TDDChart {
+  DEFAULT = "default",
+  BAR = "bar",
+  STACKED_BAR = "stacked_bar",
+  GROUPED_BAR = "grouped_bar",
+  STACKED_AREA = "stacked_area",
+}
+export interface TDDState {
+  expandedMeasureName?: string;
+  pinIndex: number;
+  chartType: TDDChart;
+}
+
 export interface HeaderData<T> {
   value: T | null | undefined;
   spark?: string;

@@ -238,7 +238,7 @@ const metricViewReducers = {
         metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       } else if (metricsExplorer.selectedDimensionName) {
         metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-      } else if (metricsExplorer.expandedMeasureName) {
+      } else if (metricsExplorer.tdd.expandedMeasureName) {
         metricsExplorer.activePage =
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
       } else {
@@ -365,7 +365,7 @@ const metricViewReducers = {
 
   setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.expandedMeasureName = measureName;
+      metricsExplorer.tdd.expandedMeasureName = measureName;
       if (measureName) {
         metricsExplorer.activePage =
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
@@ -376,7 +376,7 @@ const metricViewReducers = {
       // If going into TDD view and already having a comparison dimension,
       // then set the pinIndex
       if (metricsExplorer.selectedComparisonDimension) {
-        metricsExplorer.pinIndex = getPinIndexForDimension(
+        metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
           metricsExplorer,
           metricsExplorer.selectedComparisonDimension,
         );
@@ -386,7 +386,7 @@ const metricViewReducers = {
 
   setPinIndex(name: string, index: number) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pinIndex = index;
+      metricsExplorer.tdd.pinIndex = index;
     });
   },
 
@@ -422,7 +422,7 @@ const metricViewReducers = {
         setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
-      metricsExplorer.pinIndex = getPinIndexForDimension(
+      metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
         metricsExplorer,
         dimensionName,
       );
