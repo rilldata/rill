@@ -16,13 +16,10 @@ import type { QueryClient } from "@tanstack/query-core";
 export async function handleEntityRename(
   queryClient: QueryClient,
   instanceId: string,
-  e: Event & {
-    currentTarget: EventTarget & HTMLInputElement;
-  },
+  target: HTMLInputElement,
   filePath: string,
   entityType: EntityType, // temporary param
 ) {
-  const target = e.target as HTMLInputElement;
   const [folder, fileName] = splitFolderAndName(filePath);
   const extension = extractFileExtension(filePath);
 

@@ -21,24 +21,34 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(VALID_NAME_PATTERN)) {
+  const onChangeCallback = async (
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) => {
+    if (!e.currentTarget.value.match(VALID_NAME_PATTERN)) {
       notifications.send({
         message: INVALID_NAME_MESSAGE,
       });
-      e.target.value = chartName; // resets the input
+      e.currentTarget.value = chartName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, chartName, $allNamesQuery.data ?? [])) {
+    if (
+      isDuplicateName(
+        e.currentTarget.value,
+        chartName,
+        $allNamesQuery.data ?? [],
+      )
+    ) {
       notifications.send({
-        message: `Name ${e.target.value} is already in use`,
+        message: `Name ${e.currentTarget.value} is already in use`,
       });
-      e.target.value = chartName; // resets the input
+      e.currentTarget.value = chartName; // resets the input
       return;
     }
 
     try {
-      const toName = e.target.value;
+      const toName = e.currentTarget.value;
       const type = EntityType.Chart;
       await renameFileArtifact(
         runtimeInstanceId,
@@ -46,7 +56,7 @@
         getFileAPIPathFromNameAndType(toName, type),
         type,
       );
-      goto(`/chart/${toName}`, { replaceState: true });
+      await goto(`/chart/${toName}`, { replaceState: true });
     } catch (err) {
       console.error(err.response.data.message);
     }

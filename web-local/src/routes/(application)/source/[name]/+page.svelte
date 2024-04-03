@@ -98,7 +98,7 @@
     return handleEntityRename(
       queryClient,
       instanceId,
-      e,
+      e.currentTarget,
       filePath,
       EntityType.Table,
     );
