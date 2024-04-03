@@ -231,7 +231,7 @@ func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	observability.MuxHandle(inner, "/github/connect/callback", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("/github/connect/callback"), http.HandlerFunc(s.githubConnectCallback))))
 	observability.MuxHandle(inner, "/github/auth/login", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/login"), http.HandlerFunc(s.githubAuthLogin))))
 	observability.MuxHandle(inner, "/github/auth/callback", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/auth/callback"), http.HandlerFunc(s.githubAuthCallback))))
-	observability.MuxHandle(inner, "/github/post-auth-redirect", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/post-auth-redirect"), http.HandlerFunc(s.githubRepoStatus))))
+	observability.MuxHandle(inner, "/github/post-auth-redirect", s.authenticator.HTTPMiddleware(middleware.Check(s.checkGithubRateLimit("github/post-auth-redirect"), http.HandlerFunc(s.githubStatus))))
 	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
 }
 
@@ -597,9 +597,10 @@ func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// githubRepoStatus is a http wrapper over [GetGithubRepoStatus]. It redirects to the grantAccessURL if there is no access.
+// githubStatus is a http wrapper over [GetGithubRepoStatus]/[GetGithubUserStatus] depending upon whether `remote` query is passed.
+// It redirects to the grantAccessURL if there is no access.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/post-auth-redirect.
-func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Server) githubStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
@@ -608,18 +609,36 @@ func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := s.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{GithubUrl: r.URL.Query().Get("remote")})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to fetch github repo status: %s", err), http.StatusInternalServerError)
-		return
+	var (
+		hasAccess      bool
+		grantAccessURL string
+		remote         = r.URL.Query().Get("remote")
+	)
+
+	if remote == "" {
+		resp, err := s.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to fetch user status: %s", err), http.StatusInternalServerError)
+			return
+		}
+		hasAccess = resp.HasAccess
+		grantAccessURL = resp.GrantAccessUrl
+	} else {
+		resp, err := s.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{GithubUrl: remote})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to fetch github repo status: %s", err), http.StatusInternalServerError)
+			return
+		}
+		hasAccess = resp.HasAccess
+		grantAccessURL = resp.GrantAccessUrl
 	}
 
-	if resp.HasAccess {
+	if hasAccess {
 		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
 		return
 	}
 
-	redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect": resp.GrantAccessUrl})
+	redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect": grantAccessURL})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 		return

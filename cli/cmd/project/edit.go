@@ -86,16 +86,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				proj := resp.Project
 
-				description, err = cmdutil.InputPrompt("Enter the description", proj.Description)
-				if err != nil {
-					return err
-				}
+				description = cmdutil.InputPrompt("Enter the description", proj.Description)
 				req.Description = &description
 
-				prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
-				if err != nil {
-					return err
-				}
+				prodBranch = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
 				req.ProdBranch = &prodBranch
 
 				public = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
