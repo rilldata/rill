@@ -2755,6 +2755,11 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
    */
   implementsFileStore = false;
 
+  /**
+   * @generated from field: bool implements_notifier = 19;
+   */
+  implementsNotifier = false;
+
   constructor(data?: PartialMessage<ConnectorDriver>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2777,6 +2782,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 16, name: "implements_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "implements_object_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "implements_file_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "implements_notifier", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver {

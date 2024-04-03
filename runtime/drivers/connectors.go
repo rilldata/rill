@@ -31,6 +31,7 @@ type Spec struct {
 	ImplementsOLAP        bool
 	ImplementsObjectStore bool
 	ImplementsFileStore   bool
+	ImplementsNotifier    bool
 }
 
 // PropertySpec provides metadata about a single connector property.

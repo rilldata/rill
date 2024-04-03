@@ -6717,6 +6717,8 @@ func (m *ConnectorDriver) validate(all bool) error {
 
 	// no validation rules for ImplementsFileStore
 
+	// no validation rules for ImplementsNotifier
+
 	if len(errors) > 0 {
 		return ConnectorDriverMultiError(errors)
 	}
