@@ -22,16 +22,17 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "https",
 	Description: "Connect to a remote file.",
-	SourceProperties: []drivers.PropertySchema{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Path",
 			Description: "Path to the remote file.",
 			Placeholder: "https://example.com/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
 	},
+	ImplementsFileStore: true,
 }
 
 type driver struct{}

@@ -16,10 +16,10 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Amazon Athena",
-	Description:        "Connect to Amazon Athena database.",
-	ServiceAccountDocs: "",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Amazon Athena",
+	Description: "Connect to Amazon Athena database.",
+	DocsURL:     "",
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -30,36 +30,38 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "output_location",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "S3 output location",
 			Description: "Output location for query results in S3.",
 			Placeholder: "s3://bucket-name/path/",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 		{
 			Key:         "workgroup",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "AWS Athena workgroup",
 			Description: "AWS Athena workgroup to use for queries.",
 			Placeholder: "primary",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 		{
 			Key:         "region",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "AWS region",
 			Description: "AWS region to connect to Athena and the output location.",
 			Placeholder: "us-east-1",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 		{
 			Key:    "aws_secret_access_key",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},
@@ -67,12 +69,19 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
+type configProperties struct {
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
 func (d driver) Open(config map[string]any, shared bool, _ *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("athena driver can't be shared")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -181,11 +190,4 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
-}
-
-type configProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
