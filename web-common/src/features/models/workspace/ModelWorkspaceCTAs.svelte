@@ -19,6 +19,7 @@
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let availableDashboards: Array<V1Resource>;
+  // TODO: does it make sense to move to use path?
   export let modelName: string;
   export let suppressTooltips = false;
   export let modelHasError = false;
@@ -65,10 +66,10 @@
     </Button>
     <Menu
       dark
+      let:toggleFloatingElement
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       slot="floating-element"
-      let:toggleFloatingElement
     >
       <MenuItem
         on:select={() => {

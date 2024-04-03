@@ -1,45 +1,32 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
-  import { renameFileArtifact } from "../../entity-management/actions";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-    getRouteFromName,
-  } from "../../entity-management/entity-mappers";
-  import {
-    INVALID_NAME_MESSAGE,
-    VALID_NAME_PATTERN,
-    isDuplicateName,
-  } from "../../entity-management/name-utils";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
-  export let modelName: string;
+  export let filePath: string;
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
+  $: modelName = extractFileName(filePath);
 
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: runtimeInstanceId = $runtime.instanceId;
 
   $: workspaceLayout = $workspaces;
 
   $: tableVisible = workspaceLayout.table.visible;
 
-  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: modelHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
 
   let contextMenuOpen = false;
@@ -53,47 +40,14 @@
     return str.replace(/\.sql/, "");
   }
 
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
-    if (!e.currentTarget.value.match(VALID_NAME_PATTERN)) {
-      notifications.send({
-        message: INVALID_NAME_MESSAGE,
-      });
-      e.currentTarget.value = modelName; // resets the input
-      return;
-    }
-    if (
-      isDuplicateName(
-        e.currentTarget.value,
-        modelName,
-        $allNamesQuery?.data ?? [],
-      )
-    ) {
-      notifications.send({
-        message: `Name ${e.currentTarget.value} is already in use`,
-      });
-      e.currentTarget.value = modelName; // resets the input
-      return;
-    }
-
-    try {
-      const toName = e.currentTarget.value;
-      const entityType = EntityType.Model;
-      await renameFileArtifact(
-        runtimeInstanceId,
-        getFileAPIPathFromNameAndType(modelName, entityType),
-        getFileAPIPathFromNameAndType(toName, entityType),
-        entityType,
-      );
-      await goto(getRouteFromName(toName, entityType), {
-        replaceState: true,
-      });
-    } catch (err) {
-      console.error(err.response.data.message);
-    }
+  async function onChangeCallback(e) {
+    return handleEntityRename(
+      queryClient,
+      runtimeInstanceId,
+      e,
+      filePath,
+      EntityType.Model,
+    );
   }
 
   $: titleInput = modelName;

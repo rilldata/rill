@@ -4,14 +4,14 @@
   import ModelBody from "./ModelBody.svelte";
   import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
 
-  export let modelName: string;
+  export let filePath: string;
   export let focusEditorOnMount = false;
 </script>
 
-{#key modelName}
+{#key filePath}
   <WorkspaceContainer>
-    <ModelWorkspaceHeader slot="header" {modelName} />
-    <ModelBody slot="body" {modelName} {focusEditorOnMount} />
-    <ModelInspector {modelName} slot="inspector" />
+    <ModelWorkspaceHeader slot="header" {filePath} />
+    <ModelBody slot="body" {filePath} {focusEditorOnMount} />
+    <ModelInspector {filePath} slot="inspector" />
   </WorkspaceContainer>
 {/key}

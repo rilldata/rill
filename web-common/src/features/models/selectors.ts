@@ -87,8 +87,8 @@ export async function getModelNames(
   return modelNames ?? [];
 }
 
-export function useModelFileIsEmpty(instanceId: string, modelName: string) {
-  return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
+export function useModelFileIsEmpty(instanceId: string, filePath: string) {
+  return createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
       select(data) {
         return data?.blob?.length === 0;

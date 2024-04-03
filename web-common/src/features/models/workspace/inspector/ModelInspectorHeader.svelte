@@ -1,11 +1,6 @@
 <script lang="ts">
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useModel,
-    useModels,
-  } from "@rilldata/web-common/features/models/selectors";
+  import { useModels } from "@rilldata/web-common/features/models/selectors";
   import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,
@@ -25,20 +20,19 @@
   import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
-  export let modelName: string;
+  export let filePath: string;
   export let containerWidth = 0;
 
   const queryClient = useQueryClient();
 
-  $: modelQuery = useModel($runtime.instanceId, modelName);
-  $: model = $modelQuery?.data?.model;
-
-  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
   );
+  $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: model = $modelQuery?.data?.model;
+  $: tableName = model?.state?.table ?? "";
 
   let rollup: number;
   let sourceTableReferences;
@@ -58,7 +52,7 @@
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(
-    modelName,
+    tableName,
     sourceTableReferences,
     [...($getAllSources?.data || []), ...($getAllModels?.data || [])],
   );
@@ -106,13 +100,13 @@
   );
   $: modelColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
-    modelName,
+    tableName,
   );
 
   let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
   $: modelCardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
-    modelName,
+    tableName,
   );
   let outputRowCardinalityValue: number;
   $: outputRowCardinalityValue = Number(

@@ -1,8 +1,7 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
@@ -12,7 +11,7 @@
     createQueryServiceTableCardinality,
     createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import { Writable, derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
@@ -22,7 +21,7 @@
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
   import type { QueryHighlightState } from "../../query-highlight-store";
 
-  export let modelName: string;
+  export let filePath: string;
 
   let showSourceTables = true;
   let modelHasError = false;
@@ -35,10 +34,13 @@
     "rill:app:query-highlight",
   );
 
-  $: getModelFile = createRuntimeServiceGetFile(
-    $runtime?.instanceId,
-    getFilePathFromNameAndType(modelName, EntityType.Model),
-  );
+  const queryClient = useQueryClient();
+
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: tableName = $modelQuery?.data?.model?.state?.table ?? "";
+
+  $: getModelFile = createRuntimeServiceGetFile($runtime?.instanceId, filePath);
   $: references = getTableReferences($getModelFile?.data?.blob ?? "");
 
   $: getAllSources = useSources($runtime?.instanceId);
@@ -46,7 +48,7 @@
   $: getAllModels = useModels($runtime?.instanceId);
 
   // for each reference, match to an existing model or source,
-  $: referencedThings = getMatchingReferencesAndEntries(modelName, references, [
+  $: referencedThings = getMatchingReferencesAndEntries(tableName, references, [
     ...($getAllSources?.data ?? []),
     ...($getAllModels?.data ?? []),
   ]);

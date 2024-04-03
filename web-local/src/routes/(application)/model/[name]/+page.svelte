@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelWorkspace } from "@rilldata/web-common/features/models";
@@ -17,26 +20,23 @@
   let interceptedUrl: string | null = null;
 
   $: modelName = $page.params.name;
+  $: filePath = getFileAPIPathFromNameAndType(modelName, EntityType.Model);
 
   /** If ?focus, tell the page to focus the editor as soon as available */
   $: focusEditor = $page.url.searchParams.get("focus") === "";
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(modelName, EntityType.Model),
-    {
-      query: {
-        onError: (err) => {
-          if (err.response?.status && err.response?.data?.message) {
-            throw error(err.response.status, err.response.data.message);
-          } else {
-            console.error(err);
-            throw error(500, err.message);
-          }
-        },
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+    query: {
+      onError: (err) => {
+        if (err.response?.status && err.response?.data?.message) {
+          throw error(err.response.status, err.response.data.message);
+        } else {
+          console.error(err);
+          throw error(500, err.message);
+        }
       },
     },
-  );
+  });
 
   onMount(() => {
     if ($readOnly) {
@@ -72,7 +72,7 @@
 </svelte:head>
 
 {#if $fileQuery.data}
-  <ModelWorkspace {modelName} focusEditorOnMount={focusEditor} />
+  <ModelWorkspace {filePath} focusEditorOnMount={focusEditor} />
 {/if}
 
 {#if interceptedUrl}

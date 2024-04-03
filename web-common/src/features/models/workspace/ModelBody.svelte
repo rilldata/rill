@@ -1,15 +1,11 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import type { SelectionRange } from "@codemirror/state";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import {
     createQueryServiceTableRows,
@@ -23,7 +19,7 @@
   import { slide } from "svelte/transition";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModel, useModelFileIsEmpty } from "../selectors";
+  import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -31,10 +27,11 @@
 
   const QUERY_DEBOUNCE_TIME = 400;
 
-  export let modelName: string;
+  export let filePath: string;
   export let focusEditorOnMount = false;
 
   const queryClient = useQueryClient();
+  $: modelName = extractFileName(filePath);
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
     "rill:app:query-highlight",
@@ -46,16 +43,15 @@
   let errors: string[] = [];
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
-  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
+  $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
+  $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, filePath);
 
   $: modelSql = $modelSqlQuery?.data?.blob ?? "";
   $: hasModelSql = typeof modelSql === "string";
 
-  $: modelQuery = useModel(runtimeInstanceId, modelName);
+  $: modelQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
 
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
@@ -107,7 +103,7 @@
 
       await $updateModel.mutateAsync({
         instanceId: runtimeInstanceId,
-        path: getFileAPIPathFromNameAndType(modelName, EntityType.Model),
+        path: filePath,
         data: {
           blob: content,
         },

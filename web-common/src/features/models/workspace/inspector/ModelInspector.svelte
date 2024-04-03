@@ -1,30 +1,27 @@
 <script lang="ts">
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { useModel, useModelFileIsEmpty } from "../../selectors";
+  import { useModelFileIsEmpty } from "../../selectors";
   import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
-  export let modelName: string;
+  export let filePath: string;
 
   const queryClient = useQueryClient();
 
   let containerWidth: number;
 
-  $: filePath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  $: modelQuery = useModel($runtime?.instanceId, modelName);
+  $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
-    $runtime?.instanceId,
+    $runtime.instanceId,
   );
 
-  $: emptyModel = useModelFileIsEmpty($runtime?.instanceId, modelName);
+  $: emptyModel = useModelFileIsEmpty($runtime?.instanceId, filePath);
 </script>
 
 {#if !$emptyModel?.data}
@@ -34,11 +31,11 @@
     </div>
   {:else if !$modelHasError}
     <div>
-      {#key modelName}
+      {#key filePath}
         <div bind:clientWidth={containerWidth}>
-          <ModelInspectorHeader {modelName} {containerWidth} />
+          <ModelInspectorHeader {filePath} {containerWidth} />
           <hr />
-          <ModelInspectorModelProfile {modelName} />
+          <ModelInspectorModelProfile {filePath} />
         </div>
       {/key}
     </div>
