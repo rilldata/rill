@@ -52,16 +52,12 @@
       console.error(err.response.data.message);
     }
   };
-
-  $: titleInput = metricsDefName;
 </script>
 
 <WorkspaceHeader
-  {...{
-    titleInput,
-    onChangeCallback,
-    showInspectorToggle,
-  }}
+  titleInput={metricsDefName}
+  on:change={onChangeCallback}
+  {showInspectorToggle}
 >
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

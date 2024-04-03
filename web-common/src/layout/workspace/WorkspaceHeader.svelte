@@ -11,11 +11,6 @@
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
 
-  export let onChangeCallback: (
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) => void = () => {};
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
@@ -77,7 +72,7 @@
             class:font-bold={editingTitle === false}
             value={titleInput}
             on:input={onInput}
-            on:change={onChangeCallback}
+            on:change
             on:focus={() => {
               editingTitle = true;
             }}

@@ -101,7 +101,8 @@
 </script>
 
 <WorkspaceHeader
-  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
+  titleInput={formatModelName(titleInput)}
+  on:change={onChangeCallback}
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton on:click={workspaceLayout.table.toggle}

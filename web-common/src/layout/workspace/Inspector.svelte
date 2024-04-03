@@ -7,9 +7,7 @@
 
   $: context = $page.url.pathname;
   $: workspace = workspaces.get(context);
-
   $: width = workspace.inspector.width;
-
   $: visible = workspace.inspector.visible;
 </script>
 
@@ -38,7 +36,7 @@
     will-change: width;
     @apply h-full flex-none relative;
     @apply border-l border-gray-200 bg-white;
-    @apply overflow-y-scroll overflow-x-hidden;
+    @apply overflow-y-auto overflow-x-hidden;
   }
 
   .inner {

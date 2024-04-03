@@ -1,26 +1,21 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import { overlay } from "../../../layout/overlay-store";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
-  import { saveAndRefresh } from "../saveAndRefresh";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createEventDispatcher } from "svelte";
+  import type { EditorView } from "@codemirror/view";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
 
-  export let filePath: string;
+  const dispatch = createEventDispatcher();
+
   export let yaml: string;
   export let latest: string;
   export let isSourceUnsaved: boolean;
+  export let allErrors: V1ParseError[];
 
-  let editor: YAMLEditor;
   let view: EditorView;
 
   $: latest = yaml;
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   function handleUpdate(e: CustomEvent<{ content: string }>) {
     latest = e.detail.content;
@@ -29,30 +24,17 @@
     setLineStatuses([], view);
   }
 
-  /**
-   * Handle errors.
-   */
-  $: {
-    const lineBasedReconciliationErrors = mapParseErrorsToLines(
-      $allErrors,
-      yaml,
-    );
-    if (view) setLineStatuses(lineBasedReconciliationErrors, view);
-  }
+  //  Handle errors
+  $: if (view) setLineStatuses(mapParseErrorsToLines(allErrors, yaml), view);
 
-  async function handleModSave(event: KeyboardEvent) {
+  function handleModSave(event: KeyboardEvent) {
     // Check if a Modifier Key + S is pressed
     if (!(event.metaKey || event.ctrlKey) || event.key !== "s") return;
 
-    // Prevent default behaviour
     event.preventDefault();
 
-    // Save the source, if it's unsaved
     if (!isSourceUnsaved) return;
-    overlay.set({ title: `Importing ${filePath}` });
-    await saveAndRefresh(filePath, latest);
-    checkSourceImported(queryClient, filePath);
-    overlay.set(null);
+    dispatch("save");
   }
 </script>
 
@@ -60,11 +42,6 @@
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
-    <YAMLEditor
-      bind:this={editor}
-      bind:view
-      content={latest}
-      on:update={handleUpdate}
-    />
+    <YAMLEditor content={latest} bind:view on:update={handleUpdate} />
   </div>
 </div>

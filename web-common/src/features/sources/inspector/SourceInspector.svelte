@@ -6,7 +6,6 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
     formatConnectorType,
@@ -22,36 +21,22 @@
     createQueryServiceTableColumns,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { resourceIsLoading } from "../../entity-management/resource-selectors";
 
-  export let filePath: string;
   export let isSourceUnsaved: boolean;
-
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-
-  const queryClient = useQueryClient();
-  $: runtimeInstanceId = $runtime.instanceId;
-
-  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
-  let source: V1SourceV2 | undefined;
-  $: source = $sourceQuery.data?.source;
-  $: tableName = source?.state?.table ?? "";
+  export let tableName: string;
+  export let source: V1SourceV2 | undefined;
+  export let sourceIsReconciling: boolean;
 
   let showColumns = true;
 
-  // get source table references.
-
-  // toggle state for inspector sections
-
   /** source summary information */
-  let rowCount;
-  let columnCount;
+  let rowCount: string;
+  let columnCount: string;
   let nullPercentage: number | undefined;
 
   $: connectorType = source && formatConnectorType(source);
@@ -61,6 +46,7 @@
     $runtime.instanceId,
     tableName,
   );
+
   $: cardinality = $cardinalityQuery?.data?.cardinality
     ? Number($cardinalityQuery?.data?.cardinality)
     : 0;
@@ -110,16 +96,16 @@
 </script>
 
 <div class="{isSourceUnsaved && 'grayscale'} transition duration-200">
-  {#if resourceIsLoading($sourceQuery?.data)}
+  {#if sourceIsReconciling}
     <div class="mt-6">
       <ReconcilingSpinner />
     </div>
-  {:else if source && !$sourceQuery.isError}
+  {:else if source}
     <!-- summary info -->
     <div class="p-4 pt-2">
       <LeftRightGrid>
-        <GridCell side="left"
-          >{connectorType}
+        <GridCell side="left">
+          {connectorType}
           {fileExtension !== "" ? `(${fileExtension})` : ""}</GridCell
         >
         <GridCell side="right" classes="text-gray-800 font-bold">

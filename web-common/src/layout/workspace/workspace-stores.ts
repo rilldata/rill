@@ -3,7 +3,6 @@ import {
   DEFAULT_INSPECTOR_WIDTH,
   DEFAULT_PREVIEW_TABLE_HEIGHT,
 } from "../config";
-import { page } from "$app/stores";
 import { derived } from "svelte/store";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 

@@ -57,7 +57,7 @@
   let generateOpen = false;
 </script>
 
-<WorkspaceHeader {...{ titleInput, onChangeCallback }}>
+<WorkspaceHeader {titleInput} on:change={onChangeCallback}>
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
       <Button on:click={() => (generateOpen = true)}>Generate using AI</Button>

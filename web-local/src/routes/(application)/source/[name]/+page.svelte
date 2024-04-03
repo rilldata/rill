@@ -21,45 +21,62 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
+  import { useIsLocalFileConnector } from "@rilldata/web-common/features/sources/selectors";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import {
+    refreshSource,
+    replaceSourceWithUploadedFile,
+  } from "@rilldata/web-common/features/sources/refreshSource";
+  import { createModelFromSourceV2 } from "@rilldata/web-common/features/sources/createModel";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
 
   const { readOnly } = featureFlags;
 
   let latest: string;
+  let interceptedUrl: string | null = null;
 
-  onMount(() => {
-    if ($readOnly) {
-      throw error(404, "Page not found");
-    }
+  onMount(async () => {
+    if ($readOnly) await goto("/");
   });
 
   $: sourceName = $page.params.name;
+  $: instanceId = $runtime.instanceId;
   $: filePath = getFileAPIPathFromNameAndType(sourceName, EntityType.Table);
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
-      onError: (err) => {
-        if (err.response?.status && err.response?.data?.message) {
-          throw error(err.response.status, err.response.data.message);
-        } else {
-          console.error(err);
-          throw error(500, err.message);
-        }
+      onError: () => {
+        goto("/").catch(() => {});
       },
     },
   });
 
-  $: isSourceUnsaved = latest !== $fileQuery.data?.blob;
+  $: yaml = $fileQuery.data?.blob ?? "";
+
+  $: isSourceUnsaved = latest !== yaml;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
-  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
+  $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: source = $sourceQuery.data?.source;
+  $: connector = source?.state?.connector;
+  $: tableName = source?.state?.table ?? "";
+  $: refreshedOn = source?.state?.refreshedOn;
+  $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
 
-  $: sourceQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  $: isLocalFileConnector = !!$isLocalFileConnectorQuery.data;
 
   function revert() {
-    latest = $fileQuery.data?.blob ?? "";
+    latest = yaml;
   }
 
   async function save() {
@@ -69,22 +86,60 @@
     overlay.set(null);
   }
 
-  let interceptedUrl: string | null = null;
+  async function replaceSource() {
+    await replaceSourceWithUploadedFile(instanceId, filePath);
+  }
+
+  function onChangeCallback(
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) {
+    return handleEntityRename(
+      queryClient,
+      instanceId,
+      e,
+      filePath,
+      EntityType.Table,
+    );
+  }
+
+  function refresh() {
+    if (connector === undefined) return;
+
+    refreshSource(
+      connector,
+      filePath,
+      $sourceQuery.data?.meta?.name?.name ?? "",
+      instanceId,
+    ).catch(() => {});
+  }
+
+  async function handleCreateModelFromSource() {
+    const modelName = await createModelFromSourceV2(
+      queryClient,
+      source?.state?.table ?? "",
+    );
+    await goto(`/model/${modelName}`);
+    await behaviourEvent.fireNavigationEvent(
+      modelName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Source,
+      MetricsEventScreenName.Model,
+    );
+  }
 
   beforeNavigate((e) => {
     if (!isSourceUnsaved || interceptedUrl) return;
 
     e.cancel();
 
-    if (e.to) {
-      interceptedUrl = e.to.url.href;
-    }
+    if (e.to) interceptedUrl = e.to.url.href;
   });
 
   async function handleConfirm() {
-    if (interceptedUrl) {
-      await goto(interceptedUrl);
-    }
+    if (interceptedUrl) await goto(interceptedUrl);
 
     interceptedUrl = null;
   }
@@ -101,37 +156,50 @@
 <WorkspaceContainer>
   <SourceWorkspaceHeader
     slot="header"
-    {filePath}
     {sourceName}
+    {refreshedOn}
     {isSourceUnsaved}
-    on:revert={revert}
+    {sourceIsReconciling}
+    {isLocalFileConnector}
+    hasErrors={$hasErrors}
     on:save={save}
+    on:revert={revert}
+    on:refresh-source={refresh}
+    on:change={onChangeCallback}
+    on:replace-source={replaceSource}
+    on:create-model={handleCreateModelFromSource}
   />
-  <div
-    class="editor-pane h-full overflow-hidden w-full flex flex-col"
-    slot="body"
-  >
+
+  <div class="editor-pane size-full overflow-hidden flex flex-col" slot="body">
     <WorkspaceEditorContainer>
       <SourceEditor
+        {yaml}
         {isSourceUnsaved}
-        {filePath}
-        yaml={$fileQuery.data?.blob ?? ""}
+        allErrors={$allErrors}
         bind:latest
+        on:save={save}
       />
     </WorkspaceEditorContainer>
 
     <WorkspaceTableContainer fade={isSourceUnsaved}>
-      {#if !$allErrors?.length}
+      {#if $allErrors[0]?.message}
+        <ErrorPane errorMessage={$allErrors[0].message} />
+      {:else}
         <ConnectedPreviewTable
           objectName={$sourceQuery?.data?.source?.state?.table}
           loading={resourceIsLoading($sourceQuery?.data)}
         />
-      {:else if $allErrors[0].message}
-        <ErrorPane errorMessage={$allErrors[0].message} />
       {/if}
     </WorkspaceTableContainer>
   </div>
-  <SourceInspector {filePath} slot="inspector" {isSourceUnsaved} />
+
+  <SourceInspector
+    slot="inspector"
+    {source}
+    {tableName}
+    {isSourceUnsaved}
+    {sourceIsReconciling}
+  />
 </WorkspaceContainer>
 
 {#if interceptedUrl}
