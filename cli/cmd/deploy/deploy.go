@@ -442,7 +442,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		if len(pollRes.Organizations) > 0 {
 			repoOwners := []string{pollRes.Account}
 			repoOwners = append(repoOwners, pollRes.Organizations...)
-			ch.Print("\nYou have also access to organization(s)\n\n")
+			ch.Print("\nYou also have access to organization(s)\n\n")
 			repoOwner = cmdutil.SelectPrompt("Please chhose where to create the repository", repoOwners, pollRes.Account)
 		}
 		// create and verify
