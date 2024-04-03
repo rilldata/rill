@@ -684,7 +684,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		)
 	}
 
-	fmt.Println(sql, args)
 	return sql, args, nil
 }
 
