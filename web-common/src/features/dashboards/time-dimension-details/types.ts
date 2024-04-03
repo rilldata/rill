@@ -6,7 +6,16 @@ export enum TDDChart {
   STACKED_AREA = "stacked_area",
 }
 export interface TDDState {
+  /***
+   * The name of the measure that is currently being expanded
+   * in the Time Detailed Dimension view
+   */
   expandedMeasureName?: string;
+  /**
+   * The index at which selected dimension values are pinned in the
+   * time detailed dimension view. Values above this index preserve
+   * their original order
+   */
   pinIndex: number;
   chartType: TDDChart;
 }

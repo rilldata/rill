@@ -60,19 +60,6 @@ export interface MetricsExplorerEntity {
    */
   leaderboardMeasureName: string;
 
-  /***
-   * The name of the measure that is currently being expanded
-   * in the Time Detailed Dimension view
-   */
-  expandedMeasureName?: string;
-
-  /**
-   * The index at which selected dimension values are pinned in the
-   * time detailed dimension view. Values above this index preserve
-   * their original order
-   */
-  pinIndex: number;
-
   /**
    * This is the sort type that will be used for the leaderboard
    * and dimension detail table. See SortType for more details.
