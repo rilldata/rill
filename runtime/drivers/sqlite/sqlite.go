@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+
 	// Load sqlite driver
 	_ "modernc.org/sqlite"
 )

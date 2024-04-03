@@ -130,7 +130,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	adhocTrigger := a.Spec.Trigger
 	specHashTrigger := a.State.SpecHash != specHash
 	refsTrigger := a.State.RefsHash != refsHash && a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate
-	scheduleTrigger := a.State.NextRunOn != nil && !a.State.NextRunOn.AsTime().After(time.Now())
+	scheduleTrigger := a.State.NextRunOn != nil && a.State.NextRunOn.AsTime().Before(time.Now())
 	trigger := adhocTrigger || specHashTrigger || refsTrigger || scheduleTrigger
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
@@ -850,7 +850,7 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 	}
 
 	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
-	if !a.Spec.IntervalsCheckUnclosed && !end.After(previousWatermark) {
+	if !a.Spec.IntervalsCheckUnclosed && end.Before(previousWatermark) {
 		return nil, nil
 	}
 
@@ -865,7 +865,7 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 	for i := 0; i < limit; i++ {
 		t := ts[len(ts)-1]
 		t = d.Sub(t)
-		if !t.After(previousWatermark) {
+		if t.Before(previousWatermark) {
 			break
 		}
 		ts = append(ts, t)
