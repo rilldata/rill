@@ -447,7 +447,10 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   openProjectSubpath?: string;
-  recipients?: string[];
+  emailRecipients?: string[];
+  slackUsers?: string[];
+  slackChannels?: string[];
+  slackWebhooks?: string[];
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
@@ -864,9 +867,12 @@ export interface V1AlertOptions {
   queryName?: string;
   queryArgsJson?: string;
   metricsViewName?: string;
-  recipients?: string[];
-  emailRenotify?: boolean;
-  emailRenotifyAfterSeconds?: number;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  emailRecipients?: string[];
+  slackUsers?: string[];
+  slackChannels?: string[];
+  slackWebhooks?: string[];
 }
 
 export interface V1AddProjectMemberResponse {
@@ -887,7 +893,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

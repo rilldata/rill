@@ -245,6 +245,11 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 // DownloadFiles returns a file iterator over objects stored in gcs.
 // The credential json is read from config google_application_credentials.
 // Additionally in case `allow_host_credentials` is true it looks for "Application Default Credentials" as well

@@ -683,6 +683,11 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -694,11 +699,6 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
-}
-
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -786,6 +786,13 @@ export interface V1ReportState {
   executionCount?: number;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -797,7 +804,7 @@ export interface V1ReportSpec {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  emailRecipients?: string[];
+  notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
 }
 
@@ -1147,6 +1154,13 @@ export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
   numericOutliers?: V1NumericOutliers;
+}
+
+export type V1NotifierProperties = { [key: string]: any };
+
+export interface V1Notifier {
+  connector?: string;
+  properties?: V1NotifierProperties;
 }
 
 export interface V1ModelState {
@@ -2108,19 +2122,19 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
-  emailRecipients?: string[];
-  emailOnRecover?: boolean;
-  emailOnFail?: boolean;
-  emailOnError?: boolean;
-  emailRenotify?: boolean;
-  emailRenotifyAfterSeconds?: number;
+  notifyOnRecover?: boolean;
+  notifyOnFail?: boolean;
+  notifyOnError?: boolean;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  notifiers?: V1Notifier[];
   annotations?: V1AlertSpecAnnotations;
 }
 
 export interface V1AlertExecution {
   adhoc?: boolean;
   result?: V1AssertionResult;
-  sentEmails?: boolean;
+  sentNotifications?: boolean;
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
@@ -2166,7 +2180,7 @@ export interface Runtimev1CharLocation {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

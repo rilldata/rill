@@ -2925,7 +2925,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2997,7 +2997,7 @@ definitions:
         type: boolean
       result:
         $ref: '#/definitions/v1AssertionResult'
-      sentEmails:
+      sentNotifications:
         type: boolean
       executionTime:
         type: string
@@ -3040,21 +3040,22 @@ definitions:
         type: string
       queryForAttributes:
         type: object
-      emailRecipients:
-        type: array
-        items:
-          type: string
-      emailOnRecover:
+      notifyOnRecover:
         type: boolean
-      emailOnFail:
+      notifyOnFail:
         type: boolean
-      emailOnError:
+      notifyOnError:
         type: boolean
-      emailRenotify:
+      renotify:
         type: boolean
-      emailRenotifyAfterSeconds:
+      renotifyAfterSeconds:
         type: integer
         format: int64
+      notifiers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -4794,6 +4795,13 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1Notifier:
+    type: object
+    properties:
+      connector:
+        type: string
+      properties:
+        type: object
   v1NumericHistogramBins:
     type: object
     properties:
@@ -5347,10 +5355,11 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      emailRecipients:
+      notifiers:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:

@@ -206,6 +206,11 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 // checkPath checks that the connection's root is a valid directory.
 func (c *connection) checkRoot() error {
 	info, err := os.Stat(c.root)

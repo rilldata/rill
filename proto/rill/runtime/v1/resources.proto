@@ -256,7 +256,7 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
-  repeated string email_recipients = 9;
+  repeated Notifier notifiers = 9;
   map<string, string> annotations = 10;
 }
 
@@ -296,13 +296,18 @@ message AlertSpec {
     string query_for_user_email = 12;
     google.protobuf.Struct query_for_attributes = 13;
   }
-  repeated string email_recipients = 14;
-  bool email_on_recover = 15;
-  bool email_on_fail = 16;
-  bool email_on_error = 17;
-  bool email_renotify = 18;
-  uint32 email_renotify_after_seconds = 19;
+  bool notify_on_recover = 14;
+  bool notify_on_fail = 15;
+  bool notify_on_error = 16;
+  bool renotify = 17;
+  uint32 renotify_after_seconds = 18;
+  repeated Notifier notifiers = 19;
   map<string, string> annotations = 20;
+}
+
+message Notifier {
+  string connector = 1;
+  google.protobuf.Struct properties = 2;
 }
 
 message AlertState {
@@ -317,7 +322,7 @@ message AlertState {
 message AlertExecution {
   bool adhoc = 1;
   AssertionResult result = 2;
-  bool sent_emails = 3;
+  bool sent_notifications = 3;
   google.protobuf.Timestamp execution_time = 4;
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;
