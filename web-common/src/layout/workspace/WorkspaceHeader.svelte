@@ -22,8 +22,8 @@
   $: visible = workspaceLayout.inspector.visible;
 </script>
 
-<header class="slide" class:pl-8={!$navigationOpen} bind:clientWidth={width}>
-  <div class="wrapper">
+<header class="slide" bind:clientWidth={width}>
+  <div class="wrapper slide" class:pl-4={!$navigationOpen}>
     <label aria-hidden for="model-title-input" bind:clientWidth={titleWidth}>
       {value}
     </label>
