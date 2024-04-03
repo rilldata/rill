@@ -39,6 +39,7 @@ var spec = drivers.Spec{
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "access_token",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},

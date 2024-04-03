@@ -76,6 +76,7 @@ var motherduckSpec = drivers.Spec{
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "token",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},

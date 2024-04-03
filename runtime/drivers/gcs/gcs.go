@@ -43,18 +43,18 @@ var spec = drivers.Spec{
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "GS URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "gs://bucket-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "gcp.credentials",
+			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
-			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},

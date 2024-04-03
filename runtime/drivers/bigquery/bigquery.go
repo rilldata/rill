@@ -50,9 +50,9 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "google_application_credentials",
+			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
-			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},

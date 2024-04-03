@@ -273,9 +273,9 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 // ConnectorConfig holds and resolves connector configuration.
 // We support three levels of configuration:
-// 1. Preset: provided when creating the instance (or set by the system, such as allow_host_access)
-// 2. Project: defined in the rill.yaml file
-// 3. Env: defined in the instance's variables (in the format "connector.name.var")
+// 1. Preset: provided when creating the instance (or set by the system, such as allow_host_access). Cannot be overridden.
+// 2. Project: defined in the rill.yaml file. Can be overridden by the env.
+// 3. Env: defined in the instance's variables (in the format "connector.name.var").
 type ConnectorConfig struct {
 	Driver  string
 	Preset  map[string]string
@@ -292,13 +292,13 @@ func (c *ConnectorConfig) Resolve() map[string]any {
 	}
 
 	cfg := make(map[string]any, n)
-	for k, v := range c.Preset {
-		cfg[strings.ToLower(k)] = v
-	}
 	for k, v := range c.Project {
 		cfg[strings.ToLower(k)] = v
 	}
 	for k, v := range c.Env {
+		cfg[strings.ToLower(k)] = v
+	}
+	for k, v := range c.Preset {
 		cfg[strings.ToLower(k)] = v
 	}
 	return cfg

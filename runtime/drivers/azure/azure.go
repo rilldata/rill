@@ -60,18 +60,18 @@ var spec = drivers.Spec{
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Blob URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "azure://container-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "account",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Account name",
 			Description: "Azure storage account name.",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 	},

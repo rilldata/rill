@@ -25,10 +25,10 @@ var spec = drivers.Spec{
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Path",
 			Description: "Path to the remote file.",
 			Placeholder: "https://example.com/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
 	},

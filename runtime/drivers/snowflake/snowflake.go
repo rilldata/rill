@@ -19,6 +19,7 @@ var spec = drivers.Spec{
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},
@@ -33,8 +34,8 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "dsn",
-			DisplayName: "Snowflake Connection String",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Snowflake Connection String",
 			Required:    false,
 			DocsURL:     "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",

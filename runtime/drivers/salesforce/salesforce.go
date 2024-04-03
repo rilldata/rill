@@ -26,22 +26,27 @@ var spec = drivers.Spec{
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
+			Type:   drivers.StringPropertyType,
 			Secret: false,
 		},
 		{
 			Key:    "password",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 		{
 			Key:    "key",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 		{
 			Key:    "endpoint",
+			Type:   drivers.StringPropertyType,
 			Secret: false,
 		},
 		{
 			Key:    "client_id",
+			Type:   drivers.StringPropertyType,
 			Secret: false,
 		},
 	},
@@ -71,30 +76,30 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "username",
-			DisplayName: "Salesforce Username",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Salesforce Username",
 			Required:    false,
 			Placeholder: "user@example.com",
 			Hint:        "Either set this or pass --var connector.salesforce.username=... to rill start",
 		},
 		{
 			Key:         "password",
-			DisplayName: "Salesforce Password",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Salesforce Password",
 			Required:    false,
 			Hint:        "Either set this or pass --var connector.salesforce.password=... to rill start",
 		},
 		{
 			Key:         "key",
-			DisplayName: "JWT Key for Authentication",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Either set this or pass --var connector.salesforce.key=... to rill start",
 		},
 		{
 			Key:         "endpoint",
-			DisplayName: "Login Endpoint",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Login Endpoint",
 			Required:    false,
 			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
@@ -102,8 +107,8 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "client_id",
-			DisplayName: "Connected App Client Id",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Connected App Client Id",
 			Required:    false,
 			Default:     defaultClientID,
 			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",

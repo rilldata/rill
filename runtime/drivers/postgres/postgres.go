@@ -33,8 +33,8 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "database_url",
-			DisplayName: "Postgress Connection String",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Postgres Connection String",
 			Required:    false,
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
