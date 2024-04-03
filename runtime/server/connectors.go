@@ -127,6 +127,7 @@ func driverSpecToPB(name string, spec drivers.Spec) *runtimev1.ConnectorDriver {
 		ImplementsOlap:        spec.ImplementsOLAP,
 		ImplementsObjectStore: spec.ImplementsObjectStore,
 		ImplementsFileStore:   spec.ImplementsFileStore,
+		ImplementsNotifier:    spec.ImplementsNotifier,
 	}
 
 	for _, prop := range spec.ConfigProperties {
@@ -175,5 +176,5 @@ func driverIsNotifier(driver string) bool {
 		return false
 	}
 
-	return connector.Spec().ImplementsAdmin // TODO: Replace with ImplementsNotifier when this PR merges: https://github.com/rilldata/rill/pull/4371
+	return connector.Spec().ImplementsNotifier
 }

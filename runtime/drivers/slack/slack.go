@@ -17,9 +17,11 @@ var spec = drivers.Spec{
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "bot_token",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},
+	ImplementsNotifier: true,
 }
 
 func init() {

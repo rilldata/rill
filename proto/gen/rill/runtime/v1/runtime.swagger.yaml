@@ -2925,7 +2925,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3593,6 +3593,8 @@ definitions:
       implementsObjectStore:
         type: boolean
       implementsFileStore:
+        type: boolean
+      implementsNotifier:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1CreateInstanceRequest:
