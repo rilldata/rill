@@ -6603,6 +6603,1097 @@ var _ interface {
 	ErrorName() string
 } = CreateTriggerResponseValidationError{}
 
+// Validate checks the field values on ConnectorDriver with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ConnectorDriver) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectorDriver with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConnectorDriverMultiError, or nil if none found.
+func (m *ConnectorDriver) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectorDriver) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	for idx, item := range m.GetConfigProperties() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("ConfigProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("ConfigProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConnectorDriverValidationError{
+					field:  fmt.Sprintf("ConfigProperties[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetSourceProperties() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("SourceProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("SourceProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConnectorDriverValidationError{
+					field:  fmt.Sprintf("SourceProperties[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
+	// no validation rules for ImplementsRegistry
+
+	// no validation rules for ImplementsCatalog
+
+	// no validation rules for ImplementsRepo
+
+	// no validation rules for ImplementsAdmin
+
+	// no validation rules for ImplementsAi
+
+	// no validation rules for ImplementsSqlStore
+
+	// no validation rules for ImplementsOlap
+
+	// no validation rules for ImplementsObjectStore
+
+	// no validation rules for ImplementsFileStore
+
+	if len(errors) > 0 {
+		return ConnectorDriverMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectorDriverMultiError is an error wrapping multiple validation errors
+// returned by ConnectorDriver.ValidateAll() if the designated constraints
+// aren't met.
+type ConnectorDriverMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectorDriverMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectorDriverMultiError) AllErrors() []error { return m }
+
+// ConnectorDriverValidationError is the validation error returned by
+// ConnectorDriver.Validate if the designated constraints aren't met.
+type ConnectorDriverValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectorDriverValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectorDriverValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectorDriverValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectorDriverValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectorDriverValidationError) ErrorName() string { return "ConnectorDriverValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ConnectorDriverValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectorDriver.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectorDriverValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectorDriverValidationError{}
+
+// Validate checks the field values on AnalyzedConnector with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzedConnector) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzedConnector with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzedConnectorMultiError, or nil if none found.
+func (m *AnalyzedConnector) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzedConnector) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	if all {
+		switch v := interface{}(m.GetDriver()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalyzedConnectorValidationError{
+					field:  "Driver",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalyzedConnectorValidationError{
+					field:  "Driver",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDriver()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalyzedConnectorValidationError{
+				field:  "Driver",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Config
+
+	// no validation rules for PresetConfig
+
+	// no validation rules for ProjectConfig
+
+	// no validation rules for EnvConfig
+
+	// no validation rules for HasAnonymousAccess
+
+	for idx, item := range m.GetUsedBy() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzedConnectorValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzedConnectorValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzedConnectorValidationError{
+					field:  fmt.Sprintf("UsedBy[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzedConnectorMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzedConnectorMultiError is an error wrapping multiple validation errors
+// returned by AnalyzedConnector.ValidateAll() if the designated constraints
+// aren't met.
+type AnalyzedConnectorMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzedConnectorMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzedConnectorMultiError) AllErrors() []error { return m }
+
+// AnalyzedConnectorValidationError is the validation error returned by
+// AnalyzedConnector.Validate if the designated constraints aren't met.
+type AnalyzedConnectorValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzedConnectorValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzedConnectorValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzedConnectorValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzedConnectorValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzedConnectorValidationError) ErrorName() string {
+	return "AnalyzedConnectorValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzedConnectorValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzedConnector.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzedConnectorValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzedConnectorValidationError{}
+
+// Validate checks the field values on ListConnectorDriversRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListConnectorDriversRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListConnectorDriversRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListConnectorDriversRequestMultiError, or nil if none found.
+func (m *ListConnectorDriversRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListConnectorDriversRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ListConnectorDriversRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListConnectorDriversRequestMultiError is an error wrapping multiple
+// validation errors returned by ListConnectorDriversRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListConnectorDriversRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListConnectorDriversRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListConnectorDriversRequestMultiError) AllErrors() []error { return m }
+
+// ListConnectorDriversRequestValidationError is the validation error returned
+// by ListConnectorDriversRequest.Validate if the designated constraints
+// aren't met.
+type ListConnectorDriversRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListConnectorDriversRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListConnectorDriversRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListConnectorDriversRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListConnectorDriversRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListConnectorDriversRequestValidationError) ErrorName() string {
+	return "ListConnectorDriversRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListConnectorDriversRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListConnectorDriversRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListConnectorDriversRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListConnectorDriversRequestValidationError{}
+
+// Validate checks the field values on ListConnectorDriversResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListConnectorDriversResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListConnectorDriversResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListConnectorDriversResponseMultiError, or nil if none found.
+func (m *ListConnectorDriversResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListConnectorDriversResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListConnectorDriversResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListConnectorDriversResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListConnectorDriversResponseValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListConnectorDriversResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListConnectorDriversResponseMultiError is an error wrapping multiple
+// validation errors returned by ListConnectorDriversResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListConnectorDriversResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListConnectorDriversResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListConnectorDriversResponseMultiError) AllErrors() []error { return m }
+
+// ListConnectorDriversResponseValidationError is the validation error returned
+// by ListConnectorDriversResponse.Validate if the designated constraints
+// aren't met.
+type ListConnectorDriversResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListConnectorDriversResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListConnectorDriversResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListConnectorDriversResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListConnectorDriversResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListConnectorDriversResponseValidationError) ErrorName() string {
+	return "ListConnectorDriversResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListConnectorDriversResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListConnectorDriversResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListConnectorDriversResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListConnectorDriversResponseValidationError{}
+
+// Validate checks the field values on AnalyzeConnectorsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeConnectorsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeConnectorsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeConnectorsRequestMultiError, or nil if none found.
+func (m *AnalyzeConnectorsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeConnectorsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return AnalyzeConnectorsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeConnectorsRequestMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeConnectorsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AnalyzeConnectorsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeConnectorsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeConnectorsRequestMultiError) AllErrors() []error { return m }
+
+// AnalyzeConnectorsRequestValidationError is the validation error returned by
+// AnalyzeConnectorsRequest.Validate if the designated constraints aren't met.
+type AnalyzeConnectorsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeConnectorsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeConnectorsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeConnectorsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeConnectorsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeConnectorsRequestValidationError) ErrorName() string {
+	return "AnalyzeConnectorsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeConnectorsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeConnectorsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeConnectorsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeConnectorsRequestValidationError{}
+
+// Validate checks the field values on AnalyzeConnectorsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeConnectorsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeConnectorsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeConnectorsResponseMultiError, or nil if none found.
+func (m *AnalyzeConnectorsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeConnectorsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzeConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzeConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzeConnectorsResponseValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzeConnectorsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeConnectorsResponseMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeConnectorsResponse.ValidateAll() if the
+// designated constraints aren't met.
+type AnalyzeConnectorsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeConnectorsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeConnectorsResponseMultiError) AllErrors() []error { return m }
+
+// AnalyzeConnectorsResponseValidationError is the validation error returned by
+// AnalyzeConnectorsResponse.Validate if the designated constraints aren't met.
+type AnalyzeConnectorsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeConnectorsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeConnectorsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeConnectorsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeConnectorsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeConnectorsResponseValidationError) ErrorName() string {
+	return "AnalyzeConnectorsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeConnectorsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeConnectorsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeConnectorsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeConnectorsResponseValidationError{}
+
+// Validate checks the field values on ListNotifierConnectorsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListNotifierConnectorsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListNotifierConnectorsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListNotifierConnectorsRequestMultiError, or nil if none found.
+func (m *ListNotifierConnectorsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListNotifierConnectorsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return ListNotifierConnectorsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListNotifierConnectorsRequestMultiError is an error wrapping multiple
+// validation errors returned by ListNotifierConnectorsRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListNotifierConnectorsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListNotifierConnectorsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListNotifierConnectorsRequestMultiError) AllErrors() []error { return m }
+
+// ListNotifierConnectorsRequestValidationError is the validation error
+// returned by ListNotifierConnectorsRequest.Validate if the designated
+// constraints aren't met.
+type ListNotifierConnectorsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListNotifierConnectorsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListNotifierConnectorsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListNotifierConnectorsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListNotifierConnectorsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListNotifierConnectorsRequestValidationError) ErrorName() string {
+	return "ListNotifierConnectorsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListNotifierConnectorsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListNotifierConnectorsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListNotifierConnectorsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListNotifierConnectorsRequestValidationError{}
+
+// Validate checks the field values on ListNotifierConnectorsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListNotifierConnectorsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListNotifierConnectorsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListNotifierConnectorsResponseMultiError, or nil if none found.
+func (m *ListNotifierConnectorsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListNotifierConnectorsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListNotifierConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListNotifierConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListNotifierConnectorsResponseValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListNotifierConnectorsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListNotifierConnectorsResponseMultiError is an error wrapping multiple
+// validation errors returned by ListNotifierConnectorsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListNotifierConnectorsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListNotifierConnectorsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListNotifierConnectorsResponseMultiError) AllErrors() []error { return m }
+
+// ListNotifierConnectorsResponseValidationError is the validation error
+// returned by ListNotifierConnectorsResponse.Validate if the designated
+// constraints aren't met.
+type ListNotifierConnectorsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListNotifierConnectorsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListNotifierConnectorsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListNotifierConnectorsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListNotifierConnectorsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListNotifierConnectorsResponseValidationError) ErrorName() string {
+	return "ListNotifierConnectorsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListNotifierConnectorsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListNotifierConnectorsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListNotifierConnectorsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListNotifierConnectorsResponseValidationError{}
+
 // Validate checks the field values on CatalogEntry with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -9386,384 +10477,6 @@ var _ interface {
 	ErrorName() string
 } = RefreshAndReconcileResponseValidationError{}
 
-// Validate checks the field values on ConnectorSpec with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ConnectorSpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ConnectorSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ConnectorSpecMultiError, or
-// nil if none found.
-func (m *ConnectorSpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ConnectorSpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Name
-
-	// no validation rules for DisplayName
-
-	// no validation rules for Description
-
-	for idx, item := range m.GetProperties() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ConnectorSpecValidationError{
-						field:  fmt.Sprintf("Properties[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ConnectorSpecValidationError{
-						field:  fmt.Sprintf("Properties[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ConnectorSpecValidationError{
-					field:  fmt.Sprintf("Properties[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return ConnectorSpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// ConnectorSpecMultiError is an error wrapping multiple validation errors
-// returned by ConnectorSpec.ValidateAll() if the designated constraints
-// aren't met.
-type ConnectorSpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ConnectorSpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ConnectorSpecMultiError) AllErrors() []error { return m }
-
-// ConnectorSpecValidationError is the validation error returned by
-// ConnectorSpec.Validate if the designated constraints aren't met.
-type ConnectorSpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ConnectorSpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ConnectorSpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ConnectorSpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ConnectorSpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ConnectorSpecValidationError) ErrorName() string { return "ConnectorSpecValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ConnectorSpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sConnectorSpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ConnectorSpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ConnectorSpecValidationError{}
-
-// Validate checks the field values on ListConnectorsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListConnectorsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ListConnectorsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ListConnectorsRequestMultiError, or nil if none found.
-func (m *ListConnectorsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ListConnectorsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return ListConnectorsRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// ListConnectorsRequestMultiError is an error wrapping multiple validation
-// errors returned by ListConnectorsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type ListConnectorsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ListConnectorsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ListConnectorsRequestMultiError) AllErrors() []error { return m }
-
-// ListConnectorsRequestValidationError is the validation error returned by
-// ListConnectorsRequest.Validate if the designated constraints aren't met.
-type ListConnectorsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ListConnectorsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ListConnectorsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ListConnectorsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ListConnectorsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ListConnectorsRequestValidationError) ErrorName() string {
-	return "ListConnectorsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ListConnectorsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sListConnectorsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ListConnectorsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ListConnectorsRequestValidationError{}
-
-// Validate checks the field values on ListConnectorsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListConnectorsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ListConnectorsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ListConnectorsResponseMultiError, or nil if none found.
-func (m *ListConnectorsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ListConnectorsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetConnectors() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListConnectorsResponseValidationError{
-						field:  fmt.Sprintf("Connectors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ListConnectorsResponseValidationError{
-						field:  fmt.Sprintf("Connectors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ListConnectorsResponseValidationError{
-					field:  fmt.Sprintf("Connectors[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return ListConnectorsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ListConnectorsResponseMultiError is an error wrapping multiple validation
-// errors returned by ListConnectorsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ListConnectorsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ListConnectorsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ListConnectorsResponseMultiError) AllErrors() []error { return m }
-
-// ListConnectorsResponseValidationError is the validation error returned by
-// ListConnectorsResponse.Validate if the designated constraints aren't met.
-type ListConnectorsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ListConnectorsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ListConnectorsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ListConnectorsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ListConnectorsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ListConnectorsResponseValidationError) ErrorName() string {
-	return "ListConnectorsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ListConnectorsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sListConnectorsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ListConnectorsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ListConnectorsResponseValidationError{}
-
 // Validate checks the field values on IssueDevJWTRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -9994,6 +10707,128 @@ var _ interface {
 	ErrorName() string
 } = IssueDevJWTResponseValidationError{}
 
+// Validate checks the field values on ConnectorDriver_Property with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectorDriver_Property) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectorDriver_Property with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConnectorDriver_PropertyMultiError, or nil if none found.
+func (m *ConnectorDriver_Property) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectorDriver_Property) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Key
+
+	// no validation rules for Type
+
+	// no validation rules for Required
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
+	// no validation rules for DocsUrl
+
+	// no validation rules for Hint
+
+	// no validation rules for Default
+
+	// no validation rules for Placeholder
+
+	// no validation rules for Secret
+
+	if len(errors) > 0 {
+		return ConnectorDriver_PropertyMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectorDriver_PropertyMultiError is an error wrapping multiple validation
+// errors returned by ConnectorDriver_Property.ValidateAll() if the designated
+// constraints aren't met.
+type ConnectorDriver_PropertyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectorDriver_PropertyMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectorDriver_PropertyMultiError) AllErrors() []error { return m }
+
+// ConnectorDriver_PropertyValidationError is the validation error returned by
+// ConnectorDriver_Property.Validate if the designated constraints aren't met.
+type ConnectorDriver_PropertyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectorDriver_PropertyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectorDriver_PropertyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectorDriver_PropertyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectorDriver_PropertyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectorDriver_PropertyValidationError) ErrorName() string {
+	return "ConnectorDriver_PropertyValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectorDriver_PropertyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectorDriver_Property.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectorDriver_PropertyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectorDriver_PropertyValidationError{}
+
 // Validate checks the field values on ReconcileError_CharLocation with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10100,130 +10935,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ReconcileError_CharLocationValidationError{}
-
-// Validate checks the field values on ConnectorSpec_Property with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ConnectorSpec_Property) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ConnectorSpec_Property with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ConnectorSpec_PropertyMultiError, or nil if none found.
-func (m *ConnectorSpec_Property) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ConnectorSpec_Property) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Key
-
-	// no validation rules for DisplayName
-
-	// no validation rules for Description
-
-	// no validation rules for Placeholder
-
-	if _, ok := ConnectorSpec_Property_Type_name[int32(m.GetType())]; !ok {
-		err := ConnectorSpec_PropertyValidationError{
-			field:  "Type",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Nullable
-
-	// no validation rules for Hint
-
-	// no validation rules for Href
-
-	if len(errors) > 0 {
-		return ConnectorSpec_PropertyMultiError(errors)
-	}
-
-	return nil
-}
-
-// ConnectorSpec_PropertyMultiError is an error wrapping multiple validation
-// errors returned by ConnectorSpec_Property.ValidateAll() if the designated
-// constraints aren't met.
-type ConnectorSpec_PropertyMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ConnectorSpec_PropertyMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ConnectorSpec_PropertyMultiError) AllErrors() []error { return m }
-
-// ConnectorSpec_PropertyValidationError is the validation error returned by
-// ConnectorSpec_Property.Validate if the designated constraints aren't met.
-type ConnectorSpec_PropertyValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ConnectorSpec_PropertyValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ConnectorSpec_PropertyValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ConnectorSpec_PropertyValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ConnectorSpec_PropertyValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ConnectorSpec_PropertyValidationError) ErrorName() string {
-	return "ConnectorSpec_PropertyValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ConnectorSpec_PropertyValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sConnectorSpec_Property.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ConnectorSpec_PropertyValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ConnectorSpec_PropertyValidationError{}

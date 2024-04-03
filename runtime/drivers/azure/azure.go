@@ -32,45 +32,50 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Azure Blob Storage",
-	Description:        "Connect to Azure Blob Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/azure",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Azure Blob Storage",
+	Description: "Connect to Azure Blob Storage.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/azure",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "azure_storage_account",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_sas_token",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_connection_string",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Blob URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "azure://container-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "account",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Account name",
 			Description: "Azure storage account name.",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "azure_storage_account",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_key",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_sas_token",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_connection_string",
-			Secret: true,
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 type driver struct{}
@@ -88,7 +93,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("azure driver does not support shared connections")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}

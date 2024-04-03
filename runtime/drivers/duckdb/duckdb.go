@@ -39,8 +39,15 @@ func init() {
 
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
-	Description: "Create a DuckDB SQL source.",
-	SourceProperties: []drivers.PropertySchema{
+	Description: "DuckDB SQL connector.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:  "path",
+			Type: drivers.StringPropertyType,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -58,21 +65,22 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:  "path",
-			Type: drivers.StringPropertyType,
-		},
-	},
+	ImplementsCatalog: true,
+	ImplementsOLAP:    true,
 }
 
 var motherduckSpec = drivers.Spec{
-	ConfigProperties: []drivers.PropertySchema{
+	DisplayName: "MotherDuck",
+	Description: "MotherDuck SQL connector.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "token",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {

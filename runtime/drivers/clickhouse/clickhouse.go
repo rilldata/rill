@@ -23,8 +23,21 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
+	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/clickhouse",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Connection string",
+			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			Secret:      true,
+		},
+	},
 	// This spec is intentionally missing a source schema, as the frontend provides
 	// custom instructions for how to connect Clickhouse as the OLAP driver.
+	SourceProperties: nil,
+	ImplementsOLAP:   true,
 }
 
 var maxOpenConnections = 20
