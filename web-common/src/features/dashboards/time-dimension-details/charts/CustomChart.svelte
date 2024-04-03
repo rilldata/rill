@@ -13,9 +13,7 @@
   export let timeGrain: V1TimeGrain | undefined;
 
   let vegaSpec;
-  let data = totalsData;
-
-  $: console.log(expandedMeasureName);
+  $: data = totalsData;
 
   $: if (chartType === "bar") {
     vegaSpec = buildVegaLiteSpec("bar", ["ts_position"], [expandedMeasureName]);
@@ -50,6 +48,7 @@
   );
 
   $: console.log(
+    data,
     "sanitizedVegaSpec",
     JSON.stringify(sanitizedVegaSpec, null, 2),
   );

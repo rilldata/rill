@@ -32,7 +32,7 @@ export function sanitizeSpecForTDD(
   };
 
   // Remove titles from axes
-  xEncoding.axis = { title: "" };
+  xEncoding.axis = { ticks: false, title: "" };
   yEncoding.axis = { title: "" };
 
   if (chartType === "bar" || chartType === "stacked bar") {
