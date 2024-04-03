@@ -1,12 +1,14 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { reduceDimensionData, sanitizeSpecForTDD } from "./utils";
 
   export let totalsData;
   export let dimensionData;
   export let expandedMeasureName: string;
   export let chartType: string;
+  export let timeGrain: V1TimeGrain | undefined;
 
   let vegaSpec;
   let data = totalsData;
@@ -35,7 +37,10 @@
     );
   }
 
-  $: sanitizedVegaSpec = sanitizeSpecForTDD(vegaSpec);
+  $: sanitizedVegaSpec = sanitizeSpecForTDD(
+    vegaSpec,
+    timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
+  );
 </script>
 
 {#if sanitizedVegaSpec}

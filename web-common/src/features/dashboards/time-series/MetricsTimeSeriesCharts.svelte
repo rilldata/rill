@@ -298,6 +298,7 @@
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData?.length && expandedMeasureName && chartType != "default"}
             <CustomChart
+              timeGrain={interval}
               {chartType}
               {expandedMeasureName}
               totalsData={formattedData}
