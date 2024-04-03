@@ -28,6 +28,7 @@
   export let rounded = false;
   export let href: string | null = null;
   export let builders: Builder[] = [];
+  export let div = false;
 
   const dispatch = createEventDispatcher();
 
@@ -39,8 +40,8 @@
 </script>
 
 <svelte:element
-  this={href ? "a" : "button"}
-  role="button"
+  this={div ? "div" : href ? "a" : "button"}
+  role={div ? "presentation" : "button"}
   tabindex={0}
   {href}
   class="{$$props.class} {type}"
@@ -67,7 +68,8 @@
 
 <style lang="postcss">
   button,
-  a {
+  a,
+  div {
     @apply flex text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;

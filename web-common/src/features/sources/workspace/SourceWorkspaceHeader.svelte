@@ -8,11 +8,11 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createRuntimeServiceRefreshAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { fade } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { createEventDispatcher } from "svelte";
+  import { quintOut } from "svelte/easing";
 
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const dispatch = createEventDispatcher();
@@ -23,8 +23,6 @@
   export let sourceIsReconciling: boolean;
   export let refreshedOn: string | undefined;
   export let isLocalFileConnector: boolean;
-
-  let open = false;
 
   function formatRefreshedOn(refreshedOn: string) {
     const date = new Date(refreshedOn);
@@ -74,20 +72,25 @@
         </IconSpaceFixer>
         <ResponsiveButtonText {collapse}>Revert changes</ResponsiveButtonText>
       </Button>
-      <DropdownMenu.Root {open}>
-        <DropdownMenu.Trigger asChild>
+
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger
+          disabled={!isLocalFileConnector || isSourceUnsaved}
+        >
           <Button
-            disabled={sourceIsReconciling}
-            label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
+            div={isLocalFileConnector}
+            role={isLocalFileConnector ? "presentation" : "button"}
             on:click={() => {
+              if (isLocalFileConnector && !isSourceUnsaved) return;
+
               if (isSourceUnsaved) {
                 dispatch("save");
-              } else if (!isLocalFileConnector) {
-                dispatch("refresh-source");
               } else {
-                open = !open;
+                dispatch("refresh-source");
               }
             }}
+            disabled={sourceIsReconciling}
+            label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
             type={isSourceUnsaved ? "primary" : "secondary"}
           >
             <IconSpaceFixer pullLeft pullRight={collapse}>
@@ -96,9 +99,16 @@
             <ResponsiveButtonText {collapse}>
               <div class="flex">
                 {#if isSourceUnsaved}
-                  <div class="pr-1" transition:slideRight={{ duration: 250 }}>
+                  <span
+                    class="pr-1 w-fit whitespace-nowrap"
+                    transition:slide={{
+                      duration: 250,
+                      axis: "x",
+                      easing: quintOut,
+                    }}
+                  >
                     Save and
-                  </div>
+                  </span>
                 {/if}
                 <span class:lowercase={isSourceUnsaved}>Refresh</span>
               </div>
@@ -110,7 +120,11 @@
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Content>
-          <DropdownMenu.Item on:click={() => dispatch("refresh-source")}>
+          <DropdownMenu.Item
+            on:click={() => {
+              dispatch("refresh-source");
+            }}
+          >
             Refresh source
           </DropdownMenu.Item>
           <DropdownMenu.Item on:click={() => dispatch("replace-source")}>

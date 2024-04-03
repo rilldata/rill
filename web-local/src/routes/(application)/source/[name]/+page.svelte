@@ -38,7 +38,6 @@
 
   const { readOnly } = featureFlags;
 
-  let latest: string;
   let interceptedUrl: string | null = null;
 
   onMount(async () => {
@@ -58,6 +57,9 @@
   });
 
   $: yaml = $fileQuery.data?.blob ?? "";
+
+  // This gets updated via binding below
+  $: latest = $fileQuery.data?.blob ?? "";
 
   $: isSourceUnsaved = latest !== yaml;
 
@@ -90,12 +92,12 @@
     await replaceSourceWithUploadedFile(instanceId, filePath);
   }
 
-  function onChangeCallback(
+  async function onChangeCallback(
     e: Event & {
       currentTarget: EventTarget & HTMLInputElement;
     },
   ) {
-    return handleEntityRename(
+    await handleEntityRename(
       queryClient,
       instanceId,
       e.currentTarget,
