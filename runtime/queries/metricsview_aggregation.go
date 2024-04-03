@@ -554,6 +554,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
+		if dialect == drivers.DialectDuckDB {
+			timeCol = fmt.Sprintf("%s::TIMESTAMP", timeCol)
+		}
 		clause, err := timeRangeClause(q.TimeRange, mv, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
@@ -776,6 +779,9 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 	var col string
 	if dim.Name == mv.TimeDimension {
 		col = safeName(dim.Name)
+		if dialect == drivers.DialectDuckDB {
+			col = fmt.Sprintf("%s::TIMESTAMP", col)
+		}
 	} else {
 		d, err := metricsViewDimension(mv, dim.Name)
 		if err != nil {

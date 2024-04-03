@@ -282,14 +282,19 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		selectCols = append(selectCols, expr)
 	}
 
+	td := safeName(mv.TimeDimension)
+	if olap.Dialect() == drivers.DialectDuckDB {
+		td = fmt.Sprintf("%s::TIMESTAMP", td)
+	}
+
 	whereClause := "1=1"
 	args := []any{}
 	if q.TimeStart != nil {
-		whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
+		whereClause += fmt.Sprintf(" AND %s >= ?", td)
 		args = append(args, q.TimeStart.AsTime())
 	}
 	if q.TimeEnd != nil {
-		whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
+		whereClause += fmt.Sprintf(" AND %s < ?", td)
 		args = append(args, q.TimeEnd.AsTime())
 	}
 
