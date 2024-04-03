@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	// Load sqlite driver
 	_ "modernc.org/sqlite"
@@ -162,6 +163,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
-	return nil, false
+func (c *connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }

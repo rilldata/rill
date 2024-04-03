@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -184,8 +185,8 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Handle.
-func (c *Connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
-	return nil, false
+func (c *Connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 type configProperties struct {

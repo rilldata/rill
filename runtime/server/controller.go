@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -398,15 +399,18 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Res
 	for _, notifier := range report.Spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
 				if recipient == email {
 					return r, true, nil
 				}
 			}
 		case "slack":
-			users := pbutil.ToSliceString(notifier.Properties.AsMap()["users"].([]any))
-			for _, user := range users {
+			props, err := slack.DecodeProps(notifier.Properties)
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
 				if user == email {
 					return r, true, nil
 				}
@@ -446,15 +450,18 @@ func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Reso
 	for _, notifier := range alert.Spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
 				if recipient == email {
 					return r, true, nil
 				}
 			}
 		case "slack":
-			users := pbutil.ToSliceString(notifier.Properties.AsMap()["users"].([]any))
-			for _, user := range users {
+			props, err := slack.DecodeProps(notifier.Properties)
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
 				if user == email {
 					return r, true, nil
 				}

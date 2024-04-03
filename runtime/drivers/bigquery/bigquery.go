@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -217,8 +218,8 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
-	return nil, false
+func (c *Connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 type sourceProperties struct {

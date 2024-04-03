@@ -24,6 +24,7 @@ import (
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
 	"gocloud.dev/gcerrors"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -217,8 +218,8 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
-	return nil, false
+func (c *Connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.

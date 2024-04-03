@@ -388,9 +388,21 @@ func ToSliceAny[T any](v []T) []any {
 }
 
 // ToSliceString (as opposed to ToSliceAny) converts a slice of any type to a slice of strings
-func ToSliceString(a []any) []string {
-	s := make([]string, len(a))
-	for i, v := range a {
+// It returns nil if the input is nil or not a slice of any
+func ToSliceString(a any) []string {
+	if a == nil {
+		return nil
+	}
+	ss, ok := a.([]string)
+	if ok {
+		return ss
+	}
+	sa, ok := a.([]any)
+	if !ok {
+		return nil
+	}
+	s := make([]string, len(sa))
+	for i, v := range sa {
 		s[i] = v.(string)
 	}
 	return s

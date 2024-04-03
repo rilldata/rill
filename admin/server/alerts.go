@@ -550,14 +550,17 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	opts.Renotify = spec.Renotify
 	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
 	for _, notifier := range spec.Notifiers {
-		props := notifier.Properties.AsMap()
 		switch notifier.Connector {
 		case "email":
-			opts.EmailRecipients = pbutil.ToSliceString(props["recipients"].([]any))
+			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 		case "slack":
-			opts.SlackUsers = pbutil.ToSliceString(props[slack.UsersField].([]any))
-			opts.SlackChannels = pbutil.ToSliceString(props[slack.ChannelsField].([]any))
-			opts.SlackWebhooks = pbutil.ToSliceString(props[slack.WebhooksField].([]any))
+			props, err := slack.DecodeProps(notifier.Properties)
+			if err != nil {
+				return nil, err
+			}
+			opts.SlackUsers = props.Users
+			opts.SlackChannels = props.Channels
+			opts.SlackWebhooks = props.Webhooks
 		default:
 			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
 		}

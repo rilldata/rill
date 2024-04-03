@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -396,8 +397,8 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
-	return nil, false
+func (c *connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.

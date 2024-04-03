@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	// import clickhouse driver
 	_ "github.com/ClickHouse/clickhouse-go/v2"
@@ -217,8 +218,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(map[string]any) (drivers.Notifier, bool) {
-	return nil, false
+func (c *connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 func (c *connection) EstimateSize() (int64, bool) {

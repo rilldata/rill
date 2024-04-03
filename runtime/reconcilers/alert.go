@@ -704,7 +704,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 			switch notifier.Connector {
 			// TODO: transform email client to notifier
 			case "email":
-				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 				for _, recipient := range recipients {
 					msg.ToEmail = recipient
 					err := r.C.Runtime.Email.SendAlertStatus(msg)
@@ -720,9 +720,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						return err
 					}
 					defer release()
-					n, ok := conn.AsNotifier(notifier.Properties.AsMap())
-					if !ok {
-						return fmt.Errorf("%s connector not available", notifier.Connector)
+					n, err := conn.AsNotifier(notifier.Properties)
+					if err != nil {
+						return err
 					}
 					start := time.Now()
 					defer func() {

@@ -8,40 +8,44 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/slack-go/slack"
-)
-
-const (
-	UsersField    = "users"
-	ChannelsField = "channels"
-	WebhooksField = "webhooks"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 //go:embed templates/slack/*
 var templatesFS embed.FS
 
 type notifier struct {
-	token     string
-	users     []string
-	channels  []string
-	webhooks  []string
+	api       *slack.Client
+	props     *NotifierProperties
 	templates *template.Template
 }
 
-func newNotifier(token string, props map[string]any) *notifier {
-	users := pbutil.ToSliceString(props[UsersField].([]any))
-	channels := pbutil.ToSliceString(props[ChannelsField].([]any))
-	webhooks := pbutil.ToSliceString(props[WebhooksField].([]any))
-	return &notifier{
-		token:     token,
-		users:     users,
-		channels:  channels,
-		webhooks:  webhooks,
+type NotifierProperties struct {
+	Users    []string `mapstructure:"users"`
+	Channels []string `mapstructure:"channels"`
+	Webhooks []string `mapstructure:"webhooks"`
+}
+
+func newNotifier(token string, propsStruct *structpb.Struct) (*notifier, error) {
+	var api *slack.Client
+	if token != "" {
+		api = slack.New(token)
+	}
+	props, err := DecodeProps(propsStruct)
+	if err != nil {
+		return nil, err
+	}
+	n := &notifier{
+		api:       api,
+		props:     props,
 		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/slack/*.slack")),
 	}
+	return n, nil
 }
 
 func (n *notifier) SendScheduledReport(s *drivers.ScheduledReport) error {
@@ -137,16 +141,16 @@ func (n *notifier) sendAlertFail(data *AlertFailData) error {
 }
 
 func (n *notifier) sendTextToChannels(txt string) error {
-	if len(n.channels) == 0 {
+	if len(n.props.Channels) == 0 {
 		return nil
 	}
 
-	api, err := n.api()
-	if err != nil {
-		return err
+	if n.api == nil {
+		return fmt.Errorf("slack api is not configured, consider setting a bot token")
 	}
-	for _, channel := range n.channels {
-		_, _, err = api.PostMessage(channel, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
+
+	for _, channel := range n.props.Channels {
+		_, _, err := n.api.PostMessage(channel, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
@@ -155,20 +159,20 @@ func (n *notifier) sendTextToChannels(txt string) error {
 }
 
 func (n *notifier) sendTextToUsers(txt string) error {
-	if len(n.users) == 0 {
+	if len(n.props.Users) == 0 {
 		return nil
 	}
 
-	api, err := n.api()
-	if err != nil {
-		return err
+	if n.api == nil {
+		return fmt.Errorf("slack api is not configured, consider setting a bot token")
 	}
-	for _, email := range n.users {
-		user, err := api.GetUserByEmail(email)
+
+	for _, email := range n.props.Users {
+		user, err := n.api.GetUserByEmail(email)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
-		_, _, err = api.PostMessage(user.ID, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
+		_, _, err = n.api.PostMessage(user.ID, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
@@ -177,7 +181,7 @@ func (n *notifier) sendTextToUsers(txt string) error {
 }
 
 func (n *notifier) sendTextViaWebhooks(txt string) error {
-	for _, webhook := range n.webhooks {
+	for _, webhook := range n.props.Webhooks {
 		payload := slack.WebhookMessage{
 			Text: txt,
 		}
@@ -189,11 +193,21 @@ func (n *notifier) sendTextViaWebhooks(txt string) error {
 	return nil
 }
 
-func (n *notifier) api() (*slack.Client, error) {
-	if n.token == "" {
-		return nil, fmt.Errorf("slack bot token is required")
+func EncodeProps(users, channels, webhooks []string) (*structpb.Struct, error) {
+	return structpb.NewStruct(map[string]any{
+		"users":    pbutil.ToSliceAny(users),
+		"channels": pbutil.ToSliceAny(channels),
+		"webhooks": pbutil.ToSliceAny(webhooks),
+	})
+}
+
+func DecodeProps(propsStruct *structpb.Struct) (*NotifierProperties, error) {
+	props := &NotifierProperties{}
+	err := mapstructure.WeakDecode(propsStruct.AsMap(), props)
+	if err != nil {
+		return nil, err
 	}
-	return slack.New(n.token), nil
+	return props, nil
 }
 
 type AlertStatusData struct {

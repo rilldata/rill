@@ -13,6 +13,7 @@ type Notifier interface {
 }
 
 type AlertStatus struct {
+	// TODO: Remove ToEmail, ToName once email notifier is created
 	ToEmail        string
 	ToName         string
 	Title          string

@@ -305,7 +305,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	for _, notifier := range rep.Spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"].([]any))
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
 				err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 					ToEmail:        recipient,
@@ -329,9 +329,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return err
 				}
 				defer release()
-				n, ok := conn.AsNotifier(notifier.Properties.AsMap())
-				if !ok {
-					return fmt.Errorf("%s connector not available", notifier.Connector)
+				n, err := conn.AsNotifier(notifier.Properties)
+				if err != nil {
+					return err
 				}
 				msg := &drivers.ScheduledReport{
 					Title:          rep.Spec.Title,

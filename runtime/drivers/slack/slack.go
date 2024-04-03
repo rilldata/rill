@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var spec = drivers.Spec{
@@ -131,8 +132,8 @@ func (h *handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bo
 	return nil, false
 }
 
-func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, bool) {
-	return newNotifier(h.config.BotToken, properties), true
+func (h *handle) AsNotifier(properties *structpb.Struct) (drivers.Notifier, error) {
+	return newNotifier(h.config.BotToken, properties)
 }
 
 type configProperties struct {
