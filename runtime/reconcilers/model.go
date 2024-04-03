@@ -169,7 +169,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			refreshedOn = model.State.RefreshedOn.AsTime()
 		}
 		delayedMaterializeOn = r.delayedMaterializeTime(model.Spec, refreshedOn)
-		if !delayedMaterializeOn.IsZero() && delayedMaterializeOn.Before(time.Now()) {
+		if !delayedMaterializeOn.IsZero() && !delayedMaterializeOn.After(time.Now()) {
 			delayedMaterialize = true
 		}
 	}
