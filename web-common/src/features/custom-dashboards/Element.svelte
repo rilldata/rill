@@ -1,99 +1,105 @@
 <script lang="ts" context="module">
   import type { Vector } from "./types";
   import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
-  import { Move, Scaling } from "lucide-svelte";
   import { createEventDispatcher, onMount } from "svelte";
-  import { quintOut } from "svelte/easing";
-  import { get, writable } from "svelte/store";
-  import { fade } from "svelte/transition";
-
+  import { writable } from "svelte/store";
+  import ResizeHandle from "./ResizeHandle.svelte";
+  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
+  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
+  import { goto } from "$app/navigation";
   const zIndex = writable(0);
+
+  const options = [0, 0.5, 1];
+  const allSides = options
+    .flatMap((y) => options.map((x) => [x, y] as [number, number]))
+    .filter(([x, y]) => !(x === 0.5 && y === 0.5));
 </script>
 
 <script lang="ts">
   const dispatch = createEventDispatcher();
 
-  export let gapSize: number;
-  export let dimensions: Vector;
-  export let chartName: string;
   export let i: number;
-  export let position: Vector;
-  export let isMoving: boolean;
+  export let gapSize: number;
+  export let chart: V1DashboardComponent;
+  export let active: boolean;
+  export let width: number;
+  export let height: number;
+  export let top: number;
+  export let left: number;
 
-  let hover = false;
-  let timeout: ReturnType<typeof setTimeout> | null = null;
   let localZIndex = 0;
 
+  $: chartName = chart.chart ?? "No chart name";
+
+  $: finalLeft = width < 0 ? left + width : left;
+  $: finalTop = height < 0 ? top + height : top;
+  $: finalWidth = Math.abs(width);
+  $: finalHeight = Math.abs(height);
+  $: padding = gapSize;
+
+  $: position = [finalLeft, finalTop] as Vector;
+  $: dimensions = [finalWidth, finalHeight] as Vector;
+
   onMount(() => {
-    localZIndex = get(zIndex);
-    zIndex.update((prev) => prev + 1);
+    localZIndex = $zIndex;
+    zIndex.set(++localZIndex);
   });
+
+  function handleMouseDown(e: MouseEvent) {
+    localZIndex = $zIndex;
+    zIndex.set(++localZIndex);
+    dispatch("change", {
+      e,
+      dimensions: [width, height],
+      position,
+      changeDimensions: [0, 0],
+      changePosition: [1, 1],
+    });
+  }
 </script>
 
-<div
-  role="presentation"
-  data-index={i}
-  class="item absolute flex items-center justify-center"
-  style:z-index={localZIndex}
-  style:padding="{gapSize}px"
-  style:left="{position[0]}px"
-  style:top="{position[1]}px"
-  style:width="{dimensions[0]}px"
-  style:height="{dimensions[1]}px"
-  on:mouseenter={() => {
-    if (timeout) clearTimeout(timeout);
-    hover = true;
-  }}
-  on:mouseleave={() => {
-    timeout = setTimeout(() => {
-      hover = false;
-      timeout = null;
-    }, 800);
-  }}
->
-  <div class="size-full" class:shadow-lg={isMoving}>
-    <Chart {chartName} />
-  </div>
-</div>
+<ContextMenu.Root>
+  <ContextMenu.Trigger>
+    <div
+      role="presentation"
+      data-index={i}
+      class="wrapper"
+      style:z-index={localZIndex}
+      style:padding="{padding}px"
+      style:left="{finalLeft}px"
+      style:top="{finalTop}px"
+      style:width="{finalWidth}px"
+      style:height="{finalHeight}px"
+      on:mousedown|capture={handleMouseDown}
+    >
+      <div class="size-full relative">
+        {#each allSides as side}
+          <ResizeHandle {i} {side} {position} {dimensions} on:change />
+        {/each}
 
-{#if hover}
-  <button
-    transition:fade={{ duration: 400, easing: quintOut }}
-    style:left="{position[0]}px"
-    style:top="{position[1]}px"
-    class="tool"
-    style:z-index={localZIndex + 1}
-    data-index={i}
-    on:mousedown={(e) => {
-      localZIndex = get(zIndex);
-      zIndex.update((prev) => prev + 1);
-      dispatch("mousedown", { e, position });
-    }}
-  >
-    <Move class="w-3 h-3" />
-  </button>
-  <button
-    transition:fade={{ duration: 400, easing: quintOut }}
-    style:left="{position[0] + dimensions[0]}px"
-    style:top="{position[1] + dimensions[1]}px"
-    style:z-index={localZIndex + 1}
-    class="tool -translate-x-full -translate-y-full"
-    data-index={i}
-    on:mousedown={(e) => {
-      dispatch("resizestart", {
-        e,
-        dimensions,
-      });
-    }}
-  >
-    <Scaling class="w-3 h-3 -scale-x-100" />
-  </button>
-{/if}
+        <div class="size-full" class:shadow-lg={active}>
+          <Chart {chartName} />
+        </div>
+      </div>
+    </div>
+  </ContextMenu.Trigger>
+
+  <ContextMenu.Content class="z-[100]">
+    <ContextMenu.Item>Copy</ContextMenu.Item>
+    <ContextMenu.Item>Delete</ContextMenu.Item>
+    <ContextMenu.Item
+      on:click={async () => {
+        await goto(`/chart/${chartName}`);
+      }}
+    >
+      Go to {chartName}.yaml
+    </ContextMenu.Item>
+    <ContextMenu.Item>Show details</ContextMenu.Item>
+  </ContextMenu.Content>
+</ContextMenu.Root>
 
 <style lang="postcss">
-  .tool {
-    @apply absolute p-1 aspect-square;
-    @apply opacity-50 bg-gray-100 border shadow-md;
-    @apply rounded-full;
+  .wrapper {
+    @apply absolute;
   }
 </style>

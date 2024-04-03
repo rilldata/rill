@@ -1,5 +1,6 @@
 <script lang="ts">
   import { VegaLite, View, VisualizationSpec } from "svelte-vega";
+  import { getRillTheme } from "../charts/render/vega-config";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -7,7 +8,7 @@
   export let width: number;
 
   let viewVL: View;
-  $: error = "";
+  let error = "";
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
@@ -22,7 +23,7 @@
     {spec}
     bind:view={viewVL}
     on:onError={onError}
-    options={{ actions: false, height, width }}
+    options={{ actions: false, height, width, config: getRillTheme() }}
   />
 {/if}
 
