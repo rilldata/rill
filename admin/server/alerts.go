@@ -462,8 +462,8 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
 	res.Query.For.UserID = ownerUserID
 	// Notification options
-	res.Notify.Renotify = opts.Renotify
-	res.Notify.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Renotify = opts.Renotify
+	res.RenotifyAfter = opts.RenotifyAfterSeconds
 	res.Notify.Email.Emails = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -494,8 +494,8 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	// Notification options
-	res.Notify.Renotify = opts.Renotify
-	res.Notify.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Renotify = opts.Renotify
+	res.RenotifyAfter = opts.RenotifyAfterSeconds
 	res.Notify.Email.Emails = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -585,21 +585,16 @@ type alertYAML struct {
 			UserID string `yaml:"user_id"`
 		} `yaml:"for"`
 	} `yaml:"query"`
-	Email struct {
-		Recipients    []string `yaml:"recipients"`
-		Renotify      bool     `yaml:"renotify"`
-		RenotifyAfter uint32   `yaml:"renotify_after"`
-	} `yaml:"email"`
-	Notify struct {
-		Renotify      bool   `yaml:"renotify"`
-		RenotifyAfter uint32 `yaml:"renotify_after"`
-		Slack         struct {
+	Renotify      bool   `yaml:"renotify"`
+	RenotifyAfter uint32 `yaml:"renotify_after"`
+	Notify        struct {
+		Email struct {
+			Emails []string `yaml:"emails"`
+		}
+		Slack struct {
 			Users    []string `yaml:"users"`
 			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
-		}
-		Email struct {
-			Emails []string `yaml:"emails"`
 		}
 	}
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
