@@ -18,7 +18,7 @@ import {
 } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { getProjectRuntimeQueryKey } from "../projects/selectors";
-import { ErrorStoreState, errorStore } from "./error-store";
+import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
