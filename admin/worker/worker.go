@@ -85,7 +85,7 @@ func (w *Worker) schedule(ctx context.Context, name string, fn func(context.Cont
 	for {
 		err := w.runJob(ctx, name, fn)
 		if err != nil {
-			return err
+			w.logger.Error("Failed to run the job", zap.String("job_name", name), zap.Error(err))
 		}
 		select {
 		case <-ctx.Done():
@@ -111,7 +111,7 @@ func (w *Worker) scheduleCron(ctx context.Context, name string, fn func(context.
 		case <-time.After(waitDuration):
 			err := w.runJob(ctx, name, fn)
 			if err != nil {
-				return err
+				w.logger.Error("Failed to run the cronjob", zap.String("cronjob_name", name), zap.Error(err))
 			}
 		}
 	}

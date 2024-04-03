@@ -3,7 +3,10 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { createTotalsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
+import {
+  createTotalsForMeasure,
+  createUnfilteredTotalsForMeasure,
+} from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
@@ -42,7 +45,7 @@ export type TimeSeriesDataState = {
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
-function createMetricsViewTimeSeries(
+export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
@@ -139,13 +142,17 @@ export function createTimeSeriesDataStore(
       );
       const primaryTotals = createTotalsForMeasure(ctx, measures, false);
 
-      const unfilteredTotals = createTotalsForMeasure(
-        ctx,
-        measures,
-        false,
-        true,
-      );
+      let unfilteredTotals:
+        | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
+        | Writable<null> = writable(null);
 
+      if (dashboardStore?.selectedComparisonDimension) {
+        unfilteredTotals = createUnfilteredTotalsForMeasure(
+          ctx,
+          measures,
+          dashboardStore?.selectedComparisonDimension,
+        );
+      }
       let comparisonTimeSeries:
         | CreateQueryResult<V1MetricsViewTimeSeriesResponse, unknown>
         | Writable<null> = writable(null);
