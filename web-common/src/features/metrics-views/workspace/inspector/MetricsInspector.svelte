@@ -1,6 +1,9 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useModel,
@@ -32,8 +35,11 @@
   $: yaml = $fileQuery.data?.blob || "";
 
   // get file.
-  $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
-  $: tableName = getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
+  $: modelName =
+    getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "") ?? "";
+  $: tableName =
+    getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "") ?? "";
+  $: modelPath = getFileAPIPathFromNameAndType(modelName, EntityType.Model);
 
   // check to see if this model name exists.
   $: modelQuery = useModel($runtime.instanceId, modelName ?? "");
@@ -68,7 +74,7 @@
         </div>
         {#if showModelInformation}
           <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-            <ModelInspectorHeader {modelName} {containerWidth} />
+            <ModelInspectorHeader filePath={modelPath} {containerWidth} />
             <hr class:opacity-0={!showColumns} class="transition-opacity" />
           </div>
         {/if}
