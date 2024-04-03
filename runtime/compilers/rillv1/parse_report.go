@@ -195,7 +195,7 @@ func (p *Parser) parseReport(node *Node) error {
 		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
 			props, err := slack.EncodeProps(tmp.Notify.Slack.Users, tmp.Notify.Slack.Channels, tmp.Notify.Slack.Webhooks)
 			if err != nil {
-				return fmt.Errorf("encountered invalid property type: %w", err)
+				return err
 			}
 			r.ReportSpec.Notifiers = append(r.ReportSpec.Notifiers, &runtimev1.Notifier{
 				Connector:  "slack",
