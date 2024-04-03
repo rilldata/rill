@@ -43,7 +43,7 @@
   });
 </script>
 
-<div class="h-full w-full rounded-sm overflow-hidden" bind:this={container}>
+<div class="h-full w-full overflow-hidden" bind:this={container}>
   {#if error}
     <p>{error}</p>
   {:else if !parsedVegaSpec}

@@ -4,8 +4,12 @@
   export let gridCell = 50;
   export let scrollOffset = 0;
   export let gapSize: number;
+  export let radius: number;
+  export let scale: number;
 
   $: clampedGap = Math.max(0.5, gapSize);
+  $: cellSize = gridCell * scale;
+  $: scaledGap = clampedGap * scale;
 </script>
 
 <svg
@@ -14,7 +18,7 @@
   width="100%"
   height="100%"
   xmlns="http://www.w3.org/2000/svg"
-  class="bg-slate-100"
+  class="bg-slate-100 pointer-events-none"
   style:position="absolute"
   style:opacity="1"
 >
@@ -22,16 +26,16 @@
     <pattern
       y={scrollOffset * -1}
       id="cd-grid"
-      width={gridCell}
-      height={gridCell}
+      width={cellSize}
+      height={cellSize}
       patternUnits="userSpaceOnUse"
     >
       <rect
-        rx="0.3%"
-        x={clampedGap}
-        y={clampedGap}
-        width={gridCell - clampedGap * 2}
-        height={gridCell - clampedGap * 2}
+        rx={radius * scale}
+        x={scaledGap}
+        y={scaledGap}
+        width={cellSize - scaledGap * 2}
+        height={cellSize - scaledGap * 2}
         class="fill-slate-200"
       />
     </pattern>
@@ -39,3 +43,9 @@
 
   <rect width="100%" height="100%" fill="url(#cd-grid)" />
 </svg>
+
+<style>
+  svg {
+    transform-origin: top left;
+  }
+</style>

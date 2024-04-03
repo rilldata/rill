@@ -7,6 +7,7 @@
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
+
   const zIndex = writable(0);
 
   const options = [0, 0.5, 1];
@@ -21,11 +22,13 @@
   export let i: number;
   export let gapSize: number;
   export let chart: V1DashboardComponent;
-  export let active: boolean;
+  export let selected: boolean;
+  export let interacting: boolean;
   export let width: number;
   export let height: number;
   export let top: number;
   export let left: number;
+  export let radius: number;
 
   let localZIndex = 0;
 
@@ -74,10 +77,21 @@
     >
       <div class="size-full relative">
         {#each allSides as side}
-          <ResizeHandle {i} {side} {position} {dimensions} on:change />
+          <ResizeHandle
+            {i}
+            {side}
+            {position}
+            {dimensions}
+            {selected}
+            on:change
+          />
         {/each}
 
-        <div class="size-full" class:shadow-lg={active}>
+        <div
+          class="size-full overflow-hidden"
+          class:shadow-lg={interacting}
+          style:border-radius="{radius}px"
+        >
           <Chart {chartName} />
         </div>
       </div>

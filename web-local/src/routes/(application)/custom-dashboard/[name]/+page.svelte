@@ -33,6 +33,11 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import { slide } from "svelte/transition";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
+  import { writable } from "svelte/store";
+  import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+
+  const DEFAULT_EDITOR_HEIGHT = 300;
 
   const updateFile = createRuntimeServicePutFile();
 
@@ -41,6 +46,11 @@
   let startingWidth = 400;
   let startingX = 0;
   let currentX = 0;
+  let showChartEditor = false;
+
+  let chartEditorHeight = DEFAULT_EDITOR_HEIGHT;
+
+  let selectedChartName: string | null = null;
 
   $: customDashboardName = $page.params.name;
 
@@ -188,13 +198,15 @@
 
     await updateChart(new CustomEvent("update", { detail: stringified }));
   }
+
+  let containerWidth: number;
 </script>
 
 <svelte:head>
   <title>Rill Developer | {customDashboardName}</title>
 </svelte:head>
 
-<WorkspaceContainer inspector={false}>
+<WorkspaceContainer inspector={false} bind:width={containerWidth}>
   <WorkspaceHeader
     slot="header"
     titleInput={customDashboardName}
@@ -230,11 +242,58 @@
       <div
         transition:slide={{ duration: 400, axis: "x" }}
         class="relative h-full flex-shrink-0 w-full"
-        class:width={selectedView === "split"}
-        style:--width="{editorWidth}px"
+        class:!w-full={selectedView === "code"}
+        style:width="{editorWidth}px"
       >
-        <button class="resizer" on:mousedown={handleStartResize} />
-        <CustomDashboardEditor {yaml} on:update={updateChart} />
+        <Resizer
+          direction="EW"
+          side="right"
+          bind:dimension={editorWidth}
+          min={300}
+          max={0.6 * containerWidth}
+        />
+        <div class="flex flex-col h-full overflow-hidden">
+          <section class="size-full flex flex-col flex-shrink overflow-hidden">
+            <CustomDashboardEditor {yaml} on:update={updateChart} />
+          </section>
+
+          <section
+            class="size-full flex flex-col bg-white flex-shrink-0 relative h-fit"
+          >
+            <Resizer
+              max={500}
+              direction="NS"
+              bind:dimension={chartEditorHeight}
+            />
+            <header
+              class="flex justify-between items-center bg-gray-100 px-4 h-12"
+            >
+              <h1 class="font-semibold text-[16px]">
+                {#if selectedChartName}
+                  {selectedChartName}.yaml
+                {:else}
+                  Select a chart to edit
+                {/if}
+              </h1>
+              {#if selectedChartName || showChartEditor}
+                <Button
+                  type="text"
+                  on:click={() => (showChartEditor = !showChartEditor)}
+                >
+                  {showChartEditor ? "Close" : "Open"}
+                </Button>
+              {/if}
+            </header>
+
+            {#if showChartEditor}
+              <div style:height="{chartEditorHeight}px">
+                {#if selectedChartName && showChartEditor}
+                  <ChartsEditor chartName={selectedChartName} />
+                {/if}
+              </div>
+            {/if}
+          </section>
+        </div>
       </div>
     {/if}
 
@@ -245,6 +304,7 @@
         {charts}
         {columns}
         {showGrid}
+        bind:selectedChartName
         on:update={handlePreviewUpdate}
       />
     {/if}
@@ -252,11 +312,4 @@
 </WorkspaceContainer>
 
 <style lang="postcss">
-  .resizer {
-    @apply h-full w-2 absolute right-0 z-10 cursor-col-resize;
-  }
-
-  .width {
-    width: var(--width);
-  }
 </style>

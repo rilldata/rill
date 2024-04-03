@@ -5,7 +5,7 @@
   export let chartName: string;
 </script>
 
-<div class="flex gap-x-4 w-full">
+<div class="flex gap-x-4 size-full">
   <ChartsEditor {chartName} />
   <ChartDisplay {chartName} />
 </div>
