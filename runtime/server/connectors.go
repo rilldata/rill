@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -102,6 +103,28 @@ func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.List
 			res[c.Name] = &runtimev1.Connector{
 				Type: c.Type,
 				Name: c.Name,
+			}
+		}
+	}
+
+	// Connectors may be implicitly defined just by adding variables in the format "connector.<name>.<property>".
+	// NOTE: We can remove this if we move to explicitly defined connectors.
+	for k, _ := range inst.ResolveVariables() {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		if driverIsNotifier(name) {
+			res[name] = &runtimev1.Connector{
+				Type: name,
+				Name: name,
 			}
 		}
 	}
