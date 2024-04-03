@@ -14,9 +14,9 @@
   export let isSourceUnsaved = false;
 
   let width: number;
-  let value = titleInput;
   let titleWidth: number;
 
+  $: value = titleInput;
   $: context = $page.url.pathname;
   $: workspaceLayout = workspaces.get(context);
   $: visible = workspaceLayout.inspector.visible;
