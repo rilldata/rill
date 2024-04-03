@@ -204,7 +204,7 @@
 
 {#if interceptedUrl}
   <UnsavedSourceDialog
-    context="model"
+    context="source"
     on:confirm={handleConfirm}
     on:cancel={handleCancel}
   />
