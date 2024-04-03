@@ -14,7 +14,7 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Slack",
 	Description: "Slack Notifier",
-	ConfigProperties: []drivers.PropertySchema{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "bot_token",
 			Secret: true,
