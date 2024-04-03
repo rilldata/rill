@@ -12,7 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -198,7 +197,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 

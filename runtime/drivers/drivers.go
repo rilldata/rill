@@ -7,7 +7,6 @@ import (
 
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ErrNotFound indicates the resource wasn't found.
@@ -141,7 +140,7 @@ type Handle interface {
 
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.
-	AsNotifier(properties *structpb.Struct) (Notifier, error)
+	AsNotifier(properties map[string]any) (Notifier, error)
 }
 
 // PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.

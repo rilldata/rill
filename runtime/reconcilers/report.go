@@ -329,7 +329,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return err
 				}
 				defer release()
-				n, err := conn.AsNotifier(notifier.Properties)
+				n, err := conn.AsNotifier(notifier.Properties.AsMap())
 				if err != nil {
 					return err
 				}

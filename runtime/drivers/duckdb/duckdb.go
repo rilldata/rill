@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -397,7 +396,7 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 

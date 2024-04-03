@@ -23,7 +23,6 @@ import (
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const defaultPageSize = 20
@@ -277,7 +276,7 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 

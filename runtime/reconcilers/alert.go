@@ -720,7 +720,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						return err
 					}
 					defer release()
-					n, err := conn.AsNotifier(notifier.Properties)
+					n, err := conn.AsNotifier(notifier.Properties.AsMap())
 					if err != nil {
 						return err
 					}

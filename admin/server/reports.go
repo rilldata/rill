@@ -550,7 +550,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 		case "email":
 			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties)
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
 			if err != nil {
 				return nil, err
 			}

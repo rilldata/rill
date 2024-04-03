@@ -406,7 +406,7 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Res
 				}
 			}
 		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties)
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
 			if err != nil {
 				return nil, false, err
 			}
@@ -457,7 +457,7 @@ func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Reso
 				}
 			}
 		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties)
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
 			if err != nil {
 				return nil, false, err
 			}

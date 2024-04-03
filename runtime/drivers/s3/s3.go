@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var spec = drivers.Spec{
@@ -237,7 +236,7 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(*structpb.Struct) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 

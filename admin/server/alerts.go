@@ -554,7 +554,7 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 		case "email":
 			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties)
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
 			if err != nil {
 				return nil, err
 			}

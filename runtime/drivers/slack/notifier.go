@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/slack-go/slack"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 //go:embed templates/slack/*
@@ -31,12 +30,12 @@ type NotifierProperties struct {
 	Webhooks []string `mapstructure:"webhooks"`
 }
 
-func newNotifier(token string, propsStruct *structpb.Struct) (*notifier, error) {
+func newNotifier(token string, propsMap map[string]any) (*notifier, error) {
 	var api *slack.Client
 	if token != "" {
 		api = slack.New(token)
 	}
-	props, err := DecodeProps(propsStruct)
+	props, err := DecodeProps(propsMap)
 	if err != nil {
 		return nil, err
 	}
@@ -193,17 +192,17 @@ func (n *notifier) sendTextViaWebhooks(txt string) error {
 	return nil
 }
 
-func EncodeProps(users, channels, webhooks []string) (*structpb.Struct, error) {
-	return structpb.NewStruct(map[string]any{
+func EncodeProps(users, channels, webhooks []string) map[string]any {
+	return map[string]any{
 		"users":    pbutil.ToSliceAny(users),
 		"channels": pbutil.ToSliceAny(channels),
 		"webhooks": pbutil.ToSliceAny(webhooks),
-	})
+	}
 }
 
-func DecodeProps(propsStruct *structpb.Struct) (*NotifierProperties, error) {
+func DecodeProps(propsMap map[string]any) (*NotifierProperties, error) {
 	props := &NotifierProperties{}
-	err := mapstructure.WeakDecode(propsStruct.AsMap(), props)
+	err := mapstructure.WeakDecode(propsMap, props)
 	if err != nil {
 		return nil, err
 	}
