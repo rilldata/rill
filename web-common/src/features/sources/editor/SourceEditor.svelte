@@ -3,41 +3,31 @@
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { overlay } from "../../../layout/overlay-store";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
   import { saveAndRefresh } from "../saveAndRefresh";
-  import { useIsSourceUnsaved } from "../selectors";
-  import { useSourceStore } from "../sources-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let filePath: string;
   export let yaml: string;
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  export let latest: string;
+  export let isSourceUnsaved: boolean;
 
   let editor: YAMLEditor;
   let view: EditorView;
 
-  const queryClient = useQueryClient();
-  $: sourceStore = useSourceStore(filePath);
-
-  $: isSourceUnsavedQuery = useIsSourceUnsaved(
-    $runtime.instanceId,
-    filePath,
-    $sourceStore.clientYAML,
-  );
-  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
+  $: latest = yaml;
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   function handleUpdate(e: CustomEvent<{ content: string }>) {
-    // Update the client-side store
-    sourceStore.set({ clientYAML: e.detail.content });
+    latest = e.detail.content;
 
     // Clear line errors (it's confusing when they're outdated)
     setLineStatuses([], view);
   }
-
-  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   /**
    * Handle errors.
@@ -60,7 +50,7 @@
     // Save the source, if it's unsaved
     if (!isSourceUnsaved) return;
     overlay.set({ title: `Importing ${filePath}` });
-    await saveAndRefresh(filePath, $sourceStore.clientYAML);
+    await saveAndRefresh(filePath, latest);
     checkSourceImported(queryClient, filePath);
     overlay.set(null);
   }
@@ -73,7 +63,7 @@
     <YAMLEditor
       bind:this={editor}
       bind:view
-      content={$sourceStore.clientYAML}
+      content={latest}
       on:update={handleUpdate}
     />
   </div>

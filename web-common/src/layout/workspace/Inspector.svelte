@@ -1,10 +1,12 @@
 <script lang="ts">
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
+  import { page } from "$app/stores";
 
   let resizing = false;
 
-  $: workspace = $workspaces;
+  $: context = $page.url.pathname;
+  $: workspace = workspaces.get(context);
 
   $: width = workspace.inspector.width;
 

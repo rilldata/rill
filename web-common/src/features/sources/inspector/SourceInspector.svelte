@@ -29,10 +29,10 @@
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { resourceIsLoading } from "../../entity-management/resource-selectors";
-  import { useIsSourceUnsaved } from "../selectors";
-  import { useSourceStore } from "../sources-store";
 
   export let filePath: string;
+  export let isSourceUnsaved: boolean;
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -107,15 +107,6 @@
         ? formatBigNumberPercentage(totalNulls / totalCells)
         : undefined;
   }
-
-  $: sourceStore = useSourceStore(filePath);
-
-  $: isSourceUnsavedQuery = useIsSourceUnsaved(
-    $runtime.instanceId,
-    filePath,
-    $sourceStore.clientYAML,
-  );
-  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
 <div class="{isSourceUnsaved && 'grayscale'} transition duration-200">

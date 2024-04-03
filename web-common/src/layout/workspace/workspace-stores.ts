@@ -114,20 +114,31 @@ class WorkspaceLayoutStore {
 class Workspaces {
   private workspaces = new Map<string, WorkspaceLayoutStore>();
 
-  subscribe = derived([page], ([$page]) => {
-    const context = $page.route.id ?? crypto.randomUUID();
-    const assetId = $page.params.name;
+  // subscribe = derived([page], ([$page]) => {
+  //   const context = $page.route.id ?? crypto.randomUUID();
+  //   const assetId = $page.params.name;
 
-    const key = `${context}:${assetId}`;
+  //   const key = `${context}:${assetId}`;
 
-    let store = this.workspaces.get(key);
+  //   let store = this.workspaces.get(key);
+
+  //   if (!store) {
+  //     store = new WorkspaceLayoutStore(key);
+  //     this.workspaces.set(key, store);
+  //   }
+  //   return store;
+  // }).subscribe;
+
+  get = (context: string) => {
+    let store = this.workspaces.get(context);
 
     if (!store) {
-      store = new WorkspaceLayoutStore(key);
-      this.workspaces.set(key, store);
+      store = new WorkspaceLayoutStore(context);
+      this.workspaces.set(context, store);
     }
+
     return store;
-  }).subscribe;
+  };
 }
 
 export const workspaces = new Workspaces();

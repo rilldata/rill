@@ -28,7 +28,7 @@
   import Editor from "./Editor.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-
+  import { page } from "$app/stores";
   const QUERY_DEBOUNCE_TIME = 400;
 
   export let modelName: string;
@@ -72,7 +72,8 @@
 
   $: runtimeError = $tableQuery.error?.response.data;
 
-  $: workspaceLayout = $workspaces;
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
 
   $: tableVisible = workspaceLayout.table.visible;
 

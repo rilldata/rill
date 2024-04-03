@@ -25,7 +25,7 @@
   } from "../../entity-management/name-utils";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-
+  import { page } from "$app/stores";
   export let modelName: string;
 
   const queryClient = useQueryClient();
@@ -34,7 +34,8 @@
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  $: workspaceLayout = $workspaces;
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
 
   $: tableVisible = workspaceLayout.table.visible;
 

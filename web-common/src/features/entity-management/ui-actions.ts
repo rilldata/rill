@@ -16,7 +16,9 @@ import type { QueryClient } from "@tanstack/query-core";
 export async function handleEntityRename(
   queryClient: QueryClient,
   instanceId: string,
-  e: InputEvent,
+  e: Event & {
+    currentTarget: EventTarget & HTMLInputElement;
+  },
   filePath: string,
   entityType: EntityType, // temporary param
 ) {

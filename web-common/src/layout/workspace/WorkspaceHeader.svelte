@@ -6,9 +6,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
-  import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
   import { workspaces } from "./workspace-stores";
   import { navigationOpen } from "../navigation/Navigation.svelte";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
 
   export let onChangeCallback: (
     e: Event & {
@@ -18,13 +19,15 @@
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
+  export let isSourceUnsaved = false;
 
   let titleInputElement: HTMLInputElement;
   let editingTitle = false;
   let tooltipActive: boolean;
   let width: number;
 
-  $: workspaceLayout = $workspaces;
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
 
   $: visible = workspaceLayout.inspector.visible;
 
@@ -89,8 +92,11 @@
           </TooltipContent>
         </Tooltip>
 
-        {#if $page.url.pathname.startsWith("/source")}
-          <SourceUnsavedIndicator sourceName={titleInput} />
+        {#if context.startsWith("/source") && isSourceUnsaved}
+          <div
+            transition:scale={{ duration: 200, easing: cubicOut }}
+            class="w-1.5 h-1.5 bg-gray-300 rounded"
+          />
         {/if}
       </h1>
     {/if}
