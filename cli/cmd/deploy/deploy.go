@@ -162,7 +162,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			if !ch.IsAuthenticated() {
 				err := loginWithTelemetryAndGithubRedirect(ctx, ch, "")
 				if err != nil {
-					return fmt.Errorf("Login failed with error: %s\n", err.Error())
+					return fmt.Errorf("login failed with error: %w", err)
 				}
 				silent = true
 			}
