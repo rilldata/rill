@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
@@ -109,6 +108,7 @@
             {/if}
           </Button>
         </DropdownMenu.Trigger>
+
         <DropdownMenu.Content>
           <DropdownMenu.Item on:click={() => dispatch("refresh-source")}>
             Refresh source
@@ -118,6 +118,7 @@
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
+
       <Button
         disabled={isSourceUnsaved || hasErrors}
         on:click={() => dispatch("create-model")}
