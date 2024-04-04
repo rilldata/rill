@@ -1,10 +1,12 @@
 <script lang="ts">
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
+  import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
-  import RecipientsInputArray from "@rilldata/web-common/features/scheduled-reports/RecipientsInputArray.svelte";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { createForm } from "svelte-forms-lib";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
 </script>
@@ -26,9 +28,41 @@
     />
   </FormSection>
   <FormSection
-    description="Choose who will get notified by email for this alert. Make sure they have access to your project."
-    title="Recipients"
+    bind:enabled={$form["enableSlackNotification"]}
+    showEnabled
+    title="Slack notifications"
   >
-    <RecipientsInputArray {formState} showLabel={false} />
+    <InputArray
+      accessorKey="channel"
+      addItemLabel="Add channel"
+      description="We’ll send alerts directly to these channels."
+      {formState}
+      id="slackChannels"
+      label="Channels"
+      placeholder="# Enter a Slack channel name"
+    />
+    <InputArray
+      accessorKey="user"
+      addItemLabel="Add user"
+      description="We’ll alert them with direct messages in Slack."
+      {formState}
+      id="slackEmails"
+      label="Users"
+      placeholder="Enter an email address"
+    />
+  </FormSection>
+  <FormSection
+    bind:enabled={$form["enableEmailNotification"]}
+    description="We’ll email alerts to these addresses. Make sure they have access to your project."
+    showEnabled
+    title="Email notifications"
+  >
+    <InputArray
+      accessorKey="email"
+      addItemLabel="Add email"
+      {formState}
+      id="emailRecipients"
+      placeholder="Enter an email address"
+    />
   </FormSection>
 </div>
