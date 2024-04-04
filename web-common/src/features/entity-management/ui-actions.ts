@@ -1,9 +1,6 @@
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-import {
-  getFileAPIPathFromNameAndType,
-  getRouteFromName,
-} from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   INVALID_NAME_MESSAGE,
@@ -13,14 +10,16 @@ import {
 import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { extractFileExtension } from "../sources/extract-file-name";
 
 export async function handleEntityRename(
   instanceId: string,
   target: HTMLInputElement,
-  filePath: string,
+  existingPath: string,
   entityType: EntityType, // temporary param
 ) {
-  const [, fileName] = splitFolderAndName(filePath);
+  const [folder, fileName] = splitFolderAndName(existingPath);
+  const extension = extractFileExtension(existingPath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
     notifications.send({
@@ -43,12 +42,9 @@ export async function handleEntityRename(
   try {
     const toName = target.value;
 
-    await renameFileArtifact(
-      instanceId,
-      filePath,
-      getFileAPIPathFromNameAndType(toName, entityType),
-      entityType,
-    );
+    const newAPIPath = (folder ? `${folder}/` : "") + toName + extension;
+
+    await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
 
     return getRouteFromName(toName, entityType);
   } catch (err) {

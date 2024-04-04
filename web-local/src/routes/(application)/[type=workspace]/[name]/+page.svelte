@@ -321,7 +321,7 @@
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
           {:else if tableName}
-            <ConnectedPreviewTable objectName={tableName} />
+            <!-- <ConnectedPreviewTable objectName={tableName} /> -->
           {/if}
           <svelte:fragment slot="error">
             {#if type === "model"}
