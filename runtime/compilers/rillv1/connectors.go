@@ -93,27 +93,6 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 	return nil
 }
 
-func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*runtimev1.Notifier) error {
-	for _, n := range notifiers {
-		anonAccess := false
-		if n.Connector == "slack" {
-			// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
-			props, err := slack.DecodeProps(n.Properties.AsMap())
-			if err != nil {
-				return err
-			}
-			if len(props.Users) == 0 && len(props.Channels) == 0 {
-				anonAccess = true
-			}
-		}
-		err := a.trackConnector(n.Connector, r, anonAccess)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // analyzeSource extracts connector metadata for a source resource.
 // The logic for extracting metadata from sources is more complex than for other resource kinds, hence the separate function.
 func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) error {
@@ -171,6 +150,28 @@ func (a *connectorAnalyzer) analyzeResourceWithResolver(r *Resource, resolver st
 		}
 	}
 
+	return nil
+}
+
+// analyzeResourceNotifiers extracts connector metadata for a resource that uses notifiers (email, slack, etc).
+func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*runtimev1.Notifier) error {
+	for _, n := range notifiers {
+		anonAccess := false
+		if n.Connector == "slack" {
+			// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
+			props, err := slack.DecodeProps(n.Properties.AsMap())
+			if err != nil {
+				return err
+			}
+			if len(props.Users) == 0 && len(props.Channels) == 0 {
+				anonAccess = true
+			}
+		}
+		err := a.trackConnector(n.Connector, r, anonAccess)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
