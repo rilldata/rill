@@ -16,7 +16,7 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 
 ## Supported versions
 
-Rill supports connecting to ClickHouse v22.7+.
+Rill supports connecting to ClickHouse v22.7 or newer versions.
 
 ## Connection string (DSN)
 
