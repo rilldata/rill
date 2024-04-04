@@ -19,6 +19,7 @@
   export let table: string;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
+    connector,
     database,
     databaseSchema,
     table,

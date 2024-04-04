@@ -53,6 +53,7 @@
         {#if $tables.length > 0}
           {#each $tables as tableInfo (tableInfo)}
             {@const fullyQualifiedTableName = makeFullyQualifiedTableName(
+              olapConnector,
               tableInfo.database ?? "",
               tableInfo.databaseSchema ?? "",
               tableInfo.name ?? "",
