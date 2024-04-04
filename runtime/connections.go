@@ -237,21 +237,21 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	// NOTE: This switches on connector.Name, not connector.Type, because this only applies to implicit connectors.
 	switch name {
 	case "s3", "athena", "redshift":
-		res.setPreset("aws_access_key_id", vars["aws_access_key_id"])
-		res.setPreset("aws_secret_access_key", vars["aws_secret_access_key"])
-		res.setPreset("aws_session_token", vars["aws_session_token"])
+		res.setPreset("aws_access_key_id", vars["aws_access_key_id"], false)
+		res.setPreset("aws_secret_access_key", vars["aws_secret_access_key"], false)
+		res.setPreset("aws_session_token", vars["aws_session_token"], false)
 	case "azure":
-		res.setPreset("azure_storage_account", vars["azure_storage_account"])
-		res.setPreset("azure_storage_key", vars["azure_storage_key"])
-		res.setPreset("azure_storage_sas_token", vars["azure_storage_sas_token"])
-		res.setPreset("azure_storage_connection_string", vars["azure_storage_connection_string"])
+		res.setPreset("azure_storage_account", vars["azure_storage_account"], false)
+		res.setPreset("azure_storage_key", vars["azure_storage_key"], false)
+		res.setPreset("azure_storage_sas_token", vars["azure_storage_sas_token"], false)
+		res.setPreset("azure_storage_connection_string", vars["azure_storage_connection_string"], false)
 	case "gcs":
-		res.setPreset("google_application_credentials", vars["google_application_credentials"])
+		res.setPreset("google_application_credentials", vars["google_application_credentials"], false)
 	case "bigquery":
-		res.setPreset("google_application_credentials", vars["google_application_credentials"])
+		res.setPreset("google_application_credentials", vars["google_application_credentials"], false)
 	case "motherduck":
-		res.setPreset("token", vars["token"])
-		res.setPreset("dsn", "")
+		res.setPreset("token", vars["token"], false)
+		res.setPreset("dsn", "", true)
 	case "local_file":
 		// The "local_file" connector needs to know the repo root.
 		// TODO: This is an ugly hack. But how can we get rid of it?
@@ -260,14 +260,14 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 			if err != nil {
 				return nil, err
 			}
-			res.setPreset("dsn", repo.Root())
+			res.setPreset("dsn", repo.Root(), true)
 			release()
 		}
 	}
 
 	// Apply built-in system-wide config
-	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess))
-	res.setPreset("data_dir", filepath.Join(r.opts.InstancesDataDir, instanceID, name))
+	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
+	res.setPreset("data_dir", filepath.Join(r.opts.InstancesDataDir, instanceID, name), true)
 
 	// Done
 	return res, nil
@@ -314,20 +314,24 @@ func (c *ConnectorConfig) ResolveStrings() map[string]string {
 	}
 
 	cfg := make(map[string]string, n)
-	for k, v := range c.Preset {
-		cfg[strings.ToLower(k)] = v
-	}
 	for k, v := range c.Project {
 		cfg[strings.ToLower(k)] = v
 	}
 	for k, v := range c.Env {
 		cfg[strings.ToLower(k)] = v
 	}
+	for k, v := range c.Preset {
+		cfg[strings.ToLower(k)] = v
+	}
 	return cfg
 }
 
-// setPreset sets a preset value if it's not empty.
-func (c *ConnectorConfig) setPreset(k, v string) {
+// setPreset sets a preset value.
+// If the provided value is empty, it will not be added unless force is true.
+func (c *ConnectorConfig) setPreset(k, v string, force bool) {
+	if v == "" && !force {
+		return
+	}
 	if c.Preset == nil {
 		c.Preset = make(map[string]string)
 	}
