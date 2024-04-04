@@ -20,7 +20,7 @@
   $: if (source) {
     sourceQuery = useSource(runtimeInstanceId, source);
   }
-  $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
+  $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
   $: createDashboardFromTable =
     source !== null
