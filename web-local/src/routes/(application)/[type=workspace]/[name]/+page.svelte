@@ -7,7 +7,7 @@
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import ErrorPane from "@rilldata/web-common/features/generic-yaml-editor/ErrorPane.svelte";
+  import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
   import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
   import ModelInspector from "@rilldata/web-common/features/models/workspace/inspector/ModelInspector.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -271,21 +271,23 @@
 
       {#if $tableVisible}
         <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
-          {#if $allErrors[0]?.message}
-            <ErrorPane errorMessage={$allErrors[0].message} />
+          {#if type === "source" && $allErrors[0]?.message}
+            <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
           {:else if tableName}
             <ConnectedPreviewTable objectName={tableName} />
           {/if}
           <svelte:fragment slot="error">
-            {#if $allErrors.length > 0}
-              <div
-                transition:slide={{ duration: 200 }}
-                class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
-              >
-                {#each $allErrors as error}
-                  <div>{error.message}</div>
-                {/each}
-              </div>
+            {#if type === "model"}
+              {#if $allErrors.length > 0}
+                <div
+                  transition:slide={{ duration: 200 }}
+                  class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+                >
+                  {#each $allErrors as error}
+                    <div>{error.message}</div>
+                  {/each}
+                </div>
+              {/if}
             {/if}
           </svelte:fragment>
         </WorkspaceTableContainer>
