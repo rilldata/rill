@@ -36,8 +36,6 @@
 
   $: isModelerEnabled = $readOnly === false;
 
-  $: console.log("RUNTIME", $runtime);
-
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: olapConnector = $instance.data?.instance?.olapConnector;
   $: isModelingSupportedForCurrentOlapDriver =
