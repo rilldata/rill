@@ -56,6 +56,7 @@
   $: hasModelSql = typeof modelSql === "string";
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
+  $: connector = $modelQuery?.data?.model?.spec?.connector as string;
 
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
@@ -142,6 +143,9 @@
     <WorkspaceTableContainer fade={Boolean(modelError || runtimeError)}>
       {#if !$modelEmpty?.data && $modelQuery?.data?.model?.state?.table}
         <ConnectedPreviewTable
+          {connector}
+          database={undefined}
+          databaseSchema={undefined}
           table={$modelQuery?.data?.model?.state?.table}
           loading={resourceIsLoading($modelQuery?.data)}
           {limit}
