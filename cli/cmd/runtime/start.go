@@ -83,8 +83,8 @@ type Config struct {
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
-	// InstancesDataDir is the directory where instance data like duckdb file, temporary download file etc are stored
-	// The data for each instance is stored in a child directory named as instance id
+	// InstancesDataDir stores data for all instances like duckdb file, temporary downloaded file etc.
+	// The data for each instance is stored in a child directory named instance_id
 	InstancesDataDir string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
