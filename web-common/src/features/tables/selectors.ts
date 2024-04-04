@@ -1,3 +1,4 @@
+import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { Readable, derived } from "svelte/store";
 import {
   V1TableInfo,
@@ -42,26 +43,31 @@ export function useTables(
         },
       ),
     ],
-    ([$sources, $models, $tables]) => {
-      if (
-        !$sources.data ||
-        !$models.data ||
-        !$tables.data ||
-        !$tables.data.tables
-      ) {
-        return [];
-      }
+    ([$sources, $models, $tables], set) => {
+      // add a debounce to make sure quick changes and invalidations do not cause a flicker.
+      // these quick changes can happen when a table/model is renamed
+      debounce(() => {
+        if (
+          !$sources.data ||
+          !$models.data ||
+          !$tables.data ||
+          !$tables.data.tables
+        ) {
+          set([]);
+          return;
+        }
 
-      // Filter out Rill-managed tables (Sources and Models)
-      const sourceNames = $sources.data;
-      const modelNames = $models.data;
-      const filteredTables = $tables.data.tables?.filter(
-        (table) =>
-          !sourceNames.includes(table.name as string) &&
-          !modelNames.includes(table.name as string),
-      );
+        // Filter out Rill-managed tables (Sources and Models)
+        const sourceNames = $sources.data;
+        const modelNames = $models.data;
+        const filteredTables = $tables.data.tables?.filter(
+          (table) =>
+            !sourceNames.includes(table.name as string) &&
+            !modelNames.includes(table.name as string),
+        );
 
-      return filteredTables;
+        set(filteredTables);
+      }, 500);
     },
   );
 }
