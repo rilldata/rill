@@ -71,7 +71,8 @@
     metricsView,
   );
 
-  $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
+  $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
+  $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
   $: interval =
@@ -173,7 +174,7 @@
   }
 
   $: if (
-    expandedMeasureName &&
+    isInTimeDimensionView &&
     formattedData &&
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
@@ -211,13 +212,13 @@
 </script>
 
 <TimeSeriesChartContainer
-  enableFullWidth={Boolean(expandedMeasureName)}
+  enableFullWidth={isInTimeDimensionView}
   end={endValue}
   start={startValue}
   {workspaceWidth}
 >
   <div class="flex pl-1">
-    {#if expandedMeasureName}
+    {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelection bind:chartType />
     {:else}
@@ -276,7 +277,7 @@
           <MeasureBigNumber
             {measure}
             value={bigNum}
-            isMeasureExpanded={!!expandedMeasureName}
+            isMeasureExpanded={isInTimeDimensionView}
             {showComparison}
             comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
               ?.name}

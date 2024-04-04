@@ -9,6 +9,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers/slack"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -34,6 +36,23 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
+	OnRecover     *bool  `yaml:"on_recover"`
+	OnFail        *bool  `yaml:"on_fail"`
+	OnError       *bool  `yaml:"on_error"`
+	Renotify      *bool  `yaml:"renotify"`
+	RenotifyAfter string `yaml:"renotify_after"`
+	Notify        struct {
+		Email struct {
+			Recipients []string `yaml:"recipients"`
+		} `yaml:"email"`
+		Slack struct {
+			Users    []string `yaml:"users"`
+			Channels []string `yaml:"channels"`
+			Webhooks []string `yaml:"webhooks"`
+		} `yaml:"slack"`
+	} `yaml:"notify"`
+	Annotations map[string]string `yaml:"annotations"`
+	// Backwards compatibility
 	Email struct {
 		Recipients    []string `yaml:"recipients"`
 		OnRecover     *bool    `yaml:"on_recover"`
@@ -42,7 +61,6 @@ type AlertYAML struct {
 		Renotify      *bool    `yaml:"renotify"`
 		RenotifyAfter string   `yaml:"renotify_after"`
 	} `yaml:"email"`
-	Annotations map[string]string `yaml:"annotations"`
 }
 
 // parseAlert parses an alert definition and adds the resulting resource to p.Resources.
@@ -148,20 +166,44 @@ func (p *Parser) parseAlert(node *Node) error {
 		return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
 	}
 
-	// Validate recipients
-	for _, email := range tmp.Email.Recipients {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient email address %q", email)
-		}
+	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	// Validate email.renotify_after
-	var emailRenotifyAfter time.Duration
-	if tmp.Email.RenotifyAfter != "" {
-		emailRenotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
-		if err != nil {
-			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+	isLegacySyntax := len(tmp.Email.Recipients) > 0
+
+	// Validate the input
+	var renotifyAfter time.Duration
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Validate email recipients
+		for _, email := range tmp.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		// Validate email.renotify_after
+		if tmp.Email.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
+			if err != nil {
+				return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+			}
+		}
+	} else {
+		// Validate email recipients
+		for _, email := range tmp.Notify.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		// Validate renotify_after
+		if tmp.RenotifyAfter != "" {
+			renotifyAfter, err = parseDuration(tmp.RenotifyAfter)
+			if err != nil {
+				return fmt.Errorf(`invalid value for property "renotify_after": %w`, err)
+			}
 		}
 	}
 
@@ -195,27 +237,80 @@ func (p *Parser) parseAlert(node *Node) error {
 		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
 	}
 
-	r.AlertSpec.EmailRecipients = tmp.Email.Recipients
+	// Notification default settings
+	r.AlertSpec.NotifyOnRecover = false
+	r.AlertSpec.NotifyOnFail = true
+	r.AlertSpec.NotifyOnError = false
+	r.AlertSpec.Renotify = false
 
-	// Email notification default settings
-	r.AlertSpec.EmailOnRecover = false
-	r.AlertSpec.EmailOnFail = true
-	r.AlertSpec.EmailOnError = false
-	r.AlertSpec.EmailRenotify = false
-
-	// Override email notification defaults
-	if tmp.Email.OnRecover != nil {
-		r.AlertSpec.EmailOnRecover = *tmp.Email.OnRecover
-	}
-	if tmp.Email.OnFail != nil {
-		r.AlertSpec.EmailOnFail = *tmp.Email.OnFail
-	}
-	if tmp.Email.OnError != nil {
-		r.AlertSpec.EmailOnError = *tmp.Email.OnError
-	}
-	if tmp.Email.Renotify != nil {
-		r.AlertSpec.EmailRenotify = *tmp.Email.Renotify
-		r.AlertSpec.EmailRenotifyAfterSeconds = uint32(emailRenotifyAfter.Seconds())
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Override email notification defaults
+		if tmp.Email.OnRecover != nil {
+			r.AlertSpec.NotifyOnRecover = *tmp.Email.OnRecover
+		}
+		if tmp.Email.OnFail != nil {
+			r.AlertSpec.NotifyOnFail = *tmp.Email.OnFail
+		}
+		if tmp.Email.OnError != nil {
+			r.AlertSpec.NotifyOnError = *tmp.Email.OnError
+		}
+		if tmp.Email.Renotify != nil {
+			r.AlertSpec.Renotify = *tmp.Email.Renotify
+			r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		}
+		// Email settings
+		notifier, err := structpb.NewStruct(map[string]any{
+			"recipients": pbutil.ToSliceAny(tmp.Email.Recipients),
+		})
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
+		r.AlertSpec.Notifiers = []*runtimev1.Notifier{
+			{
+				Connector:  "email",
+				Properties: notifier,
+			},
+		}
+	} else {
+		// Override notification defaults
+		if tmp.OnRecover != nil {
+			r.AlertSpec.NotifyOnRecover = *tmp.OnRecover
+		}
+		if tmp.OnFail != nil {
+			r.AlertSpec.NotifyOnFail = *tmp.OnFail
+		}
+		if tmp.OnError != nil {
+			r.AlertSpec.NotifyOnError = *tmp.OnError
+		}
+		if tmp.Renotify != nil {
+			r.AlertSpec.Renotify = *tmp.Renotify
+			r.AlertSpec.RenotifyAfterSeconds = uint32(renotifyAfter.Seconds())
+		}
+		// Email settings
+		if len(tmp.Notify.Email.Recipients) > 0 {
+			props, err := structpb.NewStruct(map[string]any{
+				"recipients": pbutil.ToSliceAny(tmp.Notify.Email.Recipients),
+			})
+			if err != nil {
+				return fmt.Errorf("encountered invalid property type: %w", err)
+			}
+			r.AlertSpec.Notifiers = append(r.AlertSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  "email",
+				Properties: props,
+			})
+		}
+		// Slack settings
+		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
+			props, err := structpb.NewStruct(slack.EncodeProps(tmp.Notify.Slack.Users, tmp.Notify.Slack.Channels, tmp.Notify.Slack.Webhooks))
+			if err != nil {
+				return err
+			}
+			r.AlertSpec.Notifiers = append(r.AlertSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  "slack",
+				Properties: props,
+			})
+		}
 	}
 
 	r.AlertSpec.Annotations = tmp.Annotations

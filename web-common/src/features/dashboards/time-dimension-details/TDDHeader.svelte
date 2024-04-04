@@ -52,7 +52,7 @@
   $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
+  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
   $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures

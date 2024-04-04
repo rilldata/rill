@@ -376,3 +376,34 @@ func FromValue(val *structpb.Value) (any, error) {
 		return nil, fmt.Errorf("value not supported: %v", v)
 	}
 }
+
+// ToSliceAny converts a slice of any type to a slice of type any (interface{})
+// making the slice compatible with structpb.NewStruct
+func ToSliceAny[T any](v []T) []any {
+	values := make([]any, len(v))
+	for i, s := range v {
+		values[i] = s
+	}
+	return values
+}
+
+// ToSliceString (as opposed to ToSliceAny) converts a slice of any type to a slice of strings
+// It returns nil if the input is nil or not a slice of any
+func ToSliceString(a any) []string {
+	if a == nil {
+		return nil
+	}
+	ss, ok := a.([]string)
+	if ok {
+		return ss
+	}
+	sa, ok := a.([]any)
+	if !ok {
+		return nil
+	}
+	s := make([]string, len(sa))
+	for i, v := range sa {
+		s[i] = v.(string)
+	}
+	return s
+}
