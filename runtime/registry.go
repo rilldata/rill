@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -61,7 +64,14 @@ func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string, ignoreHi
 
 // CreateInstance creates a new instance and starts a controller for it.
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	return r.registryCache.create(ctx, inst)
+	if err := r.registryCache.create(ctx, inst); err != nil {
+		return err
+	}
+
+	if err := os.Mkdir(filepath.Join(r.opts.InstancesDataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+		return err
+	}
+	return nil
 }
 
 // EditInstance edits an existing instance.
@@ -109,6 +119,11 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 		err = drivers.Drop(olapCfg.Driver, olapCfg.Resolve(), r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+		}
+
+		// data dir will have all the instance's data (including OLAP data) but for now drop everything if dropOLAP is true
+		if err := os.RemoveAll(filepath.Join(r.opts.InstancesDataDir, instanceID)); err != nil {
+			r.logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}
 

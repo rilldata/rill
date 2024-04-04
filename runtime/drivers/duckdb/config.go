@@ -21,7 +21,11 @@ type config struct {
 	DSN string `mapstructure:"dsn"`
 	// Path is a path to the database file. If set, it will take precedence over the path contained in DSN.
 	// This is a convenience option for setting the path in a more human-readable way.
+	//
+	// Deprecated: See DataDir below.
 	Path string `mapstructure:"path"`
+	// DataDir serves the same purpose as path. It is set directly in runtime as compared to Path which needs to be set while creating instance.
+	DataDir string `mapstructure:"data_dir"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
@@ -44,8 +48,8 @@ type config struct {
 	BootQueries string `mapstructure:"boot_queries"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
-	// ExtStoragePath is the path where the database files are stored in case external_table_storage is true. It is inferred from the DSN (can't be provided by user).
-	ExtStoragePath string `mapstructure:"-"`
+	// DBStoragePath is the path where the database files are stored. It is inferred from the DSN (can't be provided by user).
+	DBStoragePath string `mapstructure:"-"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
 }
@@ -68,15 +72,15 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 
 	// Override DSN.Path with config.Path
-	if cfg.Path != "" {
+	if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
 		uri.Path = cfg.Path
+	} else if uri.Path == "" { // for backward compatibility only set if nothing set in dsn
+		uri.Path = filepath.Join(cfg.DataDir, "main.db")
 	}
 
 	// Infer DBFilePath
 	cfg.DBFilePath = uri.Path
-	if cfg.ExtTableStorage {
-		cfg.ExtStoragePath = filepath.Dir(cfg.DBFilePath)
-	}
+	cfg.DBStoragePath = filepath.Dir(cfg.DBFilePath)
 
 	// Set memory limit
 	maxMemory := cfg.MemoryLimitGB

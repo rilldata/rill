@@ -83,6 +83,9 @@ type Config struct {
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
+	// InstancesDataDir is the directory where instance data like duckdb file, temporary download file etc are stored
+	// The data for each instance is stored in a child directory named as instance id
+	InstancesDataDir string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
 	// Kafka brokers of an activity client's sink
@@ -205,6 +208,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
+				InstancesDataDir:             conf.InstancesDataDir,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,

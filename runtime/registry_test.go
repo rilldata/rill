@@ -380,13 +380,12 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	rt := newTestRuntime(t)
 	tests := []struct {
-		name       string
-		instanceID string
-		dropOLAP   bool
-		wantErr    bool
+		name     string
+		dropOLAP bool
+		wantErr  bool
 	}{
-		{"delete valid no drop", "default", false, false},
-		{"delete valid drop", "default", true, false},
+		{"delete valid no drop", false, false},
+		{"delete valid drop", true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -394,7 +393,6 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			ctx := context.Background()
 			dbFile := filepath.Join(t.TempDir(), "test.db")
 			inst := &drivers.Instance{
-				ID:            "default",
 				Environment:   "test",
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
@@ -426,7 +424,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.NoError(t, olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
 
 			// delete instance
-			err = rt.DeleteInstance(ctx, tt.instanceID, &tt.dropOLAP)
+			err = rt.DeleteInstance(ctx, inst.ID, &tt.dropOLAP)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Runtime.DeleteInstance() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -462,7 +460,6 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 	// Create instance
 	inst := &drivers.Instance{
-		ID:            "default",
 		Environment:   "test",
 		OLAPConnector: "duckdb",
 		RepoConnector: "repo",

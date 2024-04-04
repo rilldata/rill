@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -266,6 +267,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess))
+	res.setPreset("data_dir", filepath.Join(r.opts.InstancesDataDir, instanceID, name))
 
 	// Done
 	return res, nil

@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"fmt"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -92,8 +91,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	connectors = append(connectors, &runtimev1.Connector{
 		Name: "duckdb",
 		Type: "duckdb",
+		// duckdb DSN will automatically be computed based on these parameters
 		Config: map[string]string{
-			"dsn":                    fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main")),
 			"cpu":                    strconv.Itoa(alloc.CPU),
 			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
 			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),

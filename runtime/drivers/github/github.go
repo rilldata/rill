@@ -17,6 +17,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.opentelemetry.io/otel"
@@ -47,22 +48,35 @@ func init() {
 
 type driver struct{}
 
+type configProperties struct {
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
+	// DataDir is the directory where files will be stored
+	DataDir string `mapstructure:"data_dir"`
+}
+
 func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("github driver can't be shared")
 	}
-	dsnStr, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open github connection")
-	}
 
-	var dsn DSN
-	err := json.Unmarshal([]byte(dsnStr), &dsn)
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	tempdir, err := os.MkdirTemp("", "github_repo_driver")
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("no DSN provided to open the connection")
+	}
+
+	var dsn DSN
+	err = json.Unmarshal([]byte(conf.DSN), &dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	tempdir, err := os.MkdirTemp(conf.DataDir, "github_repo_driver")
 	if err != nil {
 		return nil, err
 	}

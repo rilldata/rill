@@ -166,6 +166,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		MetastoreConnector:           "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
+		InstancesDataDir:             dbDirPath,
 		SystemConnectors:             systemConnectors,
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,

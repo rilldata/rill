@@ -55,6 +55,8 @@ type Options struct {
 	BatchSizeBytes int64
 	// General blob format (json, csv, parquet, etc)
 	Format string
+	// DataDir where temporary files should be stored
+	DataDir string
 }
 
 // sets defaults if not set by user
@@ -116,7 +118,7 @@ var _ drivers.FileIterator = &blobIterator{}
 func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.Logger) (drivers.FileIterator, error) {
 	opts.validate()
 
-	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
+	tempDir, err := os.MkdirTemp(opts.DataDir, "blob_ingestion")
 	if err != nil {
 		return nil, err
 	}
