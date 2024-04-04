@@ -56,7 +56,7 @@
   <svelte:element
     this={open && expandable ? "button" : "a"}
     role="link"
-    class="clickable-text truncate"
+    class="clickable-text"
     class:expandable
     class:open
     tabindex={open ? -1 : 0}
@@ -69,20 +69,13 @@
       shift: [shiftClickHandler, "Copy name to clipboard"],
     }}
   >
-    <Tooltip distance={8}>
-      <span class="truncate">{name}</span>
+    <span class="truncate">{name}</span>
 
-      {#if $$slots["icon"]}
-        <span class="text-gray-400" style:width="1em" style:height="1em">
-          <slot name="icon" />
-        </span>
-      {/if}
-      <svelte:fragment slot="tooltip-content">
-        {#if $$slots["tooltip-content"]}
-          <TooltipContent><slot name="tooltip-content" /></TooltipContent>
-        {/if}
-      </svelte:fragment>
-    </Tooltip>
+    {#if $$slots["icon"]}
+      <span class="text-gray-400" style:width="1em" style:height="1em">
+        <slot name="icon" />
+      </span>
+    {/if}
   </svelte:element>
 
   {#if showContextMenu}
