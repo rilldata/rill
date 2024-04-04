@@ -11,7 +11,7 @@
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
-  export let isSourceUnsaved = false;
+  export let hasUnsavedChanges = false;
 
   let width: number;
   let titleWidth: number;
@@ -50,7 +50,7 @@
       }}
     />
 
-    {#if context.startsWith("/source") && isSourceUnsaved}
+    {#if hasUnsavedChanges}
       <span
         class="w-1.5 h-1.5 bg-gray-300 rounded flex-none"
         transition:scale={{ duration: 200, easing: cubicOut }}

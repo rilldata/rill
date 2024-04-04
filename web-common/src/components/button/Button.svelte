@@ -28,7 +28,6 @@
   export let rounded = false;
   export let href: string | null = null;
   export let builders: Builder[] = [];
-  export let div = false;
 
   const dispatch = createEventDispatcher();
 
@@ -40,8 +39,8 @@
 </script>
 
 <svelte:element
-  this={div ? "div" : href ? "a" : "button"}
-  role={div ? "presentation" : "button"}
+  this={href ? "a" : "button"}
+  role="button"
   tabindex={0}
   {href}
   class="{$$props.class} {type}"
@@ -72,7 +71,7 @@
   div {
     @apply flex text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
-    @apply gap-x-2 min-w-fit;
+    @apply gap-x-2 min-w-fit select-none;
     @apply rounded-[2px];
     @apply px-3 h-7 min-h-[28px] cursor-pointer;
   }

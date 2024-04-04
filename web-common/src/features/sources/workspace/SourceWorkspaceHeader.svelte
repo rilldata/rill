@@ -1,28 +1,28 @@
 <script lang="ts">
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
-  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { createRuntimeServiceRefreshAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { fade, slide } from "svelte/transition";
+  import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
-  import { createEventDispatcher } from "svelte";
-  import { quintOut } from "svelte/easing";
+  import { page } from "$app/stores";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
+  import ModelWorkspaceCtAs from "../../models/workspace/ModelWorkspaceCTAs.svelte";
+  import SourceCTAs from "./SourceCTAs.svelte";
+  import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
 
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-  const dispatch = createEventDispatcher();
 
   export let hasErrors: boolean;
-  export let isSourceUnsaved: boolean;
-  export let sourceName: string;
-  export let sourceIsReconciling: boolean;
+  export let hasUnsavedChanges: boolean;
+  export let assetName: string;
+  export let resourceIsReconciling: boolean;
   export let refreshedOn: string | undefined;
   export let isLocalFileConnector: boolean;
+  export let type: "source" | "model";
+
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
+  $: tableVisible = workspaceLayout.table.visible;
 
   function formatRefreshedOn(refreshedOn: string) {
     const date = new Date(refreshedOn);
@@ -34,13 +34,9 @@
       minute: "numeric",
     });
   }
-
-  function isHeaderWidthSmall(width: number) {
-    return width < 800;
-  }
 </script>
 
-<WorkspaceHeader titleInput={sourceName} {isSourceUnsaved} on:change>
+<WorkspaceHeader titleInput={assetName} {hasUnsavedChanges} on:change>
   <svelte:fragment slot="workspace-controls">
     {#if $refreshSourceMutation.isLoading}
       Refreshing...
@@ -57,91 +53,43 @@
         {/if}
       </div>
     {/if}
+
+    <IconButton on:click={workspaceLayout.table.toggle}>
+      <span class="text-gray-500">
+        <HideBottomPane size="18px" />
+      </span>
+      <svelte:fragment slot="tooltip-content">
+        <SlidingWords active={$tableVisible} reverse>
+          results preview
+        </SlidingWords>
+      </svelte:fragment>
+    </IconButton>
   </svelte:fragment>
 
   <svelte:fragment slot="cta" let:width>
-    {@const collapse = isHeaderWidthSmall(width)}
-    <PanelCTA side="right">
-      <Button
-        type="secondary"
-        disabled={!isSourceUnsaved}
-        on:click={() => dispatch("revert")}
-      >
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <UndoIcon size="14px" />
-        </IconSpaceFixer>
-        <ResponsiveButtonText {collapse}>Revert changes</ResponsiveButtonText>
-      </Button>
+    {@const collapse = width < 800}
 
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger
-          disabled={!isLocalFileConnector || isSourceUnsaved}
-        >
-          <Button
-            div={isLocalFileConnector}
-            role={isLocalFileConnector ? "presentation" : "button"}
-            on:click={() => {
-              if (isLocalFileConnector && !isSourceUnsaved) return;
-
-              if (isSourceUnsaved) {
-                dispatch("save");
-              } else {
-                dispatch("refresh-source");
-              }
-            }}
-            disabled={sourceIsReconciling}
-            label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
-            type={isSourceUnsaved ? "primary" : "secondary"}
-          >
-            <IconSpaceFixer pullLeft pullRight={collapse}>
-              <RefreshIcon size="14px" />
-            </IconSpaceFixer>
-            <ResponsiveButtonText {collapse}>
-              <div class="flex">
-                {#if isSourceUnsaved}
-                  <span
-                    class="pr-1 w-fit whitespace-nowrap"
-                    transition:slide={{
-                      duration: 250,
-                      axis: "x",
-                      easing: quintOut,
-                    }}
-                  >
-                    Save and
-                  </span>
-                {/if}
-                <span class:lowercase={isSourceUnsaved}>Refresh</span>
-              </div>
-            </ResponsiveButtonText>
-            {#if !isSourceUnsaved && isLocalFileConnector}
-              <CaretDownIcon size="14px" />
-            {/if}
-          </Button>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Content>
-          <DropdownMenu.Item
-            on:click={() => {
-              dispatch("refresh-source");
-            }}
-          >
-            Refresh source
-          </DropdownMenu.Item>
-          <DropdownMenu.Item on:click={() => dispatch("replace-source")}>
-            Replace source with uploaded file
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <Button
-        disabled={isSourceUnsaved || hasErrors}
-        on:click={() => dispatch("create-model")}
-      >
-        <ResponsiveButtonText {collapse}>Create model</ResponsiveButtonText>
-        <IconSpaceFixer pullLeft pullRight={collapse}>
-          <EnterIcon size="14px" />
-        </IconSpaceFixer>
-      </Button>
-    </PanelCTA>
+    <div class="flex gap-x-2 items-center">
+      {#if type === "source"}
+        <SourceCTAs
+          {hasUnsavedChanges}
+          {collapse}
+          {hasErrors}
+          {isLocalFileConnector}
+          isReconciling={resourceIsReconciling}
+          on:create-model
+          on:refresh-source
+          on:replace-source
+          on:revert-source
+          on:save-source
+        />
+      {:else}
+        <ModelWorkspaceCtAs
+          {collapse}
+          modelHasError={hasErrors}
+          modelName={assetName}
+        />
+      {/if}
+    </div>
   </svelte:fragment>
 </WorkspaceHeader>

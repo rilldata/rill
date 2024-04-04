@@ -8,14 +8,14 @@
 
   const dispatch = createEventDispatcher();
 
-  export let yaml: string;
+  export let blob: string;
   export let latest: string;
-  export let isSourceUnsaved: boolean;
+  export let hasUnsavedChanges: boolean;
   export let allErrors: V1ParseError[];
 
   let view: EditorView;
 
-  $: latest = yaml;
+  $: latest = blob;
 
   function handleUpdate(e: CustomEvent<{ content: string }>) {
     latest = e.detail.content;
@@ -25,7 +25,7 @@
   }
 
   //  Handle errors
-  $: if (view) setLineStatuses(mapParseErrorsToLines(allErrors, yaml), view);
+  $: if (view) setLineStatuses(mapParseErrorsToLines(allErrors, blob), view);
 
   function handleModSave(event: KeyboardEvent) {
     // Check if a Modifier Key + S is pressed
@@ -33,7 +33,7 @@
 
     event.preventDefault();
 
-    if (!isSourceUnsaved) return;
+    if (!hasUnsavedChanges) return;
     dispatch("save");
   }
 </script>

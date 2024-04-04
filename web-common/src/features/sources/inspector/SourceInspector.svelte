@@ -27,7 +27,7 @@
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let isSourceUnsaved: boolean;
+  export let hasUnsavedChanges: boolean;
   export let tableName: string;
   export let source: V1SourceV2 | undefined;
   export let sourceIsReconciling: boolean;
@@ -95,7 +95,7 @@
   }
 </script>
 
-<div class="{isSourceUnsaved && 'grayscale'} transition duration-200">
+<div class="{hasUnsavedChanges && 'grayscale'} transition duration-200">
   {#if sourceIsReconciling}
     <div class="mt-6">
       <ReconcilingSpinner />
