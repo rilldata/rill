@@ -2,13 +2,17 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { createForm } from "svelte-forms-lib";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
+
+  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -27,30 +31,32 @@
       options={SnoozeOptions}
     />
   </FormSection>
-  <FormSection
-    bind:enabled={$form["enableSlackNotification"]}
-    showEnabled
-    title="Slack notifications"
-  >
-    <InputArray
-      accessorKey="channel"
-      addItemLabel="Add channel"
-      description="We’ll send alerts directly to these channels."
-      {formState}
-      id="slackChannels"
-      label="Channels"
-      placeholder="# Enter a Slack channel name"
-    />
-    <InputArray
-      accessorKey="user"
-      addItemLabel="Add user"
-      description="We’ll alert them with direct messages in Slack."
-      {formState}
-      id="slackEmails"
-      label="Users"
-      placeholder="Enter an email address"
-    />
-  </FormSection>
+  {#if hasSlackNotifier}
+    <FormSection
+      bind:enabled={$form["enableSlackNotification"]}
+      showEnabled
+      title="Slack notifications"
+    >
+      <InputArray
+        accessorKey="channel"
+        addItemLabel="Add channel"
+        description="We’ll send alerts directly to these channels."
+        {formState}
+        id="slackChannels"
+        label="Channels"
+        placeholder="# Enter a Slack channel name"
+      />
+      <InputArray
+        accessorKey="user"
+        addItemLabel="Add user"
+        description="We’ll alert them with direct messages in Slack."
+        {formState}
+        id="slackEmails"
+        label="Users"
+        placeholder="Enter an email address"
+      />
+    </FormSection>
+  {/if}
   <FormSection
     bind:enabled={$form["enableEmailNotification"]}
     description="We’ll email alerts to these addresses. Make sure they have access to your project."
