@@ -202,6 +202,17 @@ button {
   @apply ui-copy;
 }
 
+
+
+* {
+  pointer-events: none;
+
+}
+
+a, button, input, textarea, .editor {
+  pointer-events: auto;
+}
+
 body {
   background-color: white;
   font-family: "Inter";

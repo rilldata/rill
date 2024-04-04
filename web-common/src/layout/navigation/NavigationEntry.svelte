@@ -9,7 +9,7 @@
   import { createCommandClickAction } from "../../lib/actions/command-click-action";
   import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { emitNavigationTelemetry } from "./navigation-utils";
-
+  import { modifiedClick } from "@rilldata/web-common/lib/actions/modified-click";
   export let name: string;
   export let href: string;
   export let open = false;
@@ -56,22 +56,22 @@
   <svelte:element
     this={open && expandable ? "button" : "a"}
     role="link"
-    class="clickable-text"
+    class="clickable-text truncate"
     class:expandable
     class:open
     tabindex={open ? -1 : 0}
     href={open ? undefined : href}
-    use:shiftClickAction
-    use:commandClickAction
-    on:command-click
+    aria-label={name}
+    data-tooltip-side="bottom"
     on:mousedown={handleMouseDown}
-    on:shift-click={shiftClickHandler}
-    on:click={handleClick}
+    use:modifiedClick={{
+      click: [handleClick, "Open in workspace"],
+      shift: [shiftClickHandler, "Copy name to clipboard"],
+    }}
   >
     <Tooltip distance={8}>
-      <div class="truncate">
-        {name}
-      </div>
+      <span class="truncate">{name}</span>
+
       {#if $$slots["icon"]}
         <span class="text-gray-400" style:width="1em" style:height="1em">
           <slot name="icon" />

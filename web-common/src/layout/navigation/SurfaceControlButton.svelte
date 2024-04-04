@@ -28,16 +28,16 @@
   }}
   use:portal
 >
-  <Tooltip location="bottom" alignment="start" distance={12} bind:active>
-    {#if navOpen}
-      <HideLeftSidebar size="18px" />
-    {:else}
-      <SurfaceView size="16px" mode={"hamburger"} />
-    {/if}
-    <TooltipContent slot="tooltip-content">
+  <!-- <Tooltip location="bottom" alignment="start" distance={12} bind:active> -->
+  {#if navOpen}
+    <HideLeftSidebar size="18px" />
+  {:else}
+    <SurfaceView size="16px" mode={"hamburger"} />
+  {/if}
+  <!-- <TooltipContent slot="tooltip-content">
       {label}
     </TooltipContent>
-  </Tooltip>
+  </Tooltip> -->
 </button>
 
 <style lang="postcss">
