@@ -79,7 +79,13 @@
                     />
                   {/if}
                 </svelte:fragment>
-                <TableMenuItems slot="menu-items" {fullyQualifiedTableName} />
+                <TableMenuItems
+                  slot="menu-items"
+                  connector={olapConnector}
+                  database={tableInfo.database}
+                  databaseSchema={tableInfo.databaseSchema ?? ""}
+                  table={tableInfo.name ?? ""}
+                />
               </NavigationEntry>
             </li>
           {/each}
