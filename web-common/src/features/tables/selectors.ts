@@ -1,5 +1,5 @@
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-import { QueryObserverResult } from "@tanstack/svelte-query";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import {
   V1OLAPListTablesResponse,
@@ -7,7 +7,7 @@ import {
   createConnectorServiceOLAPListTables,
   createRuntimeServiceGetInstance,
 } from "../../runtime-client";
-import { HTTPError } from "../../runtime-client/fetchWrapper";
+import type { HTTPError } from "../../runtime-client/fetchWrapper";
 import {
   ResourceKind,
   useFilteredResourceNames,
