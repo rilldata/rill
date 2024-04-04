@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";

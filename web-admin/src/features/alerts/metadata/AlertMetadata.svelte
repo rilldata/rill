@@ -11,7 +11,6 @@
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
-  import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
