@@ -63,13 +63,14 @@
     href={open ? undefined : href}
     aria-label={name}
     data-tooltip-side="bottom"
+    data-tooltip
     on:mousedown={handleMouseDown}
     use:modifiedClick={{
       click: [handleClick, "Open in workspace"],
       shift: [shiftClickHandler, "Copy name to clipboard"],
     }}
   >
-    <span class="truncate">{name}</span>
+    <span class="truncate pointer-events-none">{name}</span>
 
     {#if $$slots["icon"]}
       <span class="text-gray-400" style:width="1em" style:height="1em">

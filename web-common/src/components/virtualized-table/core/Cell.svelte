@@ -143,6 +143,7 @@
     <button
       aria-label={label ?? tooltipValue}
       data-tooltip-side="top"
+      data-tooltip
       data-suppress={suppressTooltip || !isClipboardApiSupported()}
       class="
           {isTextColumn ? 'text-left' : 'text-right'}

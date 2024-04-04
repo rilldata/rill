@@ -1,5 +1,6 @@
 <script lang="ts">
   import { debounce } from "../lib/create-debouncer";
+  import { getConnectorServiceBigQueryListTablesQueryKey } from "../runtime-client";
   import GlobalTooltip from "./GlobalTooltip.svelte";
   import type { Side, Align } from "./GlobalTooltip.svelte";
 
@@ -15,6 +16,17 @@
 
   const debouncedHandleTooltip = debounce(handleTooltip, 80);
 
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (
+        mutation.target instanceof HTMLElement &&
+        mutation.target.getAttribute("data-suppress") === "true"
+      ) {
+        reset();
+      }
+    });
+  });
+
   function handleTooltip(
     e: MouseEvent & {
       currentTarget: EventTarget & Window;
@@ -22,6 +34,9 @@
   ) {
     if (!(e.target instanceof HTMLElement) || e.target === anchorElement)
       return;
+
+    // Temporary guard so the system can exist simultaneously with the old one
+    if (!e.target.hasAttribute("data-tooltip")) return;
 
     if (e.target.getAttribute("data-suppress") === "true") return;
 
@@ -41,6 +56,10 @@
 
     anchorElement = e.target;
 
+    observer.observe(anchorElement, {
+      attributeFilter: ["data-suppress"],
+    });
+
     const onMouseLeave = () => {
       anchorElement?.removeEventListener("mouseleave", onMouseLeave);
 
@@ -51,6 +70,7 @@
   }
 
   function reset() {
+    observer.disconnect();
     label = null;
     anchorElement = null;
     shortcuts = [];

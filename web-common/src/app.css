@@ -202,8 +202,10 @@ button {
   @apply ui-copy;
 }
 
-
-
+svg {
+  pointer-events: none;
+}
+/* 
 * {
   pointer-events: none;
 
@@ -211,7 +213,7 @@ button {
 
 a, button, input, textarea, .editor {
   pointer-events: auto;
-}
+} */
 
 body {
   background-color: white;

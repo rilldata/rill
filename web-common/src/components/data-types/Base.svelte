@@ -5,7 +5,9 @@
   $: color = dark ? "" : "text-gray-900";
 </script>
 
-<span class=" whitespace-nowrap inline-block {classes} {color} break-normal">
+<span
+  class="pointer-events-none whitespace-nowrap inline-block {classes} {color} break-normal"
+>
   {#if isNull}
     <span style:font-size=".925em" class="opacity-50 italic">no data</span>
   {:else}
