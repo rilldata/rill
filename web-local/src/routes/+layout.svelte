@@ -8,7 +8,13 @@
   initializeNodeStoreContexts();
 
   addViewportListener();
+
+  function handleTooltip(event: MouseEvent) {
+    console.log(event);
+  }
 </script>
+
+<svelte:window on:mousemove={handleTooltip} />
 
 <RillTheme>
   <slot />
