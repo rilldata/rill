@@ -21,9 +21,9 @@
     table === undefined
       ? undefined
       : createQueryServiceTableColumns(instanceId, table, {
-          ...(connector !== undefined && { connector }),
-          ...(database !== undefined && { database }),
-          ...(databaseSchema !== undefined && { databaseSchema }),
+          connector: connector,
+          database: database,
+          databaseSchema: databaseSchema,
         });
 
   $: profileColumns =
@@ -35,9 +35,9 @@
     table === undefined
       ? undefined
       : createQueryServiceTableRows(instanceId, table, {
-          ...(connector !== undefined && { connector }),
-          ...(database !== undefined && { database }),
-          ...(databaseSchema !== undefined && { databaseSchema }),
+          connector: connector,
+          database: database,
+          databaseSchema: databaseSchema,
           limit,
         });
 
