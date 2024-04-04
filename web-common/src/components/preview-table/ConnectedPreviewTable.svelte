@@ -8,9 +8,9 @@
   import { onMount } from "svelte";
   import { runtime } from "../../runtime-client/runtime-store";
 
-  export let connector: string | undefined = "duckdb";
-  export let database: string | undefined = undefined;
-  export let databaseSchema: string | undefined = undefined;
+  export let connector: string;
+  export let database: string | undefined;
+  export let databaseSchema: string | undefined;
   export let table: string;
   export let limit = 150;
   export let loading = false;

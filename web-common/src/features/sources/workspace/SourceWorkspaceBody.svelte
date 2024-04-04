@@ -34,6 +34,8 @@
   $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
+  $: table = $sourceQuery?.data?.source?.state?.table as string;
+  $: connector = $sourceQuery?.data?.source?.spec?.sinkConnector as string;
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
@@ -51,7 +53,10 @@
   <WorkspaceTableContainer fade={isSourceUnsaved}>
     {#if !$allErrors?.length}
       <ConnectedPreviewTable
-        table={$sourceQuery?.data?.source?.state?.table}
+        {connector}
+        database={undefined}
+        databaseSchema={undefined}
+        {table}
         loading={resourceIsLoading($sourceQuery?.data)}
       />
     {:else if $allErrors[0].message}
