@@ -26,7 +26,6 @@
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import { derived } from "svelte/store";
-  import { COLUMN_PROFILE_CONFIG } from "../../../layout/config";
   import { getTableReferences } from "../../models/utils/get-table-references";
   import { getMatchingReferencesAndEntries } from "../../models/workspace/inspector/utils";
   import WithModelResultTooltip from "../../models/workspace/inspector/WithModelResultTooltip.svelte";
@@ -37,7 +36,7 @@
   export let source: V1SourceV2 | undefined = undefined;
   export let model: V1ModelV2 | undefined = undefined;
   export let sourceIsReconciling: boolean;
-  export let containerWidth = 0;
+
   export let isEmpty = false;
   export let hasErrors: boolean;
   export let showReferences = true;
@@ -173,10 +172,8 @@
               {:else if rollup !== 1}
                 {formatBigNumberPercentage(rollup)}
                 of source rows
-              {:else}No change in row
-                {containerWidth > COLUMN_PROFILE_CONFIG.hideRight
-                  ? "count"
-                  : "ct."}
+              {:else}
+                No change in row count
               {/if}
             </p>
 
@@ -209,21 +206,16 @@
           <WithModelResultTooltip modelHasError={hasErrors}>
             <div class:font-normal={hasErrors} class:text-gray-500={hasErrors}>
               {#if columnDelta > 0}
-                {`${formatInteger(columnDelta)} column${
-                  columnDelta !== 1 ? "s" : ""
-                } added`}
+                {formatInteger(columnDelta)}
+                {columnDelta === 1 ? "column" : "columns"} added
               {:else if columnDelta < 0}
-                {`${formatInteger(-columnDelta)} column${
-                  -columnDelta !== 1 ? "s" : ""
-                } dropped`}
-              {:else if columnDelta === 0}
-                No change in column count
+                {formatInteger(-columnDelta)}
+                {-columnDelta === 1 ? "column" : "columns"} dropped
               {:else}
                 No change in column count
               {/if}
             </div>
 
-            <!-- tooltip content -->
             <svelte:fragment slot="tooltip-title">Column diff</svelte:fragment>
             <svelte:fragment slot="tooltip-description">
               The difference in column counts between the sources and model.

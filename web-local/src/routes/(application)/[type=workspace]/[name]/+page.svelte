@@ -2,12 +2,15 @@
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
-  import SourceWorkspaceHeader from "@rilldata/web-common/features/sources/workspace/SourceWorkspaceHeader.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
+  import { createRuntimeServiceRefreshAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { fade } from "svelte/transition";
+  import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
+  import SourceCTAs from "@rilldata/web-common/features/sources/workspace/SourceCTAs.svelte";
   import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -45,9 +48,11 @@
   import type { Writable } from "svelte/store";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { slide } from "svelte/transition";
+  import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
 
   const QUERY_DEBOUNCE_TIME = 400;
 
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const updateFile = createRuntimeServicePutFile();
 
   const queryHighlight = getContext<Writable<QueryHighlightState>>(
@@ -67,6 +72,7 @@
   $: assetName = $page.params.name;
   $: type = $page.params.type as "model" | "source";
   $: entity = type === "model" ? EntityType.Model : EntityType.Table;
+  $: verb = type === "source" ? "Ingested" : "Computed";
 
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
@@ -205,6 +211,17 @@
   function handleCancel() {
     interceptedUrl = null;
   }
+
+  function formatRefreshedOn(refreshedOn: string) {
+    const date = new Date(refreshedOn);
+    return date.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+  }
 </script>
 
 <svelte:head>
@@ -222,26 +239,57 @@
   </div>
 {:else}
   <WorkspaceContainer>
-    <SourceWorkspaceHeader
+    <WorkspaceHeader
       slot="header"
-      {type}
-      {assetName}
-      {refreshedOn}
+      titleInput={assetName}
+      showTableToggle
       {hasUnsavedChanges}
-      {resourceIsReconciling}
-      {isLocalFileConnector}
-      hasErrors={$hasErrors}
-      on:save-source={save}
-      on:revert-source={revert}
-      on:refresh-source={refresh}
       on:change={handleNameChange}
-      on:replace-source={replaceSource}
-      on:create-model={handleCreateModelFromSource}
-    />
+    >
+      <svelte:fragment slot="workspace-controls">
+        <p
+          class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+          transition:fade={{ duration: 200 }}
+        >
+          {#if $refreshSourceMutation.isLoading || !refreshedOn}
+            Refreshing...
+          {:else}
+            {verb} on {formatRefreshedOn(refreshedOn)}
+          {/if}
+        </p>
+      </svelte:fragment>
+
+      <svelte:fragment slot="cta" let:width>
+        {@const collapse = width < 800}
+
+        <div class="flex gap-x-2 items-center">
+          {#if type === "source"}
+            <SourceCTAs
+              {hasUnsavedChanges}
+              {collapse}
+              hasErrors={$hasErrors}
+              {isLocalFileConnector}
+              isReconciling={resourceIsReconciling}
+              on:save-source={save}
+              on:revert-source={revert}
+              on:refresh-source={refresh}
+              on:replace-source={replaceSource}
+              on:create-model={handleCreateModelFromSource}
+            />
+          {:else}
+            <ModelWorkspaceCtAs
+              {collapse}
+              modelHasError={$hasErrors}
+              modelName={assetName}
+            />
+          {/if}
+        </div>
+      </svelte:fragment>
+    </WorkspaceHeader>
 
     <div
-      class="editor-pane size-full overflow-hidden flex flex-col"
       slot="body"
+      class="editor-pane size-full overflow-hidden flex flex-col"
     >
       <WorkspaceEditorContainer>
         {#key assetName}

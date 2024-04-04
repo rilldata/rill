@@ -67,8 +67,7 @@
 
 <style lang="postcss">
   button,
-  a,
-  div {
+  a {
     @apply flex text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit select-none;

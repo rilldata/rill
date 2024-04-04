@@ -7,10 +7,12 @@
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
 
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
+  export let showTableToggle = false;
   export let hasUnsavedChanges = false;
 
   let width: number;
@@ -20,6 +22,7 @@
   $: context = $page.url.pathname;
   $: workspaceLayout = workspaces.get(context);
   $: visible = workspaceLayout.inspector.visible;
+  $: tableVisible = workspaceLayout.table.visible;
 </script>
 
 <header class="slide" bind:clientWidth={width}>
@@ -60,6 +63,19 @@
 
   <div class="flex items-center mr-4 flex-none">
     <slot name="workspace-controls" {width} />
+
+    {#if showTableToggle}
+      <IconButton on:click={workspaceLayout.table.toggle}>
+        <span class="text-gray-500">
+          <HideBottomPane size="18px" />
+        </span>
+        <svelte:fragment slot="tooltip-content">
+          <SlidingWords active={$tableVisible} reverse>
+            results preview
+          </SlidingWords>
+        </svelte:fragment>
+      </IconButton>
+    {/if}
 
     {#if showInspectorToggle}
       <IconButton on:click={workspaceLayout.inspector.toggle}>

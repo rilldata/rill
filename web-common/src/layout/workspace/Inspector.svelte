@@ -11,7 +11,7 @@
   $: visible = workspace.inspector.visible;
 </script>
 
-<div
+<aside
   class="inspector-wrapper"
   class:closed={!$visible}
   class:resizing
@@ -29,7 +29,7 @@
   <div class="inner" style:width="{$width}px">
     <slot />
   </div>
-</div>
+</aside>
 
 <style lang="postcss">
   .inspector-wrapper {
