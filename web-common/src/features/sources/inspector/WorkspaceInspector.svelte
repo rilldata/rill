@@ -1,9 +1,6 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
-  import {
-    ColumnSummary,
-    getSummaries,
-  } from "@rilldata/web-common/components/column-profile/queries";
+  import { getSummaries } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
@@ -22,7 +19,6 @@
     V1ModelV2,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
-  import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -42,16 +38,12 @@
   export let model: V1ModelV2 | undefined = undefined;
   export let sourceIsReconciling: boolean;
   export let containerWidth = 0;
-  export let isEmpty: boolean = false;
+  export let isEmpty = false;
   export let hasErrors: boolean;
+  export let showReferences = true;
+  export let showSummaryTitle = false;
 
   let showColumns = true;
-  // let rollup: number;
-  // let rowCount: string;
-  // let columnCount: string;
-  // let nullPercentage: number | undefined;
-  // let summaries: Readable<Array<ColumnSummary>>;
-  // let totalNulls: number | undefined = undefined;
 
   $: instanceId = $runtime.instanceId;
 
@@ -99,7 +91,6 @@
     model && getTableReferences(model?.spec?.sql ?? "");
 
   $: getAllSources = useSources(instanceId);
-
   $: getAllModels = useModels(instanceId);
 
   $: allSources = $getAllSources?.data ?? [];
@@ -163,7 +154,7 @@
       {source ? "Source" : "Model"} is empty.
     </div>
   {:else if source || model}
-    <InspectorSummary {rowCount} {columnCount}>
+    <InspectorSummary {rowCount} {columnCount} showTitle={showSummaryTitle}>
       <svelte:fragment slot="row-header">
         {#if source}
           <p>
@@ -244,7 +235,7 @@
 
     <hr />
 
-    {#if referencedThings?.length}
+    {#if showReferences && referencedThings?.length}
       <References modelHasError={hasErrors} {referencedThings} />
       <hr />
     {/if}
@@ -255,7 +246,7 @@
           tooltipText="available columns"
           bind:active={showColumns}
         >
-          Columns
+          {model ? "Model columns" : "Source columns"}
         </CollapsibleSectionTitle>
       </div>
 

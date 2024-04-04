@@ -48,8 +48,10 @@
 {#if modelName && !$modelQuery?.isError && isValidModel && entry}
   <WorkspaceInspector
     hasErrors={false}
+    showReferences={false}
     sourceIsReconciling={false}
     hasUnsavedChanges={false}
+    showSummaryTitle
     model={entry?.model}
     tableName={modelName}
   />
