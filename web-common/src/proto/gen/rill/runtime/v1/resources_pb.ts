@@ -1745,7 +1745,7 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 9;
+   * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
 
@@ -1770,7 +1770,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 9, name: "notifiers", kind: "message", T: Notifier, repeated: true },
+    { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -2030,32 +2030,32 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * @generated from field: bool notify_on_recover = 14;
+   * @generated from field: bool notify_on_recover = 15;
    */
   notifyOnRecover = false;
 
   /**
-   * @generated from field: bool notify_on_fail = 15;
+   * @generated from field: bool notify_on_fail = 16;
    */
   notifyOnFail = false;
 
   /**
-   * @generated from field: bool notify_on_error = 16;
+   * @generated from field: bool notify_on_error = 17;
    */
   notifyOnError = false;
 
   /**
-   * @generated from field: bool renotify = 17;
+   * @generated from field: bool renotify = 18;
    */
   renotify = false;
 
   /**
-   * @generated from field: uint32 renotify_after_seconds = 18;
+   * @generated from field: uint32 renotify_after_seconds = 19;
    */
   renotifyAfterSeconds = 0;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 19;
+   * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 21;
    */
   notifiers: Notifier[] = [];
 
@@ -2085,12 +2085,12 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
-    { no: 14, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 15, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 16, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 18, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 19, name: "notifiers", kind: "message", T: Notifier, repeated: true },
+    { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 21, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
