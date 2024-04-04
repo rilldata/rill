@@ -3,20 +3,22 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
-  import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
+  import {
+    duplicateSourceName,
+    sourceImportedName,
+  } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
+  import AddSourceModal from "../features/sources/modal/AddSourceModal.svelte";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
+  import { addSourceModal } from "../features/sources/modal/add-source-visibility";
   import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
   import BasicLayout from "./BasicLayout.svelte";
   import { importOverlayVisible, overlay } from "./overlay-store";
-  import AddSourceModal from "../features/sources/modal/AddSourceModal.svelte";
-  import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
-  import { addSourceModal } from "../features/sources/modal/add-source-visibility";
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
@@ -70,7 +72,7 @@
   {#if $addSourceModal || $duplicateSourceName}
     <AddSourceModal />
   {/if}
-  <SourceImportedModal open={!!$sourceImportedName} />
+  <SourceImportedModal source={$sourceImportedName} />
 
   <div
     class="index-body absolute w-screen h-screen"

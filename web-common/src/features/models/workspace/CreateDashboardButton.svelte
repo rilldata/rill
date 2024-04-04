@@ -17,13 +17,14 @@
   export let collapse = false;
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: connector = $modelQuery.data?.model?.spec?.connector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   $: createDashboardFromModel = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
-    "duckdb",
+    connector as string,
     "",
     "",
     modelName,

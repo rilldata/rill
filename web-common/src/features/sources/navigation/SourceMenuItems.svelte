@@ -59,6 +59,7 @@
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
+  $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
   $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
@@ -74,7 +75,7 @@
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
-    "duckdb",
+    sinkConnector as string,
     "",
     "",
     sourceName,

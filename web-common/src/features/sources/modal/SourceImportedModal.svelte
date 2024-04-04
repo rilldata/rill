@@ -5,20 +5,31 @@
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import type { V1Resource } from "../../../runtime-client";
+  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useSource } from "../selectors";
 
-  export let open: boolean;
+  export let source: string | null;
+
+  $: runtimeInstanceId = $runtime.instanceId;
+  let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+  $: if (source) {
+    sourceQuery = useSource(runtimeInstanceId, source);
+  }
+  $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
 
   $: createDashboardFromTable =
-    $sourceImportedName !== null
+    source !== null
       ? useCreateDashboardFromTableUIAction(
           $runtime.instanceId,
-          "duckdb",
+          sinkConnector as string,
           "",
           "",
-          $sourceImportedName,
+          source,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
         )
@@ -29,7 +40,7 @@
   }
 
   function goToSource() {
-    goto(`/source/${$sourceImportedName}`);
+    goto(`/source/${source}`);
     close();
   }
 
@@ -43,7 +54,7 @@
   }
 </script>
 
-<Dialog on:close={close} {open}>
+<Dialog on:close={close} open={!!source}>
   <div class="flex flex-auto gap-x-2.5" slot="title">
     <div class="w-6 m-auto ml-0 mr-0">
       <CheckCircleNew className="fill-primary-500" size="24px" />
@@ -53,9 +64,8 @@
   <div class="flex flex-auto gap-x-2.5" slot="body">
     <div class="w-6" />
     <div class="text-slate-500">
-      <span class="font-mono text-slate-800 break-all"
-        >{$sourceImportedName}</span
-      > has been ingested. What would you like to do next?
+      <span class="font-mono text-slate-800 break-all">{source}</span> has been ingested.
+      What would you like to do next?
     </div>
   </div>
   <div class="flex flex-row-reverse gap-x-2 mt-4" slot="footer">
