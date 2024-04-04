@@ -21,20 +21,5 @@ export function extractNotifier<Notifier extends keyof NotifierPropsMap>(
   if (!notifiers) return undefined;
   const notifier = notifiers.find((n) => n.connector === name);
   if (!notifier?.properties) return undefined;
-
-  switch (name) {
-    case "email":
-      return {
-        recipients: notifier.properties.recipients ?? [],
-      } as NotifierPropsMap[Notifier];
-
-    case "slack":
-      return {
-        users: notifier.properties.recipients ?? [],
-        channels: notifier.properties.recipients ?? [],
-        webhooks: notifier.properties.recipients ?? [],
-      } as NotifierPropsMap[Notifier];
-  }
-
   return notifier.properties as NotifierPropsMap[Notifier];
 }

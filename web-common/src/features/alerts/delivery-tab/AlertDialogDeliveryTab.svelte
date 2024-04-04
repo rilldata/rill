@@ -47,11 +47,11 @@
         placeholder="# Enter a Slack channel name"
       />
       <InputArray
-        accessorKey="user"
+        accessorKey="email"
         addItemLabel="Add user"
         description="We’ll alert them with direct messages in Slack."
         {formState}
-        id="slackEmails"
+        id="slackUsers"
         label="Users"
         placeholder="Enter an email address"
       />
