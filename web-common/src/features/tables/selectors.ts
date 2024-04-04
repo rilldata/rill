@@ -1,10 +1,13 @@
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+import { QueryObserverResult } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import {
+  V1OLAPListTablesResponse,
   V1TableInfo,
   createConnectorServiceOLAPListTables,
   createRuntimeServiceGetInstance,
 } from "../../runtime-client";
+import { HTTPError } from "../../runtime-client/fetchWrapper";
 import {
   ResourceKind,
   useFilteredResourceNames,
@@ -27,6 +30,34 @@ export function useTables(
   connectorInstanceId: string | undefined,
   olapConnector: string | undefined,
 ): Readable<V1TableInfo[]> {
+  function setTables(
+    sources: QueryObserverResult<string[], HTTPError>,
+    models: QueryObserverResult<string[], HTTPError>,
+    tables: QueryObserverResult<V1OLAPListTablesResponse, HTTPError>,
+    set: (value: unknown) => void,
+  ) {
+    if (!sources.data || !models.data || !tables.data || !tables.data.tables) {
+      set([]);
+      return;
+    }
+
+    const sourceNames = sources.data;
+    const modelNames = models.data;
+    // Filter out Rill-managed tables (Sources and Models)
+    const filteredTables = tables.data.tables.filter((table) => {
+      const tableName = table.name as string;
+      return (
+        !sourceNames.includes(tableName) && !modelNames.includes(tableName)
+      );
+    });
+
+    set(filteredTables);
+  }
+
+  // Debounce the table list calculation to make sure quick changes and invalidations do not cause a flicker.
+  // These quick changes can happen when a table/model is renamed.
+  const debouncedSetTables = debounce(setTables, 450);
+
   return derived(
     [
       useFilteredResourceNames(runtimeInstanceId, ResourceKind.Source),
@@ -44,30 +75,7 @@ export function useTables(
       ),
     ],
     ([$sources, $models, $tables], set) => {
-      // add a debounce to make sure quick changes and invalidations do not cause a flicker.
-      // these quick changes can happen when a table/model is renamed
-      debounce(() => {
-        if (
-          !$sources.data ||
-          !$models.data ||
-          !$tables.data ||
-          !$tables.data.tables
-        ) {
-          set([]);
-          return;
-        }
-
-        // Filter out Rill-managed tables (Sources and Models)
-        const sourceNames = $sources.data;
-        const modelNames = $models.data;
-        const filteredTables = $tables.data.tables?.filter(
-          (table) =>
-            !sourceNames.includes(table.name as string) &&
-            !modelNames.includes(table.name as string),
-        );
-
-        set(filteredTables);
-      }, 500);
+      debouncedSetTables($sources, $models, $tables, set);
     },
   );
 }

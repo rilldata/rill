@@ -1,35 +1,17 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { flip } from "svelte/animate";
-  import { writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
-  import { debounce } from "../../lib/create-debouncer";
-  import {
-    V1TableInfo,
-    createRuntimeServiceGetInstance,
-  } from "../../runtime-client";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import TableMenuItems from "./TableMenuItems.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
   import { useTables } from "./selectors";
 
   let showTables = true;
-
-  // Debounce to prevent flickering
-  const debouncedTables = writable<V1TableInfo[]>([]);
-  const setDebouncedTables = debounce(
-    (tables: V1TableInfo[]) => debouncedTables.set(tables),
-    200,
-  );
-
-  $: if ($tables) {
-    setDebouncedTables($tables);
-  }
-
-  $: hasAssets = $debouncedTables.length > 0;
 
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: connectorInstanceId = $instance.data?.instance?.instanceId;
@@ -40,6 +22,7 @@
     connectorInstanceId,
     olapConnector,
   );
+  $: hasAssets = $tables?.length > 0;
 </script>
 
 {#if hasAssets}
@@ -48,8 +31,8 @@
 
     {#if showTables}
       <ol transition:slide={{ duration }}>
-        {#if $debouncedTables.length > 0}
-          {#each $debouncedTables as table (table)}
+        {#if $tables.length > 0}
+          {#each $tables as table (table)}
             {@const fullyQualifiedTableName = table.database + "." + table.name}
             <li
               animate:flip={{ duration }}
