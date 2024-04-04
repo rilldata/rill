@@ -15,6 +15,9 @@
     $sourceImportedName !== null
       ? useCreateDashboardFromTableUIAction(
           $runtime.instanceId,
+          "duckdb",
+          "",
+          "",
           $sourceImportedName,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,

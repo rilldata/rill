@@ -9,6 +9,8 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -19,8 +21,6 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel, useModelRoutes } from "../selectors";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
   export let modelName: string;
 
@@ -45,6 +45,9 @@
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
+    "duckdb",
+    "",
+    "",
     modelName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,

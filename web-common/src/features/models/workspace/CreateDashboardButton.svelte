@@ -23,6 +23,9 @@
 
   $: createDashboardFromModel = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
+    "duckdb",
+    "",
+    "",
     modelName,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
