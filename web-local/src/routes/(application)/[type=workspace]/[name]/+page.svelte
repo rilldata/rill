@@ -1,7 +1,7 @@
 <script lang="ts">
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import SourceInspector from "@rilldata/web-common/features/sources/inspector/SourceInspector.svelte";
+  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import SourceWorkspaceHeader from "@rilldata/web-common/features/sources/workspace/SourceWorkspaceHeader.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
@@ -9,7 +9,6 @@
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
   import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
-  import ModelInspector from "@rilldata/web-common/features/models/workspace/inspector/ModelInspector.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
@@ -295,22 +294,17 @@
     </div>
 
     <svelte:fragment slot="inspector">
-      {#if tableName}
-        {#if type === "source"}
-          <SourceInspector
-            {tableName}
-            {hasUnsavedChanges}
-            source={resource}
-            sourceIsReconciling={resourceIsReconciling}
-          />
-        {:else}
-          <ModelInspector
-            modelName={assetName}
-            hasErrors={$hasErrors}
-            {resourceIsReconciling}
-            modelIsEmpty={!blob.length}
-          />
-        {/if}
+      {#if tableName && resource}
+        <WorkspaceInspector
+          {tableName}
+          hasErrors={$hasErrors}
+          {hasUnsavedChanges}
+          {...{
+            [type]: resource,
+          }}
+          isEmpty={!blob.length}
+          sourceIsReconciling={resourceIsReconciling}
+        />
       {/if}
     </svelte:fragment>
   </WorkspaceContainer>
