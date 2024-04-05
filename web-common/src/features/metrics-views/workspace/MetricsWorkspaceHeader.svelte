@@ -14,32 +14,40 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
 
-  export let metricsDefName;
+  export let metricsDefName: string;
   export let showInspectorToggle = true;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(VALID_NAME_PATTERN)) {
+  const onChangeCallback = async (
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) => {
+    if (!e.currentTarget.value.match(VALID_NAME_PATTERN)) {
       notifications.send({
         message: INVALID_NAME_MESSAGE,
       });
-      e.target.value = metricsDefName; // resets the input
+      e.currentTarget.value = metricsDefName; // resets the input
       return;
     }
     if (
-      isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data ?? [])
+      isDuplicateName(
+        e.currentTarget.value,
+        metricsDefName,
+        $allNamesQuery.data ?? [],
+      )
     ) {
       notifications.send({
-        message: `Name ${e.target.value} is already in use`,
+        message: `Name ${e.currentTarget.value} is already in use`,
       });
-      e.target.value = metricsDefName; // resets the input
+      e.currentTarget.value = metricsDefName; // resets the input
       return;
     }
 
     try {
-      const toName = e.target.value;
+      const toName = e.currentTarget.value;
       const type = EntityType.MetricsDefinition;
       await renameFileArtifact(
         runtimeInstanceId,
@@ -47,21 +55,17 @@
         getFileAPIPathFromNameAndType(toName, type),
         type,
       );
-      goto(`/dashboard/${toName}/edit`, { replaceState: true });
+      await goto(`/dashboard/${toName}/edit`, { replaceState: true });
     } catch (err) {
       console.error(err.response.data.message);
     }
   };
-
-  $: titleInput = metricsDefName;
 </script>
 
 <WorkspaceHeader
-  {...{
-    titleInput,
-    onChangeCallback,
-    showInspectorToggle,
-  }}
+  titleInput={metricsDefName}
+  on:change={onChangeCallback}
+  {showInspectorToggle}
 >
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

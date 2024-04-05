@@ -77,7 +77,9 @@
               queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
+              emailRecipients: values.recipients
+                .map((r) => r.email)
+                .filter(Boolean),
             },
           },
         });

@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ## Operational vs. Traditional BI
 
-The distinction between operational and business intelligence is analogous to the distinction between fast and slow thinking, as characterized by psychologist Daniel Kahneman in his paper Thinking, Fast and Slow. One system operates quickly and automatically for simple decisions and the other leverages slow and effortful deliberation for complex decisions. 
+The distinction between operational and business intelligence is analogous to the distinction between fast and slow thinking, as characterized by the late psychologist Daniel Kahneman in his book __Thinking, Fast and Slow__. One system operates quickly and automatically for simple decisions and the other leverages slow and effortful deliberation for complex decisions. 
 
 Ultimately, the output of operational and business intelligence are decisions. Operational intelligence fuels fast, frequent decisions on real-time and near-time data by hands-on operators. Business intelligence drives complex decisions that occur daily or weekly, on fairly complete data sets. 
 

@@ -1,12 +1,13 @@
 <script lang="ts">
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-
+  import { page } from "$app/stores";
   import HorizontalSplitter from "@rilldata/web-common/layout/workspace/HorizontalSplitter.svelte";
 
   export let fade = false;
 
-  $: workspaceLayout = $workspaces;
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
   $: tableHeight = workspaceLayout.table.height;
 </script>
 

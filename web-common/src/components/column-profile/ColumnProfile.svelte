@@ -11,7 +11,6 @@
   import { defaultSort, sortByName, sortByNullity } from "./utils";
 
   export let containerWidth = 0;
-  // const queryClient = useQueryClient();
   export let objectName: string;
   export let indentLevel = 0;
 

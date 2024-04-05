@@ -60,6 +60,7 @@ export async function invalidateAllMetricsViews(
 ) {
   // First, refetch the resource entries (which returns the available dimensions and measures)
   await queryClient.refetchQueries({
+    type: "active",
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
       query.queryKey[0].startsWith(`/v1/instances/${instanceId}/resource`),

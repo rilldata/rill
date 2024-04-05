@@ -172,6 +172,25 @@ service RuntimeService {
     };
   }
 
+  // Connectors
+
+  // ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+  // including their configuration specs and the capabilities they support.
+  rpc ListConnectorDrivers(ListConnectorDriversRequest) returns (ListConnectorDriversResponse) {
+    option (google.api.http) = {get: "/v1/connectors/meta"};
+  }
+
+  // AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+  rpc AnalyzeConnectors(AnalyzeConnectorsRequest) returns (AnalyzeConnectorsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/analyze"};
+  }
+
+  // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+  // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+  rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
+  }
+
   // DEPRECATE:
 
   // Catalog
@@ -234,14 +253,6 @@ service RuntimeService {
       post: "/v1/refresh-and-reconcile",
       body: "*"
     };
-  }
-
-  // Connectors
-
-  // ListConnectors returns a description of all the connectors implemented in the runtime,
-  // including their schema and validation rules
-  rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
-    option (google.api.http) = {get: "/v1/connectors/meta"};
   }
 
   rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
@@ -632,6 +643,116 @@ message CreateTriggerRequest {
 message CreateTriggerResponse {}
 
 // **********
+// Connectors
+// **********
+
+// ConnectorDriver represents a connector driver available in the runtime.
+message ConnectorDriver {
+  // Property represents the spec of one of the driver's config properties
+  message Property {
+    // Type of the property
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      TYPE_NUMBER = 1;
+      TYPE_BOOLEAN = 2;
+      TYPE_STRING = 3;
+      TYPE_FILE = 4;
+      TYPE_INFORMATIONAL = 5;
+    }
+    // The property key
+    string key = 1;
+    // The type expected for this property
+    Type type = 2;
+    // Required is true if the field must be set
+    bool required = 3;
+    // Pretty name for the property
+    string display_name = 4;
+    // Human readable description of the field
+    string description = 5;
+    // Link to documentation for this property
+    string docs_url = 6;
+    // Additional textual explanation for use in UIs
+    string hint = 7;
+    // Default value for the property
+    string default = 8;
+    // Placeholder value for use in UIs
+    string placeholder = 9;
+    // If true, the property is a secret and should not be displayed in UIs
+    bool secret = 10;
+  }
+  // Name is the name of the connector
+  string name = 1;
+  // Properties for configuring the connector
+  repeated Property config_properties = 2;
+  // Properties that can be provided to the connector when using it as a source
+  repeated Property source_properties = 3;
+  // Pretty display name for use in UIs
+  string display_name = 4;
+  // Human readable description of the connector
+  string description = 5;
+  // Capabilities supported by the connector
+  bool implements_registry = 10;
+  bool implements_catalog = 11;
+  bool implements_repo = 12;
+  bool implements_admin = 13;
+  bool implements_ai = 14;
+  bool implements_sql_store = 15;
+  bool implements_olap = 16;
+  bool implements_object_store = 17;
+  bool implements_file_store = 18;
+  bool implements_notifier = 19;
+}
+
+// AnalyzedConnector contains information about a connector that is referenced in the project files.
+message AnalyzedConnector {
+  // Connector name
+  string name = 1;
+  // Connector driver metadata
+  ConnectorDriver driver = 2;
+  // Combined config properties for the connector
+  map<string, string> config = 3;
+  // Config properties preset by the runtime or when the instance was created
+  map<string, string> preset_config = 4;
+  // Config properties set in project YAML files
+  map<string, string> project_config = 5;
+  // Config properties set as dynamic variables
+  map<string, string> env_config = 6;
+  // True if the connector can be accessed without credentials
+  bool has_anonymous_access = 7;
+  // List of resources that appear to use the connector
+  repeated ResourceName used_by = 8;
+}
+
+// Request message for RuntimeService.ListConnectorDrivers
+message ListConnectorDriversRequest {}
+
+// Response message for RuntimeService.ListConnectorDrivers
+message ListConnectorDriversResponse {
+  repeated ConnectorDriver connectors = 1;
+}
+
+// Request message for RuntimeService.AnalyzeConnectors
+message AnalyzeConnectorsRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.AnalyzeConnectors
+message AnalyzeConnectorsResponse {
+  repeated AnalyzedConnector connectors = 1;
+}
+
+// Request message for RuntimeService.ListNotifierConnectors
+message ListNotifierConnectorsRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.ListNotifierConnectors
+message ListNotifierConnectorsResponse {
+  // Note: In this list, the Connector.config property will always be empty.
+  repeated Connector connectors = 1;
+}
+
+// **********
 // Catalog
 // **********
 
@@ -876,58 +997,6 @@ message RefreshAndReconcileResponse {
   // executing the reconciliation. If changed_paths was empty, this will include all
   // code artifacts in the repo.
   repeated string affected_paths = 2;
-}
-
-// **********
-// Connectors
-// **********
-
-// ConnectorSpec represents a connector available in the runtime.
-// It should not be confused with a source.
-message ConnectorSpec {
-  // Property represents one of the connector's config properties
-  message Property {
-    // Type represents the field type
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      TYPE_STRING = 1;
-      TYPE_NUMBER = 2;
-      TYPE_BOOLEAN = 3;
-      TYPE_INFORMATIONAL = 4;
-    }
-    // The property key
-    string key = 1;
-    // Pretty name for the property
-    string display_name = 2;
-    // Human readable description of the field
-    string description = 3;
-    // Placeholder value for use in UIs
-    string placeholder = 4;
-    // The type expected for this property
-    Type type = 5 [(validate.rules).enum.defined_only = true];
-    // Nullable is true if the field is optional
-    bool nullable = 6;
-    // Additional textual explanation for use in UIs
-    string hint = 7;
-    // Link to documentation for this property
-    string href = 8;
-  }
-  // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
-  string name = 1;
-  // Pretty display name for use in UIs
-  string display_name = 2;
-  // Human readable description of the connector
-  string description = 3;
-  // Properties accepted by the connector
-  repeated Property properties = 4;
-}
-
-// Request message for RuntimeService.ListConnectors
-message ListConnectorsRequest {}
-
-// Response message for RuntimeService.ListConnectors
-message ListConnectorsResponse {
-  repeated ConnectorSpec connectors = 1;
 }
 
 // Request message for RuntimeService.IssueDevJWT

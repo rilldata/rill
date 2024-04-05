@@ -33,9 +33,5 @@ func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 }
 
 func (c *connection) resolveLocalPath(path string) (string, error) {
-	allowHostAccess := false
-	if val, ok := c.driverConfig["allow_host_access"].(bool); ok {
-		allowHostAccess = val
-	}
-	return fileutil.ResolveLocalPath(path, c.root, allowHostAccess)
+	return fileutil.ResolveLocalPath(path, c.root, c.driverConfig.AllowHostAccess)
 }

@@ -7,13 +7,6 @@ import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
 service ConnectorService {
-  // ScanConnectors scans the artifacts for connectors and returns information about
-  // the connectors referenced in the artifacts. The information includes name,type and
-  // credentials for the connector. 
-  rpc ScanConnectors(ScanConnectorsRequest) returns (ScanConnectorsResponse) {
-    option (google.api.http) = {get: "/v1/connectors/scan"};
-  }
-
   // S3ListBuckets lists buckets accessible with the configured credentials.
   rpc S3ListBuckets(S3ListBucketsRequest) returns (S3ListBucketsResponse) {
     option (google.api.http) = {get: "/v1/s3/buckets"};
@@ -227,18 +220,4 @@ message BigQueryListTablesRequest {
 message BigQueryListTablesResponse {
   string next_page_token = 1;
   repeated string names = 2;
-}
-
-message ScanConnectorsRequest {
-  string instance_id = 1;
-}
-
-message ScanConnectorsResponse {
-  repeated ScannedConnector connectors = 1;
-}
-
-message ScannedConnector {
-  string name = 1;
-  string type = 2;
-  bool has_anonymous_access = 3; // reports whether access is present without any credentials
 }
