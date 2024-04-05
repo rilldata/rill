@@ -6,8 +6,6 @@
   import { retainFeaturesFlags } from "@rilldata/web-common/features/feature-flags";
   import RillDeveloperLayout from "@rilldata/web-common/layout/RillDeveloperLayout.svelte";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";

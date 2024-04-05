@@ -1,4 +1,5 @@
 import type { MetricsEvent } from "./MetricsTypes";
+import { runtimeUrl } from "@rilldata/web-common/runtime-client/runtime-store";
 
 const RillIntakeUser = "data-modeler";
 const RillIntakePassword =
@@ -19,7 +20,7 @@ export class RillIntakeClient implements TelemetryClient {
 
   public async fireEvent(event: MetricsEvent) {
     try {
-      const resp = await fetch(`${RILL_RUNTIME_URL}/local/track`, {
+      const resp = await fetch(`${runtimeUrl}/local/track`, {
         method: "POST",
         body: JSON.stringify(event),
         headers: {
