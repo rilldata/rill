@@ -66,11 +66,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		return nil, ErrForbidden
 	}
 
-	inst, err := s.runtime.Instance(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "failed to get instance: %s", err.Error())
-	}
-	cfg, err := inst.Config()
+	cfg, err := s.runtime.InstanceConfig(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
@@ -111,12 +107,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	inst, err := s.runtime.Instance(req.Context(), request.InstanceId)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get instance: %s", err.Error()), http.StatusNotFound)
-		return
-	}
-	cfg, err := inst.Config()
+	cfg, err := s.runtime.InstanceConfig(req.Context(), request.InstanceId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

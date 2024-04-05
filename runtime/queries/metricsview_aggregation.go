@@ -79,12 +79,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
-	// Resolve instance
-	inst, err := rt.Instance(ctx, instanceID)
-	if err != nil {
-		return err
-	}
-	cfg, err := inst.Config()
+	cfg, err := rt.InstanceConfig(ctx, instanceID)
 	if err != nil {
 		return err
 	}

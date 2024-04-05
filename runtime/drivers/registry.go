@@ -125,8 +125,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		}
 	}
 
-	// Decode variables into config.
-	// Minor optimization: Instead of calling ResolveVariables (and allocating a new map), just call Decode in on the underlying variable maps in the same order as in ResolveVariables.
+	// Decode variables into res.
+	// Minor optimization: Instead of calling ResolveVariables (which allocates a new map), just call Decode on the underlying maps in the same order as in ResolveVariables.
 	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:           &res,
 		WeaklyTypedInput: true,
