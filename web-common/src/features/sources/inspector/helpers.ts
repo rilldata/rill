@@ -10,7 +10,7 @@ export function getFileExtension(source: V1SourceV2): string {
 }
 
 export function formatConnectorType(source: V1SourceV2) {
-  switch (source?.state?.connector) {
+  switch (source?.spec?.sourceConnector) {
     case "s3":
       return "S3";
     case "gcs":
@@ -20,6 +20,6 @@ export function formatConnectorType(source: V1SourceV2) {
     case "local_file":
       return "Local file";
     default:
-      return "";
+      return source?.state?.connector ?? "";
   }
 }

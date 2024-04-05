@@ -36,9 +36,10 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/admin")
 
 var spec = drivers.Spec{
 	DisplayName: "Rill Admin",
-	ConfigProperties: []drivers.PropertySchema{
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "access_token",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},
@@ -194,6 +195,11 @@ func (h *Handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bo
 // AsSQLStore implements drivers.Handle.
 func (h *Handle) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Handle.
+func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.

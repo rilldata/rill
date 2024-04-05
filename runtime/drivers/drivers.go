@@ -21,6 +21,9 @@ var ErrNotImplemented = errors.New("driver: not implemented")
 // ErrStorageLimitExceeded indicates the driver's storage limit was exceeded.
 var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
 
+// ErrNotNotifier indicates the driver cannot be used as a Notifier.
+var ErrNotNotifier = errors.New("driver: not a notifier")
+
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 
@@ -134,6 +137,10 @@ type Handle interface {
 	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.
 	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).
 	AsTransporter(from Handle, to Handle) (Transporter, bool)
+
+	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
+	// Examples: email notifier, slack notifier.
+	AsNotifier(properties map[string]any) (Notifier, error)
 }
 
 // PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.

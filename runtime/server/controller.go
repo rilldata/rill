@@ -11,7 +11,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -228,6 +230,8 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 		return s.applySecurityPolicyMetricsView(ctx, instID, r)
 	case *runtimev1.Resource_Report:
 		return s.applySecurityPolicyReport(ctx, r)
+	case *runtimev1.Resource_Alert:
+		return s.applySecurityPolicyAlert(ctx, r)
 	default:
 		return r, true, nil
 	}
@@ -392,9 +396,76 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Res
 	}
 
 	// Allow if the user is a recipient
-	for _, recipient := range report.Spec.EmailRecipients {
-		if recipient == email {
-			return r, true, nil
+	for _, notifier := range report.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
+				if user == email {
+					return r, true, nil
+				}
+			}
+		}
+	}
+
+	// Don't allow
+	return nil, false, nil
+}
+
+// applySecurityPolicyAlert applies security policies to an alert.
+// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
+func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	alert := r.GetAlert()
+	claims := auth.GetClaims(ctx)
+
+	// Allow if the owner is accessing the alert
+	if alert.Spec.Annotations != nil && claims.Subject() == alert.Spec.Annotations["admin_owner_user_id"] {
+		return r, true, nil
+	}
+
+	// Extract admin attributes
+	var email string
+	admin := true // If no attributes are set, assume it's an admin
+	if attrs := claims.Attributes(); len(attrs) != 0 {
+		email, _ = attrs["email"].(string)
+		admin, _ = attrs["admin"].(bool)
+	}
+
+	// Allow if the user is an admin
+	if admin {
+		return r, true, nil
+	}
+
+	// Allow if the user is an email recipient
+	for _, notifier := range alert.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
+				if user == email {
+					return r, true, nil
+				}
+			}
 		}
 	}
 

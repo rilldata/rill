@@ -44,14 +44,16 @@
 
   $: metricsView = useMetricsView(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
+  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
+
+  $: pinIndex = $dashboardStore?.tdd.pinIndex;
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
   // Get labels for table headers
   $: measureLabel =
-    $metricsView?.data?.measures?.find(
-      (m) => m.name === $dashboardStore?.expandedMeasureName,
-    )?.label ?? "";
+    $metricsView?.data?.measures?.find((m) => m.name === expandedMeasureName)
+      ?.label ?? "";
 
   let dimensionLabel = "";
   $: if ($timeDimensionDataStore?.comparing === "dimension") {
@@ -143,7 +145,6 @@
   }
 
   function togglePin() {
-    const pinIndex = $dashboardStore?.pinIndex;
     let newPinIndex = -1;
 
     // Pin if some selected items are not pinned yet
@@ -213,7 +214,7 @@
       {timeFormatter}
       tableData={formattedData}
       highlightedCol={$chartInteractionColumn?.hover}
-      pinIndex={$dashboardStore?.pinIndex}
+      {pinIndex}
       scrubPos={{
         start: $chartInteractionColumn?.scrubStart,
         end: $chartInteractionColumn?.scrubEnd,

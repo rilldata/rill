@@ -188,6 +188,11 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
 // It's safe for concurrent calls, which are deduplicated.
 func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {

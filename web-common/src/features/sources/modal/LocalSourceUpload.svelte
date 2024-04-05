@@ -65,7 +65,6 @@
         await createSource(runtimeInstanceId, tableName, yaml);
         checkSourceImported(
           queryClient,
-          tableName,
           getFilePathFromNameAndType(tableName, EntityType.Table),
         );
         goto(`/source/${tableName}`);

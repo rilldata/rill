@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
@@ -25,6 +26,14 @@
 
     // Go to the logout URL, providing the login URL as a redirect
     window.location.href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
+  }
+
+  function handleAlerts() {
+    goto(`/${$page.params.organization}/${$page.params.project}/-/alerts`);
+  }
+
+  function handleReports() {
+    goto(`/${$page.params.organization}/${$page.params.project}/-/reports`);
   }
 
   const isDev = process.env.NODE_ENV === "development";
@@ -66,6 +75,8 @@
           </DropdownMenu.Sub>
         </svelte:fragment>
       </ProjectAccessControls>
+      <DropdownMenu.Item on:click={handleAlerts}>Alerts</DropdownMenu.Item>
+      <DropdownMenu.Item on:click={handleReports}>Reports</DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item on:click={handleDocumentation}>
       Documentation

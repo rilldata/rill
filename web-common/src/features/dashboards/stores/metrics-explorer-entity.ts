@@ -1,9 +1,10 @@
-import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { TDDState } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -58,19 +59,6 @@ export interface MetricsExplorerEntity {
    * not the human readable name.
    */
   leaderboardMeasureName: string;
-
-  /***
-   * The name of the measure that is currently being expanded
-   * in the Time Detailed Dimension view
-   */
-  expandedMeasureName?: string;
-
-  /**
-   * The index at which selected dimension values are pinned in the
-   * time detailed dimension view. Values above this index preserve
-   * their original order
-   */
-  pinIndex: number;
 
   /**
    * This is the sort type that will be used for the leaderboard
@@ -159,6 +147,11 @@ export interface MetricsExplorerEntity {
    * is not shown.
    */
   selectedDimensionName?: string;
+
+  /**
+   * Consolidated state for Time Dimenstion Detail view
+   */
+  tdd: TDDState;
 
   pivot: PivotState;
 

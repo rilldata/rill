@@ -46,7 +46,7 @@
 <style lang="postcss">
   .portal-item {
     @apply shadow-lg shadow-slate-300;
-    @apply z-10;
+    @apply z-50;
     @apply absolute pointer-events-none;
   }
 </style>

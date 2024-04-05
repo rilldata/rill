@@ -54,7 +54,7 @@
   // if in TDD take active measure and comparison dimension
   // If expanded leaderboard, take first dimension and active dimensions
   let dimension = "";
-  if ($dashboardStore.expandedMeasureName) {
+  if ($dashboardStore.tdd.expandedMeasureName) {
     dimension = $dashboardStore.selectedComparisonDimension ?? "";
   } else {
     dimension = $dashboardStore.selectedDimensionName ?? "";
@@ -72,7 +72,7 @@
     initialValues: {
       name: "",
       measure:
-        $dashboardStore.expandedMeasureName ??
+        $dashboardStore.tdd.expandedMeasureName ??
         $dashboardStore.leaderboardMeasureName ??
         "",
       splitByDimension: dimension,
@@ -123,11 +123,11 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
-              emailRenotify: !!values.snooze,
-              emailRenotifyAfterSeconds: values.snooze
-                ? Number(values.snooze)
-                : 0,
+              emailRecipients: values.recipients
+                .map((r) => r.email)
+                .filter(Boolean),
+              renotify: !!values.snooze,
+              renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },
           },
         });
