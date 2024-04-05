@@ -1,7 +1,5 @@
 import { writable } from "svelte/store";
 
-export const runtimeUrl = import.meta.env.DEV ? "http://localhost:9009" : "";
-
 export interface JWT {
   token: string;
   // The time at which the JWT was received. We use this to calculate the JWT's expiration time.
@@ -16,7 +14,6 @@ export interface Runtime {
 }
 
 export const runtime = writable<Runtime>({
-  host: runtimeUrl,
-  instanceId: "default",
-  jwt: undefined,
+  host: "",
+  instanceId: "",
 });
