@@ -176,6 +176,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		return nil, err
 	}
 
+	// Apply local overrides to default instance-level config (see runtime/drivers.InstanceConfig for details)
+	if opts.Variables == nil {
+		opts.Variables = make(map[string]string)
+	}
+	if _, ok := opts.Variables["rill.download_row_limit"]; !ok {
+		opts.Variables["rill.download_row_limit"] = "0" // 0 means unlimited
+	}
+
 	// Prepare connectors for the instance
 	var connectors []*runtimev1.Connector
 

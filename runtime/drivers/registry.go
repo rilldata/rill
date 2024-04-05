@@ -79,6 +79,8 @@ type InstanceConfig struct {
 	ModelDefaultMaterialize bool `mapstructure:"rill.model_default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.model_materialize_delay_seconds"`
+	// DownloadRowLimit is the row limit for interactive data exports. If set to 0, there is no limit.
+	DownloadRowLimit int64 `mapstructure:"rill.download_row_limit"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -113,6 +115,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                 i.StageChanges,
 		ModelDefaultMaterialize:      i.ModelDefaultMaterialize,
 		ModelMaterializeDelaySeconds: i.ModelMaterializeDelaySeconds,
+		DownloadRowLimit:             10000,
 	}
 
 	// Backwards compatibility: Use "__materialize_default" as alias for "rill.model_default_materialize".

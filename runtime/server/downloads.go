@@ -15,6 +15,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
@@ -65,9 +66,18 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		return nil, ErrForbidden
 	}
 
-	if s.opts.DownloadRowLimit != nil {
-		if req.Limit > *s.opts.DownloadRowLimit {
-			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", *s.opts.DownloadRowLimit)
+	inst, err := s.runtime.Instance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to get instance: %s", err.Error())
+	}
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+
+	if cfg.DownloadRowLimit != 0 {
+		if req.Limit > cfg.DownloadRowLimit {
+			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", cfg.DownloadRowLimit)
 		}
 	}
 
@@ -101,13 +111,23 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	inst, err := s.runtime.Instance(req.Context(), request.InstanceId)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to get instance: %s", err.Error()), http.StatusNotFound)
+		return
+	}
+	cfg, err := inst.Config()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
 	var q runtime.Query
 	switch v := request.Query.Query.(type) {
 	case *runtimev1.Query_MetricsViewAggregationRequest:
 		r := v.MetricsViewAggregationRequest
 
 		var limitPtr *int64
-		limit := s.resolveExportLimit(request.Limit, r.Limit)
+		limit := s.resolveExportLimit(cfg, request.Limit, r.Limit)
 		if limit != 0 {
 			limitPtr = &limit
 		}
@@ -166,7 +186,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		var limitPtr *int64
-		limit := s.resolveExportLimit(request.Limit, r.Limit)
+		limit := s.resolveExportLimit(cfg, request.Limit, r.Limit)
 		if limit != 0 {
 			limitPtr = &limit
 		}
@@ -198,7 +218,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		var limitPtr *int64
-		limit := s.resolveExportLimit(request.Limit, int64(r.Limit))
+		limit := s.resolveExportLimit(cfg, request.Limit, int64(r.Limit))
 		if limit != 0 {
 			limitPtr = &limit
 		}
@@ -256,7 +276,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			ComparisonMeasures:  r.ComparisonMeasures,
 			TimeRange:           r.TimeRange,
 			ComparisonTimeRange: r.ComparisonTimeRange,
-			Limit:               s.resolveExportLimit(request.Limit, r.Limit),
+			Limit:               s.resolveExportLimit(cfg, request.Limit, r.Limit),
 			Offset:              r.Offset,
 			Sort:                r.Sort,
 			Filter:              r.Filter,
@@ -311,14 +331,14 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Server) resolveExportLimit(base, override int64) int64 {
+func (s *Server) resolveExportLimit(cfg drivers.InstanceConfig, base, override int64) int64 {
 	res := base
 	if override < res {
 		res = override
 	}
-	if s.opts.DownloadRowLimit != nil {
-		if res == 0 || res > *s.opts.DownloadRowLimit {
-			res = *s.opts.DownloadRowLimit
+	if cfg.DownloadRowLimit != 0 {
+		if res == 0 || res > cfg.DownloadRowLimit {
+			res = cfg.DownloadRowLimit
 		}
 	}
 	return res
