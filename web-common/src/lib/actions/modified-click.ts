@@ -1,8 +1,8 @@
 type Description = string;
-type Handler = (e: MouseEvent) => Promise<void> | void;
+type Handler = (e: MouseEvent) => unknown;
 type Modifier = "command" | "shift" | "shift-command" | "click";
 
-type Params = Partial<Record<Modifier, [Handler, Description]>>;
+type Params = Partial<Record<Modifier, [Handler | null, Description | null]>>;
 
 export function modifiedClick(node: HTMLElement, params: Params) {
   function update(params: Params) {
@@ -10,33 +10,42 @@ export function modifiedClick(node: HTMLElement, params: Params) {
     node.addEventListener("click", async (e) => {
       const { ctrlKey, shiftKey, metaKey } = e;
 
-      let handler: Handler | undefined = undefined;
+      let handler: Handler | null = null;
+      let modifier: Modifier | null = null;
 
       if ((ctrlKey || metaKey) && shiftKey && params["shift-command"]) {
         e.preventDefault();
         handler = params["shift-command"][0];
+        modifier = "shift-command";
       } else if ((ctrlKey || metaKey) && params.command) {
         e.preventDefault();
         handler = params.command[0];
+        modifier = "command";
       } else if (shiftKey && params.shift) {
         e.preventDefault();
         handler = params.shift[0];
+        modifier = "shift";
       } else if (params.click) {
         handler = params.click[0];
       }
 
       if (handler) {
-        console.log("yeah");
-
         await handler(e);
+      } else {
+        node.dispatchEvent(
+          new CustomEvent(modifier ? `${modifier}-click` : "click"),
+        );
       }
     });
 
     const actions = Object.entries(params)
-      .map(([key, value]) => `${key}:${value[1]}`)
+      .map(([action, value]) => {
+        return value[1] ? `${action}:${value[1]}` : null;
+      })
+      .filter((s) => s !== null)
       .join(",");
 
-    node.setAttribute("data-actions", actions);
+    if (actions.length) node.setAttribute("data-actions", actions);
   }
 
   function destroy() {
