@@ -7,6 +7,7 @@ import {
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import { removeLeadingSlash } from "../../entity-management/entity-mappers";
+import { invalidate } from "$app/navigation";
 
 export async function saveFile(
   queryClient: QueryClient,
@@ -16,16 +17,16 @@ export async function saveFile(
   const instanceId = get(runtime).instanceId;
 
   await runtimeServicePutFile(instanceId, path, {
-    blob: blob,
+    blob,
   });
 
   // Invalidate `GetFile` query
-  queryClient.invalidateQueries(
+  await queryClient.invalidateQueries(
     getRuntimeServiceGetFileQueryKey(instanceId, removeLeadingSlash(path)),
   );
-
+  await invalidate(removeLeadingSlash(path));
   // If it's a rill.yaml file, invalidate the dev JWT queries
   if (path === "rill.yaml") {
-    queryClient.invalidateQueries(getRuntimeServiceIssueDevJWTQueryKey());
+    await queryClient.invalidateQueries(getRuntimeServiceIssueDevJWTQueryKey());
   }
 }

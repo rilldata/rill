@@ -9,7 +9,7 @@ import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-re
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { removeLeadingSlash } from "./entity-mappers";
-
+import { invalidateAll, invalidate } from "$app/navigation";
 export function startWatchFilesClient(queryClient: QueryClient) {
   return new WatchRequestClient<V1WatchFilesResponse>(
     (runtime) =>
@@ -23,6 +23,9 @@ function handleWatchFileResponse(
   queryClient: QueryClient,
   res: V1WatchFilesResponse,
 ) {
+  // console.log("watch file response", res);
+  // invalidateAll();
+  // invalidate("rill.yaml");
   if (!res?.path || res.path.includes(".db")) return;
 
   // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
@@ -43,6 +46,8 @@ function handleWatchFileResponse(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
       fileArtifacts.fileUpdated(cleanedPath);
+      console.log(cleanedPath);
+      invalidate(cleanedPath);
       break;
 
     case "FILE_EVENT_DELETE":
