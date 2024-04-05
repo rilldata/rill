@@ -58,12 +58,6 @@ type Instance struct {
 	EmbedCatalog bool `db:"embed_catalog"`
 	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
 	WatchRepo bool `db:"watch_repo"`
-	// Deprecated: Configure via InstanceConfig instead.
-	StageChanges bool `db:"stage_changes"`
-	// Deprecated: Configure via InstanceConfig instead.
-	ModelDefaultMaterialize bool `db:"model_default_materialize"`
-	// Deprecated: Configure via InstanceConfig instead.
-	ModelMaterializeDelaySeconds uint32 `db:"model_materialize_delay_seconds"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 }
@@ -115,9 +109,9 @@ func (i *Instance) ResolveVariables() map[string]string {
 func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
-		StageChanges:                 i.StageChanges,
-		ModelDefaultMaterialize:      i.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: i.ModelMaterializeDelaySeconds,
+		StageChanges:                 true,
+		ModelDefaultMaterialize:      false,
+		ModelMaterializeDelaySeconds: 0,
 		DownloadRowLimit:             10_000,
 		PivotCellLimit:               1_000_000,
 	}

@@ -95,7 +95,8 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	}
 	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
 
-	vars := maps.Clone(opts.Variables)
+	vars := make(map[string]string)
+	maps.Copy(vars, opts.Variables)
 	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
 
 	tmpDir := t.TempDir()

@@ -145,23 +145,20 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	inst := &drivers.Instance{
-		ID:                           req.InstanceId,
-		Environment:                  valOrDefault(req.Environment, oldInst.Environment),
-		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
-		ProjectOLAPConnector:         oldInst.ProjectOLAPConnector,
-		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
-		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
-		AIConnector:                  valOrDefault(req.AiConnector, oldInst.AIConnector),
-		Connectors:                   connectors,
-		ProjectConnectors:            oldInst.ProjectConnectors,
-		Variables:                    variables,
-		ProjectVariables:             oldInst.ProjectVariables,
-		Annotations:                  annotations,
-		EmbedCatalog:                 valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
-		WatchRepo:                    valOrDefault(req.WatchRepo, oldInst.WatchRepo),
-		StageChanges:                 oldInst.StageChanges,
-		ModelDefaultMaterialize:      oldInst.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
+		ID:                   req.InstanceId,
+		Environment:          valOrDefault(req.Environment, oldInst.Environment),
+		OLAPConnector:        valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
+		ProjectOLAPConnector: oldInst.ProjectOLAPConnector,
+		RepoConnector:        valOrDefault(req.RepoConnector, oldInst.RepoConnector),
+		AdminConnector:       valOrDefault(req.AdminConnector, oldInst.AdminConnector),
+		AIConnector:          valOrDefault(req.AiConnector, oldInst.AIConnector),
+		Connectors:           connectors,
+		ProjectConnectors:    oldInst.ProjectConnectors,
+		Variables:            variables,
+		ProjectVariables:     oldInst.ProjectVariables,
+		Annotations:          annotations,
+		EmbedCatalog:         valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
+		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
