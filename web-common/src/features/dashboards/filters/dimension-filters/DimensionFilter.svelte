@@ -48,8 +48,9 @@
   }
 
   $: if (!$topListQuery?.isFetching) {
-    const topListData = $topListQuery?.data?.data ?? [];
-    allValues[name] = topListData.map((datum) => datum[column]) ?? [];
+    const topListData = $topListQuery?.data?.rows ?? [];
+    allValues[name] =
+      topListData.map((datum) => datum.dimensionValue as any) ?? [];
   }
 
   function getColorForChip(isInclude: boolean) {

@@ -12,11 +12,11 @@ import {
   RpcStatus,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
-  V1MetricsViewToplistResponse,
   createQueryServiceMetricsViewTimeRange,
-  createQueryServiceMetricsViewToplist,
   createQueryServiceMetricsViewSchema,
   type V1MetricsViewSchemaResponse,
+  createQueryServiceMetricsViewComparison,
+  V1MetricsViewComparisonResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
@@ -65,7 +65,9 @@ export const getFilterSearchList = (
     searchText: string;
     type: string | undefined;
   },
-): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
+): Readable<
+  QueryObserverResult<V1MetricsViewComparisonResponse, RpcStatus>
+> => {
   return derived(
     [
       ctx.dashboardStore,
@@ -74,17 +76,19 @@ export const getFilterSearchList = (
       ctx.runtime,
     ],
     ([metricsExplorer, timeControls, metricViewName, runtime], set) => {
-      return createQueryServiceMetricsViewToplist(
+      return createQueryServiceMetricsViewComparison(
         runtime.instanceId,
         metricViewName,
         {
-          dimensionName: dimension,
-          measureNames: [metricsExplorer.leaderboardMeasureName],
-          timeStart: timeControls.timeStart,
-          timeEnd: timeControls.timeEnd,
+          dimension: { name: dimension },
+          measures: [{ name: metricsExplorer.leaderboardMeasureName }],
+          timeRange: {
+            start: timeControls.timeStart,
+            end: timeControls.timeEnd,
+          },
           limit: "100",
           offset: "0",
-          sort: [],
+          sort: [{ name: dimension }],
           where: addNull
             ? createInExpression(dimension, [null])
             : STRING_LIKES.has(type ?? "")
