@@ -73,11 +73,11 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, drivers.DialectDuckDB.EscapeMetricsViewTable(q.MetricsView), policyFilter, priority)
+		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDuckDB, q.MetricsView), policyFilter, priority)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, drivers.DialectDruid.EscapeMetricsViewTable(q.MetricsView), policyFilter, priority)
+		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDruid, q.MetricsView), policyFilter, priority)
 	case drivers.DialectClickHouse:
-		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, drivers.DialectClickHouse.EscapeMetricsViewTable(q.MetricsView), policyFilter, priority)
+		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
