@@ -11,6 +11,7 @@
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { extractFileName } from "../extract-file-name";
   import { useSource } from "../selectors";
 
   export let source: string | null;
@@ -40,7 +41,7 @@
   }
 
   function goToSource() {
-    goto(`/source/${source ?? ""}`);
+    goto(`/source/${extractFileName($sourceImportedName ?? "")}`);
     close();
   }
 
