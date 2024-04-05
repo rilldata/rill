@@ -125,6 +125,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		}
 	}
 
+	// Decode variables into config.
+	// Minor optimization: Instead of calling ResolveVariables (and allocating a new map), just call Decode in on the underlying variable maps in the same order as in ResolveVariables.
 	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:           &res,
 		WeaklyTypedInput: true,
@@ -132,14 +134,10 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	if err != nil {
 		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
 	}
-
-	// Minor optimization: Instead of calling ResolveVariables (and allocating a new map), just call Decode in on the underlying maps in the same order as in ResolveVariables.
-
 	err = dec.Decode(i.ProjectVariables)
 	if err != nil {
 		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
 	}
-
 	err = dec.Decode(i.Variables)
 	if err != nil {
 		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)

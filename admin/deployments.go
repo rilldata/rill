@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"fmt"
-	"maps"
 	"path"
 	"strconv"
 	"strings"
@@ -175,11 +174,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		},
 	})
 
-	// Add default instance-wide config to variables.
-	// See runtime/drivers.InstanceConfig for details.
-	vars := maps.Clone(opts.ProdVariables)
-	vars["rill.stage_changes"] = "true"
-
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
@@ -189,7 +183,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      vars,
+		Variables:      opts.ProdVariables,
 		Annotations:    opts.Annotations.toMap(),
 		EmbedCatalog:   false,
 	})

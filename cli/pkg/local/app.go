@@ -183,6 +183,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if _, ok := opts.Variables["rill.download_row_limit"]; !ok {
 		opts.Variables["rill.download_row_limit"] = "0" // 0 means unlimited
 	}
+	if _, ok := opts.Variables["rill.stage_changes"]; !ok {
+		opts.Variables["rill.stage_changes"] = "false"
+	}
 
 	// Prepare connectors for the instance
 	var connectors []*runtimev1.Connector

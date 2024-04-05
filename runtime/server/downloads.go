@@ -119,6 +119,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	cfg, err := inst.Config()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	var q runtime.Query
