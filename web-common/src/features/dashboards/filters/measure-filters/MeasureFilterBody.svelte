@@ -27,8 +27,12 @@
       case MeasureFilterOperation.LessThan:
       case MeasureFilterOperation.LessThanOrEquals:
         shortLabel =
-          MeasureFilterOptions.find((o) => o.value === filter.operation)
-            ?.shortLabel +
+          MeasureFilterOptions.find(
+            (o) =>
+              // svelte-check is throwing an error here stating `filter could be undefined` so we need this
+              o.value === filter?.operation ??
+              MeasureFilterOperation.GreaterThan,
+          )?.shortLabel +
           " " +
           filter.value1;
         break;
