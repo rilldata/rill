@@ -55,7 +55,7 @@
       recipients:
         alertSpec?.notifiers
           ?.find((n) => n.connector === "email")
-          ?.properties?.email?.recipients?.map((r) => ({ email: r })) ?? [],
+          ?.properties?.recipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertFormValues(
         queryArgsJson,
