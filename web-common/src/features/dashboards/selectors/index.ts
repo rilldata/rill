@@ -1,8 +1,13 @@
+import {
+  createInExpression,
+  createLikeExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
 import {
   RpcStatus,
   V1MetricsViewSpec,
@@ -53,10 +58,12 @@ export const getFilterSearchList = (
     dimension,
     addNull,
     searchText,
+    type,
   }: {
     dimension: string;
     addNull: boolean;
     searchText: string;
+    type: string;
   },
 ): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
   return derived(
@@ -78,16 +85,11 @@ export const getFilterSearchList = (
           limit: "100",
           offset: "0",
           sort: [],
-          filter: {
-            include: [
-              {
-                name: dimension,
-                in: addNull ? [null] : [],
-                like: [`%${searchText}%`],
-              },
-            ],
-            exclude: [],
-          },
+          where: addNull
+            ? createInExpression(dimension, [null])
+            : STRING_LIKES.has(type)
+              ? createLikeExpression(dimension, `%${searchText}%`)
+              : undefined,
         },
         {
           query: {
