@@ -37,9 +37,7 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <RuntimeProvider host={RuntimeUrl} instanceId="default">
-    <RillDeveloperLayout>
-      <slot />
-    </RillDeveloperLayout>
-  </RuntimeProvider>
+  <RillDeveloperLayout>
+    <slot />
+  </RillDeveloperLayout>
 </QueryClientProvider>
