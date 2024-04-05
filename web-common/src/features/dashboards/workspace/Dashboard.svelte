@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -20,7 +21,6 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
-  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
 
   export let metricViewName: string;
 
@@ -33,7 +33,7 @@
   $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
-  $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
+  $: expandedMeasureName = $metricsExplorer?.tdd?.expandedMeasureName;
   $: showPivot = $metricsExplorer?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,

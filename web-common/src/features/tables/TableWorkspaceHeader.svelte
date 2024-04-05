@@ -32,7 +32,7 @@
   <WorkspaceHeader
     editable={false}
     showInspectorToggle={false}
-    {...{ titleInput: fullyQualifiedTableName }}
+    titleInput={fullyQualifiedTableName}
   >
     <svelte:fragment slot="cta" let:width={headerWidth}>
       {@const collapse = isHeaderWidthSmall(headerWidth)}

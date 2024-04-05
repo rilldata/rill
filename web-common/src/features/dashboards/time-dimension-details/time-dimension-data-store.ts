@@ -358,7 +358,7 @@ function createDimensionTableData(
   ctx: StateManagers,
 ): Readable<DimensionDataItem[]> {
   return derived(ctx.dashboardStore, (dashboardStore, set) => {
-    const measureName = dashboardStore?.expandedMeasureName;
+    const measureName = dashboardStore?.tdd?.expandedMeasureName;
     if (!measureName) return set([]);
     return derived(
       getDimensionValueTimeSeries(ctx, [measureName], "table"),
@@ -400,13 +400,13 @@ export function createTimeDimensionDataStore(
       )
         return { isFetching: true };
 
-      const measureName = dashboardStore?.expandedMeasureName;
+      const measureName = dashboardStore?.tdd?.expandedMeasureName;
 
       if (!measureName) {
         return { isFetching: false };
       }
 
-      const pinIndex = dashboardStore?.pinIndex;
+      const pinIndex = dashboardStore?.tdd.pinIndex;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
 
       // Fix types in V1MetricsViewAggregationResponseDataItem

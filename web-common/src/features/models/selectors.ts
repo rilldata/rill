@@ -9,7 +9,6 @@ import {
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1ListFilesResponse,
-  createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
@@ -85,14 +84,4 @@ export async function getModelNames(
     // sort alphabetically case-insensitive
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
   return modelNames ?? [];
-}
-
-export function useModelFileIsEmpty(instanceId: string, modelName: string) {
-  return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
-    query: {
-      select(data) {
-        return data?.blob?.length === 0;
-      },
-    },
-  });
 }
