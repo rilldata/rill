@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
 import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -10,19 +9,17 @@ import {
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
-import type { QueryClient } from "@tanstack/query-core";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { extractFileExtension } from "../sources/extract-file-name";
 
 export async function handleEntityRename(
-  queryClient: QueryClient,
   instanceId: string,
-  e: InputEvent,
-  filePath: string,
+  target: HTMLInputElement,
+  existingPath: string,
   entityType: EntityType, // temporary param
 ) {
-  const target = e.target as HTMLInputElement;
-  const [folder, fileName] = splitFolderAndName(filePath);
-  const extension = extractFileExtension(filePath);
+  const [folder, fileName] = splitFolderAndName(existingPath);
+  const extension = extractFileExtension(existingPath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
     notifications.send({
@@ -31,7 +28,9 @@ export async function handleEntityRename(
     target.value = fileName; // resets the input
     return;
   }
+
   const allNames = await fetchAllNames(queryClient, instanceId);
+
   if (isDuplicateName(target.value, fileName, allNames)) {
     notifications.send({
       message: `Name ${target.value} is already in use`,
@@ -42,16 +41,12 @@ export async function handleEntityRename(
 
   try {
     const toName = target.value;
-    await renameFileArtifact(
-      instanceId,
-      filePath,
-      (folder ? `${folder}/` : "") + toName + extension,
-      entityType,
-    );
-    // TODO: replace once we have asset explorer
-    void goto(getRouteFromName(toName, entityType), {
-      replaceState: true,
-    });
+
+    const newAPIPath = (folder ? `${folder}/` : "") + toName + extension;
+
+    await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
+
+    return getRouteFromName(toName, entityType);
   } catch (err) {
     console.error(err.response.data.message);
   }

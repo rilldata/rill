@@ -5,18 +5,19 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export function checkSourceImported(
+export async function checkSourceImported(
   queryClient: QueryClient,
   filePath: string,
 ) {
   const lastUpdatedOn =
     fileArtifacts.getFileArtifact(filePath).lastStateUpdatedOn;
   if (lastUpdatedOn) return; // For now only show for fresh sources
-  waitForResourceUpdate(queryClient, get(runtime).instanceId, filePath).then(
-    (success) => {
-      if (!success) return;
-      sourceImportedName.set(filePath);
-      // TODO: telemetry
-    },
+  const success = await waitForResourceUpdate(
+    queryClient,
+    get(runtime).instanceId,
+    filePath,
   );
+
+  if (!success) return;
+  sourceImportedName.set(filePath);
 }
