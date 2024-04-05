@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -161,6 +162,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 	// Check dimension expressions are valid
 	for idx, d := range mv.Dimensions {
+		idx := idx
 		grp.Go(func() error {
 			err := validateDimension(ctx, olap, t, d, fields)
 			if err != nil {
@@ -178,6 +180,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 	// Check measure expressions are valid
 	for idx, m := range mv.Measures {
+		idx := idx
 		grp.Go(func() error {
 			err := validateMeasure(ctx, olap, t, m)
 			if err != nil {
@@ -195,6 +198,10 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 	// Wait for all validations to complete
 	_ = grp.Wait()
+
+	// Sort errors by index (for stable output)
+	slices.SortFunc(res.DimensionErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
+	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 }
 
 // validateDimension validates a metrics view dimension.
