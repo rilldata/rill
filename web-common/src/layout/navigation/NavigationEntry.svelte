@@ -4,10 +4,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createCommandClickAction } from "../../lib/actions/command-click-action";
-  import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { emitNavigationTelemetry } from "./navigation-utils";
   import { modifiedClick } from "@rilldata/web-common/lib/actions/modified-click";
   export let name: string;
@@ -15,9 +11,6 @@
   export let open = false;
   export let expandable = false;
   export let showContextMenu = true;
-
-  const { commandClickAction } = createCommandClickAction();
-  const { shiftClickAction } = createShiftClickAction();
 
   let showDetails = false;
   let contextMenuOpen = false;

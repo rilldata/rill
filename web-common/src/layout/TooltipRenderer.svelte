@@ -1,6 +1,5 @@
 <script lang="ts">
   import { debounce } from "../lib/create-debouncer";
-  import { getConnectorServiceBigQueryListTablesQueryKey } from "../runtime-client";
   import GlobalTooltip from "./GlobalTooltip.svelte";
   import type { Side, Align } from "./GlobalTooltip.svelte";
 

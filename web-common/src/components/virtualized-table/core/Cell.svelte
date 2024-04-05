@@ -1,17 +1,8 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import {
-    createShiftClickAction,
-    isClipboardApiSupported,
-  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
@@ -41,8 +32,6 @@
   $: isTextColumn = type === "VARCHAR" || type === "CODE_STRING";
 
   const dispatch = createEventDispatcher();
-
-  const { shiftClickAction } = createShiftClickAction();
 
   function onFocus() {
     dispatch("inspect", row.index);
