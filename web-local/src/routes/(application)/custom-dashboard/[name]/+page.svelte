@@ -42,13 +42,9 @@
 
   let showGrid = true;
   let editorWidth = 400;
-  let startingWidth = 400;
-  let startingX = 0;
-  let currentX = 0;
   let showChartEditor = false;
-
+  let containerWidth: number;
   let chartEditorHeight = DEFAULT_EDITOR_HEIGHT;
-
   let selectedChartName: string | null = null;
 
   $: customDashboardName = $page.params.name;
@@ -179,10 +175,6 @@
 
     await updateChart(new CustomEvent("update", { detail: stringified }));
   }
-
-  let containerWidth: number;
-
-  $: console.log({ dashboard });
 </script>
 
 <svelte:head>
@@ -293,6 +285,3 @@
     {/if}
   </div>
 </WorkspaceContainer>
-
-<style lang="postcss">
-</style>
