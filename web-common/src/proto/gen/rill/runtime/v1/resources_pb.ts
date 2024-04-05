@@ -3050,9 +3050,14 @@ export class DashboardSpec extends Message<DashboardSpec> {
   title = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Grid grid = 2;
+   * @generated from field: uint32 columns = 2;
    */
-  grid?: Grid;
+  columns = 0;
+
+  /**
+   * @generated from field: uint32 gap = 3;
+   */
+  gap = 0;
 
   /**
    * @generated from field: repeated rill.runtime.v1.DashboardComponent components = 4;
@@ -3068,7 +3073,8 @@ export class DashboardSpec extends Message<DashboardSpec> {
   static readonly typeName = "rill.runtime.v1.DashboardSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "grid", kind: "message", T: Grid },
+    { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "components", kind: "message", T: DashboardComponent, repeated: true },
   ]);
 
@@ -3086,49 +3092,6 @@ export class DashboardSpec extends Message<DashboardSpec> {
 
   static equals(a: DashboardSpec | PlainMessage<DashboardSpec> | undefined, b: DashboardSpec | PlainMessage<DashboardSpec> | undefined): boolean {
     return proto3.util.equals(DashboardSpec, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.Grid
- */
-export class Grid extends Message<Grid> {
-  /**
-   * @generated from field: uint32 columns = 1;
-   */
-  columns = 0;
-
-  /**
-   * @generated from field: uint32 gap = 2;
-   */
-  gap = 0;
-
-  constructor(data?: PartialMessage<Grid>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.Grid";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Grid {
-    return new Grid().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Grid {
-    return new Grid().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Grid {
-    return new Grid().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: Grid | PlainMessage<Grid> | undefined, b: Grid | PlainMessage<Grid> | undefined): boolean {
-    return proto3.util.equals(Grid, a, b);
   }
 }
 

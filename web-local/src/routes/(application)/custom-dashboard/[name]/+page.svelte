@@ -70,8 +70,8 @@
 
   $: dashboard = $query.data?.dashboard?.spec;
 
-  $: columns = dashboard?.grid?.columns ?? 10;
-  $: gap = dashboard?.grid?.gap ?? 1;
+  $: columns = dashboard?.columns ?? 10;
+  $: gap = dashboard?.gap ?? 1;
   $: charts = dashboard?.components ?? ([] as V1DashboardComponent[]);
 
   const onChangeCallback = async (
@@ -200,6 +200,8 @@
   }
 
   let containerWidth: number;
+
+  $: console.log({ dashboard });
 </script>
 
 <svelte:head>
@@ -211,7 +213,7 @@
     slot="header"
     titleInput={customDashboardName}
     showInspectorToggle={false}
-    {onChangeCallback}
+    on:change={onChangeCallback}
   >
     <div slot="workspace-controls" class="flex gap-x-4 items-center">
       <ViewSelector bind:selectedView />

@@ -29,6 +29,7 @@
   export let top: number;
   export let left: number;
   export let radius: number;
+  export let scale: number;
 
   let localZIndex = 0;
 
@@ -49,6 +50,7 @@
   });
 
   function handleMouseDown(e: MouseEvent) {
+    if (e.button !== 0) return;
     localZIndex = $zIndex;
     zIndex.set(++localZIndex);
     dispatch("change", {
@@ -62,22 +64,26 @@
 </script>
 
 <ContextMenu.Root>
-  <ContextMenu.Trigger>
+  <ContextMenu.Trigger asChild let:builder>
     <div
+      {...builder}
+      use:builder.action
       role="presentation"
       data-index={i}
-      class="wrapper"
+      class="wrapper hover:cursor-pointer active:cursor-grab"
       style:z-index={localZIndex}
       style:padding="{padding}px"
       style:left="{finalLeft}px"
       style:top="{finalTop}px"
       style:width="{finalWidth}px"
       style:height="{finalHeight}px"
+      on:contextmenu
       on:mousedown|capture={handleMouseDown}
     >
       <div class="size-full relative">
         {#each allSides as side}
           <ResizeHandle
+            {scale}
             {i}
             {side}
             {position}

@@ -1605,11 +1605,6 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
-export interface V1Grid {
-  columns?: number;
-  gap?: number;
-}
-
 export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
@@ -1756,7 +1751,8 @@ export interface V1DashboardComponent {
 
 export interface V1DashboardSpec {
   title?: string;
-  grid?: V1Grid;
+  columns?: number;
+  gap?: number;
   components?: V1DashboardComponent[];
 }
 

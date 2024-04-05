@@ -3676,8 +3676,12 @@ definitions:
     properties:
       title:
         type: string
-      grid:
-        $ref: '#/definitions/v1Grid'
+      columns:
+        type: integer
+        format: int64
+      gap:
+        type: integer
+        format: int64
       components:
         type: array
         items:
@@ -3864,15 +3868,6 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
-  v1Grid:
-    type: object
-    properties:
-      columns:
-        type: integer
-        format: int64
-      gap:
-        type: integer
-        format: int64
   v1HistogramMethod:
     type: string
     enum:

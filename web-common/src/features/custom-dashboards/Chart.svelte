@@ -1,5 +1,5 @@
 <script lang="ts">
-  import VegaLiteRenderer from "@rilldata/web-common/features/custom-dashboards/VegaLiteRenderer.svelte";
+  import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
@@ -43,13 +43,16 @@
   });
 </script>
 
-<div class="h-full w-full overflow-hidden" bind:this={container}>
+<div
+  class="h-full w-full overflow-hidden pointer-events-none"
+  bind:this={container}
+>
   {#if error}
     <p>{error}</p>
   {:else if !parsedVegaSpec}
     <p>Chart not available</p>
   {:else}
-    <VegaLiteRenderer
+    <DashVegaRenderer
       spec={parsedVegaSpec}
       height={clientHeight - 31}
       width={clientWidth}

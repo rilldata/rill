@@ -10,6 +10,7 @@
   export let side: [number, number];
   export let i: number;
   export let selected: boolean;
+  export let scale: number;
 
   $: ew = side[0] !== 0.5;
   $: ns = side[1] !== 0.5;
@@ -44,9 +45,15 @@
   on:mousedown={handleMouseDown}
 >
   {#if !corner}
-    <span class="line" class:hide={!selected} />
+    <span class="line" style:height="{1 / scale}px" class:hide={!selected} />
   {/if}
-  <span class="square" class:hide={!selected} />
+  <span
+    class="square"
+    style:width="{6 / scale}px"
+    style:height="{6 / scale}px"
+    style:border-width="{1 / scale}px"
+    class:hide={!selected}
+  />
 </button>
 
 <style lang="postcss">
@@ -57,11 +64,11 @@
   }
 
   .square {
-    @apply w-1.5 aspect-square bg-white border border-primary-400 z-50;
+    @apply aspect-square bg-white border-primary-400 z-50;
   }
 
   .line {
-    @apply absolute bg-primary-400 w-full h-[1px];
+    @apply absolute bg-primary-400 w-full;
   }
 
   .hide {

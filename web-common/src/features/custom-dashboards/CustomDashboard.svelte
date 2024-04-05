@@ -4,13 +4,9 @@
   import Element from "./Element.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
-
   import { createEventDispatcher } from "svelte";
-  import { DEFAULT } from "@rilldata/web-common/lib/time/config";
 
   const DEFAULT_WIDTH = 2000;
-
-  // $: console.log(scale);
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
@@ -167,6 +163,7 @@
 </script>
 
 <svelte:window on:mouseup={handleMouseUp} on:mousemove={handleMouseMove} />
+
 <div bind:contentRect class="wrapper">
   {#if showGrid || changing}
     <GridLines {gridCell} {scrollOffset} {gapSize} {radius} {scale} />
@@ -177,7 +174,7 @@
     on:scroll={handleScroll}
   >
     <div
-      class="dash h-full"
+      class="dash"
       role="presentation"
       style:width="{DEFAULT_WIDTH}px"
       style:height="{maxBottom * gridCell}px"
@@ -189,6 +186,7 @@
         {@const interacting = selected && changing}
         {#if chart.chart}
           <Element
+            {scale}
             {i}
             {chart}
             {radius}

@@ -10,10 +10,8 @@ import (
 type DashboardYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
-	Grid       struct {
-		Columns uint32 `yaml:"columns"`
-		Gap     uint32 `yaml:"gap"`
-	} `yaml:"grid"`
+	Columns    uint32           `yaml:"columns"`
+	Gap        uint32           `yaml:"gap"`
 	Components []struct {
 		Chart  string `yaml:"chart"`
 		X      uint32 `yaml:"x"`
@@ -58,8 +56,8 @@ func (p *Parser) parseDashboard(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.DashboardSpec.Title = tmp.Title
-
-	r.DashboardSpec.Grid = &runtimev1.Grid{Gap: tmp.Grid.Gap, Columns: tmp.Grid.Columns}
+	r.DashboardSpec.Columns = tmp.Columns
+	r.DashboardSpec.Gap = tmp.Gap
 
 	r.DashboardSpec.Components = make([]*runtimev1.DashboardComponent, len(tmp.Components))
 	for i, component := range tmp.Components {

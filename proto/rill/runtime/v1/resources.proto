@@ -419,13 +419,9 @@ message Dashboard {
 
 message DashboardSpec {
   string title = 1;
-  Grid grid = 2;
+  uint32 columns = 2;
+  uint32 gap = 3;
   repeated DashboardComponent components = 4;
-}
-
-message Grid {
-  uint32 columns = 1;
-  uint32 gap = 2;
 }
 
 message DashboardState {}
