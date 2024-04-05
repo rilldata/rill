@@ -81,6 +81,9 @@ type InstanceConfig struct {
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.model_materialize_delay_seconds"`
 	// DownloadRowLimit is the row limit for interactive data exports. If set to 0, there is no limit.
 	DownloadRowLimit int64 `mapstructure:"rill.download_row_limit"`
+	// PivotCellLimit is the maximum number of cells allowed in a single pivot query.
+	// Note that it does not limit the UI's pivot table because it paginates the requests.
+	PivotCellLimit int64 `mapstructure:"rill.pivot_cell_limit"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -115,7 +118,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                 i.StageChanges,
 		ModelDefaultMaterialize:      i.ModelDefaultMaterialize,
 		ModelMaterializeDelaySeconds: i.ModelMaterializeDelaySeconds,
-		DownloadRowLimit:             10000,
+		DownloadRowLimit:             10_000,
+		PivotCellLimit:               1_000_000,
 	}
 
 	// Backwards compatibility: Use "__materialize_default" as alias for "rill.model_default_materialize".
