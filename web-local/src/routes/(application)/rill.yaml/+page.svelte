@@ -7,6 +7,7 @@
   import { saveFile } from "@rilldata/web-common/features/generic-yaml-editor/actions";
   import ErrorPane from "@rilldata/web-common/features/generic-yaml-editor/ErrorPane.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer.js";
 
   const fileName = "rill.yaml";
 
@@ -15,6 +16,8 @@
   let editor: YAMLEditor;
   let view: EditorView;
   let error: Error | undefined;
+
+  const debouncedUpdate = debounce(handleUpdate, 500);
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
     const blob = e.detail.content;
@@ -26,8 +29,8 @@
     try {
       parse(blob);
       return undefined;
-    } catch (e) {
-      return e;
+    } catch (e: unknown) {
+      return e as Error;
     }
   }
 
@@ -48,7 +51,7 @@
       bind:this={editor}
       bind:view
       content={data.blob || ""}
-      on:update={handleUpdate}
+      on:update={debouncedUpdate}
     />
 
     {#if error}

@@ -21,9 +21,25 @@ export async function saveFile(
   });
 
   // Invalidate `GetFile` query
-  await queryClient.invalidateQueries(
-    getRuntimeServiceGetFileQueryKey(instanceId, removeLeadingSlash(path)),
-  );
+  // await queryClient.invalidateQueries(
+  //   getRuntimeServiceGetFileQueryKey(instanceId, removeLeadingSlash(path)),
+  // );
+
+  queryClient
+    .getQueryCache()
+    .find(
+      getRuntimeServiceGetFileQueryKey(instanceId, removeLeadingSlash(path)),
+    )
+    ?.setState((old) => {
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          blob,
+        },
+      };
+    });
+
   await invalidate(removeLeadingSlash(path));
   // If it's a rill.yaml file, invalidate the dev JWT queries
   if (path === "rill.yaml") {
