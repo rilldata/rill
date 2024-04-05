@@ -12,7 +12,8 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import TableMenuItems from "./TableMenuItems.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
-  import { makeFullyQualifiedTableName, useTables } from "./selectors";
+  import { makeFullyQualifiedTableName } from "./olap-config";
+  import { useTables } from "./selectors";
 
   let showTables = true;
 

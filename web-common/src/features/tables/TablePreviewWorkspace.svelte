@@ -22,7 +22,6 @@
     {database}
     {databaseSchema}
     {table}
-    loading={false}
     slot="body"
   />
 </WorkspaceContainer>

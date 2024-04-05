@@ -11,7 +11,7 @@
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
-  import { makeFullyQualifiedTableName } from "./selectors";
+  import { makeFullyQualifiedTableName } from "./olap-config";
 
   export let connector: string;
   export let database: string = "";

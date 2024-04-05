@@ -12,7 +12,7 @@ import {
   ResourceKind,
   useFilteredResourceNames,
 } from "../entity-management/resource-selectors";
-import { OLAP_DRIVERS_WITHOUT_MODELING } from "./config";
+import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap-config";
 
 export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
   return createRuntimeServiceGetInstance(instanceId, {
@@ -78,22 +78,4 @@ export function useTables(
       debouncedSetTables($sources, $models, $tables, set);
     },
   );
-}
-
-export function makeFullyQualifiedTableName(
-  connector: string,
-  database: string,
-  databaseSchema: string,
-  table: string,
-) {
-  switch (connector) {
-    case "clickhouse":
-      return `${databaseSchema}.${table}`;
-    case "druid":
-      return `${databaseSchema}.${table}`;
-    case "duckdb":
-      return `${database}.${databaseSchema}.${table}`;
-    default:
-      throw new Error(`Unsupported OLAP connector: ${connector}`);
-  }
 }

@@ -10,8 +10,8 @@
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
 
   export let connector: string;
-  export let database: string | undefined;
-  export let databaseSchema: string | undefined;
+  export let database: string = ""; // The backend interprets an empty string as the default database
+  export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
   export let limit = 150;
   export let loading = false;
@@ -23,16 +23,16 @@
     $runtime?.instanceId,
     table,
     {
-      connector: connector,
-      database: database,
-      databaseSchema: databaseSchema,
+      connector,
+      database,
+      databaseSchema,
     },
   );
 
   $: tableQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
-    connector: connector,
-    database: database,
-    databaseSchema: databaseSchema,
+    connector,
+    database,
+    databaseSchema,
     limit,
   });
 
