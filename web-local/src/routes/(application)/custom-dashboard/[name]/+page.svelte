@@ -33,7 +33,6 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import { slide } from "svelte/transition";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
-  import { writable } from "svelte/store";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
 
@@ -118,24 +117,6 @@
       console.error(err.response.data.message);
     }
   };
-
-  function handleStartResize(e: MouseEvent) {
-    startingWidth = editorWidth;
-    startingX = e.clientX;
-
-    window.addEventListener("mousemove", handleResize);
-    window.addEventListener("mouseup", () => {
-      window.removeEventListener("mousemove", handleResize);
-    });
-  }
-
-  function handleResize(e: MouseEvent) {
-    currentX = e.clientX;
-    editorWidth = Math.max(
-      300,
-      Math.min(startingWidth + (currentX - startingX), 600),
-    );
-  }
 
   async function updateChart(e: CustomEvent<string>) {
     const content = e.detail;

@@ -15,8 +15,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"reflect"
+
+	_ "github.com/rilldata/rill/runtime/drivers/file"
 )
 
 func TestRillYAML(t *testing.T) {
@@ -1363,7 +1364,8 @@ components:
 				{Kind: ResourceKindChart, Name: "c2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
-				Grid: &runtimev1.Grid{Gap: 3, Columns: 4},
+				Columns: 4,
+				Gap:     3,
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
 					{Chart: "c2", Width: 1, Height: 2},
