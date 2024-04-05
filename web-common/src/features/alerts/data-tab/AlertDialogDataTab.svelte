@@ -1,5 +1,7 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
@@ -7,7 +9,7 @@
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
   import { useMetricsView } from "../../dashboards/selectors";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form, errors, handleChange } = formState;
 
@@ -47,6 +49,7 @@
     title="Filters"
   >
     <FilterChipsReadOnly
+      comparisonTimeRange={$form["comparisonTimeRange"]}
       dimensionThresholdFilters={[]}
       filters={$form["whereFilter"]}
       metricsViewName={$form["metricsViewName"]}

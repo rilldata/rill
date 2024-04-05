@@ -39,7 +39,6 @@
     $dashboard.data?.metricsView.spec.title || $dashboardName.data;
 
   $: query = extractFromQuery($alertQuery.data?.resource?.alert?.spec);
-  $: console.log(query);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(
     $alertQuery.data?.resource?.alert?.spec,
@@ -145,7 +144,12 @@
     </div>
 
     <!-- Filters -->
-    <AlertFilters metricsViewName={$dashboardName.data} filters={query.where} />
+    <AlertFilters
+      metricsViewName={$dashboardName.data}
+      filters={query.where}
+      timeRange={query.timeRange}
+      comparisonTimeRange={query.comparisonTimeRange}
+    />
 
     <!-- Criteria -->
     <AlertFilterCriteria

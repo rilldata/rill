@@ -38,6 +38,8 @@
         JSON.stringify(expr?.cond?.exprs?.[1].val);
     }
   }
+
+  $: console.log(expr?.cond?.exprs);
 </script>
 
 <div class="flex gap-x-2">

@@ -69,6 +69,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       <div class="text-gray-500">Inherited from underlying dashboard view.</div>
     </Label>
     <FilterChipsReadOnly
+      comparisonTimeRange={undefined}
       dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
       filters={$dashboardStore.whereFilter}
       {metricsViewName}

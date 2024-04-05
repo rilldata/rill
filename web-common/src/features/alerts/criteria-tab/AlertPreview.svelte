@@ -3,13 +3,16 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import PreviewTable from "../../../components/preview-table/PreviewTable.svelte";
   import PreviewEmpty from "../PreviewEmpty.svelte";
 
   export let formValues: AlertFormValues;
 
-  $: alertPreviewQuery = getAlertCriteriaData(formValues);
-  $: console.log(formValues, $alertPreviewQuery.data?.rows);
+  const queryClient = useQueryClient();
+
+  $: console.log(formValues);
+  $: alertPreviewQuery = getAlertCriteriaData(queryClient, formValues);
 
   // TODO
   // $: isCriteriaEmpty = isExpressionIncomplete(criteria);

@@ -21,6 +21,7 @@ The main feature-set component for dashboard filters
   export let filters: V1Expression | undefined;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let timeRange: V1TimeRange | undefined;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
 
@@ -47,7 +48,7 @@ The main feature-set component for dashboard filters
 
 <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
   {#if timeRange}
-    <TimeRangeReadOnly {timeRange} />
+    <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
   {/if}
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as { name, label, selectedValues, isInclude } (name)}

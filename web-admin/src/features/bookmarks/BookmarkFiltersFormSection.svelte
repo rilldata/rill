@@ -22,6 +22,7 @@
   title="Filters"
 >
   <FilterChipsReadOnly
+    comparisonTimeRange={undefined}
     dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
     filters={$dashboardStore.whereFilter}
     {metricsViewName}
