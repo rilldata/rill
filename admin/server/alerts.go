@@ -464,7 +464,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
-	res.Notify.Email.Emails = opts.EmailRecipients
+	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
@@ -496,7 +496,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
-	res.Notify.Email.Emails = opts.EmailRecipients
+	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
@@ -589,7 +589,7 @@ type alertYAML struct {
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {
 		Email struct {
-			Emails []string `yaml:"emails"`
+			Recipients []string `yaml:"emails"`
 		}
 		Slack struct {
 			Users    []string `yaml:"users"`
