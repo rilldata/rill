@@ -2,8 +2,10 @@ package drivers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
@@ -56,14 +58,27 @@ type Instance struct {
 	EmbedCatalog bool `db:"embed_catalog"`
 	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
 	WatchRepo bool `db:"watch_repo"`
-	// StageChanges indicates whether to stage source and model changes before applying them.
+	// Deprecated: Configure via InstanceConfig instead.
 	StageChanges bool `db:"stage_changes"`
-	// ModelDefaultMaterialize indicates whether to materialize models by default.
+	// Deprecated: Configure via InstanceConfig instead.
 	ModelDefaultMaterialize bool `db:"model_default_materialize"`
-	// ModelMaterializeDelaySeconds adds a delay before materializing models.
+	// Deprecated: Configure via InstanceConfig instead.
 	ModelMaterializeDelaySeconds uint32 `db:"model_materialize_delay_seconds"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
+}
+
+// InstanceConfig contains dynamic configuration for an instance.
+// It is configured by parsing instance variables prefixed with "rill.".
+// For example, a variable "rill.stage_changes=true" would set the StageChanges field to true.
+// InstanceConfig should only be used for config that the user is allowed to change dynamically at runtime.
+type InstanceConfig struct {
+	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
+	StageChanges bool `mapstructure:"rill.stage_changes"`
+	// ModelDefaultMaterialize indicates whether to materialize models by default.
+	ModelDefaultMaterialize bool `mapstructure:"rill.model_default_materialize"`
+	// ModelMaterializeDelaySeconds adds a delay before materializing models.
+	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.model_materialize_delay_seconds"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -88,4 +103,46 @@ func (i *Instance) ResolveVariables() map[string]string {
 		r[k] = v
 	}
 	return r
+}
+
+// Config resolves the current dynamic config properties for the instance.
+// See InstanceConfig for details.
+func (i *Instance) Config() (InstanceConfig, error) {
+	// Default config
+	res := InstanceConfig{
+		StageChanges:                 i.StageChanges,
+		ModelDefaultMaterialize:      i.ModelDefaultMaterialize,
+		ModelMaterializeDelaySeconds: i.ModelMaterializeDelaySeconds,
+	}
+
+	// Backwards compatibility: Use "__materialize_default" as alias for "rill.model_default_materialize".
+	if i.Variables != nil {
+		if v, ok := i.Variables["__materialize_default"]; ok {
+			if _, ok := i.Variables["rill.model_default_materialize"]; !ok {
+				i.Variables["rill.model_default_materialize"] = v
+			}
+		}
+	}
+
+	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:           &res,
+		WeaklyTypedInput: true,
+	})
+	if err != nil {
+		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
+	}
+
+	// Minor optimization: Instead of calling ResolveVariables (and allocating a new map), just call Decode in on the underlying maps in the same order as in ResolveVariables.
+
+	err = dec.Decode(i.ProjectVariables)
+	if err != nil {
+		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
+	}
+
+	err = dec.Decode(i.Variables)
+	if err != nil {
+		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
+	}
+
+	return res, nil
 }
