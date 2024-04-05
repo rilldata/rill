@@ -1,31 +1,25 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useModels } from "@rilldata/web-common/features/models/selectors";
-  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
+    V1Resource,
     createQueryServiceTableCardinality,
-    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-
   import { getContext } from "svelte";
   import { Writable, derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { getTableReferences } from "../../utils/get-table-references";
-  import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
   import type { QueryHighlightState } from "../../query-highlight-store";
+  import type { Reference } from "../../utils/get-table-references";
 
-  export let modelName: string;
+  export let referencedThings: [V1Resource, Reference][];
+  export let modelHasError: boolean;
 
   let showSourceTables = true;
-  let modelHasError = false;
 
   /** classes for elements that trigger the highlight in a model query */
   export const query_reference_trigger =
@@ -35,23 +29,6 @@
     "rill:app:query-highlight",
   );
 
-  $: getModelFile = createRuntimeServiceGetFile(
-    $runtime?.instanceId,
-    getFilePathFromNameAndType(modelName, EntityType.Model),
-  );
-  $: references = getTableReferences($getModelFile?.data?.blob ?? "");
-
-  $: getAllSources = useSources($runtime?.instanceId);
-
-  $: getAllModels = useModels($runtime?.instanceId);
-
-  // for each reference, match to an existing model or source,
-  $: referencedThings = getMatchingReferencesAndEntries(modelName, references, [
-    ...($getAllSources?.data ?? []),
-    ...($getAllModels?.data ?? []),
-  ]);
-
-  // associate with the cardinality
   $: referencedWithMetadata = derived(
     referencedThings.map(([resource, ref]) => {
       return derived(
@@ -86,7 +63,7 @@
 </script>
 
 {#if $referencedWithMetadata?.length}
-  <div class="pt-4 pb-4">
+  <div>
     <div class=" pl-4 pr-4">
       <CollapsibleSectionTitle
         tooltipText="References"
@@ -129,8 +106,8 @@
               <svelte:fragment slot="tooltip-title">
                 <div class="break-all">
                   {reference?.resource?.meta?.name?.name}
-                </div></svelte:fragment
-              >
+                </div>
+              </svelte:fragment>
               <svelte:fragment slot="tooltip-right">
                 {#if reference?.resource?.source}
                   {reference?.resource?.source?.state?.connector}
@@ -149,5 +126,4 @@
       </div>
     {/if}
   </div>
-  <hr />
 {/if}

@@ -49,8 +49,8 @@ export function toggleDimensionValueSelection(
   } else {
     expr.cond.exprs.splice(inIdx, 1);
     // Only decrement pinIndex if the removed value was before the pinned value
-    if (dashboard.pinIndex >= inIdx) {
-      dashboard.pinIndex--;
+    if (dashboard.tdd.pinIndex >= inIdx) {
+      dashboard.tdd.pinIndex--;
     }
     // remove the dimension entry if all values are removed
     if (expr.cond.exprs.length === 1) {

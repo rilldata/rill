@@ -186,6 +186,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 type sourceProperties struct {
 	ProjectID string `mapstructure:"project_id"`
 	SQL       string `mapstructure:"sql"`

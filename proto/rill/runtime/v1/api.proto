@@ -698,6 +698,7 @@ message ConnectorDriver {
   bool implements_olap = 16;
   bool implements_object_store = 17;
   bool implements_file_store = 18;
+  bool implements_notifier = 19;
 }
 
 // AnalyzedConnector contains information about a connector that is referenced in the project files.

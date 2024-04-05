@@ -52,7 +52,10 @@
     initialValues: {
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
-      recipients: alertSpec?.emailRecipients?.map((r) => ({ email: r })) ?? [],
+      recipients:
+        alertSpec?.notifiers
+          ?.find((n) => n.connector === "email")
+          ?.properties?.email?.recipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertFormValues(
         queryArgsJson,
@@ -75,11 +78,11 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
-              emailRenotify: !!values.snooze,
-              emailRenotifyAfterSeconds: values.snooze
-                ? Number(values.snooze)
-                : 0,
+              emailRecipients: values.recipients
+                .map((r) => r.email)
+                .filter(Boolean),
+              renotify: !!values.snooze,
+              renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },
           },
         });
