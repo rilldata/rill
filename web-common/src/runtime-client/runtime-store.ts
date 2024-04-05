@@ -1,6 +1,5 @@
 import { writable } from "svelte/store";
 
-console.log(import.meta.env);
 export const runtimeUrl = import.meta.env.DEV ? "http://localhost:9009" : "";
 
 export interface JWT {
