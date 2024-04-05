@@ -13,6 +13,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const validateConcurrencyLimit = 10
+
 type ValidateMetricsViewResult struct {
 	TimeDimensionErr error
 	DimensionErrs    []IndexErr
@@ -155,7 +157,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 	// Validate dimensions and measures concurrently with a limit of 10 concurrent validations
 	var mu sync.Mutex
 	var grp errgroup.Group
-	grp.SetLimit(10)
+	grp.SetLimit(validateConcurrencyLimit)
 
 	// Check dimension expressions are valid
 	for idx, d := range mv.Dimensions {
