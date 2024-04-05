@@ -9,6 +9,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 //go:embed templates/gen/*
@@ -71,20 +72,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
-type AlertStatus struct {
-	ToEmail        string
-	ToName         string
-	Title          string
-	ExecutionTime  time.Time
-	Status         runtimev1.AssertionStatus
-	IsRecover      bool
-	FailRow        map[string]any
-	ExecutionError string
-	OpenLink       string
-	EditLink       string
-}
-
-func (c *Client) SendAlertStatus(opts *AlertStatus) error {
+func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 	switch opts.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -125,7 +113,7 @@ type alertFailData struct {
 	EditLink            template.URL
 }
 
-func (c *Client) sendAlertFail(opts *AlertStatus, data *alertFailData) error {
+func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
 	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
@@ -149,7 +137,7 @@ type alertStatusData struct {
 	EditLink            template.URL
 }
 
-func (c *Client) sendAlertStatus(opts *AlertStatus, data *alertStatusData) error {
+func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
 	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)

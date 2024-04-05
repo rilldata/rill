@@ -17,7 +17,9 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
@@ -246,12 +248,22 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts := recreateReportOptionsFromSpec(spec)
+	opts, err := recreateReportOptionsFromSpec(spec)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to recreate report options: %s", err.Error())
+	}
 
 	found := false
-	for idx, email := range opts.Recipients {
+	for idx, email := range opts.EmailRecipients {
 		if strings.EqualFold(user.Email, email) {
-			opts.Recipients = slices.Delete(opts.Recipients, idx, idx+1)
+			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, email := range opts.SlackUsers {
+		if strings.EqualFold(user.Email, email) {
+			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
 			found = true
 			break
 		}
@@ -261,7 +273,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to report")
 	}
 
-	if len(opts.Recipients) == 0 {
+	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -430,7 +442,10 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
 	res.Export.Limit = uint(opts.ExportLimit)
-	res.Email.Recipients = opts.Recipients
+	res.Notify.Email.Recipients = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Users = opts.SlackUsers
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -470,7 +485,10 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Query.Args = args
 	res.Export.Format = exportFormat
 	res.Export.Limit = uint(opts.ExportLimit)
-	res.Email.Recipients = opts.Recipients
+	res.Notify.Email.Recipients = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Users = opts.SlackUsers
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
 	return yaml.Marshal(res)
 }
@@ -513,7 +531,7 @@ func randomReportName(title string) string {
 	return name
 }
 
-func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) *adminv1.ReportOptions {
+func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportOptions, error) {
 	annotations := parseReportAnnotations(spec.Annotations)
 
 	opts := &adminv1.ReportOptions{}
@@ -527,8 +545,23 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) *adminv1.ReportOp
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
 	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
-	opts.Recipients = spec.EmailRecipients
-	return opts
+	for _, notifier := range spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, err
+			}
+			opts.SlackUsers = props.Users
+			opts.SlackChannels = props.Channels
+			opts.SlackWebhooks = props.Webhooks
+		default:
+			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
+		}
+	}
+	return opts, nil
 }
 
 // reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
@@ -548,9 +581,16 @@ type reportYAML struct {
 		Format string `yaml:"format"`
 		Limit  uint   `yaml:"limit"`
 	} `yaml:"export"`
-	Email struct {
-		Recipients []string `yaml:"recipients"`
-	} `yaml:"email"`
+	Notify struct {
+		Email struct {
+			Recipients []string `yaml:"recipients"`
+		} `yaml:"email"`
+		Slack struct {
+			Users    []string `yaml:"users"`
+			Channels []string `yaml:"channels"`
+			Webhooks []string `yaml:"webhooks"`
+		} `yaml:"slack"`
+	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
 }
 

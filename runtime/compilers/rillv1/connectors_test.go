@@ -37,6 +37,38 @@ uri: s3://path/to/foo
 connector: duckdb
 sql: SELECT * FROM read_csv('s3://bucket/path.csv')
 `,
+		"/alerts/a1.yaml": `
+kind: alert
+title: Test Alert
+refs:
+- kind: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: measure_0
+    time_range:
+      iso_duration: P1W
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: measure_0
+        - val: 4
+notify:
+  slack:
+    channels:
+    - channel-test
+    users:
+    - user@example.com
+`,
 	})
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -45,7 +77,7 @@ sql: SELECT * FROM read_csv('s3://bucket/path.csv')
 	cs, err := p.AnalyzeConnectors(ctx)
 	require.NoError(t, err)
 
-	require.Len(t, cs, 5)
+	require.Len(t, cs, 6)
 
 	c := cs[0]
 	require.Len(t, c.Resources, 3)
@@ -81,4 +113,63 @@ sql: SELECT * FROM read_csv('s3://bucket/path.csv')
 	require.Equal(t, "s3", c.Driver)
 	require.Equal(t, false, c.AnonymousAccess)
 	require.Equal(t, drivers.Connectors["s3"].Spec(), c.Spec)
+
+	c = cs[5]
+	require.Len(t, c.Resources, 1)
+	require.Equal(t, "slack", c.Name)
+	require.Equal(t, "slack", c.Driver)
+	require.Equal(t, false, c.AnonymousAccess)
+	require.Equal(t, drivers.Connectors["slack"].Spec(), c.Spec)
+}
+
+func TestAnonSlackConnector(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		"/alerts/a1.yaml": `
+kind: alert
+title: Test Alert
+refs:
+- kind: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: measure_0
+    time_range:
+      iso_duration: P1W
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: measure_0
+        - val: 4
+notify:
+  slack:
+    webhooks:
+    - https://hooks.slack.com/services/123/456/789
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+
+	cs, err := p.AnalyzeConnectors(ctx)
+	require.NoError(t, err)
+
+	require.Len(t, cs, 1)
+
+	c := cs[0]
+	require.Len(t, c.Resources, 1)
+	require.Equal(t, "slack", c.Name)
+	require.Equal(t, "slack", c.Driver)
+	require.Equal(t, true, c.AnonymousAccess)
+	require.Equal(t, drivers.Connectors["slack"].Spec(), c.Spec)
 }

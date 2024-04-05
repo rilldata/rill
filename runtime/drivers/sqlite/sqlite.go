@@ -59,7 +59,7 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
-		SourceProperties: []drivers.PropertySchema{
+		SourceProperties: []*drivers.PropertySpec{
 			{
 				Key:         "db",
 				Type:        drivers.StringPropertyType,
@@ -77,6 +77,8 @@ func (d driver) Spec() drivers.Spec {
 				Placeholder: "table",
 			},
 		},
+		ImplementsRegistry: true,
+		ImplementsCatalog:  true,
 	}
 }
 
@@ -159,4 +161,9 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }

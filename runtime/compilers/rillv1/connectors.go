@@ -5,16 +5,20 @@ import (
 	"slices"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Connector contains metadata about a connector used in a Rill project
 type Connector struct {
-	Driver          string
 	Name            string
+	Driver          string
 	Spec            drivers.Spec
+	DefaultConfig   map[string]string
 	Resources       []*Resource
 	AnonymousAccess bool
 }
@@ -76,6 +80,14 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 		return a.trackConnector(r.MetricsViewSpec.Connector, r, false)
 	} else if r.MigrationSpec != nil {
 		return a.trackConnector(r.MigrationSpec.Connector, r, false)
+	} else if r.APISpec != nil {
+		return a.analyzeResourceWithResolver(r, r.APISpec.Resolver, r.APISpec.ResolverProperties)
+	} else if r.ChartSpec != nil {
+		return a.analyzeResourceWithResolver(r, r.ChartSpec.Resolver, r.ChartSpec.ResolverProperties)
+	} else if r.AlertSpec != nil {
+		return a.analyzeResourceNotifiers(r, r.AlertSpec.Notifiers)
+	} else if r.ReportSpec != nil {
+		return a.analyzeResourceNotifiers(r, r.ReportSpec.Notifiers)
 	}
 	// Other resource kinds currently don't use connectors.
 	return nil
@@ -124,6 +136,45 @@ func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) erro
 	return nil
 }
 
+// analyzeResourceWithResolver extracts connector metadata for a resource that uses a resolver.
+func (a *connectorAnalyzer) analyzeResourceWithResolver(r *Resource, resolver string, resolverProps *structpb.Struct) error {
+	// The "sql" resolver takes an optional "connector" property
+	if resolver == "sql" {
+		for k, v := range resolverProps.Fields {
+			if k == "connector" {
+				connector := v.GetStringValue()
+				if connector != "" {
+					return a.trackConnector(connector, r, false)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// analyzeResourceNotifiers extracts connector metadata for a resource that uses notifiers (email, slack, etc).
+func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*runtimev1.Notifier) error {
+	for _, n := range notifiers {
+		anonAccess := false
+		if n.Connector == "slack" {
+			// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
+			props, err := slack.DecodeProps(n.Properties.AsMap())
+			if err != nil {
+				return err
+			}
+			if len(props.Users) == 0 && len(props.Channels) == 0 {
+				anonAccess = true
+			}
+		}
+		err := a.trackConnector(n.Connector, r, anonAccess)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // trackConnector tracks a connector and an associated resource in the analyzer's result map
 func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAccess bool) error {
 	res, ok := a.result[connector]
@@ -133,10 +184,22 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 			return err
 		}
 
+		// Searfch rill.yaml for default config properties for this connector
+		var defaultConfig map[string]string
+		if a.parser.RillYAML != nil {
+			for _, c := range a.parser.RillYAML.Connectors {
+				if c.Name == connector {
+					defaultConfig = c.Defaults
+					break
+				}
+			}
+		}
+
 		res = &Connector{
-			Driver:          driver,
 			Name:            connector,
+			Driver:          driver,
 			Spec:            driverConnector.Spec(),
+			DefaultConfig:   defaultConfig,
 			AnonymousAccess: true,
 		}
 

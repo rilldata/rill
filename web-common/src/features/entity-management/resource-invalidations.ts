@@ -1,8 +1,5 @@
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  getLastStateUpdatedOn,
-  resourcesStore,
-} from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
@@ -42,7 +39,8 @@ export function invalidateResourceResponse(
   res: V1WatchResourcesResponse,
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
-  if (!UsedResourceKinds[res.name.kind]) return;
+  if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind])
+    return;
 
   const instanceId = get(runtime).instanceId;
   if (
@@ -60,15 +58,13 @@ export function invalidateResourceResponse(
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
   if (isSoftDelete) {
-    invalidateRemovedResource(queryClient, instanceId, res.resource);
+    void invalidateRemovedResource(queryClient, instanceId, res.resource);
   } else {
-    invalidateResource(queryClient, instanceId, res.resource);
+    void invalidateResource(queryClient, instanceId, res.resource);
   }
 
   // only re-fetch list queries for kinds in `MainResources`
   if (!MainResourceKinds[res.name.kind]) return;
-  resourcesStore.doneReconciling(res.resource);
-  resourcesStore.setResource(res.resource);
   return queryClient.refetchQueries(
     // we only use individual kind's queries
     getRuntimeServiceListResourcesQueryKey(instanceId, {
@@ -82,77 +78,76 @@ async function invalidateResource(
   instanceId: string,
   resource: V1Resource,
 ) {
-  refreshResource(queryClient, instanceId, resource);
+  if (!resource.meta) return;
+  void refreshResource(queryClient, instanceId, resource);
 
-  const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
+  const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
+    resource.meta?.filePaths?.[0] ?? "",
+  ).lastStateUpdatedOn;
   if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
     !lastStateUpdatedOn
   ) {
     // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
     // So handle the case when it is 1st queued and status != IDLE
-    resourcesStore.setVersion(resource);
+    fileArtifacts.updateLastUpdated(resource);
     return;
   }
 
+  // avoid refreshing for cases where event is sent for a resource that has not changed since we last saw it
   if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
     lastStateUpdatedOn === resource.meta.stateUpdatedOn
   )
     return;
 
-  resourcesStore.setVersion(resource);
+  if (fileArtifacts.wasRenaming(resource)) {
+    void queryClient.invalidateQueries(
+      getConnectorServiceOLAPListTablesQueryKey(),
+    );
+  }
+  fileArtifacts.updateArtifacts(resource);
   const failed = !!resource.meta.reconcileError;
 
-  switch (resource.meta.name.kind) {
+  const name = resource.meta?.name?.name ?? "";
+  switch (resource.meta.name?.kind) {
     case ResourceKind.Source:
       if (resource.source?.state?.table)
         // make sure table is populated
-        return invalidateProfilingQueries(
-          queryClient,
-          resource.meta.name.name,
-          failed,
-        );
+        return invalidateProfilingQueries(queryClient, name, failed);
       break;
 
     case ResourceKind.Model:
       if (resource.model?.state?.table)
         // make sure table is populated
-        return invalidateProfilingQueries(
-          queryClient,
-          resource.meta.name.name,
-          failed,
-        );
+        return invalidateProfilingQueries(queryClient, name, failed);
       break;
 
     case ResourceKind.MetricsView:
-      return invalidateMetricsViewData(
-        queryClient,
-        resource.meta.name.name,
-        failed,
-      );
+      return invalidateMetricsViewData(queryClient, name, failed);
   }
 }
 
-async function invalidateRemovedResource(
+function invalidateRemovedResource(
   queryClient: QueryClient,
   instanceId: string,
   resource: V1Resource,
 ) {
+  const name = resource.meta?.name?.name ?? "";
   queryClient.removeQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": resource.meta.name.name,
-      "name.kind": resource.meta.name.kind,
+      "name.name": name,
+      "name.kind": resource.meta?.name?.kind,
     }),
   );
-  resourcesStore.deleteResource(resource);
+  fileArtifacts.deleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
   // There could still be some errors because of the race condition between a view/table deleted and we getting the event
-  switch (resource.meta.name.kind) {
+  switch (resource?.meta?.name?.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
       void queryClient.cancelQueries({
-        predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
+        predicate: (query) => isProfilingQuery(query, name),
       });
       void queryClient.invalidateQueries(
         getConnectorServiceOLAPListTablesQueryKey(),
@@ -160,8 +155,7 @@ async function invalidateRemovedResource(
       break;
     case ResourceKind.MetricsView:
       void queryClient.cancelQueries({
-        predicate: (query) =>
-          invalidationForMetricsViewData(query, resource.meta.name.name),
+        predicate: (query) => invalidationForMetricsViewData(query, name),
       });
       break;
   }
@@ -173,17 +167,14 @@ function shouldSkipResource(
   instanceId: string,
   res: V1Resource,
 ) {
-  switch (res.meta.reconcileStatus) {
+  switch (res.meta?.reconcileStatus) {
     case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
       return true;
 
     case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-      refreshResource(queryClient, instanceId, res);
-      return true;
-
     case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-      refreshResource(queryClient, instanceId, res);
-      resourcesStore.reconciling(res);
+      void refreshResource(queryClient, instanceId, res);
+      fileArtifacts.updateReconciling(res);
       return true;
   }
 
@@ -197,8 +188,8 @@ export function refreshResource(
 ) {
   return queryClient.resetQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": res.meta.name.name,
-      "name.kind": res.meta.name.kind,
+      "name.name": res.meta?.name?.name,
+      "name.kind": res.meta?.name?.kind,
     }),
   );
 }

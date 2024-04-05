@@ -145,12 +145,21 @@ export class DashboardState extends Message<DashboardState> {
   expandedMeasure?: string;
 
   /**
+   * Pin index for TDD table selected values
+   *
    * @generated from field: optional int32 pin_index = 19;
    */
   pinIndex?: number;
 
   /**
+   * Type of visualization for TDD view
    *
+   * @generated from field: optional string chart_type = 33;
+   */
+  chartType?: string;
+
+  /**
+   * *
    * Pivot related fields
    *
    * @generated from field: optional bool pivot_is_active = 22;
@@ -248,6 +257,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 33, name: "chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 23, name: "pivot_row_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 24, name: "pivot_row_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -342,7 +352,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
 ]);
 
 /**
- *
+ * *
  * SortType is used to determine how to sort the leaderboard
  * and dimension detail table, as well as where to place the
  * sort arrow.

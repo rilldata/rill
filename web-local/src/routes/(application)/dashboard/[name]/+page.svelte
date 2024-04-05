@@ -8,10 +8,8 @@
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    getResourceStatusStore,
-    ResourceStatus,
-  } from "@rilldata/web-common/features/entity-management/resource-status-utils";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
@@ -31,6 +29,7 @@
     metricViewName,
     EntityType.MetricsDefinition,
   );
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
@@ -44,14 +43,13 @@
     },
   });
 
-  $: resourceStatusStore = getResourceStatusStore(
+  $: resourceStatusStore = fileArtifact.getResourceStatusStore(
     queryClient,
     $runtime.instanceId,
-    filePath,
     (res) => !!res?.metricsView?.state?.validSpec,
   );
   let showErrorPage = false;
-  $: if (metricViewName) {
+  $: if (metricViewName && $resourceStatusStore) {
     showErrorPage = false;
     if ($resourceStatusStore.status === ResourceStatus.Errored) {
       // When the catalog entry doesn't exist, the dashboard config is invalid

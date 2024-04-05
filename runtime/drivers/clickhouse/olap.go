@@ -55,6 +55,11 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
 	if err != nil {
 		return err
@@ -76,6 +81,11 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
 		conn, release, err := c.acquireMetaConn(ctx)
@@ -464,7 +474,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// All other complex types have details in parentheses after the type name.
 	base, args, ok := splitBaseAndArgs(dbt)
 	if !ok {
-		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+		return nil, errUnsupportedType
 	}
 
 	switch base {
@@ -496,7 +506,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "MAP":
 		fieldStrs := strings.Split(args, ",")
 		if len(fieldStrs) != 2 {
-			return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+			return nil, errUnsupportedType
 		}
 
 		keyType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
@@ -518,7 +528,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		// Representing enums as strings
 		t.Code = runtimev1.Type_CODE_STRING
 	default:
-		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+		return nil, errUnsupportedType
 	}
 
 	return t, nil
@@ -539,3 +549,5 @@ func splitBaseAndArgs(s string) (string, string, bool) {
 
 	return base, rest, true
 }
+
+var errUnsupportedType = errors.New("encountered unsupported clickhouse type")

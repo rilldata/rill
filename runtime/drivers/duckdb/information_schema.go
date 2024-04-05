@@ -180,9 +180,13 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "TIMESTAMP":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "TIMESTAMPTZ", "TIMESTAMP WITH TIME ZONE":
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATE":
 		t.Code = runtimev1.Type_CODE_DATE
 	case "TIME":
+		t.Code = runtimev1.Type_CODE_TIME
+	case "TIME WITH TIME ZONE":
 		t.Code = runtimev1.Type_CODE_TIME
 	case "INTERVAL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - Consider adding interval type
@@ -206,10 +210,6 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	case "CHAR":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "TIMESTAMP WITH TIME ZONE":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "TIME WITH TIME ZONE":
-		t.Code = runtimev1.Type_CODE_TIME
 	case "NULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	default:

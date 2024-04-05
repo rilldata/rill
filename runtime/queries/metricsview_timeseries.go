@@ -282,14 +282,19 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		selectCols = append(selectCols, expr)
 	}
 
+	td := safeName(mv.TimeDimension)
+	if olap.Dialect() == drivers.DialectDuckDB {
+		td = fmt.Sprintf("%s::TIMESTAMP", td)
+	}
+
 	whereClause := "1=1"
 	args := []any{}
 	if q.TimeStart != nil {
-		whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
+		whereClause += fmt.Sprintf(" AND %s >= ?", td)
 		args = append(args, q.TimeStart.AsTime())
 	}
 	if q.TimeEnd != nil {
-		whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
+		whereClause += fmt.Sprintf(" AND %s < ?", td)
 		args = append(args, q.TimeEnd.AsTime())
 	}
 
@@ -368,15 +373,15 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(mv *runtimev1.MetricsViewSpec, tsA
 }
 
 func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause, timezone string) string {
-	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+	dateTruncSpecifier := drivers.DialectClickHouse.ConvertToDateTruncSpecifier(q.TimeGranularity)
 
 	shift := "" // shift to accommodate FirstDayOfWeek or FirstMonthOfYear
 	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
 		offset := 8 - mv.FirstDayOfWeek
-		shift = fmt.Sprintf("%d DAY", offset)
+		shift = fmt.Sprintf("%d day", offset)
 	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
 		offset := 13 - mv.FirstMonthOfYear
-		shift = fmt.Sprintf("%d MONTH", offset)
+		shift = fmt.Sprintf("%d month", offset)
 	}
 
 	sql := ""
@@ -427,7 +432,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 }
 
 func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause, timezone string) string {
-	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+	dateTruncSpecifier := drivers.DialectDuckDB.ConvertToDateTruncSpecifier(q.TimeGranularity)
 
 	shift := "" // shift to accommodate FirstDayOfWeek or FirstMonthOfYear
 	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {

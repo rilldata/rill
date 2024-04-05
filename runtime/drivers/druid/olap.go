@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 const (
@@ -69,6 +70,11 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
 		if err != nil {

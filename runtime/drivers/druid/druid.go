@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
@@ -15,26 +16,38 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 )
 
-var spec = drivers.Spec{
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			Description: "Druid connection string (using the Avatica protobuf endpoint)",
-			Secret:      true,
-		},
-	},
-}
-
 func init() {
 	drivers.Register("druid", &driver{})
 	drivers.RegisterAsConnector("druid", &driver{})
 }
 
+var spec = drivers.Spec{
+	DisplayName: "Druid",
+	Description: "Connect to Apache Druid.",
+	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/druid",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Connection string",
+			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
+			Secret:      true,
+		},
+	},
+	ImplementsOLAP: true,
+}
+
 type driver struct{}
 
 var _ drivers.Driver = &driver{}
+
+type configProperties struct {
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
+	LogQueries bool `mapstructure:"log_queries"`
+}
 
 // Opens a connection to Apache Druid using HTTP API.
 // Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
@@ -42,12 +55,17 @@ func (d *driver) Open(config map[string]any, shared bool, client *activity.Clien
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open druid connection")
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(confMap, conf)
+	if err != nil {
+		return nil, err
 	}
 
-	dsn, err := correctURL(dsn)
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("no DSN provided to open the connection")
+	}
+	dsn, err := correctURL(conf.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +85,8 @@ func (d *driver) Open(config map[string]any, shared bool, client *activity.Clien
 
 	conn := &connection{
 		db:     db,
-		config: config,
+		config: conf,
+		logger: logger,
 	}
 	return conn, nil
 }
@@ -90,7 +109,8 @@ func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]an
 
 type connection struct {
 	db     *sqlx.DB
-	config map[string]any
+	config *configProperties
+	logger *zap.Logger
 }
 
 // Driver implements drivers.Connection.
@@ -100,7 +120,9 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.config, m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -167,6 +189,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // Use OLAPStore instead.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 func (c *connection) EstimateSize() (int64, bool) {

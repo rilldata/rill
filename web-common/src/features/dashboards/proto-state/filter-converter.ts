@@ -1,4 +1,4 @@
-import type { Value } from "@bufbuild/protobuf/dist/cjs/google/protobuf/struct_pb";
+import type { Value } from "@bufbuild/protobuf";
 import {
   createAndExpression,
   createInExpression,

@@ -3,7 +3,6 @@ import {
   DEFAULT_INSPECTOR_WIDTH,
   DEFAULT_PREVIEW_TABLE_HEIGHT,
 } from "../config";
-import { page } from "$app/stores";
 import { derived } from "svelte/store";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
@@ -16,6 +15,9 @@ type WorkspaceLayout = {
     height: number;
     visible: boolean;
   };
+  editor: {
+    autoSave: boolean;
+  };
 };
 
 class WorkspaceLayoutStore {
@@ -23,6 +25,7 @@ class WorkspaceLayoutStore {
   private inspectorWidth = writable<number>(DEFAULT_INSPECTOR_WIDTH);
   private tableVisible = writable<boolean>(true);
   private tableHeight = writable<number>(DEFAULT_PREVIEW_TABLE_HEIGHT);
+  private autoSave = writable<boolean>(true);
 
   constructor(key: string) {
     const history = localStorage.getItem(key);
@@ -37,11 +40,12 @@ class WorkspaceLayoutStore {
         parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
       );
       this.tableVisible.set(parsed?.table?.visible ?? true);
+      this.autoSave.set(parsed?.editor?.autoSave ?? true);
     }
 
     const debouncer = debounce(
       (v: WorkspaceLayout) => localStorage.setItem(key, JSON.stringify(v)),
-      750,
+      500,
     );
 
     this.subscribe((v) => debouncer(v));
@@ -53,8 +57,15 @@ class WorkspaceLayoutStore {
       this.inspectorWidth,
       this.tableHeight,
       this.tableVisible,
+      this.autoSave,
     ],
-    ([$inspectorVisible, $inspectorWidth, $tableHeight, $tableVisible]) => {
+    ([
+      $inspectorVisible,
+      $inspectorWidth,
+      $tableHeight,
+      $tableVisible,
+      $autoSave,
+    ]) => {
       const layout: WorkspaceLayout = {
         inspector: {
           visible: $inspectorVisible,
@@ -63,6 +74,9 @@ class WorkspaceLayoutStore {
         table: {
           height: $tableHeight,
           visible: $tableVisible,
+        },
+        editor: {
+          autoSave: $autoSave,
         },
       };
       return layout;
@@ -88,25 +102,27 @@ class WorkspaceLayoutStore {
       toggle: () => this.tableVisible.update((v) => !v),
     };
   }
+
+  get editor() {
+    return {
+      autoSave: this.autoSave,
+    };
+  }
 }
 
 class Workspaces {
   private workspaces = new Map<string, WorkspaceLayoutStore>();
 
-  subscribe = derived([page], ([$page]) => {
-    const context = $page.route.id ?? crypto.randomUUID();
-    const assetId = $page.params.name;
-
-    const key = `${context}:${assetId}`;
-
-    let store = this.workspaces.get(key);
+  get = (context: string) => {
+    let store = this.workspaces.get(context);
 
     if (!store) {
-      store = new WorkspaceLayoutStore(key);
-      this.workspaces.set(key, store);
+      store = new WorkspaceLayoutStore(context);
+      this.workspaces.set(context, store);
     }
+
     return store;
-  }).subscribe;
+  };
 }
 
 export const workspaces = new Workspaces();

@@ -9,7 +9,6 @@ import {
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1ListFilesResponse,
-  createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
@@ -22,7 +21,9 @@ import {
 } from "../sources/selectors";
 
 export function useModels(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Model);
+  return useFilteredResources(instanceId, ResourceKind.Model, (data) =>
+    data.resources?.filter((r) => !!r.model?.state?.table),
+  );
 }
 
 export function useModelNames(instanceId: string) {
@@ -82,15 +83,5 @@ export async function getModelNames(
     .map((path) => path.replace("/models/", "").replace(".sql", ""))
     // sort alphabetically case-insensitive
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-  return modelNames;
-}
-
-export function useModelFileIsEmpty(instanceId, modelName) {
-  return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
-    query: {
-      select(data) {
-        return data?.blob?.length === 0;
-      },
-    },
-  });
+  return modelNames ?? [];
 }
