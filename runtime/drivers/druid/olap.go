@@ -146,6 +146,12 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
+// In druid there are multiple schemas but all user tables are in druid schema.
+// Other useful schema is INFORMATION_SCHEMA for metadata.
+// There are 2 more schemas - sys (internal things) and lookup (druid specific lookup).
+// While querying druid does not support db name just use schema.table
+//
+// Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
 type informationSchema struct {
 	c *connection
 }
@@ -157,7 +163,6 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	q := `
 		SELECT
-			T.TABLE_CATALOG AS DATABASE,
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
@@ -167,7 +172,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid'
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
 	rows, err := i.c.db.QueryxContext(ctx, q)
@@ -187,7 +192,6 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	q := `
 		SELECT
-			T.TABLE_CATALOG AS DATABASE,
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
@@ -197,7 +201,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
 	rows, err := i.c.db.QueryxContext(ctx, q, name)
@@ -222,7 +226,6 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	var res []*drivers.Table
 
 	for rows.Next() {
-		var database string
 		var schema string
 		var name string
 		var tableType string
@@ -230,7 +233,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var columnType string
 		var nullable bool
 
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType, &nullable)
+		err := rows.Scan(&schema, &name, &tableType, &columnName, &columnType, &nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -239,15 +242,13 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var t *drivers.Table
 		if len(res) > 0 {
 			t = res[len(res)-1]
-			if !(t.Database == database && t.DatabaseSchema == schema && t.Name == name) {
+			if !(t.DatabaseSchema == schema && t.Name == name) {
 				t = nil
 			}
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database:                database,
 				DatabaseSchema:          schema,
-				IsDefaultDatabase:       true,
 				IsDefaultDatabaseSchema: true,
 				Name:                    name,
 				Schema:                  &runtimev1.StructType{},
