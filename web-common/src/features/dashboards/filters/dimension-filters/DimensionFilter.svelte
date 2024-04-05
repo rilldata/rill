@@ -12,7 +12,6 @@
 
   export let name: string;
   export let label: string;
-  export let column: string;
   export let selectedValues: string[];
 
   const StateManagers = getStateManagers();
