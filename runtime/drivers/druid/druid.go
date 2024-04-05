@@ -191,7 +191,6 @@ func correctURL(dsn string) (string, error) {
 			dsn = u.Scheme + "://" + avaticaUser + ":" + avaticaPassword + "@" + u.Host + "/druid/v2/sql"
 		} else {
 			dsn = u.Scheme + "://" + u.Host + "/druid/v2/sql"
-
 		}
 	}
 	return dsn, nil
