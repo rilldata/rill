@@ -1,17 +1,17 @@
 <script lang="ts">
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
+  import { page } from "$app/stores";
 
   let resizing = false;
 
-  $: workspace = $workspaces;
-
+  $: context = $page.url.pathname;
+  $: workspace = workspaces.get(context);
   $: width = workspace.inspector.width;
-
   $: visible = workspace.inspector.visible;
 </script>
 
-<div
+<aside
   class="inspector-wrapper"
   class:closed={!$visible}
   class:resizing
@@ -29,14 +29,14 @@
   <div class="inner" style:width="{$width}px">
     <slot />
   </div>
-</div>
+</aside>
 
 <style lang="postcss">
   .inspector-wrapper {
     will-change: width;
     @apply h-full flex-none relative;
     @apply border-l border-gray-200 bg-white;
-    @apply overflow-y-scroll overflow-x-hidden;
+    @apply overflow-y-auto overflow-x-hidden;
   }
 
   .inner {

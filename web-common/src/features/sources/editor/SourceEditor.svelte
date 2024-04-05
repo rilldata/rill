@@ -1,68 +1,40 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import { overlay } from "../../../layout/overlay-store";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
-  import { saveAndRefresh } from "../saveAndRefresh";
-  import { useIsSourceUnsaved } from "../selectors";
-  import { useSourceStore } from "../sources-store";
+  import { createEventDispatcher } from "svelte";
+  import type { EditorView } from "@codemirror/view";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
 
-  export let filePath: string;
-  export let yaml: string;
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  const dispatch = createEventDispatcher();
 
-  let editor: YAMLEditor;
+  export let blob: string;
+  export let latest: string;
+  export let hasUnsavedChanges: boolean;
+  export let allErrors: V1ParseError[];
+
   let view: EditorView;
 
-  const queryClient = useQueryClient();
-  $: sourceStore = useSourceStore(filePath);
-
-  $: isSourceUnsavedQuery = useIsSourceUnsaved(
-    $runtime.instanceId,
-    filePath,
-    $sourceStore.clientYAML,
-  );
-  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
+  $: latest = blob;
 
   function handleUpdate(e: CustomEvent<{ content: string }>) {
-    // Update the client-side store
-    sourceStore.set({ clientYAML: e.detail.content });
+    latest = e.detail.content;
 
     // Clear line errors (it's confusing when they're outdated)
     setLineStatuses([], view);
   }
 
-  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
+  //  Handle errors
+  $: if (view) setLineStatuses(mapParseErrorsToLines(allErrors, blob), view);
 
-  /**
-   * Handle errors.
-   */
-  $: {
-    const lineBasedReconciliationErrors = mapParseErrorsToLines(
-      $allErrors,
-      yaml,
-    );
-    if (view) setLineStatuses(lineBasedReconciliationErrors, view);
-  }
-
-  async function handleModSave(event: KeyboardEvent) {
+  function handleModSave(event: KeyboardEvent) {
     // Check if a Modifier Key + S is pressed
     if (!(event.metaKey || event.ctrlKey) || event.key !== "s") return;
 
-    // Prevent default behaviour
     event.preventDefault();
 
-    // Save the source, if it's unsaved
-    if (!isSourceUnsaved) return;
-    overlay.set({ title: `Importing ${filePath}` });
-    await saveAndRefresh(filePath, $sourceStore.clientYAML);
-    checkSourceImported(queryClient, filePath);
-    overlay.set(null);
+    if (!hasUnsavedChanges) return;
+    dispatch("save");
   }
 </script>
 
@@ -70,11 +42,6 @@
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
-    <YAMLEditor
-      bind:this={editor}
-      bind:view
-      content={$sourceStore.clientYAML}
-      on:update={handleUpdate}
-    />
+    <YAMLEditor content={latest} bind:view on:update={handleUpdate} />
   </div>
 </div>

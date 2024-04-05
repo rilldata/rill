@@ -9,16 +9,14 @@
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
+  import { useGetDashboardsForModel } from "../../dashboards/selectors";
 
-  export let availableDashboards: Array<V1Resource>;
   export let modelName: string;
   export let suppressTooltips = false;
   export let modelHasError = false;
@@ -26,6 +24,10 @@
   export let collapse = false;
 
   const exportModelMutation = createExportTableMutation();
+
+  $: dashboardsQuery = useGetDashboardsForModel($runtime.instanceId, modelName);
+
+  $: availableDashboards = $dashboardsQuery.data ?? [];
 
   const onExport = async (format: V1ExportFormat) => {
     return $exportModelMutation.mutateAsync({
