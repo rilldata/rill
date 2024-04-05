@@ -216,3 +216,8 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
+
+// AsNotifier implements drivers.Handle.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}

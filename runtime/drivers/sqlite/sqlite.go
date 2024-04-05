@@ -162,3 +162,8 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}

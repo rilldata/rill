@@ -10,7 +10,7 @@
   $: width = contentRect.width;
 </script>
 
-<div class="flex flex-col h-screen w-full overflow-hidden" bind:contentRect>
+<main class="flex flex-col h-screen w-full overflow-hidden" bind:contentRect>
   {#if $$slots.header}
     <header class="bg-white w-full h-fit">
       <slot name="header" />
@@ -27,4 +27,4 @@
       </Inspector>
     {/if}
   </div>
-</div>
+</main>

@@ -11,7 +11,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -394,9 +396,25 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Res
 	}
 
 	// Allow if the user is a recipient
-	for _, recipient := range report.Spec.EmailRecipients {
-		if recipient == email {
-			return r, true, nil
+	for _, notifier := range report.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
+				if user == email {
+					return r, true, nil
+				}
+			}
 		}
 	}
 
@@ -429,9 +447,25 @@ func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Reso
 	}
 
 	// Allow if the user is an email recipient
-	for _, recipient := range alert.Spec.EmailRecipients {
-		if recipient == email {
-			return r, true, nil
+	for _, notifier := range alert.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
+				if user == email {
+					return r, true, nil
+				}
+			}
 		}
 	}
 

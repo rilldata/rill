@@ -1745,9 +1745,9 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated string email_recipients = 9;
+   * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
-  emailRecipients: string[] = [];
+  notifiers: Notifier[] = [];
 
   /**
    * @generated from field: map<string, string> annotations = 10;
@@ -1770,7 +1770,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 9, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -2030,34 +2030,34 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * @generated from field: repeated string email_recipients = 14;
+   * @generated from field: bool notify_on_recover = 15;
    */
-  emailRecipients: string[] = [];
+  notifyOnRecover = false;
 
   /**
-   * @generated from field: bool email_on_recover = 15;
+   * @generated from field: bool notify_on_fail = 16;
    */
-  emailOnRecover = false;
+  notifyOnFail = false;
 
   /**
-   * @generated from field: bool email_on_fail = 16;
+   * @generated from field: bool notify_on_error = 17;
    */
-  emailOnFail = false;
+  notifyOnError = false;
 
   /**
-   * @generated from field: bool email_on_error = 17;
+   * @generated from field: bool renotify = 18;
    */
-  emailOnError = false;
+  renotify = false;
 
   /**
-   * @generated from field: bool email_renotify = 18;
+   * @generated from field: uint32 renotify_after_seconds = 19;
    */
-  emailRenotify = false;
+  renotifyAfterSeconds = 0;
 
   /**
-   * @generated from field: uint32 email_renotify_after_seconds = 19;
+   * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 21;
    */
-  emailRenotifyAfterSeconds = 0;
+  notifiers: Notifier[] = [];
 
   /**
    * @generated from field: map<string, string> annotations = 20;
@@ -2085,12 +2085,12 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
-    { no: 14, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 15, name: "email_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 16, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 18, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 19, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 21, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -2108,6 +2108,49 @@ export class AlertSpec extends Message<AlertSpec> {
 
   static equals(a: AlertSpec | PlainMessage<AlertSpec> | undefined, b: AlertSpec | PlainMessage<AlertSpec> | undefined): boolean {
     return proto3.util.equals(AlertSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Notifier
+ */
+export class Notifier extends Message<Notifier> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct properties = 2;
+   */
+  properties?: Struct;
+
+  constructor(data?: PartialMessage<Notifier>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Notifier";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Notifier {
+    return new Notifier().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Notifier {
+    return new Notifier().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Notifier {
+    return new Notifier().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Notifier | PlainMessage<Notifier> | undefined, b: Notifier | PlainMessage<Notifier> | undefined): boolean {
+    return proto3.util.equals(Notifier, a, b);
   }
 }
 
@@ -2193,9 +2236,9 @@ export class AlertExecution extends Message<AlertExecution> {
   result?: AssertionResult;
 
   /**
-   * @generated from field: bool sent_emails = 3;
+   * @generated from field: bool sent_notifications = 3;
    */
-  sentEmails = false;
+  sentNotifications = false;
 
   /**
    * @generated from field: google.protobuf.Timestamp execution_time = 4;
@@ -2222,7 +2265,7 @@ export class AlertExecution extends Message<AlertExecution> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "result", kind: "message", T: AssertionResult },
-    { no: 3, name: "sent_emails", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "sent_notifications", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "execution_time", kind: "message", T: Timestamp },
     { no: 5, name: "started_on", kind: "message", T: Timestamp },
     { no: 6, name: "finished_on", kind: "message", T: Timestamp },

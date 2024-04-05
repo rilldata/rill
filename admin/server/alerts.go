@@ -18,7 +18,9 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -274,12 +276,22 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts := recreateAlertOptionsFromSpec(spec)
+	opts, err := recreateAlertOptionsFromSpec(spec)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
+	}
 
 	found := false
-	for idx, email := range opts.Recipients {
+	for idx, email := range opts.EmailRecipients {
 		if strings.EqualFold(user.Email, email) {
-			opts.Recipients = slices.Delete(opts.Recipients, idx, idx+1)
+			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, email := range opts.SlackUsers {
+		if strings.EqualFold(user.Email, email) {
+			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
 			found = true
 			break
 		}
@@ -289,7 +301,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
-	if len(opts.Recipients) == 0 {
+	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -449,9 +461,13 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
 	res.Query.For.UserID = ownerUserID
-	res.Email.Recipients = opts.Recipients
-	res.Email.Renotify = opts.EmailRenotify
-	res.Email.RenotifyAfter = opts.EmailRenotifyAfterSeconds
+	// Notification options
+	res.Renotify = opts.Renotify
+	res.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.Email.Recipients = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Users = opts.SlackUsers
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -477,9 +493,13 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
-	res.Email.Recipients = opts.Recipients
-	res.Email.Renotify = opts.EmailRenotify
-	res.Email.RenotifyAfter = opts.EmailRenotifyAfterSeconds
+	// Notification options
+	res.Renotify = opts.Renotify
+	res.RenotifyAfter = opts.RenotifyAfterSeconds
+	res.Notify.Email.Recipients = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Users = opts.SlackUsers
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	return yaml.Marshal(res)
 }
 
@@ -521,16 +541,31 @@ func randomAlertName(title string) string {
 	return name
 }
 
-func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) *adminv1.AlertOptions {
+func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
 	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
 	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.Recipients = spec.EmailRecipients
-	opts.EmailRenotify = spec.EmailRenotify
-	opts.EmailRenotifyAfterSeconds = spec.EmailRenotifyAfterSeconds
-	return opts
+	opts.Renotify = spec.Renotify
+	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
+	for _, notifier := range spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, err
+			}
+			opts.SlackUsers = props.Users
+			opts.SlackChannels = props.Channels
+			opts.SlackWebhooks = props.Webhooks
+		default:
+			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
+		}
+	}
+	return opts, nil
 }
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
@@ -550,11 +585,18 @@ type alertYAML struct {
 			UserID string `yaml:"user_id"`
 		} `yaml:"for"`
 	} `yaml:"query"`
-	Email struct {
-		Recipients    []string `yaml:"recipients"`
-		Renotify      bool     `yaml:"renotify"`
-		RenotifyAfter uint32   `yaml:"renotify_after"`
-	} `yaml:"email"`
+	Renotify      bool   `yaml:"renotify"`
+	RenotifyAfter uint32 `yaml:"renotify_after"`
+	Notify        struct {
+		Email struct {
+			Recipients []string `yaml:"emails"`
+		}
+		Slack struct {
+			Users    []string `yaml:"users"`
+			Channels []string `yaml:"channels"`
+			Webhooks []string `yaml:"webhooks"`
+		}
+	}
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
 }
 
