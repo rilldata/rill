@@ -114,8 +114,8 @@ func (i *Instance) ResolveVariables() map[string]string {
 func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
-		DownloadRowLimit:                  10_000,
-		PivotCellLimit:                    1_000_000,
+		DownloadRowLimit:                  200_000,
+		PivotCellLimit:                    2_000_000,
 		InteractiveSQLRowLimit:            10_000,
 		StageChanges:                      true,
 		ModelDefaultMaterialize:           false,
