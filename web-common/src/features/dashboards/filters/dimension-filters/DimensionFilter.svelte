@@ -36,7 +36,7 @@
     $metricsViewName,
     name,
   );
-  $: stringLikeDimension = STRING_LIKES.has($dimensionType.data);
+  $: stringLikeDimension = STRING_LIKES.has($dimensionType.data ?? "");
 
   $: if (isOpen) {
     topListQuery = getFilterSearchList(StateManagers, {

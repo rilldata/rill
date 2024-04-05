@@ -63,7 +63,7 @@ export const getFilterSearchList = (
     dimension: string;
     addNull: boolean;
     searchText: string;
-    type: string;
+    type: string | undefined;
   },
 ): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
   return derived(
@@ -87,7 +87,7 @@ export const getFilterSearchList = (
           sort: [],
           where: addNull
             ? createInExpression(dimension, [null])
-            : STRING_LIKES.has(type)
+            : STRING_LIKES.has(type ?? "")
               ? createLikeExpression(dimension, `%${searchText}%`)
               : undefined,
         },
