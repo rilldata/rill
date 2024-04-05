@@ -14,7 +14,7 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ListConnectorsResponse,
+  V1ListConnectorDriversResponse,
   RpcStatus,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
@@ -34,6 +34,8 @@ import type {
   RuntimeServiceListCatalogEntriesParams,
   V1GetCatalogEntryResponse,
   V1TriggerRefreshResponse,
+  V1AnalyzeConnectorsResponse,
+  V1ListNotifierConnectorsResponse,
   V1ListFilesResponse,
   RuntimeServiceListFilesParams,
   V1GetFileResponse,
@@ -84,32 +86,32 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 /**
- * @summary ListConnectors returns a description of all the connectors implemented in the runtime,
-including their schema and validation rules
+ * @summary ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+including their configuration specs and the capabilities they support.
  */
-export const runtimeServiceListConnectors = (signal?: AbortSignal) => {
-  return httpClient<V1ListConnectorsResponse>({
+export const runtimeServiceListConnectorDrivers = (signal?: AbortSignal) => {
+  return httpClient<V1ListConnectorDriversResponse>({
     url: `/v1/connectors/meta`,
     method: "get",
     signal,
   });
 };
 
-export const getRuntimeServiceListConnectorsQueryKey = () => [
+export const getRuntimeServiceListConnectorDriversQueryKey = () => [
   `/v1/connectors/meta`,
 ];
 
-export type RuntimeServiceListConnectorsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceListConnectors>>
+export type RuntimeServiceListConnectorDriversQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>
 >;
-export type RuntimeServiceListConnectorsQueryError = ErrorType<RpcStatus>;
+export type RuntimeServiceListConnectorDriversQueryError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceListConnectors = <
-  TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
+export const createRuntimeServiceListConnectorDrivers = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
   TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
+    Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
     TError,
     TData
   >;
@@ -117,14 +119,14 @@ export const createRuntimeServiceListConnectors = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceListConnectorsQueryKey();
+    queryOptions?.queryKey ?? getRuntimeServiceListConnectorDriversQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceListConnectors>>
-  > = ({ signal }) => runtimeServiceListConnectors(signal);
+    Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>
+  > = ({ signal }) => runtimeServiceListConnectorDrivers(signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
+    Awaited<ReturnType<typeof runtimeServiceListConnectorDrivers>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
@@ -750,6 +752,132 @@ export const createRuntimeServiceTriggerRefresh = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+ */
+export const runtimeServiceAnalyzeConnectors = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1AnalyzeConnectorsResponse>({
+    url: `/v1/instances/${instanceId}/connectors/analyze`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceAnalyzeConnectorsQueryKey = (
+  instanceId: string,
+) => [`/v1/instances/${instanceId}/connectors/analyze`];
+
+export type RuntimeServiceAnalyzeConnectorsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>
+>;
+export type RuntimeServiceAnalyzeConnectorsQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceAnalyzeConnectors = <
+  TData = Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>
+  > = ({ signal }) => runtimeServiceAnalyzeConnectors(instanceId, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeConnectors>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+ */
+export const runtimeServiceListNotifierConnectors = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListNotifierConnectorsResponse>({
+    url: `/v1/instances/${instanceId}/connectors/notifiers`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListNotifierConnectorsQueryKey = (
+  instanceId: string,
+) => [`/v1/instances/${instanceId}/connectors/notifiers`];
+
+export type RuntimeServiceListNotifierConnectorsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>
+>;
+export type RuntimeServiceListNotifierConnectorsQueryError =
+  ErrorType<RpcStatus>;
+
+export const createRuntimeServiceListNotifierConnectors = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListNotifierConnectorsQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>
+  > = ({ signal }) => runtimeServiceListNotifierConnectors(instanceId, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceListNotifierConnectors>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListFiles lists all the files matching a glob in a repo.
 The files are sorted by their full path.

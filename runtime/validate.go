@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -87,7 +88,7 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 
 	// Check dimension columns exist
 	for idx, d := range mv.Dimensions {
-		err = validateDimension(ctx, olap, t, d, fields)
+		err = validateDimensionExist(d, fields)
 		if err != nil {
 			res.DimensionErrs = append(res.DimensionErrs, IndexErr{
 				Idx: idx,
@@ -96,14 +97,28 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		}
 	}
 
-	// Check measure expressions are valid
-	for idx, d := range mv.Measures {
-		err := validateMeasure(ctx, olap, t, d)
-		if err != nil {
-			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
-				Idx: idx,
-				Err: fmt.Errorf("invalid expression for measure %q: %w", d.Name, err),
-			})
+	err = validateAllDimensionAndMeasureExpr(ctx, olap, t, mv)
+	if err != nil {
+		// Some measure or dimension failed validation, check individuals to provide useful errors
+		// Check dimension expressions are valid
+		for idx, d := range mv.Dimensions {
+			err = validateDimensionExpr(ctx, olap, t, d)
+			if err != nil {
+				res.DimensionErrs = append(res.DimensionErrs, IndexErr{
+					Idx: idx,
+					Err: err,
+				})
+			}
+		}
+		// Check measure expressions are valid
+		for idx, m := range mv.Measures {
+			err := validateMeasure(ctx, olap, t, m)
+			if err != nil {
+				res.MeasureErrs = append(res.MeasureErrs, IndexErr{
+					Idx: idx,
+					Err: fmt.Errorf("invalid expression for measure %q: %w", m.Name, err),
+				})
+			}
 		}
 	}
 
@@ -120,16 +135,53 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 	return res, nil
 }
 
-func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
+func validateDimensionExist(d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
 	if d.Column != "" {
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
 			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
 		}
+	}
+	return nil
+}
+
+func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, mv *runtimev1.MetricsViewSpec) error {
+	var dimExprs []string
+	var groupIndexes []string
+	for idx, d := range mv.Dimensions {
+		dimExprs = append(dimExprs, extractDimExpr(d))
+		groupIndexes = append(groupIndexes, strconv.Itoa(idx+1))
+	}
+	var metricExprs []string
+	for _, m := range mv.Measures {
+		metricExprs = append(metricExprs, m.Expression) // note the = instead of :=
+	}
+	var query string
+	if len(dimExprs) == 0 && len(metricExprs) == 0 {
+		// No metric and dimension, nothing to check
 		return nil
 	}
-
+	if len(dimExprs) == 0 {
+		// Only metrics
+		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), safeSQLName(t.Name))
+	} else if len(metricExprs) == 0 {
+		// No metrics
+		query = fmt.Sprintf("SELECT (%s) FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+	} else {
+		query = fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+	}
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
+		Query:  query,
+		DryRun: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to validate dims and metrics: %w", err)
+	}
+	return nil
+}
+
+func validateDimensionExpr(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2) error {
+	err := olap.Exec(ctx, &drivers.Statement{
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", extractDimExpr(d), safeSQLName(t.Name)),
 		DryRun: true,
 	})
 	if err != nil {
@@ -151,4 +203,11 @@ func safeSQLName(name string) string {
 		return name
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+}
+
+func extractDimExpr(d *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if d.Column != "" {
+		return "\"" + d.Column + "\""
+	}
+	return d.Expression
 }

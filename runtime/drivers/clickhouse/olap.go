@@ -55,6 +55,11 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
 	if err != nil {
 		return err
@@ -76,6 +81,11 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
 		conn, release, err := c.acquireMetaConn(ctx)

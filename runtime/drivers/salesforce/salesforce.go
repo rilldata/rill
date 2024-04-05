@@ -23,7 +23,34 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	SourceProperties: []drivers.PropertySchema{
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "username",
+			Type:   drivers.StringPropertyType,
+			Secret: false,
+		},
+		{
+			Key:    "password",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "endpoint",
+			Type:   drivers.StringPropertyType,
+			Secret: false,
+		},
+		{
+			Key:    "client_id",
+			Type:   drivers.StringPropertyType,
+			Secret: false,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "soql",
 			Type:        drivers.StringPropertyType,
@@ -49,30 +76,30 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "username",
-			DisplayName: "Salesforce Username",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Salesforce Username",
 			Required:    false,
 			Placeholder: "user@example.com",
 			Hint:        "Either set this or pass --var connector.salesforce.username=... to rill start",
 		},
 		{
 			Key:         "password",
-			DisplayName: "Salesforce Password",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Salesforce Password",
 			Required:    false,
 			Hint:        "Either set this or pass --var connector.salesforce.password=... to rill start",
 		},
 		{
 			Key:         "key",
-			DisplayName: "JWT Key for Authentication",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Either set this or pass --var connector.salesforce.key=... to rill start",
 		},
 		{
 			Key:         "endpoint",
-			DisplayName: "Login Endpoint",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Login Endpoint",
 			Required:    false,
 			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
@@ -80,35 +107,14 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "client_id",
-			DisplayName: "Connected App Client Id",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Connected App Client Id",
 			Required:    false,
 			Default:     defaultClientID,
 			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "username",
-			Secret: false,
-		},
-		{
-			Key:    "password",
-			Secret: true,
-		},
-		{
-			Key:    "key",
-			Secret: true,
-		},
-		{
-			Key:    "endpoint",
-			Secret: false,
-		},
-		{
-			Key:    "client_id",
-			Secret: false,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}
@@ -215,4 +221,9 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }

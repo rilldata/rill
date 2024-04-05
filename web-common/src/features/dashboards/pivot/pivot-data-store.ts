@@ -10,7 +10,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query/build/lib/types";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
@@ -30,6 +30,7 @@ import {
 } from "./pivot-queries";
 import {
   getTotalsRow,
+  getTotalsRowSkeleton,
   mergeRowTotals,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
@@ -54,7 +55,9 @@ import {
 /**
  * Extract out config relevant to pivot from dashboard and meta store
  */
-function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
+export function getPivotConfig(
+  ctx: StateManagers,
+): Readable<PivotDataStoreConfig> {
   return derived(
     [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
     ([metricsView, timeRangeSummary, dashboardStore], set) => {
@@ -167,6 +170,7 @@ export function createTableCellQuery(
   totalsRow: PivotDataRow,
   rowDimensionValues: string[],
 ) {
+  if (!rowDimensionValues.length) return readable(null);
   let allDimensions = config.colDimensionNames;
   if (anchorDimension) {
     allDimensions = config.colDimensionNames.concat([anchorDimension]);
@@ -372,6 +376,10 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             "5000", // Using 5000 for cache hit
           );
         }
+
+        const displayTotalsRow = Boolean(
+          rowDimensionNames.length && measureNames.length,
+        );
         if (
           (rowDimensionNames.length || colDimensionNames.length) &&
           measureNames.length
@@ -398,16 +406,23 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               (totalsRowResponse !== null && totalsRowResponse?.isFetching) ||
               rowDimensionAxes?.isFetching
             ) {
+              const skeletonTotalsRowData = getTotalsRowSkeleton(
+                config,
+                columnDimensionAxes?.data,
+              );
               return axesSet({
                 isFetching: true,
                 data: lastPivotData,
                 columnDef: lastPivotColumnDef,
                 assembled: false,
                 totalColumns: lastTotalColumns,
+                totalsRowData: displayTotalsRow
+                  ? skeletonTotalsRowData
+                  : undefined,
               });
             }
 
-            const totalsRow = getTotalsRow(
+            const totalsRowData = getTotalsRow(
               config,
               columnDimensionAxes?.data,
               totalsRowResponse?.data?.data,
@@ -417,18 +432,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             const rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
 
-            if (rowDimensionValues.length === 0 && rowPage > 1) {
-              return axesSet({
-                isFetching: false,
-                data: [totalsRow, ...lastPivotData],
-                columnDef: lastPivotColumnDef,
-                assembled: true,
-                totalColumns: lastTotalColumns,
-                reachedEndForRowData: true,
-              });
-            }
-
-            const totalColumns = getTotalColumnCount(totalsRow);
+            const totalColumns = getTotalColumnCount(totalsRowData);
 
             const axesRowTotals =
               rowDimensionAxes?.totals?.[anchorDimension] || [];
@@ -452,13 +456,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               const slicedAxesDataForDef = sliceColumnAxesDataForDef(
                 config,
                 columnDimensionAxes?.data,
-                totalsRow,
+                totalsRowData,
               );
 
               columnDef = getColumnDefForPivot(
                 config,
                 slicedAxesDataForDef,
-                totalsRow,
+                totalsRowData,
               );
 
               initialTableCellQuery = createTableCellQuery(
@@ -466,14 +470,14 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 config,
                 rowDimensionNames[0],
                 columnDimensionAxes?.data,
-                totalsRow,
+                totalsRowData,
                 rowDimensionValues,
               );
             } else {
               columnDef = getColumnDefForPivot(
                 config,
                 columnDimensionAxes?.data,
-                totalsRow,
+                totalsRowData,
               );
             }
             /**
@@ -489,6 +493,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     columnDef,
                     assembled: false,
                     totalColumns,
+                    totalsRowData: displayTotalsRow ? totalsRowData : undefined,
                   });
                 }
 
@@ -519,6 +524,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                         columnDef,
                         assembled: false,
                         totalColumns,
+                        totalsRowData: displayTotalsRow
+                          ? totalsRowData
+                          : undefined,
                       });
                     }
                     cellData = initialTableCellData.data?.data || [];
@@ -539,7 +547,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   config,
                   pivotData,
                   columnDimensionAxes?.data,
-                  totalsRow,
+                  totalsRowData,
                 );
 
                 /**
@@ -567,17 +575,18 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
-                    let assembledTableData = tableDataExpanded;
-                    if (rowDimensionNames.length && measureNames.length) {
-                      assembledTableData = [totalsRow, ...tableDataExpanded];
-                    }
-
+                    const reachedEndForRowData =
+                      rowDimensionValues.length === 0 && rowPage > 1;
                     return {
                       isFetching: false,
-                      data: assembledTableData,
+                      data: tableDataExpanded,
                       columnDef,
                       assembled: true,
                       totalColumns,
+                      reachedEndForRowData,
+                      totalsRowData: displayTotalsRow
+                        ? totalsRowData
+                        : undefined,
                     };
                   },
                 ).subscribe(cellSet);

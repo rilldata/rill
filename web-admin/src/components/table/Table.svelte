@@ -1,13 +1,13 @@
 <script lang="ts">
   import {
-    Row,
+    type Row,
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getSortedRowModel,
   } from "@tanstack/svelte-table";
-  import type { ColumnDef, TableOptions } from "@tanstack/table-core/src/types";
+  import type { ColumnDef, TableOptions } from "@tanstack/svelte-table";
   import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
 

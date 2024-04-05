@@ -2,7 +2,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Row, flexRender } from "@tanstack/svelte-table";
+  import { type Row, flexRender } from "@tanstack/svelte-table";
   import { createEventDispatcher } from "svelte";
   import Table from "../../../components/table/Table.svelte";
   import DashboardsError from "./DashboardsError.svelte";
@@ -10,7 +10,7 @@
   import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
-  import { DashboardResource, useDashboardsV2 } from "./selectors";
+  import { type DashboardResource, useDashboardsV2 } from "./selectors";
 
   export let isEmbedded = false;
 

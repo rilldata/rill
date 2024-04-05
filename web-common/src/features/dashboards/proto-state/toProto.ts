@@ -98,8 +98,12 @@ export function getProtoFromDashboardState(
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
-  if (metrics.pinIndex !== undefined) {
-    state.pinIndex = metrics.pinIndex;
+
+  if (metrics.tdd.pinIndex !== undefined) {
+    state.pinIndex = metrics.tdd.pinIndex;
+  }
+  if (metrics.tdd.chartType !== undefined) {
+    state.chartType = metrics.tdd.chartType;
   }
 
   if (metrics.allMeasuresVisible) {
@@ -300,7 +304,7 @@ function toActivePageProto(
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
         activePage: metrics.activePage,
-        expandedMeasure: metrics.expandedMeasureName,
+        expandedMeasure: metrics.tdd.expandedMeasureName,
       };
   }
 

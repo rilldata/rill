@@ -469,6 +469,9 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 
 	args := []any{}
 	td := safeName(mv.TimeDimension)
+	if dialect == drivers.DialectDuckDB {
+		td = fmt.Sprintf("%s::TIMESTAMP", td)
+	}
 
 	trc, err := timeRangeClause(q.TimeRange, mv, td, &args)
 	if err != nil {
@@ -697,6 +700,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	td := safeName(mv.TimeDimension)
+	if dialect == drivers.DialectDuckDB {
+		td = fmt.Sprintf("%s::TIMESTAMP", td)
+	}
 
 	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 	if err != nil {
