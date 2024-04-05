@@ -5,7 +5,7 @@ sidebar_label: Kafka
 sidebar_position: 7
 ---
 
-::: warning For Customers with Druid/ClickHouse Engines Only
+:::warning For Customers with Druid/ClickHouse Engines Only
 Note: the set-up instructions below are for Customers using Rill's hosted OLAP solution
 :::
 
@@ -279,7 +279,7 @@ bin/kafka-server-start etc/kafka/server.properties
 ```
 
 Brokers can also configure JAAS using the broker configuration property sasl.jaas.config. 
-The prefix the property name with the listener prefix, including the SASL mechanism, i.e. listener.name.{listenerName}.{saslMechanism}.sasl.jaas.config. 
+The prefix the property name with the listener prefix, including the SASL mechanism, i.e. listener.name.```listenerName```.```saslMechanism``````.sasl.jaas.config. 
 
 Specify one login module in the config value. To configure multiple mechanisms on a listener, you must provide a separate config for each mechanism using the listener and mechanism prefix.
 
