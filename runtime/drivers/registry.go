@@ -67,17 +67,22 @@ type Instance struct {
 // For example, a variable "rill.stage_changes=true" would set the StageChanges field to true.
 // InstanceConfig should only be used for config that the user is allowed to change dynamically at runtime.
 type InstanceConfig struct {
-	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
-	StageChanges bool `mapstructure:"rill.stage_changes"`
-	// ModelDefaultMaterialize indicates whether to materialize models by default.
-	ModelDefaultMaterialize bool `mapstructure:"rill.model_default_materialize"`
-	// ModelMaterializeDelaySeconds adds a delay before materializing models.
-	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.model_materialize_delay_seconds"`
 	// DownloadRowLimit is the row limit for interactive data exports. If set to 0, there is no limit.
 	DownloadRowLimit int64 `mapstructure:"rill.download_row_limit"`
 	// PivotCellLimit is the maximum number of cells allowed in a single pivot query.
 	// Note that it does not limit the UI's pivot table because it paginates the requests.
 	PivotCellLimit int64 `mapstructure:"rill.pivot_cell_limit"`
+	// InteractiveSQLRowLimit is the row limit for interactive SQL queries. It does not apply to exports of SQL queries. If set to 0, there is no limit.
+	InteractiveSQLRowLimit int64 `mapstructure:"rill.interactive_sql_row_limit"`
+	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
+	StageChanges bool `mapstructure:"rill.stage_changes"`
+	// ModelDefaultMaterialize indicates whether to materialize models by default.
+	ModelDefaultMaterialize bool `mapstructure:"rill.models.default_materialize"`
+	// ModelMaterializeDelaySeconds adds a delay before materializing models.
+	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
+	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
+	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
+	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -109,18 +114,20 @@ func (i *Instance) ResolveVariables() map[string]string {
 func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
-		StageChanges:                 true,
-		ModelDefaultMaterialize:      false,
-		ModelMaterializeDelaySeconds: 0,
-		DownloadRowLimit:             10_000,
-		PivotCellLimit:               1_000_000,
+		DownloadRowLimit:                  10_000,
+		PivotCellLimit:                    1_000_000,
+		InteractiveSQLRowLimit:            10_000,
+		StageChanges:                      true,
+		ModelDefaultMaterialize:           false,
+		ModelMaterializeDelaySeconds:      0,
+		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
 	}
 
-	// Backwards compatibility: Use "__materialize_default" as alias for "rill.model_default_materialize".
+	// Backwards compatibility: Use "__materialize_default" as alias for "rill.models.default_materialize".
 	if i.Variables != nil {
 		if v, ok := i.Variables["__materialize_default"]; ok {
-			if _, ok := i.Variables["rill.model_default_materialize"]; !ok {
-				i.Variables["rill.model_default_materialize"] = v
+			if _, ok := i.Variables["rill.models.default_materialize"]; !ok {
+				i.Variables["rill.models.default_materialize"] = v
 			}
 		}
 	}
