@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"os"
-	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
@@ -15,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
@@ -33,63 +30,36 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Google Cloud Storage",
-	Description:        "Connect to Google Cloud Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/gcs",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Google Cloud Storage",
+	Description: "Connect to Google Cloud Storage.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:  "google_application_credentials",
+			Type: drivers.FilePropertyType,
+			Hint: "Enter path of file to load from.",
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "GS URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "gs://bucket-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "gcp.credentials",
+			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
-			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
+			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:  "google_application_credentials",
-			Hint: "Enter path of file to load from.",
-			ValidateFunc: func(any interface{}) error {
-				val := any.(string)
-				if val == "" {
-					// user can chhose to leave empty for public sources
-					return nil
-				}
-
-				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
-				if err != nil {
-					return err
-				}
-
-				_, err = os.Stat(path)
-				return err
-			},
-			TransformFunc: func(any interface{}) interface{} {
-				val := any.(string)
-				if val == "" {
-					return ""
-				}
-
-				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
-				if err != nil {
-					return err
-				}
-				// ignoring error since PathError is already validated
-				content, _ := os.ReadFile(path)
-				return string(content)
-			},
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 type driver struct{}
@@ -104,7 +74,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("gcs driver can't be shared")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +243,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // DownloadFiles returns a file iterator over objects stored in gcs.

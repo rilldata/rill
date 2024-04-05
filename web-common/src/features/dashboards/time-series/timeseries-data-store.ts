@@ -45,7 +45,7 @@ export type TimeSeriesDataState = {
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
-function createMetricsViewTimeSeries(
+export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
@@ -125,9 +125,10 @@ export function createTimeSeriesDataStore(
         metricsView.data?.measures?.map((measure) => measure.name as string) ||
         [];
       let measures = allMeasures;
-      if (dashboardStore?.expandedMeasureName) {
+      const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
+      if (expandedMeasuerName) {
         measures = allMeasures.filter(
-          (measure) => measure === dashboardStore.expandedMeasureName,
+          (measure) => measure === expandedMeasuerName,
         );
       } else {
         measures = dashboardStore?.visibleMeasureKeys

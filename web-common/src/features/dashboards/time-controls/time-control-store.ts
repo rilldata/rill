@@ -64,6 +64,7 @@ export type TimeControlState = {
   minTimeGrain?: V1TimeGrain;
   allTimeRange?: TimeRange;
   defaultTimeRange?: TimeRange;
+  timeDimension?: string;
 
   ready?: boolean;
 } & TimeRangeState &
@@ -80,6 +81,7 @@ export const timeControlStateSelector = ([
   MetricsExplorerEntity,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
+  const timeDimension = metricsView.data?.timeDimension;
   if (
     !metricsView.data ||
     !metricsExplorer ||
@@ -133,6 +135,7 @@ export const timeControlStateSelector = ([
     minTimeGrain,
     allTimeRange,
     defaultTimeRange,
+    timeDimension,
     ready: true,
 
     ...timeRangeState,

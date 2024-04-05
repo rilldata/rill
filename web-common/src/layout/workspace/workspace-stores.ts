@@ -3,7 +3,6 @@ import {
   DEFAULT_INSPECTOR_WIDTH,
   DEFAULT_PREVIEW_TABLE_HEIGHT,
 } from "../config";
-import { page } from "$app/stores";
 import { derived } from "svelte/store";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
@@ -114,20 +113,16 @@ class WorkspaceLayoutStore {
 class Workspaces {
   private workspaces = new Map<string, WorkspaceLayoutStore>();
 
-  subscribe = derived([page], ([$page]) => {
-    const context = $page.route.id ?? crypto.randomUUID();
-    const assetId = $page.params.name;
-
-    const key = `${context}:${assetId}`;
-
-    let store = this.workspaces.get(key);
+  get = (context: string) => {
+    let store = this.workspaces.get(context);
 
     if (!store) {
-      store = new WorkspaceLayoutStore(key);
-      this.workspaces.set(key, store);
+      store = new WorkspaceLayoutStore(context);
+      this.workspaces.set(context, store);
     }
+
     return store;
-  }).subscribe;
+  };
 }
 
 export const workspaces = new Workspaces();

@@ -322,6 +322,7 @@ export function addExpandedDataToPivot(
           columnDimensionAxes,
           skeletonSubTable,
           expandedRowData?.data,
+          true,
         );
       }
 
