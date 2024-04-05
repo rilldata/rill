@@ -1324,7 +1324,6 @@ vega_lite: |%s
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
-grid:
   gap: 3
   columns: 4
 components:
