@@ -11,14 +11,26 @@
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
+  import { makeFullyQualifiedTableName } from "./olap-config";
 
-  export let fullyQualifiedTableName: string;
+  export let connector: string;
+  export let database: string = "";
+  export let databaseSchema: string;
+  export let table: string;
 
-  $: tableName = fullyQualifiedTableName.split(".")[1];
+  $: fullyQualifiedTableName = makeFullyQualifiedTableName(
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
-    tableName,
+    connector,
+    database,
+    databaseSchema,
+    table,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );

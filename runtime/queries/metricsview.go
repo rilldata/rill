@@ -279,7 +279,7 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 	return false
 }
 
-func dimensionSelect(table string, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
+func dimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
 	colName := safeName(dim.Name)
 	if !dim.Unnest || dialect == drivers.DialectDruid {
 		return fmt.Sprintf(`(%s) as %s`, metricsViewDimensionExpression(dim), colName), ""
@@ -289,7 +289,7 @@ func dimensionSelect(table string, dim *runtimev1.MetricsViewSpec_DimensionV2, d
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(table), colName, unnestColName)
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, dialect.EscapeTable(db, dbSchema, table), colName, unnestColName)
 	}
 
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) tbl(%s)`, dim.Expression, unnestColName)
