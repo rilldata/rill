@@ -162,12 +162,12 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 	}
 	if len(dimExprs) == 0 {
 		// Only metrics
-		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), safeSQLName(t.Name))
+		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name))
 	} else if len(metricExprs) == 0 {
 		// No metrics
-		query = fmt.Sprintf("SELECT (%s) FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf("SELECT (%s) FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
 	} else {
-		query = fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
 	}
 	err := olap.Exec(ctx, &drivers.Statement{
 		Query:  query,
@@ -181,7 +181,7 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 
 func validateDimensionExpr(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", extractDimExpr(d), safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", extractDimExpr(d), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	if err != nil {
@@ -196,13 +196,6 @@ func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Tab
 		DryRun: true,
 	})
 	return err
-}
-
-func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
 
 func extractDimExpr(d *runtimev1.MetricsViewSpec_DimensionV2) string {
