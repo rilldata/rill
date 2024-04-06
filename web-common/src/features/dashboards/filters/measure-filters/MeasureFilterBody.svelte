@@ -6,36 +6,42 @@
 <script lang="ts">
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
-  import { V1Operation } from "@rilldata/web-common/runtime-client";
+  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import {
+    MeasureFilterOperation,
+    MeasureFilterOptions,
+  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 
   export let dimensionName: string;
   export let label: string | undefined;
-  export let expr: V1Expression | undefined;
+  export let filter: MeasureFilterEntry | undefined;
   export let labelMaxWidth = "160px";
   export let active = false;
   export let readOnly = false;
 
   let shortLabel: string | undefined;
-  $: if (expr?.cond?.op) {
-    if (
-      expr?.cond?.op === V1Operation.OPERATION_AND ||
-      expr?.cond?.op === V1Operation.OPERATION_OR
-    ) {
-      shortLabel = `${
-        expr?.cond?.op === V1Operation.OPERATION_OR ? "!" : ""
-      }(${JSON.stringify(
-        expr?.cond?.exprs?.[0]?.cond?.exprs?.[1]?.val ?? "",
-      )}, ${JSON.stringify(
-        expr?.cond?.exprs?.[1]?.cond?.exprs?.[1]?.val ?? "",
-      )})`;
-    } else {
-      shortLabel =
-        MeasureFilterOptions.find((o) => o.value === expr?.cond?.op)
-          ?.shortLabel +
-        " " +
-        JSON.stringify(expr?.cond?.exprs?.[1].val);
+  $: if (filter) {
+    switch (filter.operation) {
+      case MeasureFilterOperation.GreaterThan:
+      case MeasureFilterOperation.GreaterThanOrEquals:
+      case MeasureFilterOperation.LessThan:
+      case MeasureFilterOperation.LessThanOrEquals:
+        shortLabel =
+          MeasureFilterOptions.find(
+            (o) =>
+              // svelte-check is throwing an error here stating `filter could be undefined` so we need this
+              o.value === filter?.operation ??
+              MeasureFilterOperation.GreaterThan,
+          )?.shortLabel +
+          " " +
+          filter.value1;
+        break;
+      case MeasureFilterOperation.Between:
+        shortLabel = `(${filter.value1},${filter.value2})`;
+        break;
+      case MeasureFilterOperation.NotBetween:
+        shortLabel = `!(${filter.value1},${filter.value2})`;
+        break;
     }
   }
 </script>

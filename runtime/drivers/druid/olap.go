@@ -76,12 +76,12 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	}
 
 	if stmt.DryRun {
-		// TODO: Find way to validate with args
-		prepared, err := c.db.PrepareContext(ctx, stmt.Query)
+		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
 		if err != nil {
 			return nil, err
 		}
-		return nil, prepared.Close()
+
+		return nil, rows.Close()
 	}
 
 	var cancelFunc context.CancelFunc

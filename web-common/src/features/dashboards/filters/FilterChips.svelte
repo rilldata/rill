@@ -75,9 +75,9 @@ The main feature-set component for dashboard filters
 </script>
 
 <div
+  class="grid items-center place-items-center"
   class:ui-copy-icon={true}
   class:ui-copy-icon-inactive={false}
-  class="grid items-center place-items-center"
   style:height={ROW_HEIGHT}
   style:width={ROW_HEIGHT}
 >
@@ -101,7 +101,6 @@ The main feature-set component for dashboard filters
             {name}
             {label}
             {selectedValues}
-            column={dimension.column}
             on:remove={() => removeDimensionFilter(name)}
             on:apply={(event) =>
               toggleDimensionValueSelection(name, event.detail, true)}

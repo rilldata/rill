@@ -3,12 +3,7 @@
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
@@ -18,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
-  export let chartName: string;
+  export let filePath: string;
 
   const updateFile = createRuntimeServicePutFile();
   const QUERY_DEBOUNCE_TIME = 100;
@@ -26,7 +21,6 @@
   let view: EditorView;
   let editor: YAMLEditor;
 
-  $: filePath = getFilePathFromNameAndType(chartName, EntityType.Chart);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
@@ -44,7 +38,7 @@
     try {
       await $updateFile.mutateAsync({
         instanceId: $runtime.instanceId,
-        path: getFileAPIPathFromNameAndType(chartName, EntityType.Chart),
+        path: filePath,
         data: {
           blob: content,
         },
