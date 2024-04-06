@@ -1,13 +1,20 @@
 <script lang="ts">
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
-  import { useChart } from "@rilldata/web-common/features/charts/selectors";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createQuery } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 
-  export let chartName: string;
+  export let filePath: string;
+
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: chartName = extractFileName(filePath);
+
+  const queryClient = useQueryClient();
+
   $: error = "";
-  $: chart = useChart($runtime.instanceId, chartName);
+  $: chart = fileArtifact.getResource(queryClient, $runtime.instanceId);
   $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
   $: vegaSpec = $chart?.data?.chart?.spec?.vegaLiteSpec;
   $: data = {};
