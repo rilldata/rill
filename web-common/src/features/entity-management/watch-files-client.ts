@@ -10,13 +10,14 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { removeLeadingSlash } from "./entity-mappers";
 
-export function startWatchFilesClient(queryClient: QueryClient) {
-  return new WatchRequestClient<V1WatchFilesResponse>(
-    (runtime) =>
-      `${runtime.host}/v1/instances/${runtime.instanceId}/files/watch`,
-    (res) => handleWatchFileResponse(queryClient, res),
-    () => invalidateAllFiles(queryClient),
-  ).start();
+export function createWatchFilesClient(queryClient: QueryClient) {
+  const watchFilesClient = new WatchRequestClient<V1WatchFilesResponse>();
+  watchFilesClient.on("response", (res) =>
+    handleWatchFileResponse(queryClient, res),
+  );
+  watchFilesClient.on("reconnect", () => invalidateAllFiles(queryClient));
+
+  return watchFilesClient;
 }
 
 function handleWatchFileResponse(

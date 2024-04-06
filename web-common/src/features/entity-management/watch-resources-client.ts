@@ -6,13 +6,18 @@ import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-re
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 
-export function startWatchResourcesClient(queryClient: QueryClient) {
-  return new WatchRequestClient<V1WatchResourcesResponse>(
-    (runtime) =>
-      `${runtime.host}/v1/instances/${runtime.instanceId}/resources/-/watch`,
-    (res) => handleWatchResourceResponse(queryClient, res),
-    () => invalidateAllResources(queryClient),
-  ).start();
+export function createWatchResourceClient(queryClient: QueryClient) {
+  const watchResourcesClient =
+    new WatchRequestClient<V1WatchResourcesResponse>();
+
+  watchResourcesClient.on("response", (res) =>
+    handleWatchResourceResponse(queryClient, res),
+  );
+  watchResourcesClient.on("reconnect", () =>
+    invalidateAllResources(queryClient),
+  );
+
+  return watchResourcesClient;
 }
 
 function handleWatchResourceResponse(
