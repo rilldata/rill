@@ -22198,9 +22198,9 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for MetricsViewName
 
-	// no validation rules for EmailRenotify
+	// no validation rules for Renotify
 
-	// no validation rules for EmailRenotifyAfterSeconds
+	// no validation rules for RenotifyAfterSeconds
 
 	if len(errors) > 0 {
 		return AlertOptionsMultiError(errors)

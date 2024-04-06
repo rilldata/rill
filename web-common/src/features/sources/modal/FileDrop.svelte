@@ -61,7 +61,6 @@
         await createSource(runtimeInstanceId, tableName, yaml);
         checkSourceImported(
           queryClient,
-          tableName,
           getFilePathFromNameAndType(tableName, EntityType.Table),
         );
         goto(`/source/${tableName}`);
@@ -74,7 +73,6 @@
 
 <Overlay bg="rgba(0,0,0,.6)">
   <div
-    role="presentation"
     class="w-screen h-screen grid place-content-center"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation
@@ -84,6 +82,7 @@
     on:mouseup|preventDefault|stopPropagation={() => {
       showDropOverlay = false;
     }}
+    role="presentation"
   >
     <div
       class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"

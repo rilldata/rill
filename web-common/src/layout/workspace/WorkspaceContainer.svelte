@@ -5,7 +5,7 @@
   export let bgClass = "bg-gray-100";
 </script>
 
-<div class="flex flex-col h-screen w-full overflow-hidden">
+<main class="flex flex-col h-screen w-full overflow-hidden">
   {#if $$slots.header}
     <header class="bg-white w-full h-fit">
       <slot name="header" />
@@ -22,4 +22,4 @@
       </Inspector>
     {/if}
   </div>
-</div>
+</main>

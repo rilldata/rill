@@ -70,7 +70,7 @@
   a {
     @apply flex text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
-    @apply gap-x-2 min-w-fit;
+    @apply gap-x-2 min-w-fit select-none;
     @apply rounded-[2px];
     @apply px-3 h-7 min-h-[28px] cursor-pointer;
   }

@@ -8166,9 +8166,24 @@ export class ReportOptions extends Message<ReportOptions> {
   openProjectSubpath = "";
 
   /**
-   * @generated from field: repeated string recipients = 8;
+   * @generated from field: repeated string email_recipients = 8;
    */
-  recipients: string[] = [];
+  emailRecipients: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_users = 10;
+   */
+  slackUsers: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_channels = 11;
+   */
+  slackChannels: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_webhooks = 12;
+   */
+  slackWebhooks: string[] = [];
 
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
@@ -8186,7 +8201,10 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 7, name: "open_project_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -8236,19 +8254,34 @@ export class AlertOptions extends Message<AlertOptions> {
   metricsViewName = "";
 
   /**
-   * @generated from field: repeated string recipients = 6;
+   * @generated from field: bool renotify = 6;
    */
-  recipients: string[] = [];
+  renotify = false;
 
   /**
-   * @generated from field: bool email_renotify = 7;
+   * @generated from field: uint32 renotify_after_seconds = 7;
    */
-  emailRenotify = false;
+  renotifyAfterSeconds = 0;
 
   /**
-   * @generated from field: uint32 email_renotify_after_seconds = 8;
+   * @generated from field: repeated string email_recipients = 8;
    */
-  emailRenotifyAfterSeconds = 0;
+  emailRecipients: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_users = 9;
+   */
+  slackUsers: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_channels = 10;
+   */
+  slackChannels: string[] = [];
+
+  /**
+   * @generated from field: repeated string slack_webhooks = 11;
+   */
+  slackWebhooks: string[] = [];
 
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
@@ -8263,9 +8296,12 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

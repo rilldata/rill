@@ -8,6 +8,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import {
+    mapExprToMeasureFilter,
+    mapMeasureFilterToExpr,
+    MeasureFilterEntry,
+  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import MeasureFilterMenu from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterMenu.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
@@ -31,10 +36,13 @@
       active = false;
     }
   }
+
+  // TODO: in the next round of refactor update upstream to use MeasureFilterEntry
+  let filter: MeasureFilterEntry | undefined;
+  $: filter = mapExprToMeasureFilter(expr);
 </script>
 
 <DropdownMenu.Root
-  preventScroll
   bind:open={active}
   onOpenChange={(open) => {
     if (!open) {
@@ -45,6 +53,7 @@
       }, 60);
     }
   }}
+  preventScroll
 >
   <DropdownMenu.Trigger asChild let:builder>
     <Tooltip
@@ -57,9 +66,9 @@
       <Chip
         {...colors}
         {active}
+        builders={[builder]}
         extraRounded={false}
         {label}
-        builders={[builder]}
         on:remove={() => dispatch("remove")}
         outline
         removable
@@ -71,7 +80,7 @@
           </slot>
         </svelte:fragment>
         <!-- body -->
-        <MeasureFilterBody {dimensionName} {expr} {label} slot="body" />
+        <MeasureFilterBody {dimensionName} {filter} {label} slot="body" />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
         <TooltipContent maxWidth="400px">
@@ -87,5 +96,16 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 
-  <MeasureFilterMenu {dimensionName} {expr} {name} on:apply open={active} />
+  <MeasureFilterMenu
+    {dimensionName}
+    {filter}
+    {name}
+    on:apply={({ detail: { dimension, oldDimension, filter } }) =>
+      dispatch("apply", {
+        dimension,
+        oldDimension,
+        expr: mapMeasureFilterToExpr(filter),
+      })}
+    open={active}
+  />
 </DropdownMenu.Root>

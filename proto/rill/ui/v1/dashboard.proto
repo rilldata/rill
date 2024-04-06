@@ -111,8 +111,10 @@ message DashboardState {
 
   // Expanded measure for TDD view
   optional string expanded_measure = 18;
-
+  // Pin index for TDD table selected values
   optional int32 pin_index = 19;
+  // Type of visualization for TDD view
+  optional string chart_type = 33;
 
   /**
    * Pivot related fields
