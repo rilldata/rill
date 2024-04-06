@@ -48,7 +48,7 @@ func ConfirmPrompt(msg, help string, def bool) bool {
 	return result
 }
 
-func InputPrompt(msg, def string) string {
+func InputPrompt(msg, def string) (string, error) {
 	prompt := &survey.Input{
 		Message: msg,
 		Default: def,
@@ -56,9 +56,9 @@ func InputPrompt(msg, def string) string {
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		return "", err
 	}
-	return strings.TrimSpace(result)
+	return strings.TrimSpace(result), nil
 }
 
 func StringPromptIfEmpty(input *string, msg string) {
@@ -109,7 +109,11 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 
 				val = fmt.Sprintf("%t", public)
 			default:
-				val = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
+				if err != nil {
+					fmt.Println("error while input prompt, error:", err)
+					return
+				}
 			}
 
 			err = f.Value.Set(val)

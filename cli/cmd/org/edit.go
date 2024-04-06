@@ -61,7 +61,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if promptFlagValues {
-				description := cmdutil.InputPrompt("Enter the description", org.Description)
+				description, err = cmdutil.InputPrompt("Enter the description", org.Description)
+				if err != nil {
+					return err
+				}
 				req.Description = &description
 			}
 

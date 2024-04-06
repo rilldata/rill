@@ -433,17 +433,10 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		// Emit success telemetry
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
 
-		ch.PrintfBold(`No git remote was found.
-
-Rill projects deploy continuously when you push changes to Github.
-Therefore, your project must be on Github before you deploy it to Rill.
-		`)
-
-		ch.Print(`			
-You can continue here and Rill can create a Github Repository for you or
-you can exit the command and create a repository manually.
-		
-		`)
+		ch.Print("No git remote was found.\n")
+		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
+		ch.Print("Therefore, your project must be on Github before you deploy it to Rill.\n")
+		ch.Print("You can continue here and Rill can create a Github Repository for you or you can exit the command and create a repository manually.\n\n")
 		if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
 			ch.PrintfBold(githubSetupMsg)
 			return nil
@@ -453,7 +446,6 @@ you can exit the command and create a repository manually.
 		if len(pollRes.Organizations) > 0 {
 			repoOwners := []string{pollRes.Account}
 			repoOwners = append(repoOwners, pollRes.Organizations...)
-			ch.Print("\nYou also have access to organization(s)\n\n")
 			repoOwner = cmdutil.SelectPrompt("Select Github account", repoOwners, pollRes.Account)
 		}
 		// create and verify
@@ -462,7 +454,7 @@ you can exit the command and create a repository manually.
 			return err
 		}
 
-		printer.ColorGreenBold.Printf("\nRepository %q created successfully\n\n", *githubRepository.Name)
+		printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 		ch.Print("Pushing local project to Github\n\n")
 		// init git repo
 		repo, err := git.PlainInit(localGitPath, false)
@@ -505,7 +497,7 @@ you can exit the command and create a repository manually.
 			return fmt.Errorf("failed to push to remote %q : %w", *githubRepository.HTMLURL, err)
 		}
 
-		ch.Print("Local changes pushed to remote\n\n")
+		ch.Print("Successfully pushed your local project to Github\n\n")
 		return nil
 	}
 }
@@ -537,7 +529,10 @@ func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *ad
 		}
 
 		ch.Printf("Repository name %q is already taken\n", repoName)
-		repoName = cmdutil.InputPrompt("Please provide alternate name", "")
+		repoName, err = cmdutil.InputPrompt("Please provide alternate name", "")
+		if err != nil {
+			return nil, err
+		}
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository: %w", err)

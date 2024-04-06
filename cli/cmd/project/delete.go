@@ -41,7 +41,11 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfWarn("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
-				project := cmdutil.InputPrompt(msg, "")
+				project, err := cmdutil.InputPrompt(msg, "")
+				if err != nil {
+					return err
+				}
+
 				if project != name {
 					return fmt.Errorf("Entered incorrect name : %q, expected value is %q", project, name)
 				}
