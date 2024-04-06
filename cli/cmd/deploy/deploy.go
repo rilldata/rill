@@ -427,9 +427,9 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			return err
 		}
 		if pollRes.HasAccess {
-			// Sleep and poll again
 			break
 		}
+		// Sleep and poll again
 	}
 
 	// Emit success telemetry
