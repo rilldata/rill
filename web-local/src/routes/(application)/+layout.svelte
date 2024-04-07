@@ -12,8 +12,8 @@
   import { onMount } from "svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  const fileWatcher = createWatchFilesClient(queryClient);
-  const resourceWatcher = createWatchResourceClient(queryClient);
+  const fileWatcher = createWatchFilesClient();
+  const resourceWatcher = createWatchResourceClient();
 
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
@@ -45,12 +45,8 @@
     };
   });
 
-  function handleVisibilityChange(
-    e: Event & {
-      currentTarget: EventTarget & Window;
-    },
-  ) {
-    if (e.currentTarget.document.visibilityState === "visible") {
+  function handleVisibilityChange() {
+    if (document.visibilityState === "visible") {
       fileWatcher.reconnect();
       resourceWatcher.reconnect();
     } else {

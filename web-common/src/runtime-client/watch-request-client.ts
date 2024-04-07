@@ -19,16 +19,23 @@ type StreamingFetchResponse<Res extends WatchResponse> = {
   error?: { code: number; message: string };
 };
 
-type WatchRequestClientEvent = "response" | "reconnect";
-type Callback<T> = (res?: T) => void | Promise<void>;
-type CallbackMap<T> = Map<WatchRequestClientEvent, Callback<T>[]>;
+type EventMap<T> = {
+  response: T;
+  reconnect: void;
+};
+
+type Listeners<T> = Map<keyof EventMap<T>, Callback<T, keyof EventMap<T>>[]>;
+
+type Callback<T, K extends keyof EventMap<T>> = (
+  eventData: EventMap<T>[K],
+) => void | Promise<void>;
 
 export class WatchRequestClient<Res extends WatchResponse> {
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private tracker = ExponentialBackoffTracker.createBasicTracker();
   private outOfFocusThrottler = new Throttler(5000);
-  private callbacks: CallbackMap<Res> = new Map([
+  private listeners: Listeners<Res> = new Map([
     ["response", []],
     ["reconnect", []],
   ]);
@@ -41,8 +48,11 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listen().catch(console.error);
   };
 
-  on = (event: WatchRequestClientEvent, callback: Callback<Res>) => {
-    this.callbacks.get(event)?.push(callback);
+  on = <K extends keyof EventMap<Res>>(
+    event: K,
+    listener: Callback<Res, K>,
+  ) => {
+    this.listeners.get(event)?.push(listener);
   };
 
   abort = () => {
@@ -65,7 +75,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
     this.listen().catch(console.error);
 
-    this.handleReconnect();
+    this.listeners.get("reconnect")?.forEach((cb) => void cb());
   };
 
   private async listen() {
@@ -76,7 +86,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
         if (this.controller?.signal.aborted) break;
         if (res.error) throw new Error(res.error.message);
 
-        this.handleResponse(res.result);
+        if (res.result)
+          this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
     } catch (err) {
       if (!(await this.tracker.failed())) {
@@ -84,15 +95,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
       }
     }
   }
-
-  private handleResponse = (result: Res | undefined) => {
-    if (result)
-      this.callbacks.get("response")?.forEach((cb) => void cb(result));
-  };
-
-  private handleReconnect = () => {
-    this.callbacks.get("reconnect")?.forEach((cb) => void cb());
-  };
 
   private getFetchStream = (url: string, controller: AbortController) => {
     const headers = { "Content-Type": "application/json" };

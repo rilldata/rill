@@ -4,26 +4,17 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@tanstack/svelte-query";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-export function createWatchResourceClient(queryClient: QueryClient) {
-  const watchResourcesClient =
-    new WatchRequestClient<V1WatchResourcesResponse>();
+export function createWatchResourceClient() {
+  const client = new WatchRequestClient<V1WatchResourcesResponse>();
+  client.on("response", handleWatchResourceResponse);
+  client.on("reconnect", invalidateAllResources);
 
-  watchResourcesClient.on("response", (res) =>
-    handleWatchResourceResponse(queryClient, res),
-  );
-  watchResourcesClient.on("reconnect", () =>
-    invalidateAllResources(queryClient),
-  );
-
-  return watchResourcesClient;
+  return client;
 }
 
-function handleWatchResourceResponse(
-  queryClient: QueryClient,
-  res: V1WatchResourcesResponse,
-) {
+function handleWatchResourceResponse(res: V1WatchResourcesResponse) {
   if (!res.resource) return;
 
   invalidateResourceResponse(queryClient, res);
