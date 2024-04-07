@@ -9,7 +9,10 @@
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
   import PreviewTable from "./PreviewTable.svelte";
 
-  export let objectName: string;
+  export let connector: string;
+  export let database: string = ""; // The backend interprets an empty string as the default database
+  export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
+  export let table: string;
   export let limit = 150;
   export let loading = false;
 
@@ -18,17 +21,20 @@
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
-    objectName,
-    {},
-  );
-
-  $: tableQuery = createQueryServiceTableRows(
-    $runtime?.instanceId,
-    objectName,
+    table,
     {
-      limit,
+      connector,
+      database,
+      databaseSchema,
     },
   );
+
+  $: tableQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
+    limit,
+  });
 
   $: columns =
     ($profileColumnsQuery?.data?.profileColumns as VirtualizedTableColumns[]) ??
@@ -40,5 +46,5 @@
 {#if loading || $tableQuery.isLoading || $profileColumnsQuery.isLoading}
   <ReconcilingSpinner />
 {:else if rows && columns}
-  <PreviewTable {rows} columnNames={columns} name={objectName} />
+  <PreviewTable {rows} columnNames={columns} name={table} />
 {/if}

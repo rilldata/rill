@@ -204,7 +204,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap 
 		return "", nil
 	}
 
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
 	if err != nil {
 		return "", err
 	}
@@ -315,7 +315,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 
 	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s %s %s OFFSET %d",
 		strings.Join(selectColumns, ","),
-		safeName(mv.Table),
+		escapeMetricsViewTable(dialect, mv),
 		whereClause,
 		orderClause,
 		limitClause,

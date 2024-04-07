@@ -29,6 +29,7 @@ are details left to the consumer of the component; this component should remain 
   export let name: string;
   export let selectedValues: string[];
   export let allValues: string[] | null;
+  export let enableSearch = true;
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
@@ -54,29 +55,29 @@ are details left to the consumer of the component; this component should remain 
 </script>
 
 <WithTogglableFloatingElement
-  bind:active
-  let:toggleFloatingElement
-  distance={8}
   alignment="start"
+  bind:active
+  distance={8}
+  let:toggleFloatingElement
 >
   <Tooltip
-    location="bottom"
+    activeDelay={60}
     alignment="start"
     distance={8}
-    activeDelay={60}
+    location="bottom"
     suppress={active}
   >
     <Chip
-      removable
+      {...colors}
+      {active}
+      {label}
       on:click={() => {
         toggleFloatingElement();
         dispatch("click");
       }}
       on:remove={() => dispatch("remove")}
-      {active}
-      {...colors}
-      {label}
       outline
+      removable
     >
       <!-- remove button tooltip -->
       <svelte:fragment slot="remove-tooltip">
@@ -87,11 +88,11 @@ are details left to the consumer of the component; this component should remain 
       </svelte:fragment>
       <!-- body -->
       <RemovableListBody
-        slot="body"
-        label={name}
-        values={selectedValues}
-        show={1}
         {active}
+        label={name}
+        show={1}
+        slot="body"
+        values={selectedValues}
       />
     </Chip>
     <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
@@ -108,14 +109,15 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
-    slot="floating-element"
-    {excludeMode}
     {allValues}
-    {selectedValues}
-    on:escape={handleDismiss}
-    on:click-outside={handleDismiss}
+    {enableSearch}
+    {excludeMode}
     on:apply
+    on:click-outside={handleDismiss}
+    on:escape={handleDismiss}
     on:search
     on:toggle
+    {selectedValues}
+    slot="floating-element"
   />
 </WithTogglableFloatingElement>

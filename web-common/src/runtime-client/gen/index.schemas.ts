@@ -91,6 +91,8 @@ export type QueryServiceQueryBody = {
 
 export type QueryServiceColumnTopKBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   agg?: string;
   k?: number;
@@ -99,6 +101,8 @@ export type QueryServiceColumnTopKBody = {
 
 export type QueryServiceColumnTimeSeriesBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
@@ -110,35 +114,47 @@ export type QueryServiceColumnTimeSeriesBody = {
 
 export type QueryServiceColumnTimeRangeParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceTableCardinalityParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnTimeGrainParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnRugHistogramParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceTableRowsParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   limit?: number;
   priority?: number;
 };
 
 export type QueryServiceColumnRollupIntervalBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
@@ -155,6 +171,8 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
 
 export type QueryServiceColumnNumericHistogramParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
   priority?: number;
@@ -162,6 +180,8 @@ export type QueryServiceColumnNumericHistogramParams = {
 
 export type QueryServiceColumnNullCountParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
@@ -265,17 +285,23 @@ export type QueryServiceExportBody = {
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceTableColumnsParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnCardinalityParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
@@ -366,6 +392,8 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   table?: string;
   path?: string;
   useAi?: boolean;
@@ -465,6 +493,8 @@ export type RuntimeServiceIssueDevJWTParams = {
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   table?: string;
 };
 
@@ -621,6 +651,8 @@ export interface V1TableRowsResponse {
 export interface V1TableRowsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   limit?: number;
   priority?: number;
@@ -628,6 +660,7 @@ export interface V1TableRowsRequest {
 
 export interface V1TableInfo {
   database?: string;
+  databaseSchema?: string;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
 }
@@ -644,6 +677,8 @@ export interface V1TableColumnsResponse {
 export interface V1TableColumnsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -655,6 +690,8 @@ export interface V1TableCardinalityResponse {
 export interface V1TableCardinalityRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -1272,6 +1309,8 @@ export interface V1MetricsViewTimeRangeResponse {
 
 export interface V1MetricsViewSpec {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   table?: string;
   title?: string;
   description?: string;
@@ -1834,6 +1873,8 @@ export interface V1ColumnTopKResponse {
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   agg?: string;
@@ -1848,6 +1889,8 @@ export interface V1ColumnTimeSeriesResponse {
 export interface V1ColumnTimeSeriesRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
@@ -1865,6 +1908,8 @@ export interface V1ColumnTimeRangeResponse {
 export interface V1ColumnTimeRangeRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1877,6 +1922,8 @@ export interface V1ColumnTimeGrainResponse {
 export interface V1ColumnTimeGrainRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1889,6 +1936,8 @@ export interface V1ColumnRugHistogramResponse {
 export interface V1ColumnRugHistogramRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1903,6 +1952,8 @@ export interface V1ColumnRollupIntervalResponse {
 export interface V1ColumnRollupIntervalRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1915,6 +1966,8 @@ export interface V1ColumnNumericHistogramResponse {
 export interface V1ColumnNumericHistogramRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   histogramMethod?: V1HistogramMethod;
@@ -1928,6 +1981,8 @@ export interface V1ColumnNullCountResponse {
 export interface V1ColumnNullCountRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1940,6 +1995,8 @@ export interface V1ColumnDescriptiveStatisticsResponse {
 export interface V1ColumnDescriptiveStatisticsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1952,6 +2009,8 @@ export interface V1ColumnCardinalityResponse {
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;

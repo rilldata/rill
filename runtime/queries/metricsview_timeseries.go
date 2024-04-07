@@ -364,7 +364,7 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(mv *runtimev1.MetricsViewSpec, tsA
 		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
-		safeName(mv.Table),
+		escapeMetricsViewTable(drivers.DialectDruid, mv),
 		whereClause,
 		havingClause,
 	)
@@ -400,10 +400,10 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
 			strings.Join(selectCols, ", "), // 4
-			safeName(mv.Table),             // 5
-			whereClause,                    // 6
-			timezone,                       // 7
-			havingClause,                   // 8
+			escapeMetricsViewTable(drivers.DialectClickHouse, mv), // 5
+			whereClause,  // 6
+			timezone,     // 7
+			havingClause, // 8
 		)
 	} else {
 		sql = fmt.Sprintf(
@@ -420,11 +420,11 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
 			strings.Join(selectCols, ", "), // 4
-			safeName(mv.Table),             // 5
-			whereClause,                    // 6
-			timezone,                       // 7
-			shift,                          // 8
-			havingClause,                   // 9
+			escapeMetricsViewTable(drivers.DialectClickHouse, mv), // 5
+			whereClause,  // 6
+			timezone,     // 7
+			shift,        // 8
+			havingClause, // 9
 		)
 	}
 
@@ -462,10 +462,10 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				safeName(mv.TimeDimension),     // 2
 				tsAlias,                        // 3
 				strings.Join(selectCols, ", "), // 4
-				safeName(mv.Table),             // 5
-				whereClause,                    // 6
-				timezone,                       // 7
-				havingClause,                   // 8
+				escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
+				whereClause,  // 6
+				timezone,     // 7
+				havingClause, // 8
 			)
 		} else { // date_trunc is faster than time_bucket for year, month, week
 			sql = fmt.Sprintf(
@@ -482,10 +482,10 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				safeName(mv.TimeDimension),     // 2
 				tsAlias,                        // 3
 				strings.Join(selectCols, ", "), // 4
-				safeName(mv.Table),             // 5
-				whereClause,                    // 6
-				timezone,                       // 7
-				havingClause,                   // 8
+				escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
+				whereClause,  // 6
+				timezone,     // 7
+				havingClause, // 8
 			)
 		}
 	} else {
@@ -503,11 +503,11 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
 			strings.Join(selectCols, ", "), // 4
-			safeName(mv.Table),             // 5
-			whereClause,                    // 6
-			timezone,                       // 7
-			shift,                          // 8
-			havingClause,                   // 9
+			escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
+			whereClause,  // 6
+			timezone,     // 7
+			shift,        // 8
+			havingClause, // 9
 		)
 	}
 
