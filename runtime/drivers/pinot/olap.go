@@ -123,7 +123,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	var tableNames []string
 	// Get table names
-	req, _ := http.NewRequestWithContext(ctx, "GET", i.c.baseURL+"/tables", nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables", http.NoBody)
 	resp, err := i.c.metaClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
-	req, _ := http.NewRequestWithContext(ctx, "GET", i.c.baseURL+"/tables/"+name+"/schema", nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables/"+name+"/schema", http.NoBody)
 	resp, err := i.c.metaClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -174,14 +174,25 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 
 	var schemaFields []*runtimev1.StructType_Field
 	for _, field := range schemaResponse.DimensionFieldSpecs {
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, field.SingleValueField)})
+		singleValueField := true
+		if field.SingleValueField != nil {
+			singleValueField = *field.SingleValueField
+		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 	for _, field := range schemaResponse.MetricFieldSpecs {
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, field.SingleValueField)})
-
+		singleValueField := true
+		if field.SingleValueField != nil {
+			singleValueField = *field.SingleValueField
+		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, field.SingleValueField)})
+		singleValueField := true
+		if field.SingleValueField != nil {
+			singleValueField = *field.SingleValueField
+		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 
 	// Mapping the schemaResponse to your Table structure
@@ -223,7 +234,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool, singleValueField bool) *runtimev1.Type {
+func databaseTypeToPB(dbt string, nullable, singleValueField bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	if !singleValueField {
 		t.Code = runtimev1.Type_CODE_ARRAY
@@ -269,7 +280,7 @@ type pinotSchema struct {
 type pinotFieldSpec struct {
 	Name             string      `json:"name"`
 	DataType         string      `json:"dataType"`
-	SingleValueField bool        `json:"singleValueField"`
+	SingleValueField *bool       `json:"singleValueField"`
 	NotNull          bool        `json:"notNull"`
 	DefaultNullValue interface{} `json:"defaultNullValue"`
 	Format           string      `json:"format"`      // only for timeFieldSpec

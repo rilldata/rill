@@ -3,6 +3,8 @@ package pinot
 import (
 	"context"
 	"database/sql"
+	sqlDriver "database/sql/driver"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -10,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	sqlDriver "database/sql/driver"
 	"github.com/startreedata/pinot-client-go/pinot"
 )
 
@@ -66,13 +67,10 @@ func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.
 		for _, e := range resp.Exceptions {
 			errMsg += fmt.Sprintf("\tcode: %q message: %q\n", e.ErrorCode, e.Message)
 		}
-		return nil, fmt.Errorf(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
-	cols, err := colSchema(resp.ResultTable)
-	if err != nil {
-		return nil, err
-	}
+	cols := colSchema(resp.ResultTable)
 
 	return &rows{results: resp.ResultTable, columns: cols, numRows: resp.ResultTable.GetRowCount(), currIdx: 0}, nil
 }
@@ -83,8 +81,11 @@ func (c *conn) ExecContext(ctx context.Context, query string, args []sqlDriver.N
 
 func (c *conn) Ping(ctx context.Context) error {
 	rows, err := c.QueryContext(ctx, "SELECT 1", nil)
+	if err != nil {
+		return err
+	}
 	defer rows.Close()
-	return err
+	return nil
 }
 
 type rows struct {
@@ -113,6 +114,7 @@ func (r *rows) Next(dest []sqlDriver.Value) error {
 	}
 	return nil
 }
+
 func (r *rows) ColumnTypeScanType(index int) reflect.Type {
 	return r.columns[index].goType
 }
@@ -127,7 +129,7 @@ type column struct {
 	goType    reflect.Type
 }
 
-func colSchema(results *pinot.ResultTable) ([]column, error) {
+func colSchema(results *pinot.ResultTable) []column {
 	var cols []column
 	for i := 0; i < results.GetColumnCount(); i++ {
 		cols = append(cols, column{
@@ -136,7 +138,7 @@ func colSchema(results *pinot.ResultTable) ([]column, error) {
 			goType:    pinotToGoType(results.GetColumnDataType(i)),
 		})
 	}
-	return cols, nil
+	return cols
 }
 
 func pinotToGoType(pinotType string) reflect.Type {

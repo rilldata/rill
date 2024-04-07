@@ -3,12 +3,12 @@ package pinot
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"go.uber.org/zap"
 )
 
 var spec = drivers.Spec{
