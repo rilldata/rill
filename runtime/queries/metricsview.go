@@ -378,11 +378,11 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 
 	var clause string
 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
-	if unnest && dialect != drivers.DialectDruid {
+	if unnest && dialect != drivers.DialectDruid && dialect != drivers.DialectPinot {
 		clause = fmt.Sprintf("%s len(list_filter((%s), x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
 	} else {
-		if dialect == drivers.DialectDruid {
-			// Druid does not support ILIKE
+		if dialect == drivers.DialectDruid || dialect == drivers.DialectPinot {
+			// Druid and Pinot does not support ILIKE
 			clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(%s AS VARCHAR))", leftExpr, notKeyword, rightExpr)
 		} else {
 			clause = fmt.Sprintf("(%s) %s ILIKE %s", leftExpr, notKeyword, rightExpr)

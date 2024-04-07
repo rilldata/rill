@@ -38,6 +38,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mysql"
+	_ "github.com/rilldata/rill/runtime/drivers/pinot"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"

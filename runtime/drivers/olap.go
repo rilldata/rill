@@ -114,6 +114,7 @@ const (
 	DialectDuckDB
 	DialectDruid
 	DialectClickHouse
+	DialectPinot
 )
 
 func (d Dialect) String() string {
@@ -126,6 +127,8 @@ func (d Dialect) String() string {
 		return "druid"
 	case DialectClickHouse:
 		return "clickhouse"
+	case DialectPinot:
+		return "pinot"
 	default:
 		panic("not implemented")
 	}

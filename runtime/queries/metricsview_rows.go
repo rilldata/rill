@@ -72,7 +72,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectPinot {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -153,10 +153,8 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
-			return err
-		}
 	case drivers.DialectClickHouse:
+	case drivers.DialectPinot:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 			return err
 		}
