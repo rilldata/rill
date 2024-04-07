@@ -1,5 +1,31 @@
+<script lang="ts" context="module">
+  const columnSizes = (() => {
+    const sizes = new Map<string, number[]>();
+
+    return {
+      get: (key: string, calculator: () => number[]): number[] => {
+        let array = sizes.get(key);
+        if (!array) {
+          array = calculator();
+          sizes.set(key, array);
+        }
+        return array;
+      },
+      set: (key: string, value: number[]) => sizes.set(key, value),
+    };
+  })();
+
+  export const ROW_HEIGHT = 24;
+  export const MIN_COL_WIDTH = 108;
+  export const MAX_COL_WIDTH = 400;
+  export const HEADER_HEIGHT = 36;
+  export const columnBuffer = 4;
+  export const rowBuffer = 10;
+  export const ROW_HEADER_WIDTH = 60;
+</script>
+
 <script lang="ts">
-  import { ComponentType, createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
@@ -16,46 +42,48 @@
   } from "@rilldata/web-common/runtime-client";
   import { tick } from "svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
-  import { writable } from "svelte/store";
   import { initColumnWidths } from "./init-widths";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import VirtualTableCell from "./VirtualTableCell.svelte";
+  import VirtualTableHeaderCellContent from "./VirtualTableHeaderCellContent.svelte";
+  import VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
+  import ColumnWidths from "./VirtualTableColumnWidths.svelte";
+  import VirtualTableHeader from "./VirtualTableHeader.svelte";
+  import VirtualTableRow from "./VirtualTableRow.svelte";
 
   type HoveringData = {
-    row: number;
+    index: number;
     column: string;
     value: string | number | null;
     type: string;
     isHeader: boolean;
+    isPin: boolean;
   };
 
   const dispatch = createEventDispatcher();
 
-  const ROW_HEIGHT = 24;
-  const MIN_COL_WIDTH = 108;
-  const MAX_COL_WIDTH = 400;
-  const HEADER_HEIGHT = 36;
-  const columnBuffer = 4;
-  const rowBuffer = 8;
-
   export let rows: V1MetricsViewRowsResponseDataItem[];
   export let columns: (VirtualizedTableColumns | V1MetricsViewColumn)[];
   export let valueAccessor: (name: string) => string = (name: string) => name;
-  export let columnAccessor: keyof VirtualizedTableColumns = "label";
-  export let HeaderCell: ComponentType | null = null;
-  export let Cell: ComponentType | null = null;
-  export let RowHeader: ComponentType | null = null;
-  export let PinnedCell: ComponentType | null = null;
+  export let columnAccessor: keyof VirtualizedTableColumns = "name";
+  export let HeaderCell = VirtualTableHeaderCellContent;
+  export let RowHeader = VirtualTableRowHeader;
+  export let Cell = VirtualTableCell;
+  export let PinnedCell = Cell;
   export let pinnedColumns = new Map<number, number>();
   export let cellBorders = false;
   export let stickyBorders = false;
   export let headerBorders = false;
+  export let rowHeaders = true;
   export let resizableColumns = false;
+  export let sortable = false;
   export let minColWidth = MIN_COL_WIDTH;
+  export let maxColWidth = MAX_COL_WIDTH;
   export let rowHeight = ROW_HEIGHT;
   export let headerHeight = HEADER_HEIGHT;
   export let selectedIndexes: number[] = [];
   export let sortedColumn: string | null = null;
-  export let sortedAscending = true;
+  export let name: string;
 
   let container: HTMLDivElement;
   let showTooltip = false;
@@ -66,32 +94,36 @@
   } = null;
   let hoverPosition: DOMRect;
   let hovering: HoveringData | null = null;
-
-  let columnWidths = initColumnWidths({
-    columns,
-    rows,
-    maxWidth: MAX_COL_WIDTH,
-    minWidth: minColWidth,
-    nameAccessor: "name",
-    resizableColumns,
-  });
-
   let previousStartCol = 0;
-
   let previousPaddingLeft = 0;
   let newColStart = 0;
   let previousColumnWidth = 0;
-  let firstColumnWidth = columnWidths[newColStart];
   let previousScrollLeft = 0;
-
   let startColumn = 0;
   let paddingLeft = 0;
+  let contentRect = new DOMRect(0, 0, 0, 0);
+  let scrollTop = 0;
+  let scrollLeft = 0;
+  let nextPinnedColumnPosition = ROW_HEADER_WIDTH;
 
-  let clientWidth = 0;
-  let clientHeight = 0;
+  $: columnWidths = columnSizes.get(name, () =>
+    initColumnWidths({
+      columns,
+      rows,
+      maxWidth: MAX_COL_WIDTH,
+      minWidth: minColWidth,
+      columnAccessor,
+      resizableColumns,
+    }),
+  );
+
+  $: firstColumnWidth = columnWidths[newColStart];
+
+  $: clientWidth = contentRect.width;
+  $: clientHeight = contentRect.height;
 
   $: rowCount = rows.length;
-  $: columnCount = columns.length - 1;
+  $: columnCount = columns.length;
 
   $: rowChunk = Math.ceil(rowBuffer / 2);
 
@@ -111,8 +143,6 @@
   $: totalColumnSize = columnWidths
     .slice(1)
     .reduce((acc, width) => acc + width, 0);
-
-  const getWidth = writable((index: number) => columnWidths[index]);
 
   function handleStartResize(
     event: MouseEvent & { currentTarget: HTMLButtonElement },
@@ -134,18 +164,18 @@
   function handleResize(event: MouseEvent) {
     if (!resizing) return;
     const delta = event.clientX - resizing.initialCursorPosition;
+
     requestAnimationFrame(() => {
+      if (!resizing) return;
       columnWidths[resizing.columnIndex] = clamp(
-        MIN_COL_WIDTH,
+        minColWidth,
         resizing.initialPixelWidth + delta,
-        MAX_COL_WIDTH,
+        maxColWidth,
       );
     });
   }
 
   function handleEndResize() {
-    getWidth.set((index) => columnWidths[index]);
-
     resizing = null;
 
     window.removeEventListener("mousemove", handleResize);
@@ -154,25 +184,29 @@
 
   function handleHover(
     e: MouseEvent & {
-      currentTarget: EventTarget & HTMLTableCellElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) {
     hoverPosition = e.currentTarget.getBoundingClientRect();
     const isHeader = Boolean(e.currentTarget.tagName === "TH");
+    const isPin = e.currentTarget.tagName === "BUTTON";
     const description = e.currentTarget.dataset.description;
 
-    const columnName = String(e.currentTarget.dataset.column);
-    const rowIndex = Number(e.currentTarget.dataset.index);
+    const column = String(e.currentTarget.dataset.column);
+    const index = Number(e.currentTarget.dataset.index);
     const value =
-      description ?? (rows[rowIndex][columnName] as string | number | null);
-    const type = columns.find((c) => c.name === columnName)?.type ?? "string";
+      description ?? isHeader
+        ? column
+        : (rows[index][column] as string | number | null);
+    const type = columns.find((c) => c.name === column)?.type ?? "string";
 
     hovering = {
-      row: rowIndex,
-      column: columnName,
+      index,
+      column,
       type,
       value,
       isHeader,
+      isPin,
     };
 
     showTooltip = true;
@@ -206,14 +240,11 @@
       dispatch("column-click", hovering.column);
     } else {
       dispatch("select-item", {
-        index: hovering.row,
+        index: hovering.index,
         meta: e.ctrlKey || e.metaKey,
       });
     }
   }
-
-  let scrollTop = 0;
-  let scrollLeft = 0;
 
   async function handleScroll(
     e: MouseEvent & { currentTarget: HTMLDivElement },
@@ -259,6 +290,29 @@
     await tick();
     container.scrollTo({ top: scrollTop, left: scrollLeft });
   }
+
+  function togglePin(e: MouseEvent & { currentTarget: HTMLButtonElement }) {
+    const index = Number(e.currentTarget.dataset.index);
+    if (pinnedColumns.has(index)) {
+      let found = false;
+      let width = columnWidths[index];
+
+      pinnedColumns.forEach((value, key) => {
+        if (key === index) found = true;
+
+        if (found) pinnedColumns.set(key, value - width);
+      });
+
+      nextPinnedColumnPosition -= width;
+
+      pinnedColumns.delete(index);
+    } else {
+      pinnedColumns.set(index, nextPinnedColumnPosition);
+      nextPinnedColumnPosition += columnWidths[index];
+    }
+
+    pinnedColumns = pinnedColumns;
+  }
 </script>
 
 <div class="size-full overflow-hidden">
@@ -267,164 +321,74 @@
     class="table-wrapper"
     class:cursor-col-resize={resizing}
     class:has-selection={selectedIndexes.length > 0}
+    class:cell-borders={cellBorders}
+    class:sticky-borders={stickyBorders}
+    class:header-borders={headerBorders}
     style:--row-height="{rowHeight}px"
     style:--header-height="{headerHeight}px"
-    style:--cell-borders="{cellBorders ? 1 : 0}px"
-    style:--sticky-borders="{stickyBorders ? 1 : 0}px"
-    style:--header-borders="{headerBorders ? 1 : 0}px"
-    bind:clientWidth
-    bind:clientHeight
+    bind:contentRect
     bind:this={container}
     on:mousedown={handleMouseDown}
     on:mouseleave={handleLeave}
     on:scroll={handleScroll}
   >
     <table
-      class:pointer-events-none={resizing}
       class="relative"
+      class:pointer-events-none={resizing}
       style:width="{totalColumnSize}px"
-      style:height="{totalRowSize}px"
+      style:height="{totalRowSize + HEADER_HEIGHT}px"
     >
-      <thead>
-        <tr>
-          {#if RowHeader}
-            <th style:width="{72}px" class="row-number">
-              <RowHeader index={"#"} />
-            </th>
-          {/if}
+      <ColumnWidths
+        {rowHeaders}
+        {paddingLeft}
+        {startColumn}
+        {columnWidths}
+        {pinnedColumns}
+        {renderedColumns}
+      />
 
-          {#each pinnedColumns as [index, position], i (index)}
-            {@const sorted = columns[index].name === sortedColumn}
-            <th
-              id="header-{index}"
-              data-index={index}
-              data-column={columns[index].name}
-              class:last-pinned={i === pinnedColumns.size - 1}
-              style:width="{columnWidths[index]}px"
-              class="group pinned pinned-header"
-              style:left="{position}px"
-              on:mouseenter={handleHover}
-            >
-              {#if HeaderCell}
-                <HeaderCell {sorted} {...columns[index]} />
-              {:else}
-                {columns[index].name}
-              {/if}
-            </th>
-          {/each}
-
-          {#if paddingLeft}
-            <th style:width="{paddingLeft}px" />
-          {/if}
-
-          {#each { length: renderedColumns } as _, i (i)}
-            {@const index = startColumn + i}
-            {@const sorted = columns[index].name === sortedColumn}
-            <th
-              id="header-{i}"
-              data-index={index}
-              data-column={columns[index].name}
-              style:width="{columnWidths[index]}px"
-              class="group relative overflow-hidden"
-              on:mouseenter={handleHover}
-            >
-              {#if HeaderCell}
-                <HeaderCell {sorted} {...columns[index]} />
-              {:else}
-                {columns[index].name}
-              {/if}
-              {#if resizableColumns}
-                <button
-                  class="absolute top-0 -right-1 w-2 z-10 cursor-col-resize"
-                  style:height="{HEADER_HEIGHT}px"
-                  data-index={index}
-                  on:mousedown={handleStartResize}
-                />
-              {/if}
-            </th>
-          {/each}
-
-          <th class="auto-right-pad" />
-        </tr>
-      </thead>
+      <VirtualTableHeader
+        {columns}
+        {sortedColumn}
+        {startColumn}
+        {pinnedColumns}
+        {resizableColumns}
+        {renderedColumns}
+        {rowHeaders}
+        {RowHeader}
+        {HeaderCell}
+        on:click={togglePin}
+        on:mousedown={handleStartResize}
+        on:mouseenter={handleHover}
+      />
 
       <tbody>
-        {#if paddingTop}
-          <tr style:height="{paddingTop}px" />
-        {/if}
+        <tr style:height="{paddingTop}px" />
 
         {#each { length: renderedRows } as _, index (index)}
           {@const rowIndex = index + startRow}
           {@const cells = rows[rowIndex]}
           {@const selected = selectedIndexes.includes(rowIndex)}
-
-          <tr class:selected>
-            {#if RowHeader}
-              <td class="row-number">
-                <RowHeader index={rowIndex + 1} />
-              </td>
-            {/if}
-
-            {#each pinnedColumns as [index, position], i (i)}
-              {@const column = columns[index]}
-              {@const columnLabel = String(column[columnAccessor])}
-              {@const sorted = columns[index].name === sortedColumn}
-              <td
-                class="pinned"
-                class:last-pinned={i === pinnedColumns.size - 1}
-                data-index={rowIndex}
-                data-column={columnLabel}
-                style:left="{position}px"
-                on:mouseenter={handleHover}
-              >
-                {#if PinnedCell}
-                  <PinnedCell
-                    {sorted}
-                    {selected}
-                    value={cells[valueAccessor(columnLabel)] ??
-                      cells[columnLabel]}
-                    type={columns[index].type}
-                  />
-                {:else}
-                  {cells[valueAccessor(columnLabel)]}
-                {/if}
-              </td>
-            {/each}
-
-            {#if paddingLeft}
-              <td />
-            {/if}
-
-            {#each { length: renderedColumns } as _, i (i)}
-              {@const index = startColumn + i}
-              {@const column = columns[index]}
-              {@const columnLabel = String(column[columnAccessor])}
-              {@const sorted = columns[index].name === sortedColumn}
-
-              <td
-                data-index={rowIndex}
-                data-column={columnLabel}
-                on:mouseenter={handleHover}
-              >
-                {#if Cell}
-                  <Cell
-                    {...column}
-                    {sorted}
-                    {selected}
-                    value={cells[columnLabel]}
-                    formattedValue={cells[valueAccessor(columnLabel)]}
-                  />
-                {:else}
-                  {cells[valueAccessor(columnLabel)]}
-                {/if}
-              </td>
-            {/each}
-
-            <td class="auto-right-pad" />
-          </tr>
+          <VirtualTableRow
+            {columnAccessor}
+            {sortedColumn}
+            {startColumn}
+            {columns}
+            {Cell}
+            {cells}
+            {valueAccessor}
+            {pinnedColumns}
+            {rowHeaders}
+            {selected}
+            index={rowIndex}
+            {renderedColumns}
+            {PinnedCell}
+            {RowHeader}
+            on:mouseenter={handleHover}
+          />
         {/each}
 
-        <tr class="auto-bottom-pad" />
+        <tr class="h-full" />
       </tbody>
     </table>
   </div>
@@ -438,34 +402,46 @@
     style:left="{hoverPosition.left + hoverPosition.width / 2}px"
   >
     <TooltipContent maxWidth="360px">
-      <TooltipTitle>
-        <svelte:fragment slot="name">
-          {#if hovering.isHeader}
-            {hovering.value}
-          {:else}
-            <FormattedDataType
-              dark
-              type={hovering?.type}
-              value={hovering?.value}
-            />
-          {/if}
-        </svelte:fragment>
-      </TooltipTitle>
+      {#if hovering.isPin}
+        {@const pinned = pinnedColumns.has(hovering.index)}
+        {pinned ? "Unpin" : "Pin"} this column to left side of the table
+      {:else}
+        <TooltipTitle>
+          <svelte:fragment slot="name">
+            {#if hovering.isHeader}
+              {hovering.value}
+            {:else}
+              <FormattedDataType
+                dark
+                type={hovering?.type}
+                value={hovering?.value}
+              />
+            {/if}
+          </svelte:fragment>
 
-      <TooltipShortcutContainer>
-        {#if hovering.isHeader}
-          <div>Sort column</div>
-          <Shortcut>Click</Shortcut>
+          <svelte:fragment slot="description">
+            {hovering.isHeader ? hovering.type : ""}
+          </svelte:fragment>
+        </TooltipTitle>
+
+        {#if !hovering.isPin}
+          <TooltipShortcutContainer>
+            {#if hovering.isHeader && sortable}
+              <div>Sort column</div>
+              <Shortcut>Click</Shortcut>
+            {/if}
+            {#if isClipboardApiSupported()}
+              <div>
+                <StackingWord key="shift">Copy</StackingWord>
+                {hovering.isHeader ? "column name" : "this value"} to clipboard
+              </div>
+              <Shortcut>
+                <span style="font-family: var(--system);">⇧</span> + Click
+              </Shortcut>
+            {/if}
+          </TooltipShortcutContainer>
         {/if}
-        {#if isClipboardApiSupported()}
-          <div>
-            <StackingWord key="shift">Copy</StackingWord> this value to clipboard
-          </div>
-          <Shortcut>
-            <span style="font-family: var(--system);">⇧</span> + Click
-          </Shortcut>
-        {/if}
-      </TooltipShortcutContainer>
+      {/if}
     </TooltipContent>
   </aside>
 {/if}
@@ -481,80 +457,8 @@
     @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-white;
   }
 
-  td,
-  th {
-    @apply truncate p-0 bg-white;
-  }
-
-  td {
-    border-right-width: var(--cell-borders);
-    border-bottom-width: var(--cell-borders);
-  }
-
-  th {
-    border-bottom-width: var(--sticky-borders);
-    border-right-width: var(--header-borders);
-  }
-
-  td:first-of-type {
-    border-bottom-width: var(--header-borders);
-    border-right-width: var(--sticky-borders);
-  }
-
-  thead tr {
-    height: var(--header-height);
-  }
-
-  tbody tr {
-    height: var(--row-height);
-  }
-
-  .pinned {
-    @apply sticky;
-  }
-
-  td.pinned {
-    @apply z-10;
-  }
-
-  th.pinned {
-    @apply z-50;
-  }
-
-  .row-number {
-    @apply sticky left-0 z-10 text-center;
-  }
-
-  thead {
-    @apply sticky top-0 z-20;
-  }
-
-  tr:hover > td {
-    @apply bg-gray-100;
-  }
-
-  td:not(:first-of-type):hover {
-    filter: brightness(0.95) !important;
-  }
-
-  .auto-right-pad {
-    width: 100%;
-  }
-
-  .auto-bottom-pad {
-    height: 100%;
-  }
-
-  .last-pinned {
-    box-shadow: 2px 0 0 0px gray;
-  }
-
   .has-selection tbody {
     @apply text-gray-400;
     --bar-color: #f0f0f0;
-  }
-
-  .selected {
-    @apply text-black font-bold;
   }
 </style>

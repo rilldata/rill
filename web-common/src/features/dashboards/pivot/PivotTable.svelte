@@ -22,6 +22,8 @@
   import { getPivotConfig } from "./pivot-data-store";
   import type { PivotDataRow, PivotDataStore } from "./types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
+  import { clamp } from "@rilldata/web-common/lib/clamp";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -192,31 +194,9 @@
 
     const finalBasis = Math.max(firstColumnName.length, maxValueLength);
     const pixelLength = finalBasis * 7;
-    const final = Math.max(
-      MIN_COL_WIDTH,
-      Math.min(MAX_INIT_COL_WIDTH, pixelLength + 16),
-    );
+    const final = clamp(MIN_COL_WIDTH, pixelLength + 16, MAX_INIT_COL_WIDTH);
 
     return final;
-  }
-
-  function extractSamples<T>(arr: T[], sampleSize: number = 30) {
-    if (arr.length <= sampleSize) {
-      return arr.slice();
-    }
-
-    const sectionSize = Math.floor(sampleSize / 3);
-
-    const lastSectionSize = sampleSize - sectionSize * 2;
-
-    const first = arr.slice(0, sectionSize);
-
-    let middleStartIndex = Math.floor((arr.length - sectionSize) / 2);
-    const middle = arr.slice(middleStartIndex, middleStartIndex + sectionSize);
-
-    const last = arr.slice(-lastSectionSize);
-
-    return [...first, ...middle, ...last];
   }
 </script>
 

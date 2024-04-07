@@ -41,6 +41,7 @@
 {:else if $alertPreviewQuery.data.rows.length > 0}
   <div class="max-h-64 overflow-auto">
     <PreviewTable
+      name="Alert Preview"
       rows={$alertPreviewQuery.data.rows}
       columnNames={$alertPreviewQuery.data.schema}
     />

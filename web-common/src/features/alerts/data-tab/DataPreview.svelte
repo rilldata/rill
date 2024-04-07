@@ -3,7 +3,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
-
   import PreviewTable from "../../../components/preview-table/PreviewTable.svelte";
   import type { V1Expression, V1TimeRange } from "../../../runtime-client";
   import PreviewEmpty from "../PreviewEmpty.svelte";
@@ -38,6 +37,7 @@
 {:else}
   <div class="max-h-64 overflow-auto">
     <PreviewTable
+      name="Data Preview"
       rows={$alertPreviewQuery.data.rows}
       columnNames={$alertPreviewQuery.data.schema}
     />
