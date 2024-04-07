@@ -9,7 +9,7 @@
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const fileWatcher = createWatchFilesClient(queryClient);
@@ -36,16 +36,13 @@
   onMount(() => {
     const stopJavascriptErrorListeners =
       errorEventHandler?.addJavascriptErrorListeners();
-    void fileArtifacts.init(queryClient, "default");
+    void fileArtifacts.init(queryClient, instanceId);
 
     return () => {
+      fileWatcher.abort();
+      resourceWatcher.abort();
       stopJavascriptErrorListeners?.();
     };
-  });
-
-  onDestroy(() => {
-    fileWatcher.abort();
-    resourceWatcher.abort();
   });
 
   function handleVisibilityChange(

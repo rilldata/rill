@@ -20,15 +20,15 @@ type StreamingFetchResponse<Res extends WatchResponse> = {
 };
 
 type WatchRequestClientEvent = "response" | "reconnect";
-
 type Callback<T> = (res?: T) => void | Promise<void>;
+type CallbackMap<T> = Map<WatchRequestClientEvent, Callback<T>[]>;
 
 export class WatchRequestClient<Res extends WatchResponse> {
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private tracker = ExponentialBackoffTracker.createBasicTracker();
   private outOfFocusThrottler = new Throttler(5000);
-  private callbacks = new Map<WatchRequestClientEvent, Callback<Res>[]>([
+  private callbacks: CallbackMap<Res> = new Map([
     ["response", []],
     ["reconnect", []],
   ]);
@@ -41,17 +41,13 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listen().catch(console.error);
   };
 
-  on = (
-    event: WatchRequestClientEvent,
-    callback: (res: Res) => void | Promise<void>,
-  ) => {
+  on = (event: WatchRequestClientEvent, callback: Callback<Res>) => {
     this.callbacks.get(event)?.push(callback);
   };
 
   abort = () => {
     this.controller?.abort();
-    this.stream = undefined;
-    this.controller = undefined;
+    this.stream = this.controller = undefined;
   };
 
   throttle = () => {
