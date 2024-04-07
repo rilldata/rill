@@ -40,33 +40,30 @@ export class WatchRequestClient<Res extends WatchResponse> {
     ["reconnect", []],
   ]);
 
-  watch = (url: string) => {
+  on<K extends keyof EventMap<Res>>(event: K, listener: Callback<Res, K>) {
+    this.listeners.get(event)?.push(listener);
+  }
+
+  watch(url: string) {
     if (this.controller) this.abort();
 
     this.controller = new AbortController();
     this.stream = this.getFetchStream(url, this.controller);
     this.listen().catch(console.error);
-  };
+  }
 
-  on = <K extends keyof EventMap<Res>>(
-    event: K,
-    listener: Callback<Res, K>,
-  ) => {
-    this.listeners.get(event)?.push(listener);
-  };
-
-  abort = () => {
+  abort() {
     this.controller?.abort();
     this.stream = this.controller = undefined;
-  };
+  }
 
-  throttle = () => {
+  throttle() {
     this.outOfFocusThrottler.throttle(() => {
       this.abort();
     });
-  };
+  }
 
-  reconnect = () => {
+  reconnect() {
     if (this.outOfFocusThrottler.isThrottling()) {
       this.outOfFocusThrottler.cancel();
     }
@@ -76,7 +73,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listen().catch(console.error);
 
     this.listeners.get("reconnect")?.forEach((cb) => void cb());
-  };
+  }
 
   private async listen() {
     if (!this.stream) return;
@@ -96,7 +93,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     }
   }
 
-  private getFetchStream = (url: string, controller: AbortController) => {
+  private getFetchStream(url: string, controller: AbortController) {
     const headers = { "Content-Type": "application/json" };
     const jwt = get(runtime).jwt;
     if (jwt) {
@@ -110,5 +107,5 @@ export class WatchRequestClient<Res extends WatchResponse> {
       headers,
       controller.signal,
     );
-  };
+  }
 }
