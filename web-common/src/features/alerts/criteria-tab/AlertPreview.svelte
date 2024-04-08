@@ -11,11 +11,7 @@
 
   const queryClient = useQueryClient();
 
-  $: console.log(formValues);
   $: alertPreviewQuery = getAlertCriteriaData(queryClient, formValues);
-
-  // TODO
-  // $: isCriteriaEmpty = isExpressionIncomplete(criteria);
 </script>
 
 {#if $alertPreviewQuery.isFetching}

@@ -44,8 +44,6 @@
         break;
     }
   }
-
-  $: console.log(expr?.cond?.exprs);
 </script>
 
 <div class="flex gap-x-2">

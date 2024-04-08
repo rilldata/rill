@@ -1,23 +1,5 @@
+import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-
-export enum CriteriaOperations {
-  GreaterThan = "GreaterThan",
-  GreaterThanOrEquals = "GreaterThanOrEquals",
-  LessThan = "LessThan",
-  LessThanOrEquals = "LessThanOrEquals",
-  IncreasesBy = "IncreasesBy",
-  DecreasesBy = "DecreasesBy",
-  ChangesBy = "ChangesBy",
-  ShareOfTotalsGreaterThan = "ShareOfTotalsGreaterThan",
-  ShareOfTotalsLessThan = "ShareOfTotalsLessThan",
-}
-export const IsCompareCriteriaOperation: Partial<
-  Record<CriteriaOperations, boolean>
-> = {
-  [CriteriaOperations.IncreasesBy]: true,
-  [CriteriaOperations.DecreasesBy]: true,
-  [CriteriaOperations.ChangesBy]: true,
-};
 
 export enum CompareWith {
   Value = "Value",
@@ -37,40 +19,40 @@ export const CompareWithOptions = [
 // TODO: should match measure filter. merge them once we add support for comparison based filters
 export const CriteriaOperationOptions = [
   {
-    value: CriteriaOperations.GreaterThan,
+    value: MeasureFilterOperation.GreaterThan,
     label: "is greater than",
   },
   {
-    value: CriteriaOperations.GreaterThanOrEquals,
+    value: MeasureFilterOperation.GreaterThanOrEquals,
     label: "is greater than or equals",
   },
   {
-    value: CriteriaOperations.LessThan,
+    value: MeasureFilterOperation.LessThan,
     label: "is less than",
   },
   {
-    value: CriteriaOperations.LessThanOrEquals,
+    value: MeasureFilterOperation.LessThanOrEquals,
     label: "is less than or equals",
   },
   {
-    value: CriteriaOperations.IncreasesBy,
+    value: MeasureFilterOperation.IncreasesBy,
     label: "increases by",
   },
   {
-    value: CriteriaOperations.DecreasesBy,
+    value: MeasureFilterOperation.DecreasesBy,
     label: "decreases by",
   },
   {
-    value: CriteriaOperations.ChangesBy,
+    value: MeasureFilterOperation.ChangesBy,
     label: "changes by",
   },
   // TODO
   // {
-  //   value: CriteriaOperations.ShareOfTotalsGreaterThan,
+  //   value: MeasureFilterOperation.ShareOfTotalsGreaterThan,
   //   label: "share of total is greater than",
   // },
   // {
-  //   value: CriteriaOperations.ShareOfTotalsLessThan,
+  //   value: MeasureFilterOperation.ShareOfTotalsLessThan,
   //   label: "share of total is less than",
   // },
 ];

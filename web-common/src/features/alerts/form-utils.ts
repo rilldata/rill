@@ -1,9 +1,9 @@
 import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
+import { type CompareWith } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
 import {
-  type CompareWith,
-  type CriteriaOperations,
-  IsCompareCriteriaOperation,
-} from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  IsCompareMeasureFilterOperation,
+  MeasureFilterOperation,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import {
   createAndExpression,
   sanitiseExpression,
@@ -19,7 +19,7 @@ import * as yup from "yup";
 
 export type AlertCriteria = {
   field: string;
-  operation: CriteriaOperations;
+  operation: MeasureFilterOperation;
   compareWith: CompareWith;
   value: string;
 };
@@ -46,7 +46,7 @@ export function getAlertQueryArgsFromFormValues(
   const addComparison =
     !!formValues.comparisonTimeRange &&
     !!formValues.criteria.find(
-      (c) => c.operation in IsCompareCriteriaOperation,
+      (c) => c.operation in IsCompareMeasureFilterOperation,
     );
 
   return {
