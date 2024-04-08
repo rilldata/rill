@@ -200,7 +200,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	}
 
 	var selectCols []string
-	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 
 	for _, m := range ms {
@@ -277,7 +277,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 
 	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY 1 %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
-		safeName(mv.Table),
+		escapeMetricsViewTable(dialect, mv),
 		unnestClause,
 		whereClause,
 		havingClause,

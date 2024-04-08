@@ -45,7 +45,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
       if (!runtimeState || runtimeUnchanged || !pageInFocus) {
         if (!pageInFocus) {
-          this.prevInstanceId = this.prevHost = undefined;
+          this.prevInstanceId = this.prevHost = "";
           this.prevFocus = false;
           // cancel the watcher if page is not in focus
           this.outOfFocusThrottler.throttle(() => {

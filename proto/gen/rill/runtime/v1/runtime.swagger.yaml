@@ -120,6 +120,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: table
           in: query
           required: false
@@ -730,6 +738,10 @@ paths:
             properties:
               connector:
                 type: string
+              database:
+                type: string
+              databaseSchema:
+                type: string
               table:
                 type: string
               path:
@@ -1046,6 +1058,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1084,6 +1104,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1115,6 +1143,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1727,6 +1763,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1762,6 +1806,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1816,6 +1868,10 @@ paths:
             properties:
               connector:
                 type: string
+              database:
+                type: string
+              databaseSchema:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -1847,6 +1903,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1888,6 +1952,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           in: query
           required: false
@@ -1923,6 +1995,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1965,6 +2045,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1995,6 +2083,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -2039,6 +2135,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               measures:
                 type: array
@@ -2100,6 +2200,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               columnName:
                 type: string
@@ -3289,6 +3393,10 @@ definitions:
         title: Required
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3311,6 +3419,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3331,6 +3443,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3355,6 +3471,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3375,6 +3495,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3406,6 +3530,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3424,6 +3552,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3446,6 +3578,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3464,6 +3600,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3505,6 +3645,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -4456,6 +4600,12 @@ definitions:
       connector:
         type: string
         title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      databaseSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
       table:
         type: string
         title: Name of the table the metrics view is based on
@@ -5636,6 +5786,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5655,6 +5809,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -5678,6 +5836,8 @@ definitions:
     properties:
       database:
         type: string
+      databaseSchema:
+        type: string
       name:
         type: string
       hasUnsupportedDataTypes:
@@ -5689,6 +5849,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string

@@ -13,4 +13,7 @@ export interface Runtime {
   jwt?: JWT;
 }
 
-export const runtime = writable<Runtime>();
+export const runtime = writable<Runtime>({
+  host: "",
+  instanceId: "",
+});

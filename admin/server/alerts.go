@@ -589,7 +589,7 @@ type alertYAML struct {
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {
 		Email struct {
-			Recipients []string `yaml:"emails"`
+			Recipients []string `yaml:"recipients"`
 		}
 		Slack struct {
 			Users    []string `yaml:"users"`

@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
-  import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+  import {
+    extractAlertFormValues,
+    extractAlertNotification,
+  } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     useMetricsView,
     useMetricsViewTimeRange,
@@ -23,6 +26,7 @@
   import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
     alertFormValidationSchema,
+    AlertFormValues,
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
@@ -48,15 +52,12 @@
     { query: { queryClient } },
   );
 
-  const formState = createForm({
+  const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
-      recipients:
-        alertSpec?.notifiers
-          ?.find((n) => n.connector === "email")
-          ?.properties?.recipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
+      ...extractAlertNotification(alertSpec),
       ...extractAlertFormValues(
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
@@ -78,9 +79,15 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              emailRecipients: values.recipients
-                .map((r) => r.email)
-                .filter(Boolean),
+              slackChannels: values.enableSlackNotification
+                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
+                : undefined,
+              slackUsers: values.enableSlackNotification
+                ? values.slackUsers.map((c) => c.email).filter(Boolean)
+                : undefined,
+              emailRecipients: values.enableEmailNotification
+                ? values.emailRecipients.map((r) => r.email).filter(Boolean)
+                : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },

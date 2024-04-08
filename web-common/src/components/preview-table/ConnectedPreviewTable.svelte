@@ -9,7 +9,10 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
 
-  export let objectName: string;
+  export let connector: string;
+  export let database: string = ""; // The backend interprets an empty string as the default database
+  export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
+  export let table: string;
   export let limit = 150;
   export let loading = false;
 
@@ -18,17 +21,20 @@
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
-    objectName,
-    {},
-  );
-
-  $: tableQuery = createQueryServiceTableRows(
-    $runtime?.instanceId,
-    objectName,
+    table,
     {
-      limit,
+      connector,
+      database,
+      databaseSchema,
     },
   );
+
+  $: tableQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
+    limit,
+  });
 
   $: profileColumns =
     ($profileColumnsQuery?.data?.profileColumns as VirtualizedTableColumns[]) ??

@@ -81,7 +81,7 @@ func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(mv *runtimev1.MetricsVi
 	var dimensions []string
 	var unnestClauses []string
 	for _, dim := range mv.Dimensions {
-		sel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+		sel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
 		if unnestClause != "" {
 			unnestClauses = append(unnestClauses, unnestClause)
 		}
@@ -116,9 +116,9 @@ func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(mv *runtimev1.MetricsVi
 
 	return fmt.Sprintf(
 		`SELECT %[1]s FROM %[2]s %[3]s %[4]s LIMIT 0`,
-		columns,                         // 1
-		safeName(mv.Table),              // 2
-		strings.Join(unnestClauses, ""), // 3
-		groupBy,                         // 4
+		columns,                             // 1
+		escapeMetricsViewTable(dialect, mv), // 2
+		strings.Join(unnestClauses, ""),     // 3
+		groupBy,                             // 4
 	)
 }
