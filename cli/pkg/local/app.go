@@ -187,7 +187,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
-		// Set path to ensure that OLAP does not store data in runtime.Options.DataDir 
+		// Set path to ensure that OLAP does not store data in runtime.Options.DataDir
 		olapCfg["path"] = olapDSN
 
 		val, err := isExternalStorageEnabled(dbDirPath, opts.Variables)
