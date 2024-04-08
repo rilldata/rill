@@ -68,7 +68,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		return err
 	}
 
-	if err := os.Mkdir(filepath.Join(r.opts.InstancesDataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+	if err := os.Mkdir(filepath.Join(r.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 		return err
 	}
 	return nil
@@ -122,7 +122,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 		}
 
 		// data dir will have all the instance's data (including OLAP data) but for now drop everything if dropOLAP is true
-		if err := os.RemoveAll(filepath.Join(r.opts.InstancesDataDir, instanceID)); err != nil {
+		if err := os.RemoveAll(filepath.Join(r.opts.DataDir, instanceID)); err != nil {
 			r.logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}

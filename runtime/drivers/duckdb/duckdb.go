@@ -116,8 +116,10 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 		}
 	}
 
-	if err := os.MkdirAll(cfg.DBStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-		return nil, err
+	if cfg.DBStoragePath != "" {
+		if err := os.MkdirAll(cfg.DBStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return nil, err
+		}
 	}
 
 	// See note in connection struct

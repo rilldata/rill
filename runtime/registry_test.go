@@ -406,7 +406,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": dbFile},
+						Config: map[string]string{"dsn": dbFile, "path": dbFile},
 					},
 				},
 			}
@@ -473,7 +473,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"dsn": dbpath},
+				Config: map[string]string{"path": dbpath},
 			},
 		},
 	}

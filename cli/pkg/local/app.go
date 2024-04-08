@@ -166,7 +166,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		MetastoreConnector:           "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
-		InstancesDataDir:             dbDirPath,
+		DataDir:                      dbDirPath,
 		SystemConnectors:             systemConnectors,
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
@@ -187,6 +187,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
+		// Set path to ensure that OLAP does not store data in runtime.Options.DataDir 
+		olapCfg["path"] = olapDSN
+
 		val, err := isExternalStorageEnabled(dbDirPath, opts.Variables)
 		if err != nil {
 			return nil, err

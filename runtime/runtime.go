@@ -27,7 +27,7 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
-	InstancesDataDir             string
+	DataDir                      string
 }
 
 type Runtime struct {

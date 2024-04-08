@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -17,14 +18,13 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
-	// DSN is the connection string
+	// DSN is the connection string. Also allows a special `:memory:` prefix to initialize an in-memory database.
 	DSN string `mapstructure:"dsn"`
 	// Path is a path to the database file. If set, it will take precedence over the path contained in DSN.
 	// This is a convenience option for setting the path in a more human-readable way.
-	//
-	// Deprecated: See DataDir below.
 	Path string `mapstructure:"path"`
-	// DataDir serves the same purpose as path. It is set directly in runtime as compared to Path which needs to be set while creating instance.
+	// DataDir is the path to where duckdb file named `main.db` will be created. In case of external table storage all the files will also be present in DataDir's subdirectories.
+	// If path is set then DataDir is ignored.
 	DataDir string `mapstructure:"data_dir"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
@@ -61,6 +61,12 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("could not decode config: %w", err)
 	}
 
+	inMemory := false
+	if strings.HasPrefix(cfg.DSN, ":memory:") {
+		inMemory = true
+		cfg.DSN = strings.Replace(cfg.DSN, ":memory:", "", 1)
+	}
+
 	// Parse DSN as URL
 	uri, err := url.Parse(cfg.DSN)
 	if err != nil {
@@ -71,16 +77,18 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("could not parse dsn: %w", err)
 	}
 
-	// Override DSN.Path with config.Path
-	if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
-		uri.Path = cfg.Path
-	} else if uri.Path == "" { // for backward compatibility only set if nothing set in dsn
-		uri.Path = filepath.Join(cfg.DataDir, "main.db")
-	}
+	if !inMemory {
+		// Override DSN.Path with config.Path
+		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
+			uri.Path = cfg.Path
+		} else if cfg.DataDir != "" {
+			uri.Path = filepath.Join(cfg.DataDir, "main.db")
+		}
 
-	// Infer DBFilePath
-	cfg.DBFilePath = uri.Path
-	cfg.DBStoragePath = filepath.Dir(cfg.DBFilePath)
+		// Infer DBFilePath
+		cfg.DBFilePath = uri.Path
+		cfg.DBStoragePath = filepath.Dir(cfg.DBFilePath)
+	}
 
 	// Set memory limit
 	maxMemory := cfg.MemoryLimitGB

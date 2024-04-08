@@ -267,7 +267,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
-	res.setPreset("data_dir", filepath.Join(r.opts.InstancesDataDir, instanceID, name), true)
+	res.setPreset("data_dir", filepath.Join(r.opts.DataDir, instanceID, name), true)
 
 	// Done
 	return res, nil
