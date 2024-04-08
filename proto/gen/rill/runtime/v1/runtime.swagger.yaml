@@ -3803,22 +3803,28 @@ definitions:
     properties:
       chart:
         type: string
-      columns:
-        type: string
+      x:
+        type: integer
         format: int64
-      rows:
-        type: string
+      "y":
+        type: integer
+        format: int64
+      width:
+        type: integer
+        format: int64
+      height:
+        type: integer
         format: int64
   v1DashboardSpec:
     type: object
     properties:
       title:
         type: string
-      gridColumns:
-        type: string
+      columns:
+        type: integer
         format: int64
-      gridRows:
-        type: string
+      gap:
+        type: integer
         format: int64
       components:
         type: array
@@ -5832,6 +5838,10 @@ definitions:
         type: string
       databaseSchema:
         type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
       name:
         type: string
       hasUnsupportedDataTypes:
