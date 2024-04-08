@@ -310,6 +310,7 @@
             <MeasureChart
               bind:mouseoverValue
               {measure}
+              {isInTimeDimensionView}
               {isScrubbing}
               {scrubStart}
               {scrubEnd}

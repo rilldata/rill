@@ -1,5 +1,6 @@
 import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { VisualizationSpec } from "svelte-vega";
 import { TDDChart, TDDCustomCharts } from "../types";
@@ -62,8 +63,14 @@ export function sanitizeSpecForTDD(
     domain: [xMin.toISOString(), xMax.toISOString()],
   };
 
+  const timeLabelFormat = TIME_GRAIN[timeGrain]?.d3format as string;
   // Remove titles from axes
-  xEncoding.axis = { ticks: false, title: "" };
+  xEncoding.axis = {
+    ticks: false,
+    title: "",
+    formatType: "time",
+    format: timeLabelFormat,
+  };
   yEncoding.axis = { title: "" };
 
   if (
