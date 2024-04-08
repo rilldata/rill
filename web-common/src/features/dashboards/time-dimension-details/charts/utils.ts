@@ -1,13 +1,44 @@
+import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { VisualizationSpec } from "svelte-vega";
+import { TDDChart, TDDCustomCharts } from "../types";
+
+export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
+  return dimensionData
+    .map((dimension) =>
+      dimension.data.map((datum) => ({
+        dimension: dimension.value,
+        ...datum,
+      })),
+    )
+    .flat();
+}
+
+export function getVegaSpec(
+  chartType: TDDCustomCharts,
+  expandedMeasureName: string,
+  isDimensional: boolean,
+): VisualizationSpec {
+  const temporalFields = ["ts_position"];
+  const measureFields = [expandedMeasureName];
+
+  const spec = buildVegaLiteSpec(
+    chartType,
+    temporalFields,
+    measureFields,
+    isDimensional ? ["dimension"] : [],
+  );
+
+  return spec;
+}
 
 export function sanitizeSpecForTDD(
   spec: VisualizationSpec,
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
-  chartType: string,
+  chartType: TDDCustomCharts,
 ): VisualizationSpec {
   if (!spec) return spec;
 
@@ -35,7 +66,10 @@ export function sanitizeSpecForTDD(
   xEncoding.axis = { ticks: false, title: "" };
   yEncoding.axis = { title: "" };
 
-  if (chartType === "bar" || chartType === "stacked bar") {
+  if (
+    chartType === TDDChart.STACKED_BAR ||
+    chartType === TDDChart.GROUPED_BAR
+  ) {
     // Set timeUnit for x-axis using timeGrain
     switch (timeGrain) {
       case V1TimeGrain.TIME_GRAIN_SECOND:
@@ -66,15 +100,4 @@ export function sanitizeSpecForTDD(
   }
 
   return sanitizedSpec;
-}
-
-export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
-  return dimensionData
-    .map((dimension) =>
-      dimension.data.map((datum) => ({
-        dimension: dimension.value,
-        ...datum,
-      })),
-    )
-    .flat();
 }

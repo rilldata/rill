@@ -17,6 +17,7 @@
   import ChartTypeSelection from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelection.svelte";
   import CustomChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/CustomChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import {
     TimeSeriesDatum,
@@ -55,7 +56,6 @@
   let mouseoverValue: DomainCoordinates | undefined = undefined;
   let startValue: Date;
   let endValue: Date;
-  let chartType: string;
 
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
@@ -75,6 +75,7 @@
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
+  $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
@@ -220,7 +221,7 @@
   <div class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelection bind:chartType />
+      <ChartTypeSelection {metricViewName} />
     {:else}
       <SearchableFilterButton
         label="Measures"
@@ -295,10 +296,10 @@
 
           {#if $timeSeriesDataStore?.isError}
             <div class="p-5"><CrossIcon /></div>
-          {:else if formattedData?.length && expandedMeasureName && chartType != "default"}
+          {:else if formattedData?.length && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
             <CustomChart
               timeGrain={interval}
-              {chartType}
+              chartType={tddChartType}
               {expandedMeasureName}
               totalsData={formattedData}
               {dimensionData}

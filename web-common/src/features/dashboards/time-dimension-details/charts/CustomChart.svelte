@@ -1,44 +1,26 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
-  import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
+  import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { reduceDimensionData, sanitizeSpecForTDD } from "./utils";
+  import { TDDCustomCharts } from "../types";
+  import {
+    getVegaSpec,
+    reduceDimensionData,
+    sanitizeSpecForTDD,
+  } from "./utils";
 
   export let totalsData;
-  export let dimensionData;
+  export let dimensionData: DimensionDataItem[];
   export let expandedMeasureName: string;
-  export let chartType: string;
+  export let chartType: TDDCustomCharts;
   export let xMin: Date;
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
 
-  let vegaSpec;
-  $: data = totalsData;
-
-  $: if (chartType === "bar") {
-    vegaSpec = buildVegaLiteSpec("bar", ["ts_position"], [expandedMeasureName]);
-  } else if (chartType === "stacked bar") {
-    data = dimensionData.length
-      ? reduceDimensionData(dimensionData)
-      : totalsData;
-    vegaSpec = buildVegaLiteSpec(
-      "bar",
-      ["ts_position"],
-      [expandedMeasureName],
-      ["dimension"],
-    );
-  } else if (chartType === "stacked area") {
-    data = dimensionData.length
-      ? reduceDimensionData(dimensionData)
-      : totalsData;
-    vegaSpec = buildVegaLiteSpec(
-      "stacked area",
-      ["ts_position"],
-      [expandedMeasureName],
-      ["dimension"],
-    );
-  }
-
+  // Reactive statements
+  $: hasDimensionData = !!dimensionData?.length;
+  $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
+  $: vegaSpec = getVegaSpec(chartType, expandedMeasureName, hasDimensionData);
   $: sanitizedVegaSpec = sanitizeSpecForTDD(
     vegaSpec,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
@@ -47,11 +29,7 @@
     chartType,
   );
 
-  $: console.log(
-    data,
-    "sanitizedVegaSpec",
-    JSON.stringify(sanitizedVegaSpec, null, 2),
-  );
+  $: console.log(sanitizedVegaSpec);
 </script>
 
 {#if sanitizedVegaSpec && data}
