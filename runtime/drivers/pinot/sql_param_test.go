@@ -33,5 +33,5 @@ func Test_main(t *testing.T) {
 	}
 	q, err = completeQuery(query, args)
 	require.NoError(t, err)
-	require.Equal(t, "SELECT * FROM users WHERE id = '"+now.Format("2006-01-02 15:04:05.000")+"' AND name = true", q)
+	require.Equal(t, "SELECT * FROM users WHERE id = '"+now.Format("2006-01-02 15:04:05.000Z")+"' AND name = true", q)
 }

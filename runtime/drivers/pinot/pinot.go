@@ -14,14 +14,14 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
-	DocsURL:     "<>", // TODO
+	DocsURL:     "", // TODO add when docs are added
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Connection string",
-			Placeholder: "<>", // TODO
+			Placeholder: "", // TODO add connection string example
 			Secret:      true,
 		},
 	},
