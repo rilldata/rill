@@ -72,7 +72,7 @@ export function sanitizeSpecForTDD(
     formatType: "time",
     format: timeLabelFormat,
   };
-  yEncoding.axis = { title: "", format: "s" };
+  yEncoding.axis = { title: "" };
 
   if (
     chartType === TDDChart.STACKED_BAR ||

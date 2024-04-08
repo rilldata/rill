@@ -106,4 +106,8 @@ export const getRillTheme: () => Config = () => ({
   range: {
     category: CategoryColors,
   },
+  numberFormat: "s",
+  tooltipFormat: {
+    numberFormat: "d",
+  },
 });

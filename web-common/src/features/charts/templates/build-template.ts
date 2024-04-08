@@ -17,6 +17,7 @@ export function buildVegaLiteSpec(
   if (!timeFields.length) throw "No time fields found";
 
   const hasNominalFields = nominalFields.length > 0;
+  const expandBars = hasNominalFields && chartType === ChartTypes.GROUPED_BAR;
 
   if (
     chartType == ChartTypes.BAR ||
@@ -25,7 +26,7 @@ export function buildVegaLiteSpec(
   ) {
     baseSpec.mark = {
       type: "bar",
-      width: { band: 0.75 },
+      width: { band: expandBars ? 1 : 0.75 },
       clip: true,
     };
     baseSpec.encoding = {
