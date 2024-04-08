@@ -151,6 +151,8 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 		res[i] = &runtimev1.TableInfo{
 			Database:                table.Database,
 			DatabaseSchema:          table.DatabaseSchema,
+			IsDefaultDatabase:       table.IsDefaultDatabase,
+			IsDefaultDatabaseSchema: table.IsDefaultDatabaseSchema,
 			Name:                    table.Name,
 			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
 		}

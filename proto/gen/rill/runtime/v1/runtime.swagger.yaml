@@ -3029,7 +3029,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -5838,6 +5838,10 @@ definitions:
         type: string
       databaseSchema:
         type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
       name:
         type: string
       hasUnsupportedDataTypes:
