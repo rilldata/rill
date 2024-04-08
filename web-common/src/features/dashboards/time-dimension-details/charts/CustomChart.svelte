@@ -28,8 +28,6 @@
     xMax,
     chartType,
   );
-
-  $: console.log(sanitizedVegaSpec);
 </script>
 
 {#if sanitizedVegaSpec && data}

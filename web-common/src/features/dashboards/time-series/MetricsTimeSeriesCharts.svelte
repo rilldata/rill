@@ -296,7 +296,7 @@
 
           {#if $timeSeriesDataStore?.isError}
             <div class="p-5"><CrossIcon /></div>
-          {:else if formattedData?.length && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
+          {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
             <CustomChart
               timeGrain={interval}
               chartType={tddChartType}

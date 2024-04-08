@@ -43,7 +43,7 @@ export function sanitizeSpecForTDD(
 ): VisualizationSpec {
   if (!spec) return spec;
 
-  const sanitizedSpec: VisualizationSpec = { ...spec };
+  const sanitizedSpec: VisualizationSpec = structuredClone(spec);
   let xEncoding;
   let yEncoding;
   if (sanitizedSpec.encoding) {
