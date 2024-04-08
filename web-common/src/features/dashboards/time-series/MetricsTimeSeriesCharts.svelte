@@ -226,7 +226,11 @@
   <div class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelection {metricViewName} chartType={tddChartType} />
+      <ChartTypeSelection
+        isDimensional={!!dimensionData.length}
+        {metricViewName}
+        chartType={tddChartType}
+      />
     {:else}
       <SearchableFilterButton
         label="Measures"

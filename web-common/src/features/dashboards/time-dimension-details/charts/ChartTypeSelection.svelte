@@ -5,6 +5,7 @@
 
   export let metricViewName: string;
   export let chartType: TDDChart;
+  export let isDimensional: boolean;
 
   $: isCustomChart = chartType != TDDChart.DEFAULT;
 
@@ -24,15 +25,18 @@
     compact
     on:click={() => handleChartTypeChange(TDDChart.GROUPED_BAR)}>Bar</Button
   >
+
   <Button
     type="text"
     compact
+    disabled={!isDimensional}
     on:click={() => handleChartTypeChange(TDDChart.STACKED_BAR)}
     >Stacked Bar</Button
   >
   <Button
     type="text"
     compact
+    disabled={!isDimensional}
     on:click={() => handleChartTypeChange(TDDChart.STACKED_AREA)}
     >Stacked Area</Button
   >
