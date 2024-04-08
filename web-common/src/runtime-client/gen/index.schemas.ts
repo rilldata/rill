@@ -661,6 +661,8 @@ export interface V1TableRowsRequest {
 export interface V1TableInfo {
   database?: string;
   databaseSchema?: string;
+  isDefaultDatabase?: boolean;
+  isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
 }
@@ -1782,14 +1784,16 @@ export interface V1DashboardState {
 
 export interface V1DashboardComponent {
   chart?: string;
-  columns?: string;
-  rows?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface V1DashboardSpec {
   title?: string;
-  gridColumns?: string;
-  gridRows?: string;
+  columns?: number;
+  gap?: number;
   components?: V1DashboardComponent[];
 }
 
