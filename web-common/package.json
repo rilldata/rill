@@ -69,6 +69,7 @@
     "svelte-forms-lib": "^2.0.1",
     "svelte-headless-table": "^0.18.1",
     "svelte-preprocess": "^5.0.4",
+    "svelte-radix": "^1.1.0",
     "svelte-vega": "^2.2.0",
     "tailwind-merge": "^2.1.0",
     "tailwind-variants": "^0.1.19",
@@ -81,8 +82,5 @@
     "yaml": "^2.1.3",
     "yup": "^0.32.11"
   },
-  "type": "module",
-  "dependencies": {
-    "svelte-radix": "^1.1.0"
-  }
+  "type": "module"
 }
