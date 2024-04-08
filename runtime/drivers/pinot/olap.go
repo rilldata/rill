@@ -143,7 +143,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 
 	var tables []*drivers.Table
 	for _, tableName := range tableNames {
-		table, err := i.Lookup(ctx, tableName)
+		table, err := i.Lookup(ctx, "", "", tableName)
 		if err != nil {
 			fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
 			continue
@@ -154,7 +154,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables/"+name+"/schema", http.NoBody)
 	resp, err := i.c.metaClient.Do(req)
 	if err != nil {
@@ -197,8 +197,8 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 
 	// Mapping the schemaResponse to your Table structure
 	table := &drivers.Table{
-		Database:        "pinot",
-		DatabaseSchema:  "pinot",
+		Database:        "",
+		DatabaseSchema:  "",
 		Name:            name,
 		View:            false,
 		Schema:          &runtimev1.StructType{Fields: schemaFields},

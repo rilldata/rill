@@ -13,6 +13,8 @@ export function makeFullyQualifiedTableName(
       return `${databaseSchema}.${table}`;
     case "duckdb":
       return `${database}.${databaseSchema}.${table}`;
+    case "pinot":
+      return `${table}`;
     default:
       throw new Error(`Unsupported OLAP connector: ${connector}`);
   }

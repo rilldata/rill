@@ -39,6 +39,8 @@
         return `/connector/druid/${tableInfo.databaseSchema}/${tableInfo.name}`;
       case "duckdb":
         return `/connector/duckdb/${tableInfo.database}/${tableInfo.databaseSchema}/${tableInfo.name}`;
+      case "pinot":
+        return `/connector/pinot/${tableInfo.name}`;
       default:
         throw new Error(`Unsupported OLAP connector: ${olapConnector}`);
     }

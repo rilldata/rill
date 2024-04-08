@@ -359,7 +359,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 }
 
 func (q *MetricsViewTimeSeries) buildPinotSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause, timezone string) string {
-	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+	dateTruncSpecifier := drivers.DialectPinot.ConvertToDateTruncSpecifier(q.TimeGranularity)
 
 	// TODO: handle shift later, input format should be take from user
 	timeClause := fmt.Sprintf("DATETRUNC('%s', %s,'MILLISECONDS','%s')", dateTruncSpecifier, safeName(mv.TimeDimension), timezone)

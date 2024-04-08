@@ -12,15 +12,21 @@ import (
 )
 
 var spec = drivers.Spec{
-	ConfigProperties: []drivers.PropertySchema{
+	DisplayName: "Pinot",
+	Description: "Connect to Apache Pinot.",
+	DocsURL:     "<>", // TODO
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			Description: "Apache Pinot connection string",
+			DisplayName: "Connection string",
+			Placeholder: "<>", // TODO
 			Secret:      true,
 		},
 	},
+	SourceProperties: nil,
+	ImplementsOLAP:   true,
 }
 
 func init() {
@@ -145,4 +151,9 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
