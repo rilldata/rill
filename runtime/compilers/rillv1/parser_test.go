@@ -1324,13 +1324,13 @@ vega_lite: |%s
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
-  gap: 3
-  columns: 4
+columns: 4
+gap: 3
 components:
-  - chart: c1
-  - chart: c2
-    width: 1
-    height: 2
+- chart: c1
+- chart: c2
+  width: 1
+  height: 2
 `,
 	})
 
