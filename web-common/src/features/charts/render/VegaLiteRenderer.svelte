@@ -5,7 +5,6 @@
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
 
-  $: console.log("spec", spec);
   let options: EmbedOptions = {
     config: getRillTheme(),
     renderer: "svg",

@@ -221,7 +221,7 @@
   <div class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelection {metricViewName} />
+      <ChartTypeSelection {metricViewName} chartType={tddChartType} />
     {:else}
       <SearchableFilterButton
         label="Measures"
@@ -235,29 +235,31 @@
     {/if}
   </div>
 
-  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-    <div class="relative w-full">
-      <ChartInteractions
-        {metricViewName}
-        {showComparison}
-        timeGrain={interval}
-      />
-      <div class="translate-x-5">
-        {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
-          <SimpleDataGraphic
-            height={26}
-            overflowHidden={false}
-            top={29}
-            bottom={0}
-            xMin={startValue}
-            xMax={endValue}
-          >
-            <Axis superlabel side="top" placement="start" />
-          </SimpleDataGraphic>
-        {/if}
+  {#if tddChartType == TDDChart.DEFAULT || !expandedMeasureName}
+    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+      <div class="relative w-full">
+        <ChartInteractions
+          {metricViewName}
+          {showComparison}
+          timeGrain={interval}
+        />
+        <div class="translate-x-5">
+          {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+            <SimpleDataGraphic
+              height={26}
+              overflowHidden={false}
+              top={29}
+              bottom={0}
+              xMin={startValue}
+              xMax={endValue}
+            >
+              <Axis superlabel side="top" placement="start" />
+            </SimpleDataGraphic>
+          {/if}
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 
   <!-- bignumbers and line charts -->
   {#if renderedMeasures}

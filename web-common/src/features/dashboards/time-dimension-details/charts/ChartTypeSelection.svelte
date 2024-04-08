@@ -4,13 +4,16 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
   export let metricViewName: string;
+  export let chartType: TDDChart;
+
+  $: isCustomChart = chartType != TDDChart.DEFAULT;
 
   function handleChartTypeChange(type: TDDChart) {
     metricsExplorerStore.setTDDChartType(metricViewName, type);
   }
 </script>
 
-<div class="flex gap-x-2 ml-auto">
+<div class:pb-6={isCustomChart} class="flex pb-6 gap-x-2 ml-auto">
   <Button
     type="text"
     compact

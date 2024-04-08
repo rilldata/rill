@@ -67,6 +67,7 @@ export function sanitizeSpecForTDD(
   // Remove titles from axes
   xEncoding.axis = {
     ticks: false,
+    orient: "top",
     title: "",
     formatType: "time",
     format: timeLabelFormat,
