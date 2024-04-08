@@ -15,10 +15,7 @@
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
@@ -62,10 +59,9 @@
 
   $: dashboard = $query.data?.dashboard?.spec;
 
-  $: selectedChartFilePath = getFileAPIPathFromNameAndType(
-    selectedChartName,
-    EntityType.Chart,
-  );
+  $: selectedChartFilePath = selectedChartName
+    ? getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart)
+    : null;
 
   $: columns = dashboard?.columns ?? 10;
   $: gap = dashboard?.gap ?? 1;
@@ -239,7 +235,7 @@
 
             {#if showChartEditor}
               <div style:height="{chartEditorHeight}px">
-                {#if selectedChartName && showChartEditor}
+                {#if selectedChartFilePath && showChartEditor}
                   <ChartsEditor filePath={selectedChartFilePath} />
                 {/if}
               </div>
