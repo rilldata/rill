@@ -1782,14 +1782,16 @@ export interface V1DashboardState {
 
 export interface V1DashboardComponent {
   chart?: string;
-  columns?: string;
-  rows?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface V1DashboardSpec {
   title?: string;
-  gridColumns?: string;
-  gridRows?: string;
+  columns?: number;
+  gap?: number;
   components?: V1DashboardComponent[];
 }
 
@@ -2233,7 +2235,7 @@ export interface Runtimev1CharLocation {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
