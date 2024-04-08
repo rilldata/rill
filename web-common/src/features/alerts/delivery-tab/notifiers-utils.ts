@@ -3,7 +3,10 @@ import { createRuntimeServiceListNotifierConnectors } from "@rilldata/web-common
 export function getHasSlackConnection(runtimeId: string) {
   return createRuntimeServiceListNotifierConnectors(runtimeId, {
     query: {
-      select: (data) => !!data.connectors?.some((c) => c.name === "slack"),
+      select: (data) => {
+        console.log(data);
+        !!data.connectors?.some((c) => c.name === "slack");
+      },
     },
   });
 }

@@ -7,7 +7,7 @@
   export let title: string;
   export let description: string = "";
   export let padding = "p-3";
-  export let showEnabled = false;
+  export let showSectionToggle = false;
   export let enabled = true;
 </script>
 
@@ -25,7 +25,7 @@
           </TooltipContent>
         </Tooltip>
       {/if}
-      {#if showEnabled}
+      {#if showSectionToggle}
         <div class="grow"></div>
         <Switch bind:checked={enabled} />
       {/if}

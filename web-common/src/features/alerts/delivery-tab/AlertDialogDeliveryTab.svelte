@@ -13,6 +13,7 @@
   const { form } = formState;
 
   $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: console.log($hasSlackNotifier);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -31,10 +32,10 @@
       options={SnoozeOptions}
     />
   </FormSection>
-  {#if hasSlackNotifier}
+  {#if $hasSlackNotifier.data}
     <FormSection
       bind:enabled={$form["enableSlackNotification"]}
-      showEnabled
+      showSectionToggle
       title="Slack notifications"
     >
       <InputArray
@@ -56,11 +57,22 @@
         placeholder="Enter an email address"
       />
     </FormSection>
+  {:else}
+    <FormSection title="Slack notifications">
+      <span class="text-sm text-slate-600">
+        Slack has not been configured for this project. Read the <a
+          href="https://docs.rilldata.com/reference/connectors/slack"
+          target="_blank"
+        >
+          docs
+        </a> to learn more.
+      </span>
+    </FormSection>
   {/if}
   <FormSection
     bind:enabled={$form["enableEmailNotification"]}
     description="We’ll email alerts to these addresses. Make sure they have access to your project."
-    showEnabled
+    showSectionToggle
     title="Email notifications"
   >
     <InputArray
