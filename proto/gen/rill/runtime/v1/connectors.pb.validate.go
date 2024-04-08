@@ -2220,6 +2220,8 @@ func (m *TableInfo) validate(all bool) error {
 
 	// no validation rules for Database
 
+	// no validation rules for DatabaseSchema
+
 	// no validation rules for Name
 
 	// no validation rules for HasUnsupportedDataTypes
@@ -2326,6 +2328,10 @@ func (m *OLAPGetTableRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	// no validation rules for Table
 

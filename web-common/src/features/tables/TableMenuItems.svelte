@@ -3,6 +3,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -14,13 +15,15 @@
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../sources/createModel";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
 
-  export let fullyQualifiedTableName: string;
+  export let connector: string;
+  export let database: string = "";
+  export let databaseSchema: string;
+  export let table: string;
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: tableName = fullyQualifiedTableName.split(".")[1];
+  $: tableName = table;
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelNames = useModelFileNames($runtime.instanceId);
 
@@ -48,6 +51,9 @@
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
+    connector,
+    database,
+    databaseSchema,
     tableName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
