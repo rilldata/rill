@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -76,6 +77,9 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, err
 	}
 
+	if err := os.Mkdir(conf.DataDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+		return nil, err
+	}
 	tempdir, err := os.MkdirTemp(conf.DataDir, "github_repo_driver")
 	if err != nil {
 		return nil, err
