@@ -399,7 +399,10 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		if res.GrantAccessUrl != "" {
 			// Print instructions to grant access
 			time.Sleep(3 * time.Second)
-			ch.Print("If the browser did not redirect, open this URL in your browser to grant Rill access to Github:\n\n")
+			if silent {
+				ch.Print("If the browser did not redirect, ")
+			}
+			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
 			// Open browser if possible
