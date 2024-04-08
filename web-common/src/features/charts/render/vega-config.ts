@@ -69,6 +69,7 @@ export const getRillTheme: () => Config = () => ({
     tickColor: gridColor,
     domain: false,
     format: "s",
+    tickSize: 0,
     labelFont: "Inter, sans-serif",
     labelFontSize: 11,
     labelFontWeight: 400,

@@ -157,6 +157,10 @@
       };
     });
 
+    const isDiscreteChart =
+      tddChartType === TDDChart.GROUPED_BAR ||
+      tddChartType === TDDChart.STACKED_BAR ||
+      !expandedMeasureName;
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
@@ -164,6 +168,7 @@
       interval,
       $timeControlsStore.selectedTimeRange?.name,
       $metricsView?.data?.defaultTimeRange,
+      isDiscreteChart,
     );
 
     if (adjustedChartValue?.start) {
