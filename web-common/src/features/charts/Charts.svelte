@@ -2,10 +2,10 @@
   import ChartDisplay from "@rilldata/web-common/features/charts/ChartDisplay.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
 
-  export let chartName: string;
+  export let filePath: string;
 </script>
 
 <div class="flex gap-x-4 w-full">
-  <ChartsEditor {chartName} />
-  <ChartDisplay {chartName} />
+  <ChartsEditor {filePath} />
+  <ChartDisplay {filePath} />
 </div>
