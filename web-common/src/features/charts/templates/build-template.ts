@@ -36,6 +36,16 @@ export function buildVegaLiteSpec(
         condition: { param: "hover", empty: false, value: 1 },
         value: 0.8,
       },
+      tooltip: [
+        {
+          field: timeFields[0],
+          type: "temporal",
+          title: "Time",
+          format: "%b %d, %Y %H:%M",
+        },
+        { field: quantitativeFields[0], type: "quantitative" },
+        { field: nominalFields[0], type: "nominal" },
+      ],
     };
 
     baseSpec.params = [
