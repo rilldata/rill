@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import type { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { Button, IconButton } from "../button";
   import Add from "../icons/Add.svelte";
@@ -8,10 +8,9 @@
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
-  export let id = "";
+  export let id: string;
   export let label = "";
-  export let values: any[];
-  export let errors: any[];
+  export let description = "";
   // The accessorKey is necessary due to the way svelte-forms-lib works with arrays.
   // See: https://svelte-forms-lib-sapper-docs.vercel.app/array
   export let accessorKey: string;
@@ -19,12 +18,33 @@
   export let hint = "";
   export let addItemLabel = "Add item";
 
-  const dispatch = createEventDispatcher();
+  export let formState: ReturnType<typeof createForm<Record<string, any>>>;
+  const { form, errors } = formState;
+  $: values = $form[id] as Record<string, string>[];
+  // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
+  // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
+  $: errs = ($errors[id] as unknown as Record<string, string>[]) ?? [];
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter") {
       event.preventDefault();
     }
+  }
+
+  function handleAddItem() {
+    $form[id] = $form[id].concat({ email: "" });
+    errs = errs.concat({ email: "" });
+    // Focus on the new input element
+    setTimeout(() => {
+      const input = document.getElementById(
+        `${id}.${$form[id].length - 1}.${accessorKey}`,
+      );
+      input?.focus();
+    }, 0);
+  }
+  function handleRemove(index: number) {
+    $form[id] = $form[id].filter((_, i) => i !== index);
+    errs = errs.filter((r, i) => i !== index);
   }
 </script>
 
@@ -41,6 +61,9 @@
             {hint}
           </TooltipContent>
         </Tooltip>
+      {/if}
+      {#if description}
+        <div class="text-sm text-slate-600">{description}</div>
       {/if}
     </div>
   {/if}
@@ -60,23 +83,18 @@
             ]?.accessorKey && 'border-red-500'}"
             on:keydown={handleKeyDown}
           />
-          <IconButton
-            on:click={() =>
-              dispatch("remove-item", {
-                index: i,
-              })}
-          >
+          <IconButton on:click={() => handleRemove(i)}>
             <Trash size="16px" className="text-gray-500 cursor-pointer" />
           </IconButton>
         </div>
-        {#if errors[i]?.[accessorKey]}
+        {#if errs[i]?.[accessorKey]}
           <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
-            {errors[i][accessorKey]}
+            {errs[i][accessorKey]}
           </div>
         {/if}
       </div>
     {/each}
-    <Button on:click={() => dispatch("add-item")} type="secondary" dashed>
+    <Button dashed on:click={handleAddItem} type="secondary">
       <div class="flex gap-x-2">
         <Add className="text-gray-700" />
         {addItemLabel}

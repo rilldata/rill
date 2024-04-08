@@ -5,6 +5,7 @@
   import {
     extractAlertFormValueFromComparison,
     extractAlertFormValues,
+    extractAlertNotification,
   } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     useMetricsView,
@@ -53,15 +54,12 @@
     { query: { queryClient } },
   );
 
-  const formState = createForm({
+  const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
-      recipients:
-        alertSpec?.notifiers
-          ?.find((n) => n.connector === "email")
-          ?.properties?.recipients?.map((r) => ({ email: r })) ?? [],
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
+      ...extractAlertNotification(alertSpec),
       ...("metricsView" in queryArgsJson
         ? extractAlertFormValues(
             queryArgsJson,
@@ -73,7 +71,7 @@
             $metricsViewSpec?.data ?? {},
             $timeRange?.data ?? {},
           )),
-    } as AlertFormValues,
+    },
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {
       try {
@@ -89,9 +87,15 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              emailRecipients: values.recipients
-                .map((r) => r.email)
-                .filter(Boolean),
+              slackChannels: values.enableSlackNotification
+                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
+                : undefined,
+              slackUsers: values.enableSlackNotification
+                ? values.slackUsers.map((c) => c.email).filter(Boolean)
+                : undefined,
+              emailRecipients: values.enableEmailNotification
+                ? values.emailRecipients.map((r) => r.email).filter(Boolean)
+                : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },

@@ -5,16 +5,14 @@
     createAdminServiceCreateAlert,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
-  import {
-    CompareWith,
-    CriteriaOperations,
-  } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  import { CompareWith } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
     AlertFormValues,
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
+  import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     mapComparisonTimeRange,
@@ -68,7 +66,7 @@
     mapTimeRange(timeControls, {}),
   );
 
-  const formState = createForm({
+  const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
       measure:
@@ -80,14 +78,25 @@
       criteria: [
         {
           field: $dashboardStore.leaderboardMeasureName ?? "",
-          operation: CriteriaOperations.GreaterThan,
+          operation: MeasureFilterOperation.GreaterThan,
           compareWith: CompareWith.Value,
           value: "0",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
       snooze: SnoozeOptions[0].value, // Defaults to `Off`
-      recipients: [
+      enableSlackNotification: true,
+      slackChannels: [
+        {
+          channel: "",
+        },
+      ],
+      slackUsers: [
+        { email: $user.data?.user?.email ? $user.data.user.email : "" },
+        { email: "" },
+      ],
+      enableEmailNotification: true,
+      emailRecipients: [
         { email: $user.data?.user?.email ? $user.data.user.email : "" },
         { email: "" },
       ],
@@ -123,9 +132,15 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              emailRecipients: values.recipients
-                .map((r) => r.email)
-                .filter(Boolean),
+              slackChannels: values.enableSlackNotification
+                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
+                : undefined,
+              slackUsers: values.enableSlackNotification
+                ? values.slackUsers.map((c) => c.email).filter(Boolean)
+                : undefined,
+              emailRecipients: values.enableEmailNotification
+                ? values.emailRecipients.map((r) => r.email).filter(Boolean)
+                : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },
