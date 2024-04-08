@@ -8,8 +8,8 @@
   $: customDashboardName = $page.params.dashboard;
   $: query = useCustomDashboard($runtime.instanceId, customDashboardName);
   $: dashboard = $query.data?.dashboard?.spec;
-  $: columns = dashboard?.grid?.columns ?? 10;
-  $: gap = dashboard?.grid?.gap ?? 1;
+  $: columns = dashboard?.columns ?? 10;
+  $: gap = dashboard?.gap ?? 1;
   $: charts = dashboard?.components ?? ([] as V1DashboardComponent[]);
 </script>
 
