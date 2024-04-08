@@ -68,8 +68,10 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		return err
 	}
 
-	if err := os.Mkdir(filepath.Join(r.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-		return err
+	if r.opts.DataDir != "" {
+		if err := os.Mkdir(filepath.Join(r.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return err
+		}
 	}
 	return nil
 }

@@ -60,7 +60,6 @@ func New(t TestingT) *runtime.Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 		AllowHostAccess:              true,
-		DataDir:                      t.TempDir(),
 	}
 
 	logger := zap.NewNop()
@@ -95,6 +94,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		olapDriver = "duckdb"
 	}
 	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+	if olapDSN == "" {
+		olapDSN = ":memory:"
+	}
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
@@ -192,7 +194,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"dsn": ""},
+				Config: map[string]string{"dsn": ":memory:"},
 			},
 			{
 				Type: "sqlite",

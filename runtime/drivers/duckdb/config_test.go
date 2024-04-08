@@ -92,7 +92,7 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile, "memory_limit_gb": "4", "cpu": "2"}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open(map[string]any{"path": dbFile, "memory_limit_gb": "4", "cpu": "2"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	config := conn.(*connection).config
 	require.Equal(t, filepath.Join(path, "st@g3's.db?custom_user_agent=rill&max_memory=4GB&threads=1"), config.DSN)
@@ -108,7 +108,7 @@ func Test_specialCharInPath(t *testing.T) {
 }
 
 func TestOverrides(t *testing.T) {
-	cfgMap := map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10"}
+	cfgMap := map[string]any{"path": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10"}
 	handle, err := Driver{}.Open(cfgMap, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 

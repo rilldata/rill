@@ -44,7 +44,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 					{
 						Type:   "sqlite",
@@ -68,7 +68,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 					{
 						Type:   "sqlite",
@@ -96,7 +96,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "olap1",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -116,7 +116,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "olap1",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -139,7 +139,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -159,7 +159,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -182,7 +182,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": "?access_mode=read_write"},
+						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
 					},
 				},
 			},
@@ -202,7 +202,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": "?access_mode=read_write"},
+						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
 					},
 				},
 			},
@@ -225,7 +225,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -245,7 +245,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -268,7 +268,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 				Annotations: map[string]string{
@@ -291,7 +291,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 				Annotations: map[string]string{
@@ -321,7 +321,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			}
@@ -406,7 +406,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": dbFile, "path": dbFile},
+						Config: map[string]string{"path": dbFile},
 					},
 				},
 			}
