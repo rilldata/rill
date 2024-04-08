@@ -121,7 +121,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 
-		// data dir will have all the instance's data (including OLAP data) but for now drop everything if dropOLAP is true
+		// We drop all data if dropOLAP is true
 		if err := os.RemoveAll(filepath.Join(r.opts.DataDir, instanceID)); err != nil {
 			r.logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}

@@ -18,12 +18,12 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
-	// DSN is the connection string. Also allows a special `:memory:` prefix to initialize an in-memory database.
+	// DSN is the connection string. Also allows a special `:memory:` path to initialize an in-memory database.
 	DSN string `mapstructure:"dsn"`
 	// Path is a path to the database file. If set, it will take precedence over the path contained in DSN.
 	// This is a convenience option for setting the path in a more human-readable way.
 	Path string `mapstructure:"path"`
-	// DataDir is the path to where duckdb file named `main.db` will be created. In case of external table storage all the files will also be present in DataDir's subdirectories.
+	// DataDir is the path to directory where duckdb file named `main.db` will be created. In case of external table storage all the files will also be present in DataDir's subdirectories.
 	// If path is set then DataDir is ignored.
 	DataDir string `mapstructure:"data_dir"`
 	// PoolSize is the number of concurrent connections and queries allowed
