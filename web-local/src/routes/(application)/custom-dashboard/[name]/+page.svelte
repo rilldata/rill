@@ -58,13 +58,14 @@
 
   $: yaml = $fileQuery.data?.blob || "";
 
-  $: console.log(yaml);
-
   $: parsedYaml = parse(yaml) as V1DashboardSpec;
 
   $: dashboard = $query.data?.dashboard?.spec;
 
-  $: console.log({ dashboard });
+  $: selectedChartFilePath = getFileAPIPathFromNameAndType(
+    selectedChartName,
+    EntityType.Chart,
+  );
 
   $: columns = dashboard?.columns ?? 10;
   $: gap = dashboard?.gap ?? 1;
@@ -239,7 +240,7 @@
             {#if showChartEditor}
               <div style:height="{chartEditorHeight}px">
                 {#if selectedChartName && showChartEditor}
-                  <ChartsEditor chartName={selectedChartName} />
+                  <ChartsEditor filePath={selectedChartFilePath} />
                 {/if}
               </div>
             {/if}
