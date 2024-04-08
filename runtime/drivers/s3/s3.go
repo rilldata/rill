@@ -26,56 +26,59 @@ import (
 )
 
 var spec = drivers.Spec{
-	DisplayName:        "Amazon S3",
-	Description:        "Connect to AWS S3 Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/s3",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Amazon S3",
+	Description: "Connect to AWS S3 Storage.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/s3",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "aws_access_key_id",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "S3 URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "s3://bucket-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "region",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "AWS region",
 			Description: "AWS Region for the bucket.",
 			Placeholder: "us-east-1",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
 		},
 		{
 			Key:         "endpoint",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Endpoint URL",
 			Description: "Override S3 Endpoint URL",
 			Placeholder: "https://my.s3.server.com",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
 		},
 		{
 			Key:         "aws.credentials",
+			Type:        drivers.InformationalPropertyType,
 			DisplayName: "AWS credentials",
 			Description: "AWS credentials inferred from your local environment.",
-			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
+			DocsURL:     "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "aws_access_key_id",
-			Secret: true,
-		},
-		{
-			Key:    "aws_secret_access_key",
-			Secret: true,
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 const defaultPageSize = 20
@@ -233,6 +236,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 type sourceProperties struct {

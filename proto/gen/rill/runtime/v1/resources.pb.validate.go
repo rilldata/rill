@@ -2712,6 +2712,10 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	// no validation rules for Table
 
 	// no validation rules for Title
@@ -3662,6 +3666,40 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for ExportFormat
 
+	for idx, item := range m.GetNotifiers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ReportSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ReportSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ReportSpecValidationError{
+					field:  fmt.Sprintf("Notifiers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for Annotations
 
 	if len(errors) > 0 {
@@ -4350,15 +4388,49 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
-	// no validation rules for EmailOnRecover
+	// no validation rules for NotifyOnRecover
 
-	// no validation rules for EmailOnFail
+	// no validation rules for NotifyOnFail
 
-	// no validation rules for EmailOnError
+	// no validation rules for NotifyOnError
 
-	// no validation rules for EmailRenotify
+	// no validation rules for Renotify
 
-	// no validation rules for EmailRenotifyAfterSeconds
+	// no validation rules for RenotifyAfterSeconds
+
+	for idx, item := range m.GetNotifiers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AlertSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AlertSpecValidationError{
+						field:  fmt.Sprintf("Notifiers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AlertSpecValidationError{
+					field:  fmt.Sprintf("Notifiers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Annotations
 
@@ -4508,6 +4580,136 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AlertSpecValidationError{}
+
+// Validate checks the field values on Notifier with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Notifier) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Notifier with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in NotifierMultiError, or nil
+// if none found.
+func (m *Notifier) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Notifier) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Connector
+
+	if all {
+		switch v := interface{}(m.GetProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, NotifierValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, NotifierValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return NotifierValidationError{
+				field:  "Properties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return NotifierMultiError(errors)
+	}
+
+	return nil
+}
+
+// NotifierMultiError is an error wrapping multiple validation errors returned
+// by Notifier.ValidateAll() if the designated constraints aren't met.
+type NotifierMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m NotifierMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m NotifierMultiError) AllErrors() []error { return m }
+
+// NotifierValidationError is the validation error returned by
+// Notifier.Validate if the designated constraints aren't met.
+type NotifierValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NotifierValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NotifierValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NotifierValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NotifierValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NotifierValidationError) ErrorName() string { return "NotifierValidationError" }
+
+// Error satisfies the builtin error interface
+func (e NotifierValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNotifier.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NotifierValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NotifierValidationError{}
 
 // Validate checks the field values on AlertState with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -4759,7 +4961,7 @@ func (m *AlertExecution) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SentEmails
+	// no validation rules for SentNotifications
 
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {

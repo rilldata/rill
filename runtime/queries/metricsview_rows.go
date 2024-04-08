@@ -204,7 +204,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap 
 		return "", nil
 	}
 
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
 	if err != nil {
 		return "", err
 	}
@@ -241,12 +241,17 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 	whereClause := "1=1"
 	args := []any{}
 	if mv.TimeDimension != "" {
+		td := safeName(mv.TimeDimension)
+		if dialect == drivers.DialectDuckDB {
+			td = fmt.Sprintf("%s::TIMESTAMP", td)
+		}
+
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
+			whereClause += fmt.Sprintf(" AND %s >= ?", td)
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
+			whereClause += fmt.Sprintf(" AND %s < ?", td)
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}
@@ -310,7 +315,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 
 	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s %s %s OFFSET %d",
 		strings.Join(selectColumns, ","),
-		safeName(mv.Table),
+		escapeMetricsViewTable(dialect, mv),
 		whereClause,
 		orderClause,
 		limitClause,

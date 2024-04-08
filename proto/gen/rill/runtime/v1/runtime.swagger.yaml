@@ -84,14 +84,14 @@ paths:
   /v1/connectors/meta:
     get:
       summary: |-
-        ListConnectors returns a description of all the connectors implemented in the runtime,
-        including their schema and validation rules
-      operationId: RuntimeService_ListConnectors
+        ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
+        including their configuration specs and the capabilities they support.
+      operationId: RuntimeService_ListConnectorDrivers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListConnectorsResponse'
+            $ref: '#/definitions/v1ListConnectorDriversResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -120,30 +120,15 @@ paths:
           in: query
           required: false
           type: string
-        - name: table
+        - name: database
           in: query
           required: false
           type: string
-      tags:
-        - ConnectorService
-  /v1/connectors/scan:
-    get:
-      summary: |-
-        ScanConnectors scans the artifacts for connectors and returns information about
-        the connectors referenced in the artifacts. The information includes name,type and
-        credentials for the connector.
-      operationId: ConnectorService_ScanConnectors
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ScanConnectorsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: table
           in: query
           required: false
           type: string
@@ -569,6 +554,48 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/connectors/analyze:
+    get:
+      summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+      operationId: RuntimeService_AnalyzeConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AnalyzeConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/connectors/notifiers:
+    get:
+      summary: |-
+        ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
+        This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
+      operationId: RuntimeService_ListNotifierConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListNotifierConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -710,6 +737,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               table:
                 type: string
@@ -1027,6 +1058,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1065,6 +1104,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1096,6 +1143,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1708,6 +1763,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1743,6 +1806,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1797,6 +1868,10 @@ paths:
             properties:
               connector:
                 type: string
+              database:
+                type: string
+              databaseSchema:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -1828,6 +1903,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1869,6 +1952,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           in: query
           required: false
@@ -1904,6 +1995,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1946,6 +2045,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1976,6 +2083,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -2020,6 +2135,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               measures:
                 type: array
@@ -2081,6 +2200,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               columnName:
                 type: string
@@ -2613,44 +2736,51 @@ definitions:
       sqlName:
         type: string
         title: Optional. Defaults to 'measure_{i}', ie measure_0
-  ConnectorSpecProperty:
+  ConnectorDriverProperty:
     type: object
     properties:
       key:
         type: string
         title: The property key
+      type:
+        $ref: '#/definitions/ConnectorDriverPropertyType'
+        title: The type expected for this property
+      required:
+        type: boolean
+        title: Required is true if the field must be set
       displayName:
         type: string
         title: Pretty name for the property
       description:
         type: string
         title: Human readable description of the field
-      placeholder:
+      docsUrl:
         type: string
-        title: Placeholder value for use in UIs
-      type:
-        $ref: '#/definitions/ConnectorSpecPropertyType'
-        title: The type expected for this property
-      nullable:
-        type: boolean
-        title: Nullable is true if the field is optional
+        title: Link to documentation for this property
       hint:
         type: string
         title: Additional textual explanation for use in UIs
-      href:
+      default:
         type: string
-        title: Link to documentation for this property
-    title: Property represents one of the connector's config properties
-  ConnectorSpecPropertyType:
+        title: Default value for the property
+      placeholder:
+        type: string
+        title: Placeholder value for use in UIs
+      secret:
+        type: boolean
+        title: If true, the property is a secret and should not be displayed in UIs
+    title: Property represents the spec of one of the driver's config properties
+  ConnectorDriverPropertyType:
     type: string
     enum:
       - TYPE_UNSPECIFIED
-      - TYPE_STRING
       - TYPE_NUMBER
       - TYPE_BOOLEAN
+      - TYPE_STRING
+      - TYPE_FILE
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
-    title: Type represents the field type
+    title: Type of the property
   MetricsViewDimension:
     type: object
     properties:
@@ -2971,7 +3101,7 @@ definitions:
         type: boolean
       result:
         $ref: '#/definitions/v1AssertionResult'
-      sentEmails:
+      sentNotifications:
         type: boolean
       executionTime:
         type: string
@@ -3014,21 +3144,22 @@ definitions:
         type: string
       queryForAttributes:
         type: object
-      emailRecipients:
-        type: array
-        items:
-          type: string
-      emailOnRecover:
+      notifyOnRecover:
         type: boolean
-      emailOnFail:
+      notifyOnFail:
         type: boolean
-      emailOnError:
+      notifyOnError:
         type: boolean
-      emailRenotify:
+      renotify:
         type: boolean
-      emailRenotifyAfterSeconds:
+      renotifyAfterSeconds:
         type: integer
         format: int64
+      notifiers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -3053,6 +3184,54 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1AnalyzeConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AnalyzedConnector'
+    title: Response message for RuntimeService.AnalyzeConnectors
+  v1AnalyzedConnector:
+    type: object
+    properties:
+      name:
+        type: string
+        title: Connector name
+      driver:
+        $ref: '#/definitions/v1ConnectorDriver'
+        title: Connector driver metadata
+      config:
+        type: object
+        additionalProperties:
+          type: string
+        title: Combined config properties for the connector
+      presetConfig:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config properties preset by the runtime or when the instance was created
+      projectConfig:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config properties set in project YAML files
+      envConfig:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config properties set as dynamic variables
+      hasAnonymousAccess:
+        type: boolean
+        title: True if the connector can be accessed without credentials
+      usedBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        title: List of resources that appear to use the connector
+    description: AnalyzedConnector contains information about a connector that is referenced in the project files.
   v1AssertionResult:
     type: object
     properties:
@@ -3214,6 +3393,10 @@ definitions:
         title: Required
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3236,6 +3419,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3256,6 +3443,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3280,6 +3471,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3300,6 +3495,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3331,6 +3530,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3349,6 +3552,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3371,6 +3578,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3389,6 +3600,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3430,6 +3645,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3476,27 +3695,52 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
-  v1ConnectorSpec:
+  v1ConnectorDriver:
     type: object
     properties:
       name:
         type: string
-        title: Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
+        title: Name is the name of the connector
+      configProperties:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ConnectorDriverProperty'
+        title: Properties for configuring the connector
+      sourceProperties:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ConnectorDriverProperty'
+        title: Properties that can be provided to the connector when using it as a source
       displayName:
         type: string
         title: Pretty display name for use in UIs
       description:
         type: string
         title: Human readable description of the connector
-      properties:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/ConnectorSpecProperty'
-        title: Properties accepted by the connector
-    description: |-
-      ConnectorSpec represents a connector available in the runtime.
-      It should not be confused with a source.
+      implementsRegistry:
+        type: boolean
+        title: Capabilities supported by the connector
+      implementsCatalog:
+        type: boolean
+      implementsRepo:
+        type: boolean
+      implementsAdmin:
+        type: boolean
+      implementsAi:
+        type: boolean
+      implementsSqlStore:
+        type: boolean
+      implementsOlap:
+        type: boolean
+      implementsObjectStore:
+        type: boolean
+      implementsFileStore:
+        type: boolean
+      implementsNotifier:
+        type: boolean
+    description: ConnectorDriver represents a connector driver available in the runtime.
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -3854,15 +4098,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1CatalogEntry'
     title: Response message for RuntimeService.ListCatalogEntries
-  v1ListConnectorsResponse:
+  v1ListConnectorDriversResponse:
     type: object
     properties:
       connectors:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ConnectorSpec'
-    title: Response message for RuntimeService.ListConnectors
+          $ref: '#/definitions/v1ConnectorDriver'
+    title: Response message for RuntimeService.ListConnectorDrivers
   v1ListExamplesResponse:
     type: object
     properties:
@@ -3891,6 +4135,16 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListNotifierConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
+        description: 'Note: In this list, the Connector.config property will always be empty.'
+    title: Response message for RuntimeService.ListNotifierConnectors
   v1ListResourcesResponse:
     type: object
     properties:
@@ -4340,6 +4594,12 @@ definitions:
       connector:
         type: string
         title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      databaseSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
       table:
         type: string
         title: Name of the table the metrics view is based on
@@ -4687,6 +4947,13 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1Notifier:
+    type: object
+    properties:
+      connector:
+        type: string
+      properties:
+        type: object
   v1NumericHistogramBins:
     type: object
     properties:
@@ -5240,10 +5507,11 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      emailRecipients:
+      notifiers:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -5404,24 +5672,6 @@ definitions:
         format: int64
       isDir:
         type: boolean
-  v1ScanConnectorsResponse:
-    type: object
-    properties:
-      connectors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ScannedConnector'
-  v1ScannedConnector:
-    type: object
-    properties:
-      name:
-        type: string
-      type:
-        type: string
-      hasAnonymousAccess:
-        type: boolean
-        title: reports whether access is present without any credentials
   v1Schedule:
     type: object
     properties:
@@ -5530,6 +5780,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5549,6 +5803,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -5572,6 +5830,8 @@ definitions:
     properties:
       database:
         type: string
+      databaseSchema:
+        type: string
       name:
         type: string
       hasUnsupportedDataTypes:
@@ -5583,6 +5843,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string

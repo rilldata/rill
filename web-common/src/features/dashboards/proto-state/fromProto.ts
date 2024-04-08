@@ -16,6 +16,7 @@ import {
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
   BOOLEANS,
@@ -142,8 +143,12 @@ export function getDashboardStateFromProto(
   } else {
     entity.selectedComparisonDimension = undefined;
   }
-  if (dashboard.pinIndex !== undefined) {
-    entity.pinIndex = dashboard.pinIndex;
+  if (dashboard.expandedMeasure) {
+    entity.tdd = {
+      pinIndex: dashboard.pinIndex ?? -1,
+      chartType: chartTypeMap(dashboard.chartType),
+      expandedMeasureName: dashboard.expandedMeasure,
+    };
   }
 
   entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
@@ -375,6 +380,13 @@ function correctComparisonTimeRange(
   }
 }
 
+function chartTypeMap(chartType: string | undefined) {
+  if (!chartType || !TDDChart[chartType as keyof typeof TDDChart]) {
+    return TDDChart.DEFAULT;
+  }
+  return TDDChart[chartType as keyof typeof TDDChart];
+}
+
 function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
 }
@@ -382,10 +394,7 @@ function fromTimeProto(timestamp: Timestamp) {
 function fromActivePageProto(
   dashboard: DashboardState,
 ): Partial<
-  Pick<
-    MetricsExplorerEntity,
-    "activePage" | "selectedDimensionName" | "expandedMeasureName"
-  >
+  Pick<MetricsExplorerEntity, "activePage" | "selectedDimensionName">
 > {
   switch (dashboard.activePage) {
     case DashboardState_ActivePage.UNSPECIFIED:
@@ -393,13 +402,11 @@ function fromActivePageProto(
       if (dashboard.selectedDimension) {
         return {
           activePage: DashboardState_ActivePage.DIMENSION_TABLE,
-          expandedMeasureName: undefined,
           selectedDimensionName: dashboard.selectedDimension,
         };
       } else if (dashboard.expandedMeasure) {
         return {
           activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
-          expandedMeasureName: dashboard.expandedMeasure,
           selectedDimensionName: undefined,
         };
       }
@@ -409,24 +416,16 @@ function fromActivePageProto(
 
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.PIVOT:
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
         activePage: dashboard.activePage,
-        expandedMeasureName: undefined,
         selectedDimensionName: undefined,
       };
 
     case DashboardState_ActivePage.DIMENSION_TABLE:
       return {
         activePage: dashboard.activePage,
-        expandedMeasureName: undefined,
         selectedDimensionName: dashboard.selectedDimension,
-      };
-
-    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
-      return {
-        activePage: dashboard.activePage,
-        expandedMeasureName: dashboard.expandedMeasure,
-        selectedDimensionName: undefined,
       };
   }
 }

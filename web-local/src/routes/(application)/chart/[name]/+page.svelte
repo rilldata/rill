@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import Charts from "@rilldata/web-common/features/charts/Charts.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
@@ -11,6 +14,7 @@
   import { error } from "@sveltejs/kit";
 
   $: chartName = $page.params.name;
+  $: filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -38,7 +42,7 @@
 
 {#if $fileQuery.data && yaml !== undefined}
   <WorkspaceContainer inspector={false}>
-    <ChartsHeader slot="header" {chartName} />
-    <Charts slot="body" {chartName} />
+    <ChartsHeader slot="header" {filePath} />
+    <Charts slot="body" {filePath} />
   </WorkspaceContainer>
 {/if}

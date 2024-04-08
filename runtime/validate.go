@@ -62,7 +62,7 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 	res := &ValidateMetricsViewResult{}
 
 	// Check underlying table exists
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))
@@ -162,12 +162,12 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 	}
 	if len(dimExprs) == 0 {
 		// Only metrics
-		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), safeSQLName(t.Name))
+		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name))
 	} else if len(metricExprs) == 0 {
 		// No metrics
-		query = fmt.Sprintf("SELECT (%s) FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf("SELECT (%s) FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
 	} else {
-		query = fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), safeSQLName(t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf("SELECT (%s), %s FROM %s GROUP BY %s", strings.Join(dimExprs, "),("), strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
 	}
 	err := olap.Exec(ctx, &drivers.Statement{
 		Query:  query,
@@ -181,7 +181,7 @@ func validateAllDimensionAndMeasureExpr(ctx context.Context, olap drivers.OLAPSt
 
 func validateDimensionExpr(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", extractDimExpr(d), safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", extractDimExpr(d), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	if err != nil {
@@ -192,17 +192,10 @@ func validateDimensionExpr(ctx context.Context, olap drivers.OLAPStore, t *drive
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", m.Expression, safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", m.Expression, olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	return err
-}
-
-func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
 
 func extractDimExpr(d *runtimev1.MetricsViewSpec_DimensionV2) string {

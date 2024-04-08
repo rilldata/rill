@@ -322,6 +322,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 				aliasesMap[e.Name] = e.Label
 			}
 		}
+		aliasesMap[mv.TimeDimension] = mv.TimeDimension
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -351,7 +352,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	for i, p := range q.PivotOn {
 		pivots[i] = p
 		if q.Exporting {
-			pivots[i] = aliasesMap[p]
+			pivots[i] = safeName(aliasesMap[p])
 		}
 	}
 
@@ -389,7 +390,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	}
 	return fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
 		temporaryTableName,              // 1
-		strings.Join(q.PivotOn, ", "),   // 2
+		strings.Join(pivots, ", "),      // 2
 		strings.Join(measureCols, ", "), // 3
 		orderClause,                     // 4
 		limitClause,                     // 5
@@ -492,7 +493,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+			dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
@@ -554,6 +555,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
+		if dialect == drivers.DialectDuckDB {
+			timeCol = fmt.Sprintf("%s::TIMESTAMP", timeCol)
+		}
 		clause, err := timeRangeClause(q.TimeRange, mv, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
@@ -633,14 +637,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 		// SELECT m1, m2, d1, d2 FROM t, LATERAL UNNEST(t.d1) tbl(unnested_d1_) WHERE d1 = 'a' GROUP BY d1, d2
 		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
-			strings.Join(selectCols, ", "),  // 1
-			safeName(mv.Table),              // 2
-			strings.Join(unnestClauses, ""), // 3
-			whereClause,                     // 4
-			groupClause,                     // 5
-			havingClause,                    // 6
-			orderClause,                     // 7
-			limitClause,                     // 8
+			strings.Join(selectCols, ", "),      // 1
+			escapeMetricsViewTable(dialect, mv), // 2
+			strings.Join(unnestClauses, ""),     // 3
+			whereClause,                         // 4
+			groupClause,                         // 5
+			havingClause,                        // 6
+			orderClause,                         // 7
+			limitClause,                         // 8
 		)
 	} else {
 		/*
@@ -669,7 +673,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
-			safeName(mv.Table),
+			escapeMetricsViewTable(dialect, mv),
 			strings.Join(unnestClauses, ""),
 			whereClause,
 			groupClause,
@@ -691,8 +695,8 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	selfJoinTableAlias := tempName("self_join")
 	nonNullValue := tempName("non_null")
 	for _, d := range q.Dimensions {
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", safeName(mv.Table), safeName(d.Name), selfJoinTableAlias, nonNullValue))
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", escapeMetricsViewTable(dialect, mv), safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", escapeMetricsViewTable(dialect, mv), safeName(d.Name)))
 		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(d.Name)))
 	}
 	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
@@ -743,7 +747,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 					OFFSET %[12]d
 				`,
 		strings.Join(selfJoinCols, ", "),      // 1
-		safeName(mv.Table),                    // 2
+		escapeMetricsViewTable(dialect, mv),   // 2
 		strings.Join(unnestClauses, ""),       // 3
 		whereClause,                           // 4
 		groupClause,                           // 5
@@ -776,6 +780,9 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 	var col string
 	if dim.Name == mv.TimeDimension {
 		col = safeName(dim.Name)
+		if dialect == drivers.DialectDuckDB {
+			col = fmt.Sprintf("%s::TIMESTAMP", col)
+		}
 	} else {
 		d, err := metricsViewDimension(mv, dim.Name)
 		if err != nil {

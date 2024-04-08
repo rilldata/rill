@@ -19,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConnectorService_ScanConnectors_FullMethodName        = "/rill.runtime.v1.ConnectorService/ScanConnectors"
 	ConnectorService_S3ListBuckets_FullMethodName         = "/rill.runtime.v1.ConnectorService/S3ListBuckets"
 	ConnectorService_S3ListObjects_FullMethodName         = "/rill.runtime.v1.ConnectorService/S3ListObjects"
 	ConnectorService_S3GetBucketMetadata_FullMethodName   = "/rill.runtime.v1.ConnectorService/S3GetBucketMetadata"
@@ -37,10 +36,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConnectorServiceClient interface {
-	// ScanConnectors scans the artifacts for connectors and returns information about
-	// the connectors referenced in the artifacts. The information includes name,type and
-	// credentials for the connector.
-	ScanConnectors(ctx context.Context, in *ScanConnectorsRequest, opts ...grpc.CallOption) (*ScanConnectorsResponse, error)
 	// S3ListBuckets lists buckets accessible with the configured credentials.
 	S3ListBuckets(ctx context.Context, in *S3ListBucketsRequest, opts ...grpc.CallOption) (*S3ListBucketsResponse, error)
 	// S3ListBuckets lists objects for the given bucket.
@@ -71,15 +66,6 @@ type connectorServiceClient struct {
 
 func NewConnectorServiceClient(cc grpc.ClientConnInterface) ConnectorServiceClient {
 	return &connectorServiceClient{cc}
-}
-
-func (c *connectorServiceClient) ScanConnectors(ctx context.Context, in *ScanConnectorsRequest, opts ...grpc.CallOption) (*ScanConnectorsResponse, error) {
-	out := new(ScanConnectorsResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_ScanConnectors_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *connectorServiceClient) S3ListBuckets(ctx context.Context, in *S3ListBucketsRequest, opts ...grpc.CallOption) (*S3ListBucketsResponse, error) {
@@ -185,10 +171,6 @@ func (c *connectorServiceClient) BigQueryListTables(ctx context.Context, in *Big
 // All implementations must embed UnimplementedConnectorServiceServer
 // for forward compatibility
 type ConnectorServiceServer interface {
-	// ScanConnectors scans the artifacts for connectors and returns information about
-	// the connectors referenced in the artifacts. The information includes name,type and
-	// credentials for the connector.
-	ScanConnectors(context.Context, *ScanConnectorsRequest) (*ScanConnectorsResponse, error)
 	// S3ListBuckets lists buckets accessible with the configured credentials.
 	S3ListBuckets(context.Context, *S3ListBucketsRequest) (*S3ListBucketsResponse, error)
 	// S3ListBuckets lists objects for the given bucket.
@@ -218,9 +200,6 @@ type ConnectorServiceServer interface {
 type UnimplementedConnectorServiceServer struct {
 }
 
-func (UnimplementedConnectorServiceServer) ScanConnectors(context.Context, *ScanConnectorsRequest) (*ScanConnectorsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ScanConnectors not implemented")
-}
 func (UnimplementedConnectorServiceServer) S3ListBuckets(context.Context, *S3ListBucketsRequest) (*S3ListBucketsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method S3ListBuckets not implemented")
 }
@@ -265,24 +244,6 @@ type UnsafeConnectorServiceServer interface {
 
 func RegisterConnectorServiceServer(s grpc.ServiceRegistrar, srv ConnectorServiceServer) {
 	s.RegisterService(&ConnectorService_ServiceDesc, srv)
-}
-
-func _ConnectorService_ScanConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ScanConnectorsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ConnectorServiceServer).ScanConnectors(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ConnectorService_ScanConnectors_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).ScanConnectors(ctx, req.(*ScanConnectorsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ConnectorService_S3ListBuckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -490,10 +451,6 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "rill.runtime.v1.ConnectorService",
 	HandlerType: (*ConnectorServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "ScanConnectors",
-			Handler:    _ConnectorService_ScanConnectors_Handler,
-		},
 		{
 			MethodName: "S3ListBuckets",
 			Handler:    _ConnectorService_S3ListBuckets_Handler,

@@ -1,42 +1,32 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    Popover,
-    PopoverButton,
-    PopoverPanel,
-  } from "@rgossiaux/svelte-headlessui";
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createPopperActions } from "svelte-popperjs";
   import { errorStore } from "../../features/errors/error-store";
-  import { clearViewedAsUserWithinProject } from "./clearViewedAsUser";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
+  import { clearViewedAsUserWithinProject } from "./clearViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
 
-  // Position the popover
-  const [popperRef, popperContent] = createPopperActions();
-  const popperOptions = {
-    placement: "bottom-start",
-    strategy: "fixed",
-    modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
-  };
-
   const queryClient = useQueryClient();
+
   $: org = $page.params.organization;
   $: project = $page.params.project;
+
+  let active: boolean;
 </script>
 
-<Popover let:close let:open>
-  <PopoverButton use={[popperRef]}>
+<DropdownMenu.Root bind:open={active}>
+  <DropdownMenu.Trigger>
     <Chip
       removable
       on:remove={async () => {
         await clearViewedAsUserWithinProject(queryClient, org, project);
         errorStore.reset();
       }}
-      active={open}
+      {active}
     >
       <div slot="body">
         <div class="flex gap-x-2">
@@ -45,7 +35,7 @@
           </div>
           <div class="flex items-center">
             <IconSpaceFixer pullRight>
-              <div class="transition-transform" class:-rotate-180={open}>
+              <div class="transition-transform" class:-rotate-180={active}>
                 <CaretDownIcon size="14px" />
               </div>
             </IconSpaceFixer>
@@ -56,12 +46,15 @@
         <slot name="remove-tooltip-content">Clear view</slot>
       </svelte:fragment>
     </Chip>
-  </PopoverButton>
-  <PopoverPanel use={[[popperContent, popperOptions]]} class="z-[1000]">
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content
+    align="start"
+    class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
+  >
     <ViewAsUserPopover
       organization={$page.params.organization}
       project={$page.params.project}
-      on:select={() => close(undefined)}
+      on:select={() => (active = false)}
     />
-  </PopoverPanel>
-</Popover>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
