@@ -15,10 +15,7 @@
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
@@ -95,10 +92,7 @@
     try {
       await $updateFile.mutateAsync({
         instanceId: $runtime.instanceId,
-        path: getFileAPIPathFromNameAndType(
-          customDashboardName,
-          EntityType.Dashboard,
-        ),
+        path: filePath,
         data: {
           blob: content,
         },
