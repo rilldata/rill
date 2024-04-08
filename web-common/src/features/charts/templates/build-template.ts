@@ -27,7 +27,6 @@ export function buildVegaLiteSpec(
       type: "bar",
       width: { band: 0.75 },
       clip: true,
-      bandPosition: 0,
     };
     baseSpec.encoding = {
       x: { field: timeFields[0], type: "temporal" },
@@ -36,24 +35,56 @@ export function buildVegaLiteSpec(
         condition: { param: "hover", empty: false, value: 1 },
         value: 0.8,
       },
-      ...(hasNominalFields && {
-        color: { field: nominalFields[0], type: "nominal", legend: null },
-      }),
     };
+
     baseSpec.params = [
       {
         name: "hover",
         select: {
           type: "point",
           on: "pointerover",
+          fields: ["x"],
+          nearest: true,
         },
       },
     ];
 
     if (chartType === ChartTypes.GROUPED_BAR) {
+      baseSpec.encoding.color = {
+        field: nominalFields[0],
+        type: "nominal",
+        legend: null,
+      };
+
       baseSpec.encoding.xOffset = {
         field: nominalFields[0],
       };
+      baseSpec.params = [
+        {
+          name: "hover",
+          select: {
+            type: "point",
+            on: "pointerover",
+            encodings: ["x", "color"],
+            nearest: true,
+          },
+        },
+      ];
+    } else if (chartType === ChartTypes.STACKED_BAR) {
+      baseSpec.encoding.color = {
+        field: nominalFields[0],
+        type: "nominal",
+        legend: null,
+      };
+      baseSpec.params = [
+        {
+          name: "hover",
+          select: {
+            type: "point",
+            on: "pointerover",
+          },
+        },
+      ];
     }
   } else if (chartType == ChartTypes.AREA) {
     baseSpec.mark = { type: "area", clip: true };

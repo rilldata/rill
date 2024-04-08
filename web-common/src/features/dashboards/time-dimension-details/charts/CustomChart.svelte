@@ -17,7 +17,6 @@
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
 
-  // Reactive statements
   $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
   $: vegaSpec = getVegaSpec(chartType, expandedMeasureName, hasDimensionData);
@@ -28,8 +27,18 @@
     xMax,
     chartType,
   );
+
+  let signalListeners = {
+    hover: (name: string, value) => {
+      // console.log(name, value);
+    },
+  };
 </script>
 
 {#if sanitizedVegaSpec && data}
-  <VegaLiteRenderer data={{ table: data }} spec={sanitizedVegaSpec} />
+  <VegaLiteRenderer
+    {signalListeners}
+    data={{ table: data }}
+    spec={sanitizedVegaSpec}
+  />
 {/if}

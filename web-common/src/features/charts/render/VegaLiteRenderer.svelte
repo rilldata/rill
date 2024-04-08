@@ -1,9 +1,15 @@
 <script lang="ts">
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
-  import { VegaLite, View, type EmbedOptions } from "svelte-vega";
+  import {
+    SignalListeners,
+    VegaLite,
+    View,
+    type EmbedOptions,
+  } from "svelte-vega";
 
   export let data: Record<string, unknown> = {};
   export let spec; // VisualizationSpec;
+  export let signalListeners: SignalListeners = {};
 
   let options: EmbedOptions = {
     config: getRillTheme(),
@@ -22,7 +28,14 @@
 {#if error}
   <p>{error}</p>
 {:else}
-  <VegaLite {data} {spec} {options} bind:view={viewVL} on:onError={onError} />
+  <VegaLite
+    {data}
+    {spec}
+    {signalListeners}
+    {options}
+    bind:view={viewVL}
+    on:onError={onError}
+  />
 {/if}
 
 <style>
