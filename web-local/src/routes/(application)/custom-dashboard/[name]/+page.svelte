@@ -8,13 +8,8 @@
     WorkspaceContainer,
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
-  import { goto } from "$app/navigation";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServiceGetFile,
@@ -35,6 +30,7 @@
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
 
   const DEFAULT_EDITOR_HEIGHT = 300;
 
@@ -47,6 +43,8 @@
   let chartEditorHeight = DEFAULT_EDITOR_HEIGHT;
   let selectedChartName: string | null = null;
 
+  $: instanceId = $runtime.instanceId;
+
   $: customDashboardName = $page.params.name;
 
   $: filePath = getFilePathFromNameAndType(
@@ -57,7 +55,6 @@
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
   $: query = useCustomDashboard($runtime.instanceId, customDashboardName);
-  $: allNamesQuery = useAllNames($runtime.instanceId);
 
   $: yaml = $fileQuery.data?.blob || "";
 
@@ -83,35 +80,13 @@
       e.currentTarget.value = customDashboardName; // resets the input
       return;
     }
-    if (
-      isDuplicateName(
-        e.currentTarget.value,
-        customDashboardName,
-        $allNamesQuery?.data ?? [],
-      )
-    ) {
-      notifications.send({
-        message: `Name ${e.currentTarget.value} is already in use`,
-      });
-      e.currentTarget.value = customDashboardName; // resets the input
-      return;
-    }
+    await handleEntityRename(
+      instanceId,
+      e.currentTarget,
+      filePath,
 
-    try {
-      const toName = e.currentTarget.value;
-      const entityType = EntityType.Dashboard;
-      await renameFileArtifact(
-        $runtime.instanceId,
-        customDashboardName,
-        toName,
-        entityType,
-      );
-      await goto(getRouteFromName(toName, entityType), {
-        replaceState: true,
-      });
-    } catch (err) {
-      console.error(err.response.data.message);
-    }
+      EntityType.Dashboard,
+    );
   };
 
   async function updateChart(e: CustomEvent<string>) {
