@@ -23,7 +23,12 @@
     {spec}
     bind:view={viewVL}
     on:onError={onError}
-    options={{ actions: false, height, width, config: getRillTheme() }}
+    options={{
+      actions: false,
+      height,
+      width,
+      config: getRillTheme(),
+    }}
   />
 {/if}
 

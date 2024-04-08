@@ -4,6 +4,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
   import type { VisualizationSpec } from "svelte-vega";
+  import { createQuery } from "@tanstack/svelte-query";
 
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -34,6 +35,28 @@
     error = e;
   }
 
+  $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
+
+  async function fetchChartData(chartName: string) {
+    // TODO: replace with prod API call
+    const api_url = `http://localhost:9009/v1/instances/default/charts/${chartName}/data`;
+    const response = await fetch(api_url);
+
+    console.log({ response });
+    if (!response.ok) {
+      error = `HTTP error! status: ${response.status}`;
+      console.warn(response);
+    }
+    return response.json();
+  }
+
+  $: chartDataQuery = createQuery({
+    queryKey: [`chart-data`, chartName, metricsQuery],
+    queryFn: () => fetchChartData(chartName),
+  });
+
+  $: data = $chartDataQuery?.data;
+
   onMount(() => {
     observer.observe(container);
   });
@@ -53,6 +76,7 @@
     <p>Chart not available</p>
   {:else}
     <DashVegaRenderer
+      data={{ table: data }}
       spec={parsedVegaSpec}
       height={clientHeight - 31}
       width={clientWidth}

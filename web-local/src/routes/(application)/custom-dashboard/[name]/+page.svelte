@@ -15,7 +15,10 @@
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
@@ -44,7 +47,7 @@
 
   $: customDashboardName = $page.params.name;
 
-  $: filePath = getFilePathFromNameAndType(
+  $: filePath = getFileAPIPathFromNameAndType(
     customDashboardName,
     EntityType.Dashboard,
   );
@@ -55,9 +58,13 @@
 
   $: yaml = $fileQuery.data?.blob || "";
 
+  $: console.log(yaml);
+
   $: parsedYaml = parse(yaml) as V1DashboardSpec;
 
   $: dashboard = $query.data?.dashboard?.spec;
+
+  $: console.log({ dashboard });
 
   $: columns = dashboard?.columns ?? 10;
   $: gap = dashboard?.gap ?? 1;
