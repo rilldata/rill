@@ -75,7 +75,9 @@
 
   $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardNotFound =
-    $dashboard.isError && $dashboard.error?.response?.status === 404;
+    !$dashboard.data &&
+    $dashboard.isError &&
+    $dashboard.error?.response?.status === 404;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
