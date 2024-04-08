@@ -13,7 +13,6 @@
   const { form } = formState;
 
   $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
-  $: console.log($hasSlackNotifier);
 </script>
 
 <div class="flex flex-col gap-y-3">

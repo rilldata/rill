@@ -166,6 +166,7 @@ export function getAlertCriteriaData(
                 formValues,
                 metricsViewResp.data ?? {},
                 metricsViewSchemaResp.data as V1StructType,
+                !!alertPreviewQueryParams.comparisonTimeRange,
                 data,
               ),
             queryClient,
@@ -179,13 +180,12 @@ function alertCriteriaDataMapper(
   formValues: AlertFormValues,
   metricsView: V1MetricsViewSpec,
   metricsViewSchema: V1StructType,
+  hasComparison: boolean,
   data: V1MetricsViewComparisonResponse,
 ): {
   rows: Record<string, any>[];
   schema: VirtualizedTableColumns[];
 } {
-  let hasDelta = false;
-  let hasDeltaPerc = false;
   const rows =
     data.rows?.map((row) => {
       const retRow: Record<string, any> = {};
@@ -198,11 +198,9 @@ function alertCriteriaDataMapper(
         retRow[formValues.measure] = measureValue.baseValue;
         if ("deltaAbs" in measureValue) {
           retRow[formValues.measure + "__delta"] = measureValue.deltaAbs;
-          hasDelta = true;
         }
         if ("deltaRel" in measureValue) {
           retRow[formValues.measure + "__delta_perc"] = measureValue.deltaRel;
-          hasDeltaPerc = true;
         }
       }
       return retRow;
@@ -235,14 +233,12 @@ function alertCriteriaDataMapper(
       type: col?.type?.code ?? V1TypeCode.CODE_STRING,
       label: mes?.label ?? formValues.measure,
     });
-    if (hasDelta) {
+    if (hasComparison) {
       schema.push({
         name: formValues.measure + "__delta",
         type: col?.type?.code ?? V1TypeCode.CODE_FLOAT64,
         label: `Δ`,
       });
-    }
-    if (hasDeltaPerc) {
       schema.push({
         name: formValues.measure + "__delta_perc",
         type: col?.type?.code ?? V1TypeCode.CODE_FLOAT64,

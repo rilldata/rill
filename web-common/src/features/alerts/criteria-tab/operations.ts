@@ -34,6 +34,9 @@ export const CriteriaOperationOptions = [
     value: MeasureFilterOperation.LessThanOrEquals,
     label: "is less than or equals",
   },
+];
+export const CriteriaOperationComparisonOptions = [
+  ...CriteriaOperationOptions,
   {
     value: MeasureFilterOperation.IncreasesBy,
     label: "increases by",

@@ -3,6 +3,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import {
     CompareWithOptions,
+    CriteriaOperationComparisonOptions,
     CriteriaOperationOptions,
   } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
@@ -33,6 +34,10 @@
     },
   ];
 
+  $: hasComparison =
+    $form.comparisonTimeRange?.isoDuration ||
+    $form.comparisonTimeRange?.isoOffset;
+
   // Debounce the update of value. This avoid constant refetches
   let value: string = $form["criteria"][index].value;
   const valueUpdater = debounce(() => {
@@ -55,7 +60,9 @@
     bind:value={$form["criteria"][index].operation}
     id="operation"
     label=""
-    options={CriteriaOperationOptions}
+    options={hasComparison
+      ? CriteriaOperationComparisonOptions
+      : CriteriaOperationOptions}
     placeholder="Operator"
   />
   <Select

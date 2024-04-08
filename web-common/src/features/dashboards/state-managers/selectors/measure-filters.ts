@@ -113,7 +113,6 @@ export function getMeasureFilterForDimension(
     }
     const ident =
       e.cond?.exprs?.[0].ident ?? e.cond?.exprs?.[0].cond?.exprs?.[0].ident;
-    console.log(ident);
     if (
       ident === undefined ||
       addedMeasure.has(ident) ||

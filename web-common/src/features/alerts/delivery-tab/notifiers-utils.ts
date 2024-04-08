@@ -5,7 +5,7 @@ export function getHasSlackConnection(runtimeId: string) {
     query: {
       select: (data) => {
         console.log(data);
-        !!data.connectors?.some((c) => c.name === "slack");
+        return !!data.connectors?.some((c) => c.name === "slack");
       },
     },
   });
