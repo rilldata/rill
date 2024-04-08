@@ -23,7 +23,11 @@ export type AlertFormValues = {
   criteriaOperation: V1Operation;
   evaluationInterval: string;
   snooze: string;
-  recipients: { email: string }[];
+  enableSlackNotification: boolean;
+  slackChannels: { channel: string }[];
+  slackUsers: { email: string }[];
+  enableEmailNotification: boolean;
+  emailRecipients: { email: string }[];
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
@@ -71,7 +75,12 @@ export const alertFormValidationSchema = yup.object({
   ),
   criteriaOperation: yup.string().required("Required"),
   snooze: yup.string().required("Required"),
-  recipients: yup.array().of(
+  slackUsers: yup.array().of(
+    yup.object().shape({
+      email: yup.string().email("Invalid email"),
+    }),
+  ),
+  emailRecipients: yup.array().of(
     yup.object().shape({
       email: yup.string().email("Invalid email"),
     }),
@@ -80,7 +89,7 @@ export const alertFormValidationSchema = yup.object({
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["name", "measure"],
   ["criteria", "criteriaOperation"],
-  ["snooze", "recipients"],
+  ["snooze", "slackUsers", "emailRecipients"],
 ];
 
 export function checkIsTabValid(
@@ -109,11 +118,11 @@ export function checkIsTabValid(
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
-      formValues.snooze !== "" && formValues.recipients[0].email !== "";
+      formValues.snooze !== "" && formValues.emailRecipients[0].email !== "";
 
     // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
     // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
-    const receipientErrors = errors.recipients as unknown as {
+    const receipientErrors = errors.emailRecipients as unknown as {
       email: string;
     }[];
 

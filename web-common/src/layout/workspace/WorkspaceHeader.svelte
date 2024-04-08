@@ -3,126 +3,129 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
-  import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
   import { workspaces } from "./workspace-stores";
   import { navigationOpen } from "../navigation/Navigation.svelte";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
 
-  export let onChangeCallback: (
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) => void = () => {};
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
+  export let showTableToggle = false;
+  export let hasUnsavedChanges = false;
 
-  let titleInputElement: HTMLInputElement;
-  let editingTitle = false;
-  let tooltipActive: boolean;
   let width: number;
+  let titleWidth: number;
 
-  $: workspaceLayout = $workspaces;
-
+  $: value = titleInput;
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
   $: visible = workspaceLayout.inspector.visible;
-
-  function onKeydown(
-    event: KeyboardEvent & {
-      currentTarget: EventTarget & Window;
-    },
-  ) {
-    if (editingTitle && event.key === "Enter") {
-      titleInputElement.blur();
-    }
-  }
-
-  function onInput() {
-    if (editable) {
-      editingTitle = true;
-    }
-  }
+  $: tableVisible = workspaceLayout.table.visible;
 </script>
 
-<svelte:window on:keydown={onKeydown} />
+<header class="slide" bind:clientWidth={width}>
+  <div class="wrapper slide" class:pl-4={!$navigationOpen}>
+    <label aria-hidden for="model-title-input" bind:clientWidth={titleWidth}>
+      {value}
+    </label>
+    <input
+      id="model-title-input"
+      name="title"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      disabled={!editable}
+      style:width="{titleWidth}px"
+      bind:value
+      on:change
+      on:keydown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
+      on:blur={() => {
+        if (value.length === 0) {
+          value = titleInput;
+        }
+      }}
+    />
 
-<header
-  class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
-  style:grid-template-columns="[title] minmax(0, 1fr) [controls] auto"
-  style:height="var(--header-height)"
-  bind:clientWidth={width}
->
-  <div class:pl-4={!$navigationOpen} class="slide">
-    {#if titleInput !== undefined && titleInput !== null}
-      <h1
-        style:font-size="16px"
-        class="grid grid-flow-col justify-start items-center gap-x-1 overflow-hidden"
-      >
-        <Tooltip
-          distance={8}
-          alignment="start"
-          bind:active={tooltipActive}
-          suppress={editingTitle || !editable}
-        >
-          <input
-            autocomplete="off"
-            disabled={!editable}
-            id="model-title-input"
-            class="bg-transparent border-transparent border-2 rounded pl-2 pr-2"
-            class:editable
-            class:font-bold={editingTitle === false}
-            value={titleInput}
-            on:input={onInput}
-            on:change={onChangeCallback}
-            on:focus={() => {
-              editingTitle = true;
-            }}
-            on:blur={() => {
-              editingTitle = false;
-            }}
-            use:dynamicTextInputWidth
-            bind:this={titleInputElement}
-          />
-          <TooltipContent slot="tooltip-content">
-            <div class="flex items-center gap-x-2">Edit</div>
-          </TooltipContent>
-        </Tooltip>
-
-        {#if $page.url.pathname.startsWith("/source")}
-          <SourceUnsavedIndicator sourceName={titleInput} />
-        {/if}
-      </h1>
+    {#if hasUnsavedChanges}
+      <span
+        class="w-1.5 h-1.5 bg-gray-300 rounded flex-none"
+        transition:scale={{ duration: 200, easing: cubicOut }}
+      />
     {/if}
   </div>
 
-  <div class="flex items-center mr-4">
+  <div class="flex items-center mr-4 flex-none">
     <slot name="workspace-controls" {width} />
+
+    {#if showTableToggle}
+      <IconButton on:click={workspaceLayout.table.toggle}>
+        <span class="text-gray-500">
+          <HideBottomPane size="18px" />
+        </span>
+        <svelte:fragment slot="tooltip-content">
+          <SlidingWords active={$tableVisible} reverse>
+            results preview
+          </SlidingWords>
+        </svelte:fragment>
+      </IconButton>
+    {/if}
+
     {#if showInspectorToggle}
       <IconButton on:click={workspaceLayout.inspector.toggle}>
         <span class="text-gray-500">
           <HideRightSidebar size="18px" />
         </span>
         <svelte:fragment slot="tooltip-content">
-          <SlidingWords active={$visible} direction="horizontal" reverse
-            >inspector</SlidingWords
-          >
+          <SlidingWords active={$visible} direction="horizontal" reverse>
+            inspector
+          </SlidingWords>
         </svelte:fragment>
       </IconButton>
     {/if}
 
-    <div class="pl-4">
+    <div class="pl-4 flex-none">
       <slot name="cta" {width} />
     </div>
   </div>
 </header>
 
 <style lang="postcss">
-  .editable {
-    @apply cursor-pointer;
+  input:focus,
+  input:not(:disabled):hover {
+    @apply border-2 border-gray-400 outline-none;
   }
 
-  .editable:hover {
-    @apply border-gray-400;
+  input,
+  label {
+    @apply whitespace-pre rounded border-2 border-transparent;
+  }
+
+  input {
+    @apply absolute text-left;
+    text-indent: 6px;
+  }
+
+  label {
+    @apply w-fit min-w-8 px-2 text-transparent max-w-full;
+  }
+
+  header {
+    @apply justify-between;
+    @apply flex items-center pl-4 border-b border-gray-300 overflow-hidden;
+    height: var(--header-height);
+  }
+
+  .wrapper {
+    @apply overflow-hidden max-w-full gap-x-2;
+    @apply size-full relative flex items-center;
+    @apply font-bold pr-2 self-start;
+    font-size: 16px;
   }
 </style>

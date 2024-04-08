@@ -5,7 +5,9 @@ import (
 	"slices"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -82,6 +84,10 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 		return a.analyzeResourceWithResolver(r, r.APISpec.Resolver, r.APISpec.ResolverProperties)
 	} else if r.ChartSpec != nil {
 		return a.analyzeResourceWithResolver(r, r.ChartSpec.Resolver, r.ChartSpec.ResolverProperties)
+	} else if r.AlertSpec != nil {
+		return a.analyzeResourceNotifiers(r, r.AlertSpec.Notifiers)
+	} else if r.ReportSpec != nil {
+		return a.analyzeResourceNotifiers(r, r.ReportSpec.Notifiers)
 	}
 	// Other resource kinds currently don't use connectors.
 	return nil
@@ -144,6 +150,28 @@ func (a *connectorAnalyzer) analyzeResourceWithResolver(r *Resource, resolver st
 		}
 	}
 
+	return nil
+}
+
+// analyzeResourceNotifiers extracts connector metadata for a resource that uses notifiers (email, slack, etc).
+func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*runtimev1.Notifier) error {
+	for _, n := range notifiers {
+		anonAccess := false
+		if n.Connector == "slack" {
+			// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
+			props, err := slack.DecodeProps(n.Properties.AsMap())
+			if err != nil {
+				return err
+			}
+			if len(props.Users) == 0 && len(props.Channels) == 0 {
+				anonAccess = true
+			}
+		}
+		err := a.trackConnector(n.Connector, r, anonAccess)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

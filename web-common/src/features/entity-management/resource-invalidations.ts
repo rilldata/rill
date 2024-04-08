@@ -101,6 +101,11 @@ async function invalidateResource(
   )
     return;
 
+  if (fileArtifacts.wasRenaming(resource)) {
+    void queryClient.invalidateQueries(
+      getConnectorServiceOLAPListTablesQueryKey(),
+    );
+  }
   fileArtifacts.updateArtifacts(resource);
   const failed = !!resource.meta.reconcileError;
 
