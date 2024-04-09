@@ -421,7 +421,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 		if src.State.Table == "" {
 			return nil, nil
 		}
-		t, err := olap.InformationSchema().Lookup(ctx, src.State.Table)
+		t, err := olap.InformationSchema().Lookup(ctx, "", "", src.State.Table)
 		if err != nil {
 			return nil, err
 		}
@@ -439,7 +439,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 		if mdl.State.Table == "" {
 			return nil, nil
 		}
-		t, err := olap.InformationSchema().Lookup(ctx, mdl.State.Table)
+		t, err := olap.InformationSchema().Lookup(ctx, "", "", mdl.State.Table)
 		if err != nil {
 			return nil, err
 		}

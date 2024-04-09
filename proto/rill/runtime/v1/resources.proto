@@ -179,6 +179,10 @@ message MetricsViewSpec {
   }
   // Connector containing the table
   string connector = 1;
+  // Name of the database where table is located (optional)
+  string database = 21;
+  // Name of the database schema where table is located (optional)
+  string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
   // User friendly label for the dashboard
@@ -419,8 +423,8 @@ message Dashboard {
 
 message DashboardSpec {
   string title = 1;
-  int64 grid_columns = 2;
-  int64 grid_rows = 3;
+  uint32 columns = 2;
+  uint32 gap = 3;
   repeated DashboardComponent components = 4;
 }
 
@@ -428,8 +432,10 @@ message DashboardState {}
 
 message DashboardComponent {
   string chart = 1;
-  int64 columns = 2;
-  int64 rows = 3;
+  uint32 x = 2;
+  uint32 y = 3;
+  uint32 width = 4;
+  uint32 height = 5;
 }
 
 // API defines a custom operation for querying data stored in Rill.

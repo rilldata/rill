@@ -15,8 +15,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"reflect"
+
+	_ "github.com/rilldata/rill/runtime/drivers/file"
 )
 
 func TestRillYAML(t *testing.T) {
@@ -1323,14 +1324,13 @@ vega_lite: |%s
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
-grid:
-  rows: 3
-  columns: 4
+columns: 4
+gap: 3
 components:
-  - chart: c1
-  - chart: c2
-    rows: 1
-    columns: 2
+- chart: c1
+- chart: c2
+  width: 1
+  height: 2
 `,
 	})
 
@@ -1363,11 +1363,11 @@ components:
 				{Kind: ResourceKindChart, Name: "c2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
-				GridColumns: 3,
-				GridRows:    4,
+				Columns: 4,
+				Gap:     3,
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
-					{Chart: "c2", Rows: 1, Columns: 2},
+					{Chart: "c2", Width: 1, Height: 2},
 				},
 			},
 		},

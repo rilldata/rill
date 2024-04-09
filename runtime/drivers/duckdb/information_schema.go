@@ -55,7 +55,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
@@ -114,11 +114,13 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 
 		t := &drivers.Table{
-			Database:       database,
-			DatabaseSchema: schema,
-			Name:           name,
-			View:           tableType == "VIEW",
-			Schema:         &runtimev1.StructType{},
+			Database:                database,
+			DatabaseSchema:          schema,
+			IsDefaultDatabase:       true,
+			IsDefaultDatabaseSchema: true,
+			Name:                    name,
+			View:                    tableType == "VIEW",
+			Schema:                  &runtimev1.StructType{},
 		}
 
 		// should NEVER happen, but just to be safe
