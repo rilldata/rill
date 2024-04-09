@@ -123,29 +123,20 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
 	}
 
+	// Resolve variables
+	vars := i.ResolveVariables()
+
 	// Backwards compatibility: Use "__materialize_default" as alias for "rill.models.default_materialize".
-	if i.Variables != nil {
-		if v, ok := i.Variables["__materialize_default"]; ok {
-			if _, ok := i.Variables["rill.models.default_materialize"]; !ok {
-				i.Variables["rill.models.default_materialize"] = v
+	if vars != nil {
+		if v, ok := vars["__materialize_default"]; ok {
+			if _, ok := vars["rill.models.default_materialize"]; !ok {
+				vars["rill.models.default_materialize"] = v
 			}
 		}
 	}
 
 	// Decode variables into res.
-	// Minor optimization: Instead of calling ResolveVariables (which allocates a new map), just call Decode on the underlying maps in the same order as in ResolveVariables.
-	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:           &res,
-		WeaklyTypedInput: true,
-	})
-	if err != nil {
-		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
-	}
-	err = dec.Decode(i.ProjectVariables)
-	if err != nil {
-		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
-	}
-	err = dec.Decode(i.Variables)
+	err := mapstructure.WeakDecode(vars, &res)
 	if err != nil {
 		return InstanceConfig{}, fmt.Errorf("failed to parse instance config: %w", err)
 	}
