@@ -16,8 +16,6 @@
   export let limit = 150;
   export let loading = false;
 
-  $: console.log({ connector });
-
   let profileColumns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
