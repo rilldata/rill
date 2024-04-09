@@ -78,9 +78,9 @@ export async function getModelNames(
       });
     },
   });
-  const modelNames = files.paths
-    ?.filter((path) => path.includes("models/"))
-    .map((path) => path.replace("/models/", "").replace(".sql", ""))
+  const modelNames = files.files
+    ?.filter((f) => !f.isDir && f.path?.includes("models/"))
+    .map((f) => f.path?.replace("/models/", "").replace(".sql", "") ?? "")
     // sort alphabetically case-insensitive
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
   return modelNames ?? [];
