@@ -60,6 +60,25 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
 	}
 
+	// We use the meta conn for dry run queries
+	if stmt.DryRun {
+		conn, release, err := c.acquireMetaConn(ctx)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = release() }()
+
+		// TODO: Find way to validate with args
+		name := uuid.NewString()
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
+		if err != nil {
+			return err
+		}
+
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
+		return err
+	}
+
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
 	if err != nil {
 		return err
