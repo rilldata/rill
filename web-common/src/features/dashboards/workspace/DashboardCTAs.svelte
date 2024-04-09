@@ -20,14 +20,15 @@
 
   export let metricViewName: string;
 
+  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+
   $: dashboardPolicyCheck = useDashboardPolicyCheck(
     $runtime.instanceId,
-    metricViewName,
+    $dashboardQuery.data?.meta?.filePaths?.[0] ?? "",
   );
 
   const { readOnly } = featureFlags;
 
-  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
   $: dashboardIsIdle =
     $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
