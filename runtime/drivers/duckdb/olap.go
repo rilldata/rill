@@ -550,7 +550,7 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 		typ = "TABLE"
 	}
 
-	existing, err := c.InformationSchema().Lookup(ctx, newName)
+	existing, err := c.InformationSchema().Lookup(ctx, "", "", newName)
 	if err != nil {
 		if !errors.Is(err, drivers.ErrNotFound) {
 			return err

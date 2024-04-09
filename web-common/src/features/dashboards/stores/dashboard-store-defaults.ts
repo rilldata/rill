@@ -9,6 +9,7 @@ import {
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
@@ -167,7 +168,10 @@ export function getDefaultMetricsExplorerEntity(
     showTimeComparison: false,
     dimensionSearchText: "",
     temporaryFilterName: null,
-    pinIndex: -1,
+    tdd: {
+      chartType: TDDChart.DEFAULT,
+      pinIndex: -1,
+    },
     pivot: {
       active: false,
       rows: {

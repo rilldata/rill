@@ -1,12 +1,18 @@
 <script lang="ts">
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
+  import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
-  import RecipientsInputArray from "@rilldata/web-common/features/scheduled-reports/RecipientsInputArray.svelte";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { createForm } from "svelte-forms-lib";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
+
+  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -25,10 +31,55 @@
       options={SnoozeOptions}
     />
   </FormSection>
+  {#if $hasSlackNotifier.data}
+    <FormSection
+      bind:enabled={$form["enableSlackNotification"]}
+      showSectionToggle
+      title="Slack notifications"
+    >
+      <InputArray
+        accessorKey="channel"
+        addItemLabel="Add channel"
+        description="We’ll send alerts directly to these channels."
+        {formState}
+        id="slackChannels"
+        label="Channels"
+        placeholder="# Enter a Slack channel name"
+      />
+      <InputArray
+        accessorKey="email"
+        addItemLabel="Add user"
+        description="We’ll alert them with direct messages in Slack."
+        {formState}
+        id="slackUsers"
+        label="Users"
+        placeholder="Enter an email address"
+      />
+    </FormSection>
+  {:else}
+    <FormSection title="Slack notifications">
+      <span class="text-sm text-slate-600">
+        Slack has not been configured for this project. Read the <a
+          href="https://docs.rilldata.com/explore/alerts/slack"
+          target="_blank"
+        >
+          docs
+        </a> to learn more.
+      </span>
+    </FormSection>
+  {/if}
   <FormSection
-    description="Choose who will get notified by email for this alert. Make sure they have access to your project."
-    title="Recipients"
+    bind:enabled={$form["enableEmailNotification"]}
+    description="We’ll email alerts to these addresses. Make sure they have access to your project."
+    showSectionToggle
+    title="Email notifications"
   >
-    <RecipientsInputArray {formState} showLabel={false} />
+    <InputArray
+      accessorKey="email"
+      addItemLabel="Add email"
+      {formState}
+      id="emailRecipients"
+      placeholder="Enter an email address"
+    />
   </FormSection>
 </div>

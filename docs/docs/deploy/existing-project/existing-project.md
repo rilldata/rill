@@ -11,8 +11,8 @@ sidebar_position: 00
 Follow this tutorial to deploy an existing Rill project to Rill Cloud. Deploying a project makes its dashboards available online and enables you to invite others to access it. Benefits of deploying your project:
 
 - Share dashboards with other users
-- Leverage Rill Cloud capabililies like [scheduled reports](../../explore/exports.md) and [alerts](../../explore/alerts.md) 
-- [Embed Rill](../../integrate/embedding.md) in other applications
+- Leverage Rill Cloud capabililies like [scheduled reports](/explore/exports.md) and [alerts](explore//alerts/alerts.md) 
+- [Embed Rill](/integrate/embedding.md) in other applications
 
 The flow diagram below shows the steps needed for deploying an existing project.  
 ```mermaid

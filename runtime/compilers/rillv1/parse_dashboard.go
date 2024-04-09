@@ -10,14 +10,14 @@ import (
 type DashboardYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
-	Grid       struct {
-		Columns int64 `yaml:"columns"`
-		Rows    int64 `yaml:"rows"`
-	} `yaml:"grid"`
+	Columns    uint32           `yaml:"columns"`
+	Gap        uint32           `yaml:"gap"`
 	Components []struct {
-		Chart   string `yaml:"chart"`
-		Columns int64  `yaml:"columns"`
-		Rows    int64  `yaml:"rows"`
+		Chart  string `yaml:"chart"`
+		X      uint32 `yaml:"x"`
+		Y      uint32 `yaml:"y"`
+		Width  uint32 `yaml:"width"`
+		Height uint32 `yaml:"height"`
 	} `yaml:"components"`
 }
 
@@ -56,16 +56,17 @@ func (p *Parser) parseDashboard(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.DashboardSpec.Title = tmp.Title
-
-	r.DashboardSpec.GridColumns = tmp.Grid.Columns
-	r.DashboardSpec.GridRows = tmp.Grid.Rows
+	r.DashboardSpec.Columns = tmp.Columns
+	r.DashboardSpec.Gap = tmp.Gap
 
 	r.DashboardSpec.Components = make([]*runtimev1.DashboardComponent, len(tmp.Components))
 	for i, component := range tmp.Components {
 		r.DashboardSpec.Components[i] = &runtimev1.DashboardComponent{
-			Chart:   component.Chart,
-			Columns: component.Columns,
-			Rows:    component.Rows,
+			Chart:  component.Chart,
+			X:      component.X,
+			Y:      component.Y,
+			Width:  component.Width,
+			Height: component.Height,
 		}
 	}
 
