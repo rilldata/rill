@@ -40,7 +40,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
     createRuntimeServiceRefreshAndReconcile,
     type V1ModelV2,
@@ -64,6 +63,8 @@
 
   const { readOnly } = featureFlags;
 
+  export let data;
+
   let interceptedUrl: string | null = null;
   let focusOnMount = false;
   let fileNotFound = false;
@@ -72,8 +73,8 @@
     if ($readOnly) await goto("/");
   });
 
-  $: assetName = $page.params.name;
-  $: type = $page.params.type as "model" | "source";
+  $: assetName = data.file.name;
+  $: type = $page.params.type === "models" ? "model" : "source";
   $: entity = type === "model" ? EntityType.Model : EntityType.Table;
   $: verb = type === "source" ? "Ingested" : "Computed";
 
@@ -83,16 +84,10 @@
   $: tableVisible = workspace.table.visible;
 
   $: instanceId = $runtime.instanceId;
-  $: filePath = getFileAPIPathFromNameAndType(assetName, entity);
-  $: console.log({ filePath });
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
-    },
-  });
+  $: filePath = data.file.path.slice(1);
 
-  $: blob = $fileQuery.data?.blob ?? "";
+  $: blob = data.file.blob ?? "";
 
   // This gets updated via binding below
   $: latest = blob;
@@ -104,6 +99,7 @@
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+
   $: resource = $resourceQuery.data?.[type];
   $: connector =
     type === "model"

@@ -16,7 +16,7 @@ export async function renameFileArtifact(
   instanceId: string,
   fromPath: string,
   toPath: string,
-  type: EntityType,
+  type?: EntityType,
 ) {
   await runtimeServiceRenameFile(instanceId, {
     fromPath,
@@ -28,7 +28,7 @@ export async function renameFileArtifact(
 
   httpRequestQueue.removeByName(fromName);
   notifications.send({
-    message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
+    message: `Renamed ${type ? getLabel(type) : ""} ${fromName} to ${toName}`,
   });
 }
 

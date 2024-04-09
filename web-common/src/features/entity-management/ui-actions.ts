@@ -16,7 +16,7 @@ export async function handleEntityRename(
   instanceId: string,
   target: HTMLInputElement,
   existingPath: string,
-  entityType: EntityType, // temporary param
+  entityType?: EntityType, // temporary param
 ) {
   const [folder, fileName] = splitFolderAndName(existingPath);
   const extension = extractFileExtension(existingPath);
@@ -46,7 +46,7 @@ export async function handleEntityRename(
 
     await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
 
-    return getRouteFromName(toName, entityType);
+    return entityType ? getRouteFromName(toName, entityType) : newAPIPath;
   } catch (err) {
     console.error(err.response.data.message);
   }
