@@ -113,7 +113,10 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 
 	defaultOrg := orgNames[0]
 	if interactive && len(orgNames) > 1 {
-		defaultOrg = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
+		defaultOrg, err = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = dotrill.SetDefaultOrg(defaultOrg)

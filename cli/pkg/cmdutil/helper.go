@@ -274,7 +274,7 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 		return names[0], nil
 	}
 
-	return SelectPrompt("Select project", names, ""), nil
+	return SelectPrompt("Select project", names, "")
 }
 
 func hashStr(ss ...string) string {
