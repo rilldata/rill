@@ -15,7 +15,8 @@ export function bindEditorEventsToDispatcher(
     if (viewUpdate.focusChanged && viewUpdate.view.hasFocus) {
       dispatch("receive-focus");
     }
-    if (viewUpdate.docChanged) {
+
+    if (viewUpdate.docChanged && viewUpdate.view.hasFocus) {
       /** we will pass in the content directly as well as the viewUpdate more broadly.
        * The viewUpdate can be used to look at transactions at the parent component level.
        */
