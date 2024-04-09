@@ -21,6 +21,7 @@ import type {
   AdminServiceTriggerRefreshSourcesBody,
   V1GetGithubRepoStatusResponse,
   AdminServiceGetGithubRepoStatusParams,
+  V1GetGithubUserStatusResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -294,6 +295,60 @@ export const createAdminServiceGetGithubRepoStatus = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+ */
+export const adminServiceGetGithubUserStatus = (signal?: AbortSignal) => {
+  return httpClient<V1GetGithubUserStatusResponse>({
+    url: `/v1/github/user`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetGithubUserStatusQueryKey = () => [
+  `/v1/github/user`,
+];
+
+export type AdminServiceGetGithubUserStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGithubUserStatus>>
+>;
+export type AdminServiceGetGithubUserStatusQueryError = RpcStatus;
+
+export const createAdminServiceGetGithubUserStatus = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubUserStatus>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetGithubUserStatus>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetGithubUserStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetGithubUserStatus>>
+  > = ({ signal }) => adminServiceGetGithubUserStatus(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetGithubUserStatus>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

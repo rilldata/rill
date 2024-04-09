@@ -43,16 +43,19 @@ jobs:
             echo "Fetch tags to get the last tagged version"
             git fetch --all --tags;
           fi
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          VERSION="${LATEST_TAG}+${GITHUB_SHA:0:8}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
-          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
 
           gcloud auth configure-docker
 
-          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
-          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
+          docker build -t gcr.io/rilldata/rill-headless:${VERSION} .
+          docker push gcr.io/rilldata/rill-headless:${VERSION}
 
           if [ ${RELEASE} == "true" ]; then
-            docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
+            docker tag gcr.io/rilldata/rill-headless:${VERSION} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
             docker push gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
           fi
 
@@ -62,4 +65,4 @@ jobs:
           curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
-          --data '{"event_type": "Deploying Tag: '"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
+          --data '{"event_type": "Deploying Tag: '"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${VERSION}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
