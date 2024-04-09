@@ -60,7 +60,7 @@
     <FormSection title="Slack notifications">
       <span class="text-sm text-slate-600">
         Slack has not been configured for this project. Read the <a
-          href="https://docs.rilldata.com/reference/connectors/slack"
+          href="https://docs.rilldata.com/explore/alerts/slack"
           target="_blank"
         >
           docs
