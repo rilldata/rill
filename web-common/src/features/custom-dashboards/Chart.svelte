@@ -1,10 +1,11 @@
 <script lang="ts">
-  import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
+  import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import type { VisualizationSpec } from "svelte-vega";
-  import { createQuery } from "@tanstack/svelte-query";
+  import { createRuntimeServiceGetChartData } from "../../runtime-client/manual-clients";
 
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -13,6 +14,7 @@
       clientWidth = width;
     }
   });
+  const queryClient = useQueryClient();
 
   export let chartName: string;
 
@@ -37,23 +39,12 @@
 
   $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
 
-  async function fetchChartData(chartName: string) {
-    // TODO: replace with prod API call
-    const api_url = `http://localhost:9009/v1/instances/default/charts/${chartName}/data`;
-    const response = await fetch(api_url);
-
-    console.log({ response });
-    if (!response.ok) {
-      error = `HTTP error! status: ${response.status}`;
-      console.warn(response);
-    }
-    return response.json();
-  }
-
-  $: chartDataQuery = createQuery({
-    queryKey: [`chart-data`, chartName, metricsQuery],
-    queryFn: () => fetchChartData(chartName),
-  });
+  $: chartDataQuery = createRuntimeServiceGetChartData(
+    queryClient,
+    $runtime.instanceId,
+    chartName,
+    metricsQuery,
+  );
 
   $: data = $chartDataQuery?.data;
 
