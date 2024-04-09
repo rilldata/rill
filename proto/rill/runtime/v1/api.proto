@@ -305,9 +305,6 @@ message Instance {
   map<string, string> annotations = 14;
   bool embed_catalog = 6;
   bool watch_repo = 15;
-  bool stage_changes = 16;
-  bool model_default_materialize = 17;
-  uint32 model_materialize_delay_seconds = 18;
 }
  
 message Connector {
@@ -358,9 +355,6 @@ message CreateInstanceRequest {
   map<string, string> annotations = 9;
   bool embed_catalog = 6;
   bool watch_repo = 11;
-  bool stage_changes = 12;
-  bool model_default_materialize = 13;
-  uint32 model_materialize_delay_seconds = 14;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -391,9 +385,6 @@ message EditInstanceRequest {
   map<string, string> annotations = 10;
   optional bool embed_catalog = 6;
   optional bool watch_repo = 11;
-  optional bool stage_changes = 12;
-  optional bool model_default_materialize = 13;
-  optional uint32 model_materialize_delay_seconds = 14;
 }
 
 // Response message for RuntimeService.EditInstance

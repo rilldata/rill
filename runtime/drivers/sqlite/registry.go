@@ -50,10 +50,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			project_variables,
 			annotations,
 			embed_catalog,
-			watch_repo,
-			stage_changes,
-			model_default_materialize,
-			model_materialize_delay_seconds
+			watch_repo
 		FROM instances %s ORDER BY id
 	`, whereClause)
 
@@ -86,9 +83,6 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&annotations,
 			&i.EmbedCatalog,
 			&i.WatchRepo,
-			&i.StageChanges,
-			&i.ModelDefaultMaterialize,
-			&i.ModelMaterializeDelaySeconds,
 		)
 		if err != nil {
 			return nil, err
@@ -181,12 +175,9 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			project_variables,
 			annotations,
 			embed_catalog,
-			watch_repo,
-			stage_changes,
-			model_default_materialize,
-			model_materialize_delay_seconds
+			watch_repo
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -205,9 +196,6 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		annotations,
 		inst.EmbedCatalog,
 		inst.WatchRepo,
-		inst.StageChanges,
-		inst.ModelDefaultMaterialize,
-		inst.ModelMaterializeDelaySeconds,
 	)
 	if err != nil {
 		return err
@@ -269,10 +257,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			project_variables = $13,
 			annotations = $14,
 			embed_catalog = $15,
-			watch_repo = $16,
-			stage_changes = $17,
-			model_default_materialize = $18,
-			model_materialize_delay_seconds = $19
+			watch_repo = $16
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -291,9 +276,6 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		annotations,
 		inst.EmbedCatalog,
 		inst.WatchRepo,
-		inst.StageChanges,
-		inst.ModelDefaultMaterialize,
-		inst.ModelMaterializeDelaySeconds,
 	)
 	if err != nil {
 		return err

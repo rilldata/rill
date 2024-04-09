@@ -450,9 +450,6 @@ export type RuntimeServiceEditInstanceBody = {
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -1630,9 +1627,6 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
 }
 
 export interface V1InlineMeasure {
@@ -1839,9 +1833,6 @@ export interface V1CreateInstanceRequest {
   annotations?: V1CreateInstanceRequestAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
 }
 
 export interface V1CreateDirectoryResponse {

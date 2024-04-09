@@ -83,10 +83,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Prepare instance config
 	var connectors []*runtimev1.Connector
-	modelDefaultMaterialize, err := defaultModelMaterialize(opts.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
 
 	// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
 	connectors = append(connectors, &runtimev1.Connector{
@@ -180,18 +176,16 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:              instanceID,
-		Environment:             "prod",
-		OlapConnector:           olapConnector,
-		RepoConnector:           "admin",
-		AdminConnector:          "admin",
-		AiConnector:             "admin",
-		Connectors:              connectors,
-		Variables:               opts.ProdVariables,
-		Annotations:             opts.Annotations.toMap(),
-		EmbedCatalog:            false,
-		StageChanges:            true,
-		ModelDefaultMaterialize: modelDefaultMaterialize,
+		InstanceId:     instanceID,
+		Environment:    "prod",
+		OlapConnector:  olapConnector,
+		RepoConnector:  "admin",
+		AdminConnector: "admin",
+		AiConnector:    "admin",
+		Connectors:     connectors,
+		Variables:      opts.ProdVariables,
+		Annotations:    opts.Annotations.toMap(),
+		EmbedCatalog:   false,
 	})
 	if err != nil {
 		err2 := p.Deprovision(ctx, provisionID)
@@ -220,15 +214,6 @@ type UpdateDeploymentOptions struct {
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
 	if opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without specifying a valid branch")
-	}
-
-	var modelDefaultMaterialize *bool
-	if opts.Variables != nil { // if variables are nil, it means they were not changed
-		val, err := defaultModelMaterialize(opts.Variables)
-		if err != nil {
-			return err
-		}
-		modelDefaultMaterialize = &val
 	}
 
 	// Update the provisioned runtime if the version has changed
@@ -293,11 +278,10 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:              depl.RuntimeInstanceID,
-		Connectors:              connectors,
-		Annotations:             opts.Annotations.toMap(),
-		Variables:               opts.Variables,
-		ModelDefaultMaterialize: modelDefaultMaterialize,
+		InstanceId:  depl.RuntimeInstanceID,
+		Connectors:  connectors,
+		Annotations: opts.Annotations.toMap(),
+		Variables:   opts.Variables,
 	})
 	if err != nil {
 		return err
@@ -457,29 +441,4 @@ func (da *DeploymentAnnotations) toMap() map[string]string {
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	return res
-}
-
-// defaultModelMaterialize determines whether to materialize models by default for deployed projects.
-// It defaults to true, but can be overridden with the __materialize_default variable.
-func defaultModelMaterialize(vars map[string]string) (bool, error) {
-	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
-	// Remove when we have a way to conditionally configure it using code files.
-
-	systemDefault := false
-
-	if vars == nil {
-		return systemDefault, nil
-	}
-
-	s, ok := vars["__materialize_default"]
-	if !ok {
-		return systemDefault, nil
-	}
-
-	val, err := strconv.ParseBool(s)
-	if err != nil {
-		return false, fmt.Errorf("invalid __materialize_default value %q: %w", s, err)
-	}
-
-	return val, nil
 }

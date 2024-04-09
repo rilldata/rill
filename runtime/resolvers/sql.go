@@ -17,18 +17,17 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const sqlResolverInteractiveRowLimit = 10000
-
 func init() {
 	runtime.RegisterResolverInitializer("sql", newSQL)
 }
 
 type sqlResolver struct {
-	sql         string
-	refs        []*runtimev1.ResourceName
-	olap        drivers.OLAPStore
-	olapRelease func()
-	priority    int
+	sql                 string
+	refs                []*runtimev1.ResourceName
+	olap                drivers.OLAPStore
+	olapRelease         func()
+	interactiveRowLimit int64
+	priority            int
 }
 
 type sqlProps struct {
@@ -44,12 +43,6 @@ type sqlArgs struct {
 // newSQL creates a resolver that executes a SQL query.
 // It supports the use of templating in the SQL string to inject user attributes and args into the SQL query.
 func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	return newSQLWithRefs(ctx, opts, nil)
-}
-
-// newSQLWithRefs is similar to newSQL, but allows providing extra refs.
-// This capability is required by the metrics SQL resolver to wrap this regular SQL resolver.
-func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRefs []*runtimev1.ResourceName) (runtime.Resolver, error) {
 	props := &sqlProps{}
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
@@ -65,6 +58,11 @@ func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRef
 		return nil, err
 	}
 
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, err
+	}
+
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
@@ -75,17 +73,50 @@ func newSQLWithRefs(ctx context.Context, opts *runtime.ResolverOptions, extraRef
 		return nil, err
 	}
 
-	if extraRefs != nil {
-		refs = append(refs, extraRefs...)
-		refs = normalizeRefs(refs)
+	return &sqlResolver{
+		sql:                 resolvedSQL,
+		refs:                refs,
+		olap:                olap,
+		olapRelease:         release,
+		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
+		priority:            args.Priority,
+	}, nil
+}
+
+// newSQLSimple is a simplified version of newSQL that does not do any template resolution
+func newSQLSimple(ctx context.Context, opts *runtime.ResolverOptions, refs []*runtimev1.ResourceName) (runtime.Resolver, error) {
+	props := &sqlProps{}
+	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+		return nil, err
+	}
+
+	args := &sqlArgs{}
+	if err := mapstructure.Decode(opts.Args, args); err != nil {
+		return nil, err
+	}
+
+	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, err
+	}
+
+	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
+	if err != nil {
+		return nil, err
 	}
 
 	return &sqlResolver{
-		sql:         resolvedSQL,
-		refs:        refs,
-		olap:        olap,
-		olapRelease: release,
-		priority:    args.Priority,
+		sql:                 props.SQL,
+		refs:                refs,
+		olap:                olap,
+		olapRelease:         release,
+		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
+		priority:            args.Priority,
 	}, nil
 }
 
@@ -113,7 +144,7 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
-	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, sqlResolverInteractiveRowLimit+1)
+	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, r.interactiveRowLimit+1)
 
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
@@ -126,8 +157,8 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 
 	var out []map[string]any
 	for res.Rows.Next() {
-		if len(out) >= sqlResolverInteractiveRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", sqlResolverInteractiveRowLimit)
+		if int64(len(out)) >= r.interactiveRowLimit {
+			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)
 		}
 
 		row := make(map[string]any)
@@ -233,31 +264,7 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 // buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.
 func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
 	// Resolve the SQL template
-	var refs []*runtimev1.ResourceName
-	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
-		Environment: inst.Environment,
-		User:        userAttributes,
-		Variables:   inst.ResolveVariables(),
-		ExtraProps: map[string]any{
-			"args":   args,
-			"export": forExport,
-		},
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			// Add to the list of potential refs
-			if ref.Kind == compilerv1.ResourceKindUnspecified {
-				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
-				refs = append(refs,
-					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: ref.Name},
-					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
-				)
-			} else {
-				refs = append(refs, runtime.ResourceNameFromCompiler(ref))
-			}
-
-			// Return the escaped identifier
-			return dialect.EscapeIdentifier(ref.Name), nil
-		},
-	})
+	sql, refs, err := resolveTemplate(sqlTemplate, args, inst, userAttributes, forExport)
 	if err != nil {
 		return "", nil, err
 	}
@@ -280,4 +287,37 @@ func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, 
 	}
 
 	return sql, normalizeRefs(refs), nil
+}
+
+func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
+	var refs []*runtimev1.ResourceName
+	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
+		Environment: inst.Environment,
+		User:        userAttributes,
+		Variables:   inst.ResolveVariables(),
+		ExtraProps: map[string]any{
+			"args":   args,
+			"export": forExport,
+		},
+		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+			// Add to the list of potential refs
+			if ref.Kind == compilerv1.ResourceKindUnspecified {
+				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
+				refs = append(refs,
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: ref.Name},
+					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
+				)
+			} else {
+				refs = append(refs, runtime.ResourceNameFromCompiler(ref))
+			}
+
+			// Return the escaped identifier
+			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template resolution.
+			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
+		},
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return sql, refs, nil
 }

@@ -274,21 +274,6 @@ export class Instance extends Message<Instance> {
    */
   watchRepo = false;
 
-  /**
-   * @generated from field: bool stage_changes = 16;
-   */
-  stageChanges = false;
-
-  /**
-   * @generated from field: bool model_default_materialize = 17;
-   */
-  modelDefaultMaterialize = false;
-
-  /**
-   * @generated from field: uint32 model_materialize_delay_seconds = 18;
-   */
-  modelMaterializeDelaySeconds = 0;
-
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -312,9 +297,6 @@ export class Instance extends Message<Instance> {
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 16, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 18, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -619,21 +601,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
    */
   watchRepo = false;
 
-  /**
-   * @generated from field: bool stage_changes = 12;
-   */
-  stageChanges = false;
-
-  /**
-   * @generated from field: bool model_default_materialize = 13;
-   */
-  modelDefaultMaterialize = false;
-
-  /**
-   * @generated from field: uint32 model_materialize_delay_seconds = 14;
-   */
-  modelMaterializeDelaySeconds = 0;
-
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -653,9 +620,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 12, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 13, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 14, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -854,21 +818,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
    */
   watchRepo?: boolean;
 
-  /**
-   * @generated from field: optional bool stage_changes = 12;
-   */
-  stageChanges?: boolean;
-
-  /**
-   * @generated from field: optional bool model_default_materialize = 13;
-   */
-  modelDefaultMaterialize?: boolean;
-
-  /**
-   * @generated from field: optional uint32 model_materialize_delay_seconds = 14;
-   */
-  modelMaterializeDelaySeconds?: number;
-
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -888,9 +837,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 12, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 13, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 14, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
