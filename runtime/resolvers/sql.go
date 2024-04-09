@@ -17,18 +17,17 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const sqlResolverInteractiveRowLimit = 10000
-
 func init() {
 	runtime.RegisterResolverInitializer("sql", newSQL)
 }
 
 type sqlResolver struct {
-	sql         string
-	refs        []*runtimev1.ResourceName
-	olap        drivers.OLAPStore
-	olapRelease func()
-	priority    int
+	sql                 string
+	refs                []*runtimev1.ResourceName
+	olap                drivers.OLAPStore
+	olapRelease         func()
+	interactiveRowLimit int64
+	priority            int
 }
 
 type sqlProps struct {
@@ -59,6 +58,11 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, err
+	}
+
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
@@ -70,11 +74,12 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}
 
 	return &sqlResolver{
-		sql:         resolvedSQL,
-		refs:        refs,
-		olap:        olap,
-		olapRelease: release,
-		priority:    args.Priority,
+		sql:                 resolvedSQL,
+		refs:                refs,
+		olap:                olap,
+		olapRelease:         release,
+		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
+		priority:            args.Priority,
 	}, nil
 }
 
@@ -90,17 +95,28 @@ func newSQLSimple(ctx context.Context, opts *runtime.ResolverOptions, refs []*ru
 		return nil, err
 	}
 
+	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, err
+	}
+
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
 	}
 
 	return &sqlResolver{
-		sql:         props.SQL,
-		refs:        refs,
-		olap:        olap,
-		olapRelease: release,
-		priority:    args.Priority,
+		sql:                 props.SQL,
+		refs:                refs,
+		olap:                olap,
+		olapRelease:         release,
+		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
+		priority:            args.Priority,
 	}, nil
 }
 
@@ -128,7 +144,7 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
-	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, sqlResolverInteractiveRowLimit+1)
+	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, r.interactiveRowLimit+1)
 
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
@@ -141,8 +157,8 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 
 	var out []map[string]any
 	for res.Rows.Next() {
-		if len(out) >= sqlResolverInteractiveRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", sqlResolverInteractiveRowLimit)
+		if int64(len(out)) >= r.interactiveRowLimit {
+			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)
 		}
 
 		row := make(map[string]any)
