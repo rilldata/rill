@@ -114,3 +114,23 @@ export async function invalidateProfilingQueries(
     type: "active",
   });
 }
+
+export async function invalidateChartData(
+  queryClient: QueryClient,
+  name: string,
+  failed: boolean,
+) {
+  const chartAPIRegex = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/charts/${name}`,
+  );
+  queryClient.removeQueries({
+    predicate: (query) => chartAPIRegex.test(query.queryHash),
+    type: "inactive",
+  });
+  if (failed) return;
+
+  return queryClient.resetQueries({
+    predicate: (query) => chartAPIRegex.test(query.queryHash),
+    type: "active",
+  });
+}

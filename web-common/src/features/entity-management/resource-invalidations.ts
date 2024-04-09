@@ -9,6 +9,7 @@ import {
   getRuntimeServiceListResourcesQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
+  invalidateChartData,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
   invalidationForMetricsViewData,
@@ -25,6 +26,7 @@ export const MainResourceKinds: {
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
   [ResourceKind.Chart]: true,
+  [ResourceKind.Dashboard]: true,
 };
 const UsedResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -125,6 +127,12 @@ async function invalidateResource(
 
     case ResourceKind.MetricsView:
       return invalidateMetricsViewData(queryClient, name, failed);
+
+    case ResourceKind.Chart:
+      return invalidateChartData(queryClient, name, failed);
+
+    case ResourceKind.Dashboard:
+    // TODO
   }
 }
 
