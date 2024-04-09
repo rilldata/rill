@@ -16,7 +16,7 @@ type RepoStore interface {
 	// Root returns directory where artifacts are stored.
 	Root() string
 	CommitHash(ctx context.Context) (string, error)
-	ListRecursive(ctx context.Context, glob string) ([]FileEntry, error)
+	ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]DirEntry, error)
 	Get(ctx context.Context, path string) (string, error)
 	Stat(ctx context.Context, path string) (*RepoObjectStat, error)
 	Put(ctx context.Context, path string, reader io.Reader) error
@@ -41,7 +41,7 @@ type RepoObjectStat struct {
 
 var ErrFileAlreadyExists = errors.New("file already exists")
 
-type FileEntry struct {
+type DirEntry struct {
 	Path  string
 	IsDir bool
 }

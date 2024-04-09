@@ -29,7 +29,7 @@ const (
 	RuntimeService_WatchFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchFiles"
 	RuntimeService_GetFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetFile"
 	RuntimeService_PutFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PutFile"
-	RuntimeService_MakeDir_FullMethodName                 = "/rill.runtime.v1.RuntimeService/MakeDir"
+	RuntimeService_CreateDirectory_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateDirectory"
 	RuntimeService_DeleteFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/DeleteFile"
 	RuntimeService_RenameFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/RenameFile"
 	RuntimeService_ListExamples_FullMethodName            = "/rill.runtime.v1.RuntimeService/ListExamples"
@@ -83,7 +83,7 @@ type RuntimeServiceClient interface {
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
 	PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error)
-	MakeDir(ctx context.Context, in *MakeDirRequest, opts ...grpc.CallOption) (*MakeDirResponse, error)
+	CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error)
 	// DeleteFile deletes a file from a repo
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
@@ -266,9 +266,9 @@ func (c *runtimeServiceClient) PutFile(ctx context.Context, in *PutFileRequest, 
 	return out, nil
 }
 
-func (c *runtimeServiceClient) MakeDir(ctx context.Context, in *MakeDirRequest, opts ...grpc.CallOption) (*MakeDirResponse, error) {
-	out := new(MakeDirResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_MakeDir_FullMethodName, in, out, opts...)
+func (c *runtimeServiceClient) CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error) {
+	out := new(CreateDirectoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_CreateDirectory_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -580,7 +580,7 @@ type RuntimeServiceServer interface {
 	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
 	PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error)
-	MakeDir(context.Context, *MakeDirRequest) (*MakeDirResponse, error)
+	CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error)
 	// DeleteFile deletes a file from a repo
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
@@ -677,8 +677,8 @@ func (UnimplementedRuntimeServiceServer) GetFile(context.Context, *GetFileReques
 func (UnimplementedRuntimeServiceServer) PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PutFile not implemented")
 }
-func (UnimplementedRuntimeServiceServer) MakeDir(context.Context, *MakeDirRequest) (*MakeDirResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MakeDir not implemented")
+func (UnimplementedRuntimeServiceServer) CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDirectory not implemented")
 }
 func (UnimplementedRuntimeServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
@@ -954,20 +954,20 @@ func _RuntimeService_PutFile_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_MakeDir_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MakeDirRequest)
+func _RuntimeService_CreateDirectory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDirectoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).MakeDir(ctx, in)
+		return srv.(RuntimeServiceServer).CreateDirectory(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RuntimeService_MakeDir_FullMethodName,
+		FullMethod: RuntimeService_CreateDirectory_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).MakeDir(ctx, req.(*MakeDirRequest))
+		return srv.(RuntimeServiceServer).CreateDirectory(ctx, req.(*CreateDirectoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1490,8 +1490,8 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_PutFile_Handler,
 		},
 		{
-			MethodName: "MakeDir",
-			Handler:    _RuntimeService_MakeDir_Handler,
+			MethodName: "CreateDirectory",
+			Handler:    _RuntimeService_CreateDirectory_Handler,
 		},
 		{
 			MethodName: "DeleteFile",

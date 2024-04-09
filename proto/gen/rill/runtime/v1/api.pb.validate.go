@@ -2227,22 +2227,22 @@ var _ interface {
 	ErrorName() string
 } = ListFilesResponseValidationError{}
 
-// Validate checks the field values on ListFileEntry with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
+// Validate checks the field values on FileEntry with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *ListFileEntry) Validate() error {
+func (m *FileEntry) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListFileEntry with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ListFileEntryMultiError, or
-// nil if none found.
-func (m *ListFileEntry) ValidateAll() error {
+// ValidateAll checks the field values on FileEntry with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FileEntryMultiError, or nil
+// if none found.
+func (m *FileEntry) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListFileEntry) validate(all bool) error {
+func (m *FileEntry) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2254,19 +2254,18 @@ func (m *ListFileEntry) validate(all bool) error {
 	// no validation rules for IsDir
 
 	if len(errors) > 0 {
-		return ListFileEntryMultiError(errors)
+		return FileEntryMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListFileEntryMultiError is an error wrapping multiple validation errors
-// returned by ListFileEntry.ValidateAll() if the designated constraints
-// aren't met.
-type ListFileEntryMultiError []error
+// FileEntryMultiError is an error wrapping multiple validation errors returned
+// by FileEntry.ValidateAll() if the designated constraints aren't met.
+type FileEntryMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListFileEntryMultiError) Error() string {
+func (m FileEntryMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2275,11 +2274,11 @@ func (m ListFileEntryMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListFileEntryMultiError) AllErrors() []error { return m }
+func (m FileEntryMultiError) AllErrors() []error { return m }
 
-// ListFileEntryValidationError is the validation error returned by
-// ListFileEntry.Validate if the designated constraints aren't met.
-type ListFileEntryValidationError struct {
+// FileEntryValidationError is the validation error returned by
+// FileEntry.Validate if the designated constraints aren't met.
+type FileEntryValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2287,22 +2286,22 @@ type ListFileEntryValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListFileEntryValidationError) Field() string { return e.field }
+func (e FileEntryValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListFileEntryValidationError) Reason() string { return e.reason }
+func (e FileEntryValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListFileEntryValidationError) Cause() error { return e.cause }
+func (e FileEntryValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListFileEntryValidationError) Key() bool { return e.key }
+func (e FileEntryValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListFileEntryValidationError) ErrorName() string { return "ListFileEntryValidationError" }
+func (e FileEntryValidationError) ErrorName() string { return "FileEntryValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ListFileEntryValidationError) Error() string {
+func (e FileEntryValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2314,14 +2313,14 @@ func (e ListFileEntryValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListFileEntry.%s: %s%s",
+		"invalid %sFileEntry.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListFileEntryValidationError{}
+var _ error = FileEntryValidationError{}
 
 var _ interface {
 	Field() string
@@ -2329,7 +2328,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListFileEntryValidationError{}
+} = FileEntryValidationError{}
 
 // Validate checks the field values on WatchFilesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -3041,30 +3040,30 @@ var _ interface {
 	ErrorName() string
 } = PutFileResponseValidationError{}
 
-// Validate checks the field values on MakeDirRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *MakeDirRequest) Validate() error {
+// Validate checks the field values on CreateDirectoryRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateDirectoryRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MakeDirRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in MakeDirRequestMultiError,
-// or nil if none found.
-func (m *MakeDirRequest) ValidateAll() error {
+// ValidateAll checks the field values on CreateDirectoryRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateDirectoryRequestMultiError, or nil if none found.
+func (m *CreateDirectoryRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MakeDirRequest) validate(all bool) error {
+func (m *CreateDirectoryRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if !_MakeDirRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := MakeDirRequestValidationError{
+	if !_CreateDirectoryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := CreateDirectoryRequestValidationError{
 			field:  "InstanceId",
 			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
 		}
@@ -3075,7 +3074,7 @@ func (m *MakeDirRequest) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetPath()) < 1 {
-		err := MakeDirRequestValidationError{
+		err := CreateDirectoryRequestValidationError{
 			field:  "Path",
 			reason: "value length must be at least 1 runes",
 		}
@@ -3085,24 +3084,22 @@ func (m *MakeDirRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Create
-
-	// no validation rules for CreateOnly
+	// no validation rules for IgnoreIfExists
 
 	if len(errors) > 0 {
-		return MakeDirRequestMultiError(errors)
+		return CreateDirectoryRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MakeDirRequestMultiError is an error wrapping multiple validation errors
-// returned by MakeDirRequest.ValidateAll() if the designated constraints
-// aren't met.
-type MakeDirRequestMultiError []error
+// CreateDirectoryRequestMultiError is an error wrapping multiple validation
+// errors returned by CreateDirectoryRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CreateDirectoryRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MakeDirRequestMultiError) Error() string {
+func (m CreateDirectoryRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -3111,11 +3108,11 @@ func (m MakeDirRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MakeDirRequestMultiError) AllErrors() []error { return m }
+func (m CreateDirectoryRequestMultiError) AllErrors() []error { return m }
 
-// MakeDirRequestValidationError is the validation error returned by
-// MakeDirRequest.Validate if the designated constraints aren't met.
-type MakeDirRequestValidationError struct {
+// CreateDirectoryRequestValidationError is the validation error returned by
+// CreateDirectoryRequest.Validate if the designated constraints aren't met.
+type CreateDirectoryRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -3123,22 +3120,24 @@ type MakeDirRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MakeDirRequestValidationError) Field() string { return e.field }
+func (e CreateDirectoryRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MakeDirRequestValidationError) Reason() string { return e.reason }
+func (e CreateDirectoryRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MakeDirRequestValidationError) Cause() error { return e.cause }
+func (e CreateDirectoryRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MakeDirRequestValidationError) Key() bool { return e.key }
+func (e CreateDirectoryRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MakeDirRequestValidationError) ErrorName() string { return "MakeDirRequestValidationError" }
+func (e CreateDirectoryRequestValidationError) ErrorName() string {
+	return "CreateDirectoryRequestValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e MakeDirRequestValidationError) Error() string {
+func (e CreateDirectoryRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3150,14 +3149,14 @@ func (e MakeDirRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMakeDirRequest.%s: %s%s",
+		"invalid %sCreateDirectoryRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MakeDirRequestValidationError{}
+var _ error = CreateDirectoryRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -3165,26 +3164,26 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MakeDirRequestValidationError{}
+} = CreateDirectoryRequestValidationError{}
 
-var _MakeDirRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+var _CreateDirectoryRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
-// Validate checks the field values on MakeDirResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *MakeDirResponse) Validate() error {
+// Validate checks the field values on CreateDirectoryResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateDirectoryResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MakeDirResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on CreateDirectoryResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// MakeDirResponseMultiError, or nil if none found.
-func (m *MakeDirResponse) ValidateAll() error {
+// CreateDirectoryResponseMultiError, or nil if none found.
+func (m *CreateDirectoryResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MakeDirResponse) validate(all bool) error {
+func (m *CreateDirectoryResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -3192,19 +3191,19 @@ func (m *MakeDirResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return MakeDirResponseMultiError(errors)
+		return CreateDirectoryResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MakeDirResponseMultiError is an error wrapping multiple validation errors
-// returned by MakeDirResponse.ValidateAll() if the designated constraints
-// aren't met.
-type MakeDirResponseMultiError []error
+// CreateDirectoryResponseMultiError is an error wrapping multiple validation
+// errors returned by CreateDirectoryResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CreateDirectoryResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MakeDirResponseMultiError) Error() string {
+func (m CreateDirectoryResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -3213,11 +3212,11 @@ func (m MakeDirResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MakeDirResponseMultiError) AllErrors() []error { return m }
+func (m CreateDirectoryResponseMultiError) AllErrors() []error { return m }
 
-// MakeDirResponseValidationError is the validation error returned by
-// MakeDirResponse.Validate if the designated constraints aren't met.
-type MakeDirResponseValidationError struct {
+// CreateDirectoryResponseValidationError is the validation error returned by
+// CreateDirectoryResponse.Validate if the designated constraints aren't met.
+type CreateDirectoryResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -3225,22 +3224,24 @@ type MakeDirResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MakeDirResponseValidationError) Field() string { return e.field }
+func (e CreateDirectoryResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MakeDirResponseValidationError) Reason() string { return e.reason }
+func (e CreateDirectoryResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MakeDirResponseValidationError) Cause() error { return e.cause }
+func (e CreateDirectoryResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MakeDirResponseValidationError) Key() bool { return e.key }
+func (e CreateDirectoryResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MakeDirResponseValidationError) ErrorName() string { return "MakeDirResponseValidationError" }
+func (e CreateDirectoryResponseValidationError) ErrorName() string {
+	return "CreateDirectoryResponseValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e MakeDirResponseValidationError) Error() string {
+func (e CreateDirectoryResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3252,14 +3253,14 @@ func (e MakeDirResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMakeDirResponse.%s: %s%s",
+		"invalid %sCreateDirectoryResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MakeDirResponseValidationError{}
+var _ error = CreateDirectoryResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -3267,7 +3268,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MakeDirResponseValidationError{}
+} = CreateDirectoryResponseValidationError{}
 
 // Validate checks the field values on DeleteFileRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

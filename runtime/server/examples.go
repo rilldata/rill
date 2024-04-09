@@ -61,17 +61,13 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 
 	existingPaths := make(map[string]bool)
 	if !req.Force {
-		files, err := repo.ListRecursive(ctx, "**")
+		// we don't need to explicitly unpack directories since repo.Put will take care of creating folders
+		files, err := repo.ListRecursive(ctx, "**", true)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, file := range files {
-			if file.IsDir {
-				// we don't need to explicitly unpack directories since repo.Put will take care of creating folders
-				continue
-			}
-
 			existingPaths[file.Path] = true
 		}
 	}

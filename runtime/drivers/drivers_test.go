@@ -21,10 +21,10 @@ import (
 // as subtests of TestAll.
 func TestAll(t *testing.T) {
 	var matrix = []func(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error{
-		//withDuckDB,
+		withDuckDB,
 		withFile,
-		//withPostgres,
-		//withSQLite,
+		withPostgres,
+		withSQLite,
 		// Druid only tested in driver due to complicated ingestion setup
 	}
 

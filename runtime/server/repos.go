@@ -41,9 +41,9 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	var entries []*runtimev1.ListFileEntry
+	var entries []*runtimev1.FileEntry
 	for _, file := range files {
-		entries = append(entries, &runtimev1.ListFileEntry{
+		entries = append(entries, &runtimev1.FileEntry{
 			Path:  file.Path,
 			IsDir: file.IsDir,
 		})
@@ -70,7 +70,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 	defer release()
 
 	if req.Replay {
-		files, err := repo.ListRecursive(ss.Context(), "**")
+		files, err := repo.ListRecursive(ss.Context(), "**", true)
 		if err != nil {
 			return err
 		}
@@ -144,13 +144,12 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 	return &runtimev1.PutFileResponse{}, nil
 }
 
-// MakeDir implements RuntimeService.
-func (s *Server) MakeDir(ctx context.Context, req *runtimev1.MakeDirRequest) (*runtimev1.MakeDirResponse, error) {
+// CreateDirectory implements RuntimeService.
+func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirectoryRequest) (*runtimev1.CreateDirectoryResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
-		attribute.Bool("args.create", req.Create),
-		attribute.Bool("args.create_only", req.CreateOnly),
+		attribute.Bool("args.ignore_if_exists", req.IgnoreIfExists),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -159,12 +158,12 @@ func (s *Server) MakeDir(ctx context.Context, req *runtimev1.MakeDirRequest) (*r
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path, req.Create, req.CreateOnly)
+	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path, req.IgnoreIfExists)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.MakeDirResponse{}, nil
+	return &runtimev1.CreateDirectoryResponse{}, nil
 }
 
 // DeleteFile implements RuntimeService.

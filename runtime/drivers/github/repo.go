@@ -51,7 +51,7 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, glob string) ([]drivers.FileEntry, error) {
+func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	err := c.cloneOrPull(ctx, true)
 	if err != nil {
 		return nil, err
@@ -60,8 +60,12 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]drivers.
 	fsRoot := os.DirFS(c.projectdir)
 	glob = path.Clean(path.Join("./", glob))
 
-	var entries []drivers.FileEntry
+	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
+		if skipDirs && d.IsDir() {
+			return nil
+		}
+
 		// Exit if we reached the limit
 		if len(entries) == limit {
 			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
@@ -69,7 +73,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]drivers.
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		entries = append(entries, drivers.FileEntry{
+		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),
 		})

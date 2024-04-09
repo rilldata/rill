@@ -44,8 +44,8 @@ import type {
   RuntimeServicePutFileBody,
   V1GenerateMetricsViewFileResponse,
   RuntimeServiceGenerateMetricsViewFileBody,
-  V1MakeDirResponse,
-  RuntimeServiceMakeDirBody,
+  V1CreateDirectoryResponse,
+  RuntimeServiceCreateDirectoryBody,
   V1RenameFileResponse,
   RuntimeServiceRenameFileBody,
   V1UnpackEmptyResponse,
@@ -1160,51 +1160,64 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
     TContext
   >(mutationFn, mutationOptions);
 };
-export const runtimeServiceMakeDir = (
+export const runtimeServiceCreateDirectory = (
   instanceId: string,
   path: string,
-  runtimeServiceMakeDirBody: RuntimeServiceMakeDirBody,
+  runtimeServiceCreateDirectoryBody: RuntimeServiceCreateDirectoryBody,
 ) => {
-  return httpClient<V1MakeDirResponse>({
+  return httpClient<V1CreateDirectoryResponse>({
     url: `/v1/instances/${instanceId}/files/make-dir/-/${path}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServiceMakeDirBody,
+    data: runtimeServiceCreateDirectoryBody,
   });
 };
 
-export type RuntimeServiceMakeDirMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceMakeDir>>
+export type RuntimeServiceCreateDirectoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>
 >;
-export type RuntimeServiceMakeDirMutationBody = RuntimeServiceMakeDirBody;
-export type RuntimeServiceMakeDirMutationError = ErrorType<RpcStatus>;
+export type RuntimeServiceCreateDirectoryMutationBody =
+  RuntimeServiceCreateDirectoryBody;
+export type RuntimeServiceCreateDirectoryMutationError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceMakeDir = <
+export const createRuntimeServiceCreateDirectory = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMakeDir>>,
+    Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
     TError,
-    { instanceId: string; path: string; data: RuntimeServiceMakeDirBody },
+    {
+      instanceId: string;
+      path: string;
+      data: RuntimeServiceCreateDirectoryBody;
+    },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMakeDir>>,
-    { instanceId: string; path: string; data: RuntimeServiceMakeDirBody }
+    Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
+    {
+      instanceId: string;
+      path: string;
+      data: RuntimeServiceCreateDirectoryBody;
+    }
   > = (props) => {
     const { instanceId, path, data } = props ?? {};
 
-    return runtimeServiceMakeDir(instanceId, path, data);
+    return runtimeServiceCreateDirectory(instanceId, path, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof runtimeServiceMakeDir>>,
+    Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
     TError,
-    { instanceId: string; path: string; data: RuntimeServiceMakeDirBody },
+    {
+      instanceId: string;
+      path: string;
+      data: RuntimeServiceCreateDirectoryBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };

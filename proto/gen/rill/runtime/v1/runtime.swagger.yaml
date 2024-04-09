@@ -753,12 +753,12 @@ paths:
         - RuntimeService
   /v1/instances/{instanceId}/files/make-dir/-/{path}:
     post:
-      operationId: RuntimeService_MakeDir
+      operationId: RuntimeService_CreateDirectory
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1MakeDirResponse'
+            $ref: '#/definitions/v1CreateDirectoryResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -779,14 +779,9 @@ paths:
           schema:
             type: object
             properties:
-              create:
+              ignoreIfExists:
                 type: boolean
-                title: Create indicates whether to create the directory if it doesn't already exist
-              createOnly:
-                type: boolean
-                description: |-
-                  Will cause the operation to fail if the directory already exists.
-                  It should only be set when create = true.
+                title: Indicates whether to ignore the request if the directory already exists
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/rename:
@@ -3779,6 +3774,8 @@ definitions:
       implementsNotifier:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1CreateDirectoryResponse:
+    type: object
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -3951,6 +3948,13 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
+  v1FileEntry:
+    type: object
+    properties:
+      path:
+        type: string
+      isDir:
+        type: boolean
   v1FileEvent:
     type: string
     enum:
@@ -4160,13 +4164,6 @@ definitions:
           type: object
           $ref: '#/definitions/v1Example'
     title: Response message for RuntimeService.ListExamples
-  v1ListFileEntry:
-    type: object
-    properties:
-      path:
-        type: string
-      isDir:
-        type: boolean
   v1ListFilesResponse:
     type: object
     properties:
@@ -4174,7 +4171,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ListFileEntry'
+          $ref: '#/definitions/v1FileEntry'
     title: Response message for RuntimeService.ListFiles
   v1ListInstancesResponse:
     type: object
@@ -4227,8 +4224,6 @@ definitions:
       - LOG_LEVEL_ERROR
       - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
-  v1MakeDirResponse:
-    type: object
   v1MapType:
     type: object
     properties:

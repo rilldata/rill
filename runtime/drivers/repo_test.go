@@ -12,36 +12,43 @@ import (
 func testRepo(t *testing.T, repo drivers.RepoStore) {
 	ctx := context.Background()
 
-	files, err := repo.ListRecursive(ctx, "**")
+	files, err := repo.ListRecursive(ctx, "**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{{"/", true}}, files)
+	require.Equal(t, []drivers.DirEntry{{"/", true}}, files)
 
 	err = repo.Put(ctx, "foo.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
 	err = repo.Put(ctx, "/nested/bar.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
 
-	files, err = repo.ListRecursive(ctx, "/**")
+	files, err = repo.ListRecursive(ctx, "/**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/", true},
 		{"/foo.sql", false},
 		{"/nested", true},
 		{"/nested/bar.sql", false},
 	}, files)
 
-	files, err = repo.ListRecursive(ctx, "./**")
+	files, err = repo.ListRecursive(ctx, "/**", true)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
+		{"/foo.sql", false},
+		{"/nested/bar.sql", false},
+	}, files)
+
+	files, err = repo.ListRecursive(ctx, "./**", false)
+	require.NoError(t, err)
+	require.Equal(t, []drivers.DirEntry{
 		{"/", true},
 		{"/foo.sql", false},
 		{"/nested", true},
 		{"/nested/bar.sql", false},
 	}, files)
 
-	files, err = repo.ListRecursive(ctx, "/nested/**")
+	files, err = repo.ListRecursive(ctx, "/nested/**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/nested", true},
 		{"/nested/bar.sql", false},
 	}, files)
@@ -49,9 +56,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	err = repo.Delete(ctx, "nested/bar.sql")
 	require.NoError(t, err)
 
-	files, err = repo.ListRecursive(ctx, "**")
+	files, err = repo.ListRecursive(ctx, "**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/", true},
 		{"/foo.sql", false},
 		{"/nested", true},
@@ -61,9 +68,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	err = repo.Delete(ctx, "nested")
 	require.NoError(t, err)
 
-	files, err = repo.ListRecursive(ctx, "**")
+	files, err = repo.ListRecursive(ctx, "**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/", true},
 		{"/foo.sql", false},
 	}, files)
@@ -82,9 +89,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Equal(t, "bar bar bar", blob)
 
-	files, err = repo.ListRecursive(ctx, "**")
+	files, err = repo.ListRecursive(ctx, "**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/", true},
 		{"/foo.sql", false},
 	}, files)
@@ -94,9 +101,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	err = repo.Put(ctx, "foo.csv", strings.NewReader("foo foo"))
 	require.NoError(t, err)
 
-	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/foo.sql", false},
 		{"/foo.yml", false},
 	}, files)
@@ -104,9 +111,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	// renaming to existing throws error
 	err = repo.Rename(ctx, "foo.yml", "foo.sql")
 	require.ErrorIs(t, err, drivers.ErrFileAlreadyExists)
-	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/foo.sql", false},
 		{"/foo.yml", false},
 	}, files)
@@ -114,9 +121,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	// rename to existing with different case
 	err = repo.Rename(ctx, "foo.sql", "FOO.sql")
 	require.NoError(t, err)
-	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/FOO.sql", false},
 		{"/foo.yml", false},
 	}, files)
@@ -124,9 +131,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	// valid rename
 	err = repo.Rename(ctx, "foo.yml", "foo_new.yml")
 	require.NoError(t, err)
-	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	files, err = repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/FOO.sql", false},
 		{"/foo_new.yml", false},
 	}, files)
@@ -134,9 +141,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	// create a new folder
 	err = repo.MakeDir(ctx, "new_folder")
 	require.NoError(t, err)
-	files, err = repo.ListRecursive(ctx, "**")
+	files, err = repo.ListRecursive(ctx, "**", false)
 	require.NoError(t, err)
-	require.Equal(t, []drivers.FileEntry{
+	require.Equal(t, []drivers.DirEntry{
 		{"/", true},
 		{"/FOO.sql", false},
 		{"/foo.csv", false},

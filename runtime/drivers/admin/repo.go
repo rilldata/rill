@@ -43,7 +43,7 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	return ref.Hash().String(), nil
 }
 
-func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]drivers.FileEntry, error) {
+func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	err := h.cloneOrPull(ctx, true)
 	if err != nil {
 		return nil, err
@@ -52,8 +52,12 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]drivers.File
 	fsRoot := os.DirFS(h.projPath)
 	glob = path.Clean(path.Join("./", glob))
 
-	var entries []drivers.FileEntry
+	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
+		if skipDirs && d.IsDir() {
+			return nil
+		}
+
 		// Exit if we reached the limit
 		if len(entries) == listFileslimit {
 			return fmt.Errorf("glob exceeded limit of %d matched files", listFileslimit)
@@ -61,7 +65,7 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]drivers.File
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		entries = append(entries, drivers.FileEntry{
+		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),
 		})

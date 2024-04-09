@@ -8,14 +8,14 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (r *Runtime) ListFiles(ctx context.Context, instanceID, glob string) ([]drivers.FileEntry, error) {
+func (r *Runtime) ListFiles(ctx context.Context, instanceID, glob string) ([]drivers.DirEntry, error) {
 	repo, release, err := r.Repo(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	return repo.ListRecursive(ctx, glob)
+	return repo.ListRecursive(ctx, glob, false)
 }
 
 func (r *Runtime) GetFile(ctx context.Context, instanceID, path string) (string, time.Time, error) {
@@ -56,14 +56,14 @@ func (r *Runtime) PutFile(ctx context.Context, instanceID, path string, blob io.
 	return nil
 }
 
-func (r *Runtime) MakeDir(ctx context.Context, instanceID, path string, create, createOnly bool) error {
+func (r *Runtime) MakeDir(ctx context.Context, instanceID, path string, ignoreIfExists bool) error {
 	repo, release, err := r.Repo(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	// TODO: Handle create, createOnly
+	// TODO: Handle ignoreIfExists
 
 	err = repo.MakeDir(ctx, path)
 	if err != nil {

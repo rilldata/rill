@@ -390,11 +390,8 @@ export type RuntimeServiceRenameFileBody = {
   toPath?: string;
 };
 
-export type RuntimeServiceMakeDirBody = {
-  create?: boolean;
-  /** Will cause the operation to fail if the directory already exists.
-It should only be set when create = true. */
-  createOnly?: boolean;
+export type RuntimeServiceCreateDirectoryBody = {
+  ignoreIfExists?: boolean;
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
@@ -1550,10 +1547,6 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1MakeDirResponse {
-  [key: string]: any;
-}
-
 export type V1LogLevel = (typeof V1LogLevel)[keyof typeof V1LogLevel];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -1587,13 +1580,8 @@ export interface V1ListInstancesResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListFileEntry {
-  path?: string;
-  isDir?: boolean;
-}
-
 export interface V1ListFilesResponse {
-  files?: V1ListFileEntry[];
+  files?: V1FileEntry[];
 }
 
 export interface V1ListExamplesResponse {
@@ -1734,6 +1722,11 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1FileEntry {
+  path?: string;
+  isDir?: boolean;
+}
+
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1849,6 +1842,10 @@ export interface V1CreateInstanceRequest {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
+}
+
+export interface V1CreateDirectoryResponse {
+  [key: string]: any;
 }
 
 /**
