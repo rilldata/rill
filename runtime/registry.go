@@ -31,6 +31,15 @@ func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Ins
 	return r.registryCache.get(instanceID)
 }
 
+// InstanceConfig returns the instance's dynamic configuration.
+func (r *Runtime) InstanceConfig(ctx context.Context, instanceID string) (drivers.InstanceConfig, error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return drivers.InstanceConfig{}, err
+	}
+	return inst.Config()
+}
+
 // InstanceLogger returns a logger scoped for the given instance. Logs emitted to the logger will also be available in the instance's log buffer.
 func (r *Runtime) InstanceLogger(ctx context.Context, instanceID string) (*zap.Logger, error) {
 	return r.registryCache.getLogger(instanceID)
