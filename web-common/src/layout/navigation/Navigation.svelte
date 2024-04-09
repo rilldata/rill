@@ -9,37 +9,20 @@
 </script>
 
 <script lang="ts">
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
-  import SourceAssets from "@rilldata/web-common/features/sources/navigation/SourceAssets.svelte";
   import { writable } from "svelte/store";
-  import ChartAssets from "../../features/charts/ChartAssets.svelte";
-  import CustomDashboardAssets from "../../features/custom-dashboards/CustomDashboardAssets.svelte";
-  import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
-  import OtherFiles from "../../features/project/OtherFiles.svelte";
+  import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
+  import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
   import TableAssets from "../../features/tables/TableAssets.svelte";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "../../features/tables/selectors";
-  import { createRuntimeServiceGetInstance } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
-  import Resizer from "../Resizer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
-
-  const { customDashboards, readOnly } = featureFlags;
 
   let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
   let container: HTMLElement;
   let resizing = false;
-
-  $: isModelerEnabled = $readOnly === false;
-
-  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
-  $: olapConnector = $instance.data?.instance?.olapConnector;
-  $: isModelingSupportedForCurrentOlapDriver =
-    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
 
   function handleResize(
     e: UIEvent & {
@@ -76,26 +59,11 @@
   <div class="inner" style:width="{width}px">
     <ProjectTitle />
 
+    <AddAssetButton />
     <div class="scroll-container">
       <div class="nav-wrapper">
-        {#if isModelerEnabled}
-          <TableAssets />
-
-          {#if olapConnector === "duckdb"}
-            <SourceAssets />
-          {/if}
-          {#if $isModelingSupportedForCurrentOlapDriver.data}
-            <ModelAssets />
-          {/if}
-        {/if}
-        <DashboardAssets />
-        {#if $customDashboards}
-          <ChartAssets />
-          <CustomDashboardAssets />
-        {/if}
-        {#if isModelerEnabled}
-          <OtherFiles />
-        {/if}
+        <FileExplorer />
+        <TableAssets />
       </div>
     </div>
     <Footer />

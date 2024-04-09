@@ -1,17 +1,33 @@
 <script lang="ts">
-  import Add from "../../components/icons/Add.svelte";
+  import { PlusCircleIcon } from "lucide-svelte";
+  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
 
-  export let id: string;
-  export let label: string;
-  export let bold: boolean;
+  // Button handler: Create new file
+  // const createFile = createRuntimeServicePutFileAndReconcile();
+  // let path: string;
+  // function submit() {
+  //   $createFile.mutateAsync({
+  //     data: {
+  //       instanceId: "default",
+  //       path: path,
+  //       blob: undefined,
+  //       create: true,
+  //       createOnly: true,
+  //       strict: false,
+  //     },
+  //   });
+  // }
 </script>
 
-<button
-  on:click
-  {id}
-  class:font-bold={bold}
-  class="pl-2.5 pr-2 py-1 hover:bg-gray-100 w-full text-left flex gap-x-1.5 items-center text-xs"
->
-  <Add className="text-gray-900 bg-gray-300 rounded" size={"16px"} />
-  {label}
-</button>
+<div class="p-2">
+  <button
+    on:click
+    class="p-2 bg-primary-50 hover:bg-primary-100 text-primary-700 hover:text-primary-800 w-full flex gap-x-2 items-center font-medium h-7 rounded-sm justify-center"
+  >
+    <PlusCircleIcon size="14px" />
+    <div class="flex gap-x-1 items-center">
+      Add
+      <CaretDownIcon size="10px" />
+    </div>
+  </button>
+</div>
