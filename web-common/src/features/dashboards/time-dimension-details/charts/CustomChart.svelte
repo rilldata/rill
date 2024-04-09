@@ -27,18 +27,8 @@
     xMax,
     chartType,
   );
-
-  let signalListeners = {
-    hover: (name: string, value) => {
-      // console.log(name, value);
-    },
-  };
 </script>
 
 {#if sanitizedVegaSpec && data}
-  <VegaLiteRenderer
-    {signalListeners}
-    data={{ table: data }}
-    spec={sanitizedVegaSpec}
-  />
+  <VegaLiteRenderer data={{ table: data }} spec={sanitizedVegaSpec} />
 {/if}
