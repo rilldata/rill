@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN github_refresh_token TEXT NOT NULL DEFAULT '';

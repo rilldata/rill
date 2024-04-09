@@ -24,7 +24,11 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			role := args[2]
 
 			ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s\n", domain, org, role)
-			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue", "", false)
+			if err != nil {
+				return err
+			}
+			if !ok {
 				ch.PrintfWarn("Aborted\n")
 				return nil
 			}

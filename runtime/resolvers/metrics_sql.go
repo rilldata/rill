@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 )
@@ -30,6 +31,17 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, errors.New(`metrics SQL: missing required property "sql"`)
 	}
 
+	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	var finalRefs []*runtimev1.ResourceName
+	props.SQL, finalRefs, err = resolveTemplate(props.SQL, opts.Args, instance, opts.UserAttributes, opts.ForExport)
+	if err != nil {
+		return nil, err
+	}
+
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, err
@@ -39,6 +51,10 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	sql, connector, refs, err := compiler.Compile(ctx, props.SQL)
 	if err != nil {
 		return nil, err
+	}
+	if refs != nil {
+		finalRefs = append(finalRefs, refs...)
+		finalRefs = normalizeRefs(finalRefs)
 	}
 
 	// Build the options for the regular SQL resolver
@@ -53,6 +69,5 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		UserAttributes: opts.UserAttributes,
 		ForExport:      opts.ForExport,
 	}
-
-	return newSQLWithRefs(ctx, sqlResolverOpts, refs)
+	return newSQLSimple(ctx, sqlResolverOpts, finalRefs)
 }

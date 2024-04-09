@@ -80,6 +80,12 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 :::
 
+## Reading from multiple schemas
+
+Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer and all accessible tables (given the permission set of the underlying user) should automatically be listed in the left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
+
+![ClickHouse multiple schemas](/img/reference/olap-engines/clickhouse/clickhouse-multiple-schemas.png)
+
 ## Configuring Rill Developer
 
 When using Rill for local development, there are two options to configure Rill to enable ClickHouse as an OLAP engine:
@@ -108,3 +114,4 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 - At the moment, we do not officially support modeling with ClickHouse. If this is something you're interested in, please [contact us](../../contact.md).
 - For dashboards powered by ClickHouse, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
+- Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.

@@ -371,6 +371,7 @@ type User struct {
 	DisplayName         string    `db:"display_name"`
 	PhotoURL            string    `db:"photo_url"`
 	GithubUsername      string    `db:"github_username"`
+	GithubRefreshToken  string    `db:"github_refresh_token"`
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	ActiveOn            time.Time `db:"active_on"`
@@ -393,6 +394,7 @@ type UpdateUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	GithubUsername      string
+	GithubRefreshToken  string
 	QuotaSingleuserOrgs int
 	PreferenceTimeZone  string
 }

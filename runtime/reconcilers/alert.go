@@ -30,8 +30,6 @@ const alertQueryPriority = 1
 
 const alertCheckDefaultTimeout = 5 * time.Minute
 
-const alertStreamingRefDefaultRefreshCron = "*/10 * * * *"
-
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindAlert, newAlertReconciler)
 }
@@ -104,12 +102,17 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
-	// As a special rule, we override the refresh schedule to run every 10 minutes if:
+	// As a special rule, we set a default refresh schedule if:
 	// ref_update=true and one of the refs is streaming (and an explicit schedule wasn't provided).
 	if hasStreamingRef(ctx, r.C, self.Meta.Refs) {
 		if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate {
 			if a.Spec.RefreshSchedule.TickerSeconds == 0 && a.Spec.RefreshSchedule.Cron == "" {
-				a.Spec.RefreshSchedule.Cron = alertStreamingRefDefaultRefreshCron
+				cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+				if err != nil {
+					return runtime.ReconcileResult{Err: err}
+				}
+
+				a.Spec.RefreshSchedule.Cron = cfg.AlertsDefaultStreamingRefreshCron
 			}
 		}
 	}

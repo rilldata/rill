@@ -7,14 +7,14 @@
   import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
-  import BreadcrumbItem from "../navigation/BreadcrumbItem.svelte";
+  import BreadcrumbItem from "../navigation/breadcrumbs/BreadcrumbItem.svelte";
 
   export let instanceId: string;
   export let activeResourceName: string;
 
   const dispatch = createEventDispatcher();
 
-  // Project breacrumb (if any)
+  // Project breadcrumb (if any)
   $: onProjectPage = !activeResourceName;
 
   // Dashboard breadcrumb

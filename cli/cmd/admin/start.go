@@ -119,18 +119,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
-				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
-				os.Exit(1)
+				logger.Fatal("invalid frontend URL", zap.Error(err))
 			}
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
-				fmt.Printf("error: invalid external URL: %s\n", err.Error())
-				os.Exit(1)
+				logger.Fatal("invalid external URL", zap.Error(err))
 			}
 			_, err = url.Parse(conf.ExternalGRPCURL)
 			if err != nil {
-				fmt.Printf("error: invalid external grpc URL: %s\n", err.Error())
-				os.Exit(1)
+				logger.Fatal("invalid external grpc URL", zap.Error(err))
 			}
 
 			// Init observability
