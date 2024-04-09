@@ -70,7 +70,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 		// TODO: Find way to validate with args
 		name := uuid.NewString()
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE VIEW %q AS %s", name, stmt.Query))
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		// TODO: Find way to validate with args
 
 		name := uuid.NewString()
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE VIEW %q AS %s", name, stmt.Query))
 		if err != nil {
 			return nil, err
 		}
