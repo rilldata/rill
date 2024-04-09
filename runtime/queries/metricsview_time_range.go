@@ -73,17 +73,17 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDuckDB, q.MetricsView), policyFilter, priority)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDruid, q.MetricsView), policyFilter, priority)
 	case drivers.DialectClickHouse:
-		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 }
 
-func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
@@ -91,7 +91,7 @@ func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.O
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s %[3]s",
 		safeName(timeDim),
-		safeName(tableName),
+		escapedTableName,
 		filter,
 	)
 
@@ -138,7 +138,7 @@ func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.O
 	return errors.New("no rows returned")
 }
 
-func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
@@ -150,7 +150,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
 			safeName(timeDim),
-			safeName(tableName),
+			escapedTableName,
 			filter,
 		)
 
@@ -184,7 +184,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
 			safeName(timeDim),
-			safeName(tableName),
+			escapedTableName,
 			filter,
 		)
 
@@ -232,7 +232,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 	return nil
 }
 
-func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
@@ -240,7 +240,7 @@ func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drive
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) AS \"min\", max(%[1]s) AS \"max\" FROM %[2]s %[3]s",
 		safeName(timeDim),
-		safeName(tableName),
+		escapedTableName,
 		filter,
 	)
 

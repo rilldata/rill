@@ -2,13 +2,18 @@
   import { DialogTitle } from "@rgossiaux/svelte-headlessui";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import { createEventDispatcher } from "svelte";
+  import type { createForm } from "svelte-forms-lib";
   import Button from "../../components/button/Button.svelte";
   import AlertDialogCriteriaTab from "./criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "./delivery-tab/AlertDialogDeliveryTab.svelte";
-  import { checkIsTabValid, FieldsByTab } from "./form-utils";
+  import {
+    type AlertFormValues,
+    checkIsTabValid,
+    FieldsByTab,
+  } from "./form-utils";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let isEditForm: boolean;
 
   const dispatch = createEventDispatcher();

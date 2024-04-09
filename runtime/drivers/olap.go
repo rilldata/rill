@@ -86,17 +86,19 @@ func (r *Result) Close() error {
 // Table lookups should be case insensitive.
 type InformationSchema interface {
 	All(ctx context.Context) ([]*Table, error)
-	Lookup(ctx context.Context, name string) (*Table, error)
+	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 
 // Table represents a table in an information schema.
 type Table struct {
-	Database        string
-	DatabaseSchema  string
-	Name            string
-	View            bool
-	Schema          *runtimev1.StructType
-	UnsupportedCols map[string]string
+	Database                string
+	DatabaseSchema          string
+	IsDefaultDatabase       bool
+	IsDefaultDatabaseSchema bool
+	Name                    string
+	View                    bool
+	Schema                  *runtimev1.StructType
+	UnsupportedCols         map[string]string
 }
 
 // IngestionSummary is details about ingestion
@@ -164,4 +166,19 @@ func (d Dialect) ConvertToDateTruncSpecifier(specifier runtimev1.TimeGrain) stri
 		return strings.ToLower(str)
 	}
 	return str
+}
+
+// EscapeTable returns an esacped fully qualified table name
+func (d Dialect) EscapeTable(db, schema, table string) string {
+	var sb strings.Builder
+	if db != "" {
+		sb.WriteString(d.EscapeIdentifier(db))
+		sb.WriteString(".")
+	}
+	if schema != "" {
+		sb.WriteString(d.EscapeIdentifier(schema))
+		sb.WriteString(".")
+	}
+	sb.WriteString(d.EscapeIdentifier(table))
+	return sb.String()
 }

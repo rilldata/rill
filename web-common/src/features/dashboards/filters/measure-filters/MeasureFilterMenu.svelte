@@ -3,23 +3,22 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+  import {
+    MeasureFilterComparisonType,
+    MeasureFilterEntry,
+  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import {
+    MeasureFilterOperation,
+    MeasureFilterOptions,
+  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import {
-    createBetweenExpression,
-    createBinaryExpression,
-  } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import {
-    V1Operation,
-    type V1Expression,
-  } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
 
   export let dimensionName: string;
   export let name: string;
-  export let expr: V1Expression | undefined;
+  export let filter: MeasureFilterEntry | undefined;
   export let open: boolean;
 
   const dispatch = createEventDispatcher();
@@ -32,12 +31,9 @@
 
   const initialValues = {
     dimension: dimensionName,
-    operation: expr?.cond?.op ?? MeasureFilterOptions[0].value,
-    value1:
-      (expr?.cond?.exprs?.[0].cond?.exprs?.[1]?.val as string) ??
-      expr?.cond?.exprs?.[1]?.val ??
-      "",
-    value2: (expr?.cond?.exprs?.[1].cond?.exprs?.[1]?.val as string) ?? "",
+    operation: filter?.operation ?? MeasureFilterOptions[0].value,
+    value1: filter?.value1 ?? "",
+    value2: filter?.value2 ?? "",
   };
 
   const validationSchema = yup.object().shape({
@@ -45,7 +41,7 @@
     operation: yup.string().required("Required"),
     value1: yup.number().required("Required"),
     value2: yup.number().when("operation", {
-      is: (val: V1Operation) => expressionIsBetween(val),
+      is: (val: MeasureFilterOperation) => expressionIsBetween(val),
       then: (schema) => schema.required("Required"),
       otherwise: (schema) => schema.optional(),
     }),
@@ -56,29 +52,18 @@
       initialValues,
       validationSchema,
       onSubmit: (values) => {
-        let newExpr: V1Expression;
-
-        if (expressionIsBetween(values.operation)) {
-          newExpr = createBetweenExpression(
-            name,
-            Number(values.value1),
-            Number(values.value2),
-            values.operation === V1Operation.OPERATION_OR,
-          );
-        } else {
-          newExpr = createBinaryExpression(
-            name,
-            values.operation as V1Operation,
-            Number(values.value1),
-          );
-        }
-
         lastValidState = { ...values };
 
         dispatch("apply", {
           dimension: values.dimension,
           oldDimension: dimensionName,
-          expr: newExpr,
+          filter: <MeasureFilterEntry>{
+            measure: name,
+            operation: values.operation,
+            comparison: MeasureFilterComparisonType.None,
+            value1: values.value1,
+            value2: values.value2,
+          },
         });
       },
     });
@@ -105,12 +90,15 @@
 
   $: if (!isBetweenExpression) updateField("value2", undefined);
 
-  function expressionIsBetween(op: V1Operation | "" | undefined) {
-    return op === V1Operation.OPERATION_OR || op === V1Operation.OPERATION_AND;
+  function expressionIsBetween(op: MeasureFilterOperation) {
+    return (
+      selectedOperation === MeasureFilterOperation.Between ||
+      op === MeasureFilterOperation.NotBetween
+    );
   }
 </script>
 
-<DropdownMenu.Content class="p-2 px-3 w-[250px]" align="start">
+<DropdownMenu.Content align="start" class="p-2 px-3 w-[250px]">
   <form
     autocomplete="off"
     class="flex flex-col gap-y-3"

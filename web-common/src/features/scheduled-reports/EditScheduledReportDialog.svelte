@@ -58,7 +58,7 @@
       recipients:
         reportSpec.notifiers
           ?.find((n) => n.connector === "email")
-          ?.properties?.email?.recipients?.map((email) => ({
+          ?.properties?.recipients?.map((email) => ({
             email: email,
           })) ?? [],
     },

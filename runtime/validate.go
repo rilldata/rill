@@ -67,7 +67,7 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 	res := &ValidateMetricsViewResult{}
 
 	// Check underlying table exists
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))
@@ -135,12 +135,12 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 	}
 	if len(dimExprs) == 0 {
 		// Only metrics
-		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), olap.Dialect().EscapeIdentifier(t.Name))
+		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name))
 	} else if len(metricExprs) == 0 {
 		// No metrics
-		query = fmt.Sprintf("SELECT %s FROM %s GROUP BY %s", strings.Join(dimExprs, ","), olap.Dialect().EscapeIdentifier(t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf("SELECT %s FROM %s GROUP BY %s", strings.Join(dimExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
 	} else {
-		query = fmt.Sprintf("SELECT %s, %s FROM %s GROUP BY %s", strings.Join(dimExprs, ","), strings.Join(metricExprs, ","), olap.Dialect().EscapeIdentifier(t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf("SELECT %s, %s FROM %s GROUP BY %s", strings.Join(dimExprs, ","), strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
 	}
 	err := olap.Exec(ctx, &drivers.Statement{
 		Query:  query,
@@ -206,6 +206,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 // validateDimension validates a metrics view dimension.
 func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
+	// Validate with a simple check if it's a column
 	if d.Column != "" {
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
 			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
@@ -213,8 +214,9 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 		return nil
 	}
 
+	// Validate with a query if it's an expression
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, olap.Dialect().EscapeIdentifier(t.Name)),
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	if err != nil {
@@ -226,7 +228,7 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 // validateMeasure validates a metrics view measure.
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, olap.Dialect().EscapeIdentifier(t.Name)),
+		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	return err

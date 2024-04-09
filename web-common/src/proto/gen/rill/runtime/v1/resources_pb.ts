@@ -927,6 +927,20 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   connector = "";
 
   /**
+   * Name of the database where table is located (optional)
+   *
+   * @generated from field: string database = 21;
+   */
+  database = "";
+
+  /**
+   * Name of the database schema where table is located (optional)
+   *
+   * @generated from field: string database_schema = 22;
+   */
+  databaseSchema = "";
+
+  /**
    * Name of the table the metrics view is based on
    *
    * @generated from field: string table = 2;
@@ -1068,6 +1082,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3050,14 +3066,14 @@ export class DashboardSpec extends Message<DashboardSpec> {
   title = "";
 
   /**
-   * @generated from field: int64 grid_columns = 2;
+   * @generated from field: uint32 columns = 2;
    */
-  gridColumns = protoInt64.zero;
+  columns = 0;
 
   /**
-   * @generated from field: int64 grid_rows = 3;
+   * @generated from field: uint32 gap = 3;
    */
-  gridRows = protoInt64.zero;
+  gap = 0;
 
   /**
    * @generated from field: repeated rill.runtime.v1.DashboardComponent components = 4;
@@ -3073,8 +3089,8 @@ export class DashboardSpec extends Message<DashboardSpec> {
   static readonly typeName = "rill.runtime.v1.DashboardSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "grid_columns", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 3, name: "grid_rows", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "components", kind: "message", T: DashboardComponent, repeated: true },
   ]);
 
@@ -3136,14 +3152,24 @@ export class DashboardComponent extends Message<DashboardComponent> {
   chart = "";
 
   /**
-   * @generated from field: int64 columns = 2;
+   * @generated from field: uint32 x = 2;
    */
-  columns = protoInt64.zero;
+  x = 0;
 
   /**
-   * @generated from field: int64 rows = 3;
+   * @generated from field: uint32 y = 3;
    */
-  rows = protoInt64.zero;
+  y = 0;
+
+  /**
+   * @generated from field: uint32 width = 4;
+   */
+  width = 0;
+
+  /**
+   * @generated from field: uint32 height = 5;
+   */
+  height = 0;
 
   constructor(data?: PartialMessage<DashboardComponent>) {
     super();
@@ -3154,8 +3180,10 @@ export class DashboardComponent extends Message<DashboardComponent> {
   static readonly typeName = "rill.runtime.v1.DashboardComponent";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "chart", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "columns", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 3, name: "rows", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardComponent {

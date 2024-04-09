@@ -7,6 +7,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { saveFile } from "./actions";
   import ErrorPane from "./ErrorPane.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let fileName: string;
 
@@ -22,6 +23,8 @@
       refetchOnWindowFocus: true,
     },
   });
+
+  const debouncedUpdate = debounce(handleUpdate, 300);
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
     const blob = e.detail.content;
@@ -57,7 +60,7 @@
         bind:this={editor}
         bind:view
         content={$file?.data?.blob || ""}
-        on:update={handleUpdate}
+        on:update={debouncedUpdate}
       />
     </div>
   </div>

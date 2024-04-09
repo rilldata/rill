@@ -49,6 +49,9 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
  */
 export function useCreateDashboardFromTableUIAction(
   instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
   tableName: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
@@ -92,6 +95,9 @@ export function useCreateDashboardFromTableUIAction(
       void runtimeServiceGenerateMetricsViewFileWithSignal(
         instanceId,
         {
+          connector: connector,
+          database: database,
+          databaseSchema: databaseSchema,
           table: tableName,
           path: newFilePath,
           useAi: isAiEnabled, // AI isn't enabled during e2e tests
@@ -115,6 +121,9 @@ export function useCreateDashboardFromTableUIAction(
       // If the user canceled the AI request, submit another request with `useAi=false`
       if (isAICancelled) {
         await runtimeServiceGenerateMetricsViewFile(instanceId, {
+          connector: connector,
+          database: database,
+          databaseSchema: databaseSchema,
           table: tableName,
           path: newFilePath,
           useAi: false,
