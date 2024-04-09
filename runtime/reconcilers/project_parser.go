@@ -501,7 +501,10 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 // If existing is not nil, it compares values and only updates meta/spec values if they have changed (ensuring stable resource version numbers).
 func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
 	// Apply defaults
-	def = applySpecDefaults(inst, def)
+	def, err := applySpecDefaults(inst, def)
+	if err != nil {
+		return err
+	}
 
 	// Make resource spec to insert/update.
 	// res should be nil if no spec changes are needed.
@@ -614,7 +617,10 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 	}
 
 	// Apply defaults before comparing specs
-	def = applySpecDefaults(inst, def)
+	def, err := applySpecDefaults(inst, def)
+	if err != nil {
+		return false, err
+	}
 
 	// Check spec is the same
 	switch def.Name.Kind {
@@ -643,7 +649,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 	// NOTE: Not comparing owner and paths since changing those are allowed when renaming.
 
 	// Run rename
-	err := r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths)
+	err = r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths)
 	if err != nil {
 		return false, err
 	}
@@ -652,20 +658,26 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 }
 
 // applySpecDefaults applies instance-level default properties to a resource spec.
-func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) *compilerv1.Resource {
+func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) (*compilerv1.Resource, error) {
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, err
+	}
+
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
-		def.SourceSpec.StageChanges = inst.StageChanges
+		def.SourceSpec.StageChanges = cfg.StageChanges
 	case compilerv1.ResourceKindModel:
-		def.ModelSpec.StageChanges = inst.StageChanges
+		def.ModelSpec.StageChanges = cfg.StageChanges
 		if def.ModelSpec.Materialize == nil {
-			def.ModelSpec.Materialize = &inst.ModelDefaultMaterialize
+			def.ModelSpec.Materialize = &cfg.ModelDefaultMaterialize
 		}
-		def.ModelSpec.MaterializeDelaySeconds = inst.ModelMaterializeDelaySeconds
+		def.ModelSpec.MaterializeDelaySeconds = cfg.ModelMaterializeDelaySeconds
 	default:
 		// Nothing to do
 	}
-	return def
+
+	return def, nil
 }
 
 func equalResourceName(a, b *runtimev1.ResourceName) bool {

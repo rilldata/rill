@@ -460,13 +460,6 @@ paths:
                 type: boolean
               watchRepo:
                 type: boolean
-              stageChanges:
-                type: boolean
-              modelDefaultMaterialize:
-                type: boolean
-              modelMaterializeDelaySeconds:
-                type: integer
-                format: int64
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -3773,13 +3766,6 @@ definitions:
         type: boolean
       watchRepo:
         type: boolean
-      stageChanges:
-        type: boolean
-      modelDefaultMaterialize:
-        type: boolean
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -4075,13 +4061,6 @@ definitions:
         type: boolean
       watchRepo:
         type: boolean
-      stageChanges:
-        type: boolean
-      modelDefaultMaterialize:
-        type: boolean
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related

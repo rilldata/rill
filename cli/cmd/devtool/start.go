@@ -51,7 +51,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				preset = args[0]
 			} else {
-				preset = cmdutil.SelectPrompt("Select preset", []string{"cloud", "local"}, "cloud")
+				res, err := cmdutil.SelectPrompt("Select preset", []string{"cloud", "local"}, "cloud")
+				if err != nil {
+					return err
+				}
+				preset = res
 			}
 
 			err := services.parse()
