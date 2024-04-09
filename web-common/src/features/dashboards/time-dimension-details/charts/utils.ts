@@ -1,4 +1,5 @@
 import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
+import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -24,8 +25,10 @@ export function getVegaSpec(
   const temporalFields = ["ts"];
   const measureFields = [expandedMeasureName];
 
+  const builderChartType = TDDChartMap[chartType];
+
   const spec = buildVegaLiteSpec(
-    chartType,
+    builderChartType,
     temporalFields,
     measureFields,
     isDimensional ? ["dimension"] : [],

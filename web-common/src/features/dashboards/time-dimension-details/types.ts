@@ -1,4 +1,4 @@
-export enum TDDChart {
+export const enum TDDChart {
   DEFAULT = "default",
   STACKED_BAR = "stacked_bar",
   GROUPED_BAR = "grouped_bar",
