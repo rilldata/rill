@@ -151,6 +151,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  user.GithubRefreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
 	})
@@ -307,6 +308,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  user.GithubRefreshToken,
 		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
