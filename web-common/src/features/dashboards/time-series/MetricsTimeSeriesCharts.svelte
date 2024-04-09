@@ -14,7 +14,7 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import ChartTypeSelection from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelection.svelte";
+  import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import CustomChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/CustomChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -226,7 +226,7 @@
   <div class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelection
+      <ChartTypeSelector
         isDimensional={!!dimensionData.length}
         {metricViewName}
         chartType={tddChartType}
