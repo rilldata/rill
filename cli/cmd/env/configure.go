@@ -67,7 +67,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 					projectName = names[0]
 				} else {
 					// prompt for name from user
-					projectName = cmdutil.SelectPrompt("Select project", names, "")
+					projectName, err = cmdutil.SelectPrompt("Select project", names, "")
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -105,7 +108,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("Updated project variables\n")
 
 			if !cmd.Flags().Changed("redeploy") {
-				redeploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
+				redeploy, err = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
+				if err != nil {
+					return err
+				}
 			}
 
 			if redeploy {
