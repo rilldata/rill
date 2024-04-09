@@ -8,7 +8,7 @@ import {
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { extractFileExtension } from "../sources/extract-file-name";
 
@@ -46,8 +46,12 @@ export async function handleEntityRename(
 
     await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
 
-    return getRouteFromName(toName, entityType);
+    if (entityType === EntityType.Unknown) {
+      return `/files/${newAPIPath}`;
+    } else {
+      return getRouteFromName(toName, entityType);
+    }
   } catch (err) {
-    console.error(err.response.data.message);
+    console.error(err.response?.data?.message ?? err);
   }
 }
