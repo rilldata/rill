@@ -28,6 +28,7 @@
   export let rounded = false;
   export let href: string | null = null;
   export let builders: Builder[] = [];
+  export let newTab = false;
 
   const dispatch = createEventDispatcher();
 
@@ -58,6 +59,7 @@
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
   aria-label={label}
+  target={newTab ? "_blank" : undefined}
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   on:click={handleClick}
@@ -135,16 +137,16 @@
   /* LINK STYLES */
 
   .link {
-    @apply text-blue-500;
+    @apply text-primary-500;
   }
 
   .link:hover,
   .link.selected {
-    @apply text-blue-600;
+    @apply text-primary-600;
   }
 
   .link:active {
-    @apply text-blue-700;
+    @apply text-primary-700;
   }
 
   .link:disabled {
@@ -194,15 +196,15 @@
   /* BRAND STYLES */
 
   .brand {
-    @apply bg-blue-600 text-white;
+    @apply bg-primary-600 text-white;
   }
 
   .brand:hover {
-    @apply bg-blue-500;
+    @apply bg-primary-500;
   }
 
   .brand:active {
-    @apply bg-blue-700;
+    @apply bg-primary-700;
   }
 
   /* TEXT STYLES */

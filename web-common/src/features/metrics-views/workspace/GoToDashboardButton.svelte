@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     Button,
     IconSpaceFixer,
@@ -18,6 +17,7 @@
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { Play } from "lucide-svelte";
 
   export let filePath: string;
   $: metricsDefName = extractFileName(filePath);
@@ -32,10 +32,8 @@
   let buttonDisabled = true;
   let buttonStatus;
 
-  const viewDashboard = () => {
-    goto(`/dashboard/${metricsDefName}`); // TODO: update to use new paths
-
-    behaviourEvent.fireNavigationEvent(
+  const viewDashboard = async () => {
+    await behaviourEvent.fireNavigationEvent(
       metricsDefName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
@@ -65,16 +63,16 @@
 </script>
 
 <Tooltip alignment="middle" distance={5} location="right">
-  <!-- TODO: we need to standardize these buttons. -->
   <Button
     disabled={buttonDisabled}
     label="Go to dashboard"
-    on:click={() => viewDashboard()}
-    type="primary"
+    href={`/dashboard/${metricsDefName}`}
+    newTab
+    on:click={viewDashboard}
+    type="brand"
   >
-    <IconSpaceFixer pullLeft>
-      <Forward /></IconSpaceFixer
-    > Go to Dashboard
+    <Play size="10px" />
+    Preview
   </Button>
   <TooltipContent slot="tooltip-content">
     {#each buttonStatus as status}

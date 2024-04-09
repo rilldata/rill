@@ -5,7 +5,10 @@
   import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import GoToDashboardButton from "./GoToDashboardButton.svelte";
+  import PreviewButton from "./GoToDashboardButton.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let filePath: string;
   export let showInspectorToggle = true;
@@ -25,6 +28,10 @@
     );
     if (newRoute) await goto(newRoute);
   };
+
+  function showDeployModal() {
+    console.log("Deploying dashboard");
+  }
 </script>
 
 <WorkspaceHeader
@@ -32,5 +39,13 @@
   {showInspectorToggle}
   titleInput={metricsDefName}
 >
-  <GoToDashboardButton {filePath} slot="cta" />
+  <div slot="cta" class="flex gap-x-2">
+    <Tooltip distance={8}>
+      <Button on:click={showDeployModal} type="secondary">Deploy</Button>
+      <TooltipContent slot="tooltip-content">
+        Deploy this dashboard to Rill Cloud
+      </TooltipContent>
+    </Tooltip>
+    <PreviewButton {filePath} />
+  </div>
 </WorkspaceHeader>

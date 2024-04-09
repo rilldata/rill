@@ -10,7 +10,9 @@
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
+  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
 
+  let showDeployDashboardModal = false;
   $: metricViewName = $page.params.name;
   $: filePath = getFileAPIPathFromNameAndType(
     metricViewName,
@@ -51,3 +53,8 @@
 {#if $fileQuery.data && yaml !== undefined}
   <MetricsWorkspace {filePath} />
 {/if}
+
+<DeployDashboardCta
+  on:close={() => (showDeployDashboardModal = false)}
+  open={showDeployDashboardModal}
+/>

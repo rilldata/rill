@@ -59,23 +59,7 @@
   {/if}
   {#if !$readOnly}
     <Tooltip distance={8}>
-      <Button
-        disabled={!dashboardIsIdle}
-        on:click={() => viewMetrics(metricViewName)}
-        type="secondary"
-      >
-        Edit Metrics <MetricsIcon size="16px" />
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        {#if !dashboardIsIdle}
-          Dependencies are being ingested
-        {:else}
-          Edit this dashboard's metrics & settings
-        {/if}
-      </TooltipContent>
-    </Tooltip>
-    <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
+      <Button on:click={() => showDeployModal()} type="brand">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

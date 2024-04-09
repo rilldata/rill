@@ -88,7 +88,7 @@
             <NavigationEntry
               showContextMenu={!$readOnly}
               name={dashboardName}
-              href={`/dashboard/${dashboardName}`}
+              href={`/dashboard/${dashboardName}/edit`}
               open={$page.url.pathname === `/dashboard/${dashboardName}` ||
                 $page.url.pathname === `/dashboard/${dashboardName}/edit`}
             >
