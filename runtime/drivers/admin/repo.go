@@ -113,7 +113,7 @@ func (h *Handle) Put(ctx context.Context, filePath string, reader io.Reader) err
 	return fmt.Errorf("put operation is unsupported")
 }
 
-func (h *Handle) MakeDir(ctx context.Context, path string) error {
+func (h *Handle) MakeDir(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
 }
 

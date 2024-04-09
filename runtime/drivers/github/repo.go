@@ -124,7 +124,7 @@ func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader)
 	return fmt.Errorf("put operation is unsupported")
 }
 
-func (c *connection) MakeDir(ctx context.Context, path string) error {
+func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
 }
 

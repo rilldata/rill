@@ -56,7 +56,11 @@ export function useAllModelColumns(
 
     derived(
       allModels.data.map((r) =>
-        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
+        createTableColumnsWithName(
+          queryClient,
+          instanceId,
+          r.meta?.name?.name ?? "",
+        ),
       ),
       (modelColumnResponses) =>
         modelColumnResponses.filter((res) => !!res.data).map((res) => res.data),

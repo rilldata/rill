@@ -113,10 +113,10 @@ func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader)
 	return nil
 }
 
-func (c *connection) MakeDir(ctx context.Context, path string) error {
-	path = filepath.Join(c.root, path)
+func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
+	dirPath = filepath.Join(c.root, dirPath)
 
-	err := os.MkdirAll(path, os.ModePerm)
+	err := os.MkdirAll(dirPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
