@@ -248,7 +248,7 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 // buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.
 func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
 	// Resolve the SQL template
-	sql, refs, err := resolveTemplate(sqlTemplate, dialect, args, inst, userAttributes, forExport)
+	sql, refs, err := resolveTemplate(sqlTemplate, args, inst, userAttributes, forExport)
 	if err != nil {
 		return "", nil, err
 	}
@@ -273,7 +273,7 @@ func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, 
 	return sql, normalizeRefs(refs), nil
 }
 
-func resolveTemplate(sqlTemplate string, dialect drivers.Dialect, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
+func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
 	var refs []*runtimev1.ResourceName
 	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
 		Environment: inst.Environment,
@@ -296,7 +296,8 @@ func resolveTemplate(sqlTemplate string, dialect drivers.Dialect, args map[strin
 			}
 
 			// Return the escaped identifier
-			return dialect.EscapeIdentifier(ref.Name), nil
+			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template reslution.
+			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
 		},
 	})
 	if err != nil {
