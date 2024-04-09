@@ -70,7 +70,7 @@
       use:builder.action
       role="presentation"
       data-index={i}
-      class="wrapper hover:cursor-pointer active:cursor-grab"
+      class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
       style:z-index={localZIndex}
       style:padding="{padding}px"
       style:left="{finalLeft}px"
