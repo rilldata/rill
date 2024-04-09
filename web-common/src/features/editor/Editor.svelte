@@ -32,28 +32,27 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { createEventDispatcher, onMount } from "svelte";
-  import { rillTheme } from "./theme";
 
   export let content: string;
   export let focusOnMount = false;
 
-  const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
-
-  // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
   const dispatch = createEventDispatcher();
-  const { listenToNodeResize } = createResizeListenerActionFactory();
-  let latestContent = content;
-  const debounce = new Debounce();
 
   let editor: EditorView;
-  let editorContainer;
-  let editorContainerComponent;
+  let editorContainerComponent: HTMLDivElement;
+  let latestContent = content;
+  const writeDebounce = debounce(() => {
+    dispatch("write", {
+      content: latestContent,
+    });
+  }, 500);
 
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        doc: latestContent,
+        doc: content,
         extensions: [
           lineNumbers(),
           highlightActiveLineGutter(),
@@ -94,24 +93,14 @@
               },
             ]),
           ),
-          // sql({ dialect: DuckDBSQL }),
           keymap.of([indentWithTab]),
-          rillTheme,
           EditorView.updateListener.of((v) => {
             if (v.focusChanged && v.view.hasFocus) {
               dispatch("receive-focus");
             }
             if (v.docChanged) {
               latestContent = v.state.doc.toString();
-              debounce.debounce(
-                "write",
-                () => {
-                  dispatch("write", {
-                    content: latestContent,
-                  });
-                },
-                QUERY_UPDATE_DEBOUNCE_TIMEOUT,
-              );
+              writeDebounce();
             }
           }),
         ],
@@ -142,14 +131,11 @@
   $: updateEditorContents(content);
 </script>
 
-<div class="h-full w-full overflow-x-auto" use:listenToNodeResize>
-  <div
-    bind:this={editorContainer}
-    class="editor-container h-full w-full overflow-x-auto"
-  >
+<div class="h-full w-full overflow-x-auto">
+  <div class="editor-container h-full w-full overflow-x-auto">
     <div
-      class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
+      class="w-full overflow-x-auto h-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();
@@ -157,6 +143,8 @@
       on:keydown={() => {
         /** no op for now */
       }}
+      role="textbox"
+      tabindex="0"
     />
   </div>
 </div>

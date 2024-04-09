@@ -1,6 +1,5 @@
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   INVALID_NAME_MESSAGE,
@@ -8,7 +7,7 @@ import {
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { extractFileExtension } from "../sources/extract-file-name";
 
@@ -46,8 +45,8 @@ export async function handleEntityRename(
 
     await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
 
-    return getRouteFromName(toName, entityType);
+    return `/files/${newAPIPath}`;
   } catch (err) {
-    console.error(err.response.data.message);
+    console.error(err.response?.data?.message ?? err);
   }
 }

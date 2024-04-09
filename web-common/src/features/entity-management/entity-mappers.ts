@@ -96,6 +96,8 @@ export function getLabel(entityType: EntityType) {
       return "chart";
     case EntityType.Dashboard:
       return "custom dashboard";
+    case EntityType.Unknown:
+      return "";
     default:
       throw new Error("Unrecognized EntityType");
   }
