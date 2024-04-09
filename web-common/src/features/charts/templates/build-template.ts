@@ -93,6 +93,7 @@ export function buildVegaLiteSpec(
           select: {
             type: "point",
             on: "pointerover",
+            encodings: ["color"],
           },
         },
       ];

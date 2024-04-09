@@ -43,7 +43,7 @@
 </script>
 
 <div class:mb-6={isCustomChart} class="chart-type-selector">
-  {#each chartTypeTabs as { label, id, Icon }, i (label)}
+  {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
     {@const disabled = !isDimensional && dimensionalCharts.includes(id)}
     <div class:bg-primary-100={active} class="chart-icon-wrapper">

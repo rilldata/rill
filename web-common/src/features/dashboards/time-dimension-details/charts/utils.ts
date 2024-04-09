@@ -21,7 +21,7 @@ export function getVegaSpec(
   expandedMeasureName: string,
   isDimensional: boolean,
 ): VisualizationSpec {
-  const temporalFields = ["ts_position"];
+  const temporalFields = ["ts"];
   const measureFields = [expandedMeasureName];
 
   const spec = buildVegaLiteSpec(
