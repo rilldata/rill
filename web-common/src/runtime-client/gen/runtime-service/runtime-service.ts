@@ -44,6 +44,8 @@ import type {
   RuntimeServicePutFileBody,
   V1GenerateMetricsViewFileResponse,
   RuntimeServiceGenerateMetricsViewFileBody,
+  V1MakeDirResponse,
+  RuntimeServiceMakeDirBody,
   V1RenameFileResponse,
   RuntimeServiceRenameFileBody,
   V1UnpackEmptyResponse,
@@ -1155,6 +1157,54 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
     Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
     TError,
     { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const runtimeServiceMakeDir = (
+  instanceId: string,
+  path: string,
+  runtimeServiceMakeDirBody: RuntimeServiceMakeDirBody,
+) => {
+  return httpClient<V1MakeDirResponse>({
+    url: `/v1/instances/${instanceId}/files/make-dir/-/${path}`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceMakeDirBody,
+  });
+};
+
+export type RuntimeServiceMakeDirMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceMakeDir>>
+>;
+export type RuntimeServiceMakeDirMutationBody = RuntimeServiceMakeDirBody;
+export type RuntimeServiceMakeDirMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceMakeDir = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceMakeDir>>,
+    TError,
+    { instanceId: string; path: string; data: RuntimeServiceMakeDirBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceMakeDir>>,
+    { instanceId: string; path: string; data: RuntimeServiceMakeDirBody }
+  > = (props) => {
+    const { instanceId, path, data } = props ?? {};
+
+    return runtimeServiceMakeDir(instanceId, path, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceMakeDir>>,
+    TError,
+    { instanceId: string; path: string; data: RuntimeServiceMakeDirBody },
     TContext
   >(mutationFn, mutationOptions);
 };

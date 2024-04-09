@@ -751,6 +751,44 @@ paths:
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/make-dir/-/{path}:
+    post:
+      operationId: RuntimeService_MakeDir
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MakeDirResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              create:
+                type: boolean
+                title: Create indicates whether to create the directory if it doesn't already exist
+              createOnly:
+                type: boolean
+                description: |-
+                  Will cause the operation to fail if the directory already exists.
+                  It should only be set when create = true.
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/rename:
     post:
       summary: RenameFile renames a file in a repo
@@ -3992,7 +4030,7 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-    title: Reponse message for RuntimeService.GetFile
+    title: Response message for RuntimeService.GetFile
   v1GetInstanceResponse:
     type: object
     properties:
@@ -4122,13 +4160,21 @@ definitions:
           type: object
           $ref: '#/definitions/v1Example'
     title: Response message for RuntimeService.ListExamples
+  v1ListFileEntry:
+    type: object
+    properties:
+      path:
+        type: string
+      isDir:
+        type: boolean
   v1ListFilesResponse:
     type: object
     properties:
-      paths:
+      files:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1ListFileEntry'
     title: Response message for RuntimeService.ListFiles
   v1ListInstancesResponse:
     type: object
@@ -4181,6 +4227,8 @@ definitions:
       - LOG_LEVEL_ERROR
       - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
+  v1MakeDirResponse:
+    type: object
   v1MapType:
     type: object
     properties:

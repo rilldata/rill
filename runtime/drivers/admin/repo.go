@@ -9,7 +9,7 @@ import (
 	"path"
 	"path/filepath"
 
-	doublestar "github.com/bmatcuk/doublestar/v4"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -43,7 +43,7 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	return ref.Hash().String(), nil
 }
 
-func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]string, error) {
+func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]drivers.FileEntry, error) {
 	err := h.cloneOrPull(ctx, true)
 	if err != nil {
 		return nil, err
@@ -52,21 +52,19 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]string, erro
 	fsRoot := os.DirFS(h.projPath)
 	glob = path.Clean(path.Join("./", glob))
 
-	var paths []string
+	var entries []drivers.FileEntry
 	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
-		// Don't track directories
-		if d.IsDir() {
-			return nil
-		}
-
 		// Exit if we reached the limit
-		if len(paths) == listFileslimit {
+		if len(entries) == listFileslimit {
 			return fmt.Errorf("glob exceeded limit of %d matched files", listFileslimit)
 		}
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		paths = append(paths, p)
+		entries = append(entries, drivers.FileEntry{
+			Path:  p,
+			IsDir: d.IsDir(),
+		})
 
 		return nil
 	})
@@ -74,7 +72,7 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string) ([]string, erro
 		return nil, err
 	}
 
-	return paths, nil
+	return entries, nil
 }
 
 func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
@@ -113,6 +111,10 @@ func (h *Handle) Stat(ctx context.Context, filePath string) (*drivers.RepoObject
 
 func (h *Handle) Put(ctx context.Context, filePath string, reader io.Reader) error {
 	return fmt.Errorf("put operation is unsupported")
+}
+
+func (h *Handle) MakeDir(ctx context.Context, path string) error {
+	return fmt.Errorf("make dir operation is unsupported")
 }
 
 func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {

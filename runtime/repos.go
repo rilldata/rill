@@ -4,9 +4,11 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (r *Runtime) ListFiles(ctx context.Context, instanceID, glob string) ([]string, error) {
+func (r *Runtime) ListFiles(ctx context.Context, instanceID, glob string) ([]drivers.FileEntry, error) {
 	repo, release, err := r.Repo(ctx, instanceID)
 	if err != nil {
 		return nil, err
@@ -47,6 +49,23 @@ func (r *Runtime) PutFile(ctx context.Context, instanceID, path string, blob io.
 	// TODO: Handle create, createOnly
 
 	err = repo.Put(ctx, path, blob)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Runtime) MakeDir(ctx context.Context, instanceID, path string, create, createOnly bool) error {
+	repo, release, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	// TODO: Handle create, createOnly
+
+	err = repo.MakeDir(ctx, path)
 	if err != nil {
 		return err
 	}

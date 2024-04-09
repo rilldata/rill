@@ -32,7 +32,7 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, error) {
+func (c *connection) ListRecursive(ctx context.Context, glob string) ([]drivers.FileEntry, error) {
 	// Check that folder hasn't been moved
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -41,21 +41,19 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, 
 	fsRoot := os.DirFS(c.root)
 	glob = filepath.Clean(filepath.Join("./", glob))
 
-	var paths []string
+	var entries []drivers.FileEntry
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
-		// Don't track directories
-		if d.IsDir() {
-			return nil
-		}
-
 		// Exit if we reached the limit
-		if len(paths) == limit {
+		if len(entries) == limit {
 			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
 		}
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		paths = append(paths, p)
+		entries = append(entries, drivers.FileEntry{
+			Path:  p,
+			IsDir: d.IsDir(),
+		})
 
 		return nil
 	})
@@ -63,7 +61,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, 
 		return nil, err
 	}
 
-	return paths, nil
+	return entries, nil
 }
 
 // Get implements drivers.RepoStore.
@@ -108,6 +106,17 @@ func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader)
 	defer f.Close()
 
 	_, err = io.Copy(f, reader)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *connection) MakeDir(ctx context.Context, path string) error {
+	path = filepath.Join(c.root, path)
+
+	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		return err
 	}
