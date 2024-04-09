@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     Button,
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
-  import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
+
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -32,14 +33,16 @@
   let buttonDisabled = true;
   let buttonStatus;
 
-  const viewDashboard = async () => {
-    await behaviourEvent.fireNavigationEvent(
-      metricsDefName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.MetricsDefinition,
-      MetricsEventScreenName.Dashboard,
-    );
+  const viewDashboard = () => {
+    behaviourEvent
+      .fireNavigationEvent(
+        metricsDefName,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Workspace,
+        MetricsEventScreenName.MetricsDefinition,
+        MetricsEventScreenName.Dashboard,
+      )
+      .catch(console.error);
   };
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
@@ -65,14 +68,14 @@
 <Tooltip alignment="middle" distance={5} location="right">
   <Button
     disabled={buttonDisabled}
-    label="Go to dashboard"
+    label="Preview"
     href={`/dashboard/${metricsDefName}`}
-    newTab
     on:click={viewDashboard}
     type="brand"
   >
-    <Play size="10px" />
-    Preview
+    <IconSpaceFixer pullLeft>
+      <Play size="10px" /></IconSpaceFixer
+    > Preview
   </Button>
   <TooltipContent slot="tooltip-content">
     {#each buttonStatus as status}

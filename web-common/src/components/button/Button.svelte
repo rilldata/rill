@@ -40,9 +40,9 @@
 </script>
 
 <svelte:element
-  this={href ? "a" : "button"}
+  this={disabled || !href ? "button" : "a"}
   role="button"
-  tabindex={0}
+  tabindex={disabled ? -1 : 0}
   {href}
   class="{$$props.class} {type}"
   {disabled}

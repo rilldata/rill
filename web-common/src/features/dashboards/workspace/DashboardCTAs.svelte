@@ -34,22 +34,24 @@
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   async function viewMetrics(metricViewName: string) {
-    goto(`/dashboard/${metricViewName}/edit`);
+    await goto(`/dashboard/${metricViewName}/edit`);
 
-    behaviourEvent.fireNavigationEvent(
-      metricViewName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      MetricsEventScreenName.MetricsDefinition,
-    );
+    behaviourEvent
+      .fireNavigationEvent(
+        metricViewName,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Workspace,
+        MetricsEventScreenName.Dashboard,
+        MetricsEventScreenName.MetricsDefinition,
+      )
+      .catch(console.error);
   }
 
   let showDeployDashboardModal = false;
 
-  function showDeployModal() {
-    behaviourEvent?.fireDeployIntentEvent();
+  async function showDeployModal() {
     showDeployDashboardModal = true;
+    await behaviourEvent?.fireDeployIntentEvent();
   }
 </script>
 
@@ -59,7 +61,23 @@
   {/if}
   {#if !$readOnly}
     <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="brand">Deploy</Button>
+      <Button
+        disabled={!dashboardIsIdle}
+        on:click={() => viewMetrics(metricViewName)}
+        type="secondary"
+      >
+        Edit Metrics <MetricsIcon size="16px" />
+      </Button>
+      <TooltipContent slot="tooltip-content">
+        {#if !dashboardIsIdle}
+          Dependencies are being ingested
+        {:else}
+          Edit this dashboard's metrics & settings
+        {/if}
+      </TooltipContent>
+    </Tooltip>
+    <Tooltip distance={8}>
+      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

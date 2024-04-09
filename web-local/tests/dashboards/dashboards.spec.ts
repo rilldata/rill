@@ -41,12 +41,6 @@ test.describe("dashboard", () => {
   test("Autogenerate dashboard from model", async ({ page }) => {
     await createAdBidsModel(page);
     await Promise.all([
-      waitForEntity(
-        page,
-        TestEntityType.Dashboard,
-        "AdBids_model_dashboard",
-        true,
-      ),
       waitForTimeSeries(page, "AdBids_model_dashboard"),
       waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
       createDashboardFromModel(page, "AdBids_model"),
@@ -320,7 +314,7 @@ test.describe("dashboard", () => {
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
 
-    await page.getByRole("button", { name: "Go to Dashboard" }).click();
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that name changed
     await expect(page.getByText("AdBids_model_dashboard_rename")).toBeVisible();
@@ -360,8 +354,8 @@ test.describe("dashboard", () => {
     await updateCodeEditor(page, addBackTimestampColumnDoc);
     await waitForDashboard(page);
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to Dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("Metric trends by week");
@@ -389,14 +383,12 @@ test.describe("dashboard", () => {
 
         `;
     await updateCodeEditor(page, deleteOnlyMeasureDoc);
-    // Check warning message appears, Go to Dashboard is disabled
+    // Check warning message appears, Preview is disabled
     await expect(
       page.getByText("must define at least one measure"),
     ).toBeVisible();
 
-    await expect(
-      page.getByRole("button", { name: "Go to dashboard" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -421,9 +413,7 @@ test.describe("dashboard", () => {
         `;
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
-    await expect(
-      page.getByRole("button", { name: "Go to dashboard" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
@@ -453,12 +443,10 @@ dimensions:
         `;
 
     await updateCodeEditor(page, docWithCompleteMeasure);
-    await expect(
-      page.getByRole("button", { name: "Go to dashboard" }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Check Avg Bid Price
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
