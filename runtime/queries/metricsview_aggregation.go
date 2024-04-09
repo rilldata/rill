@@ -40,8 +40,6 @@ type MetricsViewAggregation struct {
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
 
-var maxPivotCells = 1_000_000
-
 var _ runtime.Query = &MetricsViewAggregation{}
 
 func (q *MetricsViewAggregation) Key() string {
@@ -81,6 +79,11 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
+	cfg, err := rt.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
@@ -104,7 +107,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Build query
-	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security)
+	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security, cfg.PivotCellLimit)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -151,9 +154,9 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 					return err
 				}
 
-				if count > maxPivotCells/q.cols() {
+				if count > int(cfg.PivotCellLimit)/q.cols() {
 					res.Close()
-					return fmt.Errorf("PIVOT cells count exceeded %d", maxPivotCells)
+					return fmt.Errorf("PIVOT cells count exceeded %d", cfg.PivotCellLimit)
 				}
 			}
 			res.Close()
@@ -189,10 +192,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer rows.Close()
 
-	return q.pivotDruid(ctx, rows, mv)
+	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit)
 }
 
-func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec, pivotCellLimit int64) error {
 	pivotDB, err := sqlx.Connect("duckdb", "")
 	if err != nil {
 		return err
@@ -243,7 +246,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				scanValues[i] = new(interface{})
 			}
 			count := 0
-			maxCount := maxPivotCells / q.cols()
+			maxCount := int(pivotCellLimit) / q.cols()
 
 			for rows.Next() {
 				err = rows.Scan(scanValues...)
@@ -259,7 +262,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				}
 				count++
 				if count > maxCount {
-					return fmt.Errorf("PIVOT cells count limit exceeded %d", maxPivotCells)
+					return fmt.Errorf("PIVOT cells count limit exceeded %d", pivotCellLimit)
 				}
 
 				if count >= batchSize {
@@ -463,7 +466,7 @@ func (q *MetricsViewAggregation) cols() int {
 	return len(q.Dimensions) + len(q.Measures)
 }
 
-func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, pivotCellLimit int64) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
@@ -493,7 +496,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+			dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
@@ -628,7 +631,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	var sql string
 	if len(q.PivotOn) > 0 {
-		l := maxPivotCells / q.cols()
+		l := int(pivotCellLimit) / q.cols()
 		limitClause = fmt.Sprintf("LIMIT %d", l+1)
 
 		if q.Offset != 0 {
@@ -637,14 +640,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 		// SELECT m1, m2, d1, d2 FROM t, LATERAL UNNEST(t.d1) tbl(unnested_d1_) WHERE d1 = 'a' GROUP BY d1, d2
 		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
-			strings.Join(selectCols, ", "),  // 1
-			safeName(mv.Table),              // 2
-			strings.Join(unnestClauses, ""), // 3
-			whereClause,                     // 4
-			groupClause,                     // 5
-			havingClause,                    // 6
-			orderClause,                     // 7
-			limitClause,                     // 8
+			strings.Join(selectCols, ", "),      // 1
+			escapeMetricsViewTable(dialect, mv), // 2
+			strings.Join(unnestClauses, ""),     // 3
+			whereClause,                         // 4
+			groupClause,                         // 5
+			havingClause,                        // 6
+			orderClause,                         // 7
+			limitClause,                         // 8
 		)
 	} else {
 		/*
@@ -673,7 +676,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
-			safeName(mv.Table),
+			escapeMetricsViewTable(dialect, mv),
 			strings.Join(unnestClauses, ""),
 			whereClause,
 			groupClause,
@@ -695,8 +698,8 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	selfJoinTableAlias := tempName("self_join")
 	nonNullValue := tempName("non_null")
 	for _, d := range q.Dimensions {
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", safeName(mv.Table), safeName(d.Name), selfJoinTableAlias, nonNullValue))
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", escapeMetricsViewTable(dialect, mv), safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", escapeMetricsViewTable(dialect, mv), safeName(d.Name)))
 		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(d.Name)))
 	}
 	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
@@ -747,7 +750,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 					OFFSET %[12]d
 				`,
 		strings.Join(selfJoinCols, ", "),      // 1
-		safeName(mv.Table),                    // 2
+		escapeMetricsViewTable(dialect, mv),   // 2
 		strings.Join(unnestClauses, ""),       // 3
 		whereClause,                           // 4
 		groupClause,                           // 5

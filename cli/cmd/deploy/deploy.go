@@ -12,6 +12,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -20,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -153,23 +157,37 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		var remote *gitutil.Remote
 		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
-			// It's not a valid remote for Github. But we still navigate user to login and then fail afterwards.
+			// It's not a valid remote for Github. We still navigate user to login and then ask user to chhose either to create repo manually or let rill create one for them.
+			silent := false
 			if !ch.IsAuthenticated() {
-				err := loginWithTelemetry(ctx, ch, "")
+				err := loginWithTelemetryAndGithubRedirect(ctx, ch, "")
 				if err != nil {
-					ch.PrintfWarn("Login failed with error: %s\n", err.Error())
+					return fmt.Errorf("login failed with error: %w", err)
 				}
-				fmt.Println()
+				silent = true
 			}
-			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-				ch.PrintfBold(githubSetupMsg)
-				return nil
+			if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
+				return err
 			}
-			return err
+
+			if err := createGithubRepoFlow(ctx, ch, localGitPath, silent); err != nil {
+				return err
+			}
+			// In the rest of the flow we still check for the github access.
+			// It just adds some delay and no user action should be required and handles any improbable edge case where we don't have access to newly created repository.
+			// Also keeps the code clean.
+			remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Error if the repository is not in sync with the remote
-		if !repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name) {
+		ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
@@ -189,15 +207,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	silentGitFlow := false
 	if !ch.IsAuthenticated() {
 		silentGitFlow = true
-		authURL := ch.AdminURL
-		if strings.Contains(authURL, "http://localhost:9090") {
-			authURL = "http://localhost:8080"
-		}
-		redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "/github/post-auth-redirect"), map[string]string{"remote": githubURL})
-		if err != nil {
-			return err
-		}
-		if err := loginWithTelemetry(ctx, ch, redirectURL); err != nil {
+		if err := loginWithTelemetryAndGithubRedirect(ctx, ch, githubURL); err != nil {
 			return err
 		}
 	}
@@ -275,7 +285,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		ch.PrintfBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
 		ch.PrintfBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
 		ch.PrintfBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
-		if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
+		ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			ch.PrintfWarn("Aborted\n")
 			return nil
 		}
@@ -334,6 +348,23 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	return nil
 }
 
+func loginWithTelemetryAndGithubRedirect(ctx context.Context, ch *cmdutil.Helper, remote string) error {
+	authURL := ch.AdminURL
+	if strings.Contains(authURL, "http://localhost:9090") {
+		authURL = "http://localhost:8080"
+	}
+	var qry map[string]string
+	if remote != "" {
+		qry = map[string]string{"remote": remote}
+	}
+
+	redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "/github/post-auth-redirect"), qry)
+	if err != nil {
+		return err
+	}
+	return loginWithTelemetry(ctx, ch, redirectURL)
+}
+
 func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
 	time.Sleep(2 * time.Second)
@@ -356,6 +387,198 @@ func loginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL str
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
 
 	return nil
+}
+
+func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath string, silent bool) error {
+	// Get the admin client
+	c, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
+	res, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+	if err != nil {
+		return err
+	}
+
+	if !res.HasAccess {
+		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
+
+		if res.GrantAccessUrl != "" {
+			// Print instructions to grant access
+			time.Sleep(3 * time.Second)
+			if silent {
+				ch.Print("If the browser did not redirect, ")
+			}
+			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
+			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
+
+			// Open browser if possible
+			if !silent {
+				_ = browser.Open(res.GrantAccessUrl)
+			}
+		}
+	}
+
+	// Poll for permission granted
+	pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)
+	defer cancel()
+	var pollRes *adminv1.GetGithubUserStatusResponse
+	for {
+		select {
+		case <-pollCtx.Done():
+			return pollCtx.Err()
+		case <-time.After(pollInterval):
+			// Ready to check again.
+		}
+
+		// Poll for access to the Github's user account
+		pollRes, err = c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+		if err != nil {
+			return err
+		}
+		if pollRes.HasAccess {
+			break
+		}
+		// Sleep and poll again
+	}
+
+	// Emit success telemetry
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
+
+	ch.Print("No git remote was found.\n")
+	ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
+	ch.Print("Therefore, your project must be on Github before you deploy it to Rill.\n")
+	ch.Print("You can continue here and Rill can create a Github Repository for you or you can exit the command and create a repository manually.\n\n")
+	ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		ch.PrintfBold(githubSetupMsg)
+		return nil
+	}
+
+	repoOwner := pollRes.Account
+	if len(pollRes.Organizations) > 0 {
+		repoOwners := []string{pollRes.Account}
+		repoOwners = append(repoOwners, pollRes.Organizations...)
+		repoOwner, err = cmdutil.SelectPrompt("Select Github account", repoOwners, pollRes.Account)
+		if err != nil {
+			return err
+		}
+	}
+	// create and verify
+	githubRepository, err := createGithubRepository(ctx, ch, pollRes, localGitPath, repoOwner)
+	if err != nil {
+		return err
+	}
+
+	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
+	ch.Print("Pushing local project to Github\n\n")
+	// init git repo
+	repo, err := git.PlainInit(localGitPath, false)
+	if err != nil {
+		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+		repo, err = git.PlainOpen(localGitPath)
+		if err != nil {
+			return fmt.Errorf("failed to open git repo: %w", err)
+		}
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	// git add .
+	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		return fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// git commit -m
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	if err != nil {
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit files to git: %w", err)
+		}
+	}
+
+	// Create the remote
+	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepository.HTMLURL}})
+	if err != nil {
+		return fmt.Errorf("failed to create remote: %w", err)
+	}
+
+	// push the changes
+	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &http.BasicAuth{Username: "x-access-token", Password: pollRes.AccessToken}}); err != nil {
+		return fmt.Errorf("failed to push to remote %q : %w", *githubRepository.HTMLURL, err)
+	}
+
+	ch.Print("Successfully pushed your local project to Github\n\n")
+	return nil
+}
+
+func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *adminv1.GetGithubUserStatusResponse, localGitPath, repoOwner string) (*github.Repository, error) {
+	githubClient := github.NewTokenClient(ctx, pollRes.AccessToken)
+
+	defaultBranch := "main"
+	if repoOwner == pollRes.Account {
+		repoOwner = ""
+	}
+	repoName := filepath.Base(localGitPath)
+
+	var githubRepo *github.Repository
+	var err error
+	for i := 1; i <= 10; i++ {
+		githubRepo, _, err = githubClient.Repositories.Create(ctx, repoOwner, &github.Repository{Name: &repoName, DefaultBranch: &defaultBranch})
+		if err == nil {
+			break
+		}
+		if strings.Contains(err.Error(), "authentication") || strings.Contains(err.Error(), "credentials") {
+			// The users who installed app before we started including repo:write permissions need to accept permissions
+			// and then only we can create repositories.
+			return nil, fmt.Errorf("rill app does not have permissions to create github repository. Visit `https://github.com/settings/installations` to accept new permissions or reinstall app and try again")
+		}
+
+		if !strings.Contains(err.Error(), "name already exists") {
+			return nil, fmt.Errorf("failed to create repository: %w", err)
+		}
+
+		ch.Printf("Repository name %q is already taken\n", repoName)
+		repoName, err = cmdutil.InputPrompt("Please provide alternate name", "")
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repository: %w", err)
+	}
+
+	// the create repo API does not wait for repo creation to be fully processed on server. Need to verify by making a get call in a loop
+	if repoOwner == "" {
+		repoOwner = pollRes.Account
+	}
+
+	ch.Print("\nRequest submitted for creating repository. Checking completion status\n")
+	pollCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	for {
+		select {
+		case <-pollCtx.Done():
+			return nil, pollCtx.Err()
+		case <-time.After(2 * time.Second):
+			// Ready to check again.
+		}
+		_, _, err := githubClient.Repositories.Get(ctx, repoOwner, repoName)
+		if err == nil {
+			break
+		}
+	}
+
+	return githubRepo, nil
 }
 
 func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string, silent bool) (*adminv1.GetGithubRepoStatusResponse, error) {
@@ -607,18 +830,18 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, pr
 	time.Sleep(2 * time.Second)
 }
 
-func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) bool {
+func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) (bool, error) {
 	syncStatus, err := gitutil.GetSyncStatus(gitPath, branch, remoteName)
 	if err != nil {
 		// ignore errors since check is best effort and can fail in multiple cases
-		return true
+		return true, nil
 	}
 
 	switch syncStatus {
 	case gitutil.SyncStatusUnspecified:
-		return true
+		return true, nil
 	case gitutil.SyncStatusSynced:
-		return true
+		return true, nil
 	case gitutil.SyncStatusModified:
 		ch.PrintfWarn("Some files have been locally modified. These changes will not be present in the deployed project.\n")
 	case gitutil.SyncStatusAhead:
@@ -687,12 +910,7 @@ func errMsgContains(err error, msg string) bool {
 }
 
 const (
-	githubSetupMsg = `No git remote was found.
-
-Rill projects deploy continuously when you push changes to Github.
-Therefore, your project must be on Github before you deploy it to Rill.
-
-Follow these steps to push your project to Github.
+	githubSetupMsg = `Follow these steps to push your project to Github.
 
 1. Initialize git
 

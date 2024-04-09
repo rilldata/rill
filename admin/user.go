@@ -25,6 +25,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			DisplayName:         name,
 			PhotoURL:            photoURL,
 			GithubUsername:      user.GithubUsername,
+			GithubRefreshToken:  user.GithubRefreshToken,
 			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 			PreferenceTimeZone:  user.PreferenceTimeZone,
 		})

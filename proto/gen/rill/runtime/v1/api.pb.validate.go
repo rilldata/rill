@@ -443,12 +443,6 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for WatchRepo
 
-	// no validation rules for StageChanges
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
-
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}
@@ -1212,12 +1206,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for WatchRepo
 
-	// no validation rules for StageChanges
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
-
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}
@@ -1749,18 +1737,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.WatchRepo != nil {
 		// no validation rules for WatchRepo
-	}
-
-	if m.StageChanges != nil {
-		// no validation rules for StageChanges
-	}
-
-	if m.ModelDefaultMaterialize != nil {
-		// no validation rules for ModelDefaultMaterialize
-	}
-
-	if m.ModelMaterializeDelaySeconds != nil {
-		// no validation rules for ModelMaterializeDelaySeconds
 	}
 
 	if len(errors) > 0 {
@@ -4197,6 +4173,10 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
 
 	// no validation rules for Table
 

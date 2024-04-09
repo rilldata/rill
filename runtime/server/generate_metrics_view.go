@@ -34,6 +34,8 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.Table),
 		attribute.String("args.path", req.Path),
 		attribute.Bool("args.use_ai", req.UseAi),
@@ -65,9 +67,9 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	defer release()
 
 	// Get table info
-	tbl, err := olap.InformationSchema().Lookup(ctx, req.Table)
+	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "table not found")
+		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
 	}
 
 	// The table may have been created by a model. Search for a model with the same name in the same connector.
@@ -93,7 +95,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, model != nil)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
@@ -121,7 +123,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl.Name, isDefaultConnector, model != nil, tbl.Schema)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, model != nil, tbl.Schema)
 		if err != nil {
 			return nil, err
 		}
@@ -150,11 +152,11 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
 		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
-		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tblName, schema)},
+		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -186,21 +188,29 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
-	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(schema)
-	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(schema)
+	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
+	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
 	if isModel {
-		doc.Model = tblName
+		doc.Model = tbl.Name
 	} else {
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Table = tblName
+		doc.Table = tbl.Name
+		if tbl.Database != "" && !tbl.IsDefaultDatabase {
+			doc.Database = tbl.Database
+		}
+		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
+			doc.DatabaseSchema = tbl.DatabaseSchema
+		}
 	}
 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
 	spec := &runtimev1.MetricsViewSpec{
-		Connector: connector,
-		Table:     tblName,
+		Connector:      connector,
+		Database:       tbl.Database,
+		DatabaseSchema: tbl.DatabaseSchema,
+		Table:          tbl.Name,
 	}
 	for _, measure := range doc.Measures {
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
@@ -295,21 +305,27 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector, tblName string, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
 	doc := &metricsViewYAML{
-		Title:         identifierToTitle(tblName),
+		Title:         identifierToTitle(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(schema),
 		Measures:      generateMetricsViewYAMLSimpleMeasures(schema),
 	}
 
 	if isModel {
-		doc.Model = tblName
+		doc.Model = tbl.Name
 	} else {
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Table = tblName
+		if tbl.Database != "" && !tbl.IsDefaultDatabase {
+			doc.Database = tbl.Database
+		}
+		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
+			doc.DatabaseSchema = tbl.DatabaseSchema
+		}
+		doc.Table = tbl.Name
 	}
 
 	return marshalMetricsViewYAML(doc, false)
@@ -371,6 +387,8 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metr
 type metricsViewYAML struct {
 	Title              string                      `yaml:"title,omitempty"`
 	Connector          string                      `yaml:"connector,omitempty"`
+	Database           string                      `yaml:"database,omitempty"`
+	DatabaseSchema     string                      `yaml:"database_schema,omitempty"`
 	Table              string                      `yaml:"table,omitempty"`
 	Model              string                      `yaml:"model,omitempty"`
 	TimeDimension      string                      `yaml:"timeseries,omitempty"`

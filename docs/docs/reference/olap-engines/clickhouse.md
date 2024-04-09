@@ -80,6 +80,12 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 :::
 
+## Reading from multiple schemas
+
+Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer and all accessible tables (given the permission set of the underlying user) should automatically be listed in the left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
+
+![ClickHouse multiple schemas](/img/reference/olap-engines/clickhouse/clickhouse-multiple-schemas.png)
+
 ## Configuring Rill Developer
 
 When using Rill for local development, there are two options to configure Rill to enable ClickHouse as an OLAP engine:

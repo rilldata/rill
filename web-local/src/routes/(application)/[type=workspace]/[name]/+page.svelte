@@ -1,54 +1,57 @@
 <script lang="ts">
-  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
-  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
-  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
-  import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
-  import { createRuntimeServiceRefreshAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { fade } from "svelte/transition";
-  import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
-  import SourceCTAs from "@rilldata/web-common/features/sources/workspace/SourceCTAs.svelte";
-  import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import type { SelectionRange } from "@codemirror/state";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { getContext, onMount } from "svelte";
-  import { useIsLocalFileConnector } from "@rilldata/web-common/features/sources/selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
+  import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
+  import { createModelFromSourceV2 } from "@rilldata/web-common/features/sources/createModel";
+  import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
+  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
+  import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
+  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "@rilldata/web-common/features/sources/refreshSource";
-  import { createModelFromSourceV2 } from "@rilldata/web-common/features/sources/createModel";
+  import { useIsLocalFileConnector } from "@rilldata/web-common/features/sources/selectors";
+  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
+  import SourceCTAs from "@rilldata/web-common/features/sources/workspace/SourceCTAs.svelte";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import type { SelectionRange } from "@codemirror/state";
-  import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
-  import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import {
+    createRuntimeServiceGetFile,
+    createRuntimeServicePutFile,
+    createRuntimeServiceRefreshAndReconcile,
+    type V1ModelV2,
+    type V1SourceV2,
+  } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import { slide } from "svelte/transition";
-  import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { fade, slide } from "svelte/transition";
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -101,7 +104,10 @@
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data?.[type];
-  $: connector = resource?.state?.connector;
+  $: connector =
+    type === "model"
+      ? ((resource as V1ModelV2)?.spec?.connector as string)
+      : ((resource as V1SourceV2)?.spec?.sinkConnector as string);
   $: tableName = resource?.state?.table;
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
@@ -321,7 +327,7 @@
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
           {:else if tableName}
-            <ConnectedPreviewTable objectName={tableName} />
+            <ConnectedPreviewTable {connector} table={tableName} />
           {/if}
           <svelte:fragment slot="error">
             {#if type === "model"}

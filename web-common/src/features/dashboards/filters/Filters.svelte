@@ -106,7 +106,6 @@
               {name}
               {label}
               {selectedValues}
-              column={dimensionName}
               on:remove={() => removeDimensionFilter(name)}
               on:apply={(event) =>
                 toggleDimensionValueSelection(name, event.detail, true)}
