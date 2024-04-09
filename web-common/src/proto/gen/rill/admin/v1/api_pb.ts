@@ -5082,6 +5082,98 @@ export class GetGithubRepoStatusResponse extends Message<GetGithubRepoStatusResp
 }
 
 /**
+ * @generated from message rill.admin.v1.GetGithubUserStatusRequest
+ */
+export class GetGithubUserStatusRequest extends Message<GetGithubUserStatusRequest> {
+  constructor(data?: PartialMessage<GetGithubUserStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetGithubUserStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubUserStatusRequest {
+    return new GetGithubUserStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubUserStatusRequest {
+    return new GetGithubUserStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubUserStatusRequest {
+    return new GetGithubUserStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubUserStatusRequest | PlainMessage<GetGithubUserStatusRequest> | undefined, b: GetGithubUserStatusRequest | PlainMessage<GetGithubUserStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GetGithubUserStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetGithubUserStatusResponse
+ */
+export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResponse> {
+  /**
+   * @generated from field: bool has_access = 1;
+   */
+  hasAccess = false;
+
+  /**
+   * @generated from field: string grant_access_url = 2;
+   */
+  grantAccessUrl = "";
+
+  /**
+   * @generated from field: string access_token = 3;
+   */
+  accessToken = "";
+
+  /**
+   * @generated from field: string account = 4;
+   */
+  account = "";
+
+  /**
+   * @generated from field: repeated string organizations = 5;
+   */
+  organizations: string[] = [];
+
+  constructor(data?: PartialMessage<GetGithubUserStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetGithubUserStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "has_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "organizations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubUserStatusResponse {
+    return new GetGithubUserStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGithubUserStatusResponse {
+    return new GetGithubUserStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGithubUserStatusResponse {
+    return new GetGithubUserStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGithubUserStatusResponse | PlainMessage<GetGithubUserStatusResponse> | undefined, b: GetGithubUserStatusResponse | PlainMessage<GetGithubUserStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GetGithubUserStatusResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetGitCredentialsRequest
  */
 export class GetGitCredentialsRequest extends Message<GetGitCredentialsRequest> {

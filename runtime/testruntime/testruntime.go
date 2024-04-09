@@ -3,9 +3,11 @@ package testruntime
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
+	"strconv"
 
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -76,12 +78,10 @@ func New(t TestingT) *runtime.Runtime {
 
 // InstanceOptions enables configuration of the instance options that are configurable in tests.
 type InstanceOptions struct {
-	Files                        map[string]string
-	Variables                    map[string]string
-	WatchRepo                    bool
-	StageChanges                 bool
-	ModelDefaultMaterialize      bool
-	ModelMaterializeDelaySeconds uint32
+	Files        map[string]string
+	Variables    map[string]string
+	WatchRepo    bool
+	StageChanges bool
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -94,6 +94,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		olapDriver = "duckdb"
 	}
 	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+
+	vars := make(map[string]string)
+	maps.Copy(vars, opts.Variables)
+	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
@@ -120,11 +124,8 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		Variables:                    opts.Variables,
-		WatchRepo:                    opts.WatchRepo,
-		StageChanges:                 opts.StageChanges,
-		ModelDefaultMaterialize:      opts.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: opts.ModelMaterializeDelaySeconds,
+		Variables: vars,
+		WatchRepo: opts.WatchRepo,
 	}
 
 	for path, data := range opts.Files {
