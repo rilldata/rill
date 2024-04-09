@@ -13,7 +13,7 @@
   import { createUpdateMetricsCallback } from "./update-metrics";
 
   export let filePath: string;
-  $: metricsDefName = extractFileName(filePath);
+  const metricsDefName = extractFileName(filePath);
 
   let editor: YAMLEditor;
 
