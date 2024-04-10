@@ -43,7 +43,7 @@
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
             builders={[builder]}
-            id="more-actions-{dir.name}"
+            id="more-actions-{dir.path}"
             label="{dir.name} actions menu trigger"
             suppressTooltip={contextMenuOpen}
             tooltipText="More actions"
