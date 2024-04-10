@@ -23,9 +23,10 @@
   import { useReports } from "../scheduled-reports/selectors";
   import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import Breadcrumbs, {
+    type Entry,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useAlerts } from "../alerts/selectors";
-  import type { Entry } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -109,25 +110,20 @@
 </script>
 
 <div
-  class="grid items-center w-full justify-stretch pr-4"
+  class="grid items-center w-full justify-stretch pr-4 pl-2 py-1"
   class:border-b={!onProjectPage}
   style:grid-template-columns="max-content auto max-content"
 >
   <Tooltip distance={2}>
     <a
-      class="inline-flex items-center hover:bg-gray-200 grid place-items-center rounded"
       href="/"
-      style:height="36px"
-      style:margin-bottom="4px"
-      style:margin-left="8px"
-      style:margin-top="4px"
-      style:width="36px"
+      class=" hover:bg-gray-200 grid place-content-center rounded p-2"
     >
       <Home color="black" size="20px" />
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
-  {#if $isErrorStoreEmpty}
+  {#if $isErrorStoreEmpty && organization}
     <Breadcrumbs {levels} {selections}>
       <OrganizationAvatar {organization} slot="icon" />
     </Breadcrumbs>
