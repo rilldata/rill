@@ -13,6 +13,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
@@ -477,7 +478,12 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 	ch.Print("Pushing local project to Github\n\n")
 	// init git repo
-	repo, err := git.PlainInit(localGitPath, false)
+	repo, err := git.PlainInitWithOptions(localGitPath, &git.PlainInitOptions{
+		InitOptions: git.InitOptions{
+			DefaultBranch: plumbing.NewBranchReferenceName("main"),
+		},
+		Bare: false,
+	})
 	if err != nil {
 		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
 			return fmt.Errorf("failed to init git repo: %w", err)
@@ -491,11 +497,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	wt, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// create main branch, default branch is master which has issues with github
-	if err := gitutil.CreateNewBranch(localGitPath, "main"); err != nil {
-		return fmt.Errorf("failed to create main branch: %w", err)
 	}
 
 	// git add .
