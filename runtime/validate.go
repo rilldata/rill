@@ -162,9 +162,10 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 	// Check dimension expressions are valid
 	for idx, d := range mv.Dimensions {
+		dimension := d
 		idx := idx
 		grp.Go(func() error {
-			err := validateDimension(ctx, olap, t, d, fields)
+			err := validateDimension(ctx, olap, t, dimension, fields)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
@@ -181,15 +182,16 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 	// Check measure expressions are valid
 	for idx, m := range mv.Measures {
 		idx := idx
+		measure := m
 		grp.Go(func() error {
-			err := validateMeasure(ctx, olap, t, m)
+			err := validateMeasure(ctx, olap, t, measure)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
 
 				res.MeasureErrs = append(res.MeasureErrs, IndexErr{
 					Idx: idx,
-					Err: fmt.Errorf("invalid expression for measure %q: %w", m.Name, err),
+					Err: fmt.Errorf("invalid expression for measure %q: %w", measure.Name, err),
 				})
 			}
 			return nil
