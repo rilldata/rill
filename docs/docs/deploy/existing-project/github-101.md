@@ -15,16 +15,16 @@ To share dashboards with other users, Rill utilizes GitHub as a means of version
 
 In this section, we will outline: 
 
-- Installing the Git desktop app (recommended for those less familiar with Git vs. using the command line)
+- Installing the GitHub Desktop app (recommended for those less familiar with Git versus using the command line)
 - Setting up your repository (repo) and cloning to your local
 - Pushing changes to Git
 - Deploying Rill to your new org to share dashboards, set up alerts and receive scheduled reports
 
-![process](../../../static/img/deploy/github/process.png)
+![process](/img/deploy/github-101/process.png)
 
 ## Installing Git
 
--To download the GitHub app, visit the [install site here](https://docs.github.com/en/desktop/installing-and-authenticating-to-github-desktop/installing-github-desktop).
+-To download the GitHub app for a UI driven workflow, visit the [install site here](https://docs.github.com/en/desktop/installing-and-authenticating-to-github-desktop/installing-github-desktop).
 - In your computer's Downloads folder, double-click the GitHub Desktop zip file.
 - After the file has been unzipped, double-click the GitHub Desktop application file.
 - GitHub Desktop will launch after installation is complete.
@@ -38,14 +38,14 @@ If you do not already have a GitHub account, you'll need to create one as part o
 Once you have downloaded GitHub and connected your account, you'll be able to create a new repository. Think of the repository as a shared cloud drive for the configuration files (sources, models, dashboards) that power Rill.
 
 - First, go to GitHub.com and create a new repository - clicking the ```New``` button on the homepage
-![new](../../../static/img/deploy/github/new.png)
+![new](/img/deploy/github-101/new.png)
 
 - After you name your respository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer
-![repo](../../../static/img/deploy/github/repo.png)
+![repo](/img/deploy/github-101/repo.png)
 
 - Select the folder on your computer where you'd like to build with Rill. Confirm the location you cloned for the next step.
 
-![clone](../../../static/img/deploy/github/clone.png)
+![clone](/img/deploy/github-101/clone.png)
 
 - Open the Terminal and go to your local copy of the repo (e.g. the above would be ```cd Documents/GitHub/rill-poc/testrepo```)
 
@@ -59,7 +59,7 @@ After installing Rill and adding sources, your local project will now contain a 
 
 - First, open the GitHub app and select your repo. You should now see a variety of new changes
 
-![commit](../../../static/img/deploy/github/commit.png)
+![commit](/img/deploy/github-101/commit.png)
 
 - On the bottom left, you can describe the changes (or add something like "initial commit")
 - Select the now blue "Commit to Main" button on the bottom left
