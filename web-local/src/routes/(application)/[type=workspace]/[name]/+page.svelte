@@ -84,7 +84,6 @@
 
   $: instanceId = $runtime.instanceId;
   $: filePath = getFileAPIPathFromNameAndType(assetName, entity);
-  $: console.log({ filePath });
 
   $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
