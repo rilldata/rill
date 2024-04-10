@@ -9,7 +9,7 @@
     const initialized = await isProjectInitialized($runtime.instanceId);
 
     if (!initialized) return;
-    await goto("/");
+    // await goto("/");
   });
 </script>
 

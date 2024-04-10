@@ -1,65 +1,36 @@
 import {
-  runtimeServiceGetFile,
-  getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceListFilesQueryKey,
+  runtimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client/index.js";
 import type { QueryFunction } from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error } from "@sveltejs/kit";
+import { buildMapStructure } from "@rilldata/web-common/layout/file-explorer/createMap.js";
 
-type FileType =
-  | "md"
-  | "sql"
-  | "yaml"
-  | "yml"
-  | "txt"
-  | "csv"
-  | "parquet"
-  | "json";
+export async function load({ depends, parent }) {
+  depends("files");
 
-export async function load({ parent, url }) {
   const { instanceId } = await parent();
-  const path = url.pathname.slice(5);
-  const fileName = path.split("/").pop();
-
-  if (!fileName || !path) throw error(404, "Not found");
-
-  let name: string;
-  let type: FileType = "txt";
-
-  if (fileName.startsWith(".")) {
-    name = fileName;
-  } else {
-    const parts = fileName.split(".");
-    type = parts.pop() as FileType;
-
-    if (parts.length > 1) {
-      name = parts.join(".");
-    } else {
-      name = parts[0];
-    }
-  }
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetFile>>
-  > = ({ signal }) => runtimeServiceGetFile(instanceId, path, signal);
+    Awaited<ReturnType<typeof runtimeServiceListFiles>>
+  > = ({ signal }) => runtimeServiceListFiles(instanceId, {}, signal);
 
-  const fileQuery = queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, path),
+  const filesQuery = queryClient.fetchQuery({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {}),
     queryFn,
+    cacheTime: 0,
   });
 
-  try {
-    const file = await fileQuery;
+  const files = await filesQuery;
 
-    return {
-      file: {
-        ...file,
-        path,
-        name,
-        type,
-      },
-    };
-  } catch (e) {
-    throw error(404, "Not found");
-  }
+  const filtered =
+    files.paths?.filter((p) => {
+      return !p.startsWith("/tmp/");
+    }) || [];
+
+  const fileStructure = buildMapStructure(filtered);
+
+  return {
+    files: fileStructure,
+  };
 }
