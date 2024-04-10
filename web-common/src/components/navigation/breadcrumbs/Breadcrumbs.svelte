@@ -15,8 +15,6 @@
   export let selections: (string | null)[] = [];
 
   $: currentPage = selections.findLastIndex((level) => level !== null);
-
-  $: console.log({ levels, selections, currentPage });
 </script>
 
 <nav class="flex gap-x-0 pl-1.5 items-center">
