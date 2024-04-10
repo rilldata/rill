@@ -29,9 +29,11 @@
 
   let showRenameModelModal = false;
   let renameFilePath: string;
-  function onRename(filePath: string) {
+  let renameIsDir: boolean;
+  function onRename(filePath: string, isDir: boolean) {
     showRenameModelModal = true;
     renameFilePath = filePath;
+    renameIsDir = isDir;
   }
 
   async function onDelete(filePath: string) {
@@ -52,5 +54,6 @@
   <RenameAssetModal
     closeModal={() => (showRenameModelModal = false)}
     filePath={renameFilePath}
+    isDir={renameIsDir}
   />
 {/if}

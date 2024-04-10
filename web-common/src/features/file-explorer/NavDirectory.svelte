@@ -1,6 +1,9 @@
 <script lang="ts">
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { directoryState } from "./directory-store";
   import NavFile from "./NavFile.svelte";
@@ -8,7 +11,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let directory: Directory;
-  export let onRename: (filePath: string) => void;
+  export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
 
   function toggleDirectory(directory: Directory): void {
@@ -56,7 +59,16 @@
           class="border-none bg-gray-800 text-white min-w-60"
           side="right"
           sideOffset={16}
-        ></DropdownMenu.Content>
+        >
+          <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
+            <EditIcon slot="icon" />
+            Rename...
+          </NavigationMenuItem>
+          <NavigationMenuItem on:click={() => onDelete(dir.path)}>
+            <Cancel slot="icon" />
+            Delete
+          </NavigationMenuItem>
+        </DropdownMenu.Content>
       </DropdownMenu.Root>
     </button>
 

@@ -10,7 +10,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let filePath: string;
-  export let onRename: (filePath: string) => void;
+  export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
 
   $: fileName = filePath.split("/").pop();
@@ -56,7 +56,7 @@
       side="right"
       sideOffset={16}
     >
-      <NavigationMenuItem on:click={() => onRename(filePath)}>
+      <NavigationMenuItem on:click={() => onRename(filePath, false)}>
         <EditIcon slot="icon" />
         Rename...
       </NavigationMenuItem>

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -18,6 +18,7 @@
 
   export let closeModal: () => void;
   export let filePath: string;
+  export let isDir: boolean;
 
   let error: string;
 
@@ -47,9 +48,21 @@
       try {
         const newPath = (folder ? `${folder}/` : "") + values.newName;
         await renameFileArtifact(runtimeInstanceId, filePath, newPath);
-        goto(`/files/${newPath}`, {
-          replaceState: true,
-        });
+        if (isDir) {
+          if ($page.url.pathname.startsWith(`/files/${filePath}`)) {
+            // if the file focused has the dir then replace the dir path to the new one
+            void goto(
+              $page.url.pathname.replace(
+                `/files/${filePath}`,
+                `/files/${newPath}`,
+              ),
+            );
+          }
+        } else {
+          void goto(`/files/${newPath}`, {
+            replaceState: true,
+          });
+        }
         closeModal();
       } catch (err) {
         error = err.response.data.message;
