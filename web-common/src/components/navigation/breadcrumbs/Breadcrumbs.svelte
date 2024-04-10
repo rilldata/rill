@@ -11,24 +11,27 @@
 </script>
 
 <script lang="ts">
-  export let levels: Level[];
-  export let selections: string[] = [];
+  export let levels: (Level | null)[];
+  export let selections: (string | null)[] = [];
 
   $: currentPage = selections.findLastIndex((level) => level !== null);
+
+  $: console.log({ levels, selections, currentPage });
 </script>
 
 <nav class="flex gap-x-0 pl-1.5 items-center">
   <slot name="icon" />
   <ol class="flex flex-row items-center">
     {#each levels as options, i (i)}
-      {#if selections[i] && options.size}
+      {@const current = selections[i]}
+      {#if current && options?.size}
         {#if i}
           <Slash />
         {/if}
         <BreadcrumbItem
           depth={i}
           {options}
-          current={selections[i]}
+          {current}
           isCurrentPage={i === currentPage}
         />
       {/if}

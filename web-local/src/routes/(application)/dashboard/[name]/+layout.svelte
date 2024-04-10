@@ -4,10 +4,7 @@
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
   import { page } from "$app/stores";
-  import type {
-    Level,
-    Entry,
-  } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type { Entry } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
 
   export let data;
 
@@ -18,20 +15,17 @@
   $: projectTitleQuery = useProjectTitle(instanceId);
   $: dashboardsQuery = useValidDashboards(instanceId);
 
+  $: projectName = ($projectTitleQuery.data as string | undefined) ?? null;
   $: dashboards = $dashboardsQuery.data ?? [];
 
   $: dashboardOptions = dashboards.reduce((map, dimension) => {
     const label = dimension.metricsView?.state?.validSpec?.title ?? "";
     const id = dimension.meta?.name?.name ?? "";
 
-    if (!label || !id) return map;
-
-    map.set(id, { label, href: `/dashboard/${id}` });
+    if (label && id) map.set(id, { label, href: `/dashboard/${id}` });
 
     return map;
   }, new Map<string, Entry>());
-
-  $: projectName = ($projectTitleQuery.data as string | undefined) ?? null;
 
   $: projectOptions = new Map<string, Entry>([
     [projectName ?? "", { label: projectName ?? "", href: "/" }],
