@@ -5,8 +5,14 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import {
+    FileArtifact,
+    fileArtifacts,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    resourceIsLoading,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -50,8 +56,32 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext, onMount } from "svelte";
-  import type { Writable } from "svelte/store";
+  import { get, type Writable } from "svelte/store";
   import { fade, slide } from "svelte/transition";
+
+  export let data: { fileArtifact?: FileArtifact } = {};
+
+  let filePath: string;
+  let assetName: string;
+  let type: "model" | "source";
+  let entity: EntityType;
+  let fileArtifact: FileArtifact;
+
+  $: if (data.fileArtifact) {
+    fileArtifact = data.fileArtifact;
+    filePath = fileArtifact.path;
+    assetName = fileArtifact.getEntityName();
+    type =
+      get(fileArtifact.name)?.kind === ResourceKind.Model ? "model" : "source";
+    entity = type === "model" ? EntityType.Model : EntityType.Table;
+  } else {
+    // needed for backwards compatibility for now
+    assetName = $page.params.name;
+    type = $page.params.type as "model" | "source";
+    entity = type === "model" ? EntityType.Model : EntityType.Table;
+    filePath = getFileAPIPathFromNameAndType(assetName, entity);
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  }
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -72,9 +102,6 @@
     if ($readOnly) await goto("/");
   });
 
-  $: assetName = $page.params.name;
-  $: type = $page.params.type as "model" | "source";
-  $: entity = type === "model" ? EntityType.Model : EntityType.Table;
   $: verb = type === "source" ? "Ingested" : "Computed";
 
   $: pathname = $page.url.pathname;
@@ -83,7 +110,6 @@
   $: tableVisible = workspace.table.visible;
 
   $: instanceId = $runtime.instanceId;
-  $: filePath = getFileAPIPathFromNameAndType(assetName, entity);
 
   $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
@@ -98,7 +124,6 @@
 
   $: hasUnsavedChanges = latest !== blob;
 
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 

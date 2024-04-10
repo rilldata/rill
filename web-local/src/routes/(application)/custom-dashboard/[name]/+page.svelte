@@ -26,8 +26,29 @@
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    FileArtifact,
+    fileArtifacts,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+
+  export let data: { fileArtifact?: FileArtifact } = {};
+
+  let fileArtifact: FileArtifact;
+  let filePath: string;
+  let customDashboardName: string;
+  $: if (data.fileArtifact) {
+    fileArtifact = data.fileArtifact;
+    filePath = fileArtifact.path;
+    customDashboardName = fileArtifact.getEntityName();
+  } else {
+    customDashboardName = $page.params.name;
+    filePath = getFileAPIPathFromNameAndType(
+      customDashboardName,
+      EntityType.Dashboard,
+    );
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  }
 
   const DEFAULT_EDITOR_HEIGHT = 300;
   const DEFAULT_EDITOR_WIDTH = 400;
@@ -50,14 +71,6 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: customDashboardName = $page.params.name;
-
-  $: filePath = getFileAPIPathFromNameAndType(
-    customDashboardName,
-    EntityType.Dashboard,
-  );
-
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
@@ -168,21 +181,21 @@
   <title>Rill Developer | {customDashboardName}</title>
 </svelte:head>
 
-<WorkspaceContainer inspector={false} bind:width={containerWidth}>
+<WorkspaceContainer bind:width={containerWidth} inspector={false}>
   <WorkspaceHeader
+    on:change={onChangeCallback}
+    showInspectorToggle={false}
     slot="header"
     titleInput={customDashboardName}
-    showInspectorToggle={false}
-    on:change={onChangeCallback}
   >
-    <div slot="workspace-controls" class="flex gap-x-4 items-center">
+    <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
 
       <div
         class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
       >
-        <Switch small id="snap" bind:checked={snap} />
-        <Label for="snap" class="font-normal text-xs">Snap on change</Label>
+        <Switch bind:checked={snap} id="snap" small />
+        <Label class="font-normal text-xs" for="snap">Snap on change</Label>
       </div>
 
       {#if selectedView === "split" || selectedView === "viz"}

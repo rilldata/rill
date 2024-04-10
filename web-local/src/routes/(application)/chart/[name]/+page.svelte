@@ -2,10 +2,8 @@
   import { page } from "$app/stores";
   import Charts from "@rilldata/web-common/features/charts/Charts.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
@@ -13,25 +11,32 @@
   import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
   import { error } from "@sveltejs/kit";
 
-  $: chartName = $page.params.name;
-  $: filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
+  export let data: { fileArtifact?: FileArtifact } = {};
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(chartName, EntityType.Chart),
-    {
-      query: {
-        onError: (err) => {
-          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-            throw error(404, "Dashboard not found");
-          }
+  let filePath: string;
+  let chartName: string;
 
-          throw error(err.response?.status || 500, err.message);
-        },
-        refetchOnWindowFocus: false,
+  if (data.fileArtifact) {
+    filePath = data.fileArtifact.path;
+    chartName = data.fileArtifact.getEntityName();
+  } else {
+    // needed for backwards compatibility for now
+    chartName = $page.params.name;
+    filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
+  }
+
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+    query: {
+      onError: (err) => {
+        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
+          throw error(404, "Dashboard not found");
+        }
+
+        throw error(err.response?.status || 500, err.message);
       },
+      refetchOnWindowFocus: false,
     },
-  );
+  });
 
   $: yaml = $fileQuery.data?.blob || "";
 </script>
