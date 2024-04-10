@@ -917,6 +917,21 @@ export class TableInfo extends Message<TableInfo> {
   database = "";
 
   /**
+   * @generated from field: string database_schema = 4;
+   */
+  databaseSchema = "";
+
+  /**
+   * @generated from field: bool is_default_database = 5;
+   */
+  isDefaultDatabase = false;
+
+  /**
+   * @generated from field: bool is_default_database_schema = 6;
+   */
+  isDefaultDatabaseSchema = false;
+
+  /**
    * @generated from field: string name = 2;
    */
   name = "";
@@ -937,6 +952,9 @@ export class TableInfo extends Message<TableInfo> {
   static readonly typeName = "rill.runtime.v1.TableInfo";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "is_default_database", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "is_default_database_schema", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -973,6 +991,16 @@ export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
   connector = "";
 
   /**
+   * @generated from field: string database = 4;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 5;
+   */
+  databaseSchema = "";
+
+  /**
    * @generated from field: string table = 3;
    */
   table = "";
@@ -987,6 +1015,8 @@ export class OLAPGetTableRequest extends Message<OLAPGetTableRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

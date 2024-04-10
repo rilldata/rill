@@ -73,7 +73,11 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfWarn("This will overwrite the .env file in shared storage with the contents of your local .env file.\n")
 			ch.PrintfWarn("The updated .env will automatically be used by other users of the devtool.\n")
-			if !cmdutil.ConfirmPrompt("Do you want to continue?", "", false) {
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 

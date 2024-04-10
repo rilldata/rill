@@ -2712,6 +2712,10 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
 	// no validation rules for Table
 
 	// no validation rules for Title
@@ -7503,9 +7507,9 @@ func (m *DashboardSpec) validate(all bool) error {
 
 	// no validation rules for Title
 
-	// no validation rules for GridColumns
+	// no validation rules for Columns
 
-	// no validation rules for GridRows
+	// no validation rules for Gap
 
 	for idx, item := range m.GetComponents() {
 		_, _ = idx, item
@@ -7743,9 +7747,13 @@ func (m *DashboardComponent) validate(all bool) error {
 
 	// no validation rules for Chart
 
-	// no validation rules for Columns
+	// no validation rules for X
 
-	// no validation rules for Rows
+	// no validation rules for Y
+
+	// no validation rules for Width
+
+	// no validation rules for Height
 
 	if len(errors) > 0 {
 		return DashboardComponentMultiError(errors)

@@ -109,6 +109,23 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/github/user:
+    get:
+      summary: |-
+        GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+        If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+      operationId: AdminService_GetGithubUserStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGithubUserStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -2485,6 +2502,21 @@ definitions:
         type: string
       defaultBranch:
         type: string
+  v1GetGithubUserStatusResponse:
+    type: object
+    properties:
+      hasAccess:
+        type: boolean
+      grantAccessUrl:
+        type: string
+      accessToken:
+        type: string
+      account:
+        type: string
+      organizations:
+        type: array
+        items:
+          type: string
   v1GetIFrameResponse:
     type: object
     properties:

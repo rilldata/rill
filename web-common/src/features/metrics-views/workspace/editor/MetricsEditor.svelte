@@ -2,10 +2,8 @@
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -14,7 +12,8 @@
   import { createPlaceholder } from "./create-placeholder";
   import { createUpdateMetricsCallback } from "./update-metrics";
 
-  export let metricsDefName: string;
+  export let filePath: string;
+  const metricsDefName = extractFileName(filePath);
 
   let editor: YAMLEditor;
 
@@ -31,17 +30,13 @@
   /** create an updateMetrics event callback based on the queryClient
    * and metricsDefName.
    */
-  const updateMetrics = createUpdateMetricsCallback(metricsDefName);
+  const updateMetrics = createUpdateMetricsCallback(filePath, metricsDefName);
 
-  $: filePath = getFilePathFromNameAndType(
-    metricsDefName,
-    EntityType.MetricsDefinition,
-  );
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
 
-  $: dashboard = useDashboard($runtime.instanceId, metricsDefName);
+  $: dashboard = fileArtifact.getResource(queryClient, $runtime.instanceId);
 
   // get the yaml blob from the file.
   $: yaml = $fileQuery.data?.blob || "";

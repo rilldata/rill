@@ -8,6 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -17,14 +18,9 @@
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
 
-  export let metricsDefName;
-  $: filePath = getFilePathFromNameAndType(
-    metricsDefName,
-    EntityType.MetricsDefinition,
-  );
+  export let filePath: string;
+  $: metricsDefName = extractFileName(filePath);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -37,7 +33,7 @@
   let buttonStatus;
 
   const viewDashboard = () => {
-    goto(`/dashboard/${metricsDefName}`);
+    goto(`/dashboard/${metricsDefName}`); // TODO: update to use new paths
 
     behaviourEvent.fireNavigationEvent(
       metricsDefName,

@@ -1,32 +1,31 @@
 <script lang="ts">
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
-  import { useChart } from "@rilldata/web-common/features/charts/selectors";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
+  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createQuery } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
-  export let chartName: string;
+  export let filePath: string;
+
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: chartName = extractFileName(filePath);
+
+  const queryClient = useQueryClient();
+
   $: error = "";
-  $: chart = useChart($runtime.instanceId, chartName);
+  $: chart = fileArtifact.getResource(queryClient, $runtime.instanceId);
   $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
   $: vegaSpec = $chart?.data?.chart?.spec?.vegaLiteSpec;
   $: data = {};
 
-  async function fetchChartData(chartName: string) {
-    // TODO: replace with prod API call
-    const api_url = `http://localhost:9009/v1/instances/default/charts/${chartName}/data`;
-    const response = await fetch(api_url);
-    if (!response.ok) {
-      error = `HTTP error! status: ${response.status}`;
-      console.warn(response);
-    }
-    return response.json();
-  }
-
-  $: chartDataQuery = createQuery({
-    queryKey: [`chart-data`, chartName, metricsQuery],
-    queryFn: () => fetchChartData(chartName),
-  });
+  $: chartDataQuery = createRuntimeServiceGetChartData(
+    queryClient,
+    $runtime.instanceId,
+    chartName,
+    metricsQuery,
+  );
 
   $: if (!$chartDataQuery.isFetching && $chartDataQuery?.data) {
     data = { table: $chartDataQuery?.data };

@@ -97,7 +97,7 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 	return t2, nil
 }
 
-// olapTableInfo returns info about a table in an OLAP connector.
+// olapTableInfo returns info about a table in an OLAP connector
 func olapTableInfo(ctx context.Context, c *runtime.Controller, connector, table string) (*drivers.Table, bool) {
 	if table == "" {
 		return nil, false
@@ -109,7 +109,7 @@ func olapTableInfo(ctx context.Context, c *runtime.Controller, connector, table 
 	}
 	defer release()
 
-	t, err := olap.InformationSchema().Lookup(ctx, table)
+	t, err := olap.InformationSchema().Lookup(ctx, "", "", table)
 	if err != nil {
 		return nil, false
 	}
