@@ -20,16 +20,18 @@
 
   $: lastRefreshedDate = new Date(lastRefreshed);
   $: isValidLastRefreshedDate = !isNaN(lastRefreshedDate.getTime());
+
+  $: href = isEmbedded
+    ? undefined
+    : isMetricsExplorer
+      ? `/${organization}/${project}/${name}`
+      : `/${organization}/${project}/-/dashboards/${name}`;
 </script>
 
 <svelte:element
   this={isEmbedded ? "button" : "a"}
   class="flex flex-col gap-y-0.5 group px-4 py-[5px] w-full"
-  href={isEmbedded
-    ? undefined
-    : isMetricsExplorer
-      ? `/${organization}/${project}/${name}`
-      : `/${organization}/${project}/-/dashboards/${name}`}
+  {href}
   role={isEmbedded ? "button" : "link"}
 >
   <div class="flex gap-x-2 items-center">
