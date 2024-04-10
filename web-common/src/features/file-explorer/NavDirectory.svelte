@@ -35,12 +35,9 @@
       class="pr-2 w-full text-left flex justify-between group gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
       on:click={() => toggleDirectory(dir)}
     >
-      {#if expanded}
-        <CaretDownIcon />
-      {:else}
-        <CaretDownIcon className="transform -rotate-90" />
-      {/if}
-
+      <CaretDownIcon
+        className="text-gray-400 {expanded ? 'transform -rotate-90' : ''}"
+      />
       <span class="truncate w-full">{dir.name}</span>
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>

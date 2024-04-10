@@ -49,7 +49,7 @@
   <svelte:component
     this={resourceKind ? resourceIconMapping[resourceKind] : File}
     size="14px"
-    className="text-gray-900"
+    className="text-gray-400"
   />
   <span class="truncate w-full">{fileName}</span>
   <DropdownMenu.Root bind:open={contextMenuOpen}>
