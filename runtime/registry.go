@@ -73,10 +73,7 @@ func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string, ignoreHi
 
 // CreateInstance creates a new instance and starts a controller for it.
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	if err := r.registryCache.create(ctx, inst); err != nil {
-		return err
-	}
-	return nil
+	return r.registryCache.create(ctx, inst)
 }
 
 // EditInstance edits an existing instance.
@@ -182,7 +179,9 @@ func (r *registryCache) init(ctx context.Context) error {
 	}
 
 	for _, inst := range insts {
-		r.add(inst)
+		if err := r.add(inst); err != nil {
+			return err
+		}
 	}
 
 	return nil
