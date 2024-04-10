@@ -10,7 +10,8 @@
   export let options: Level;
   export let current: string;
   export let isCurrentPage = false;
-  export let depth: number;
+  export let depth: number = 0;
+  export let onSelectMenuOption: undefined | ((id: string) => void) = undefined;
 
   $: selected = options.get(current);
   $: nextChild = $page.route.id?.split(regex)[depth + 1];
@@ -20,7 +21,9 @@
   <div class="flex flex-row gap-x-1 items-center">
     {#if selected}
       <a
-        href={isCurrentPage ? "#top" : selected?.href + nextChild}
+        href={!isCurrentPage && selected.href
+          ? selected.href + nextChild
+          : "#top"}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
       >
@@ -37,7 +40,12 @@
         <DropdownMenu.Content align="start" class="max-h-96 overflow-auto">
           {#each options as [id, { label, href }] (id)}
             {@const selected = id === current}
-            <DropdownMenu.Item {href}>
+            <DropdownMenu.Item
+              {href}
+              on:click={() => {
+                if (onSelectMenuOption) onSelectMenuOption(id);
+              }}
+            >
               <div class="item" class:pl-4={!selected}>
                 <Check className={!selected ? "hidden" : ""} />
 

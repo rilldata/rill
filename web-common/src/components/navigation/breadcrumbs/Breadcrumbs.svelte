@@ -4,7 +4,7 @@
 
   export type Entry = {
     label: string;
-    href: string;
+    href: string | undefined;
   };
 
   export type Level = Map<string, Entry>;

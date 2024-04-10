@@ -23,9 +23,8 @@
   import { useReports } from "../scheduled-reports/selectors";
   import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import Breadcrumbs, {
-    type Entry,
-  } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type { Entry } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useAlerts } from "../alerts/selectors";
 
   const user = createAdminServiceGetCurrentUser();
@@ -69,35 +68,29 @@
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: organizationOptions = $organizationQuery.data?.organizations.reduce(
-    (map, org) => {
-      map.set(org.name, { label: org.name, href: `/${org.name}` });
-      return map;
-    },
+    (map, org) => map.set(org.name, { label: org.name, href: `/${org.name}` }),
     new Map<string, Entry>(),
   );
 
   $: projectOptions = projects.reduce((map, proj) => {
-    map.set(proj.name, {
+    return map.set(proj.name, {
       label: proj.name,
       href: `/${organization}/${proj.name}`,
     });
-    return map;
   }, new Map<string, Entry>());
 
   $: alertOptions = alerts.reduce((map, alert) => {
-    map.set(alert.meta.name.name, {
+    return map.set(alert.meta.name.name, {
       label: alert.alert.spec.title || alert.meta.name.name,
       href: `/${organization}/${project}/-/alerts/${alert.meta.name.name}`,
     });
-    return map;
   }, new Map<string, Entry>());
 
   $: reportOptions = reports.reduce((map, report) => {
-    map.set(report.meta.name.name, {
+    return map.set(report.meta.name.name, {
       label: report.report.spec.title || report.meta.name.name,
       href: `/${organization}/${project}/-/reports/${report.meta.name.name}`,
     });
-    return map;
   }, new Map<string, Entry>());
 
   $: levels = [
