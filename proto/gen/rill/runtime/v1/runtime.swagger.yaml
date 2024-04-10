@@ -404,9 +404,6 @@ paths:
           required: true
           schema:
             type: object
-            properties:
-              dropOlap:
-                type: boolean
             title: Request message for RuntimeService.DeleteInstance
       tags:
         - RuntimeService

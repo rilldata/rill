@@ -448,9 +448,7 @@ export type RuntimeServiceEditInstanceBody = {
   watchRepo?: boolean;
 };
 
-export type RuntimeServiceDeleteInstanceBody = {
-  dropOlap?: boolean;
-};
+export type RuntimeServiceDeleteInstanceBody = { [key: string]: any };
 
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;

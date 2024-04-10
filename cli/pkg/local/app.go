@@ -207,10 +207,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	if opts.Reset {
-		err := drivers.Drop(opts.OlapDriver, map[string]any{"dsn": olapDSN}, logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
-		}
 		_ = os.RemoveAll(dbDirPath)
 		err = os.MkdirAll(dbDirPath, os.ModePerm)
 		if err != nil {

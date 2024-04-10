@@ -1452,10 +1452,6 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.DropOlap != nil {
-		// no validation rules for DropOlap
-	}
-
 	if len(errors) > 0 {
 		return DeleteInstanceRequestMultiError(errors)
 	}

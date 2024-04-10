@@ -380,12 +380,10 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	rt := newTestRuntime(t)
 	tests := []struct {
-		name     string
-		dropOLAP bool
-		wantErr  bool
+		name    string
+		wantErr bool
 	}{
-		{"delete valid no drop", false, false},
-		{"delete valid drop", true, false},
+		{"delete valid drop", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -424,7 +422,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.NoError(t, olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
 
 			// delete instance
-			err = rt.DeleteInstance(ctx, inst.ID, &tt.dropOLAP)
+			err = rt.DeleteInstance(ctx, inst.ID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Runtime.DeleteInstance() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -445,7 +443,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 
 			// verify db file is dropped if requested
 			_, err = os.Stat(dbFile)
-			require.Equal(t, tt.dropOLAP, os.IsNotExist(err))
+			require.True(t, os.IsNotExist(err))
 		})
 	}
 }
@@ -500,7 +498,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.FileExists(t, dbpath)
 
 	// Delete instance and check it still drops the .db file for DuckDB
-	err = rt.DeleteInstance(ctx, inst.ID, nil)
+	err = rt.DeleteInstance(ctx, inst.ID)
 	require.NoError(t, err)
 	require.NoFileExists(t, dbpath)
 }
