@@ -7,7 +7,7 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { isDashboardPage } from "../nav-utils";
+  import { isAnyDashboardPage } from "../nav-utils";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
 
   $: orgName = $page.params.organization;
@@ -23,7 +23,7 @@
   $: currentDashboardName = currentResource?.meta?.name?.name;
   let currentDashboard: V1MetricsViewSpec;
   $: currentDashboard = currentResource?.metricsView?.state?.validSpec;
-  $: onDashboardPage = isDashboardPage($page);
+  $: onDashboardPage = isAnyDashboardPage($page);
 </script>
 
 {#if currentDashboard}

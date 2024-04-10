@@ -14,11 +14,22 @@ export function isProjectPage(page: Page): boolean {
   );
 }
 
-export function isDashboardPage(page: Page): boolean {
+export function isMetricsExplorerPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]/[dashboard]" ||
     page.route.id === "/-/embed"
   );
+}
+
+export function isCustomDashboardPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/dashboards/[dashboard]";
+}
+
+/**
+ * Returns true if the page is any kind of dashboard page (either a Metrics Explorer or a Custom Dashboard).
+ */
+export function isAnyDashboardPage(page: Page): boolean {
+  return isMetricsExplorerPage(page) || isCustomDashboardPage(page);
 }
 
 export function isReportPage(page: Page): boolean {
@@ -42,7 +53,7 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Organization;
     case isProjectPage(page):
       return MetricsEventScreenName.Project;
-    case isDashboardPage(page):
+    case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
     case isReportPage(page):
       return MetricsEventScreenName.Report;

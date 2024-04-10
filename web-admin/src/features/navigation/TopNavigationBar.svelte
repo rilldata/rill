@@ -16,7 +16,7 @@
   import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./breadcrumbs/Breadcrumbs.svelte";
-  import { isDashboardPage, isProjectPage } from "./nav-utils";
+  import { isMetricsExplorerPage, isProjectPage } from "./nav-utils";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -25,7 +25,7 @@
   $: dashboard = $page.params.dashboard;
 
   $: onProjectPage = isProjectPage($page);
-  $: onDashboardPage = isDashboardPage($page);
+  $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 </script>
 
 <div
@@ -60,7 +60,7 @@
     {#if onProjectPage}
       <ShareProjectButton {organization} {project} />
     {/if}
-    {#if onDashboardPage}
+    {#if onMetricsExplorerPage}
       <StateManagersProvider metricsViewName={dashboard}>
         <LastRefreshedDate {dashboard} />
         {#if $user.isSuccess && $user.data.user}
