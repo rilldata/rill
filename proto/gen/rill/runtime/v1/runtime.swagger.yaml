@@ -705,6 +705,37 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/create-dir/-/{path}:
+    post:
+      summary: CreateDirectory create a directory for the given path
+      operationId: RuntimeService_CreateDirectory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDirectoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.CreateDirectory
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -742,39 +773,6 @@ paths:
               useAi:
                 type: boolean
             title: Request message for RuntimeService.GenerateMetricsViewFile
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/files/make-dir/-/{path}:
-    post:
-      operationId: RuntimeService_CreateDirectory
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateDirectoryResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              ignoreIfExists:
-                type: boolean
-                title: Indicates whether to ignore the request if the directory already exists
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/rename:
@@ -3769,6 +3767,7 @@ definitions:
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1CreateDirectoryResponse:
     type: object
+    title: Response message for RuntimeService.CreateDirectory
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -3897,6 +3896,13 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1DirEntry:
+    type: object
+    properties:
+      path:
+        type: string
+      isDir:
+        type: boolean
   v1EditInstanceResponse:
     type: object
     properties:
@@ -3934,13 +3940,6 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
-  v1FileEntry:
-    type: object
-    properties:
-      path:
-        type: string
-      isDir:
-        type: boolean
   v1FileEvent:
     type: string
     enum:
@@ -4150,7 +4149,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1FileEntry'
+          $ref: '#/definitions/v1DirEntry'
     title: Response message for RuntimeService.ListFiles
   v1ListInstancesResponse:
     type: object

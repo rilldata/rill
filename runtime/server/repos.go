@@ -41,9 +41,9 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	var entries []*runtimev1.FileEntry
+	var entries []*runtimev1.DirEntry
 	for _, file := range files {
-		entries = append(entries, &runtimev1.FileEntry{
+		entries = append(entries, &runtimev1.DirEntry{
 			Path:  file.Path,
 			IsDir: file.IsDir,
 		})
@@ -149,7 +149,6 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
-		attribute.Bool("args.ignore_if_exists", req.IgnoreIfExists),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -158,7 +157,7 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path, req.IgnoreIfExists)
+	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -390,10 +390,6 @@ export type RuntimeServiceRenameFileBody = {
   toPath?: string;
 };
 
-export type RuntimeServiceCreateDirectoryBody = {
-  ignoreIfExists?: boolean;
-};
-
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
   database?: string;
@@ -402,6 +398,8 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   path?: string;
   useAi?: boolean;
 };
+
+export type RuntimeServiceCreateDirectoryBody = { [key: string]: any };
 
 export type RuntimeServicePutFileBody = {
   blob?: string;
@@ -1578,7 +1576,7 @@ export interface V1ListInstancesResponse {
 }
 
 export interface V1ListFilesResponse {
-  files?: V1FileEntry[];
+  files?: V1DirEntry[];
 }
 
 export interface V1ListExamplesResponse {
@@ -1716,11 +1714,6 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
-export interface V1FileEntry {
-  path?: string;
-  isDir?: boolean;
-}
-
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1753,6 +1746,11 @@ export interface V1Example {
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
+}
+
+export interface V1DirEntry {
+  path?: string;
+  isDir?: boolean;
 }
 
 export interface V1DeleteInstanceResponse {

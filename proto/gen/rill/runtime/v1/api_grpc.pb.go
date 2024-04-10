@@ -83,6 +83,7 @@ type RuntimeServiceClient interface {
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
 	PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error)
+	// CreateDirectory create a directory for the given path
 	CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error)
 	// DeleteFile deletes a file from a repo
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
@@ -580,6 +581,7 @@ type RuntimeServiceServer interface {
 	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
 	PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error)
+	// CreateDirectory create a directory for the given path
 	CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error)
 	// DeleteFile deletes a file from a repo
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)

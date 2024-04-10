@@ -56,14 +56,12 @@ func (r *Runtime) PutFile(ctx context.Context, instanceID, path string, blob io.
 	return nil
 }
 
-func (r *Runtime) MakeDir(ctx context.Context, instanceID, path string, ignoreIfExists bool) error {
+func (r *Runtime) MakeDir(ctx context.Context, instanceID, path string) error {
 	repo, release, err := r.Repo(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	defer release()
-
-	// TODO: Handle ignoreIfExists
 
 	err = repo.MakeDir(ctx, path)
 	if err != nil {

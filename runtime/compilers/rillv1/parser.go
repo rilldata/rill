@@ -177,9 +177,9 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}
 
-	var paths []string
-	for _, file := range files {
-		paths = append(paths, file.Path)
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
 	}
 
 	p := Parser{Repo: repo, InstanceID: instanceID}
@@ -265,9 +265,9 @@ func (p *Parser) reload(ctx context.Context) error {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
 
-	var paths []string
-	for _, file := range files {
-		paths = append(paths, file.Path)
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
 	}
 
 	// Parse all files

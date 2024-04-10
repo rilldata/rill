@@ -78,9 +78,10 @@ service RuntimeService {
     };
   }
 
+  // CreateDirectory create a directory for the given path
   rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/make-dir/-/{path=**}",
+      post: "/v1/instances/{instance_id}/files/create-dir/-/{path=**}",
       body: "*"
     };
   }
@@ -404,10 +405,10 @@ message ListFilesRequest {
 
 // Response message for RuntimeService.ListFiles
 message ListFilesResponse {
-  repeated FileEntry files = 1;
+  repeated DirEntry files = 1;
 }
 
-message FileEntry {
+message DirEntry {
   string path = 1;
   bool is_dir = 2;
 }
@@ -460,13 +461,13 @@ message PutFileResponse {
   string file_path = 1; // TODO: Redundant, should be removed (but frontend currently uses it)
 }
 
+// Request message for RuntimeService.CreateDirectory
 message CreateDirectoryRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string path = 2 [(validate.rules).string.min_len = 1];
-  // Indicates whether to ignore the request if the directory already exists
-  bool ignore_if_exists = 3;
 }
 
+// Response message for RuntimeService.CreateDirectory
 message CreateDirectoryResponse {}
 
 // Request message for RuntimeService.DeleteFile

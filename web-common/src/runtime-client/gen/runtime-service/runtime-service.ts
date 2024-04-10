@@ -42,10 +42,10 @@ import type {
   V1DeleteFileResponse,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
-  V1GenerateMetricsViewFileResponse,
-  RuntimeServiceGenerateMetricsViewFileBody,
   V1CreateDirectoryResponse,
   RuntimeServiceCreateDirectoryBody,
+  V1GenerateMetricsViewFileResponse,
+  RuntimeServiceGenerateMetricsViewFileBody,
   V1RenameFileResponse,
   RuntimeServiceRenameFileBody,
   V1UnpackEmptyResponse,
@@ -1109,64 +1109,15 @@ export const createRuntimeServicePutFile = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+ * @summary CreateDirectory create a directory for the given path
  */
-export const runtimeServiceGenerateMetricsViewFile = (
-  instanceId: string,
-  runtimeServiceGenerateMetricsViewFileBody: RuntimeServiceGenerateMetricsViewFileBody,
-) => {
-  return httpClient<V1GenerateMetricsViewFileResponse>({
-    url: `/v1/instances/${instanceId}/files/generate-metrics-view`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceGenerateMetricsViewFileBody,
-  });
-};
-
-export type RuntimeServiceGenerateMetricsViewFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>
->;
-export type RuntimeServiceGenerateMetricsViewFileMutationBody =
-  RuntimeServiceGenerateMetricsViewFileBody;
-export type RuntimeServiceGenerateMetricsViewFileMutationError =
-  ErrorType<RpcStatus>;
-
-export const createRuntimeServiceGenerateMetricsViewFile = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceGenerateMetricsViewFile(instanceId, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
 export const runtimeServiceCreateDirectory = (
   instanceId: string,
   path: string,
   runtimeServiceCreateDirectoryBody: RuntimeServiceCreateDirectoryBody,
 ) => {
   return httpClient<V1CreateDirectoryResponse>({
-    url: `/v1/instances/${instanceId}/files/make-dir/-/${path}`,
+    url: `/v1/instances/${instanceId}/files/create-dir/-/${path}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceCreateDirectoryBody,
@@ -1218,6 +1169,58 @@ export const createRuntimeServiceCreateDirectory = <
       path: string;
       data: RuntimeServiceCreateDirectoryBody;
     },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
+ */
+export const runtimeServiceGenerateMetricsViewFile = (
+  instanceId: string,
+  runtimeServiceGenerateMetricsViewFileBody: RuntimeServiceGenerateMetricsViewFileBody,
+) => {
+  return httpClient<V1GenerateMetricsViewFileResponse>({
+    url: `/v1/instances/${instanceId}/files/generate-metrics-view`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateMetricsViewFileBody,
+  });
+};
+
+export type RuntimeServiceGenerateMetricsViewFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>
+>;
+export type RuntimeServiceGenerateMetricsViewFileMutationBody =
+  RuntimeServiceGenerateMetricsViewFileBody;
+export type RuntimeServiceGenerateMetricsViewFileMutationError =
+  ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGenerateMetricsViewFile = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
+    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateMetricsViewFile(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
     TContext
   >(mutationFn, mutationOptions);
 };
