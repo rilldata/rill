@@ -2,7 +2,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { Builder } from "bits-ui";
-  import { getAttrs, builderActions } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
 
   // utilize the ID for easier UI testing.
   export let id: string;
@@ -31,7 +31,7 @@
 
 <style lang="postcss">
   button {
-    @apply h-full aspect-square;
+    @apply h-full aspect-square p-1.5;
     @apply grid place-content-center;
     @apply text-gray-500 opacity-0;
     @apply transition-transform duration-100;
@@ -39,6 +39,6 @@
 
   button:hover,
   button:focus {
-    @apply outline-none bg-gray-300;
+    @apply outline-none bg-slate-300;
   }
 </style>
