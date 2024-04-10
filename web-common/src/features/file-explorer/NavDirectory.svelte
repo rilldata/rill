@@ -31,7 +31,7 @@
     {@const expanded = $directoryState[dir.name]}
     {@const directoryLevel = getDirectoryLevelFromPath(dir.path)}
     <button
-      style:padding-left="{5 + directoryLevel * 14}px"
+      style:padding-left="{8 + (directoryLevel - 1) * 14}px"
       class="pr-2 w-full text-left flex justify-between group gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
       on:click={() => toggleDirectory(dir)}
     >

@@ -16,7 +16,7 @@
   export let onDelete: (filePath: string) => void;
 
   $: fileName = filePath.split("/").pop();
-  $: fileLevel = getDirectoryLevelFromPath(filePath);
+  $: directoryLevel = getDirectoryLevelFromPath(filePath);
   $: isCurrentFile = filePath === $page.params.file;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: name = fileArtifact.name;
@@ -39,7 +39,7 @@
     ? 'bg-slate-100 text-gray-900'
     : ''}"
   on:click={() => navigate(filePath)}
-  style:padding-left="{5 + fileLevel * 14}px"
+  style:padding-left="{8 + (directoryLevel - 1) * 14}px"
 >
   <svelte:component
     this={resourceKind ? resourceIconMapping[resourceKind] : File}
