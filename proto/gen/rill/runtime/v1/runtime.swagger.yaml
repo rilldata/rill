@@ -120,6 +120,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: table
           in: query
           required: false
@@ -452,13 +460,6 @@ paths:
                 type: boolean
               watchRepo:
                 type: boolean
-              stageChanges:
-                type: boolean
-              modelDefaultMaterialize:
-                type: boolean
-              modelMaterializeDelaySeconds:
-                type: integer
-                format: int64
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -704,6 +705,37 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/create-dir/-/{path}:
+    post:
+      summary: CreateDirectory create a directory for the given path
+      operationId: RuntimeService_CreateDirectory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDirectoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.CreateDirectory
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -729,6 +761,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               table:
                 type: string
@@ -1046,6 +1082,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1084,6 +1128,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1115,6 +1167,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1727,6 +1787,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           description: Required
           in: query
@@ -1762,6 +1830,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1816,6 +1892,10 @@ paths:
             properties:
               connector:
                 type: string
+              database:
+                type: string
+              databaseSchema:
+                type: string
               columnName:
                 type: string
                 title: Required
@@ -1847,6 +1927,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1888,6 +1976,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: columnName
           in: query
           required: false
@@ -1923,6 +2019,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -1965,6 +2069,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false
@@ -1995,6 +2107,14 @@ paths:
           required: true
           type: string
         - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -2039,6 +2159,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               measures:
                 type: array
@@ -2100,6 +2224,10 @@ paths:
             type: object
             properties:
               connector:
+                type: string
+              database:
+                type: string
+              databaseSchema:
                 type: string
               columnName:
                 type: string
@@ -2997,7 +3125,7 @@ definitions:
         type: boolean
       result:
         $ref: '#/definitions/v1AssertionResult'
-      sentEmails:
+      sentNotifications:
         type: boolean
       executionTime:
         type: string
@@ -3040,21 +3168,22 @@ definitions:
         type: string
       queryForAttributes:
         type: object
-      emailRecipients:
-        type: array
-        items:
-          type: string
-      emailOnRecover:
+      notifyOnRecover:
         type: boolean
-      emailOnFail:
+      notifyOnFail:
         type: boolean
-      emailOnError:
+      notifyOnError:
         type: boolean
-      emailRenotify:
+      renotify:
         type: boolean
-      emailRenotifyAfterSeconds:
+      renotifyAfterSeconds:
         type: integer
         format: int64
+      notifiers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -3288,6 +3417,10 @@ definitions:
         title: Required
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3310,6 +3443,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -3330,6 +3467,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3354,6 +3495,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3374,6 +3519,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3405,6 +3554,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3423,6 +3576,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3445,6 +3602,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
       columnName:
@@ -3463,6 +3624,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3504,6 +3669,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -3593,7 +3762,12 @@ definitions:
         type: boolean
       implementsFileStore:
         type: boolean
+      implementsNotifier:
+        type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1CreateDirectoryResponse:
+    type: object
+    title: Response message for RuntimeService.CreateDirectory
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -3626,13 +3800,6 @@ definitions:
         type: boolean
       watchRepo:
         type: boolean
-      stageChanges:
-        type: boolean
-      modelDefaultMaterialize:
-        type: boolean
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -3656,22 +3823,28 @@ definitions:
     properties:
       chart:
         type: string
-      columns:
-        type: string
+      x:
+        type: integer
         format: int64
-      rows:
-        type: string
+      "y":
+        type: integer
+        format: int64
+      width:
+        type: integer
+        format: int64
+      height:
+        type: integer
         format: int64
   v1DashboardSpec:
     type: object
     properties:
       title:
         type: string
-      gridColumns:
-        type: string
+      columns:
+        type: integer
         format: int64
-      gridRows:
-        type: string
+      gap:
+        type: integer
         format: int64
       components:
         type: array
@@ -3723,6 +3896,13 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1DirEntry:
+    type: object
+    properties:
+      path:
+        type: string
+      isDir:
+        type: boolean
   v1EditInstanceResponse:
     type: object
     properties:
@@ -3839,7 +4019,7 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-    title: Reponse message for RuntimeService.GetFile
+    title: Response message for RuntimeService.GetFile
   v1GetInstanceResponse:
     type: object
     properties:
@@ -3922,13 +4102,6 @@ definitions:
         type: boolean
       watchRepo:
         type: boolean
-      stageChanges:
-        type: boolean
-      modelDefaultMaterialize:
-        type: boolean
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -3972,10 +4145,11 @@ definitions:
   v1ListFilesResponse:
     type: object
     properties:
-      paths:
+      files:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1DirEntry'
     title: Response message for RuntimeService.ListFiles
   v1ListInstancesResponse:
     type: object
@@ -4447,6 +4621,12 @@ definitions:
       connector:
         type: string
         title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      databaseSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
       table:
         type: string
         title: Name of the table the metrics view is based on
@@ -4794,6 +4974,13 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1Notifier:
+    type: object
+    properties:
+      connector:
+        type: string
+      properties:
+        type: object
   v1NumericHistogramBins:
     type: object
     properties:
@@ -5347,10 +5534,11 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      emailRecipients:
+      notifiers:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1Notifier'
       annotations:
         type: object
         additionalProperties:
@@ -5619,6 +5807,10 @@ definitions:
         type: string
       connector:
         type: string
+      database:
+        type: string
+      databaseSchema:
+        type: string
       tableName:
         type: string
         title: Required
@@ -5638,6 +5830,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string
@@ -5661,6 +5857,12 @@ definitions:
     properties:
       database:
         type: string
+      databaseSchema:
+        type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
       name:
         type: string
       hasUnsupportedDataTypes:
@@ -5672,6 +5874,10 @@ definitions:
       instanceId:
         type: string
       connector:
+        type: string
+      database:
+        type: string
+      databaseSchema:
         type: string
       tableName:
         type: string

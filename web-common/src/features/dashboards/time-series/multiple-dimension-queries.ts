@@ -91,7 +91,7 @@ export function getDimensionValuesForComparison(
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
       const dimensionName = dashboardStore?.selectedComparisonDimension;
-      const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
+      const isInTimeDimensionView = dashboardStore?.tdd.expandedMeasureName;
 
       if (!isValidMeasureList || !dimensionName) return;
 
@@ -126,7 +126,7 @@ export function getDimensionValuesForComparison(
         });
       } else if (surface === "table") {
         let sortBy = isInTimeDimensionView
-          ? dashboardStore.expandedMeasureName
+          ? dashboardStore.tdd.expandedMeasureName
           : dashboardStore.leaderboardMeasureName;
         if (dashboardStore?.dashboardSortType === SortType.DIMENSION) {
           sortBy = dimensionName;

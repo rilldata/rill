@@ -51,6 +51,7 @@ const (
 	AdminService_IssueRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_GetGithubUserStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_GetGitCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetGitCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -166,6 +167,9 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
+	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
 	// GetGitCredentials returns credentials and other details for a project's Git repository.
 	GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -546,6 +550,15 @@ func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *Rev
 func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error) {
 	out := new(GetGithubRepoStatusResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetGithubRepoStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error) {
+	out := new(GetGithubUserStatusResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetGithubUserStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1017,6 +1030,9 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
+	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
 	// GetGitCredentials returns credentials and other details for a project's Git repository.
 	GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1207,6 +1223,9 @@ func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *
 }
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
+}
+func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
 }
 func (UnimplementedAdminServiceServer) GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGitCredentials not implemented")
@@ -1925,6 +1944,24 @@ func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, req.(*GetGithubRepoStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubUserStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetGithubUserStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetGithubUserStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetGithubUserStatus(ctx, req.(*GetGithubUserStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2855,6 +2892,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGithubRepoStatus",
 			Handler:    _AdminService_GetGithubRepoStatus_Handler,
+		},
+		{
+			MethodName: "GetGithubUserStatus",
+			Handler:    _AdminService_GetGithubUserStatus_Handler,
 		},
 		{
 			MethodName: "GetGitCredentials",

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -106,6 +107,28 @@ func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.List
 		}
 	}
 
+	// Connectors may be implicitly defined just by adding variables in the format "connector.<name>.<property>".
+	// NOTE: We can remove this if we move to explicitly defined connectors.
+	for k := range inst.ResolveVariables() {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		if driverIsNotifier(name) {
+			res[name] = &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			}
+		}
+	}
+
 	return &runtimev1.ListNotifierConnectorsResponse{
 		Connectors: maps.Values(res),
 	}, nil
@@ -127,6 +150,7 @@ func driverSpecToPB(name string, spec drivers.Spec) *runtimev1.ConnectorDriver {
 		ImplementsOlap:        spec.ImplementsOLAP,
 		ImplementsObjectStore: spec.ImplementsObjectStore,
 		ImplementsFileStore:   spec.ImplementsFileStore,
+		ImplementsNotifier:    spec.ImplementsNotifier,
 	}
 
 	for _, prop := range spec.ConfigProperties {
@@ -175,5 +199,5 @@ func driverIsNotifier(driver string) bool {
 		return false
 	}
 
-	return connector.Spec().ImplementsAdmin // TODO: Replace with ImplementsNotifier when this PR merges: https://github.com/rilldata/rill/pull/4371
+	return connector.Spec().ImplementsNotifier
 }

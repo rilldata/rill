@@ -1,67 +1,36 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { notifications } from "@rilldata/web-common/components/notifications";
-  import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    INVALID_NAME_MESSAGE,
-    VALID_NAME_PATTERN,
-    isDuplicateName,
-  } from "@rilldata/web-common/features/entity-management/name-utils";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
 
-  export let metricsDefName;
+  export let filePath: string;
   export let showInspectorToggle = true;
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: metricsDefName = extractFileName(filePath);
 
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(VALID_NAME_PATTERN)) {
-      notifications.send({
-        message: INVALID_NAME_MESSAGE,
-      });
-      e.target.value = metricsDefName; // resets the input
-      return;
-    }
-    if (
-      isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data ?? [])
-    ) {
-      notifications.send({
-        message: `Name ${e.target.value} is already in use`,
-      });
-      e.target.value = metricsDefName; // resets the input
-      return;
-    }
-
-    try {
-      const toName = e.target.value;
-      const type = EntityType.MetricsDefinition;
-      await renameFileArtifact(
-        runtimeInstanceId,
-        getFileAPIPathFromNameAndType(metricsDefName, type),
-        getFileAPIPathFromNameAndType(toName, type),
-        type,
-      );
-      goto(`/dashboard/${toName}/edit`, { replaceState: true });
-    } catch (err) {
-      console.error(err.response.data.message);
-    }
+  const onChangeCallback = async (
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) => {
+    const newRoute = await handleEntityRename(
+      $runtime.instanceId,
+      e.currentTarget,
+      filePath,
+      EntityType.MetricsDefinition,
+    );
+    if (newRoute) await goto(newRoute);
   };
-
-  $: titleInput = metricsDefName;
 </script>
 
 <WorkspaceHeader
-  {...{
-    titleInput,
-    onChangeCallback,
-    showInspectorToggle,
-  }}
+  on:change={onChangeCallback}
+  {showInspectorToggle}
+  titleInput={metricsDefName}
 >
-  <GoToDashboardButton {metricsDefName} slot="cta" />
+  <GoToDashboardButton {filePath} slot="cta" />
 </WorkspaceHeader>

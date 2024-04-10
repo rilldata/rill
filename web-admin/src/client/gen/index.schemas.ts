@@ -447,7 +447,10 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   openProjectSubpath?: string;
-  recipients?: string[];
+  emailRecipients?: string[];
+  slackUsers?: string[];
+  slackChannels?: string[];
+  slackWebhooks?: string[];
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
@@ -673,6 +676,14 @@ export interface V1GetIFrameResponse {
   ttlSeconds?: number;
 }
 
+export interface V1GetGithubUserStatusResponse {
+  hasAccess?: boolean;
+  grantAccessUrl?: string;
+  accessToken?: string;
+  account?: string;
+  organizations?: string[];
+}
+
 export interface V1GetGithubRepoStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
@@ -864,9 +875,12 @@ export interface V1AlertOptions {
   queryName?: string;
   queryArgsJson?: string;
   metricsViewName?: string;
-  recipients?: string[];
-  emailRenotify?: boolean;
-  emailRenotifyAfterSeconds?: number;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  emailRecipients?: string[];
+  slackUsers?: string[];
+  slackChannels?: string[];
+  slackWebhooks?: string[];
 }
 
 export interface V1AddProjectMemberResponse {

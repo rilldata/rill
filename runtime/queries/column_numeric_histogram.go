@@ -12,12 +12,14 @@ import (
 )
 
 type ColumnNumericHistogram struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Method     runtimev1.HistogramMethod
-	Threshold  int
-	Result     []*runtimev1.NumericHistogramBins_Bin
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Method         runtimev1.HistogramMethod
+	Threshold      int
+	Result         []*runtimev1.NumericHistogramBins_Bin
 }
 
 var _ runtime.Query = &ColumnNumericHistogram{}
@@ -92,7 +94,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,
-		safeName(q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -147,7 +149,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
 	}
@@ -216,7 +218,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	      `,
 		selectColumn,
 		sanitizedColumnName,
-		safeName(q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		bucketSize,
 		*min,
 		*max,
@@ -265,7 +267,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
 	}
@@ -345,7 +347,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		`,
 		selectColumn,
 		sanitizedColumnName,
-		safeName(q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		bucketCount,
 		startTick,
 		endTick,
@@ -385,7 +387,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 }
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
-func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (*float64, *float64, *float64, error) {
+func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, database, databaseSchema, tableName string, priority int) (*float64, *float64, *float64, error) {
 	sanitizedColumnName := safeName(columnName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
@@ -398,7 +400,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tab
 			FROM %[1]s
 			WHERE %[2]s IS NOT NULL
 		`,
-		safeName(tableName),
+		olap.Dialect().EscapeTable(database, databaseSchema, tableName),
 		selectColumn,
 	)
 

@@ -5,6 +5,7 @@
     createAdminServiceCreateAlert,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
     AlertFormValues,
@@ -46,17 +47,17 @@
   // if in TDD take active measure and comparison dimension
   // If expanded leaderboard, take first dimension and active dimensions
   let dimension = "";
-  if ($dashboardStore.expandedMeasureName) {
+  if ($dashboardStore.tdd.expandedMeasureName) {
     dimension = $dashboardStore.selectedComparisonDimension ?? "";
   } else {
     dimension = $dashboardStore.selectedDimensionName ?? "";
   }
 
-  const formState = createForm({
+  const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
       measure:
-        $dashboardStore.expandedMeasureName ??
+        $dashboardStore.tdd.expandedMeasureName ??
         $dashboardStore.leaderboardMeasureName ??
         "",
       splitByDimension: dimension,
@@ -70,7 +71,18 @@
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
       snooze: SnoozeOptions[0].value, // Defaults to `Off`
-      recipients: [
+      enableSlackNotification: false,
+      slackChannels: [
+        {
+          channel: "",
+        },
+      ],
+      slackUsers: [
+        { email: $user.data?.user?.email ? $user.data.user.email : "" },
+        { email: "" },
+      ],
+      enableEmailNotification: true,
+      emailRecipients: [
         { email: $user.data?.user?.email ? $user.data.user.email : "" },
         { email: "" },
       ],
@@ -98,11 +110,17 @@
                 getAlertQueryArgsFromFormValues(values),
               ),
               metricsViewName: values.metricsViewName,
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
-              emailRenotify: !!values.snooze,
-              emailRenotifyAfterSeconds: values.snooze
-                ? Number(values.snooze)
-                : 0,
+              slackChannels: values.enableSlackNotification
+                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
+                : undefined,
+              slackUsers: values.enableSlackNotification
+                ? values.slackUsers.map((c) => c.email).filter(Boolean)
+                : undefined,
+              emailRecipients: values.enableEmailNotification
+                ? values.emailRecipients.map((r) => r.email).filter(Boolean)
+                : undefined,
+              renotify: !!values.snooze,
+              renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
             },
           },
         });
@@ -125,6 +143,12 @@
       }
     },
   });
+
+  const { form } = formState;
+  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: if ($hasSlackNotifier.data) {
+    $form["enableSlackNotification"] = true;
+  }
 </script>
 
 <Dialog

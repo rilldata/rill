@@ -3,20 +3,34 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
-  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import type { V1Resource } from "../../../runtime-client";
+  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { extractFileName } from "../extract-file-name";
+  import { useSource } from "../selectors";
 
-  export let open: boolean;
+  export let source: string | null;
+
+  $: runtimeInstanceId = $runtime.instanceId;
+  let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
+  $: if (source) {
+    sourceQuery = useSource(runtimeInstanceId, source);
+  }
+  $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
   $: createDashboardFromTable =
-    $sourceImportedName !== null
+    source !== null
       ? useCreateDashboardFromTableUIAction(
           $runtime.instanceId,
-          $sourceImportedName,
+          sinkConnector as string,
+          "",
+          "",
+          source,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
         )
@@ -41,7 +55,7 @@
   }
 </script>
 
-<Dialog on:close={close} {open}>
+<Dialog on:close={close} open={!!source}>
   <div class="flex flex-auto gap-x-2.5" slot="title">
     <div class="w-6 m-auto ml-0 mr-0">
       <CheckCircleNew className="fill-primary-500" size="24px" />
@@ -51,9 +65,8 @@
   <div class="flex flex-auto gap-x-2.5" slot="body">
     <div class="w-6" />
     <div class="text-slate-500">
-      <span class="font-mono text-slate-800 break-all"
-        >{$sourceImportedName}</span
-      > has been ingested. What would you like to do next?
+      <span class="font-mono text-slate-800 break-all">{source}</span> has been ingested.
+      What would you like to do next?
     </div>
   </div>
   <div class="flex flex-row-reverse gap-x-2 mt-4" slot="footer">

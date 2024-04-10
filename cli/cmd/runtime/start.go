@@ -42,6 +42,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/salesforce"
+	_ "github.com/rilldata/rill/runtime/drivers/slack"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
@@ -73,7 +74,6 @@ type Config struct {
 	EmailSenderEmail        string                 `split_words:"true"`
 	EmailSenderName         string                 `split_words:"true"`
 	EmailBCC                string                 `split_words:"true"`
-	DownloadRowLimit        int64                  `default:"10000" split_words:"true"`
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes     int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	SecurityEngineCacheSize int                    `default:"1000" split_words:"true"`
@@ -231,15 +231,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init server
 			srvOpts := &server.Options{
-				HTTPPort:         conf.HTTPPort,
-				GRPCPort:         conf.GRPCPort,
-				AllowedOrigins:   conf.AllowedOrigins,
-				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
-				SessionKeyPairs:  keyPairs,
-				AuthEnable:       conf.AuthEnable,
-				AuthIssuerURL:    conf.AuthIssuerURL,
-				AuthAudienceURL:  conf.AuthAudienceURL,
-				DownloadRowLimit: &conf.DownloadRowLimit,
+				HTTPPort:        conf.HTTPPort,
+				GRPCPort:        conf.GRPCPort,
+				AllowedOrigins:  conf.AllowedOrigins,
+				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
+				SessionKeyPairs: keyPairs,
+				AuthEnable:      conf.AuthEnable,
+				AuthIssuerURL:   conf.AuthIssuerURL,
+				AuthAudienceURL: conf.AuthAudienceURL,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {

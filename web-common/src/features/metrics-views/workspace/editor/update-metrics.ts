@@ -2,14 +2,13 @@ import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/a
 import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
 import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
 export function createUpdateMetricsCallback(
+  filePath: string,
   metricsDefName: string,
 ): (event: CustomEvent) => void {
   const debounce = createDebouncer();
@@ -18,10 +17,6 @@ export function createUpdateMetricsCallback(
 
   async function reconcileNewMetricsContent(blob: string) {
     const instanceId = get(runtime).instanceId;
-    const filePath = getFileAPIPathFromNameAndType(
-      metricsDefName,
-      EntityType.MetricsDefinition,
-    );
     await get(fileSaver).mutateAsync({
       instanceId,
       path: filePath,

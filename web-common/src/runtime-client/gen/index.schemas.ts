@@ -91,6 +91,8 @@ export type QueryServiceQueryBody = {
 
 export type QueryServiceColumnTopKBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   agg?: string;
   k?: number;
@@ -99,6 +101,8 @@ export type QueryServiceColumnTopKBody = {
 
 export type QueryServiceColumnTimeSeriesBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
@@ -110,35 +114,47 @@ export type QueryServiceColumnTimeSeriesBody = {
 
 export type QueryServiceColumnTimeRangeParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceTableCardinalityParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnTimeGrainParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnRugHistogramParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceTableRowsParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   limit?: number;
   priority?: number;
 };
 
 export type QueryServiceColumnRollupIntervalBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
@@ -155,6 +171,8 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
 
 export type QueryServiceColumnNumericHistogramParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
   priority?: number;
@@ -162,6 +180,8 @@ export type QueryServiceColumnNumericHistogramParams = {
 
 export type QueryServiceColumnNullCountParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
@@ -265,17 +285,23 @@ export type QueryServiceExportBody = {
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
 
 export type QueryServiceTableColumnsParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   priority?: number;
 };
 
 export type QueryServiceColumnCardinalityParams = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   columnName?: string;
   priority?: number;
 };
@@ -366,10 +392,14 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   table?: string;
   path?: string;
   useAi?: boolean;
 };
+
+export type RuntimeServiceCreateDirectoryBody = { [key: string]: any };
 
 export type RuntimeServicePutFileBody = {
   blob?: string;
@@ -418,9 +448,6 @@ export type RuntimeServiceEditInstanceBody = {
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -465,6 +492,8 @@ export type RuntimeServiceIssueDevJWTParams = {
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   table?: string;
 };
 
@@ -555,12 +584,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -588,6 +611,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -621,6 +650,8 @@ export interface V1TableRowsResponse {
 export interface V1TableRowsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   limit?: number;
   priority?: number;
@@ -628,6 +659,9 @@ export interface V1TableRowsRequest {
 
 export interface V1TableInfo {
   database?: string;
+  databaseSchema?: string;
+  isDefaultDatabase?: boolean;
+  isDefaultDatabaseSchema?: boolean;
   name?: string;
   hasUnsupportedDataTypes?: boolean;
 }
@@ -644,6 +678,8 @@ export interface V1TableColumnsResponse {
 export interface V1TableColumnsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -655,6 +691,8 @@ export interface V1TableCardinalityResponse {
 export interface V1TableCardinalityRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   priority?: number;
 }
@@ -683,23 +721,12 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export type V1SourceSpecProperties = { [key: string]: any };
-
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
-}
-
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
+
+export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -717,6 +744,17 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
+}
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
 }
 
 export interface V1S3Object {
@@ -779,41 +817,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
-export type V1ReportSpecAnnotations = { [key: string]: string };
-
-export interface V1ReportSpec {
-  trigger?: boolean;
-  title?: string;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  queryName?: string;
-  queryArgsJson?: string;
-  exportLimit?: string;
-  exportFormat?: V1ExportFormat;
-  emailRecipients?: string[];
-  annotations?: V1ReportSpecAnnotations;
-}
-
-export interface V1ReportExecution {
-  adhoc?: boolean;
-  errorMessage?: string;
-  reportTime?: string;
-  startedOn?: string;
-  finishedOn?: string;
-}
-
-export interface V1Report {
-  spec?: V1ReportSpec;
-  state?: V1ReportState;
-}
-
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -830,6 +833,41 @@ export interface V1Resource {
   chart?: V1Chart;
   dashboard?: V1Dashboard;
   api?: V1API;
+}
+
+export type V1ReportSpecAnnotations = { [key: string]: string };
+
+export interface V1ReportSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
+  exportLimit?: string;
+  exportFormat?: V1ExportFormat;
+  notifiers?: V1Notifier[];
+  annotations?: V1ReportSpecAnnotations;
+}
+
+export interface V1ReportExecution {
+  adhoc?: boolean;
+  errorMessage?: string;
+  reportTime?: string;
+  startedOn?: string;
+  finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
+export interface V1Report {
+  spec?: V1ReportSpec;
+  state?: V1ReportState;
 }
 
 export interface V1RenameFileResponse {
@@ -866,6 +904,16 @@ export interface V1RefreshTriggerSpec {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -929,16 +977,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -1149,6 +1187,13 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export type V1NotifierProperties = { [key: string]: any };
+
+export interface V1Notifier {
+  connector?: string;
+  properties?: V1NotifierProperties;
+}
+
 export interface V1ModelState {
   connector?: string;
   table?: string;
@@ -1222,23 +1267,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1265,6 +1293,8 @@ export interface V1MetricsViewTimeRangeResponse {
 
 export interface V1MetricsViewSpec {
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   table?: string;
   title?: string;
   description?: string;
@@ -1322,6 +1352,23 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1529,7 +1576,7 @@ export interface V1ListInstancesResponse {
 }
 
 export interface V1ListFilesResponse {
-  paths?: string[];
+  files?: V1DirEntry[];
 }
 
 export interface V1ListExamplesResponse {
@@ -1578,9 +1625,6 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
 }
 
 export interface V1InlineMeasure {
@@ -1704,6 +1748,11 @@ export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
 
+export interface V1DirEntry {
+  path?: string;
+  isDir?: boolean;
+}
+
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -1736,14 +1785,16 @@ export interface V1DashboardState {
 
 export interface V1DashboardComponent {
   chart?: string;
-  columns?: string;
-  rows?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface V1DashboardSpec {
   title?: string;
-  gridColumns?: string;
-  gridRows?: string;
+  columns?: number;
+  gap?: number;
   components?: V1DashboardComponent[];
 }
 
@@ -1780,9 +1831,10 @@ export interface V1CreateInstanceRequest {
   annotations?: V1CreateInstanceRequestAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
-  stageChanges?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
+}
+
+export interface V1CreateDirectoryResponse {
+  [key: string]: any;
 }
 
 /**
@@ -1803,6 +1855,7 @@ export interface V1ConnectorDriver {
   implementsOlap?: boolean;
   implementsObjectStore?: boolean;
   implementsFileStore?: boolean;
+  implementsNotifier?: boolean;
 }
 
 export type V1ConnectorConfig = { [key: string]: string };
@@ -1826,6 +1879,8 @@ export interface V1ColumnTopKResponse {
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   agg?: string;
@@ -1840,6 +1895,8 @@ export interface V1ColumnTimeSeriesResponse {
 export interface V1ColumnTimeSeriesRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
@@ -1857,6 +1914,8 @@ export interface V1ColumnTimeRangeResponse {
 export interface V1ColumnTimeRangeRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1869,6 +1928,8 @@ export interface V1ColumnTimeGrainResponse {
 export interface V1ColumnTimeGrainRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1881,6 +1942,8 @@ export interface V1ColumnRugHistogramResponse {
 export interface V1ColumnRugHistogramRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1895,6 +1958,8 @@ export interface V1ColumnRollupIntervalResponse {
 export interface V1ColumnRollupIntervalRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1907,6 +1972,8 @@ export interface V1ColumnNumericHistogramResponse {
 export interface V1ColumnNumericHistogramRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   histogramMethod?: V1HistogramMethod;
@@ -1920,6 +1987,8 @@ export interface V1ColumnNullCountResponse {
 export interface V1ColumnNullCountRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1932,6 +2001,8 @@ export interface V1ColumnDescriptiveStatisticsResponse {
 export interface V1ColumnDescriptiveStatisticsRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -1944,6 +2015,8 @@ export interface V1ColumnCardinalityResponse {
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
+  database?: string;
+  databaseSchema?: string;
   tableName?: string;
   columnName?: string;
   priority?: number;
@@ -2108,19 +2181,19 @@ export interface V1AlertSpec {
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
-  emailRecipients?: string[];
-  emailOnRecover?: boolean;
-  emailOnFail?: boolean;
-  emailOnError?: boolean;
-  emailRenotify?: boolean;
-  emailRenotifyAfterSeconds?: number;
+  notifyOnRecover?: boolean;
+  notifyOnFail?: boolean;
+  notifyOnError?: boolean;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  notifiers?: V1Notifier[];
   annotations?: V1AlertSpecAnnotations;
 }
 
 export interface V1AlertExecution {
   adhoc?: boolean;
   result?: V1AssertionResult;
-  sentEmails?: boolean;
+  sentNotifications?: boolean;
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;

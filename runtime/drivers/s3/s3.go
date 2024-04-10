@@ -238,6 +238,11 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 type sourceProperties struct {
 	Path                  string         `mapstructure:"path"`
 	URI                   string         `mapstructure:"uri"`

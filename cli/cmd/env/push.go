@@ -85,7 +85,11 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Prompt for confirmation if any existing variables have changed
 			if changed != 0 {
 				ch.Printf("Found %d variable(s) in your local .env file that will overwrite existing variables in the cloud env for project %q.\n", changed, projectName)
-				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+				if err != nil {
+					return err
+				}
+				if !ok {
 					return nil
 				}
 			}
