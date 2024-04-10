@@ -65,6 +65,8 @@
 
   export let data;
 
+  $: console.log("WHAT");
+
   let interceptedUrl: string | null = null;
   let focusOnMount = false;
   let fileNotFound = false;

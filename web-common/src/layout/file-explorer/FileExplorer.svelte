@@ -1,16 +1,6 @@
-<script lang="ts" context="module">
-  export const navigationOpen = (() => {
-    const store = writable(true);
-    return {
-      ...store,
-      toggle: () => store.update((open) => !open),
-    };
-  })();
-</script>
-
 <script lang="ts">
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
-  import { writable } from "svelte/store";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import Footer from "../navigation/Footer.svelte";
   import Resizer from "../Resizer.svelte";
