@@ -15,7 +15,7 @@
     config: getRillTheme(),
     renderer: "svg",
     actions: false,
-    logLevel: 0,
+    logLevel: 0, // only show errors
   };
 
   let viewVL: View;

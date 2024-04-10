@@ -54,7 +54,7 @@ export function buildVegaLiteSpec(
       clip: true,
     };
     baseSpec.encoding = {
-      x: { field: timeFields[0], type: "temporal" },
+      x: { field: timeFields[0], type: "temporal", bandPosition: 0 },
       y: { field: quantitativeFields[0], type: "quantitative" },
       opacity: {
         condition: { param: "hover", empty: false, value: 1 },

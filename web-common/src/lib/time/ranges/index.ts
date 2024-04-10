@@ -377,7 +377,6 @@ export function getAdjustedChartTime(
   interval: V1TimeGrain | undefined,
   timePreset: TimeRangePreset | TimeComparisonOption | undefined,
   defaultTimeRange: string | undefined,
-  isDiscreteChart: boolean,
 ) {
   if (!start || !end || !interval)
     return {
@@ -419,16 +418,9 @@ export function getAdjustedChartTime(
   }
 
   /**
-   * For line like charts, we need to remove the offset from the end to
-   * remove whitespace
+   * We need to remove the offset from the end to remove whitespace
    */
-  if (!isDiscreteChart) {
-    adjustedEnd = getOffset(
-      adjustedEnd,
-      offsetDuration,
-      TimeOffsetType.SUBTRACT,
-    );
-  }
+  adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
   return {
     /**
