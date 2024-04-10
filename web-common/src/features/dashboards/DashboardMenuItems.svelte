@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import {
     useDashboard,
     useDashboardFileNames,
@@ -13,11 +15,6 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
-  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
-  import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -120,12 +117,3 @@
     </svelte:fragment>
   </NavigationMenuItem>
 {/if}
-<NavigationMenuSeparator />
-<NavigationMenuItem on:click={() => dispatch("rename")}>
-  <EditIcon slot="icon" />
-  Rename...
-</NavigationMenuItem>
-<NavigationMenuItem on:click={deleteMetricsDef}>
-  <Cancel slot="icon" />
-  Delete
-</NavigationMenuItem>

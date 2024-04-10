@@ -8,12 +8,19 @@
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import File from "../../components/icons/File.svelte";
+  import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
+  import DashboardMenuItems from "../dashboards/DashboardMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
+  import { ResourceKind } from "../entity-management/resource-selectors";
+  import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
+  import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
+
+  let contextMenuOpen = false;
 
   $: fileName = filePath.split("/").pop();
   $: directoryLevel = getDirectoryLevelFromPath(filePath);
@@ -30,8 +37,6 @@
     // Root level is 0; each "/" in the path represents a level deeper
     return path === "" ? 0 : path.split("/").length;
   }
-
-  let contextMenuOpen = false;
 </script>
 
 <button
@@ -65,6 +70,18 @@
       side="right"
       sideOffset={16}
     >
+      {#if $name && $name.name}
+        {#if resourceKind === ResourceKind.Source}
+          <SourceMenuItems sourceName={$name.name} />
+          <NavigationMenuSeparator />
+        {:else if resourceKind === ResourceKind.Model}
+          <ModelMenuItems modelName={$name.name} />
+          <NavigationMenuSeparator />
+        {:else if resourceKind === ResourceKind.Dashboard}
+          <DashboardMenuItems metricsViewName={$name.name} />
+          <NavigationMenuSeparator />
+        {/if}
+      {/if}
       <NavigationMenuItem on:click={() => onRename(filePath, false)}>
         <EditIcon slot="icon" />
         Rename...

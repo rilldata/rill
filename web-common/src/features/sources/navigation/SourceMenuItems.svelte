@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
@@ -17,7 +15,6 @@
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -197,20 +194,3 @@
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
-
-<NavigationMenuSeparator />
-
-<NavigationMenuItem
-  on:click={() => {
-    dispatch("rename-asset");
-  }}
->
-  <EditIcon slot="icon" />
-  Rename...
-</NavigationMenuItem>
-
-<!-- FIXME: this should pop up an "are you sure?" modal -->
-<NavigationMenuItem on:click={handleDeleteSource}>
-  <Cancel slot="icon" />
-  Delete
-</NavigationMenuItem>

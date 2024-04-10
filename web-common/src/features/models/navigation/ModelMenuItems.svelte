@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -10,7 +8,6 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -107,18 +104,3 @@
     </svelte:fragment>
   </NavigationMenuItem>
 {/if}
-
-<NavigationMenuSeparator />
-
-<NavigationMenuItem
-  on:click={() => {
-    dispatch("rename-asset");
-  }}
->
-  <EditIcon slot="icon" />
-  Rename...
-</NavigationMenuItem>
-<NavigationMenuItem on:click={() => handleDeleteModel(modelName)}>
-  <Cancel slot="icon" />
-  Delete
-</NavigationMenuItem>
