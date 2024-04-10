@@ -1,3 +1,5 @@
+import { V1DirEntry } from "@rilldata/web-common/runtime-client";
+
 export interface Directory {
   name: string; // TODO: Remove 'name' field and instead compute it downstream from 'path'
   path: string;
@@ -5,7 +7,7 @@ export interface Directory {
   files: string[]; // TODO: Use file 'path' instead of 'name'; compute 'name' downstream
 }
 
-export function transformFileList(filePaths: string[]): Directory {
+export function transformFileList(files: V1DirEntry[]): Directory {
   const rootDirectory: Directory = {
     name: "",
     path: "",
@@ -13,8 +15,10 @@ export function transformFileList(filePaths: string[]): Directory {
     files: [],
   };
 
-  for (const filePath of filePaths) {
-    const parts = filePath.split("/");
+  for (const file of files) {
+    const parts = file.path?.split("/") ?? [];
+    if (parts.length === 0) continue;
+
     const fileName = parts.pop();
     let currentDirectory = rootDirectory;
 
@@ -41,7 +45,16 @@ export function transformFileList(filePaths: string[]): Directory {
     }, "");
 
     if (fileName) {
-      currentDirectory.files.push(fileName);
+      if (file.isDir) {
+        currentDirectory.directories.push({
+          name: fileName,
+          path: file.path ?? "",
+          directories: [],
+          files: [],
+        });
+      } else {
+        currentDirectory.files.push(fileName);
+      }
     }
   }
 

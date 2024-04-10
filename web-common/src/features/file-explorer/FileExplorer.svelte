@@ -6,17 +6,20 @@
   $: getFileTree = createRuntimeServiceListFiles("default", undefined, {
     query: {
       select: (data) => {
-        if (!data || !data.paths) return;
+        if (!data || !data.files?.length) return;
 
-        const paths = data.paths
+        const files = data.files
           // remove leading slash
-          .map((path) => path.slice(1))
+          .map((file) => ({
+            path: file.path?.slice(1) ?? "",
+            isDir: !!file.isDir,
+          }))
           // sort alphabetically case-insensitive
           .sort((a, b) =>
-            a.localeCompare(b, undefined, { sensitivity: "base" }),
+            a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
           );
 
-        const fileTree = transformFileList(paths);
+        const fileTree = transformFileList(files);
 
         return fileTree;
       },

@@ -1,3 +1,4 @@
+import { V1DirEntry } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 import { transformFileList } from "./transform-file-list";
 
@@ -5,7 +6,11 @@ describe("transformFileList", () => {
   const testCases = [
     {
       description: "transforms a flat list of files",
-      fileList: ["file1.yaml", "file2.py", "file3.md"],
+      fileList: [
+        { path: "file1.yaml", isDir: false },
+        { path: "file2.py", isDir: false },
+        { path: "file3.md", isDir: false },
+      ] as V1DirEntry[],
       expectedStructure: {
         name: "",
         path: "",
@@ -15,7 +20,13 @@ describe("transformFileList", () => {
     },
     {
       description: "transforms a nested list of files into directories",
-      fileList: ["dir1/fileA.sql", "dir2/dir3/fileAB.sql"],
+      fileList: [
+        { path: "dir1", isDir: true },
+        { path: "dir1/fileA.sql", isDir: false },
+        { path: "dir1/dir4", isDir: true },
+        { path: "dir2/dir3", isDir: true },
+        { path: "dir2/dir3/fileAB.sql", isDir: false },
+      ] as V1DirEntry[],
       expectedStructure: {
         name: "",
         path: "",
@@ -23,7 +34,14 @@ describe("transformFileList", () => {
           {
             name: "dir1",
             path: "dir1",
-            directories: [],
+            directories: [
+              {
+                name: "dir4",
+                path: "dir1/dir4",
+                directories: [],
+                files: [],
+              },
+            ],
             files: ["fileA.sql"],
           },
           {
