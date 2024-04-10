@@ -19,7 +19,7 @@
     class:!opacity-100={suppressTooltip}
     aria-label={label}
     {...getAttrs(builders)}
-    on:click|preventDefault
+    on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
   >
     <slot />
