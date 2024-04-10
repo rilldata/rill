@@ -163,6 +163,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 	// Check dimension expressions are valid
 	for idx, d := range mv.Dimensions {
 		idx := idx
+		d := d
 		grp.Go(func() error {
 			err := validateDimension(ctx, olap, t, d, fields)
 			if err != nil {
@@ -181,6 +182,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 	// Check measure expressions are valid
 	for idx, m := range mv.Measures {
 		idx := idx
+		m := m
 		grp.Go(func() error {
 			err := validateMeasure(ctx, olap, t, m)
 			if err != nil {
