@@ -1,12 +1,18 @@
 <script lang="ts">
+  import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { directoryState } from "./directory-store";
   import NavFile from "./NavFile.svelte";
   import type { Directory } from "./transform-file-list";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let directory: Directory;
-
-  $: console.log("directories", directory?.directories);
+  export let onRename: (filePath: string, isDir: boolean) => void;
+  export let onDelete: (filePath: string) => void;
 
   function toggleDirectory(directory: Directory): void {
     directoryState.toggle(directory.name);
@@ -17,9 +23,7 @@
     return path === "" ? 0 : path.split("/").length;
   }
 
-  function getLeftPaddingForDirectoryLevel(dirLevel: number) {
-    return 4 + (1 - dirLevel) * 2;
-  }
+  let contextMenuOpen = false;
 </script>
 
 {#if directory?.directories}
@@ -27,9 +31,8 @@
     {@const expanded = $directoryState[dir.name]}
     {@const directoryLevel = getDirectoryLevelFromPath(dir.path)}
     <button
-      class="pl-{getLeftPaddingForDirectoryLevel(
-        directoryLevel,
-      )} pr-2 py-0.5 w-full flex gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
+      style:padding-left="{5 + directoryLevel * 14}px"
+      class="pr-2 py-0.5 w-full text-left flex justify-between group gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
       on:click={() => toggleDirectory(dir)}
     >
       {#if expanded}
@@ -38,17 +41,45 @@
         <CaretDownIcon className="transform -rotate-90" />
       {/if}
 
-      {dir.name}
+      <span class="truncate w-full">{dir.name}</span>
+      <DropdownMenu.Root bind:open={contextMenuOpen}>
+        <DropdownMenu.Trigger asChild let:builder>
+          <ContextButton
+            builders={[builder]}
+            id="more-actions-{dir.name}"
+            label="{dir.name} actions menu trigger"
+            suppressTooltip={contextMenuOpen}
+            tooltipText="More actions"
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content
+          align="start"
+          class="border-none bg-gray-800 text-white min-w-60"
+          side="right"
+          sideOffset={16}
+        >
+          <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
+            <EditIcon slot="icon" />
+            Rename...
+          </NavigationMenuItem>
+          <NavigationMenuItem on:click={() => onDelete(dir.path)}>
+            <Cancel slot="icon" />
+            Delete
+          </NavigationMenuItem>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
     </button>
 
     {#if expanded}
       <!-- Recursive call to display subdirectories -->
-      <svelte:self directory={dir} />
+      <svelte:self directory={dir} {onRename} {onDelete} />
     {/if}
   {/each}
 {/if}
 
 {#each directory.files as file}
   {@const filePath = directory.path ? `${directory.path}/${file}` : file}
-  <NavFile {filePath} />
+  <NavFile {filePath} {onRename} {onDelete} />
 {/each}

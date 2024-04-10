@@ -1,19 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
-  import {
-    getFileAPIPathFromNameAndType,
-    getLabel,
-    getRouteFromName,
-  } from "./entity-mappers";
   import {
     INVALID_NAME_MESSAGE,
     VALID_NAME_PATTERN,
@@ -21,54 +17,58 @@
   } from "./name-utils";
 
   export let closeModal: () => void;
-  export let entityType: EntityType;
-  export let currentAssetName: string;
+  export let filePath: string;
+  export let isDir: boolean;
 
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
+  const [folder, assetName] = splitFolderAndName(filePath);
+
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
-      newName: currentAssetName,
+      newName: assetName,
     },
     validationSchema: yup.object({
       newName: yup
         .string()
         .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         .required("Enter a name!")
-        .notOneOf([currentAssetName], `That's the current name!`),
+        .notOneOf([assetName], `That's the current name!`),
     }),
     onSubmit: async (values) => {
       if (
-        isDuplicateName(
-          values?.newName,
-          currentAssetName,
-          $allNamesQuery?.data ?? [],
-        )
+        isDuplicateName(values?.newName, assetName, $allNamesQuery?.data ?? [])
       ) {
         error = `Name ${values.newName} is already in use`;
         return;
       }
       try {
-        await renameFileArtifact(
-          runtimeInstanceId,
-          getFileAPIPathFromNameAndType(currentAssetName, entityType),
-          getFileAPIPathFromNameAndType(values.newName, entityType),
-          entityType,
-        );
-        goto(getRouteFromName(values.newName, entityType), {
-          replaceState: true,
-        });
+        const newPath = (folder ? `${folder}/` : "") + values.newName;
+        await renameFileArtifact(runtimeInstanceId, filePath, newPath);
+        if (isDir) {
+          if ($page.url.pathname.startsWith(`/files/${filePath}`)) {
+            // if the file focused has the dir then replace the dir path to the new one
+            void goto(
+              $page.url.pathname.replace(
+                `/files/${filePath}`,
+                `/files/${newPath}`,
+              ),
+            );
+          }
+        } else {
+          void goto(`/files/${newPath}`, {
+            replaceState: true,
+          });
+        }
         closeModal();
       } catch (err) {
         error = err.response.data.message;
       }
     },
   });
-
-  $: entityLabel = getLabel(entityType);
 </script>
 
 <Dialog
@@ -91,8 +91,8 @@
           bind:value={$form["newName"]}
           claimFocusOnMount
           error={$errors["newName"]}
-          id="{entityLabel}-name"
-          label="{entityLabel} name"
+          id="entity-name"
+          label="entity name"
         />
       </div>
     </form>
