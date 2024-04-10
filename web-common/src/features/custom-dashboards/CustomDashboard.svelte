@@ -172,14 +172,14 @@
     role="presentation"
     class="size-full overflow-y-auto overflow-x-hidden relative"
     on:scroll={handleScroll}
+    on:click|self={deselect}
   >
     <div
-      class="dash"
+      class="dash pointer-events-none"
       role="presentation"
       style:width="{DEFAULT_WIDTH}px"
       style:height="{maxBottom * gridCell}px"
       style:transform="scale({scale})"
-      on:click|self={deselect}
     >
       {#each charts as chart, i (i)}
         {@const selected = i === selectedIndex}
