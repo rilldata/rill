@@ -46,7 +46,7 @@
           <BreadcrumbItem
             label={currentDashboard?.title || currentDashboardName}
             href=""
-            menuOptions={$dashboards?.data?.length > 1 &&
+            menuItems={$dashboards?.data?.length > 1 &&
               $dashboards.data.map((listing) => {
                 return {
                   key: listing.meta.name.name,
@@ -56,7 +56,7 @@
                 };
               })}
             menuKey={currentDashboardName}
-            onSelectMenuOption={(dashboard) =>
+            onSelectMenuItem={(dashboard) =>
               dispatch("select-dashboard", dashboard)}
             isCurrentPage={onDashboardPage}
           />

@@ -21,12 +21,12 @@
   <BreadcrumbItem
     label={alertName}
     href={`/${orgName}/${projectName}/-/alerts/${alertName}`}
-    menuOptions={$alerts.data?.resources.map((resource) => ({
+    menuItems={$alerts.data?.resources.map((resource) => ({
       key: resource.meta.name.name,
       main: resource.alert.spec.title || resource.meta.name.name,
     }))}
     menuKey={alertName}
-    onSelectMenuOption={(alert) =>
+    onSelectMenuItem={(alert) =>
       goto(`/${orgName}/${projectName}/-/alerts/${alert}`)}
     isCurrentPage={onAlertPage}
   />

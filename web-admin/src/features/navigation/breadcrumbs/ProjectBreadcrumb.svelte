@@ -35,13 +35,13 @@
     href={onReportPage
       ? `/${orgName}/${projectName}/-/reports`
       : `/${orgName}/${projectName}`}
-    menuOptions={$projects.data?.projects?.length > 1 &&
+    menuItems={$projects.data?.projects?.length > 1 &&
       $projects.data.projects.map((proj) => ({
         key: proj.name,
         main: proj.name,
       }))}
     menuKey={projectName}
-    onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
+    onSelectMenuItem={(project) => goto(`/${orgName}/${project}`)}
     isCurrentPage={onProjectPage}
   />
 {/if}

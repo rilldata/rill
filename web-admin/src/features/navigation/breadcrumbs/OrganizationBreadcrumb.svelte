@@ -38,13 +38,13 @@
   <BreadcrumbItem
     label={orgName}
     href={`/${orgName}`}
-    menuOptions={$organizations.data?.organizations?.length > 1 &&
+    menuItems={$organizations.data?.organizations?.length > 1 &&
       $organizations.data.organizations.map((org) => ({
         key: org.name,
         main: org.name,
       }))}
     menuKey={orgName}
-    onSelectMenuOption={onOrgChange}
+    onSelectMenuItem={onOrgChange}
     isCurrentPage={onOrganizationPage}
   >
     <OrganizationAvatar organization={orgName} slot="icon" />

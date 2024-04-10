@@ -12,6 +12,7 @@ import {
   V1Expression,
   V1MetricsViewSpec,
   createQueryServiceMetricsViewTimeRange,
+  createRuntimeServiceListResources,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
@@ -41,6 +42,23 @@ export function useDashboard(instanceId: string, metricViewName: string) {
 export function useValidDashboards(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
     data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
+  );
+}
+
+export function useValidVisualizations(instanceId: string) {
+  return createRuntimeServiceListResources(
+    instanceId,
+    undefined, // TODO: it'd be nice if we could provide multiple kinds here
+    {
+      query: {
+        select: (data) => {
+          // Filter for valid Metrics Explorers and all Custom Dashboards (which don't yet have a valid/invalid state)
+          return data?.resources?.filter(
+            (res) => !!res.metricsView?.state?.validSpec || res.dashboard,
+          );
+        },
+      },
+    },
   );
 }
 

@@ -21,12 +21,12 @@
   <BreadcrumbItem
     label={reportName}
     href={`/${orgName}/${projectName}/-/reports/${reportName}`}
-    menuOptions={$reports.data?.resources.map((resource) => ({
+    menuItems={$reports.data?.resources.map((resource) => ({
       key: resource.meta.name.name,
       main: resource.report.spec.title || resource.meta.name.name,
     }))}
     menuKey={reportName}
-    onSelectMenuOption={(report) =>
+    onSelectMenuItem={(report) =>
       goto(`/${orgName}/${projectName}/-/reports/${report}`)}
     isCurrentPage={onReportPage}
   />
