@@ -21,7 +21,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Connection string",
-			Placeholder: "", // TODO add connection string example
+			Placeholder: "http(s)://username:password@localhost:9000",
 			Secret:      true,
 		},
 	},
@@ -41,7 +41,7 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}
 	dsn, ok := config["dsn"].(string)
-	if !ok {
+	if !ok || dsn == "" {
 		return nil, fmt.Errorf("require dsn to open pinot connection")
 	}
 

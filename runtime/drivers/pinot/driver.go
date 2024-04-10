@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	sqlDriver "database/sql/driver"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
+	"net/url"
 	"reflect"
 	"strings"
 	"time"
@@ -18,15 +20,39 @@ import (
 type pinotDriver struct{}
 
 func (d *pinotDriver) Open(dsn string) (sqlDriver.Conn, error) {
-	// TODO dsn parsing to connect to actual server
-	// use pinot.NewWithConfig for extra configs
-	connection, err := pinot.NewFromController("localhost:9000")
+	// validate dsn - it should be a valid URL, may contain basic auth credentials
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("invalid DSN: %w", err)
+	}
+
+	var authHeader map[string]string
+	if u.User != nil {
+		uname := u.User.Username()
+		pwd, passwordSet := u.User.Password()
+		if uname == "" || !passwordSet {
+			return nil, fmt.Errorf("DSN should contain valid basic auth credentials")
+		}
+		// clear user info from URL so that u.String() doesn't include it
+		u.User = nil
+		authString := fmt.Sprintf("%s:%s", uname, pwd)
+		authHeader = map[string]string{
+			"Authorization": fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(authString))),
+		}
+	}
+
+	pinotConn, err := pinot.NewWithConfig(&pinot.ClientConfig{
+		ExtraHTTPHeader: authHeader,
+		ControllerConfig: &pinot.ControllerConfig{
+			ControllerAddress: u.String(),
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
 	// TODO check if it needs to be configurable
-	connection.UseMultistageEngine(true)
-	return &conn{pinotConn: connection}, nil
+	pinotConn.UseMultistageEngine(true)
+	return &conn{pinotConn: pinotConn}, nil
 }
 
 func init() {

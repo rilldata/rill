@@ -361,7 +361,11 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 func (q *MetricsViewTimeSeries) buildPinotSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause, timezone string) string {
 	dateTruncSpecifier := drivers.DialectPinot.ConvertToDateTruncSpecifier(q.TimeGranularity)
 
-	// TODO: handle shift later, input format should be take from user
+	// TODO: handle shift later, not native support so everything needs to be converted to millis and then shifted
+	if (q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1) || (q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1) {
+		panic("time shift not supported for Pinot dialect yet")
+	}
+
 	timeClause := fmt.Sprintf("DATETRUNC('%s', %s,'MILLISECONDS','%s')", dateTruncSpecifier, safeName(mv.TimeDimension), timezone)
 	sql := fmt.Sprintf(
 		`SELECT %s AS %s, %s FROM %s WHERE %s GROUP BY 1 %s ORDER BY 1`,
