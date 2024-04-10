@@ -15,7 +15,7 @@
   export let onDelete: (filePath: string) => void;
 
   function toggleDirectory(directory: Directory): void {
-    directoryState.toggle(directory.name);
+    directoryState.toggle(directory.path);
   }
 
   function getDirectoryLevelFromPath(path: string) {
@@ -28,7 +28,7 @@
 
 {#if directory?.directories}
   {#each directory.directories as dir}
-    {@const expanded = $directoryState[dir.name]}
+    {@const expanded = $directoryState[dir.path]}
     {@const directoryLevel = getDirectoryLevelFromPath(dir.path)}
     <button
       style:padding-left="{8 + (directoryLevel - 1) * 14}px"

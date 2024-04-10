@@ -1,13 +1,13 @@
 import { Writable, writable } from "svelte/store";
 
 interface DirectoryState {
-  [directoryName: string]: boolean;
+  [directoryPath: string]: boolean;
 }
 
 interface CustomWritable<T> extends Writable<T> {
-  expand: (directoryName: string) => void;
-  collapse: (directoryName: string) => void;
-  toggle: (directoryName: string) => void;
+  expand: (directoryPath: string) => void;
+  collapse: (directoryPath: string) => void;
+  toggle: (directoryPath: string) => void;
   reset: () => void;
 }
 
@@ -18,14 +18,14 @@ const createDirectoryStore = (): CustomWritable<DirectoryState> => {
     subscribe,
     set,
     update,
-    expand: (directoryName: string) => {
-      update((state) => ({ ...state, [directoryName]: true }));
+    expand: (directoryPath: string) => {
+      update((state) => ({ ...state, [directoryPath]: true }));
     },
-    collapse: (directoryName: string) => {
-      update((state) => ({ ...state, [directoryName]: false }));
+    collapse: (directoryPath: string) => {
+      update((state) => ({ ...state, [directoryPath]: false }));
     },
-    toggle: (directoryName: string) => {
-      update((state) => ({ ...state, [directoryName]: !state[directoryName] }));
+    toggle: (directoryPath: string) => {
+      update((state) => ({ ...state, [directoryPath]: !state[directoryPath] }));
     },
     reset: () => {
       set({});
