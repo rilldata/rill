@@ -13,7 +13,7 @@ type FileType =
   | "yml"
   | "txt"
   | "csv"
-  | "parque"
+  | "parquet"
   | "json";
 
 export async function load({ parent, url }) {

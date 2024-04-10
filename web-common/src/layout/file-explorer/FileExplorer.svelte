@@ -16,8 +16,9 @@
   import Resizer from "../Resizer.svelte";
   import SurfaceControlButton from "../navigation/SurfaceControlButton.svelte";
   import Folder from "./Folder.svelte";
+  import type { DirectoryOrFile } from "./createMap";
 
-  export let files;
+  export let files: DirectoryOrFile;
 
   let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
