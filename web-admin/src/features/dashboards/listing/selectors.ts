@@ -245,7 +245,6 @@ export function useDashboardsV2(
         const resources = data.resources.filter(
           (res) => res.metricsView || res.dashboard,
         );
-        console.log("resources", resources);
         return resources.map((resource) => {
           const refreshedOn = getDashboardRefreshedOn(resource, data.resources);
           return { resource, refreshedOn };
