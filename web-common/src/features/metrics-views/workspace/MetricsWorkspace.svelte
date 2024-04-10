@@ -6,7 +6,7 @@
   import MetricsInspector from "./inspector/MetricsInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
 
-  export let metricsDefName: string;
+  export let filePath: string;
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
@@ -15,10 +15,10 @@
 
 <WorkspaceContainer inspector={showInspector}>
   <MetricsWorkspaceHeader
-    slot="header"
-    {metricsDefName}
+    {filePath}
     showInspectorToggle={showInspector}
+    slot="header"
   />
-  <MetricsEditor slot="body" {metricsDefName} />
-  <MetricsInspector slot="inspector" {metricsDefName} />
+  <MetricsEditor {filePath} slot="body" />
+  <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>

@@ -30,7 +30,9 @@
         <Switch bind:checked={enabled} />
       {/if}
     </span>
-    {#if description}
+    {#if $$slots["description"]}
+      <slot name="description" />
+    {:else if description}
       <span class="text-sm text-slate-600">{description}</span>
     {/if}
   </div>

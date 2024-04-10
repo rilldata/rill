@@ -183,7 +183,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		}
 
 		// Error if the repository is not in sync with the remote
-		if !repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name) {
+		ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
@@ -281,7 +285,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		ch.PrintfBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
 		ch.PrintfBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
 		ch.PrintfBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
-		if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
+		ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			ch.PrintfWarn("Aborted\n")
 			return nil
 		}
@@ -442,7 +450,11 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 	ch.Print("Therefore, your project must be on Github before you deploy it to Rill.\n")
 	ch.Print("You can continue here and Rill can create a Github Repository for you or you can exit the command and create a repository manually.\n\n")
-	if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
+	ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
+	if err != nil {
+		return err
+	}
+	if !ok {
 		ch.PrintfBold(githubSetupMsg)
 		return nil
 	}
@@ -451,7 +463,10 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	if len(pollRes.Organizations) > 0 {
 		repoOwners := []string{pollRes.Account}
 		repoOwners = append(repoOwners, pollRes.Organizations...)
-		repoOwner = cmdutil.SelectPrompt("Select Github account", repoOwners, pollRes.Account)
+		repoOwner, err = cmdutil.SelectPrompt("Select Github account", repoOwners, pollRes.Account)
+		if err != nil {
+			return err
+		}
 	}
 	// create and verify
 	githubRepository, err := createGithubRepository(ctx, ch, pollRes, localGitPath, repoOwner)
@@ -815,18 +830,18 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, pr
 	time.Sleep(2 * time.Second)
 }
 
-func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) bool {
+func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) (bool, error) {
 	syncStatus, err := gitutil.GetSyncStatus(gitPath, branch, remoteName)
 	if err != nil {
 		// ignore errors since check is best effort and can fail in multiple cases
-		return true
+		return true, nil
 	}
 
 	switch syncStatus {
 	case gitutil.SyncStatusUnspecified:
-		return true
+		return true, nil
 	case gitutil.SyncStatusSynced:
-		return true
+		return true, nil
 	case gitutil.SyncStatusModified:
 		ch.PrintfWarn("Some files have been locally modified. These changes will not be present in the deployed project.\n")
 	case gitutil.SyncStatusAhead:

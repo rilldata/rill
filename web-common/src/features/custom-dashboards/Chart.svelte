@@ -42,7 +42,6 @@
     const api_url = `http://localhost:9009/v1/instances/default/charts/${chartName}/data`;
     const response = await fetch(api_url);
 
-    console.log({ response });
     if (!response.ok) {
       error = `HTTP error! status: ${response.status}`;
       console.warn(response);
