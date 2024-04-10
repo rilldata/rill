@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { Code2Icon, Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import ApiIcon from "../../components/icons/APIIcon.svelte";
@@ -9,45 +10,216 @@
   import File from "../../components/icons/File.svelte";
   import ReportIcon from "../../components/icons/ReportIcon.svelte";
   import ThemeIcon from "../../components/icons/ThemeIcon.svelte";
+  import { appScreen } from "../../layout/app-store";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
+  import { createRuntimeServicePutFileAndReconcile } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { useDashboardFileNames } from "../dashboards/selectors";
+  import {
+    NEW_ALERT_FILE_CONTENT,
+    NEW_API_FILE_CONTENT,
+    NEW_CHART_FILE_CONTENT,
+    NEW_MODEL_FILE_CONTENT,
+    NEW_REPORT_FILE_CONTENT,
+    NEW_THEME_FILE_CONTENT,
+  } from "../file-explorer/new-files";
+  import { useModelFileNames } from "../models/selectors";
+  import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { getName } from "./name-utils";
 
-  function handleAddSource() {
-    console.log("Add source");
+  const createFile = createRuntimeServicePutFileAndReconcile();
+
+  $: instanceId = $runtime.instanceId;
+
+  // TODO: we should only fetch the existing names when needed
+  $: useModelNames = useModelFileNames(instanceId);
+  $: dashboardNames = useDashboardFileNames(instanceId);
+
+  // TODO: get current directory
+  $: currentDirectory = "dir-1";
+
+  /**
+   * Open the add source modal
+   */
+  async function handleAddSource() {
+    addSourceModal.open();
+
+    await behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.SourceAdd,
+      BehaviourEventMedium.Button,
+      $appScreen.type,
+      MetricsEventSpace.LeftPanel,
+    );
   }
 
-  function handleAddModel() {
-    console.log("Add model");
+  /**
+   * Put an example Model file in the `models` directory
+   */
+  async function handleAddModel() {
+    const newModelName = getName("model", $useModelNames?.data ?? []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId,
+        path: `models/${newModelName}.sql`,
+        blob: NEW_MODEL_FILE_CONTENT,
+        create: true,
+        createOnly: true,
+      },
+    });
+
+    await goto(`/files/models/${newModelName}.sql`);
   }
 
-  function handleAddDashboard() {
-    console.log("Add dashboard");
+  /**
+   * Put an example Dashboard file in the `dashboards` directory
+   */
+  async function handleAddDashboard() {
+    const newDashboardName = getName("dashboard", $dashboardNames?.data ?? []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId,
+        path: `dashboards/${newDashboardName}.yaml`,
+        blob: "",
+        create: true,
+        createOnly: true,
+      },
+    });
+
+    await goto(`/files/dashboards/${newDashboardName}.yaml`);
   }
 
+  /**
+   * Put a folder in the current directory
+   */
   function handleAddFolder() {
     console.log("Add folder");
   }
 
-  function handleAddBlankFile() {
-    console.log("Add blank file");
+  /**
+   * Put a blank file in the current directory
+   */
+  async function handleAddBlankFile() {
+    const nextFileName = getName("file", []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId: instanceId,
+        path: `${currentDirectory}/${nextFileName}`,
+        blob: undefined,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+
+    await goto(`/files/${currentDirectory}/${nextFileName}`);
   }
 
-  function handleAddAPI() {
-    console.log("Add API");
+  /**
+   * Put an example API file in the `apis` directory
+   */
+  async function handleAddAPI() {
+    const nextFileName = getName("api", []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId: instanceId,
+        path: `apis/${nextFileName}.yaml`,
+        blob: NEW_API_FILE_CONTENT,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+
+    await goto(`/files/apis/${nextFileName}.yaml`);
   }
 
-  function handleAddChart() {
-    console.log("Add chart");
+  /**
+   * Put an example Chart file in the `charts` directory
+   */
+  async function handleAddChart() {
+    const nextFileName = getName("chart", []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId: instanceId,
+        path: `charts/${nextFileName}.yaml`,
+        blob: NEW_CHART_FILE_CONTENT,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+
+    await goto(`/files/charts/${nextFileName}.yaml`);
   }
 
-  function handleAddTheme() {
-    console.log("Add theme");
+  /**
+   * Put an example Theme file in the `themes` directory
+   */
+  async function handleAddTheme() {
+    const nextFileName = getName("theme", []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId: instanceId,
+        path: `themes/${nextFileName}.yaml`,
+        blob: NEW_THEME_FILE_CONTENT,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+
+    await goto(`/files/themes/${nextFileName}.yaml`);
   }
 
-  function handleAddReport() {
-    console.log("Add report");
+  /**
+   * Put an example Report file in the `reports` directory
+   */
+  async function handleAddReport() {
+    const nextFileName = getName("report", []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId: instanceId,
+        path: `reports/${nextFileName}.yaml`,
+        blob: NEW_REPORT_FILE_CONTENT,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+
+    await goto(`/files/reports/${nextFileName}.yaml`);
   }
 
-  function handleAddAlert() {
-    console.log("Add alert");
+  /**
+   * Put an example Alert file in the `alerts` directory
+   */
+  async function handleAddAlert() {
+    const nextFileName = getName("alert", []);
+
+    void $createFile.mutateAsync({
+      data: {
+        instanceId: instanceId,
+        path: `alerts/${nextFileName}.yaml`,
+        blob: NEW_ALERT_FILE_CONTENT,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+
+    await goto(`/files/alerts/${nextFileName}.yaml`);
   }
 </script>
 
@@ -67,7 +239,7 @@
         </div>
       </button>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content class="w-[240px]">
+    <DropdownMenu.Content class="w-[240px]" align="start">
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddSource}>
         <Database size="16px" className="text-gray-900" />
         Source
