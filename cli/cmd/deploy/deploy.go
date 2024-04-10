@@ -493,6 +493,11 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
+	// create main branch, default branch is master which has issues with github
+	if err := gitutil.CreateNewBranch(localGitPath, "main"); err != nil {
+		return fmt.Errorf("failed to create main branch: %w", err)
+	}
+
 	// git add .
 	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
 		return fmt.Errorf("failed to add files to git: %w", err)

@@ -222,3 +222,12 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	}
 	return SyncStatusSynced, nil
 }
+
+func CreateNewBranch(repoPath, branch string) error {
+	// Couldn't find any way to create a new local branch in a repository that has no commits yet using go-git
+	// use git commands directly
+	cmd := exec.Command("git", "checkout", "-b", branch)
+	cmd.Dir = repoPath
+	_, err := cmd.Output()
+	return err
+}
