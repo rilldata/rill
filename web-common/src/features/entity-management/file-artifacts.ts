@@ -11,6 +11,7 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
+import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import {
   type V1ParseError,
   V1ReconcileStatus,
@@ -180,6 +181,10 @@ export class FileArtifact {
         };
       },
     );
+  }
+
+  public getEntityName() {
+    return get(this.name)?.name ?? extractFileName(this.path);
   }
 
   private updateNameIfChanged(resource: V1Resource) {

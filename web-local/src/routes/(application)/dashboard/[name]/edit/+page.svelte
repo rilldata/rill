@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
@@ -11,11 +12,21 @@
   import { onMount } from "svelte";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
-  $: metricViewName = $page.params.name;
-  $: filePath = getFileAPIPathFromNameAndType(
-    metricViewName,
-    EntityType.MetricsDefinition,
-  );
+  export let data: { fileArtifact?: FileArtifact } = {};
+
+  let filePath: string;
+  let metricViewName: string;
+
+  $: if (data.fileArtifact) {
+    filePath = data.fileArtifact.path;
+    metricViewName = data.fileArtifact.getEntityName();
+  } else {
+    metricViewName = $page.params.name;
+    filePath = getFileAPIPathFromNameAndType(
+      metricViewName,
+      EntityType.MetricsDefinition,
+    );
+  }
 
   const { readOnly } = featureFlags;
 

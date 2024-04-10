@@ -16,6 +16,7 @@ export function parseKindAndNameFromFile(
   const kind = FolderToResourceKind[folder];
   const name = extractFileName(fileName);
 
+  console.log(filePath, fileContents);
   if (filePath.endsWith(".yaml")) {
     return tryParseYaml(kind, name, fileContents);
   } else if (filePath.endsWith(".sql")) {
