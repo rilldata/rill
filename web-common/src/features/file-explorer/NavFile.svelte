@@ -8,6 +8,8 @@
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import File from "../../components/icons/File.svelte";
+  import { fileArtifacts } from "../entity-management/file-artifacts";
+  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -16,6 +18,9 @@
   $: fileName = filePath.split("/").pop();
   $: fileLevel = getDirectoryLevelFromPath(filePath);
   $: isCurrentFile = filePath === $page.params.file;
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: name = fileArtifact.name;
+  $: resourceKind = $name?.kind;
 
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
@@ -36,7 +41,11 @@
   on:click={() => navigate(filePath)}
   style:padding-left="{5 + fileLevel * 14}px"
 >
-  <File className="shrink-0" size="14px" />
+  <svelte:component
+    this={resourceKind ? resourceIconMapping[resourceKind] : File}
+    size="14px"
+    className="text-gray-900"
+  />
   <span class="truncate w-full">{fileName}</span>
   <DropdownMenu.Root bind:open={contextMenuOpen}>
     <DropdownMenu.Trigger asChild let:builder>

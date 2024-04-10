@@ -1,15 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Code2Icon, Database, Folder, PlusCircleIcon } from "lucide-svelte";
-  import ApiIcon from "../../components/icons/APIIcon.svelte";
-  import AlertCircleOutline from "../../components/icons/AlertCircleOutline.svelte";
+  import { Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import Chart from "../../components/icons/Chart.svelte";
-  import DashboardIcon from "../../components/icons/DashboardIcon.svelte";
   import File from "../../components/icons/File.svelte";
-  import ReportIcon from "../../components/icons/ReportIcon.svelte";
-  import ThemeIcon from "../../components/icons/ThemeIcon.svelte";
   import { appScreen } from "../../layout/app-store";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
@@ -31,6 +25,8 @@
   import { useModelFileNames } from "../models/selectors";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import { getName } from "./name-utils";
+  import { resourceIconMapping } from "./resource-icon-mapping";
+  import { ResourceKind } from "./resource-selectors";
 
   const createFile = createRuntimeServicePutFileAndReconcile();
 
@@ -241,15 +237,27 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="w-[240px]" align="start">
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddSource}>
-        <Database size="16px" className="text-gray-900" />
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Source]}
+          size="16px"
+          className="text-gray-900"
+        />
         Source
       </DropdownMenu.Item>
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddModel}>
-        <Code2Icon size="16px" className="text-gray-900" />
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          size="16px"
+          className="text-gray-900"
+        />
         Model
       </DropdownMenu.Item>
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddDashboard}>
-        <DashboardIcon size="16px" className="text-gray-900" />
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.MetricsView]}
+          size="16px"
+          className="text-gray-900"
+        />
         Dashboard
       </DropdownMenu.Item>
       <DropdownMenu.Sub>
@@ -263,20 +271,45 @@
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
-            <ApiIcon size="16px" /> API
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.API]}
+              size="16px"
+              className="text-gray-900"
+            />
+            API
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
-            <Chart size="16px" /> Chart
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Chart]}
+              size="16px"
+              className="text-gray-900"
+            />
+            Chart
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
-            <ThemeIcon size="16px" /> Theme
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Theme]}
+              size="16px"
+              className="text-gray-900"
+            />
+            Theme
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
-            <ReportIcon size="16px" /> Report
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Report]}
+              size="16px"
+              className="text-gray-900"
+            />
+            Report
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAlert}>
-            <AlertCircleOutline size="16px" /> Alert
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Alert]}
+              size="16px"
+              className="text-gray-900"
+            />
+            Alert
           </DropdownMenu.Item>
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>

@@ -21,6 +21,7 @@ export enum ResourceKind {
   Theme = "rill.runtime.v1.Theme",
   Chart = "rill.runtime.v1.Chart",
   Dashboard = "rill.runtime.v1.Dashboard",
+  API = "rill.runtime.v1.API",
 }
 export const SingletonProjectParserName = "parser";
 export const ResourceShortNameToKind: Record<string, ResourceKind> = {
