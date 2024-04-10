@@ -36,7 +36,7 @@
       on:click={() => toggleDirectory(dir)}
     >
       <CaretDownIcon
-        className="text-gray-400 {expanded ? 'transform -rotate-90' : ''}"
+        className="text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
       />
       <span class="truncate w-full">{dir.name}</span>
       <DropdownMenu.Root bind:open={contextMenuOpen}>
