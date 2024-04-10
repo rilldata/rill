@@ -5,7 +5,6 @@ export const vector = {
     return [add[0] + initial[0], add[1] + initial[1]];
   },
   multiply: (vector: Vector, multiplier: Vector): Vector => {
-    // console.log("multiply");
     return [vector[0] * multiplier[0], vector[1] * multiplier[1]];
   },
   subtract: (minuend: Vector, subtrahend: Vector): Vector => {

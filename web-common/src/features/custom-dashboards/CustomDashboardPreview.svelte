@@ -1,12 +1,11 @@
 <script lang="ts">
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
-  import GridLines from "./GridLines.svelte";
   import Element from "./Element.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
   import { createEventDispatcher } from "svelte";
-
-  const DEFAULT_WIDTH = 2000;
+  import { DEFAULT_WIDTH, DEFAULT_RADIUS } from "./constants";
+  import Wrapper from "./Wrapper.svelte";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
@@ -37,7 +36,7 @@
 
   $: gapSize = DEFAULT_WIDTH * (gap / 1000);
   $: gridCell = DEFAULT_WIDTH / columns;
-  $: radius = gridCell * 0.08;
+  $: radius = gridCell * DEFAULT_RADIUS;
   $: gridVector = [gridCell, gridCell] as Vector;
 
   $: mouseDelta = vector.divide(vector.subtract(mousePosition, startMouse), [
@@ -164,65 +163,37 @@
 
 <svelte:window on:mouseup={handleMouseUp} on:mousemove={handleMouseMove} />
 
-<div bind:contentRect class="wrapper">
-  {#if showGrid || changing}
-    <GridLines {gridCell} {scrollOffset} {gapSize} {radius} {scale} />
-  {/if}
-  <div
-    role="presentation"
-    class="size-full overflow-y-auto overflow-x-hidden relative"
-    on:scroll={handleScroll}
-    on:click|self={deselect}
-  >
-    <div
-      class="dash pointer-events-none"
-      role="presentation"
-      style:width="{DEFAULT_WIDTH}px"
-      style:height="{maxBottom * gridCell}px"
-      style:transform="scale({scale})"
-    >
-      {#each charts as chart, i (i)}
-        {@const selected = i === selectedIndex}
-        {@const interacting = selected && changing}
-        {#if chart.chart}
-          <Element
-            {scale}
-            {i}
-            {chart}
-            {radius}
-            {selected}
-            {interacting}
-            {gapSize}
-            width={interacting
-              ? finalResize[0]
-              : Number(chart.width) * gridCell}
-            height={interacting
-              ? finalResize[1]
-              : Number(chart.height) * gridCell}
-            top={interacting ? finalDrag[1] : Number(chart.y) * gridCell}
-            left={interacting ? finalDrag[0] : Number(chart.x) * gridCell}
-            on:change={handleChange}
-          />
-        {/if}
-      {/each}
-    </div>
-  </div>
-</div>
-
-<style lang="postcss">
-  .wrapper {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-    user-select: none;
-    margin: 0;
-    pointer-events: auto;
-  }
-
-  .dash {
-    transform-origin: top left;
-    position: absolute;
-    touch-action: none;
-  }
-</style>
+<Wrapper
+  width={DEFAULT_WIDTH}
+  height={maxBottom * gridCell}
+  {scale}
+  {showGrid}
+  {gapSize}
+  {gridCell}
+  {radius}
+  {changing}
+  bind:contentRect
+  on:scroll={handleScroll}
+  on:click={deselect}
+>
+  {#each charts as chart, i (i)}
+    {@const selected = i === selectedIndex}
+    {@const interacting = selected && changing}
+    {#if chart.chart}
+      <Element
+        {scale}
+        {i}
+        {chart}
+        {radius}
+        {selected}
+        {interacting}
+        {gapSize}
+        width={interacting ? finalResize[0] : Number(chart.width) * gridCell}
+        height={interacting ? finalResize[1] : Number(chart.height) * gridCell}
+        top={interacting ? finalDrag[1] : Number(chart.y) * gridCell}
+        left={interacting ? finalDrag[0] : Number(chart.x) * gridCell}
+        on:change={handleChange}
+      />
+    {/if}
+  {/each}
+</Wrapper>

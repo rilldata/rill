@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import CustomDashboard from "@rilldata/web-common/features/custom-dashboards/CustomDashboard.svelte";
+  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
   import {
     WorkspaceContainer,
@@ -264,7 +264,7 @@
     {/if}
 
     {#if selectedView == "viz" || selectedView == "split"}
-      <CustomDashboard
+      <CustomDashboardPreview
         {snap}
         {gap}
         {charts}
