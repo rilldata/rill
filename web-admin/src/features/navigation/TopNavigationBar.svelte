@@ -26,6 +26,7 @@
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { Entry } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useAlerts } from "../alerts/selectors";
+  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -59,11 +60,14 @@
     },
   );
 
+  $: dashboardsQuery = useValidDashboards(instanceId);
+
   $: alertsQuery = useAlerts(instanceId);
   $: reportsQuery = useReports(instanceId);
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
+  $: dashboards = $dashboardsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
@@ -76,6 +80,15 @@
     return map.set(proj.name, {
       label: proj.name,
       href: `/${organization}/${proj.name}`,
+    });
+  }, new Map<string, Entry>());
+
+  $: dashboardOptions = dashboards.reduce((map, dashboard) => {
+    return map.set(dashboard.meta.name.name, {
+      label:
+        dashboard.metricsView?.state?.validSpec?.title ||
+        dashboard.meta.name.name,
+      href: `/${organization}/${project}/${dashboard.meta.name.name}`,
     });
   }, new Map<string, Entry>());
 
@@ -96,10 +109,11 @@
   $: levels = [
     organizationOptions,
     projectOptions,
+    dashboardOptions,
     report ? reportOptions : alert ? alertOptions : null,
   ];
 
-  $: selections = [organization, project, report || alert];
+  $: selections = [organization, project, dashboard, report || alert];
 </script>
 
 <div
