@@ -5,9 +5,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
-  import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
+  import { beforeNavigate } from "$app/navigation";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
@@ -22,19 +21,20 @@
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import MetricsEditorContainer from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditorContainer.svelte";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
 
   const { readOnly } = featureFlags;
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
   export let data;
 
+  let fileNotFound = false;
   let showDeployModal = false;
   let previewStatus: string[] = [];
 
   onMount(() => {
     if ($readOnly) {
-      throw error(404, "Page not found");
+      fileNotFound = true;
     }
   });
 
@@ -53,13 +53,7 @@
 
   $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
-      onError: (err) => {
-        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-          throw error(404, "Dashboard not found");
-        }
-
-        throw error(err.response?.status || 500, err.message);
-      },
+      onError: () => (fileNotFound = true),
       // this will ensure that any changes done outside our app is pulled in.
       refetchOnWindowFocus: true,
     },
@@ -85,11 +79,15 @@
     previewStatus = ["Explore your metrics dashboard"];
   }
 
-  const onChangeCallback = async (
+  beforeNavigate(() => {
+    fileNotFound = false;
+  });
+
+  async function onChangeCallback(
     e: Event & {
       currentTarget: EventTarget & HTMLInputElement;
     },
-  ) => {
+  ) {
     const newRoute = await handleEntityRename(
       instanceId,
       e.currentTarget,
@@ -97,41 +95,50 @@
       EntityType.MetricsDefinition,
     );
     if (newRoute) await goto(newRoute + "/edit");
-  };
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 
-<WorkspaceContainer inspector={isModelingSupported}>
-  <WorkspaceHeader
-    slot="header"
-    showInspectorToggle={isModelingSupported}
-    titleInput={metricViewName}
-    on:change={onChangeCallback}
-  >
-    <div slot="cta" class="flex gap-x-2">
-      <Tooltip distance={8}>
-        <Button on:click={() => (showDeployModal = true)} type="secondary">
-          Deploy
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Deploy this dashboard to Rill Cloud
-        </TooltipContent>
-      </Tooltip>
-      <PreviewButton
-        {metricViewName}
-        status={previewStatus}
-        disabled={previewDisbaled}
-      />
+{#if fileNotFound}
+  <div class="size-full grid place-content-center">
+    <div class="flex flex-col items-center gap-y-2">
+      <AlertCircleOutline size="40px" />
+      <h1>Page not found</h1>
     </div>
-  </WorkspaceHeader>
+  </div>
+{:else}
+  <WorkspaceContainer inspector={isModelingSupported}>
+    <WorkspaceHeader
+      slot="header"
+      showInspectorToggle={isModelingSupported}
+      titleInput={metricViewName}
+      on:change={onChangeCallback}
+    >
+      <div slot="cta" class="flex gap-x-2">
+        <Tooltip distance={8}>
+          <Button on:click={() => (showDeployModal = true)} type="secondary">
+            Deploy
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Deploy this dashboard to Rill Cloud
+          </TooltipContent>
+        </Tooltip>
+        <PreviewButton
+          {metricViewName}
+          status={previewStatus}
+          disabled={previewDisbaled}
+        />
+      </div>
+    </WorkspaceHeader>
 
-  <MetricsEditor slot="body" {yaml} {filePath} {allErrors} {metricViewName} />
+    <MetricsEditor slot="body" {yaml} {filePath} {allErrors} {metricViewName} />
 
-  <MetricsInspector {filePath} slot="inspector" />
-</WorkspaceContainer>
+    <MetricsInspector {filePath} slot="inspector" />
+  </WorkspaceContainer>
+{/if}
 
 <DeployDashboardCta
   on:close={() => (showDeployModal = false)}

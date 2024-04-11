@@ -131,7 +131,7 @@ export function useCreateDashboardFromTableUIAction(
       }
 
       // Preview
-      await goto(`/dashboard/${newDashboardName}`);
+      await goto(`/dashboard/${newDashboardName}/edit`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,

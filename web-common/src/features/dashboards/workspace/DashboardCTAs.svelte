@@ -33,9 +33,7 @@
     $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  async function viewMetrics(metricViewName: string) {
-    await goto(`/dashboard/${metricViewName}/edit`);
-
+  function fireTelemetry() {
     behaviourEvent
       .fireNavigationEvent(
         metricViewName,
@@ -62,8 +60,9 @@
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
+        href={`/dashboard/${metricViewName}/edit`}
         disabled={!dashboardIsIdle}
-        on:click={() => viewMetrics(metricViewName)}
+        on:click={fireTelemetry}
         type="secondary"
       >
         Edit Metrics <MetricsIcon size="16px" />

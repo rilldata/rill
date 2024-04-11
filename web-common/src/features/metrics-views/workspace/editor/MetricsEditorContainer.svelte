@@ -15,11 +15,13 @@ It will show an error message if passed in.
 
 <div class="flex flex-col w-full h-full">
   <div
-    class="border-white bg-white w-full h-full overflow-auto"
-    class:border-b-hidden={error}
-    class:border-red-500={error}
+    class="size-full overflow-auto border border-white bg-white"
+    class:!border-red-500={error}
+    class:border-b-0={error}
   >
-    <slot />
+    <div class="w-fit h-fit min-h-full min-w-full">
+      <slot />
+    </div>
   </div>
 
   {#if error}
