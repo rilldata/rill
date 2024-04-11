@@ -5,7 +5,7 @@
   export let filePath: string;
 </script>
 
-<div class="flex gap-x-4 w-full">
+<div class="flex gap-x-4 size-full">
   <ChartsEditor {filePath} />
   <ChartDisplay {filePath} />
 </div>

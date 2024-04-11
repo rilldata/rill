@@ -176,6 +176,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		return nil, err
 	}
 
+	// Merge opts.Variables with some local overrides of the defaults in runtime/drivers.InstanceConfig.
+	vars := map[string]string{
+		"rill.download_row_limit": "0", // 0 means unlimited
+		"rill.stage_changes":      "false",
+	}
+	for k, v := range opts.Variables {
+		vars[k] = v
+	}
+
 	// Prepare connectors for the instance
 	var connectors []*runtimev1.Connector
 
@@ -186,7 +195,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
-		val, err := isExternalStorageEnabled(dbDirPath, opts.Variables)
+		val, err := isExternalStorageEnabled(dbDirPath, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -265,7 +274,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		AIConnector:      aiConnector.Name,
 		CatalogConnector: catalogConnector.Name,
 		Connectors:       connectors,
-		Variables:        opts.Variables,
+		Variables:        vars,
 		Annotations:      map[string]string{},
 		WatchRepo:        true,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load

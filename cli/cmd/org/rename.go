@@ -34,7 +34,10 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
+				name, err = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
+				if err != nil {
+					return err
+				}
 			}
 
 			if ch.Interactive {
@@ -50,7 +53,11 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if !force {
 				msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
-				if !cmdutil.ConfirmPrompt(msg, "", false) {
+				ok, err := cmdutil.ConfirmPrompt(msg, "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
 					return nil
 				}
 			}

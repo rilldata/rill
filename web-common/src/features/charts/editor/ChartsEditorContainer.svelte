@@ -11,24 +11,22 @@ It will show an error message if passed in.
   import { slide } from "svelte/transition";
 
   export let error: LineStatus | V1ReconcileError | undefined = undefined;
-  export let height = "calc(100vh - var(--header-height))";
 </script>
 
-<div class="flex flex-col w-1/2 h-full content-stretch" style:height>
-  <div class="grow bg-white overflow-y-auto">
-    <div
-      class="border-white w-full overflow-y-auto"
-      class:border-b-hidden={error}
-      class:border-red-500={error}
-    >
-      <slot />
-    </div>
+<div class="flex flex-col size-full bg-white">
+  <div
+    class="overflow-auto size-full border-white"
+    class:border-b-hidden={error}
+    class:border-red-500={error}
+  >
+    <slot />
   </div>
+
   {#if error}
     <div
       role="status"
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
-      class="editor-error ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-72 overflow-auto"
+      class="m-2 editor-error ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-2 max-h-72"
     >
       <div class="flex gap-x-2 items-center">
         <CancelCircle />{error.message}

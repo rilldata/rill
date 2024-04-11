@@ -50,7 +50,11 @@ func ReconcileCmd(ch *cmdutil.Helper) *cobra.Command {
 			if reset || resp.ProdDeployment == nil {
 				if !force {
 					msg := "This will create a new deployment, causing downtime as data sources are reloaded from scratch. If you just need to refresh data, use `rill project refresh`. Do you want to continue?"
-					if !cmdutil.ConfirmPrompt(msg, "", false) {
+					ok, err := cmdutil.ConfirmPrompt(msg, "", false)
+					if err != nil {
+						return err
+					}
+					if !ok {
 						return nil
 					}
 				}

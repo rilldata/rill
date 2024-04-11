@@ -4,19 +4,19 @@
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import CreateAlert from "../alerts/CreateAlert.svelte";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
-  import Breadcrumbs from "./Breadcrumbs.svelte";
+  import Breadcrumbs from "./breadcrumbs/Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import CreateAlert from "../alerts/CreateAlert.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 

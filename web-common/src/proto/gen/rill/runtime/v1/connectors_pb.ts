@@ -922,6 +922,16 @@ export class TableInfo extends Message<TableInfo> {
   databaseSchema = "";
 
   /**
+   * @generated from field: bool is_default_database = 5;
+   */
+  isDefaultDatabase = false;
+
+  /**
+   * @generated from field: bool is_default_database_schema = 6;
+   */
+  isDefaultDatabaseSchema = false;
+
+  /**
    * @generated from field: string name = 2;
    */
   name = "";
@@ -943,6 +953,8 @@ export class TableInfo extends Message<TableInfo> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "is_default_database", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "is_default_database_schema", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

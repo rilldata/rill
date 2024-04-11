@@ -37,7 +37,10 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				toEnv = args[0]
 			} else {
-				toEnv = cmdutil.SelectPrompt("Select environment", maps.Keys(envURLs), fromEnv)
+				toEnv, err = cmdutil.SelectPrompt("Select environment", maps.Keys(envURLs), fromEnv)
+				if err != nil {
+					return err
+				}
 			}
 
 			err = switchEnv(ch, fromEnv, toEnv)

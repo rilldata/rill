@@ -31,6 +31,8 @@ export function getFilePathFromNameAndType(
       return `dashboards/${name}.yaml`;
     case EntityType.Chart:
       return `charts/${name}.yaml`;
+    case EntityType.Dashboard:
+      return `/custom-dashboards/${name}.yaml`;
     default:
       throw new Error("Unrecognized EntityType");
   }

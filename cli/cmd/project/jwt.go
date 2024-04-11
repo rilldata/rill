@@ -32,7 +32,10 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// prompt for name from user
-				name = cmdutil.SelectPrompt("Select project", names, "")
+				name, err = cmdutil.SelectPrompt("Select project", names, "")
+				if err != nil {
+					return err
+				}
 			}
 
 			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{

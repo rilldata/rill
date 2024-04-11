@@ -460,13 +460,6 @@ paths:
                 type: boolean
               watchRepo:
                 type: boolean
-              stageChanges:
-                type: boolean
-              modelDefaultMaterialize:
-                type: boolean
-              modelMaterializeDelaySeconds:
-                type: integer
-                format: int64
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -710,6 +703,37 @@ paths:
                   Will cause the operation to fail if the file already exists.
                   It should only be set when create = true.
             title: Request message for RuntimeService.PutFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/create-dir/-/{path}:
+    post:
+      summary: CreateDirectory create a directory for the given path
+      operationId: RuntimeService_CreateDirectory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDirectoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.CreateDirectory
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
@@ -3741,6 +3765,9 @@ definitions:
       implementsNotifier:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1CreateDirectoryResponse:
+    type: object
+    title: Response message for RuntimeService.CreateDirectory
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -3773,13 +3800,6 @@ definitions:
         type: boolean
       watchRepo:
         type: boolean
-      stageChanges:
-        type: boolean
-      modelDefaultMaterialize:
-        type: boolean
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -3803,22 +3823,28 @@ definitions:
     properties:
       chart:
         type: string
-      columns:
-        type: string
+      x:
+        type: integer
         format: int64
-      rows:
-        type: string
+      "y":
+        type: integer
+        format: int64
+      width:
+        type: integer
+        format: int64
+      height:
+        type: integer
         format: int64
   v1DashboardSpec:
     type: object
     properties:
       title:
         type: string
-      gridColumns:
-        type: string
+      columns:
+        type: integer
         format: int64
-      gridRows:
-        type: string
+      gap:
+        type: integer
         format: int64
       components:
         type: array
@@ -3870,6 +3896,13 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1DirEntry:
+    type: object
+    properties:
+      path:
+        type: string
+      isDir:
+        type: boolean
   v1EditInstanceResponse:
     type: object
     properties:
@@ -3986,7 +4019,7 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-    title: Reponse message for RuntimeService.GetFile
+    title: Response message for RuntimeService.GetFile
   v1GetInstanceResponse:
     type: object
     properties:
@@ -4069,13 +4102,6 @@ definitions:
         type: boolean
       watchRepo:
         type: boolean
-      stageChanges:
-        type: boolean
-      modelDefaultMaterialize:
-        type: boolean
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -4119,10 +4145,11 @@ definitions:
   v1ListFilesResponse:
     type: object
     properties:
-      paths:
+      files:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1DirEntry'
     title: Response message for RuntimeService.ListFiles
   v1ListInstancesResponse:
     type: object
@@ -5832,6 +5859,10 @@ definitions:
         type: string
       databaseSchema:
         type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
       name:
         type: string
       hasUnsupportedDataTypes:
