@@ -55,6 +55,7 @@
     database,
     databaseSchema,
     tableName,
+    "models", // TODO
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );

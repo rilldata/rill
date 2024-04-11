@@ -9,6 +9,7 @@
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -82,6 +83,7 @@
     filePath = getFileAPIPathFromNameAndType(assetName, entity);
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
+  $: [folder] = splitFolderAndName(filePath);
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -212,6 +214,7 @@
     const modelName = await createModelFromSourceV2(
       queryClient,
       tableName ?? "",
+      folder,
     );
     await goto(`/files/models/${modelName}.sql`);
     await behaviourEvent.fireNavigationEvent(
@@ -314,6 +317,7 @@
               {collapse}
               modelHasError={$hasErrors}
               modelName={assetName}
+              {filePath}
             />
           {/if}
         </div>

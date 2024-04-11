@@ -31,6 +31,7 @@
     database,
     databaseSchema,
     table,
+    "models", // TODO
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
@@ -46,7 +47,7 @@
     showInspectorToggle={false}
     titleInput={fullyQualifiedTableName}
   >
-    <svelte:fragment slot="cta" let:width={headerWidth}>
+    <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
         <Button on:click={createDashboardFromTable}>

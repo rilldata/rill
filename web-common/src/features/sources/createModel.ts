@@ -31,6 +31,7 @@ export async function createModelFromSource(
 export async function createModelFromSourceV2(
   queryClient: QueryClient,
   sourceName: string,
+  folder: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -39,14 +40,10 @@ export async function createModelFromSourceV2(
   const newModelName = getName(`${sourceName}_model`, modelNames);
 
   // Create model
-  await runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(newModelName, EntityType.Model),
-    {
-      blob: `select * from ${sourceName}`,
-      createOnly: true,
-    },
-  );
+  await runtimeServicePutFile(instanceId, `/${folder}/${newModelName}.sql`, {
+    blob: `select * from ${sourceName}`,
+    createOnly: true,
+  });
 
   // Done
   return newModelName;

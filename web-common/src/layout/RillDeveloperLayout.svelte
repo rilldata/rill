@@ -5,7 +5,7 @@
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import {
     duplicateSourceName,
-    sourceImportedName,
+    sourceImportedPath,
   } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
@@ -72,7 +72,7 @@
   {#if $addSourceModal || $duplicateSourceName}
     <AddSourceModal />
   {/if}
-  <SourceImportedModal source={$sourceImportedName} />
+  <SourceImportedModal sourcePath={$sourceImportedPath} />
 
   <div
     class="index-body absolute w-screen h-screen"

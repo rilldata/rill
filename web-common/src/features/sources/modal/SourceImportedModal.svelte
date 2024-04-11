@@ -3,45 +3,56 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
-  import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
+  import {
+    FileArtifact,
+    fileArtifacts,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { extractFileName } from "../extract-file-name";
-  import { useSource } from "../selectors";
 
-  export let source: string | null;
+  export let sourcePath: string | null;
+  $: [folder] = splitFolderAndName(sourcePath ?? "");
+  $: sourceName = extractFileName(sourcePath ?? "");
+
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
+  let fileArtifact: FileArtifact;
   let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
-  $: if (source) {
-    sourceQuery = useSource(runtimeInstanceId, source);
+  $: if (sourcePath) {
+    fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
+    sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
   $: createDashboardFromTable =
-    source !== null
+    sourcePath !== null
       ? useCreateDashboardFromTableUIAction(
           $runtime.instanceId,
           sinkConnector as string,
           "",
           "",
-          source,
+          sourceName,
+          folder,
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
         )
       : null;
 
   function close() {
-    sourceImportedName.set(null);
+    sourceImportedPath.set(null);
   }
 
   async function goToSource() {
-    await goto(`/files/sources/${extractFileName($sourceImportedName ?? "")}`);
+    await goto(`/files/${extractFileName($sourceImportedPath ?? "")}`);
     close();
   }
 
@@ -55,7 +66,7 @@
   }
 </script>
 
-<Dialog on:close={close} open={!!source}>
+<Dialog on:close={close} open={!!sourcePath}>
   <div class="flex flex-auto gap-x-2.5" slot="title">
     <div class="w-6 m-auto ml-0 mr-0">
       <CheckCircleNew className="fill-primary-500" size="24px" />
@@ -65,8 +76,8 @@
   <div class="flex flex-auto gap-x-2.5" slot="body">
     <div class="w-6" />
     <div class="text-slate-500">
-      <span class="font-mono text-slate-800 break-all">{source}</span> has been ingested.
-      What would you like to do next?
+      <span class="font-mono text-slate-800 break-all">{sourceName}</span> has been
+      ingested. What would you like to do next?
     </div>
   </div>
   <div class="flex flex-row-reverse gap-x-2 mt-4" slot="footer">

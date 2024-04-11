@@ -1,6 +1,7 @@
 <script lang="ts">
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -15,6 +16,7 @@
   export let filePath: string;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: [folder] = splitFolderAndName(filePath);
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -39,6 +41,7 @@
     "",
     "",
     tableName,
+    folder,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );

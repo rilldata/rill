@@ -5,6 +5,7 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ReconcileStatus } from "../../../runtime-client";
@@ -12,9 +13,12 @@
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
 
+  export let filePath: string;
   export let modelName: string;
   export let hasError = false;
   export let collapse = false;
+
+  $: [folder] = splitFolderAndName(filePath);
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
   $: connector = $modelQuery.data?.model?.spec?.connector;
@@ -28,6 +32,7 @@
     "",
     "",
     modelName,
+    folder,
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );

@@ -4,6 +4,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -34,6 +35,7 @@
 
   export let filePath: string;
 
+  $: [folder] = splitFolderAndName(filePath);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -65,6 +67,7 @@
     "",
     "",
     tableName,
+    folder,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );

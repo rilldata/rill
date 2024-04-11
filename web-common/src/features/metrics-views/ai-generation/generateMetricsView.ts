@@ -53,6 +53,7 @@ export function useCreateDashboardFromTableUIAction(
   database: string,
   databaseSchema: string,
   tableName: string,
+  folder: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
@@ -85,10 +86,7 @@ export function useCreateDashboardFromTableUIAction(
       `${tableName}_dashboard`,
       get(dashboardNames).data ?? [],
     );
-    const newFilePath = getFilePathFromNameAndType(
-      newDashboardName,
-      EntityType.MetricsDefinition,
-    );
+    const newFilePath = `/${folder}/${newDashboardName}.yaml`;
 
     try {
       // First, request an AI-generated dashboard

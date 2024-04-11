@@ -17,6 +17,7 @@
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
+  export let filePath: string;
   export let modelName: string;
   export let suppressTooltips = false;
   export let modelHasError = false;
@@ -67,10 +68,10 @@
     </Button>
     <Menu
       dark
+      let:toggleFloatingElement
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       slot="floating-element"
-      let:toggleFloatingElement
     >
       <MenuItem
         on:select={() => {
@@ -107,7 +108,12 @@
 </Tooltip>
 
 {#if availableDashboards?.length === 0}
-  <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
+  <CreateDashboardButton
+    {collapse}
+    hasError={modelHasError}
+    {modelName}
+    {filePath}
+  />
 {:else if availableDashboards?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button
