@@ -11,7 +11,7 @@
   const zeroVector = [0, 0] as [0, 0];
 
   export let columns = 20;
-  export let charts: V1DashboardComponent[];
+  export let components: V1DashboardComponent[];
   export let gap = 4;
   export let showGrid = false;
   export let snap = false;
@@ -64,18 +64,21 @@
     const cellPosition = getCell(dragPosition, true);
     const dimensions = getCell(resizeDimenions, true);
 
-    charts[selectedIndex].x =
+    components[selectedIndex].x =
       dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0];
-    charts[selectedIndex].y =
+    components[selectedIndex].y =
       dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
 
-    charts[selectedIndex].width = Math.abs(dimensions[0]);
-    charts[selectedIndex].height = Math.abs(dimensions[1]);
+    components[selectedIndex].width = Math.abs(dimensions[0]);
+    components[selectedIndex].height = Math.abs(dimensions[1]);
 
     dispatch("update", {
       index: selectedIndex,
-      position: [charts[selectedIndex].x, charts[selectedIndex].y],
-      dimensions: [charts[selectedIndex].width, charts[selectedIndex].height],
+      position: [components[selectedIndex].x, components[selectedIndex].y],
+      dimensions: [
+        components[selectedIndex].width,
+        components[selectedIndex].height,
+      ],
     });
 
     reset();
@@ -121,7 +124,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    selectedChartName = charts[index].chart ?? null;
+    selectedChartName = components[index].chart ?? null;
     changing = true;
   }
 
@@ -155,7 +158,7 @@
     selectedChartName = null;
   }
 
-  $: maxBottom = charts.reduce((max, el) => {
+  $: maxBottom = components.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
@@ -176,22 +179,26 @@
   on:scroll={handleScroll}
   on:click={deselect}
 >
-  {#each charts as chart, i (i)}
+  {#each components as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
-    {#if chart.chart}
+    {#if component.chart}
       <Element
         {scale}
         {i}
-        {chart}
+        chart={component}
         {radius}
         {selected}
         {interacting}
         {gapSize}
-        width={interacting ? finalResize[0] : Number(chart.width) * gridCell}
-        height={interacting ? finalResize[1] : Number(chart.height) * gridCell}
-        top={interacting ? finalDrag[1] : Number(chart.y) * gridCell}
-        left={interacting ? finalDrag[0] : Number(chart.x) * gridCell}
+        width={interacting
+          ? finalResize[0]
+          : Number(component.width) * gridCell}
+        height={interacting
+          ? finalResize[1]
+          : Number(component.height) * gridCell}
+        top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
+        left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
         on:change={handleChange}
       />
     {/if}

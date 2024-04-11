@@ -75,11 +75,7 @@
     selectedChartName &&
     getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart);
 
-  $: ({
-    columns,
-    gap,
-    components: charts = [],
-  } = dashboard ?? ({} as V1DashboardSpec));
+  $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
 
   const onChangeCallback = async (
     e: Event & {
@@ -127,26 +123,26 @@
       dimensions: Vector;
     }>,
   ) {
-    const components = [...charts];
+    const newComponents = [...components];
 
-    components[e.detail.index].width = e.detail.dimensions[0];
-    components[e.detail.index].height = e.detail.dimensions[1];
+    newComponents[e.detail.index].width = e.detail.dimensions[0];
+    newComponents[e.detail.index].height = e.detail.dimensions[1];
 
-    components[e.detail.index].x = e.detail.position[0];
-    components[e.detail.index].y = e.detail.position[1];
+    newComponents[e.detail.index].x = e.detail.position[0];
+    newComponents[e.detail.index].y = e.detail.position[1];
 
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components,
+      newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const components = [...charts];
-    components.push({
+    const newComponents = [...components];
+    newComponents.push({
       chart: e.detail.chartName,
       height: 4,
       width: 4,
@@ -157,7 +153,7 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components,
+      newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
@@ -267,7 +263,7 @@
       <CustomDashboardPreview
         {snap}
         {gap}
-        {charts}
+        {components}
         {columns}
         {showGrid}
         bind:selectedChartName

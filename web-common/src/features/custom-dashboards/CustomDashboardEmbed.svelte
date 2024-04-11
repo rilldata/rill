@@ -6,7 +6,7 @@
   import Component from "./Component.svelte";
 
   export let columns = 20;
-  export let charts: V1DashboardComponent[];
+  export let components: V1DashboardComponent[];
   export let gap = 4;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -17,7 +17,7 @@
   $: gridCell = DEFAULT_WIDTH / columns;
   $: radius = gridCell * DEFAULT_RADIUS;
 
-  $: maxBottom = charts.reduce((max, el) => {
+  $: maxBottom = components.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
@@ -29,20 +29,20 @@
   height={maxBottom * gridCell}
   bind:contentRect
 >
-  {#each charts as chart, i (i)}
-    {#if chart.chart}
+  {#each components as component, i (i)}
+    {#if component.chart}
       <Component
         embed
         {i}
         {scale}
         {radius}
         padding={gapSize}
-        width={Number(chart.width) * gridCell}
-        height={Number(chart.height) * gridCell}
-        left={Number(chart.x) * gridCell}
-        top={Number(chart.y) * gridCell}
+        width={Number(component.width) * gridCell}
+        height={Number(component.height) * gridCell}
+        left={Number(component.x) * gridCell}
+        top={Number(component.y) * gridCell}
       >
-        <Chart chartName={chart.chart} />
+        <Chart chartName={component.chart} />
       </Component>
     {/if}
   {/each}
