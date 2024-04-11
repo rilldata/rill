@@ -11,15 +11,13 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import {
-    createRuntimeServicePutFile,
-    createRuntimeServicePutFileAndReconcile,
-  } from "../../runtime-client";
+  import { createRuntimeServicePutFile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useAlertFileNames } from "../alerts/selectors";
   import { useAPIFileNames } from "../apis/selectors";
   import { useChartFileNames } from "../charts/selectors";
   import { useDashboardFileNames } from "../dashboards/selectors";
+  import { featureFlags } from "../feature-flags";
   import {
     NEW_ALERT_FILE_CONTENT,
     NEW_API_FILE_CONTENT,
@@ -37,6 +35,7 @@
   import { ResourceKind } from "./resource-selectors";
 
   const createFile = createRuntimeServicePutFile();
+  const { customDashboards } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
 
@@ -302,14 +301,16 @@
             API
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Chart]}
-              className="text-gray-900"
-              size="16px"
-            />
-            Chart
-          </DropdownMenu.Item>
+          {#if $customDashboards}
+            <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
+              <svelte:component
+                this={resourceIconMapping[ResourceKind.Chart]}
+                className="text-gray-900"
+                size="16px"
+              />
+              Chart
+            </DropdownMenu.Item>
+          {/if}
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Theme]}
