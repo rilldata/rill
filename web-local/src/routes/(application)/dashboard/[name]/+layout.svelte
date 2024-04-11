@@ -5,6 +5,7 @@
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
   import { page } from "$app/stores";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
 
   export let data;
 
@@ -46,6 +47,7 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
+    <DashboardCtAs metricViewName={dashboardName} />
   </header>
   <slot />
 </div>

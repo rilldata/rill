@@ -16,9 +16,9 @@
 
 <script lang="ts">
   export let pathParts: (PathOptions | null)[];
-  export let currentPath: (string | null)[] = [];
+  export let currentPath: (string | undefined)[] = [];
 
-  $: currentPage = currentPath.findLastIndex((level) => level !== null);
+  $: currentPage = currentPath.findLastIndex(Boolean);
 </script>
 
 <nav class="flex gap-x-0 pl-1.5 items-center">
