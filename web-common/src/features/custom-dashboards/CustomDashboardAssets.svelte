@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
@@ -25,7 +25,7 @@
       $customDashboardFileNames.data ?? [],
     );
     await createCustomDashboard($runtime.instanceId, newCustomDashboardName);
-    await goto(`/custom-dashboard/${newCustomDashboardName}`);
+    await goto(`/files/custom-dashboards/${newCustomDashboardName}`);
   }
 </script>
 

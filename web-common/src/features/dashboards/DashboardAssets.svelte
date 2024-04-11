@@ -58,7 +58,7 @@
       },
     });
 
-    await goto(`/dashboard/${newDashboardName}`);
+    await goto(`/files/dashboards/${newDashboardName}`);
   };
 
   $: canAddDashboard = $readOnly === false;

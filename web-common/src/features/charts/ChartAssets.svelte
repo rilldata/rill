@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
@@ -11,7 +12,6 @@
   import ChartMenuItems from "./ChartMenuItems.svelte";
   import { createChart } from "./createChart";
   import { useChartFileNames } from "./selectors";
-  import { flip } from "svelte/animate";
 
   let showCharts = true;
 
@@ -20,7 +20,7 @@
   async function handleAddChart() {
     const newChartName = getName("chart", $chartFileNames.data ?? []);
     await createChart($runtime.instanceId, newChartName);
-    await goto(`/chart/${newChartName}`);
+    await goto(`/files/charts/${newChartName}`);
   }
 </script>
 
