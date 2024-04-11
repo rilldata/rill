@@ -399,6 +399,8 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   useAi?: boolean;
 };
 
+export type RuntimeServiceCreateDirectoryBody = { [key: string]: any };
+
 export type RuntimeServicePutFileBody = {
   blob?: string;
   create?: boolean;
@@ -580,12 +582,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -613,6 +609,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -724,17 +726,6 @@ export interface V1SourceV2 {
 
 export type V1SourceSpecProperties = { [key: string]: any };
 
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
-}
-
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
@@ -751,6 +742,17 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
+}
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
 }
 
 export interface V1S3Object {
@@ -1263,23 +1265,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1365,6 +1350,23 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1572,7 +1574,7 @@ export interface V1ListInstancesResponse {
 }
 
 export interface V1ListFilesResponse {
-  paths?: string[];
+  files?: V1DirEntry[];
 }
 
 export interface V1ListExamplesResponse {
@@ -1744,6 +1746,11 @@ export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
 
+export interface V1DirEntry {
+  path?: string;
+  isDir?: boolean;
+}
+
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -1822,6 +1829,10 @@ export interface V1CreateInstanceRequest {
   annotations?: V1CreateInstanceRequestAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;
+}
+
+export interface V1CreateDirectoryResponse {
+  [key: string]: any;
 }
 
 /**

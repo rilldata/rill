@@ -40,11 +40,11 @@ For more information about available DSN properties and setting an appropriate c
 
 ### Connecting to ClickHouse Cloud
 
-If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve the connection string from the admin navigation panel.
+If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
 ![ClickHouse Cloud connection string](/img/reference/olap-engines/clickhouse/clickhouse-cloud.png)
 
-Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you can pass in a https URL with `secure=true` and `skip_verify=true` as additional URL parameters:
+Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN):
 
 ```bash
 
@@ -112,5 +112,6 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 ## Additional Notes
 
-- At the moment, Rill does not officially support modeling with ClickHouse. If this is something you're interested in, please [contact us](../../contact.md).
+- At the moment, we do not officially support modeling with ClickHouse. If this is something you're interested in, please [contact us](../../contact.md).
 - For dashboards powered by ClickHouse, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
+- Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.

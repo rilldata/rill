@@ -9,6 +9,7 @@ import {
   getRuntimeServiceListResourcesQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
+  invalidateChartData,
   invalidateMetricsViewData,
   invalidateProfilingQueries,
   invalidationForMetricsViewData,
@@ -17,6 +18,7 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const MainResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -25,6 +27,7 @@ export const MainResourceKinds: {
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
   [ResourceKind.Chart]: true,
+  [ResourceKind.Dashboard]: true,
 };
 const UsedResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -125,6 +128,12 @@ async function invalidateResource(
 
     case ResourceKind.MetricsView:
       return invalidateMetricsViewData(queryClient, name, failed);
+
+    case ResourceKind.Chart:
+      return invalidateChartData(queryClient, name, failed);
+
+    case ResourceKind.Dashboard:
+    // TODO
   }
 }
 
@@ -194,7 +203,7 @@ export function refreshResource(
   );
 }
 
-export async function invalidateAllResources(queryClient: QueryClient) {
+export async function invalidateAllResources() {
   return queryClient.resetQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
