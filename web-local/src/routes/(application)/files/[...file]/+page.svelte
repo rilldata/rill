@@ -1,11 +1,13 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import {
     createRuntimeServiceGetFile,
@@ -18,8 +20,19 @@
   import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
+  const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+
   $: filePath = $page.params.file;
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileExtension = extractFileExtension(filePath);
+  $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
+
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+    query: {
+      enabled: !fileTypeUnsupported,
+    },
+  });
+  $: fileError = !!$fileQuery.error;
+  $: fileErrorMessage = $fileQuery.error?.response.data.message;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: name = fileArtifact.name;
   $: resourceKind = $name?.kind;
@@ -29,7 +42,7 @@
   $: isDashboard = resourceKind === ResourceKind.MetricsView;
   $: isChart = resourceKind === ResourceKind.Chart;
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
-  $: isUnknown =
+  $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
 
   // TODO: optimistically update the get file cache
@@ -66,8 +79,23 @@
   }
 </script>
 
-<!-- on:write={(evt) => $putFile.mutate(evt.detail.blob)} -->
-{#if isSource || isModel}
+{#if fileTypeUnsupported}
+  <div class="size-full grid place-content-center">
+    <div class="flex flex-col items-center gap-y-2">
+      <AlertCircleOutline size="40px" />
+      <h1>Unsupported file type.</h1>
+    </div>
+  </div>
+{:else if fileError}
+  <div class="size-full grid place-content-center">
+    <div class="flex flex-col items-center gap-y-2">
+      <AlertCircleOutline size="40px" />
+      <h1>
+        Error loading file: {fileErrorMessage}
+      </h1>
+    </div>
+  </div>
+{:else if isSource || isModel}
   <SourceModelPage data={{ fileArtifact }} />
 {:else if isDashboard}
   <DashboardPage data={{ fileArtifact }} />
@@ -75,7 +103,7 @@
   <ChartPage data={{ fileArtifact }} />
 {:else if isCustomDashboard}
   <CustomDashboardPage data={{ fileArtifact }} />
-{:else if isUnknown}
+{:else if isOther && $fileQuery.data}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
     <Editor
