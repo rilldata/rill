@@ -43,7 +43,7 @@ export async function waitForProfiling(
 }
 
 export function getEntityLink(page: Page, name: string) {
-  return page.getByRole("listitem", { name, exact: true });
+  return page.getByLabel(`${name} Nav Entry`);
 }
 
 /**

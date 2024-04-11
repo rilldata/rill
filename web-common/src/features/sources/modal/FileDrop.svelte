@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
@@ -61,9 +61,9 @@
         await createSource(runtimeInstanceId, tableName, yaml);
         await checkSourceImported(
           queryClient,
-          getFilePathFromNameAndType(tableName, EntityType.Table),
+          getFileAPIPathFromNameAndType(tableName, EntityType.Table),
         );
-        await goto(`/files/sources/${tableName}`);
+        await goto(`/files/sources/${tableName}.yaml`);
       } catch (err) {
         console.error(err);
       }

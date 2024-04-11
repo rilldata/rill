@@ -45,6 +45,7 @@
 </script>
 
 <button
+  aria-label="{fileName} Nav Entry"
   class="w-full group pr-2 text-left flex justify-between gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100 {isCurrentFile
     ? 'bg-slate-100 text-gray-900'
     : ''}"

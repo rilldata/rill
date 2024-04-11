@@ -38,7 +38,7 @@
           if (connector.name === undefined)
             throw new Error("connector name is undefined");
           await submitRemoteSourceForm(queryClient, connector.name, values);
-          await goto(`/files/sources/${values.sourceName}`);
+          await goto(`/files/sources/${values.sourceName}.yaml`);
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;

@@ -52,7 +52,7 @@
   }
 
   async function goToSource() {
-    await goto(`/files/${extractFileName($sourceImportedPath ?? "")}`);
+    await goto(`/files/${$sourceImportedPath ?? ""}`);
     close();
   }
 

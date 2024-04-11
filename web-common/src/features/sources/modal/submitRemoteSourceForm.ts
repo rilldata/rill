@@ -13,10 +13,7 @@ import {
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
-import {
-  getFileAPIPathFromNameAndType,
-  getFilePathFromNameAndType,
-} from "../../entity-management/entity-mappers";
+import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
@@ -84,7 +81,7 @@ export async function submitRemoteSourceForm(
   );
   checkSourceImported(
     queryClient,
-    getFilePathFromNameAndType(values.sourceName, EntityType.Table),
+    getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
   );
 
   // TODO: telemetry

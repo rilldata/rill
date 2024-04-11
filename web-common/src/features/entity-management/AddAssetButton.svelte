@@ -234,6 +234,7 @@
     <DropdownMenu.Trigger asChild let:builder>
       <button
         {...builder}
+        aria-label="Add Asset"
         class="p-2 bg-primary-50 hover:bg-primary-100 text-primary-700 hover:text-primary-800 w-full flex gap-x-2 items-center font-medium h-7 rounded-sm justify-center"
         class:open
         use:builder.action
@@ -246,7 +247,11 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-[240px]">
-      <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddSource}>
+      <DropdownMenu.Item
+        aria-label="Add Source"
+        class="flex gap-x-2"
+        on:click={handleAddSource}
+      >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Source]}
           className="text-gray-900"
@@ -254,7 +259,11 @@
         />
         Source
       </DropdownMenu.Item>
-      <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddModel}>
+      <DropdownMenu.Item
+        aria-label="Add Model"
+        class="flex gap-x-2"
+        on:click={handleAddModel}
+      >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
           className="text-gray-900"
@@ -262,7 +271,11 @@
         />
         Model
       </DropdownMenu.Item>
-      <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddDashboard}>
+      <DropdownMenu.Item
+        aria-label="Add Dashboard"
+        class="flex gap-x-2"
+        on:click={handleAddDashboard}
+      >
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
           className="text-gray-900"

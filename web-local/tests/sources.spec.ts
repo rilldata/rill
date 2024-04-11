@@ -14,7 +14,11 @@ import {
   createOrReplaceSource,
   uploadFile,
 } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
+import {
+  entityNotPresent,
+  waitForEntity,
+  waitForFileEntry,
+} from "./utils/waitHelpers";
 import { test } from "./utils/test";
 
 test.describe("sources", () => {
@@ -31,7 +35,6 @@ test.describe("sources", () => {
 
     // upload existing table and keep both
     await Promise.all([
-      waitForEntity(page, TestEntityType.Source, "AdBids", false),
       waitForAdBids(page, "AdBids_1"),
       uploadFile(page, "AdBids.csv", true, true),
     ]);
@@ -46,11 +49,16 @@ test.describe("sources", () => {
 
     // rename
     await renameEntityUsingMenu(page, "AdBids", "AdBids_new");
-    await waitForEntity(page, TestEntityType.Source, "AdBids_new", true);
-    await entityNotPresent(page, "AdBids");
+    await waitForFileEntry(
+      page,
+      `sources/AdBids_new.yaml`,
+      `AdBids_new.yaml`,
+      true,
+    );
+    await entityNotPresent(page, "AdBids.yaml");
 
     // delete
-    await deleteEntity(page, "AdBids_new");
+    await deleteEntity(page, "AdBids_new.yaml");
     await entityNotPresent(page, "AdBids_new");
     await entityNotPresent(page, "AdBids");
   });
