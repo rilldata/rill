@@ -24,7 +24,7 @@
   import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { Entry } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useAlerts } from "../alerts/selectors";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
 
@@ -78,14 +78,14 @@
 
   $: projectOptions = projects.reduce((map, { name: label }) => {
     return map.set(label, { label });
-  }, new Map<string, Entry>());
+  }, new Map<string, PathOption>());
 
   $: dashboardOptions = dashboards.reduce((map, { meta, metricsView }) => {
     const id = meta.name.name;
     return map.set(id, {
       label: metricsView?.state?.validSpec?.title || id,
     });
-  }, new Map<string, Entry>());
+  }, new Map<string, PathOption>());
 
   $: alertOptions = alerts.reduce((map, alert) => {
     const id = alert.meta.name.name;
@@ -93,7 +93,7 @@
       label: alert.alert.spec.title || id,
       section: "-/alerts",
     });
-  }, new Map<string, Entry>());
+  }, new Map<string, PathOption>());
 
   $: reportOptions = reports.reduce((map, report) => {
     const id = report.meta.name.name;
@@ -101,7 +101,7 @@
       label: report.report.spec.title || id,
       section: "-/reports",
     });
-  }, new Map<string, Entry>());
+  }, new Map<string, PathOption>());
 
   $: pathParts = [
     organizationOptions,

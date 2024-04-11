@@ -4,7 +4,7 @@
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
   import { page } from "$app/stores";
-  import type { Entry } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
 
   export let data;
 
@@ -25,9 +25,9 @@
     if (label && id) map.set(id, { label, section: "dashboard", depth: 0 });
 
     return map;
-  }, new Map<string, Entry>());
+  }, new Map<string, PathOption>());
 
-  $: projectOptions = new Map<string, Entry>([
+  $: projectOptions = new Map<string, PathOption>([
     [projectName ?? "", { label: projectName ?? "", href: "/" }],
   ]);
 

@@ -6,7 +6,7 @@
 
   export type PathOption = {
     label: string;
-    depth: number;
+    depth?: number;
     href?: string;
     section?: string;
   };
