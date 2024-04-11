@@ -13,6 +13,9 @@
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { createRuntimeServicePutFileAndReconcile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { useAlertFileNames } from "../alerts/selectors";
+  import { useAPIFileNames } from "../apis/selectors";
+  import { useChartFileNames } from "../charts/selectors";
   import { useDashboardFileNames } from "../dashboards/selectors";
   import {
     NEW_ALERT_FILE_CONTENT,
@@ -23,7 +26,9 @@
     NEW_THEME_FILE_CONTENT,
   } from "../file-explorer/new-files";
   import { useModelFileNames } from "../models/selectors";
+  import { useReportFileNames } from "../reports/selectors";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { useThemeFileNames } from "../themes/selectors";
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
@@ -33,8 +38,13 @@
   $: instanceId = $runtime.instanceId;
 
   // TODO: we should only fetch the existing names when needed
-  $: useModelNames = useModelFileNames(instanceId);
-  $: dashboardNames = useDashboardFileNames(instanceId);
+  $: modelFileNamesQuery = useModelFileNames(instanceId);
+  $: dashboardFileNamesQuery = useDashboardFileNames(instanceId);
+  $: apiFileNamesQuery = useAPIFileNames(instanceId);
+  $: chartFileNamesQuery = useChartFileNames(instanceId);
+  $: themeFileNamesQuery = useThemeFileNames(instanceId);
+  $: reportFileNamesQuery = useReportFileNames(instanceId);
+  $: alertFileNamesQuery = useAlertFileNames(instanceId);
 
   // TODO: get current directory
   $: currentDirectory = "dir-1";
@@ -57,7 +67,7 @@
    * Put an example Model file in the `models` directory
    */
   async function handleAddModel() {
-    const newModelName = getName("model", $useModelNames?.data ?? []);
+    const newModelName = getName("model", $modelFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
       data: {
@@ -76,7 +86,10 @@
    * Put an example Dashboard file in the `dashboards` directory
    */
   async function handleAddDashboard() {
-    const newDashboardName = getName("dashboard", $dashboardNames?.data ?? []);
+    const newDashboardName = getName(
+      "dashboard",
+      $dashboardFileNamesQuery?.data ?? [],
+    );
 
     void $createFile.mutateAsync({
       data: {
@@ -122,7 +135,7 @@
    * Put an example API file in the `apis` directory
    */
   async function handleAddAPI() {
-    const nextFileName = getName("api", []);
+    const nextFileName = getName("api", $apiFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
       data: {
@@ -142,7 +155,7 @@
    * Put an example Chart file in the `charts` directory
    */
   async function handleAddChart() {
-    const nextFileName = getName("chart", []);
+    const nextFileName = getName("chart", $chartFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
       data: {
@@ -162,7 +175,7 @@
    * Put an example Theme file in the `themes` directory
    */
   async function handleAddTheme() {
-    const nextFileName = getName("theme", []);
+    const nextFileName = getName("theme", $themeFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
       data: {
@@ -182,7 +195,7 @@
    * Put an example Report file in the `reports` directory
    */
   async function handleAddReport() {
-    const nextFileName = getName("report", []);
+    const nextFileName = getName("report", $reportFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
       data: {
@@ -202,7 +215,7 @@
    * Put an example Alert file in the `alerts` directory
    */
   async function handleAddAlert() {
-    const nextFileName = getName("alert", []);
+    const nextFileName = getName("alert", $alertFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
       data: {

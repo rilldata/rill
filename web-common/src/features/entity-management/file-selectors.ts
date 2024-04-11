@@ -13,7 +13,16 @@ import type { QueryClient } from "@tanstack/svelte-query";
  */
 export function useMainEntityFiles(
   instanceId: string,
-  prefix: "sources" | "models" | "dashboards" | "charts" | "custom-dashboards",
+  prefix:
+    | "sources"
+    | "models"
+    | "dashboards"
+    | "charts"
+    | "custom-dashboards"
+    | "apis"
+    | "themes"
+    | "alerts"
+    | "reports",
   transform = (name: string) => name,
 ) {
   let extension: string;
