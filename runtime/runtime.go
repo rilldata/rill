@@ -91,11 +91,11 @@ func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	r.registryCache.close(ctx)
-	err1 := r.queryCache.close()
-	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
 	if r.instanceHeartbeatEmitter != nil {
 		r.instanceHeartbeatEmitter.close()
 	}
+	err1 := r.queryCache.close()
+	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
 	return errors.Join(err1, err2)
 }
 
