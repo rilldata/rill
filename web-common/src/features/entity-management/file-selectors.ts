@@ -27,6 +27,10 @@ export function useMainEntityFiles(
 ) {
   let extension: string;
   switch (prefix) {
+    case "apis":
+    case "themes":
+    case "alerts":
+    case "reports":
     case "sources":
     case "dashboards":
     case "charts":
@@ -42,7 +46,7 @@ export function useMainEntityFiles(
     instanceId,
     {
       // We still use opinionated folder names. So we still need this filter
-      glob: "{sources,models,dashboards,charts,custom-dashboards}/*.{yaml,sql}",
+      glob: "{apis,themes,alerts,reports,sources,models,dashboards,charts,custom-dashboards}/*.{yaml,sql}",
     },
     {
       query: {
