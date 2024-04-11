@@ -3,15 +3,12 @@
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
-    useSource,
     useSourceFromYaml,
-    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -28,8 +25,6 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
-  import { EntityType } from "../../entity-management/types";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../createModel";
   import {
@@ -37,9 +32,8 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
 
-  export let sourceName: string;
+  export let filePath: string;
 
-  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -50,21 +44,19 @@
 
   const { customDashboards } = featureFlags;
 
-  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
-  $: embedded = false; // TODO: remove embedded support
-  $: path = source?.spec?.properties?.path;
   $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
+  $: tableName = source?.state?.table ?? "";
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceRoutes = useSourceRoutes($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
@@ -72,19 +64,10 @@
     sinkConnector as string,
     "",
     "",
-    sourceName,
+    tableName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
-
-  const handleDeleteSource = async () => {
-    await deleteFileArtifact(
-      runtimeInstanceId,
-      filePath,
-      EntityType.Table,
-      $sourceRoutes.data ?? [],
-    );
-  };
 
   const handleCreateModel = async () => {
     try {
@@ -92,8 +75,8 @@
       const newModelName = await createModelFromSource(
         runtimeInstanceId,
         $modelNames.data ?? [],
-        sourceName,
-        embedded ? `"${path}"` : sourceName,
+        tableName,
+        tableName,
       );
 
       await behaviourEvent.fireNavigationEvent(
@@ -117,7 +100,12 @@
       return;
     }
     try {
-      await refreshSource(connector, filePath, sourceName, runtimeInstanceId);
+      await refreshSource(
+        connector,
+        filePath,
+        $sourceQuery.data?.meta?.name?.name ?? "",
+        runtimeInstanceId,
+      );
     } catch (err) {
       // no-op
     }
@@ -131,7 +119,7 @@
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {
-    await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
+    await replaceSourceWithUploadedFile(runtimeInstanceId, filePath);
     overlay.set(null);
   }
 </script>

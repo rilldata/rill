@@ -7,6 +7,8 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
   import DashboardMenuItems from "../dashboards/DashboardMenuItems.svelte";
@@ -26,6 +28,7 @@
   $: directoryLevel = getDirectoryLevelFromPath(filePath);
   $: isCurrentFile = filePath === $page.params.file;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  let name: Readable<V1ResourceName | undefined>;
   $: name = fileArtifact.name;
   $: resourceKind = $name?.kind;
 
@@ -48,8 +51,8 @@
 >
   <svelte:component
     this={resourceKind ? resourceIconMapping[resourceKind] : File}
-    size="14px"
     className="text-gray-400"
+    size="14px"
   />
   <span class="truncate w-full">{fileName}</span>
   <DropdownMenu.Root bind:open={contextMenuOpen}>
@@ -70,15 +73,15 @@
       side="right"
       sideOffset={16}
     >
-      {#if $name && $name.name}
+      {#if resourceKind}
         {#if resourceKind === ResourceKind.Source}
-          <SourceMenuItems sourceName={$name.name} />
+          <SourceMenuItems {filePath} />
           <NavigationMenuSeparator />
         {:else if resourceKind === ResourceKind.Model}
-          <ModelMenuItems modelName={$name.name} />
+          <ModelMenuItems {filePath} />
           <NavigationMenuSeparator />
         {:else if resourceKind === ResourceKind.Dashboard}
-          <DashboardMenuItems metricsViewName={$name.name} />
+          <DashboardMenuItems {filePath} />
           <NavigationMenuSeparator />
         {/if}
       {/if}

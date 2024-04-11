@@ -3,15 +3,8 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import {
-    useDashboard,
-    useDashboardFileNames,
-  } from "@rilldata/web-common/features/dashboards/selectors";
-  import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -26,12 +19,8 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
 
-  export let metricsViewName: string;
+  export let filePath: string;
 
-  $: filePath = getFileAPIPathFromNameAndType(
-    metricsViewName,
-    EntityType.MetricsDefinition,
-  );
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const dispatch = createEventDispatcher();
@@ -39,8 +28,7 @@
   const { customDashboards } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
-  $: dashboardNames = useDashboardFileNames(instanceId);
-  $: dashboardQuery = useDashboard(instanceId, metricsViewName);
+  $: dashboardQuery = fileArtifact.getResource(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
@@ -66,24 +54,15 @@
   };
 
   const editMetrics = async () => {
-    await goto(`/dashboard/${metricsViewName}/edit`);
+    await goto(`/files/${filePath}`);
 
     const previousActiveEntity = $appScreen?.type;
     await behaviourEvent.fireNavigationEvent(
-      metricsViewName,
+      $dashboardQuery.data?.meta?.name ?? "",
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousActiveEntity,
       MetricsEventScreenName.MetricsDefinition,
-    );
-  };
-
-  const deleteMetricsDef = async () => {
-    await deleteFileArtifact(
-      instanceId,
-      filePath,
-      EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? [],
     );
   };
 </script>

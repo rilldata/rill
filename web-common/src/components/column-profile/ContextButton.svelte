@@ -12,13 +12,13 @@
   export let builders: Builder[] = [];
 </script>
 
-<Tooltip location="right" distance={16} suppress={suppressTooltip}>
+<Tooltip distance={16} location="right" suppress={suppressTooltip}>
   <button
-    {id}
-    class="group-hover:opacity-100"
-    class:!opacity-100={suppressTooltip}
-    aria-label={label}
     {...getAttrs(builders)}
+    aria-label={label}
+    class="group-hover:opacity-100"
+    class:!group-hover:opacity-100={suppressTooltip}
+    {id}
     on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
   >
