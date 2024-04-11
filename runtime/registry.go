@@ -532,10 +532,16 @@ func (i *instanceHeartbeatEmitter) emit() {
 				return
 			}
 			for _, instance := range instances {
+				var dataDirSize int64
+				f, err := os.Stat(filepath.Join(i.rt.opts.DataDir, instance.ID))
+				if err == nil {
+					dataDirSize = f.Size()
+				}
 				attrs := []attribute.KeyValue{
 					attribute.String("instance_id", instance.ID),
 					attribute.Int("variable_count", len(instance.ResolveVariables())),
 					attribute.String("updated_on", instance.UpdatedOn.String()),
+					attribute.Int64("data_dir_size_bytes", dataDirSize),
 				}
 				i.rt.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat", attrs...)
 			}
