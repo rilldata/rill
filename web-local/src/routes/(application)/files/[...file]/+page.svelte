@@ -4,6 +4,7 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -19,8 +20,7 @@
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
-  import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import DashboardPage from "../../dashboard/[name]/edit/+page@dashboard.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
