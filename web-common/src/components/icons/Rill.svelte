@@ -2,7 +2,7 @@
   width="27"
   height="16"
   viewBox="0 0 27 16"
-  class="mb-[1px]"
+  class="mb-[1px] flex-none"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
 >
