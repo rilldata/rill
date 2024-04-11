@@ -300,7 +300,7 @@ func (q *MetricsViewTimeRange) resolvePinot(ctx context.Context, olap drivers.OL
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
 
-	// TODO casting to double so that response is consistent with single and multi stage engine
+	// casting to double to get epoch millis, cast to long fails with Pinot's mutli stage engine
 	rangeSQL := fmt.Sprintf(
 		"SELECT CAST(min(%[1]s) AS DOUBLE) AS \"min\", CAST(max(%[1]s) AS DOUBLE) AS \"max\" FROM %[2]s %[3]s",
 		safeName(timeDim),

@@ -213,7 +213,6 @@ func completeQuery(query string, args []sqlDriver.NamedValue) (string, error) {
 	return sb.String(), nil
 }
 
-// TODO check if it supports all types
 func formatArg(value sqlDriver.Value) (string, error) {
 	switch v := value.(type) {
 	case string, *big.Int, *big.Float:
