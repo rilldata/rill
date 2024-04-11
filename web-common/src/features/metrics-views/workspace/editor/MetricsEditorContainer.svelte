@@ -13,16 +13,15 @@ It will show an error message if passed in.
   export let error: LineStatus | V1ReconcileError | undefined = undefined;
 </script>
 
-<div class="flex flex-col w-full h-full content-stretch">
-  <div class="grow bg-white overflow-y-auto">
-    <div
-      class="border-white w-full overflow-y-auto"
-      class:border-b-hidden={error}
-      class:border-red-500={error}
-    >
-      <slot />
-    </div>
+<div class="flex flex-col w-full h-full">
+  <div
+    class="border-white bg-white w-full h-full overflow-auto"
+    class:border-b-hidden={error}
+    class:border-red-500={error}
+  >
+    <slot />
   </div>
+
   {#if error}
     <div
       role="status"

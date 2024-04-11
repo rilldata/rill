@@ -22,6 +22,7 @@
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import MetricsEditorContainer from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditorContainer.svelte";
 
   const { readOnly } = featureFlags;
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
@@ -70,22 +71,17 @@
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
 
-  $: dashboardQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: dashboard = $dashboardQuery;
-
-  $: previewDisbaled = !yaml?.length || !!allErrors?.length;
+  $: previewDisbaled = !yaml.length || !!allErrors?.length;
 
   $: if (!yaml?.length) {
     previewStatus = [
       "Your metrics definition is empty. Get started by trying one of the options in the editor.",
     ];
-  }
-  // content & errors
-  else if (allErrors?.length && allErrors[0].message) {
+  } else if (allErrors?.length && allErrors[0].message) {
+    // content & errors
     previewStatus = [allErrors[0].message, TOOLTIP_CTA];
-  }
-  // preview is available
-  else {
+  } else {
+    // preview is available
     previewStatus = ["Explore your metrics dashboard"];
   }
 
@@ -132,14 +128,8 @@
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditor
-    slot="body"
-    {yaml}
-    {filePath}
-    {allErrors}
-    {dashboard}
-    {metricViewName}
-  />
+  <MetricsEditor slot="body" {yaml} {filePath} {allErrors} {metricViewName} />
+
   <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>
 

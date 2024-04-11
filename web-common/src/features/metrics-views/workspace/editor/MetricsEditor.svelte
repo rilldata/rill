@@ -6,16 +6,12 @@
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import { createUpdateMetricsCallback } from "./update-metrics";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
-  import { QueryObserverResult } from "@tanstack/svelte-query";
-  import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   export let filePath: string;
   export let yaml: string;
   export let metricViewName: string;
   export let allErrors: V1ParseError[];
-  export let dashboard: QueryObserverResult<V1Resource, HTTPError>;
 
   let view: EditorView;
 
@@ -35,12 +31,7 @@
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
   /** If the errors change, run the following transaction. */
-  $: if (
-    view &&
-    !dashboard.isFetching &&
-    (dashboard.isError || dashboard.data?.meta?.reconcileError)
-  )
-    setLineStatuses(lineBasedRuntimeErrors, view);
+  $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
 <MetricsEditorContainer error={yaml?.length ? mainError : undefined}>
