@@ -27,18 +27,20 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
+	EmitInstanceHeartBeat        bool
 }
 
 type Runtime struct {
-	Email          *email.Client
-	opts           *Options
-	logger         *zap.Logger
-	activity       *activity.Client
-	metastore      drivers.Handle
-	registryCache  *registryCache
-	connCache      conncache.Cache
-	queryCache     *queryCache
-	securityEngine *securityEngine
+	Email                    *email.Client
+	opts                     *Options
+	logger                   *zap.Logger
+	activity                 *activity.Client
+	metastore                drivers.Handle
+	registryCache            *registryCache
+	connCache                conncache.Cache
+	queryCache               *queryCache
+	securityEngine           *securityEngine
+	instanceHeartbeatEmitter *instanceHeartbeatEmitter
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -72,6 +74,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	if err != nil {
 		return nil, err
 	}
+	if rt.opts.EmitInstanceHeartBeat {
+		rt.instanceHeartbeatEmitter = newInstanceHeartbeatEmitter(rt, time.Minute)
+		rt.instanceHeartbeatEmitter.emit()
+	}
 
 	return rt, nil
 }
@@ -86,6 +92,9 @@ func (r *Runtime) Close() error {
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
+	if r.instanceHeartbeatEmitter != nil {
+		r.instanceHeartbeatEmitter.close()
+	}
 	return errors.Join(err1, err2)
 }
 

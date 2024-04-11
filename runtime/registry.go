@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -499,4 +500,49 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if err != nil {
 		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
+}
+
+// instanceHeartbeatEmitter emits instance heartbeat events periodically after specified duration until closed.
+type instanceHeartbeatEmitter struct {
+	rt       *Runtime
+	duration time.Duration
+
+	closeChan chan struct{}
+}
+
+func newInstanceHeartbeatEmitter(rt *Runtime, duration time.Duration) *instanceHeartbeatEmitter {
+	return &instanceHeartbeatEmitter{
+		rt:       rt,
+		duration: duration,
+	}
+}
+
+func (i *instanceHeartbeatEmitter) emit() {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			instances, err := i.rt.registryCache.list()
+			if err != nil {
+				i.rt.logger.Warn("failed to send instance heartbeat event, instance listing failed", zap.Error(err))
+				return
+			}
+			for _, instance := range instances {
+				attrs := []attribute.KeyValue{
+					attribute.String("instance_id", instance.ID),
+					attribute.Int("variable_count", len(instance.ResolveVariables())),
+					attribute.String("updated_on", instance.UpdatedOn.String()),
+				}
+				i.rt.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat", attrs...)
+			}
+		case <-i.closeChan:
+			return
+		}
+	}
+}
+
+func (i *instanceHeartbeatEmitter) close() {
+	close(i.closeChan)
 }
