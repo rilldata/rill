@@ -77,7 +77,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	}
 	if rt.opts.EmitInstanceHeartBeat {
 		rt.instanceHeartbeatEmitter = newInstanceHeartbeatEmitter(rt, time.Minute)
-		rt.instanceHeartbeatEmitter.emit()
+		go rt.instanceHeartbeatEmitter.emit()
 	}
 
 	return rt, nil
