@@ -27,7 +27,6 @@ type ProvisionOptions struct {
 type Allocation struct {
 	Host         string
 	Audience     string
-	DataDir      string
 	CPU          int
 	MemoryGB     int
 	StorageBytes int64

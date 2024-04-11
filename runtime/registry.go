@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -82,7 +85,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance, rest
 }
 
 // DeleteInstance deletes an instance and stops its controller.
-func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLAP *bool) error {
+func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	inst, err := r.registryCache.get(instanceID)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
@@ -93,12 +96,6 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 
 	// For idempotency, it's ok for some steps to fail
 
-	// Get OLAP info for dropOLAP
-	olapCfg, err := r.ConnectorConfig(ctx, instanceID, inst.ResolveOLAPConnector())
-	if err != nil {
-		r.logger.Error("delete instance: error getting config", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-	}
-
 	// Delete the instance
 	completed, err := r.registryCache.delete(ctx, instanceID)
 	if err != nil {
@@ -108,18 +105,8 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropOLA
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
-	// If dropOLAP isn't set, let it default to true for DuckDB
-	if dropOLAP == nil && olapCfg.Driver == "duckdb" {
-		d := true
-		dropOLAP = &d
-	}
-
-	// Can now drop the OLAP
-	if dropOLAP != nil && *dropOLAP {
-		err = drivers.Drop(olapCfg.Driver, olapCfg.Resolve(), r.logger)
-		if err != nil {
-			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-		}
+	if err := os.RemoveAll(filepath.Join(r.opts.DataDir, instanceID)); err != nil {
+		r.logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
 	// If catalog is not embedded, catalog data is in the metastore, and should be cleaned up
@@ -193,7 +180,9 @@ func (r *registryCache) init(ctx context.Context) error {
 	}
 
 	for _, inst := range insts {
-		r.add(inst)
+		if err := r.add(inst); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -301,12 +290,10 @@ func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) erro
 		return err
 	}
 
-	r.add(inst)
-
-	return nil
+	return r.add(inst)
 }
 
-func (r *registryCache) add(inst *drivers.Instance) {
+func (r *registryCache) add(inst *drivers.Instance) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -319,6 +306,20 @@ func (r *registryCache) add(inst *drivers.Instance) {
 		instance:   inst,
 	}
 	r.instances[inst.ID] = iwc
+	if r.rt.opts.DataDir != "" {
+		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return err
+		}
+
+		// also recreate instance's tmp directory
+		tmpDir := filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp")
+		if err := os.RemoveAll(tmpDir); err != nil {
+			r.logger.Warn("failed to remove tmp directory", zap.String("instance_id", inst.ID), zap.Error(err))
+		}
+		if err := os.Mkdir(tmpDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return err
+		}
+	}
 
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
 	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
@@ -331,6 +332,7 @@ func (r *registryCache) add(inst *drivers.Instance) {
 	iwc.logbuffer = buffer
 
 	r.restartController(iwc)
+	return nil
 }
 
 func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance, restartController bool) error {
