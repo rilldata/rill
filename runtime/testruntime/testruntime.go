@@ -94,6 +94,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		olapDriver = "duckdb"
 	}
 	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+	if olapDSN == "" {
+		olapDSN = ":memory:"
+	}
 
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
@@ -192,7 +195,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"dsn": ""},
+				Config: map[string]string{"dsn": ":memory:"},
 			},
 			{
 				Type: "sqlite",

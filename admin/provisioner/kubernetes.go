@@ -29,7 +29,6 @@ import (
 type KubernetesSpec struct {
 	Host           string                   `json:"host"`
 	Image          string                   `json:"image"`
-	DataDir        string                   `json:"data_dir"`
 	Namespace      string                   `json:"namespace"`
 	TimeoutSeconds int                      `json:"timeout_seconds"`
 	KubeconfigPath string                   `json:"kubeconfig_path"`
@@ -56,7 +55,6 @@ type TemplateData struct {
 	CPU          int
 	MemoryGB     int
 	StorageBytes int64
-	DataDir      string
 	Slots        int
 	Names        ResourceNames
 	Annotations  map[string]string
@@ -120,7 +118,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 		CPU:          1 * opts.Slots,
 		MemoryGB:     2 * opts.Slots,
 		StorageBytes: 40 * int64(opts.Slots) * int64(datasize.GB),
-		DataDir:      p.Spec.DataDir,
 		Slots:        opts.Slots,
 		Annotations:  opts.Annotations,
 	}
@@ -198,7 +195,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 	return &Allocation{
 		Host:         host,
 		Audience:     host,
-		DataDir:      data.DataDir,
 		CPU:          data.CPU,
 		MemoryGB:     data.MemoryGB,
 		StorageBytes: data.StorageBytes,

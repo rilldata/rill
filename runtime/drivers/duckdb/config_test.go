@@ -19,7 +19,7 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, "?custom_user_agent=rill", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "?memory_limit=2GB"})
+	cfg, err = newConfig(map[string]any{"dsn": ":memory:?memory_limit=2GB"})
 	require.NoError(t, err)
 	require.Equal(t, "?custom_user_agent=rill&memory_limit=2GB", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
@@ -29,23 +29,23 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, "?custom_user_agent=rill&max_memory=1GB&threads=1", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db"})
+	cfg, err = newConfig(map[string]any{"data_dir": "path/to"})
 	require.NoError(t, err)
-	require.Equal(t, "path/to/duck.db?custom_user_agent=rill", cfg.DSN)
-	require.Equal(t, "path/to/duck.db", cfg.DBFilePath)
+	require.Equal(t, "path/to/main.db?custom_user_agent=rill", cfg.DSN)
+	require.Equal(t, "path/to/main.db", cfg.DBFilePath)
 	require.Equal(t, 2, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db", "pool_size": 10})
+	cfg, err = newConfig(map[string]any{"data_dir": "path/to", "pool_size": 10})
 	require.NoError(t, err)
-	require.Equal(t, "path/to/duck.db?custom_user_agent=rill", cfg.DSN)
-	require.Equal(t, "path/to/duck.db", cfg.DBFilePath)
+	require.Equal(t, "path/to/main.db?custom_user_agent=rill", cfg.DSN)
+	require.Equal(t, "path/to/main.db", cfg.DBFilePath)
 	require.Equal(t, 10, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db", "pool_size": "10"})
+	cfg, err = newConfig(map[string]any{"data_dir": "path/to", "pool_size": "10"})
 	require.NoError(t, err)
 	require.Equal(t, 10, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db?rill_pool_size=4", "pool_size": "10"})
+	cfg, err = newConfig(map[string]any{"data_dir": "path/to", "dsn": "?rill_pool_size=4", "pool_size": "10"})
 	require.NoError(t, err)
 	require.Equal(t, 4, cfg.PoolSize)
 
@@ -92,7 +92,7 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile, "memory_limit_gb": "4", "cpu": "2"}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open(map[string]any{"path": dbFile, "memory_limit_gb": "4", "cpu": "2"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	config := conn.(*connection).config
 	require.Equal(t, filepath.Join(path, "st@g3's.db?custom_user_agent=rill&max_memory=4GB&threads=1"), config.DSN)
@@ -108,7 +108,7 @@ func Test_specialCharInPath(t *testing.T) {
 }
 
 func TestOverrides(t *testing.T) {
-	cfgMap := map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10"}
+	cfgMap := map[string]any{"path": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10"}
 	handle, err := Driver{}.Open(cfgMap, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 

@@ -14,7 +14,7 @@ import (
 
 func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	tempDir := t.TempDir()
-	conn, err := Driver{}.Open(map[string]any{"dsn": fmt.Sprintf("%s.db?access_mode=read_write", filepath.Join(tempDir, "tranfser"))}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open(map[string]any{"path": fmt.Sprintf("%s.db", filepath.Join(tempDir, "tranfser"))}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -31,7 +31,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	to, err := Driver{}.Open(map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
+	to, err := Driver{}.Open(map[string]any{"dsn": ":memory:"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, _ = to.AsOLAP("")
