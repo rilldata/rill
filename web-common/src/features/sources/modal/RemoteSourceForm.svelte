@@ -13,6 +13,7 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { overlay } from "../../../layout/overlay-store";
+  import { directoryState } from "../../file-explorer/directory-store";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
@@ -38,7 +39,8 @@
           if (connector.name === undefined)
             throw new Error("connector name is undefined");
           await submitRemoteSourceForm(queryClient, connector.name, values);
-          goto(`/source/${values.sourceName}`);
+          await goto(`/files/sources/${values.sourceName}`);
+          directoryState.expand("sources");
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;

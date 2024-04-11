@@ -9,6 +9,7 @@
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { directoryState } from "../../file-explorer/directory-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
@@ -59,11 +60,12 @@
           "local_file",
         );
         await createSource(runtimeInstanceId, tableName, yaml);
-        checkSourceImported(
+        await checkSourceImported(
           queryClient,
           getFilePathFromNameAndType(tableName, EntityType.Table),
         );
-        goto(`/source/${tableName}`);
+        await goto(`/files/sources/${tableName}`);
+        directoryState.expand("sources");
       } catch (err) {
         console.error(err);
       }

@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
+import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
@@ -58,7 +59,8 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName && goToIfSuccessful) {
-    goto(`/source/${lastTableName}`);
+    await goto(`/files/sources/${lastTableName}`);
+    directoryState.expand("sources");
   }
 
   if (invalidFiles.length) {

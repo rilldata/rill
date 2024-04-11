@@ -14,6 +14,7 @@
   import { createRuntimeServicePutFileAndReconcile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useDashboardFileNames } from "../dashboards/selectors";
+  import { directoryState } from "../file-explorer/directory-store";
   import {
     NEW_ALERT_FILE_CONTENT,
     NEW_API_FILE_CONTENT,
@@ -70,6 +71,7 @@
     });
 
     await goto(`/files/models/${newModelName}.sql`);
+    directoryState.expand("models");
   }
 
   /**
@@ -89,6 +91,7 @@
     });
 
     await goto(`/files/dashboards/${newDashboardName}.yaml`);
+    directoryState.expand("dashboards");
   }
 
   /**
@@ -116,6 +119,7 @@
     });
 
     await goto(`/files/${currentDirectory}/${nextFileName}`);
+    directoryState.expand(currentDirectory);
   }
 
   /**
@@ -136,6 +140,7 @@
     });
 
     await goto(`/files/apis/${nextFileName}.yaml`);
+    directoryState.expand("apis");
   }
 
   /**
@@ -156,6 +161,7 @@
     });
 
     await goto(`/files/charts/${nextFileName}.yaml`);
+    directoryState.expand("charts");
   }
 
   /**
@@ -176,6 +182,7 @@
     });
 
     await goto(`/files/themes/${nextFileName}.yaml`);
+    directoryState.expand("themes");
   }
 
   /**
@@ -196,6 +203,7 @@
     });
 
     await goto(`/files/reports/${nextFileName}.yaml`);
+    directoryState.expand("reports");
   }
 
   /**
@@ -216,6 +224,7 @@
     });
 
     await goto(`/files/alerts/${nextFileName}.yaml`);
+    directoryState.expand("alerts");
   }
 </script>
 
