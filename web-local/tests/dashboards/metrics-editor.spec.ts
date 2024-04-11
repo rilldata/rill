@@ -85,6 +85,6 @@ test.describe("Metrics editor", () => {
     ).toBeVisible();
 
     // go back to the metrics page.
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
   });
 });

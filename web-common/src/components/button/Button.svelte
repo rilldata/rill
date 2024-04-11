@@ -28,8 +28,8 @@
   export let rounded = false;
   export let href: string | null = null;
   export let builders: Builder[] = [];
-  export let newTab = false;
   export let loading = false;
+  export let target: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -60,7 +60,8 @@
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
   aria-label={label}
-  target={newTab ? "_blank" : undefined}
+  {target}
+  rel={target === "_blank" ? "noopener noreferrer" : undefined}
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   on:click={handleClick}

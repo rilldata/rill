@@ -534,7 +534,7 @@ dimensions:
 
     await expect(page.getByText("~0%")).toBeVisible();
 
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // go back to the dashboard
 

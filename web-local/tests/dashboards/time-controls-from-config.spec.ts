@@ -12,7 +12,7 @@ test.describe("time controls settings from dashboard config", () => {
   useDashboardFlowTestSetup();
 
   test("default_time_range", async ({ page }) => {
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set a time range that is one of the supported presets
     await updateCodeEditor(
@@ -31,7 +31,7 @@ default_comparison:
     // Data has changed as well
     await expect(page.getByText("Total rows 26.7k -4.7k -15%")).toBeVisible();
     await expect(page.getByText("Facebook 7.0k 67%")).toBeVisible();
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set a time range that is one of the period to date preset
     await updateCodeEditor(
@@ -62,7 +62,7 @@ default_comparison:
     // Data has changed
     await expect(page.getByText("Total rows 7.9k -15 ~0%")).toBeVisible();
     await expect(page.getByText("Facebook 2.0k -2%")).toBeVisible();
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set a time range that is not one of the supported presets
     await updateCodeEditor(
@@ -84,7 +84,7 @@ default_comparison:
   });
 
   test("default_comparison", async ({ page }) => {
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set comparison to time
     await updateCodeEditor(
@@ -100,7 +100,7 @@ default_comparison:
     // Comparison is selected
     await expect(page.getByText("Comparing by Time")).toBeVisible();
     // Go back to metrics editor
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set comparison to dimension
     await updateCodeEditor(
@@ -117,7 +117,7 @@ default_comparison:
     // Comparison is selected
     await expect(page.getByText("Comparing by Publisher")).toBeVisible();
     // Go back to metrics editor
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set comparison to none
     await updateCodeEditor(
@@ -135,7 +135,7 @@ default_comparison:
   });
 
   test("available_time_ranges", async ({ page }) => {
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
     await updateCodeEditor(
       page,
       getDashboardYaml(`default_time_range: "P4W"
