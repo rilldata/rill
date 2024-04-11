@@ -196,7 +196,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
-		// Set path to ensure that OLAP does not store data in runtime.Options.DataDir
+		// Set path which overrides the duckdb's default behaviour to store duckdb data in data_dir/<instance_id>/<connector> directory which is not backward compatible
 		olapCfg["path"] = olapDSN
 		val, err := isExternalStorageEnabled(dbDirPath, vars)
 		if err != nil {

@@ -379,6 +379,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	rt := newTestRuntime(t)
+	rt.opts.DataDir = t.TempDir()
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -389,7 +390,6 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// create test data
 			ctx := context.Background()
-			dbFile := filepath.Join(t.TempDir(), "test.db")
 			inst := &drivers.Instance{
 				Environment:   "test",
 				OLAPConnector: "duckdb",
@@ -404,13 +404,14 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"path": dbFile},
+						Config: map[string]string{"data_dir": rt.opts.DataDir},
 					},
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
 			_, err := rt.Controller(ctx, inst.ID)
 			require.NoError(t, err)
+			dbFile := filepath.Join(t.TempDir(), inst.ID, "duckdb", "main.db")
 
 			// Acquire OLAP
 			olap, release, err := rt.OLAP(ctx, inst.ID, "")
@@ -441,7 +442,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
 
-			// verify db file is dropped if requested
+			// verify db file is dropped
 			_, err = os.Stat(dbFile)
 			require.True(t, os.IsNotExist(err))
 		})
@@ -454,8 +455,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	// Prepare
 	ctx := context.Background()
 	rt := newTestRuntime(t)
-	dbpath := filepath.Join(t.TempDir(), "test.db")
-
+	rt.opts.DataDir = t.TempDir()
 	// Create instance
 	inst := &drivers.Instance{
 		Environment:   "test",
@@ -471,12 +471,14 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"path": dbpath},
+				Config: map[string]string{"data_dir": rt.opts.DataDir},
 			},
 		},
 	}
 	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
+
+	dbpath := filepath.Join(rt.opts.DataDir, inst.ID, "duckdb", "main.db")
 
 	// Put some data into it to create a .db file on disk
 	olap, release, err := rt.OLAP(ctx, inst.ID, "")

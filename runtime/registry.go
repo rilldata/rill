@@ -309,6 +309,11 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
 		}
+
+		// also clear instance's tmp directory and recreate
+		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp"), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return err
+		}
 	}
 
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API

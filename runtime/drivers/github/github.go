@@ -52,8 +52,8 @@ type driver struct{}
 type configProperties struct {
 	// DSN is the connection string
 	DSN string `mapstructure:"dsn"`
-	// DataDir is the directory where files will be stored
-	DataDir string `mapstructure:"data_dir"`
+	// TempDir is the directory where temporary files will be stored
+	TempDir string `mapstructure:"temp_dir"`
 }
 
 func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -77,10 +77,10 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, err
 	}
 
-	if err := os.Mkdir(conf.DataDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+	if err := os.Mkdir(conf.TempDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 		return nil, err
 	}
-	tempdir, err := os.MkdirTemp(conf.DataDir, "github_repo_driver")
+	tempdir, err := os.MkdirTemp(conf.TempDir, "github_repo_driver")
 	if err != nil {
 		return nil, err
 	}

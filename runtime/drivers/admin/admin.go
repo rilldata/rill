@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -59,7 +58,7 @@ type configProperties struct {
 	AccessToken string `mapstructure:"access_token"`
 	ProjectID   string `mapstructure:"project_id"`
 	Branch      string `mapstructure:"branch"`
-	DataDir     string `mapstructure:"data_dir"`
+	TempDir     string `mapstructure:"temp_dir"`
 }
 
 func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -274,10 +273,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	}
 
 	if h.repoPath == "" {
-		if err := os.Mkdir(h.config.DataDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return err
-		}
-		h.repoPath, err = os.MkdirTemp(h.config.DataDir, "admin_driver_repo")
+		h.repoPath, err = os.MkdirTemp(h.config.TempDir, "admin_driver_repo")
 		if err != nil {
 			return err
 		}
