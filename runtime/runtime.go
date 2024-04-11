@@ -28,7 +28,7 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	DataDir                      string
-	EmitInstanceHeartBeat        bool
+	EmitInstanceHeartbeat        bool
 }
 
 type Runtime struct {
@@ -42,7 +42,7 @@ type Runtime struct {
 	queryCache     *queryCache
 	securityEngine *securityEngine
 
-	// ctx and cancel controls background tasks
+	// ctx and cancel control background tasks
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -81,7 +81,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	if err != nil {
 		return nil, err
 	}
-	if rt.opts.EmitInstanceHeartBeat {
+	if rt.opts.EmitInstanceHeartbeat {
 		go rt.emitInstanceHeartbeatEvents(time.Minute)
 	}
 
