@@ -16,7 +16,10 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
-  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1DashboardSpec,
+    V1DashboardComponent,
+  } from "@common/runtime-client";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -65,7 +68,11 @@
 
   $: if (yaml) {
     try {
-      dashboard = parse(yaml) as V1DashboardSpec;
+      const potentialDb = parse(yaml) as V1DashboardSpec;
+      dashboard = {
+        ...potentialDb,
+        components: potentialDb.components?.filter(isComponent) ?? [],
+      };
     } catch {
       // Unable to parse YAML, no-op
     }
@@ -157,6 +164,12 @@
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
+  }
+
+  function isComponent(
+    component: V1DashboardComponent | null | undefined,
+  ): component is V1DashboardComponent {
+    return !!component;
   }
 </script>
 
