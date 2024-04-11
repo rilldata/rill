@@ -46,15 +46,12 @@
           <BreadcrumbItem
             options={$dashboards.data.reduce((map, { meta, metricsView }) => {
               const id = meta.name.name;
-              const label = metricsView?.state?.validSpec?.title || id;
               return map.set(id, {
-                label,
-                href: undefined,
+                label: metricsView?.state?.validSpec?.title || id,
               });
             }, new Map())}
             current={currentDashboardName}
-            onSelectMenuOption={(dashboard) =>
-              dispatch("select-dashboard", dashboard)}
+            onSelect={(dashboard) => dispatch("select-dashboard", dashboard)}
             isCurrentPage={onDashboardPage}
           />
         {/if}

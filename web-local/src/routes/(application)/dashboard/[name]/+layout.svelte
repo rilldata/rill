@@ -22,7 +22,7 @@
     const label = dimension.metricsView?.state?.validSpec?.title ?? "";
     const id = dimension.meta?.name?.name ?? "";
 
-    if (label && id) map.set(id, { label, href: `/dashboard/${id}` });
+    if (label && id) map.set(id, { label, section: "dashboard", depth: 0 });
 
     return map;
   }, new Map<string, Entry>());
@@ -31,15 +31,15 @@
     [projectName ?? "", { label: projectName ?? "", href: "/" }],
   ]);
 
-  $: levels = [projectOptions, dashboardOptions];
+  $: pathParts = [projectOptions, dashboardOptions];
 
-  $: selections = [projectName ?? "", dashboardName];
+  $: currentPath = [projectName ?? "", dashboardName];
 </script>
 
 <div class="flex flex-col size-full">
   <header class="py-3 w-full bg-white flex gap-x-2 items-center px-4 border-b">
     {#if $dashboardsQuery.data}
-      <Breadcrumbs {levels} {selections}>
+      <Breadcrumbs {pathParts} {currentPath}>
         <Rill slot="icon" />
       </Breadcrumbs>
     {/if}

@@ -3,26 +3,47 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { page } from "$app/stores";
-  import type { Level } from "./Breadcrumbs.svelte";
+  import type { PathOptions, PathOption } from "./Breadcrumbs.svelte";
 
   const regex = /\[.*?\]/g;
 
-  export let options: Level;
+  export let options: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
   export let depth: number = 0;
-  export let onSelectMenuOption: undefined | ((id: string) => void) = undefined;
+  export let currentPath: (string | null)[] = [];
+  export let onSelect: undefined | ((id: string) => void) = undefined;
 
   $: selected = options.get(current);
-  $: nextChild = $page.route.id?.split(regex)[depth + 1];
+  $: nextChild = $page.route.id?.split(regex)[depth + 1] ?? "";
+
+  function linkMaker(
+    current: (string | null)[],
+    depth: number,
+    id: string,
+    option: PathOption,
+  ) {
+    if (onSelect) return undefined;
+    if (option?.href) return option.href;
+
+    const newPath = current
+      .slice(0, option?.depth ?? depth)
+      .filter((p): p is string => !!p);
+
+    if (selected?.section) newPath.push(selected?.section);
+
+    newPath.push(id);
+
+    return `/${newPath.join("/")}`;
+  }
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
   <div class="flex flex-row gap-x-1 items-center">
     {#if selected}
       <a
-        href={!isCurrentPage && selected.href
-          ? selected.href + nextChild
+        href={!isCurrentPage
+          ? linkMaker(currentPath, depth, current, selected) + nextChild
           : "#top"}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
@@ -38,19 +59,19 @@
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start" class="max-h-96 overflow-auto">
-          {#each options as [id, { label, href }] (id)}
+          {#each options as [id, option] (id)}
             {@const selected = id === current}
             <DropdownMenu.Item
-              {href}
+              href={linkMaker(currentPath, depth, id, option)}
               on:click={() => {
-                if (onSelectMenuOption) onSelectMenuOption(id);
+                if (onSelect) onSelect(id);
               }}
             >
               <div class="item" class:pl-4={!selected}>
                 <Check className={!selected ? "hidden" : ""} />
 
                 <svelte:element this={selected ? "b" : "span"}>
-                  {label}
+                  {option.label}
                 </svelte:element>
               </div>
             </DropdownMenu.Item>

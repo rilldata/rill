@@ -71,49 +71,46 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationOptions = $organizationQuery.data?.organizations.reduce(
-    (map, org) => map.set(org.name, { label: org.name, href: `/${org.name}` }),
+  $: organizationOptions = organizations.reduce(
+    (map, { name }) => map.set(name, { label: name }),
     new Map<string, Entry>(),
   );
 
-  $: projectOptions = projects.reduce((map, proj) => {
-    return map.set(proj.name, {
-      label: proj.name,
-      href: `/${organization}/${proj.name}`,
-    });
+  $: projectOptions = projects.reduce((map, { name: label }) => {
+    return map.set(label, { label });
   }, new Map<string, Entry>());
 
-  $: dashboardOptions = dashboards.reduce((map, dashboard) => {
-    return map.set(dashboard.meta.name.name, {
-      label:
-        dashboard.metricsView?.state?.validSpec?.title ||
-        dashboard.meta.name.name,
-      href: `/${organization}/${project}/${dashboard.meta.name.name}`,
+  $: dashboardOptions = dashboards.reduce((map, { meta, metricsView }) => {
+    const id = meta.name.name;
+    return map.set(id, {
+      label: metricsView?.state?.validSpec?.title || id,
     });
   }, new Map<string, Entry>());
 
   $: alertOptions = alerts.reduce((map, alert) => {
-    return map.set(alert.meta.name.name, {
-      label: alert.alert.spec.title || alert.meta.name.name,
-      href: `/${organization}/${project}/-/alerts/${alert.meta.name.name}`,
+    const id = alert.meta.name.name;
+    return map.set(id, {
+      label: alert.alert.spec.title || id,
+      section: "-/alerts",
     });
   }, new Map<string, Entry>());
 
   $: reportOptions = reports.reduce((map, report) => {
-    return map.set(report.meta.name.name, {
-      label: report.report.spec.title || report.meta.name.name,
-      href: `/${organization}/${project}/-/reports/${report.meta.name.name}`,
+    const id = report.meta.name.name;
+    return map.set(id, {
+      label: report.report.spec.title || id,
+      section: "-/reports",
     });
   }, new Map<string, Entry>());
 
-  $: levels = [
+  $: pathParts = [
     organizationOptions,
     projectOptions,
     dashboardOptions,
     report ? reportOptions : alert ? alertOptions : null,
   ];
 
-  $: selections = [organization, project, dashboard, report || alert];
+  $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
 <div
@@ -131,7 +128,7 @@
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
   {#if $isErrorStoreEmpty && organization}
-    <Breadcrumbs {levels} {selections}>
+    <Breadcrumbs {pathParts} {currentPath}>
       <OrganizationAvatar {organization} slot="icon" />
     </Breadcrumbs>
   {:else}
