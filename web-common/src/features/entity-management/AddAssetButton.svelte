@@ -292,15 +292,16 @@
             <File size="16px" /> Blank file
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+          <!-- Temporarily hide API option -->
+          <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.API]}
               className="text-gray-900"
               size="16px"
             />
             API
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
+            <DropdownMenu.Separator />
+          </DropdownMenu.Item> -->
           {#if $customDashboards}
             <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
               <svelte:component
@@ -319,7 +320,8 @@
             />
             Theme
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
+          <!-- Temporarily hide Report and Alert options -->
+          <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-gray-900"
@@ -334,7 +336,7 @@
               size="16px"
             />
             Alert
-          </DropdownMenu.Item>
+          </DropdownMenu.Item> -->
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
     </DropdownMenu.Content>
