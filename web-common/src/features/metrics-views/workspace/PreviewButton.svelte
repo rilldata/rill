@@ -11,21 +11,9 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { Play } from "lucide-svelte";
 
-  // export let filePath: string;
   export let disabled: boolean;
   export let status: string[];
   export let metricViewName: string;
-
-  // let buttonStatus: string[];
-
-  // $: metricsDefName = extractFileName(filePath);
-  // $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-
-  // $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
-  // $: yaml = $fileQuery?.data?.blob;
-  // $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
-
-  // $: buttonDisabled = !yaml?.length || !!$allErrors?.length;
 
   const viewDashboard = () => {
     behaviourEvent
@@ -38,22 +26,6 @@
       )
       .catch(console.error);
   };
-
-  // const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
-  // // no content
-  // $: if (!yaml?.length) {
-  //   buttonStatus = [
-  //     "Your metrics definition is empty. Get started by trying one of the options in the editor.",
-  //   ];
-  // }
-  // // content & errors
-  // else if ($allErrors?.length && $allErrors[0].message) {
-  //   buttonStatus = [$allErrors[0].message, TOOLTIP_CTA];
-  // }
-  // // preview is available
-  // else {
-  //   buttonStatus = ["Explore your metrics dashboard"];
-  // }
 </script>
 
 <Tooltip alignment="middle" distance={5} location="right">
