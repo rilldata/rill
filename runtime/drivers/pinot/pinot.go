@@ -11,10 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
+func init() {
+	drivers.Register("pinot", driver{})
+}
+
 var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
-	DocsURL:     "", // TODO add when docs are added
+	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/pinot",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -27,10 +31,6 @@ var spec = drivers.Spec{
 	},
 	SourceProperties: nil,
 	ImplementsOLAP:   true,
-}
-
-func init() {
-	drivers.Register("pinot", driver{})
 }
 
 type driver struct{}
