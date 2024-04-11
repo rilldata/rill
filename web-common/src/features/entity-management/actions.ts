@@ -13,36 +13,43 @@ export async function renameFileArtifact(
   fromPath: string,
   toPath: string,
 ) {
-  await runtimeServiceRenameFile(instanceId, {
-    fromPath,
-    toPath,
-  });
-
   const fromName = extractFileName(fromPath);
   const toName = extractFileName(toPath);
 
-  httpRequestQueue.removeByName(fromName);
-  notifications.send({
-    message: `Renamed ${fromName} to ${toName}`,
-  });
+  try {
+    await runtimeServiceRenameFile(instanceId, {
+      fromPath,
+      toPath,
+    });
+
+    httpRequestQueue.removeByName(fromName);
+    notifications.send({
+      message: `Renamed ${fromName} to ${toName}`,
+    });
+  } catch (err) {
+    notifications.send({
+      message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+    });
+  }
 }
 
-export async function deleteFileArtifact(
-  instanceId: string,
-  filePath: string,
-  showNotification = true,
-) {
+export async function deleteFileArtifact(instanceId: string, filePath: string) {
   const name = extractFileName(filePath);
   try {
     await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
 
     httpRequestQueue.removeByName(name);
-    if (showNotification) {
-      notifications.send({ message: `Deleted ${name}` });
-    }
+    notifications.send({ message: `Deleted ${name}` });
 
     await goto("/");
   } catch (err) {
-    console.error(err);
+    notifications.send({
+      message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+    });
   }
+}
+
+function extractMessage(msg: string) {
+  if (msg.endsWith("directory not empty")) return "directory not empty";
+  return msg;
 }

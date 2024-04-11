@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -21,7 +20,7 @@
       $runtime.instanceId,
       e.currentTarget,
       filePath,
-      EntityType.MetricsDefinition,
+      metricsDefName,
     );
     if (newRoute) await goto(newRoute);
   };

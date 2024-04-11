@@ -112,8 +112,7 @@
       instanceId,
       e.currentTarget,
       filePath,
-
-      EntityType.Dashboard,
+      customDashboardName,
     );
   };
 

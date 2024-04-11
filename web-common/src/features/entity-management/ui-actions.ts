@@ -7,45 +7,43 @@ import {
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { extractFileExtension } from "../sources/extract-file-name";
 
 export async function handleEntityRename(
   instanceId: string,
   target: HTMLInputElement,
   existingPath: string,
-  entityType: EntityType, // temporary param
+  existingName: string,
 ) {
   const [folder, fileName] = splitFolderAndName(existingPath);
-  const extension = extractFileExtension(existingPath);
+  const suffix = fileName.replace(existingName, "");
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
     notifications.send({
       message: INVALID_NAME_MESSAGE,
     });
-    target.value = fileName; // resets the input
+    target.value = existingName; // resets the input
     return;
   }
 
   const allNames = await fetchAllNames(queryClient, instanceId);
 
-  if (isDuplicateName(target.value, fileName, allNames)) {
+  if (isDuplicateName(target.value, existingName, allNames)) {
     notifications.send({
       message: `Name ${target.value} is already in use`,
     });
-    target.value = fileName; // resets the input
+    target.value = existingName; // resets the input
     return;
   }
 
   try {
     const toName = target.value;
 
-    const newAPIPath = (folder ? `${folder}/` : "") + toName + extension;
+    const newFilePath = (folder ? `${folder}/` : "") + toName + suffix;
 
-    await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
+    await renameFileArtifact(instanceId, existingPath, newFilePath);
 
-    return `/files/${newAPIPath}`;
+    return `/files/${newFilePath}`;
   } catch (err) {
     console.error(err.response?.data?.message ?? err);
   }

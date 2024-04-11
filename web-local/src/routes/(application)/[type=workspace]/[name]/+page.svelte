@@ -191,7 +191,7 @@
       instanceId,
       e.currentTarget,
       filePath,
-      entity,
+      assetName,
     );
 
     if (newRoute) await goto(newRoute);

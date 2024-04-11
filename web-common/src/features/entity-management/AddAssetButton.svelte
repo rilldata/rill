@@ -11,7 +11,10 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import { createRuntimeServicePutFileAndReconcile } from "../../runtime-client";
+  import {
+    createRuntimeServicePutFile,
+    createRuntimeServicePutFileAndReconcile,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useAlertFileNames } from "../alerts/selectors";
   import { useAPIFileNames } from "../apis/selectors";
@@ -33,7 +36,7 @@
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
 
-  const createFile = createRuntimeServicePutFileAndReconcile();
+  const createFile = createRuntimeServicePutFile();
 
   $: instanceId = $runtime.instanceId;
 
@@ -70,9 +73,9 @@
     const newModelName = getName("model", $modelFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
+      instanceId,
+      path: `models/${newModelName}.sql`,
       data: {
-        instanceId,
-        path: `models/${newModelName}.sql`,
         blob: NEW_MODEL_FILE_CONTENT,
         create: true,
         createOnly: true,
@@ -92,9 +95,9 @@
     );
 
     void $createFile.mutateAsync({
+      instanceId,
+      path: `dashboards/${newDashboardName}.yaml`,
       data: {
-        instanceId,
-        path: `dashboards/${newDashboardName}.yaml`,
         blob: "",
         create: true,
         createOnly: true,
@@ -118,13 +121,12 @@
     const nextFileName = getName("file", []);
 
     void $createFile.mutateAsync({
+      instanceId: instanceId,
+      path: `${currentDirectory}/${nextFileName}`,
       data: {
-        instanceId: instanceId,
-        path: `${currentDirectory}/${nextFileName}`,
         blob: undefined,
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
 
@@ -138,13 +140,12 @@
     const nextFileName = getName("api", $apiFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
+      instanceId: instanceId,
+      path: `apis/${nextFileName}.yaml`,
       data: {
-        instanceId: instanceId,
-        path: `apis/${nextFileName}.yaml`,
         blob: NEW_API_FILE_CONTENT,
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
 
@@ -158,13 +159,12 @@
     const nextFileName = getName("chart", $chartFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
+      instanceId: instanceId,
+      path: `charts/${nextFileName}.yaml`,
       data: {
-        instanceId: instanceId,
-        path: `charts/${nextFileName}.yaml`,
         blob: NEW_CHART_FILE_CONTENT,
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
 
@@ -178,13 +178,12 @@
     const nextFileName = getName("theme", $themeFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
+      instanceId: instanceId,
+      path: `themes/${nextFileName}.yaml`,
       data: {
-        instanceId: instanceId,
-        path: `themes/${nextFileName}.yaml`,
         blob: NEW_THEME_FILE_CONTENT,
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
 
@@ -198,13 +197,12 @@
     const nextFileName = getName("report", $reportFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
+      instanceId: instanceId,
+      path: `reports/${nextFileName}.yaml`,
       data: {
-        instanceId: instanceId,
-        path: `reports/${nextFileName}.yaml`,
         blob: NEW_REPORT_FILE_CONTENT,
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
 
@@ -218,13 +216,12 @@
     const nextFileName = getName("alert", $alertFileNamesQuery?.data ?? []);
 
     void $createFile.mutateAsync({
+      instanceId: instanceId,
+      path: `alerts/${nextFileName}.yaml`,
       data: {
-        instanceId: instanceId,
-        path: `alerts/${nextFileName}.yaml`,
         blob: NEW_ALERT_FILE_CONTENT,
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
 
@@ -237,9 +234,9 @@
     <DropdownMenu.Trigger asChild let:builder>
       <button
         {...builder}
-        use:builder.action
-        class:open
         class="p-2 bg-primary-50 hover:bg-primary-100 text-primary-700 hover:text-primary-800 w-full flex gap-x-2 items-center font-medium h-7 rounded-sm justify-center"
+        class:open
+        use:builder.action
       >
         <PlusCircleIcon size="14px" />
         <div class="flex gap-x-1 items-center">
@@ -248,28 +245,28 @@
         </div>
       </button>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content class="w-[240px]" align="start">
+    <DropdownMenu.Content align="start" class="w-[240px]">
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddSource}>
         <svelte:component
           this={resourceIconMapping[ResourceKind.Source]}
-          size="16px"
           className="text-gray-900"
+          size="16px"
         />
         Source
       </DropdownMenu.Item>
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddModel}>
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
-          size="16px"
           className="text-gray-900"
+          size="16px"
         />
         Model
       </DropdownMenu.Item>
       <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddDashboard}>
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
-          size="16px"
           className="text-gray-900"
+          size="16px"
         />
         Dashboard
       </DropdownMenu.Item>
@@ -286,8 +283,8 @@
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.API]}
-              size="16px"
               className="text-gray-900"
+              size="16px"
             />
             API
           </DropdownMenu.Item>
@@ -295,32 +292,32 @@
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Chart]}
-              size="16px"
               className="text-gray-900"
+              size="16px"
             />
             Chart
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Theme]}
-              size="16px"
               className="text-gray-900"
+              size="16px"
             />
             Theme
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
-              size="16px"
               className="text-gray-900"
+              size="16px"
             />
             Report
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAlert}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
-              size="16px"
               className="text-gray-900"
+              size="16px"
             />
             Alert
           </DropdownMenu.Item>

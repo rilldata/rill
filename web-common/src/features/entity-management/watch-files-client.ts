@@ -21,14 +21,6 @@ export function createWatchFilesClient() {
 function handleWatchFileResponse(res: V1WatchFilesResponse) {
   if (!res?.path || res.path.includes(".db")) return;
 
-  // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
-  if (
-    !res.path.endsWith(".sql") &&
-    !res.path.endsWith(".yaml") &&
-    !res.path.endsWith(".yml")
-  )
-    return;
-
   const instanceId = get(runtime).instanceId;
   const cleanedPath = removeLeadingSlash(res.path);
   // invalidations will wait until the re-fetched query is completed
