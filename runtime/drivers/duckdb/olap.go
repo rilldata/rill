@@ -190,13 +190,13 @@ func (c *connection) EstimateSize() (int64, bool) {
 	dbWalPath := fmt.Sprintf("%s.wal", path)
 	paths := []string{path, dbWalPath}
 	if c.config.ExtTableStorage {
-		entries, err := os.ReadDir(c.config.ExtStoragePath)
+		entries, err := os.ReadDir(c.config.DBStoragePath)
 		if err == nil { // ignore error
 			for _, entry := range entries {
 				if !entry.IsDir() {
 					continue
 				}
-				path := filepath.Join(c.config.ExtStoragePath, entry.Name())
+				path := filepath.Join(c.config.DBStoragePath, entry.Name())
 				version, exist, err := c.tableVersion(entry.Name())
 				if err != nil || !exist {
 					continue
@@ -292,7 +292,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		// NOTE: Running mkdir while holding the connection to avoid directory getting cleaned up when concurrent calls to RenameTable cause reopenDB to be called.
 
 		// create a new db file in /<instanceid>/<name> directory
-		sourceDir := filepath.Join(c.config.ExtStoragePath, name)
+		sourceDir := filepath.Join(c.config.DBStoragePath, name)
 		if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return fmt.Errorf("create: unable to create dir %q: %w", sourceDir, err)
 		}
@@ -400,7 +400,7 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 	}
 
 	// delete source directory
-	return os.RemoveAll(filepath.Join(c.config.ExtStoragePath, name))
+	return os.RemoveAll(filepath.Join(c.config.DBStoragePath, name))
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
@@ -476,8 +476,8 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		return err
 	}
 
-	newSrcDir := filepath.Join(c.config.ExtStoragePath, newName)
-	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
+	newSrcDir := filepath.Join(c.config.DBStoragePath, newName)
+	oldSrcDir := filepath.Join(c.config.DBStoragePath, oldName)
 
 	return c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		err = os.Mkdir(newSrcDir, fs.ModePerm)
@@ -512,7 +512,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		if err != nil {
 			return fmt.Errorf("rename: update version failed: %w", err)
 		}
-		err = os.RemoveAll(filepath.Join(c.config.ExtStoragePath, oldName))
+		err = os.RemoveAll(filepath.Join(c.config.DBStoragePath, oldName))
 		if err != nil {
 			c.logger.Error("rename: unable to delete old path", zap.Error(err))
 		}
@@ -589,7 +589,7 @@ func (c *connection) detachAndRemoveFile(ctx context.Context, db, dbFile string)
 }
 
 func (c *connection) tableVersion(name string) (string, bool, error) {
-	pathToFile := filepath.Join(c.config.ExtStoragePath, name, "version.txt")
+	pathToFile := filepath.Join(c.config.DBStoragePath, name, "version.txt")
 	contents, err := os.ReadFile(pathToFile)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -601,7 +601,7 @@ func (c *connection) tableVersion(name string) (string, bool, error) {
 }
 
 func (c *connection) updateVersion(name, version string) error {
-	pathToFile := filepath.Join(c.config.ExtStoragePath, name, "version.txt")
+	pathToFile := filepath.Join(c.config.DBStoragePath, name, "version.txt")
 	file, err := os.Create(pathToFile)
 	if err != nil {
 		return err
@@ -692,7 +692,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 	}
 	_ = res.Close()
 
-	sourceDir := filepath.Join(c.config.ExtStoragePath, table)
+	sourceDir := filepath.Join(c.config.DBStoragePath, table)
 	newVersion := fmt.Sprint(time.Now().UnixMilli())
 	newDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
 	newDB := dbName(table, newVersion)

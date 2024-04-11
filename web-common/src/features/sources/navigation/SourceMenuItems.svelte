@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
@@ -10,6 +11,7 @@
   import {
     useIsLocalFileConnector,
     useSourceFromYaml,
+    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -26,7 +28,10 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { deleteFileArtifact } from "../../entity-management/actions";
+  import { EntityType } from "../../entity-management/types";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { getNextRoute } from "../../models/utils/navigate-to-next";
   import { createModelFromSource } from "../createModel";
   import {
     refreshSource,
@@ -34,6 +39,7 @@
   } from "../refreshSource";
 
   export let filePath: string;
+  export let open: boolean;
 
   $: [folder] = splitFolderAndName(filePath);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
@@ -59,6 +65,8 @@
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
+  $: sourceRoutesQuery = useSourceRoutes($runtime.instanceId);
+  $: sourceRoutes = $sourceRoutesQuery.data ?? [];
   $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
@@ -71,6 +79,16 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  const handleDeleteSource = async () => {
+    try {
+      await deleteFileArtifact(runtimeInstanceId, filePath, EntityType.Table);
+
+      if (open) await goto(getNextRoute(sourceRoutes));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleCreateModel = async () => {
     try {

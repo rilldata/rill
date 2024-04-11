@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
@@ -11,9 +12,15 @@
   import { createEventDispatcher } from "svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { deleteFileArtifact } from "../../entity-management/actions";
+  import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { EntityType } from "../../entity-management/types";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useModelRoutes } from "../selectors";
+  import { getNextRoute } from "../utils/navigate-to-next";
 
   export let filePath: string;
+  export let open: boolean;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: [folder] = splitFolderAndName(filePath);
@@ -23,6 +30,8 @@
 
   const { customDashboards } = featureFlags;
 
+  $: modelRoutesQuery = useModelRoutes($runtime.instanceId);
+  $: modelRoutes = $modelRoutesQuery.data ?? [];
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
@@ -45,6 +54,20 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  const handleDeleteModel = async (modelName: string) => {
+    try {
+      await deleteFileArtifact(
+        $runtime.instanceId,
+        getFileAPIPathFromNameAndType(modelName, EntityType.Model),
+        EntityType.MetricsDefinition,
+      );
+
+      if (open) await goto(getNextRoute(modelRoutes));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 </script>
 
 <NavigationMenuItem

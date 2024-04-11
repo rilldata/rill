@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import {
@@ -6,7 +5,8 @@ import {
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import { removeLeadingSlash } from "./entity-mappers";
+import { getLabel, removeLeadingSlash } from "./entity-mappers";
+import type { EntityType } from "./types";
 
 export async function renameFileArtifact(
   instanceId: string,
@@ -33,15 +33,20 @@ export async function renameFileArtifact(
   }
 }
 
-export async function deleteFileArtifact(instanceId: string, filePath: string) {
+export async function deleteFileArtifact(
+  instanceId: string,
+  filePath: string,
+  type: EntityType,
+  showNotification = true,
+) {
   const name = extractFileName(filePath);
   try {
     await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
 
     httpRequestQueue.removeByName(name);
-    notifications.send({ message: `Deleted ${name}` });
-
-    await goto("/");
+    if (showNotification) {
+      notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+    }
   } catch (err) {
     notifications.send({
       message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
