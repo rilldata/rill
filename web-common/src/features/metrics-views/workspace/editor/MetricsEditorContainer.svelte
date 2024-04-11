@@ -11,10 +11,9 @@ It will show an error message if passed in.
   import { slide } from "svelte/transition";
 
   export let error: LineStatus | V1ReconcileError | undefined = undefined;
-  export let height = "calc(100vh - var(--header-height))";
 </script>
 
-<div class="flex flex-col w-full h-full content-stretch" style:height>
+<div class="flex flex-col w-full h-full content-stretch">
   <div class="grow bg-white overflow-y-auto">
     <div
       class="border-white w-full overflow-y-auto"

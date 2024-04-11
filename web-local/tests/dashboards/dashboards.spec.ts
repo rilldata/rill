@@ -5,7 +5,7 @@ import {
   wrapRetryAssertion,
 } from "../utils/commonHelpers";
 import {
-  RequestMatcher,
+  type RequestMatcher,
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
@@ -318,7 +318,7 @@ test.describe("dashboard", () => {
 
     // Assert that name changed
     await expect(
-      page.getByRole("heading", { name: "AdBids_model_dashboard_rename" }),
+      page.getByRole("link", { name: "AdBids_model_dashboard_rename" }),
     ).toBeVisible();
 
     // Assert that no time dimension specified

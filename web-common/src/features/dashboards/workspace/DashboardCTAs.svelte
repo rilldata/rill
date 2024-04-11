@@ -55,7 +55,7 @@
   }
 </script>
 
-<div class="flex gap-2 flex-shrink-0">
+<div class="flex gap-2 flex-shrink-0 ml-auto">
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}

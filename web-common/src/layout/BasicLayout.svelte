@@ -18,5 +18,7 @@ BasicLayout is the backbone of the Rill application.
   {#if !hideNavigation}
     <Navigation />
   {/if}
-  <slot />
+  <section class="size-full overflow-hidden">
+    <slot />
+  </section>
 </main>
