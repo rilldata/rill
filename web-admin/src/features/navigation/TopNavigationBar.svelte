@@ -7,8 +7,8 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import {
     createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizations,
-    createAdminServiceListProjectsForOrganization,
+    createAdminServiceListOrganizations as listOrgs,
+    createAdminServiceListProjectsForOrganization as listProjects,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
@@ -32,16 +32,13 @@
 
   $: instanceId = $runtime?.instanceId;
 
-  $: organization = $page.params.organization || null;
-  $: project = $page.params.project || null;
-  $: dashboard = $page.params.dashboard || null;
-  $: alert = $page.params.alert || null;
-  $: report = $page.params.report || null;
+  // These can be undefined
+  $: ({ organization, project, dashboard, alert, report } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
 
-  $: organizationQuery = createAdminServiceListOrganizations(
+  $: organizationQuery = listOrgs(
     { pageSize: 100 },
     {
       query: {
@@ -50,15 +47,11 @@
     },
   );
 
-  $: projectsQuery = createAdminServiceListProjectsForOrganization(
-    organization,
-    undefined,
-    {
-      query: {
-        enabled: !!organizations.length,
-      },
+  $: projectsQuery = listProjects(organization, undefined, {
+    query: {
+      enabled: !!organizations.length,
     },
-  );
+  });
 
   $: dashboardsQuery = useValidDashboards(instanceId);
 
@@ -71,23 +64,23 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationOptions = organizations.reduce(
+  $: organizationPaths = organizations.reduce(
     (map, { name }) => map.set(name, { label: name }),
-    new Map<string, Entry>(),
+    new Map<string, PathOption>(),
   );
 
-  $: projectOptions = projects.reduce((map, { name: label }) => {
+  $: projectPaths = projects.reduce((map, { name: label }) => {
     return map.set(label, { label });
   }, new Map<string, PathOption>());
 
-  $: dashboardOptions = dashboards.reduce((map, { meta, metricsView }) => {
+  $: dashboardPaths = dashboards.reduce((map, { meta, metricsView }) => {
     const id = meta.name.name;
     return map.set(id, {
       label: metricsView?.state?.validSpec?.title || id,
     });
   }, new Map<string, PathOption>());
 
-  $: alertOptions = alerts.reduce((map, alert) => {
+  $: alertPaths = alerts.reduce((map, alert) => {
     const id = alert.meta.name.name;
     return map.set(id, {
       label: alert.alert.spec.title || id,
@@ -95,7 +88,7 @@
     });
   }, new Map<string, PathOption>());
 
-  $: reportOptions = reports.reduce((map, report) => {
+  $: reportPaths = reports.reduce((map, report) => {
     const id = report.meta.name.name;
     return map.set(id, {
       label: report.report.spec.title || id,
@@ -104,25 +97,21 @@
   }, new Map<string, PathOption>());
 
   $: pathParts = [
-    organizationOptions,
-    projectOptions,
-    dashboardOptions,
-    report ? reportOptions : alert ? alertOptions : null,
+    organizationPaths,
+    projectPaths,
+    dashboardPaths,
+    report ? reportPaths : alert ? alertPaths : null,
   ];
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
 <div
-  class="grid items-center w-full justify-stretch pr-4 pl-2 py-1"
+  class="flex items-center w-full pr-4 pl-2 py-1"
   class:border-b={!onProjectPage}
-  style:grid-template-columns="max-content auto max-content"
 >
   <Tooltip distance={2}>
-    <a
-      href="/"
-      class=" hover:bg-gray-200 grid place-content-center rounded p-2"
-    >
+    <a href="/" class="hover:bg-gray-200 grid place-content-center rounded p-2">
       <Home color="black" size="20px" />
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
@@ -131,10 +120,8 @@
     <Breadcrumbs {pathParts} {currentPath}>
       <OrganizationAvatar {organization} slot="icon" />
     </Breadcrumbs>
-  {:else}
-    <div />
   {/if}
-  <div class="flex gap-x-2 items-center">
+  <div class="flex gap-x-2 items-center ml-auto">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
