@@ -123,6 +123,38 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
+func (r *Runtime) emitInstanceHeartbeatEvents(duration time.Duration) {
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			instances, err := r.registryCache.list()
+			if err != nil {
+				r.logger.Warn("failed to send instance heartbeat event, instance listing failed", zap.Error(err))
+				return
+			}
+			for _, instance := range instances {
+				var dataDirSize int64
+				f, err := os.Stat(filepath.Join(r.opts.DataDir, instance.ID))
+				if err == nil {
+					dataDirSize = f.Size()
+				}
+				attrs := []attribute.KeyValue{
+					attribute.String("instance_id", instance.ID),
+					attribute.Int("variable_count", len(instance.ResolveVariables())),
+					attribute.String("updated_on", instance.UpdatedOn.String()),
+					attribute.Int64("data_dir_size_bytes", dataDirSize),
+				}
+				r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat", attrs...)
+			}
+		case <-r.ctx.Done():
+			return
+		}
+	}
+}
+
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
@@ -502,55 +534,4 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if err != nil {
 		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
-}
-
-// instanceHeartbeatEmitter emits instance heartbeat events periodically after specified duration until closed.
-type instanceHeartbeatEmitter struct {
-	rt       *Runtime
-	duration time.Duration
-
-	closeChan chan struct{}
-}
-
-func newInstanceHeartbeatEmitter(rt *Runtime, duration time.Duration) *instanceHeartbeatEmitter {
-	return &instanceHeartbeatEmitter{
-		rt:       rt,
-		duration: duration,
-	}
-}
-
-func (i *instanceHeartbeatEmitter) emit() {
-	ticker := time.NewTicker(i.duration)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			instances, err := i.rt.registryCache.list()
-			if err != nil {
-				i.rt.logger.Warn("failed to send instance heartbeat event, instance listing failed", zap.Error(err))
-				return
-			}
-			for _, instance := range instances {
-				var dataDirSize int64
-				f, err := os.Stat(filepath.Join(i.rt.opts.DataDir, instance.ID))
-				if err == nil {
-					dataDirSize = f.Size()
-				}
-				attrs := []attribute.KeyValue{
-					attribute.String("instance_id", instance.ID),
-					attribute.Int("variable_count", len(instance.ResolveVariables())),
-					attribute.String("updated_on", instance.UpdatedOn.String()),
-					attribute.Int64("data_dir_size_bytes", dataDirSize),
-				}
-				i.rt.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat", attrs...)
-			}
-		case <-i.closeChan:
-			return
-		}
-	}
-}
-
-func (i *instanceHeartbeatEmitter) close() {
-	close(i.closeChan)
 }

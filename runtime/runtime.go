@@ -32,16 +32,19 @@ type Options struct {
 }
 
 type Runtime struct {
-	Email                    *email.Client
-	opts                     *Options
-	logger                   *zap.Logger
-	activity                 *activity.Client
-	metastore                drivers.Handle
-	registryCache            *registryCache
-	connCache                conncache.Cache
-	queryCache               *queryCache
-	securityEngine           *securityEngine
-	instanceHeartbeatEmitter *instanceHeartbeatEmitter
+	Email          *email.Client
+	opts           *Options
+	logger         *zap.Logger
+	activity       *activity.Client
+	metastore      drivers.Handle
+	registryCache  *registryCache
+	connCache      conncache.Cache
+	queryCache     *queryCache
+	securityEngine *securityEngine
+
+	// ctx and cancel controls background tasks
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -49,6 +52,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		emailClient = email.New(email.NewNoopSender())
 	}
 
+	bgCtx, cancel := context.WithCancel(context.Background())
 	rt := &Runtime{
 		Email:          emailClient,
 		opts:           opts,
@@ -56,6 +60,8 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
+		ctx:            bgCtx,
+		cancel:         cancel,
 	}
 
 	rt.connCache = rt.newConnectionCache()
@@ -76,8 +82,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		return nil, err
 	}
 	if rt.opts.EmitInstanceHeartBeat {
-		rt.instanceHeartbeatEmitter = newInstanceHeartbeatEmitter(rt, time.Minute)
-		go rt.instanceHeartbeatEmitter.emit()
+		go rt.emitInstanceHeartbeatEvents(time.Minute)
 	}
 
 	return rt, nil
@@ -90,10 +95,8 @@ func (r *Runtime) AllowHostAccess() bool {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	r.cancel()
 	r.registryCache.close(ctx)
-	if r.instanceHeartbeatEmitter != nil {
-		r.instanceHeartbeatEmitter.close()
-	}
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
 	return errors.Join(err1, err2)
