@@ -76,7 +76,7 @@
 {:else if isCustomDashboard}
   <CustomDashboardPage data={{ fileArtifact }} />
 {:else if isUnknown}
-  <WorkspaceContainer>
+  <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
     <Editor
       content={$fileQuery.data?.blob ?? ""}
