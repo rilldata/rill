@@ -21,6 +21,7 @@ type Options struct {
 	VersionNumber      string
 	MetricsProjectOrg  string
 	MetricsProjectName string
+	AutoscalerCron     string
 }
 
 type Service struct {
@@ -35,6 +36,7 @@ type Service struct {
 	issuer           *auth.Issuer
 	VersionNumber    string
 	metricsProjectID string
+	AutoscalerCron   string
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
@@ -97,6 +99,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		issuer:           issuer,
 		VersionNumber:    opts.VersionNumber,
 		metricsProjectID: metricsProjectID,
+		AutoscalerCron:   opts.AutoscalerCron,
 	}, nil
 }
 

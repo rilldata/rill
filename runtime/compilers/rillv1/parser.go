@@ -172,9 +172,14 @@ type Parser struct {
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
 func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID string) (*RillYAML, error) {
-	paths, err := repo.ListRecursive(ctx, "rill.{yaml,yml}")
+	files, err := repo.ListRecursive(ctx, "rill.{yaml,yml}", true)
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
 	}
 
 	p := Parser{Repo: repo, InstanceID: instanceID}
@@ -255,9 +260,14 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}")
+	files, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}", true)
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
 	}
 
 	// Parse all files

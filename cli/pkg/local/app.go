@@ -166,6 +166,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		MetastoreConnector:           "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
+		DataDir:                      dbDirPath,
 		SystemConnectors:             systemConnectors,
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
@@ -195,6 +196,8 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
+		// Set path which overrides the duckdb's default behaviour to store duckdb data in data_dir/<instance_id>/<connector> directory which is not backward compatible
+		olapCfg["path"] = olapDSN
 		val, err := isExternalStorageEnabled(dbDirPath, vars)
 		if err != nil {
 			return nil, err
@@ -204,10 +207,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	if opts.Reset {
-		err := drivers.Drop(opts.OlapDriver, map[string]any{"dsn": olapDSN}, logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
-		}
 		_ = os.RemoveAll(dbDirPath)
 		err = os.MkdirAll(dbDirPath, os.ModePerm)
 		if err != nil {
