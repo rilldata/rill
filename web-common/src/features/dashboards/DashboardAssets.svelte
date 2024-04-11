@@ -84,15 +84,18 @@
     <ol transition:slide={{ duration }} id="assets-metrics-list">
       {#if $dashboardNames.data}
         {#each $dashboardNames.data as dashboardName (dashboardName)}
+          {@const open =
+            $page.url.pathname === `/dashboard/${dashboardName}` ||
+            $page.url.pathname === `/dashboard/${dashboardName}/edit`}
           <li animate:flip={{ duration }} aria-label={dashboardName}>
             <NavigationEntry
               showContextMenu={!$readOnly}
               name={dashboardName}
               href={`/dashboard/${dashboardName}/edit`}
-              open={$page.url.pathname === `/dashboard/${dashboardName}` ||
-                $page.url.pathname === `/dashboard/${dashboardName}/edit`}
+              {open}
             >
               <DashboardMenuItems
+                {open}
                 slot="menu-items"
                 metricsViewName={dashboardName}
                 on:rename={() => openRenameMetricsDefModal(dashboardName)}

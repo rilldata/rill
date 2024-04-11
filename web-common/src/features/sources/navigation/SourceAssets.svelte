@@ -77,6 +77,7 @@
     <ol transition:slide={{ duration }}>
       {#if $sourceNames?.data}
         {#each $sourceNames.data as sourceName (sourceName)}
+          {@const open = $page.url.pathname === `/source/${sourceName}`}
           <li
             animate:flip={{ duration: 200 }}
             transition:slide={{ duration }}
@@ -86,7 +87,7 @@
               expandable
               name={sourceName}
               href={`/source/${sourceName}`}
-              open={$page.url.pathname === `/source/${sourceName}`}
+              {open}
               on:command-click={() => queryHandler(sourceName)}
             >
               <div slot="more" transition:slide={{ duration }}>
@@ -96,6 +97,7 @@
               <SourceTooltip slot="tooltip-content" {sourceName} connector="" />
 
               <SourceMenuItems
+                {open}
                 slot="menu-items"
                 {sourceName}
                 on:rename-asset={() => {
