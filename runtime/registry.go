@@ -310,7 +310,7 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 			return err
 		}
 
-		// also clear instance's tmp directory and recreate
+		// also create instance's tmp directory
 		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp"), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
 		}

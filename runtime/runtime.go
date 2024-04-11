@@ -116,7 +116,7 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	return instanceAnnotationsToAttribs(instance)
 }
 
-// cleanTempDirs removes all temporary directories under the runtime instance's data directory.
+// cleanTempDirs removes temporary directories of every instance.
 // This is to prevent temp data from accumulating in a persistent directory over time due to bugs or crashes.
 // In happy cases any temp files should be cleared by the logic that adds them.
 func cleanTempDirs(dataDir string, logger *zap.Logger) {
