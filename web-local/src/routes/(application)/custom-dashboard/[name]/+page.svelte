@@ -19,7 +19,7 @@
   import type {
     V1DashboardSpec,
     V1DashboardComponent,
-  } from "@common/runtime-client";
+  } from "@rilldata/web-common/runtime-client";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
