@@ -57,7 +57,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
 	})
 	group.Go(func() error {
-		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, "CRON_TZ=America/Los_Angeles 0 0 * * 1") // Run the scaling job at 00:00 on every Monday.
+		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
 	})
 
 	// NOTE: Add new scheduled jobs here
