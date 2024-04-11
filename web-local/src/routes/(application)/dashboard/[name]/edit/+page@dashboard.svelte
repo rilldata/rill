@@ -100,7 +100,7 @@
       filePath,
       EntityType.MetricsDefinition,
     );
-    if (newRoute) await goto(newRoute);
+    if (newRoute) await goto(newRoute + "/edit");
   };
 </script>
 
