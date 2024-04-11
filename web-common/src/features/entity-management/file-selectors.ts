@@ -88,11 +88,11 @@ export async function fetchMainEntityFiles(
 ) {
   const resp = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
-      glob: ".{yaml,sql}",
+      glob: "**/*.{yaml,yml,sql}",
     }),
     queryFn: () =>
       runtimeServiceListFiles(instanceId, {
-        glob: ".{yaml,sql}",
+        glob: "**/*.{yaml,yml,sql}",
       }),
   });
   return resp.files?.filter((f) => !f.isDir).map((f) => f.path ?? "") ?? [];

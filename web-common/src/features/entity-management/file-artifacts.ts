@@ -224,13 +224,18 @@ export class FileArtifacts {
     }
 
     const files = await fetchMainEntityFiles(queryClient, instanceId);
-    const missingFiles = files.filter((f) => !this.artifacts[f]);
+    const missingFiles = files
+      .map(removeLeadingSlash)
+      .filter((f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind);
     await Promise.all(
       missingFiles.map((filePath) =>
         fetchFileContent(queryClient, instanceId, filePath).then(
           (fileContents) => {
-            const artifact = new FileArtifact(filePath);
-            artifact.name.set(parseKindAndNameFromFile(filePath, fileContents));
+            const artifact =
+              this.artifacts[filePath] ?? new FileArtifact(filePath);
+            const newName = parseKindAndNameFromFile(filePath, fileContents);
+            if (newName) artifact.name.set(newName);
+            this.artifacts[filePath] ??= artifact;
           },
         ),
       ),

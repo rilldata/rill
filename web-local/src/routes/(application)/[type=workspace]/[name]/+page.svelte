@@ -153,6 +153,8 @@
   const debounceSave = debounce(save, QUERY_DEBOUNCE_TIME);
 
   async function save() {
+    if (!hasUnsavedChanges) return;
+
     if (type === "source") {
       overlay.set({ title: `Importing ${filePath}` });
     } else {
@@ -164,7 +166,7 @@
 
     await $updateFile.mutateAsync({
       instanceId,
-      path: getFileAPIPathFromNameAndType(assetName, entity),
+      path: filePath,
       data: {
         blob: latest,
       },

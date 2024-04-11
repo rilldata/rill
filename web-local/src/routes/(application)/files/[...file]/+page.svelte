@@ -6,6 +6,7 @@
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -19,6 +20,7 @@
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
@@ -44,6 +46,8 @@
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
+
+  $: initialLoading = !resourceKind && $fileQuery.isFetching;
 
   // TODO: optimistically update the get file cache
   const putFile = createRuntimeServicePutFile();
@@ -79,7 +83,9 @@
   }
 </script>
 
-{#if fileTypeUnsupported}
+{#if initialLoading}
+  <Spinner status={EntityStatus.Running} />
+{:else if fileTypeUnsupported}
   <div class="size-full grid place-content-center">
     <div class="flex flex-col items-center gap-y-2">
       <AlertCircleOutline size="40px" />
@@ -106,10 +112,15 @@
 {:else if isOther && $fileQuery.data}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
-    <Editor
-      content={$fileQuery.data?.blob ?? ""}
-      on:write={({ detail: { content } }) => handleFileUpdate(content)}
-      slot="body"
-    />
+    <div class="editor-pane size-full" slot="body">
+      <div class="editor flex flex-col border border-gray-200 rounded h-full">
+        <div class="grow flex bg-white overflow-y-auto rounded">
+          <Editor
+            content={$fileQuery.data?.blob ?? ""}
+            on:update={({ detail: { content } }) => handleFileUpdate(content)}
+          />
+        </div>
+      </div>
+    </div>
   </WorkspaceContainer>
 {/if}

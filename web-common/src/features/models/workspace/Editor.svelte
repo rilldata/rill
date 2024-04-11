@@ -299,10 +299,8 @@
 <section>
   <div class="editor-container">
     <div
-      class="size-full"
-      role="textbox"
-      tabindex="0"
       bind:this={editorContainerComponent}
+      class="size-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();
@@ -310,6 +308,8 @@
       on:keydown={() => {
         /** no op for now */
       }}
+      role="textbox"
+      tabindex="0"
     />
   </div>
 
@@ -332,8 +332,8 @@
       {/if}
     </div>
     <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
-      <Switch small id="auto-save" bind:checked={autoSave} />
-      <Label for="auto-save" class="font-normal text-xs">Auto-save</Label>
+      <Switch bind:checked={autoSave} id="auto-save" small />
+      <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
     </div>
   </footer>
 </section>

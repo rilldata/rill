@@ -35,14 +35,14 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
   // so, we should not `await` here on `refetchQueries`
   switch (res.event) {
     case "FILE_EVENT_WRITE":
-      void queryClient.refetchQueries(
+      void queryClient.resetQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
       fileArtifacts.fileUpdated(cleanedPath);
       break;
 
     case "FILE_EVENT_DELETE":
-      queryClient.removeQueries(
+      void queryClient.resetQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
       );
       fileArtifacts.fileDeleted(cleanedPath);

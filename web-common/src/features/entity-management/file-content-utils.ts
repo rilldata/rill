@@ -16,8 +16,7 @@ export function parseKindAndNameFromFile(
   const kind = FolderToResourceKind[folder];
   const name = extractFileName(fileName);
 
-  console.log(filePath, fileContents);
-  if (filePath.endsWith(".yaml")) {
+  if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
     return tryParseYaml(kind, name, fileContents);
   } else if (filePath.endsWith(".sql")) {
     return tryParseSql(kind, name, fileContents);
@@ -27,11 +26,11 @@ export function parseKindAndNameFromFile(
 
 function tryParseYaml(
   kindFromFolder: ResourceKind | undefined,
-  kindFromName: string,
+  nameFromFolder: string,
   fileContents: string,
 ): V1ResourceName | undefined {
   let kind = kindFromFolder;
-  let name = kindFromName;
+  let name = nameFromFolder;
 
   try {
     const yaml = parse(fileContents);
@@ -42,11 +41,11 @@ function tryParseYaml(
       name = yaml.name as string;
     }
   } catch (err) {
-    const kindMatches = /^kind\s*:\s*(.*)\s*$/gm.exec(fileContents);
+    const kindMatches = /^kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
     if (kindMatches?.[1]) {
       kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
     }
-    const nameMatches = /^name\s*:\s*(.*)\s*$/gm.exec(fileContents);
+    const nameMatches = /^name\s*:\s*(.+?)\s*$/gm.exec(fileContents);
     if (nameMatches?.[1]) {
       name = nameMatches?.[1];
     }
@@ -61,17 +60,17 @@ function tryParseYaml(
 
 function tryParseSql(
   kindFromFolder: ResourceKind | undefined,
-  kindFromName: string,
+  nameFromFolder: string,
   fileContents: string,
 ): V1ResourceName | undefined {
   let kind = kindFromFolder;
-  let name = kindFromName;
+  let name = nameFromFolder;
 
-  const kindMatches = /^--\s*@kind\s*:\s*(.*)\s*$/gm.exec(fileContents);
+  const kindMatches = /^--\s*@kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
   if (kindMatches?.[1]) {
     kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
   }
-  const nameMatches = /^--\s*@name\s*:\s*(.*)\s*$/gm.exec(fileContents);
+  const nameMatches = /^--\s*@name\s*:\s*(.+?)\s*$/gm.exec(fileContents);
   if (nameMatches?.[1]) {
     name = nameMatches?.[1];
   }
