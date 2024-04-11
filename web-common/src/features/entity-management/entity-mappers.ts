@@ -45,15 +45,15 @@ export function getFileAPIPathFromNameAndType(
 ): string {
   switch (type) {
     case EntityType.Table:
-      return `/files/sources/${name}.yaml`;
+      return `sources/${name}.yaml`;
     case EntityType.Model:
-      return `/files/models/${name}.sql`;
+      return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
-      return `/files/dashboards/${name}.yaml`;
+      return `dashboards/${name}.yaml`;
     case EntityType.Chart:
-      return `/files/charts/${name}.yaml`;
+      return `charts/${name}.yaml`;
     case EntityType.Dashboard:
-      return `/files/custom-dashboards/${name}.yaml`;
+      return `custom-dashboards/${name}.yaml`;
     default:
       throw new Error("Unrecognized EntityType");
   }

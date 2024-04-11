@@ -10,8 +10,8 @@
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
-    resourceIsLoading,
     ResourceKind,
+    resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -211,7 +211,7 @@
       queryClient,
       tableName ?? "",
     );
-    await goto(`/model/${modelName}`);
+    await goto(`/files/models/${modelName}.sql`);
     await behaviourEvent.fireNavigationEvent(
       modelName,
       BehaviourEventMedium.Button,
