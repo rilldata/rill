@@ -18,6 +18,7 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const MainResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -202,7 +203,7 @@ export function refreshResource(
   );
 }
 
-export async function invalidateAllResources(queryClient: QueryClient) {
+export async function invalidateAllResources() {
   return queryClient.resetQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),

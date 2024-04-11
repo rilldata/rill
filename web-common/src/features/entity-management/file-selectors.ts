@@ -39,17 +39,19 @@ export function useMainEntityFiles(
       query: {
         select: (data) => {
           // Filter the list of file paths to include only those that match the given prefix and extension
-          const filteredPaths = data.paths
-            ?.filter((filePath) => {
+          const filteredPaths = data.files
+            ?.filter((file) => {
+              if (file.isDir) return false;
               // Match the filePath against a pattern to extract the directory name
-              const regexMatch = filePath.match(/\/([^/]+)\/[^/]+$/);
+              const regexMatch = file.path?.match(/\/([^/]+)\/[^/]+$/);
               // Check if the directory name exactly matches the prefix
               return regexMatch && regexMatch[1] === prefix;
             })
-            .map((filePath) => {
+            .map((file) => {
               // Remove the directory and extension from the filePath to get the file name
               return transform(
-                filePath.replace(`/${prefix}/`, "").replace(extension, ""),
+                file.path?.replace(`/${prefix}/`, "").replace(extension, "") ??
+                  "",
               );
             })
             // Sort the file names alphabetically in a case-insensitive manner
@@ -80,7 +82,7 @@ export async function fetchMainEntityFiles(
         glob: ".{yaml,sql}",
       }),
   });
-  return resp.paths ?? [];
+  return resp.files?.filter((f) => !f.isDir).map((f) => f.path ?? "") ?? [];
 }
 
 export async function fetchFileContent(

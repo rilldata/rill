@@ -7,7 +7,7 @@
   import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
-  import BreadcrumbItem from "../navigation/breadcrumbs/BreadcrumbItem.svelte";
+  import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
 
   export let instanceId: string;
   export let activeResourceName: string;
@@ -44,20 +44,14 @@
         {/if}
         {#if currentDashboard}
           <BreadcrumbItem
-            label={currentDashboard?.title || currentDashboardName}
-            href=""
-            menuOptions={$dashboards?.data?.length > 1 &&
-              $dashboards.data.map((listing) => {
-                return {
-                  key: listing.meta.name.name,
-                  main:
-                    listing?.metricsView?.state?.validSpec?.title ||
-                    listing.meta.name.name,
-                };
-              })}
-            menuKey={currentDashboardName}
-            onSelectMenuOption={(dashboard) =>
-              dispatch("select-dashboard", dashboard)}
+            options={$dashboards.data.reduce((map, { meta, metricsView }) => {
+              const id = meta.name.name;
+              return map.set(id, {
+                label: metricsView?.state?.validSpec?.title || id,
+              });
+            }, new Map())}
+            current={currentDashboardName}
+            onSelect={(dashboard) => dispatch("select-dashboard", dashboard)}
             isCurrentPage={onDashboardPage}
           />
         {/if}

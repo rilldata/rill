@@ -58,6 +58,7 @@ type configProperties struct {
 	AccessToken string `mapstructure:"access_token"`
 	ProjectID   string `mapstructure:"project_id"`
 	Branch      string `mapstructure:"branch"`
+	TempDir     string `mapstructure:"temp_dir"`
 }
 
 func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -84,10 +85,6 @@ func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 	}
 
 	return h, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -276,7 +273,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	}
 
 	if h.repoPath == "" {
-		h.repoPath, err = os.MkdirTemp("", "admin_driver_repo")
+		h.repoPath, err = os.MkdirTemp(h.config.TempDir, "admin_driver_repo")
 		if err != nil {
 			return err
 		}

@@ -317,7 +317,9 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that name changed
-    await expect(page.getByText("AdBids_model_dashboard_rename")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "AdBids_model_dashboard_rename" }),
+    ).toBeVisible();
 
     // Assert that no time dimension specified
     await expect(page.getByText("No time dimension specified")).toBeVisible();
@@ -512,16 +514,16 @@ dimensions:
 
     await page.getByText("google.com", { exact: true }).click();
     await page.getByText("instagram.com").click();
-    await page.getByText("news.google.com").click();
+    await page.getByText("msn.com").click();
 
-    await expect(page.getByText(" Total rows 41.1k")).toBeVisible();
+    await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
     await page.getByRole("button", { name: "Total rows", exact: true }).click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
-    await expect(page.getByText(" Avg Bid Price $2.93")).toBeVisible();
+    await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();
 
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
@@ -530,7 +532,7 @@ dimensions:
     await page.getByRole("button", { name: "Domain name" }).nth(1).click();
     await page.getByRole("menuitem", { name: "Time" }).click();
 
-    await expect(page.getByText("-52.2%")).toBeVisible();
+    await expect(page.getByText("~0%")).toBeVisible();
 
     await page.getByRole("button", { name: "Edit metrics" }).click();
 
