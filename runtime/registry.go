@@ -520,7 +520,7 @@ func newInstanceHeartbeatEmitter(rt *Runtime, duration time.Duration) *instanceH
 }
 
 func (i *instanceHeartbeatEmitter) emit() {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(i.duration)
 	defer ticker.Stop()
 
 	for {
