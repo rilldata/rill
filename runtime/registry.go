@@ -310,7 +310,10 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 			return err
 		}
 
-		// also create instance's tmp directory
+		// also recreate instance's tmp directory
+		if err := os.RemoveAll(filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp")); err != nil {
+			r.logger.Warn("failed to remove tmp directory", zap.String("instance_id", inst.ID), zap.Error(err))
+		}
 		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp"), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
 		}

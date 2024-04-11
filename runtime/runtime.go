@@ -4,12 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -51,9 +47,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		emailClient = email.New(email.NewNoopSender())
 	}
 
-	if opts.DataDir != "" {
-		cleanTempDirs(opts.DataDir, logger)
-	}
 	rt := &Runtime{
 		Email:          emailClient,
 		opts:           opts,
@@ -114,27 +107,6 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	}
 
 	return instanceAnnotationsToAttribs(instance)
-}
-
-// cleanTempDirs removes temporary directories of every instance.
-// This is to prevent temp data from accumulating in a persistent directory over time due to bugs or crashes.
-// In happy cases any temp files should be cleared by the logic that adds them.
-func cleanTempDirs(dataDir string, logger *zap.Logger) {
-	fsRoot := os.DirFS(dataDir)
-	glob := path.Clean(path.Join("./", filepath.Join("*", "tmp")))
-
-	matches, err := doublestar.Glob(fsRoot, glob)
-	if err != nil {
-		logger.Warn("failed to list temp directories", zap.Error(err))
-		return
-	}
-
-	for _, match := range matches {
-		err := os.RemoveAll(match)
-		if err != nil {
-			logger.Warn("failed to remove temp directory", zap.String("dir", match), zap.Error(err))
-		}
-	}
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
