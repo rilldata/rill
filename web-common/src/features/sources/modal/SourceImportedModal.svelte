@@ -10,7 +10,6 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-  import { directoryState } from "../../file-explorer/directory-store";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { extractFileName } from "../extract-file-name";
   import { useSource } from "../selectors";
@@ -43,7 +42,6 @@
 
   async function goToSource() {
     await goto(`/files/sources/${extractFileName($sourceImportedName ?? "")}`);
-    directoryState.expand("sources");
     close();
   }
 
