@@ -31,13 +31,14 @@
     <ol transition:slide={{ duration }}>
       {#if $chartFileNames?.data}
         {#each $chartFileNames.data as chartName (chartName)}
+          {@const open = $page.url.pathname === `/chart/${chartName}`}
           <li animate:flip={{ duration }} aria-label={chartName}>
             <NavigationEntry
               name={chartName}
               href={`/chart/${chartName}`}
-              open={$page.url.pathname === `/chart/${chartName}`}
+              {open}
             >
-              <ChartMenuItems slot="menu-items" {chartName} />
+              <ChartMenuItems slot="menu-items" {chartName} {open} />
             </NavigationEntry>
           </li>
         {/each}

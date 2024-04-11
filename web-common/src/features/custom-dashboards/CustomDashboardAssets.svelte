@@ -38,14 +38,16 @@
     <ol transition:slide={{ duration }}>
       {#if $customDashboardFileNames?.data}
         {#each $customDashboardFileNames.data as customDashboardName (customDashboardName)}
+          {@const open =
+            $page.url.pathname === `/custom-dashboard/${customDashboardName}`}
           <li animate:flip={{ duration }} aria-label={customDashboardName}>
             <NavigationEntry
               name={customDashboardName}
               href={`/custom-dashboard/${customDashboardName}`}
-              open={$page.url.pathname ===
-                `/custom-dashboard/${customDashboardName}`}
+              {open}
             >
               <CustomDashboardMenuItems
+                {open}
                 slot="menu-items"
                 {customDashboardName}
               />
