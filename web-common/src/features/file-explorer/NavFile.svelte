@@ -6,6 +6,8 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { Readable } from "svelte/store";
@@ -21,24 +23,24 @@
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
+  export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
+  export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
 
   $: fileName = filePath.split("/").pop();
-  $: directoryLevel = getDirectoryLevelFromPath(filePath);
   $: isCurrentFile = filePath === $page.params.file;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   let name: Readable<V1ResourceName | undefined>;
   $: name = fileArtifact.name;
-  $: resourceKind = $name?.kind;
+  $: resourceKind = $name?.kind as ResourceKind;
+
+  $: id = `${filePath}-nav-entry`;
+
+  $: padding = getPaddingFromPath(filePath);
 
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
-  }
-
-  function getDirectoryLevelFromPath(path: string) {
-    // Root level is 0; each "/" in the path represents a level deeper
-    return path === "" ? 0 : path.split("/").length;
   }
 </script>
 
@@ -46,8 +48,13 @@
   class="w-full group pr-2 text-left flex justify-between gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100 {isCurrentFile
     ? 'bg-slate-100 text-gray-900'
     : ''}"
+  {id}
   on:click={() => navigate(filePath)}
-  style:padding-left="{8 + (directoryLevel - 1) * 14}px"
+  on:mousedown={(e) =>
+    onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind })}
+  on:mouseup={(e) =>
+    onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
+  style:padding-left="{padding}px"
 >
   <svelte:component
     this={resourceKind ? resourceIconMapping[resourceKind] : File}
