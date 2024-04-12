@@ -49,10 +49,9 @@
       },
     );
 
-  $: emailNotifier = extractNotifier(
-    $reportQuery.data.resource.report.spec.notifiers,
-    "email",
-  );
+  $: emailNotifier =
+    $reportQuery.data &&
+    extractNotifier($reportQuery.data.resource.report.spec.notifiers, "email");
 
   // Actions
   const queryClient = useQueryClient();

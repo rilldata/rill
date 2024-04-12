@@ -1,4 +1,4 @@
-import { expect, Locator } from "@playwright/test";
+import { expect, type Locator } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import { waitForValidResource } from "web-local/tests/utils/commonHelpers";
@@ -22,7 +22,7 @@ export async function assertLeaderboards(
   }>,
 ) {
   for (const { label, values } of leaderboards) {
-    const leaderboardBlock = await page.locator("svelte-virtual-list-row", {
+    const leaderboardBlock = page.locator("svelte-virtual-list-row", {
       hasText: label,
     });
     await expect(leaderboardBlock).toBeVisible();

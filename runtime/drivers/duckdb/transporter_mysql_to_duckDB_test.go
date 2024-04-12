@@ -106,7 +106,7 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 	require.NotNil(t, handle)
 
 	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", map[string]any{"dsn": ":memory:"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 

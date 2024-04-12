@@ -7,12 +7,18 @@ BasicLayout is the backbone of the Rill application.
 
   import Navigation from "./navigation/Navigation.svelte";
 
-  $: showNavigation = $page.route.id !== "/(application)/welcome";
+  $: route = $page.route.id;
+
+  $: hideNavigation =
+    route === "/(application)/welcome" ||
+    (route?.includes("/dashboard/") && !route?.includes("/edit"));
 </script>
 
 <main class="flex overflow-hidden h-screen w-screen">
-  {#if showNavigation}
+  {#if !hideNavigation}
     <Navigation />
   {/if}
-  <slot />
+  <section class="size-full overflow-hidden">
+    <slot />
+  </section>
 </main>

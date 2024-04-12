@@ -404,9 +404,6 @@ paths:
           required: true
           schema:
             type: object
-            properties:
-              dropOlap:
-                type: boolean
             title: Request message for RuntimeService.DeleteInstance
       tags:
         - RuntimeService
@@ -6066,6 +6063,8 @@ definitions:
         $ref: '#/definitions/v1FileEvent'
       path:
         type: string
+      isDir:
+        type: boolean
     title: Response message for RuntimeService.WatchFiles
   v1WatchLogsResponse:
     type: object

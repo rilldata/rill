@@ -4,7 +4,7 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -58,7 +58,8 @@
           getFileAPIPathFromNameAndType(values.newName, entityType),
           entityType,
         );
-        goto(getRouteFromName(values.newName, entityType), {
+        const edit = entityType === EntityType.MetricsDefinition ? "/edit" : "";
+        await goto(getRouteFromName(values.newName, entityType) + edit, {
           replaceState: true,
         });
         closeModal();

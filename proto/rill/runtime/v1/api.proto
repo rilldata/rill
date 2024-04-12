@@ -366,7 +366,6 @@ message CreateInstanceResponse {
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional bool drop_olap = 2;
 }
 
 // Response message for RuntimeService.DeleteInstance
@@ -430,6 +429,7 @@ message WatchFilesRequest {
 message WatchFilesResponse {
   FileEvent event = 1;
   string path = 2;
+  bool is_dir = 3;
 }
 
 // Request message for RuntimeService.GetFile

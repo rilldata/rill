@@ -175,7 +175,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.drop_olap", boolPtrStr(req.DropOlap)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -184,7 +183,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropOlap)
+	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -296,11 +295,4 @@ func connectorsStrings(connectors []*runtimev1.Connector) []string {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
-}
-
-func boolPtrStr(b *bool) string {
-	if b == nil {
-		return "nil"
-	}
-	return fmt.Sprintf("%v", *b)
 }

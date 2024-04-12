@@ -1452,10 +1452,6 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.DropOlap != nil {
-		// no validation rules for DropOlap
-	}
-
 	if len(errors) > 0 {
 		return DeleteInstanceRequestMultiError(errors)
 	}
@@ -2448,6 +2444,8 @@ func (m *WatchFilesResponse) validate(all bool) error {
 	// no validation rules for Event
 
 	// no validation rules for Path
+
+	// no validation rules for IsDir
 
 	if len(errors) > 0 {
 		return WatchFilesResponseMultiError(errors)

@@ -1,19 +1,13 @@
 <script lang="ts" context="module">
-  import type { Vector } from "./types";
   import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
-  import ResizeHandle from "./ResizeHandle.svelte";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
+  import Component from "./Component.svelte";
 
   const zIndex = writable(0);
-
-  const options = [0, 0.5, 1];
-  const allSides = options
-    .flatMap((y) => options.map((x) => [x, y] as [number, number]))
-    .filter(([x, y]) => !(x === 0.5 && y === 0.5));
 </script>
 
 <script lang="ts">
@@ -41,9 +35,6 @@
   $: finalHeight = Math.abs(height);
   $: padding = gapSize;
 
-  $: position = [finalLeft, finalTop] as Vector;
-  $: dimensions = [finalWidth, finalHeight] as Vector;
-
   onMount(() => {
     localZIndex = $zIndex;
     zIndex.set(++localZIndex);
@@ -56,7 +47,7 @@
     dispatch("change", {
       e,
       dimensions: [width, height],
-      position,
+      position: [finalLeft, finalTop],
       changeDimensions: [0, 0],
       changePosition: [1, 1],
     });
@@ -65,43 +56,24 @@
 
 <ContextMenu.Root>
   <ContextMenu.Trigger asChild let:builder>
-    <div
-      {...builder}
-      use:builder.action
-      role="presentation"
-      data-index={i}
-      class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
-      style:z-index={localZIndex}
-      style:padding="{padding}px"
-      style:left="{finalLeft}px"
-      style:top="{finalTop}px"
-      style:width="{finalWidth}px"
-      style:height="{finalHeight}px"
+    <Component
+      builders={[builder]}
+      left={finalLeft}
+      top={finalTop}
+      {padding}
+      {scale}
+      {radius}
+      {selected}
+      {interacting}
+      width={finalWidth}
+      height={finalHeight}
+      {i}
+      on:mousedown={handleMouseDown}
       on:contextmenu
-      on:mousedown|capture={handleMouseDown}
+      on:change
     >
-      <div class="size-full relative">
-        {#each allSides as side}
-          <ResizeHandle
-            {scale}
-            {i}
-            {side}
-            {position}
-            {dimensions}
-            {selected}
-            on:change
-          />
-        {/each}
-
-        <div
-          class="size-full overflow-hidden"
-          class:shadow-lg={interacting}
-          style:border-radius="{radius}px"
-        >
-          <Chart {chartName} />
-        </div>
-      </div>
-    </div>
+      <Chart {chartName} />
+    </Component>
   </ContextMenu.Trigger>
 
   <ContextMenu.Content class="z-[100]">

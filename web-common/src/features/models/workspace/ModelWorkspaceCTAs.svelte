@@ -120,7 +120,7 @@
       <IconSpaceFixer pullLeft pullRight={collapse}>
         <Forward />
       </IconSpaceFixer>
-      <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
+      <ResponsiveButtonText {collapse}>Preview</ResponsiveButtonText>
     </Button>
     <TooltipContent slot="tooltip-content">
       Go to the dashboard associated with this model
@@ -137,7 +137,7 @@
         <IconSpaceFixer pullLeft pullRight={collapse}>
           <Forward /></IconSpaceFixer
         >
-        <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
+        <ResponsiveButtonText {collapse}>Preview</ResponsiveButtonText>
       </Button>
       <Menu
         dark
