@@ -311,6 +311,10 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
 	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
 	aliasesMap := make(map[string]string)
+	pivotMap := make(map[string]bool)
+	for _, p := range q.PivotOn {
+		pivotMap[p] = true
+	}
 	if q.Exporting {
 		for _, e := range mv.Measures {
 			aliasesMap[e.Name] = e.Name
@@ -329,7 +333,11 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-				selectCols = append(selectCols, fmt.Sprintf("lower(%s) AS %s", safeName(d.Name), safeName(aliasesMap[d.Name])))
+				expr := safeName(d.Name)
+				if pivotMap[d.Name] {
+					expr = fmt.Sprintf("lower(%s)", safeName(d.Name))
+				}
+				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", expr, safeName(aliasesMap[d.Name])))
 			} else {
 				alias := d.Name
 				if d.Alias != "" {
