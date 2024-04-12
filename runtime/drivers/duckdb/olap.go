@@ -469,13 +469,6 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		return c.dropAndReplace(ctx, oldName, newName, view)
 	}
 
-	// reopen duckdb connections which should delete any temporary files built up during ingestion
-	// making an empty call so that stop the world call with tx=true is very fast and only blocks for the duration of close and open db hanle call
-	err = c.WithConnection(ctx, 100, false, true, func(_, _ context.Context, _ *dbsql.Conn) error { return nil })
-	if err != nil {
-		return err
-	}
-
 	oldVersionInNewDir, replaceInNewTable, err := c.tableVersion(newName)
 	if err != nil {
 		return err
@@ -484,8 +477,8 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	newSrcDir := filepath.Join(c.config.ExtStoragePath, newName)
 	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
-	var cleanupFunc func()
-	err = c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
+	// reopen duckdb connections which should delete any temporary files built up during ingestion
+	err = c.WithConnection(ctx, 100, true, true, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		err = os.Mkdir(newSrcDir, fs.ModePerm)
 		if err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
@@ -497,16 +490,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return fmt.Errorf("rename: drop %q view failed: %w", oldName, err)
 		}
 
-		cleanupFunc = func() {
-			// detach old db
-			// need to pass background ctx so we don't use connection from outer WithConnection
-			_ = c.WithConnection(context.Background(), 100, false, true, func(_, bgCtx context.Context, conn *dbsql.Conn) error {
-				err = c.Exec(bgCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
-				if err != nil {
-					c.logger.Error("rename: detach %q db failed", zap.String("db", dbName(oldName, oldVersion)), zap.Error(err))
-				}
-				return nil
-			})
+		// detach old db
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
+		if err != nil {
+			return fmt.Errorf("rename: detach %q db failed: %w", dbName(oldName, oldVersion), err)
 		}
 
 		// move old file as a new file in source directory
@@ -549,32 +536,14 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 		if !replaceInNewTable {
 			return nil
-		} // new table had some other file previously
-		cleanupFunc = func() {
-			err := c.WithConnection(context.Background(), 100, false, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-				// detach old db
-				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
-				if err != nil {
-					return err
-				}
-
-				db := dbName(newName, oldVersionInNewDir)
-				if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100}); err != nil {
-					return err
-				}
-				dbFile := filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersionInNewDir))
-				removeDBFile(dbFile)
-				return nil
-			})
-			if err != nil {
-				c.logger.Error("detach failed", zap.Error(err))
-			}
 		}
+		// new table had some other file previously
+		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(newName, oldVersionInNewDir))), Priority: 100}); err != nil {
+			return err
+		}
+		removeDBFile(filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersionInNewDir)))
 		return nil
 	})
-	if cleanupFunc != nil {
-		cleanupFunc()
-	}
 	return err
 }
 
