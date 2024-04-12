@@ -478,6 +478,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
 	// reopen duckdb connections which should delete any temporary files built up during ingestion
+	// need to do detach using tx=true to isolate it from other queries
 	err = c.WithConnection(ctx, 100, true, true, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		err = os.Mkdir(newSrcDir, fs.ModePerm)
 		if err != nil && !errors.Is(err, fs.ErrExist) {
@@ -538,7 +539,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return nil
 		}
 		// new table had some other file previously
-		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(newName, oldVersionInNewDir))), Priority: 100}); err != nil {
+		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(newName, oldVersionInNewDir)))}); err != nil {
 			return err
 		}
 		removeDBFile(filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersionInNewDir)))
@@ -773,7 +774,9 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 			return fmt.Errorf("failed to update version: %w", err)
 		}
 
-		cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
+		cleanupFunc = func() {
+			c.detachAndRemoveFile(oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
+		}
 		return nil
 	})
 	if cleanupFunc != nil {
