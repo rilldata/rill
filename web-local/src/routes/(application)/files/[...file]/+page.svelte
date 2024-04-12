@@ -51,8 +51,6 @@
 
   $: initialLoading = !resourceKind && $fileQuery.isFetching;
 
-  $: console.log(filePath, $name);
-
   // TODO: optimistically update the get file cache
   const putFile = createRuntimeServicePutFile();
 

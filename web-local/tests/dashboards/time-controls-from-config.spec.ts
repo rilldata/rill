@@ -12,8 +12,6 @@ test.describe("time controls settings from dashboard config", () => {
   useDashboardFlowTestSetup();
 
   test("default_time_range", async ({ page }) => {
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
-
     // Set a time range that is one of the supported presets
     await updateCodeEditor(
       page,
@@ -236,6 +234,7 @@ function getDashboardYaml(defaults: string) {
   return `
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+kind: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
 timeseries: "timestamp"

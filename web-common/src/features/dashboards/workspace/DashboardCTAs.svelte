@@ -20,10 +20,11 @@
   export let metricViewName: string;
 
   $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+  $: filePath = $dashboardQuery.data?.meta?.filePaths?.[0] ?? "";
 
   $: dashboardPolicyCheck = useDashboardPolicyCheck(
     $runtime.instanceId,
-    $dashboardQuery.data?.meta?.filePaths?.[0] ?? "",
+    filePath,
   );
 
   const { readOnly } = featureFlags;
@@ -59,7 +60,7 @@
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
-        href={`/dashboard/${metricViewName}/edit`}
+        href={`/files/${filePath}`}
         disabled={!dashboardIsIdle}
         on:click={fireTelemetry}
         type="secondary"

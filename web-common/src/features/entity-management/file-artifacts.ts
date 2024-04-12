@@ -312,6 +312,16 @@ export class FileArtifacts {
     return this.artifacts[filePath];
   }
 
+  public findFileArtifact(resKind: ResourceKind, resName: string) {
+    for (const filePath in this.artifacts) {
+      const name = get(this.artifacts[filePath].name);
+      if (name?.kind === resKind && name?.name === resName) {
+        return this.artifacts[filePath];
+      }
+    }
+    return undefined;
+  }
+
   /**
    * Best effort list of all reconciling resources.
    */

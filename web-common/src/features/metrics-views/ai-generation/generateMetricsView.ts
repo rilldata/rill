@@ -17,12 +17,8 @@ import {
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
 import { useDashboardFileNames } from "../../dashboards/selectors";
-import {
-  getFilePathFromNameAndType,
-  removeLeadingSlash,
-} from "../../entity-management/entity-mappers";
+import { removeLeadingSlash } from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
-import { EntityType } from "../../entity-management/types";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
