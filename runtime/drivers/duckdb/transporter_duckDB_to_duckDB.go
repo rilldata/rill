@@ -143,7 +143,7 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 		}
 
 		defer func() {
-			err := t.to.WithConnection(ensuredCtx, 100, false, true, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
+			err := t.to.WithConnection(context.Background(), 100, false, true, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
 				return t.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s;", safeSQLName(dbName))})
 			})
 			if err != nil {

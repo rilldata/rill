@@ -499,7 +499,8 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 		cleanupFunc = func() {
 			// detach old db
-			_ = c.WithConnection(ctx, 100, false, true, func(_, bgCtx context.Context, conn *dbsql.Conn) error {
+			// need to pass background ctx so we don't use connection from outer WithConnection
+			_ = c.WithConnection(context.Background(), 100, false, true, func(_, bgCtx context.Context, conn *dbsql.Conn) error {
 				err = c.Exec(bgCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
 				if err != nil {
 					c.logger.Error("rename: detach %q db failed", zap.String("db", dbName(oldName, oldVersion)), zap.Error(err))
