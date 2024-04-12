@@ -4,13 +4,12 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -23,6 +22,7 @@
   import DashboardPage from "../../dashboard/[name]/edit/+page@dashboard.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+  const FILE_SAVE_DEBOUNCE_TIME = 400;
 
   $: filePath = $page.params.file;
   $: fileExtension = extractFileExtension(filePath);
@@ -64,7 +64,13 @@
     // TODO: Focus on the code editor
   });
 
-  function handleFileUpdate(content: string) {
+  const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
+  $: blob = $fileQuery.data?.blob ?? "";
+
+  // This gets updated via binding below
+  $: latest = blob;
+
+  function save(content: string) {
     if ($fileQuery.data?.blob === content) return;
     return $putFile.mutateAsync({
       instanceId: $runtime.instanceId,
@@ -83,9 +89,7 @@
   }
 </script>
 
-{#if initialLoading}
-  <Spinner status={EntityStatus.Running} />
-{:else if fileTypeUnsupported}
+{#if fileTypeUnsupported}
   <div class="size-full grid place-content-center">
     <div class="flex flex-col items-center gap-y-2">
       <AlertCircleOutline size="40px" />
@@ -109,15 +113,15 @@
   <ChartPage data={{ fileArtifact }} />
 {:else if isCustomDashboard}
   <CustomDashboardPage data={{ fileArtifact }} />
-{:else if isOther && $fileQuery.data}
+{:else if isOther}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
     <div class="editor-pane size-full" slot="body">
       <div class="editor flex flex-col border border-gray-200 rounded h-full">
         <div class="grow flex bg-white overflow-y-auto rounded">
           <Editor
-            content={$fileQuery.data?.blob ?? ""}
-            on:update={({ detail: { content } }) => handleFileUpdate(content)}
+            content={latest}
+            on:update={({ detail: { content } }) => debounceSave(content)}
           />
         </div>
       </div>
