@@ -1,14 +1,12 @@
+import { writable } from "svelte/store";
+
 export const addSourceModal = (() => {
+  const { subscribe, set, update } = writable(false);
+
   return {
-    open: () => {
-      const state = { step: 1, connector: null, requestConnector: false };
-      window.history.pushState(state, "", "");
-      dispatchEvent(new PopStateEvent("popstate", { state: state }));
-    },
-    close: () => {
-      const state = { step: 0, connector: null, requestConnector: false };
-      window.history.pushState(state, "", "");
-      dispatchEvent(new PopStateEvent("popstate", { state: state }));
-    },
+    subscribe,
+    open: () => set(true),
+    close: () => set(false),
+    toggle: () => update((state) => !state),
   };
 })();
