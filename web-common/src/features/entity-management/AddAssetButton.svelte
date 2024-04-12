@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
@@ -11,7 +12,10 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import { createRuntimeServicePutFile } from "../../runtime-client";
+  import {
+    createRuntimeServiceCreateDirectory,
+    createRuntimeServicePutFile,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useAlertFileNames } from "../alerts/selectors";
   import { useAPIFileNames } from "../apis/selectors";
@@ -35,9 +39,12 @@
   import { ResourceKind } from "./resource-selectors";
 
   const createFile = createRuntimeServicePutFile();
+  const createFolder = createRuntimeServiceCreateDirectory();
   const { customDashboards } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
+  $: currentFile = $page.params.file;
+  $: currentDirectory = currentFile.split("/").slice(0, -1).join("/");
 
   // TODO: we should only fetch the existing names when needed
   $: modelFileNamesQuery = useModelFileNames(instanceId);
@@ -47,9 +54,6 @@
   $: themeFileNamesQuery = useThemeFileNames(instanceId);
   $: reportFileNamesQuery = useReportFileNames(instanceId);
   $: alertFileNamesQuery = useAlertFileNames(instanceId);
-
-  // TODO: get current directory
-  $: currentDirectory = "dir-1";
 
   /**
    * Open the add source modal
@@ -109,17 +113,26 @@
   /**
    * Put a folder in the current directory
    */
-  function handleAddFolder() {
-    console.log("Add folder");
+  async function handleAddFolder() {
+    const nextFolderName = getName("untitled_folder", []);
+
+    await $createFolder.mutateAsync({
+      instanceId: instanceId,
+      path: `${currentDirectory}/${nextFolderName}`,
+      data: {
+        create: true,
+        createOnly: true,
+      },
+    });
   }
 
   /**
    * Put a blank file in the current directory
    */
   async function handleAddBlankFile() {
-    const nextFileName = getName("file", []);
+    const nextFileName = getName("untitled_file", []);
 
-    void $createFile.mutateAsync({
+    await $createFile.mutateAsync({
       instanceId: instanceId,
       path: `${currentDirectory}/${nextFileName}`,
       data: {
