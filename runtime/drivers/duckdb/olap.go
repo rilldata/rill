@@ -288,7 +288,8 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		})
 	}
 
-	return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+	var cleanupFunc func()
+	err := c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
 		// NOTE: Running mkdir while holding the connection to avoid directory getting cleaned up when concurrent calls to RenameTable cause reopenDB to be called.
 
 		// create a new db file in /<instanceid>/<name> directory
@@ -313,7 +314,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 
 		// Enforce storage limits
 		if err := c.execWithLimits(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
-			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
 			return fmt.Errorf("create: create %q.default table failed: %w", db, err)
 		}
 
@@ -321,7 +322,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		err = c.updateVersion(name, newVersion)
 		if err != nil {
 			// extreme bad luck
-			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
 			return fmt.Errorf("create: update version %q failed: %w", newVersion, err)
 		}
 
@@ -335,17 +336,21 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), qry),
 		})
 		if err != nil {
-			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
 			return fmt.Errorf("create: create view %q failed: %w", name, err)
 		}
 
 		if oldVersionExists {
 			oldDB := dbName(name, oldVersion)
 			// ignore these errors since source has been correctly ingested and attached
-			c.detachAndRemoveFile(ensuredCtx, oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
+			cleanupFunc = func() { c.detachAndRemoveFile(oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion))) }
 		}
 		return nil
 	})
+	if cleanupFunc != nil {
+		cleanupFunc()
+	}
+	return err
 }
 
 // DropTable implements drivers.OLAPStore.
@@ -381,7 +386,7 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		})
 	}
 
-	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+	err = c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
 		// drop view
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name))})
 		if err != nil {
@@ -479,7 +484,8 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	newSrcDir := filepath.Join(c.config.ExtStoragePath, newName)
 	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
-	return c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
+	var cleanupFunc func()
+	err = c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		err = os.Mkdir(newSrcDir, fs.ModePerm)
 		if err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
@@ -491,10 +497,15 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return fmt.Errorf("rename: drop %q view failed: %w", oldName, err)
 		}
 
-		// detach old db
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
-		if err != nil {
-			return fmt.Errorf("rename: detach %q db failed: %w", dbName(oldName, oldVersion), err)
+		cleanupFunc = func() {
+			// detach old db
+			_ = c.WithConnection(ctx, 100, false, true, func(_, bgCtx context.Context, conn *dbsql.Conn) error {
+				err = c.Exec(bgCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
+				if err != nil {
+					c.logger.Error("rename: detach %q db failed", zap.String("db", dbName(oldName, oldVersion)), zap.Error(err))
+				}
+				return nil
+			})
 		}
 
 		// move old file as a new file in source directory
@@ -535,11 +546,35 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return fmt.Errorf("rename: create %q view failed: %w", newName, err)
 		}
 
-		if replaceInNewTable { // new table had some other file previously
-			c.detachAndRemoveFile(ctx, dbName(newName, oldVersionInNewDir), filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersionInNewDir)))
+		if !replaceInNewTable {
+			return nil
+		} // new table had some other file previously
+		cleanupFunc = func() {
+			err := c.WithConnection(context.Background(), 100, false, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+				// detach old db
+				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
+				if err != nil {
+					return err
+				}
+
+				db := dbName(newName, oldVersionInNewDir)
+				if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100}); err != nil {
+					return err
+				}
+				dbFile := filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersionInNewDir))
+				removeDBFile(dbFile)
+				return nil
+			})
+			if err != nil {
+				c.logger.Error("detach failed", zap.Error(err))
+			}
 		}
 		return nil
 	})
+	if cleanupFunc != nil {
+		cleanupFunc()
+	}
+	return err
 }
 
 func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string, view bool) error {
@@ -580,12 +615,17 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 	})
 }
 
-func (c *connection) detachAndRemoveFile(ctx context.Context, db, dbFile string) {
-	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100})
+func (c *connection) detachAndRemoveFile(db, dbFile string) {
+	err := c.WithConnection(context.Background(), 100, false, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100}); err != nil {
+			return err
+		}
+		removeDBFile(dbFile)
+		return nil
+	})
 	if err != nil {
 		c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
 	}
-	removeDBFile(dbFile)
 }
 
 func (c *connection) tableVersion(name string) (string, bool, error) {
@@ -696,7 +736,8 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 	newVersion := fmt.Sprint(time.Now().UnixMilli())
 	newDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
 	newDB := dbName(table, newVersion)
-	return c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+	var cleanupFunc func()
+	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
 		// attach new db
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newDBFile), safeSQLName(newDB))})
 		if err != nil {
@@ -709,7 +750,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", safeSQLName(newDB))})
 		if err != nil {
-			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 			return fmt.Errorf("failed switch db %q: %w", newDB, err)
 		}
 		defer func() {
@@ -717,7 +758,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 			// we want to switch to original db and schema
 			err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(mainDB), safeSQLName(mainSchema))})
 			if err != nil {
-				c.detachAndRemoveFile(ctx, newDB, newDBFile)
+				cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 				// This should NEVER happen
 				c.fatalInternalError(fmt.Errorf("failed to switch back from db %q: %w", mainDB, err))
 			}
@@ -727,7 +768,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		for _, col := range cols {
 			enum := fmt.Sprintf("%s_enum", col)
 			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM %s.default WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(oldDB), safeSQLName(col))}); err != nil {
-				c.detachAndRemoveFile(ctx, newDB, newDBFile)
+				cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 				return fmt.Errorf("failed to create enum %q: %w", enum, err)
 			}
 		}
@@ -740,7 +781,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		selectQry += fmt.Sprintf("* EXCLUDE(%s)", strings.Join(cols, ","))
 
 		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE \"default\" AS SELECT %s FROM %s.default", selectQry, safeSQLName(oldDB))}); err != nil {
-			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 			return fmt.Errorf("failed to create table with enum values: %w", err)
 		}
 
@@ -752,19 +793,23 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 
 		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
 		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(mainDB), safeSQLName(mainSchema), safeSQLName(table), selectQry)}); err != nil {
-			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 			return fmt.Errorf("failed to create view %q: %w", table, err)
 		}
 
 		// update version and detach old db
 		if err := c.updateVersion(table, newVersion); err != nil {
-			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 			return fmt.Errorf("failed to update version: %w", err)
 		}
 
-		c.detachAndRemoveFile(ensuredCtx, oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
+		cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
 		return nil
 	})
+	if cleanupFunc != nil {
+		cleanupFunc()
+	}
+	return err
 }
 
 // duckDB raises Contents of view were altered: types don't match! error even when number of columns are same but sequence of column changes in underlying table.
