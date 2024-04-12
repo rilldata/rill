@@ -34,6 +34,10 @@
   import { useReportFileNames } from "../reports/selectors";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import { useThemeFileNames } from "../themes/selectors";
+  import {
+    useDirectoryNamesInDirectory,
+    useFileNamesInDirectory,
+  } from "./file-selectors";
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
@@ -44,9 +48,19 @@
 
   $: instanceId = $runtime.instanceId;
   $: currentFile = $page.params.file;
-  $: currentDirectory = currentFile.split("/").slice(0, -1).join("/");
+  $: currentDirectory =
+    currentFile && currentFile.split("/").slice(0, -1).join("/");
 
   // TODO: we should only fetch the existing names when needed
+  // TODO: simplify all this
+  $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
+    instanceId,
+    currentDirectory,
+  );
+  $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    instanceId,
+    currentDirectory,
+  );
   $: modelFileNamesQuery = useModelFileNames(instanceId);
   $: dashboardFileNamesQuery = useDashboardFileNames(instanceId);
   $: apiFileNamesQuery = useAPIFileNames(instanceId);
@@ -114,7 +128,10 @@
    * Put a folder in the current directory
    */
   async function handleAddFolder() {
-    const nextFolderName = getName("untitled_folder", []);
+    const nextFolderName = getName(
+      "untitled_folder",
+      $currentDirectoryDirectoryNamesQuery?.data ?? [],
+    );
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
@@ -130,7 +147,10 @@
    * Put a blank file in the current directory
    */
   async function handleAddBlankFile() {
-    const nextFileName = getName("untitled_file", []);
+    const nextFileName = getName(
+      "untitled_file",
+      $currentDirectoryFileNamesQuery?.data ?? [],
+    );
 
     await $createFile.mutateAsync({
       instanceId: instanceId,
