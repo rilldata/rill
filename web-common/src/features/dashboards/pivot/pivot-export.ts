@@ -75,6 +75,12 @@ export default async function exportPivot({
 
   // Sort by the dimensions in the pivot's rows
   const sort = rowDimensions.map((d) => {
+    if (d.alias) {
+      return  {
+        name: d.alias,
+        desc: true,
+      }
+    }
     return {
       name: d.name,
       desc: true,
