@@ -329,7 +329,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", safeName(d.Name), safeName(aliasesMap[d.Name])))
+				selectCols = append(selectCols, fmt.Sprintf("lower(%s) AS %s", safeName(d.Name), safeName(aliasesMap[d.Name])))
 			} else {
 				alias := d.Name
 				if d.Alias != "" {
