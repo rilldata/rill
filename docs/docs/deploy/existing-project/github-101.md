@@ -55,26 +55,31 @@ Now - any changes you make locally can be synced directly with your GitHub repo 
 
 ## Pushing Changes
 
-After installing Rill and adding sources, your local project will now contain a variety of new files - source definitions for connectors, sql models for transformation and dashboards for analysis. GitHub automatically recognizes those files as new and you can now push those changes to your cloud repository.
+After installing Rill and adding sources, your local project will now contain a variety of new files - source definitions, SQL models for transformation, and dashboards for analysis. GitHub automatically recognizes those files as new and you can now push those changes to your cloud repository.
 
-- First, open the GitHub app and select your repo. You should now see a variety of new changes
+First, open the GitHub app and select your repo. You should now see a variety of new changes (that can then be committed):
 
 ![commit](/img/deploy/github-101/commit.png)
 
+Now, in order to actually commit these changes to your repo, you can take the following steps:
 - On the bottom left, you can describe the changes (or add something like "initial commit")
-- Select the now blue "Commit to Main" button on the bottom left
-- Click Publish Branch on the top right - and that's it. Any future changes would follow the same two steps - add a comment, commit and publish
+- Select the now blue _Commit to main_ button on the bottom left
+- Click _Publish Branch_ on the top right - and that's it. Any future changes would follow the same two steps - add a comment, commit and publish!
 
 :::warning Avoid Syncing Data Files
-During the commit process, uncheck files you do not wish to sync to your cloud repo. In particular, if you were working with local data files those will now be in the repo including ```tmp``` files and/or sources (e.g. parquet files). GitHub has a limit on cloud storage so instead add that data to a [cloud location (s3, gcs, azure)](../../reference/connectors/connectors.md) to access via the internet
+During the commit process, make sure to **uncheck** files you do not wish to sync to your cloud repo (or add the appropriate exclusions in your `.gitignore` file). In particular, if you were working with local data files, those will now be in the repo including ```tmp``` files and/or sources (e.g. parquet or CSV files). GitHub has a limit on cloud storage so instead consider adding that data to a [cloud object storage location]((/reference/connectors/connectors.md)) (S3, GCS, Azure).
 :::
 
 :::tip Make small changes directly in github
-For any larger changes, we would suggest developing locally to see the effects of that change. However, for smaller changes (add a simple metric, changing the name of a dimension, etc) some users prefer to edit directly inline on GitHub.com
+For any larger changes, we would strongly suggest developing locally to see the effects of that change. However, for smaller changes (add a simple metric, changing the name of a dimension, etc.), some users _may_ prefer to edit directly inline on [Github](https://github.com) directly.
 :::
 
 ## Deploying Rill
 
-Now your dashboards are fully synced to GitHub, version controled and available to be edited by others. To make the dashboard fully cloud-enabled, you can return the Terminal and run ```rill deploy```. With everything synced, you should now be able to create a new Org within Rill and push your dashboard to the cloud. Any future changes would automatically be present in the cloud dashboards once committed and new dashboards would appear automatically as well (no deploy command needed). More details on [deployment here](../existing-project/existing-project.md).
+Now your dashboards are fully synced to GitHub, version controled and available to be edited by others. To make the dashboard fully cloud-enabled, you can return to your terminal and run ```rill deploy```. With everything synced, you should now be able to create a [new organization](/manage/user-management#managing-members-of-an-organization) within Rill Cloud and push your dashboard to the cloud for shared collaboration. Any future changes should automatically be present in your deployed dashboards on Rill Cloud once committed and new dashboards will appear automatically as well (no deploy command needed). More details on [deployment here](../existing-project/existing-project.md).
 
-We know that utilizing Git may be new to some - please reach out with questions on our [Discord channel](https://bit.ly/3unvA05) or [send us a note](mailto:contact@rilldata.com) 
+:::info Have further questions? We'd love to hear from you!
+
+We know that utilizing Git may be new to some - please don't hesitate to [reach out](contact.md) to us with any questions and we'd be happy to assist.
+
+:::
