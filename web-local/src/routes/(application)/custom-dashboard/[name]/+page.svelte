@@ -1,39 +1,40 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
-  import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
-  import {
-    WorkspaceContainer,
-    WorkspaceHeader,
-  } from "@rilldata/web-common/layout/workspace";
-  import { notifications } from "@rilldata/web-common/components/notifications";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-  } from "@rilldata/web-common/runtime-client";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import { parse, stringify } from "yaml";
-  import type {
-    V1DashboardSpec,
-    V1DashboardComponent,
-  } from "@rilldata/web-common/runtime-client";
-  import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import { slide } from "svelte/transition";
-  import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
+  import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
+  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
+  import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
+  import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import {
+    WorkspaceContainer,
+    WorkspaceHeader,
+  } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import type {
+    V1DashboardComponent,
+    V1DashboardSpec,
+  } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetFile,
+    createRuntimeServicePutFile,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { slide } from "svelte/transition";
+  import { parse, stringify } from "yaml";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -76,6 +77,7 @@
 
   $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: [, fileName] = splitFolderAndName(filePath);
 
   $: yaml = $fileQuery.data?.blob || "";
 
@@ -194,7 +196,7 @@
     on:change={onChangeCallback}
     showInspectorToggle={false}
     slot="header"
-    titleInput={customDashboardName}
+    titleInput={fileName}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />

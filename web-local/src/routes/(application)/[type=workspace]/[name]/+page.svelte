@@ -83,7 +83,7 @@
     filePath = getFileAPIPathFromNameAndType(assetName, entity);
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
-  $: [folder] = splitFolderAndName(filePath);
+  $: [folder, fileName] = splitFolderAndName(filePath);
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -279,7 +279,7 @@
   <WorkspaceContainer>
     <WorkspaceHeader
       slot="header"
-      titleInput={assetName}
+      titleInput={fileName}
       showTableToggle
       {hasUnsavedChanges}
       on:change={handleNameChange}

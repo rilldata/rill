@@ -15,8 +15,7 @@ export async function handleEntityRename(
   existingPath: string,
   existingName: string,
 ) {
-  const [folder, fileName] = splitFolderAndName(existingPath);
-  const suffix = fileName.replace(existingName, "");
+  const [folder] = splitFolderAndName(existingPath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
     notifications.send({
@@ -39,7 +38,7 @@ export async function handleEntityRename(
   try {
     const toName = target.value;
 
-    const newFilePath = (folder ? `${folder}/` : "") + toName + suffix;
+    const newFilePath = (folder ? `${folder}/` : "") + toName;
 
     await renameFileArtifact(instanceId, existingPath, newFilePath);
 

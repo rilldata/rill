@@ -16,6 +16,7 @@
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/tables/selectors";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -54,6 +55,7 @@
       EntityType.MetricsDefinition,
     );
   }
+  $: [, fileName] = splitFolderAndName(filePath);
 
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
@@ -124,7 +126,7 @@
     <WorkspaceHeader
       slot="header"
       showInspectorToggle={isModelingSupported}
-      titleInput={metricViewName}
+      titleInput={fileName}
       on:change={onChangeCallback}
     >
       <div slot="cta" class="flex gap-x-2">

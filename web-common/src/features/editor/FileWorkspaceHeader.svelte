@@ -6,6 +6,7 @@
   import { WorkspaceHeader } from "../../layout/workspace";
 
   export let filePath: string;
+
   let fileName: string;
   $: [, fileName] = splitFolderAndName(filePath);
 
