@@ -21,55 +21,82 @@ export default async function exportPivot({
   format: V1ExportFormat;
   timeDimension: string | undefined;
 }) {
+  const instanceId = get(runtime).instanceId;
   const metricsView = get(ctx.metricsViewName);
   const dashboard = get(ctx.dashboardStore);
   const selectedTimeRange = get(
     ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
   );
-
-  // used for dimensions
   const rows = get(ctx.selectors.pivot.rows);
-  // used for pivot on
   const columns = get(ctx.selectors.pivot.columns);
+
+  const timeRange = {
+    start: selectedTimeRange?.start.toISOString(),
+    end: selectedTimeRange?.end.toISOString(),
+  };
+
+  const measures = columns.measure.map((m) => {
+    return {
+      name: m.id,
+    };
+  });
+
+  const allDimensions = [...rows.dimension, ...columns.dimension].map((d) =>
+    d.type === PivotChipType.Time
+      ? {
+          name: timeDimension,
+          timeGrain: d.id as V1TimeGrain,
+          timeZone: dashboard.selectedTimezone,
+          alias: `Time ${d.title}`,
+        }
+      : {
+          name: d.id,
+        },
+  );
 
   const measureFilters = await getResolvedMeasureFilters(ctx);
 
+  const pivotOn = columns.dimension.map((d) =>
+    d.type === PivotChipType.Time ? (timeDimension as string) : d.id,
+  );
+
+  const rowDimensions = [...rows.dimension].map((d) =>
+    d.type === PivotChipType.Time
+      ? {
+          name: timeDimension,
+          timeGrain: d.id as V1TimeGrain,
+          timeZone: dashboard.selectedTimezone,
+          alias: `Time ${d.title}`,
+        }
+      : {
+          name: d.id,
+        },
+  );
+
+  // Sort by the dimensions in the pivot's rows
+  const sort = rowDimensions.map((d) => {
+    return {
+      name: d.name,
+      desc: true,
+    };
+  });
+
   const result = await get(query).mutateAsync({
-    instanceId: get(runtime).instanceId,
+    instanceId,
     data: {
       format,
       query: {
         metricsViewAggregationRequest: {
-          dimensions: [...rows.dimension, ...columns.dimension].map((d) =>
-            d.type === PivotChipType.Time
-              ? {
-                  name: timeDimension,
-                  timeGrain: d.id as V1TimeGrain,
-                  timeZone: dashboard.selectedTimezone,
-                  alias: `Time ${d.title}`,
-                }
-              : {
-                  name: d.id,
-                },
-          ),
-          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
-          instanceId: get(runtime).instanceId,
-          limit: undefined, // the backend handles export limits
-          measures: columns.measure.map((m) => {
-            return {
-              name: m.id,
-            };
-          }),
+          instanceId,
           metricsView,
+          timeRange,
+          measures,
+          dimensions: allDimensions,
+          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
+          pivotOn,
+          sort,
           offset: "0",
-          pivotOn: columns.dimension.map((d) =>
-            d.type === PivotChipType.Time ? (timeDimension as string) : d.id,
-          ),
-          sort: undefined, // future work
-          timeRange: {
-            start: selectedTimeRange?.start.toISOString(),
-            end: selectedTimeRange?.end.toISOString(),
-          },
+          limit: undefined, // the backend handles export limits
         },
       },
     },
