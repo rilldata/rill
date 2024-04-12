@@ -6,6 +6,7 @@
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -20,6 +21,7 @@
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page@dashboard.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
@@ -65,7 +67,8 @@
   });
 
   const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
-  $: blob = $fileQuery.data?.blob ?? "";
+  let blob = "";
+  $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
   // This gets updated via binding below
   $: latest = blob;
@@ -89,7 +92,9 @@
   }
 </script>
 
-{#if fileTypeUnsupported}
+{#if initialLoading}
+  <Spinner status={EntityStatus.Running} />
+{:else if fileTypeUnsupported}
   <div class="size-full grid place-content-center">
     <div class="flex flex-col items-center gap-y-2">
       <AlertCircleOutline size="40px" />
@@ -119,11 +124,13 @@
     <div class="editor-pane size-full" slot="body">
       <div class="editor flex flex-col border border-gray-200 rounded h-full">
         <div class="grow flex bg-white overflow-y-auto rounded">
-          <Editor
-            {blob}
-            bind:latest
-            on:update={({ detail: { content } }) => debounceSave(content)}
-          />
+          {#key $page.params.file}
+            <Editor
+              {blob}
+              bind:latest
+              on:update={({ detail: { content } }) => debounceSave(content)}
+            />
+          {/key}
         </div>
       </div>
     </div>

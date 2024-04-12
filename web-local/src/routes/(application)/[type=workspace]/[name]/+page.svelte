@@ -119,7 +119,8 @@
     },
   });
 
-  $: blob = $fileQuery.data?.blob ?? "";
+  let blob = "";
+  $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
   // This gets updated via binding below
   $: latest = blob;

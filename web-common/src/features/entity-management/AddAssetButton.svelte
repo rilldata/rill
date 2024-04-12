@@ -48,8 +48,9 @@
 
   $: instanceId = $runtime.instanceId;
   $: currentFile = $page.params.file;
-  $: currentDirectory =
-    currentFile && currentFile.split("/").slice(0, -1).join("/");
+  $: currentDirectory = currentFile
+    ? currentFile.split("/").slice(0, -1).join("/") + "/"
+    : "";
 
   // TODO: we should only fetch the existing names when needed
   // TODO: simplify all this
@@ -135,7 +136,7 @@
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: `${currentDirectory}/${nextFolderName}`,
+      path: `${currentDirectory}${nextFolderName}`,
       data: {
         create: true,
         createOnly: true,
@@ -154,7 +155,7 @@
 
     await $createFile.mutateAsync({
       instanceId: instanceId,
-      path: `${currentDirectory}/${nextFileName}`,
+      path: `${currentDirectory}${nextFileName}`,
       data: {
         blob: undefined,
         create: true,
@@ -162,7 +163,7 @@
       },
     });
 
-    await goto(`/files/${currentDirectory}/${nextFileName}`);
+    await goto(`/files/${currentDirectory}${nextFileName}`);
   }
 
   /**
