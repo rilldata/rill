@@ -49,12 +49,7 @@ test.describe("sources", () => {
 
     // rename
     await renameEntityUsingMenu(page, "AdBids.yaml", "AdBids_new.yaml");
-    await waitForFileEntry(
-      page,
-      `sources/AdBids_new.yaml`,
-      `AdBids_new.yaml`,
-      true,
-    );
+    await waitForFileEntry(page, `sources/AdBids_new.yaml`, true);
     await entityNotPresent(page, "AdBids.yaml");
 
     // delete

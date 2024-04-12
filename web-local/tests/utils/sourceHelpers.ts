@@ -75,7 +75,8 @@ export async function createOrReplaceSource(
   filePath: string,
 ) {
   const [, fileName] = splitFolderAndName(filePath);
-  const name = extractFileName(filePath);
+  const name = extractFileName(fileName);
+
   try {
     await getEntityLink(page, name).waitFor({
       timeout: 100,
@@ -86,7 +87,7 @@ export async function createOrReplaceSource(
   }
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForFileEntry(page, filePath, fileName, true),
+    waitForFileEntry(page, filePath, true),
   ]);
 }
 
@@ -96,10 +97,11 @@ export async function waitForSource(
   columns: Array<string>,
 ) {
   const [, fileName] = splitFolderAndName(filePath);
-  const name = extractFileName(filePath);
+  const name = extractFileName(fileName);
+
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForFileEntry(page, filePath, fileName, true),
+    waitForFileEntry(page, filePath, true),
     waitForProfiling(page, name, columns),
   ]);
 }

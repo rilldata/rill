@@ -7,10 +7,10 @@ export enum TestEntityType {
   Dashboard = "dashboard",
 }
 
-export async function openEntityMenu(page: Page, name: string) {
-  const entityLocator = getEntityLink(page, name);
+export async function openEntityMenu(page: Page, fileName: string) {
+  const entityLocator = getEntityLink(page, fileName);
   await entityLocator.hover();
-  await entityLocator.getByLabel(`${name} actions menu trigger`).click();
+  await entityLocator.getByLabel(`${fileName} actions menu trigger`).click();
 }
 
 export async function clickModalButton(page: Page, text: string) {
@@ -80,11 +80,11 @@ export async function gotoEntity(page: Page, name: string) {
 
 export async function renameEntityUsingMenu(
   page: Page,
-  name: string,
-  toName: string,
+  fileName: string,
+  toFileName: string,
 ) {
   // open context menu and click rename
-  await openEntityMenu(page, name);
+  await openEntityMenu(page, fileName);
   await clickMenuButton(page, "Rename...");
 
   // wait for rename modal to open
@@ -94,8 +94,8 @@ export async function renameEntityUsingMenu(
     })
     .waitFor();
 
-  // type new name and submit
-  await page.locator("#rill-portal input").fill(toName);
+  // type new fileName and submit
+  await page.locator("#rill-portal input").fill(toFileName);
   await Promise.all([
     page.waitForResponse(/rename/),
     clickModalButton(page, "Change Name"),

@@ -12,12 +12,14 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type V1ParseError,
   V1ReconcileStatus,
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, type Readable, writable } from "svelte/store";
 
@@ -242,10 +244,18 @@ export class FileArtifacts {
     );
   }
 
-  public fileUpdated(filePath: string) {
-    // Handle new file added or exited edited without a valid resource
-    // TODO: fetch file and estimate name & kind once we have a structure on asset explorer
+  public async fileUpdated(filePath: string) {
+    filePath = removeLeadingSlash(filePath);
+    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
+      return;
     this.artifacts[filePath] ??= new FileArtifact(filePath);
+    const fileContents = await fetchFileContent(
+      queryClient,
+      get(runtime).instanceId,
+      filePath,
+    );
+    const newName = parseKindAndNameFromFile(filePath, fileContents);
+    if (newName) this.artifacts[filePath].name.set(newName);
   }
 
   /**

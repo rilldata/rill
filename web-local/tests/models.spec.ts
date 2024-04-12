@@ -1,28 +1,29 @@
 import {
-  TestEntityType,
+  clickMenuButton,
   deleteEntity,
   gotoEntity,
+  openEntityMenu,
   renameEntityUsingMenu,
   updateCodeEditor,
   waitForProfiling,
   wrapRetryAssertion,
 } from "./utils/commonHelpers";
-import {
-  createModel,
-  createModelFromSource,
-  modelHasError,
-} from "./utils/modelHelpers";
+import { createModel, modelHasError } from "./utils/modelHelpers";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
+import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
 import { test } from "./utils/test";
 
 test.describe("models", () => {
   test("Create and edit model", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
-    await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
+    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
+    await createOrReplaceSource(
+      page,
+      "AdImpressions.tsv",
+      "sources/AdImpressions.yaml",
+    );
 
-    await createModel(page, "AdBids_model_t");
-    await waitForEntity(page, TestEntityType.Model, "AdBids_model_t", true);
+    await createModel(page, "models/AdBids_model_t.sql");
+    await waitForFileEntry(page, "models/AdBids_model_t.sql", true);
     await Promise.all([
       waitForProfiling(page, "AdBids_model_t", [
         "publisher",
@@ -44,30 +45,25 @@ test.describe("models", () => {
 
   test("Rename and delete model", async ({ page }) => {
     // make sure AdBids_rename_delete is present
-    await createModel(page, "AdBids_rename_delete");
+    await createModel(page, "models/AdBids_rename_delete.sql");
 
     // rename
     await renameEntityUsingMenu(
       page,
-      "AdBids_rename_delete",
-      "AdBids_rename_delete_new",
+      "AdBids_rename_delete.sql",
+      "AdBids_rename_delete_new.sql",
     );
-    await waitForEntity(
-      page,
-      TestEntityType.Model,
-      "AdBids_rename_delete_new",
-      true,
-    );
+    await waitForFileEntry(page, "models/AdBids_rename_delete_new.sql", true);
     await entityNotPresent(page, "AdBids_rename_delete");
 
     // delete
-    await deleteEntity(page, "AdBids_rename_delete_new");
+    await deleteEntity(page, "AdBids_rename_delete_new.sql");
     await entityNotPresent(page, "AdBids_rename_delete_new");
     await entityNotPresent(page, "AdBids_rename_delete");
   });
 
   test("Create model from source", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
 
     await Promise.all([
       waitForProfiling(page, "AdBids_model", [
@@ -75,16 +71,21 @@ test.describe("models", () => {
         "domain",
         "timestamp",
       ]),
-      createModelFromSource(page, "AdBids"),
+      openEntityMenu(page, "AdBids.yaml"),
+      clickMenuButton(page, "Create New Model"),
     ]);
-    await waitForEntity(page, TestEntityType.Model, "AdBids_model", true);
+    await waitForFileEntry(page, "sources/AdBids_model.sql", true);
 
     // navigate to another source
-    await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
+    await createOrReplaceSource(
+      page,
+      "AdImpressions.tsv",
+      "sources/AdImpressions.yaml",
+    );
     // delete the source of model
-    await deleteEntity(page, "AdBids");
+    await deleteEntity(page, "AdBids.yaml");
     // go to model
-    await gotoEntity(page, "AdBids_model");
+    await gotoEntity(page, "AdBids_model.sql");
     // make sure error has propagated
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });
