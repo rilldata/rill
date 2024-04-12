@@ -2445,6 +2445,8 @@ func (m *WatchFilesResponse) validate(all bool) error {
 
 	// no validation rules for Path
 
+	// no validation rules for IsDir
+
 	if len(errors) > 0 {
 		return WatchFilesResponseMultiError(errors)
 	}
