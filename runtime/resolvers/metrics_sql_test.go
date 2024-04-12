@@ -60,6 +60,32 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 	require.Equal(t, "Yahoo", rows[0]["publisher"])
 }
 
+func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	testruntime.RequireParseErrors(t, rt, instanceID, nil)
+
+	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api_2")
+	require.NoError(t, err)
+
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Args:               map[string]any{"domain": "yahoo.com", "pageSize": ""},
+		UserAttributes:     map[string]any{"domain": "yahoo.com"},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.Equal(t, 1, len(rows))
+	require.Equal(t, 3.0, rows[0]["measure_2"])
+	require.Equal(t, "yahoo.com", rows[0]["domain"])
+	require.Equal(t, "Yahoo", rows[0]["publisher"])
+}
+
 func TestPolicyMetricsSQLAPI(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 

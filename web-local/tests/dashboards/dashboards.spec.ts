@@ -5,7 +5,7 @@ import {
   wrapRetryAssertion,
 } from "../utils/commonHelpers";
 import {
-  RequestMatcher,
+  type RequestMatcher,
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
@@ -41,12 +41,6 @@ test.describe("dashboard", () => {
   test("Autogenerate dashboard from model", async ({ page }) => {
     await createAdBidsModel(page);
     await Promise.all([
-      waitForEntity(
-        page,
-        TestEntityType.Dashboard,
-        "AdBids_model_dashboard",
-        true,
-      ),
       waitForTimeSeries(page, "AdBids_model_dashboard"),
       waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
       createDashboardFromModel(page, "AdBids_model"),
@@ -320,10 +314,12 @@ test.describe("dashboard", () => {
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
 
-    await page.getByRole("button", { name: "Go to Dashboard" }).click();
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that name changed
-    await expect(page.getByText("AdBids_model_dashboard_rename")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "AdBids_model_dashboard_rename" }),
+    ).toBeVisible();
 
     // Assert that no time dimension specified
     await expect(page.getByText("No time dimension specified")).toBeVisible();
@@ -360,8 +356,8 @@ test.describe("dashboard", () => {
     await updateCodeEditor(page, addBackTimestampColumnDoc);
     await waitForDashboard(page);
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to Dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("Metric trends by week");
@@ -389,14 +385,12 @@ test.describe("dashboard", () => {
 
         `;
     await updateCodeEditor(page, deleteOnlyMeasureDoc);
-    // Check warning message appears, Go to Dashboard is disabled
+    // Check warning message appears, Preview is disabled
     await expect(
       page.getByText("must define at least one measure"),
     ).toBeVisible();
 
-    await expect(
-      page.getByRole("button", { name: "Go to dashboard" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -421,9 +415,7 @@ test.describe("dashboard", () => {
         `;
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
-    await expect(
-      page.getByRole("button", { name: "Go to dashboard" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
@@ -453,12 +445,10 @@ dimensions:
         `;
 
     await updateCodeEditor(page, docWithCompleteMeasure);
-    await expect(
-      page.getByRole("button", { name: "Go to dashboard" }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Check Avg Bid Price
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
@@ -524,16 +514,16 @@ dimensions:
 
     await page.getByText("google.com", { exact: true }).click();
     await page.getByText("instagram.com").click();
-    await page.getByText("news.google.com").click();
+    await page.getByText("msn.com").click();
 
-    await expect(page.getByText(" Total rows 41.1k")).toBeVisible();
+    await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 
     await page.getByRole("button", { name: "Total rows", exact: true }).click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
-    await expect(page.getByText(" Avg Bid Price $2.93")).toBeVisible();
+    await expect(page.getByText(" Avg Bid Price $3.02")).toBeVisible();
 
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
@@ -542,9 +532,9 @@ dimensions:
     await page.getByRole("button", { name: "Domain name" }).nth(1).click();
     await page.getByRole("menuitem", { name: "Time" }).click();
 
-    await expect(page.getByText("-52.2%")).toBeVisible();
+    await expect(page.getByText("~0%")).toBeVisible();
 
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // go back to the dashboard
 

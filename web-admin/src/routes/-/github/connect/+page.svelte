@@ -42,11 +42,13 @@
       <CtaMessage>
         Rill projects deploy continuously when you push changes to Github.
       </CtaMessage>
-      <CtaMessage>
-        Please grant read-only access to your repository<br /><GithubRepoInline
-          githubUrl={remote}
-        />
-      </CtaMessage>
+      {#if remote}
+        <CtaMessage>
+          Please grant access to your repository<br /><GithubRepoInline
+            githubUrl={remote}
+          />
+        </CtaMessage>
+      {/if}
       <div class="mt-4 w-full">
         <CtaButton variant="primary" on:click={handleGoToGithub}
           >Connect to Github</CtaButton

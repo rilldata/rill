@@ -1,8 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useCustomDashboard } from "@rilldata/web-common/features/custom-dashboards/selectors";
-  import CustomDashboard from "@rilldata/web-common/features/custom-dashboards/CustomDashboard.svelte";
+  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
   import {
     WorkspaceContainer,
@@ -10,7 +9,6 @@
   } from "@rilldata/web-common/layout/workspace";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -18,7 +16,10 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
-  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1DashboardSpec,
+    V1DashboardComponent,
+  } from "@rilldata/web-common/runtime-client";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -28,17 +29,27 @@
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const DEFAULT_EDITOR_HEIGHT = 300;
+  const DEFAULT_EDITOR_WIDTH = 400;
 
   const updateFile = createRuntimeServicePutFile();
 
+  let selectedView = "split";
   let showGrid = true;
-  let editorWidth = 400;
+  let snap = false;
   let showChartEditor = false;
   let containerWidth: number;
+  let editorWidth = DEFAULT_EDITOR_WIDTH;
   let chartEditorHeight = DEFAULT_EDITOR_HEIGHT;
   let selectedChartName: string | null = null;
+  let dashboard: V1DashboardSpec = {
+    columns: 10,
+    gap: 1,
+    components: [],
+  };
 
   $: instanceId = $runtime.instanceId;
 
@@ -49,23 +60,29 @@
     EntityType.Dashboard,
   );
 
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
-
-  $: query = useCustomDashboard($runtime.instanceId, customDashboardName);
 
   $: yaml = $fileQuery.data?.blob || "";
 
-  $: parsedYaml = parse(yaml) as V1DashboardSpec;
+  $: if (yaml) {
+    try {
+      const potentialDb = parse(yaml) as V1DashboardSpec;
+      dashboard = {
+        ...potentialDb,
+        components: potentialDb.components?.filter(isComponent) ?? [],
+      };
+    } catch {
+      // Unable to parse YAML, no-op
+    }
+  }
 
-  $: dashboard = $query.data?.dashboard?.spec;
+  $: selectedChartFilePath =
+    selectedChartName &&
+    getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart);
 
-  $: selectedChartFilePath = selectedChartName
-    ? getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart)
-    : null;
-
-  $: columns = dashboard?.columns ?? 10;
-  $: gap = dashboard?.gap ?? 1;
-  $: charts = dashboard?.components ?? ([] as V1DashboardComponent[]);
+  $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
 
   const onChangeCallback = async (
     e: Event & {
@@ -90,19 +107,17 @@
     );
   };
 
-  async function updateChart(e: CustomEvent<string>) {
+  async function updateChartFile(e: CustomEvent<string>) {
     const content = e.detail;
     if (!content) return;
     try {
       await $updateFile.mutateAsync({
-        instanceId: $runtime.instanceId,
+        instanceId,
         path: filePath,
         data: {
           blob: content,
         },
       });
-      yaml = content;
-      dashboard = parse(content) as V1DashboardSpec;
     } catch (err) {
       console.error(err);
     }
@@ -115,28 +130,26 @@
       dimensions: Vector;
     }>,
   ) {
-    const components = [...(parsedYaml?.components ?? [])];
+    const newComponents = [...components];
 
-    // if (e.detail.change === "dimension") {
-    components[e.detail.index].width = e.detail.dimensions[0];
-    components[e.detail.index].height = e.detail.dimensions[1];
-    // } else {
-    components[e.detail.index].x = e.detail.position[0];
-    components[e.detail.index].y = e.detail.position[1];
-    // }
+    newComponents[e.detail.index].width = e.detail.dimensions[0];
+    newComponents[e.detail.index].height = e.detail.dimensions[1];
 
-    const stringified = stringify({ ...parsedYaml, components });
+    newComponents[e.detail.index].x = e.detail.position[0];
+    newComponents[e.detail.index].y = e.detail.position[1];
 
-    await updateChart(new CustomEvent("update", { detail: stringified }));
+    yaml = stringify(<V1DashboardSpec>{
+      kind: "dashboard",
+      ...dashboard,
+      newComponents,
+    });
+
+    await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
-  let selectedView = "split";
-
-  let snap = false;
-
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const components = [...(parsedYaml?.components ?? [])];
-    components.push({
+    const newComponents = [...components];
+    newComponents.push({
       chart: e.detail.chartName,
       height: 4,
       width: 4,
@@ -144,9 +157,19 @@
       y: 0,
     });
 
-    const stringified = stringify({ ...parsedYaml, components });
+    yaml = stringify(<V1DashboardSpec>{
+      kind: "dashboard",
+      ...dashboard,
+      newComponents,
+    });
 
-    await updateChart(new CustomEvent("update", { detail: stringified }));
+    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+  }
+
+  function isComponent(
+    component: V1DashboardComponent | null | undefined,
+  ): component is V1DashboardComponent {
+    return !!component;
   }
 </script>
 
@@ -202,7 +225,11 @@
         />
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
-            <CustomDashboardEditor {yaml} on:update={updateChart} />
+            <CustomDashboardEditor
+              errors={$errors}
+              {yaml}
+              on:update={updateChartFile}
+            />
           </section>
 
           <section
@@ -216,7 +243,7 @@
             <header
               class="flex justify-between items-center bg-gray-100 px-4 h-12"
             >
-              <h1 class="font-semibold text-[16px]">
+              <h1 class="font-semibold text-[16px] truncate">
                 {#if selectedChartName}
                   {selectedChartName}.yaml
                 {:else}
@@ -246,10 +273,10 @@
     {/if}
 
     {#if selectedView == "viz" || selectedView == "split"}
-      <CustomDashboard
+      <CustomDashboardPreview
         {snap}
         {gap}
-        {charts}
+        {components}
         {columns}
         {showGrid}
         bind:selectedChartName

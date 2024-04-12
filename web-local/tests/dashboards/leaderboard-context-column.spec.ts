@@ -91,8 +91,8 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menu").waitFor({ state: "hidden" });
     }
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // make sure "All time" is selected to clear any time comparison
     await interactWithTimeRangeMenu(page, async () => {

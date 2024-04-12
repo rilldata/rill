@@ -42,7 +42,7 @@
 </script>
 
 <DropdownMenu.Root>
-  <DropdownMenu.Trigger>
+  <DropdownMenu.Trigger class="flex-none">
     <img
       src={$user.data?.user?.photoUrl}
       alt="avatar"

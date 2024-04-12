@@ -76,8 +76,8 @@ dimensions:
     // make the viewport big enough to see the whole dashboard
     await page.setViewportSize({ width: 1920, height: 1200 });
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // wait a tick for the dash to update
     await page.waitForTimeout(50);

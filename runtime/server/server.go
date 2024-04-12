@@ -39,17 +39,16 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/server")
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 
 type Options struct {
-	HTTPPort         int
-	GRPCPort         int
-	AllowedOrigins   []string
-	ServePrometheus  bool
-	SessionKeyPairs  [][]byte
-	AuthEnable       bool
-	AuthIssuerURL    string
-	AuthAudienceURL  string
-	DownloadRowLimit *int64
-	TLSCertPath      string
-	TLSKeyPath       string
+	HTTPPort        int
+	GRPCPort        int
+	AllowedOrigins  []string
+	ServePrometheus bool
+	SessionKeyPairs [][]byte
+	AuthEnable      bool
+	AuthIssuerURL   string
+	AuthAudienceURL string
+	TLSCertPath     string
+	TLSKeyPath      string
 }
 
 type Server struct {
