@@ -81,9 +81,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	if err != nil {
 		return nil, err
 	}
-	if rt.opts.EmitInstanceHeartbeat {
-		go rt.emitInstanceHeartbeatEvents(time.Minute)
-	}
 
 	return rt, nil
 }

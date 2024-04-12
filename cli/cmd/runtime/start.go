@@ -91,7 +91,6 @@ type Config struct {
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
-	EmitInstanceHeartbeat  bool   `default:"true" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -209,7 +208,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
 				DataDir:                      conf.DataDir,
-				EmitInstanceHeartbeat:        conf.EmitInstanceHeartbeat,
+				EmitInstanceHeartbeat:        true,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
