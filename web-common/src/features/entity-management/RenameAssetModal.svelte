@@ -91,8 +91,8 @@
           bind:value={$form["newName"]}
           claimFocusOnMount
           error={$errors["newName"]}
-          id="entity-name"
-          label="entity name"
+          id="file-name"
+          label="File name"
         />
       </div>
     </form>
