@@ -172,7 +172,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 				return err
 			}
 
-			if *q.Limit > 0 && int64(len(data)) > *q.Limit {
+			if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
 				return fmt.Errorf("Limit exceeded %d", *q.Limit)
 			}
 
@@ -303,7 +303,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 			return err
 		}
 
-		if *q.Limit > 0 && int64(len(data)) > *q.Limit {
+		if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
 			return fmt.Errorf("Limit exceeded %d", *q.Limit)
 		}
 
@@ -640,10 +640,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
+		limit := *q.Limit
+		if limit == 0 {
+			limit = 100
 		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
 	}
 
 	var args []any
