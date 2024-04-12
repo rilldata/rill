@@ -523,6 +523,7 @@ export interface V1WatchLogsResponse {
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
+  isDir?: boolean;
 }
 
 export interface V1UnpackExampleResponse {

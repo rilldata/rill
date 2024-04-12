@@ -6063,6 +6063,8 @@ definitions:
         $ref: '#/definitions/v1FileEvent'
       path:
         type: string
+      isDir:
+        type: boolean
     title: Response message for RuntimeService.WatchFiles
   v1WatchLogsResponse:
     type: object
