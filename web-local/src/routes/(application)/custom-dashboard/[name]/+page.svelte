@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import CustomDashboard from "@rilldata/web-common/features/custom-dashboards/CustomDashboard.svelte";
+  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
   import {
     WorkspaceContainer,
@@ -16,7 +16,10 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { parse, stringify } from "yaml";
-  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1DashboardSpec,
+    V1DashboardComponent,
+  } from "@rilldata/web-common/runtime-client";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -78,7 +81,11 @@
 
   $: if (yaml) {
     try {
-      dashboard = parse(yaml) as V1DashboardSpec;
+      const potentialDb = parse(yaml) as V1DashboardSpec;
+      dashboard = {
+        ...potentialDb,
+        components: potentialDb.components?.filter(isComponent) ?? [],
+      };
     } catch {
       // Unable to parse YAML, no-op
     }
@@ -88,11 +95,7 @@
     selectedChartName &&
     getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart);
 
-  $: ({
-    columns,
-    gap,
-    components: charts = [],
-  } = dashboard ?? ({} as V1DashboardSpec));
+  $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
 
   const onChangeCallback = async (
     e: Event & {
@@ -139,26 +142,26 @@
       dimensions: Vector;
     }>,
   ) {
-    const components = [...charts];
+    const newComponents = [...components];
 
-    components[e.detail.index].width = e.detail.dimensions[0];
-    components[e.detail.index].height = e.detail.dimensions[1];
+    newComponents[e.detail.index].width = e.detail.dimensions[0];
+    newComponents[e.detail.index].height = e.detail.dimensions[1];
 
-    components[e.detail.index].x = e.detail.position[0];
-    components[e.detail.index].y = e.detail.position[1];
+    newComponents[e.detail.index].x = e.detail.position[0];
+    newComponents[e.detail.index].y = e.detail.position[1];
 
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components,
+      newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const components = [...charts];
-    components.push({
+    const newComponents = [...components];
+    newComponents.push({
       chart: e.detail.chartName,
       height: 4,
       width: 4,
@@ -169,10 +172,16 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components,
+      newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
+  }
+
+  function isComponent(
+    component: V1DashboardComponent | null | undefined,
+  ): component is V1DashboardComponent {
+    return !!component;
   }
 </script>
 
@@ -276,10 +285,10 @@
     {/if}
 
     {#if selectedView == "viz" || selectedView == "split"}
-      <CustomDashboard
+      <CustomDashboardPreview
         {snap}
         {gap}
-        {charts}
+        {components}
         {columns}
         {showGrid}
         bind:selectedChartName

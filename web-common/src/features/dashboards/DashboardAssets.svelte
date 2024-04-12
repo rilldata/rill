@@ -20,27 +20,39 @@
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
 
+  const createDashboard = createRuntimeServicePutFile();
+
+  const { readOnly } = featureFlags;
+
+  let showMetricsDefs = true;
+  let showGenerateChartModal = false;
+  let generateChartMetricsView = "";
+  let showRenameMetricsDefinitionModal = false;
+  let renameMetricsDefName: string | null = null;
+
   $: instanceId = $runtime.instanceId;
 
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
 
-  const createDashboard = createRuntimeServicePutFile();
+  $: currentPath = $page.url.pathname;
 
-  const { readOnly } = featureFlags;
+  $: canAddDashboard = $readOnly === false;
 
-  let showMetricsDefs = true;
+  $: hasSourceAndModelButNoDashboards =
+    $sourceNames?.data &&
+    $modelNames?.data &&
+    $sourceNames?.data?.length > 0 &&
+    $modelNames?.data?.length > 0 &&
+    $dashboardNames?.data?.length === 0;
 
-  let showRenameMetricsDefinitionModal = false;
-  let renameMetricsDefName: string | null = null;
-
-  const openRenameMetricsDefModal = (metricsDefName: string) => {
+  function openRenameMetricsDefModal(metricsDefName: string) {
     showRenameMetricsDefinitionModal = true;
     renameMetricsDefName = metricsDefName;
-  };
+  }
 
-  const dispatchAddEmptyMetricsDef = async () => {
+  async function dispatchAddEmptyMetricsDef() {
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
@@ -59,19 +71,8 @@
     });
 
     await goto(`/files/dashboards/${newDashboardName}`);
-  };
+  }
 
-  $: canAddDashboard = $readOnly === false;
-
-  $: hasSourceAndModelButNoDashboards =
-    $sourceNames?.data &&
-    $modelNames?.data &&
-    $sourceNames?.data?.length > 0 &&
-    $modelNames?.data?.length > 0 &&
-    $dashboardNames?.data?.length === 0;
-
-  let showGenerateChartModal = false;
-  let generateChartMetricsView = "";
   function openGenerateChartModal(metricsView: string) {
     showGenerateChartModal = true;
     generateChartMetricsView = metricsView;
@@ -84,19 +85,17 @@
     <ol transition:slide={{ duration }} id="assets-metrics-list">
       {#if $dashboardNames.data}
         {#each $dashboardNames.data as dashboardName (dashboardName)}
-          {@const open =
-            $page.url.pathname === `/dashboard/${dashboardName}` ||
-            $page.url.pathname === `/dashboard/${dashboardName}/edit`}
+          {@const open = currentPath === `/dashboard/${dashboardName}/edit`}
           <li animate:flip={{ duration }} aria-label={dashboardName}>
             <NavigationEntry
               showContextMenu={!$readOnly}
               name={dashboardName}
-              href={`/dashboard/${dashboardName}`}
+              href={`/dashboard/${dashboardName}/edit`}
               {open}
             >
               <DashboardMenuItems
-                {open}
                 slot="menu-items"
+                {open}
                 metricsViewName={dashboardName}
                 on:rename={() => openRenameMetricsDefModal(dashboardName)}
                 on:generate-chart={() => openGenerateChartModal(dashboardName)}

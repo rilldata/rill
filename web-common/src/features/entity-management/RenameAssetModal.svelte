@@ -59,7 +59,7 @@
             );
           }
         } else {
-          void goto(`/files/${newPath}`, {
+          await goto(`/files/${newPath}`, {
             replaceState: true,
           });
         }

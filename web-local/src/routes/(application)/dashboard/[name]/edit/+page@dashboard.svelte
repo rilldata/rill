@@ -1,21 +1,45 @@
 <script lang="ts">
+  import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
+  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
+  import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
+  import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
+  import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/tables/selectors";
+  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
-  import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
+
+  const { readOnly } = featureFlags;
+  const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
   let filePath: string;
   let metricViewName: string;
+  let fileNotFound = false;
+  let showDeployModal = false;
+  let previewStatus: string[] = [];
+
+  onMount(() => {
+    if ($readOnly) {
+      fileNotFound = true;
+    }
+  });
 
   $: if (data.fileArtifact) {
     filePath = data.fileArtifact.path;
@@ -28,23 +52,14 @@
     );
   }
 
-  const { readOnly } = featureFlags;
+  $: instanceId = $runtime.instanceId;
+  $: initLocalUserPreferenceStore(metricViewName);
+  $: isModelingSupportedQuery = canModel(instanceId);
+  $: isModelingSupported = $isModelingSupportedQuery.data;
 
-  onMount(() => {
-    if ($readOnly) {
-      throw error(404, "Page not found");
-    }
-  });
-
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
-      onError: (err) => {
-        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-          throw error(404, "Dashboard not found");
-        }
-
-        throw error(err.response?.status || 500, err.message);
-      },
+      onError: () => (fileNotFound = true),
       // this will ensure that any changes done outside our app is pulled in.
       refetchOnWindowFocus: true,
     },
@@ -52,13 +67,86 @@
 
   $: yaml = $fileQuery.data?.blob || "";
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: allErrors = $allErrorsQuery;
+
+  $: previewDisbaled = !yaml.length || !!allErrors?.length;
+
+  $: if (!yaml?.length) {
+    previewStatus = [
+      "Your metrics definition is empty. Get started by trying one of the options in the editor.",
+    ];
+  } else if (allErrors?.length && allErrors[0].message) {
+    // content & errors
+    previewStatus = [allErrors[0].message, TOOLTIP_CTA];
+  } else {
+    // preview is available
+    previewStatus = ["Explore your metrics dashboard"];
+  }
+
+  beforeNavigate(() => {
+    fileNotFound = false;
+  });
+
+  async function onChangeCallback(
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) {
+    const newRoute = await handleEntityRename(
+      instanceId,
+      e.currentTarget,
+      filePath,
+      EntityType.MetricsDefinition,
+    );
+    if (newRoute) await goto(newRoute + "/edit");
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 
-{#if $fileQuery.data && yaml !== undefined}
-  <MetricsWorkspace {filePath} />
+{#if fileNotFound}
+  <div class="size-full grid place-content-center">
+    <div class="flex flex-col items-center gap-y-2">
+      <AlertCircleOutline size="40px" />
+      <h1>Page not found</h1>
+    </div>
+  </div>
+{:else}
+  <WorkspaceContainer inspector={isModelingSupported}>
+    <WorkspaceHeader
+      slot="header"
+      showInspectorToggle={isModelingSupported}
+      titleInput={metricViewName}
+      on:change={onChangeCallback}
+    >
+      <div slot="cta" class="flex gap-x-2">
+        <Tooltip distance={8}>
+          <Button on:click={() => (showDeployModal = true)} type="secondary">
+            Deploy
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Deploy this dashboard to Rill Cloud
+          </TooltipContent>
+        </Tooltip>
+        <PreviewButton
+          {metricViewName}
+          status={previewStatus}
+          disabled={previewDisbaled}
+        />
+      </div>
+    </WorkspaceHeader>
+
+    <MetricsEditor slot="body" {yaml} {filePath} {allErrors} {metricViewName} />
+
+    <MetricsInspector {filePath} slot="inspector" />
+  </WorkspaceContainer>
 {/if}
+
+<DeployDashboardCta
+  on:close={() => (showDeployModal = false)}
+  open={showDeployModal}
+/>

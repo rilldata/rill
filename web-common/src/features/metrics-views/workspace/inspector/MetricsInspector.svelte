@@ -52,9 +52,8 @@
   />
 {:else}
   <div
-    class="px-4 py-24 italic ui-copy-disabled text-center"
+    class="px-4 py-24 italic ui-copy-disabled text-center w-full"
     style:text-wrap="balance"
-    style:max-inline-size="50ch"
   >
     {#if !yaml?.length}
       <p>Let's get started.</p>

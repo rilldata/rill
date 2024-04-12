@@ -11,14 +11,14 @@
   export let current: string;
   export let isCurrentPage = false;
   export let depth: number = 0;
-  export let currentPath: (string | null)[] = [];
+  export let currentPath: (string | undefined)[] = [];
   export let onSelect: undefined | ((id: string) => void) = undefined;
 
   $: selected = options.get(current);
   $: nextChild = $page.route.id?.split(regex)[depth + 1] ?? "";
 
   function linkMaker(
-    current: (string | null)[],
+    current: (string | undefined)[],
     depth: number,
     id: string,
     option: PathOption,
