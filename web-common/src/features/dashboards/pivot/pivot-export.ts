@@ -57,7 +57,7 @@ export default async function exportPivot({
   const measureFilters = await getResolvedMeasureFilters(ctx);
 
   const pivotOn = columns.dimension.map((d) =>
-    d.type === PivotChipType.Time ? (timeDimension as string) : d.id,
+    d.type === PivotChipType.Time ? (`Time ${d.title}` as string) : d.id,
   );
 
   const rowDimensions = [...rows.dimension].map((d) =>
@@ -76,10 +76,10 @@ export default async function exportPivot({
   // Sort by the dimensions in the pivot's rows
   const sort = rowDimensions.map((d) => {
     if (d.alias) {
-      return  {
+      return {
         name: d.alias,
         desc: true,
-      }
+      };
     }
     return {
       name: d.name,
