@@ -33,12 +33,17 @@ class PlaceholderWidget extends WidgetType {
 }
 
 /* Extension that enables a simple placeholder for the metrics editor. **/
-export function createPlaceholder(metricsViewName: string, showOnEmpty = true) {
-  const component = createPlaceholderElement(metricsViewName);
+export function createPlaceholder(
+  filePath: string,
+  metricsViewName: string,
+  showOnEmpty = true,
+) {
+  const component = createPlaceholderElement(filePath, metricsViewName);
   const elem = component.DOMElement;
   const extension = ViewPlugin.fromClass(
     class {
       placeholder: DecorationSet;
+      update!: () => void; // Kludge to convince TypeScript that this is a plugin value
 
       constructor(readonly view: EditorView) {
         this.placeholder = Decoration.set([
@@ -48,8 +53,6 @@ export function createPlaceholder(metricsViewName: string, showOnEmpty = true) {
           }).range(0),
         ]);
       }
-
-      update!: () => void; // Kludge to convince TypeScript that this is a plugin value
 
       get decorations() {
         return showOnEmpty
@@ -67,13 +70,17 @@ export function createPlaceholder(metricsViewName: string, showOnEmpty = true) {
 /** creates a set of callbacks that enables updating the placeholder,
  * which itself is a svelte component.
  */
-export function createPlaceholderElement(metricsName: string) {
+export function createPlaceholderElement(
+  filePath: string,
+  metricsName: string,
+) {
   const DOMElement = document.createElement("span");
   // create placeholder text and attach it to the DOM element.
   const component = new Placeholder({
     target: DOMElement,
     props: {
       metricsName,
+      filePath,
       view: undefined,
     },
   });

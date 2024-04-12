@@ -3,30 +3,32 @@
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+  import { useModels } from "@rilldata/web-common/features/models/selectors";
+  import {
+    runtimeServicePutFile,
+    V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useIsModelingSupportedForCurrentOlapDriver } from "../../../tables/selectors";
   import { createDashboardFromTableInMetricsEditor } from "../../ai-generation/generateMetricsView";
 
   export let metricsName: string;
+  export let filePath: string;
   export let view: EditorView | undefined = undefined;
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: models = useModelFileNames($runtime.instanceId);
+  $: models = useModels($runtime.instanceId);
 
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
 
-  async function onAutogenerateConfigFromModel(modelName: string) {
+  async function onAutogenerateConfigFromModel(modelRes: V1Resource) {
     await createDashboardFromTableInMetricsEditor(
       $runtime.instanceId,
-      modelName,
-      metricsName,
+      modelRes?.model?.state?.table ?? "",
+      filePath,
     );
   }
 
@@ -34,15 +36,11 @@
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    await runtimeServicePutFile(
-      $runtime.instanceId,
-      getFileAPIPathFromNameAndType(metricsName, EntityType.MetricsDefinition),
-      {
-        blob: yaml,
-        create: true,
-        createOnly: true,
-      },
-    );
+    await runtimeServicePutFile($runtime.instanceId, filePath, {
+      blob: yaml,
+      create: true,
+      createOnly: true,
+    });
 
     /** optimistically update the editor. We will dispatch
      * a debounce annotation here to tell the MetricsWorkspace
@@ -80,14 +78,16 @@
         let:toggleFloatingElement
       >
         {#each $models?.data ?? [] as model}
-          <MenuItem
-            on:select={() => {
-              void onAutogenerateConfigFromModel(model);
-              toggleFloatingElement();
-            }}
-          >
-            {model}
-          </MenuItem>
+          {#if model?.model?.state?.table}
+            <MenuItem
+              on:select={() => {
+                void onAutogenerateConfigFromModel(model);
+                toggleFloatingElement();
+              }}
+            >
+              {model?.model?.state?.table}
+            </MenuItem>
+          {/if}
         {/each}
       </Menu>
     </WithTogglableFloatingElement>

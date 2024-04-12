@@ -36,7 +36,6 @@ export async function renameFileArtifact(
 export async function deleteFileArtifact(
   instanceId: string,
   filePath: string,
-  type: EntityType,
   showNotification = true,
 ) {
   const name = extractFileName(filePath);
@@ -45,7 +44,7 @@ export async function deleteFileArtifact(
 
     httpRequestQueue.removeByName(name);
     if (showNotification) {
-      notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+      notifications.send({ message: `Deleted ${name}` });
     }
   } catch (err) {
     notifications.send({

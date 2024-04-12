@@ -211,14 +211,15 @@
   }
 
   async function handleCreateModelFromSource() {
-    const modelName = await createModelFromSourceV2(
+    const [newModelPath, newModelName] = await createModelFromSourceV2(
       queryClient,
+      assetName,
       tableName ?? "",
       folder,
     );
-    await goto(`/files/models/${modelName}.sql`);
+    await goto(`/files/${newModelPath}`);
     await behaviourEvent.fireNavigationEvent(
-      modelName,
+      newModelName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
       MetricsEventScreenName.Source,

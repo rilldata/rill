@@ -160,7 +160,7 @@ export function useCreateDashboardFromTableUIAction(
 export async function createDashboardFromTableInMetricsEditor(
   instanceId: string,
   modelName: string,
-  metricsViewName: string,
+  filePath: string,
 ) {
   const isAiEnabled = get(featureFlags.ai);
 
@@ -181,10 +181,6 @@ export async function createDashboardFromTableInMetricsEditor(
     },
   });
 
-  const filePath = getFilePathFromNameAndType(
-    metricsViewName,
-    EntityType.MetricsDefinition,
-  );
   try {
     // First, request an AI-generated dashboard
     void runtimeServiceGenerateMetricsViewFileWithSignal(

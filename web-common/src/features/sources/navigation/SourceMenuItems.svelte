@@ -7,11 +7,9 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useIsLocalFileConnector,
     useSourceFromYaml,
-    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -28,18 +26,14 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
-  import { EntityType } from "../../entity-management/types";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { getNextRoute } from "../../models/utils/navigate-to-next";
-  import { createModelFromSource } from "../createModel";
+  import { createModelFromSourceV2 } from "../createModel";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
 
   export let filePath: string;
-  export let open: boolean;
 
   $: [folder] = splitFolderAndName(filePath);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
@@ -62,12 +56,9 @@
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
   $: tableName = source?.state?.table ?? "";
+  $: sourceName = $sourceQuery.data?.meta?.name?.name ?? "";
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
-
-  $: sourceRoutesQuery = useSourceRoutes($runtime.instanceId);
-  $: sourceRoutes = $sourceRoutesQuery.data ?? [];
-  $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
@@ -80,26 +71,17 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  const handleDeleteSource = async () => {
-    try {
-      await deleteFileArtifact(runtimeInstanceId, filePath, EntityType.Table);
-
-      if (open) await goto(getNextRoute(sourceRoutes));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const handleCreateModel = async () => {
     try {
       const previousActiveEntity = $appScreen?.type;
-      const newModelName = await createModelFromSource(
-        runtimeInstanceId,
-        $modelNames.data ?? [],
+      const [newModelPath, newModelName] = await createModelFromSourceV2(
+        queryClient,
+        sourceName,
         tableName,
-        tableName,
+        folder,
+        true,
       );
-
+      await goto(`/files/${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,

@@ -118,9 +118,9 @@
   <Tooltip distance={8} alignment="end">
     <Button
       on:click={async () => {
-        if (availableDashboards[0]?.meta?.name?.name) {
+        if (availableDashboards[0]?.meta?.filePaths?.[0]) {
           await goto(
-            `/files/dashboards/${availableDashboards[0].meta.name.name}.yaml`,
+            `/files/dashboards/${availableDashboards[0].meta.filePaths[0]}.yaml`,
           );
         }
       }}
@@ -157,8 +157,10 @@
         {#each availableDashboards as resource}
           <MenuItem
             on:select={async () => {
-              if (resource?.meta?.name?.name) {
-                await goto(`/files/dashboards/${resource.meta.name.name}.yaml`);
+              if (resource?.meta?.filePaths?.[0]) {
+                await goto(
+                  `/files/dashboards/${resource.meta.filePaths?.[0]}.yaml`,
+                );
                 toggleFloatingElement();
               }
             }}

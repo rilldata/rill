@@ -31,20 +31,30 @@ export async function createModelFromSource(
 export async function createModelFromSourceV2(
   queryClient: QueryClient,
   sourceName: string,
+  tableName: string,
   folder: string,
-): Promise<string> {
+  notify = false,
+): Promise<[string, string]> {
   const instanceId = get(runtime).instanceId;
 
   // Get new model name
   const modelNames = await getModelNames(queryClient, instanceId);
   const newModelName = getName(`${sourceName}_model`, modelNames);
+  const newModelPath = `${folder}/${newModelName}.sql`;
 
   // Create model
-  await runtimeServicePutFile(instanceId, `/${folder}/${newModelName}.sql`, {
-    blob: `select * from ${sourceName}`,
+  await runtimeServicePutFile(instanceId, newModelPath, {
+    blob: `-- @kind: model
+select * from ${tableName}`,
     createOnly: true,
   });
 
+  if (notify) {
+    notifications.send({
+      message: `Queried ${tableName} in workspace`,
+    });
+  }
+
   // Done
-  return newModelName;
+  return [newModelPath, newModelName];
 }

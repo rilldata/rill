@@ -30,6 +30,7 @@
   export let data: { fileArtifact?: FileArtifact } = {};
 
   let filePath: string;
+  let fileArtifact: FileArtifact;
   let metricViewName: string;
   let fileNotFound = false;
   let showDeployModal = false;
@@ -42,9 +43,11 @@
   });
 
   $: if (data.fileArtifact) {
-    filePath = data.fileArtifact.path;
-    metricViewName = data.fileArtifact.getEntityName();
+    fileArtifact = data.fileArtifact;
+    filePath = fileArtifact.path;
+    metricViewName = fileArtifact.getEntityName();
   } else {
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
     metricViewName = $page.params.name;
     filePath = getFileAPIPathFromNameAndType(
       metricViewName,
@@ -62,12 +65,13 @@
       onError: () => (fileNotFound = true),
       // this will ensure that any changes done outside our app is pulled in.
       refetchOnWindowFocus: true,
+      keepPreviousData: true,
     },
   });
 
-  $: yaml = $fileQuery.data?.blob || "";
+  let yaml = "";
+  $: yaml = $fileQuery.isFetching ? yaml : $fileQuery.data?.blob || "";
 
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
 
@@ -98,9 +102,9 @@
       instanceId,
       e.currentTarget,
       filePath,
-      EntityType.MetricsDefinition,
+      metricViewName,
     );
-    if (newRoute) await goto(newRoute + "/edit");
+    if (newRoute) await goto(newRoute);
   }
 </script>
 

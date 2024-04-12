@@ -22,7 +22,6 @@
           customDashboardName,
           EntityType.Dashboard,
         ),
-        EntityType.Dashboard,
       );
 
       if (open) await goto(getNextRoute(customDashboardRoutes));

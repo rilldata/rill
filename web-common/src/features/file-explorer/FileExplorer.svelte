@@ -54,6 +54,9 @@
 
   async function onDelete(filePath: string) {
     await deleteFileArtifact(instanceId, filePath);
+    if ($page.params.file === filePath) {
+      await goto("/");
+    }
   }
 
   const { navDragging, offset, dragStart } = navEntryDragDropStore;
