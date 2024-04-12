@@ -588,11 +588,9 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 
 func (c *connection) detachAndRemoveFile(db, dbFile string) {
 	err := c.WithConnection(context.Background(), 100, false, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100}); err != nil {
-			return err
-		}
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100})
 		removeDBFile(dbFile)
-		return nil
+		return err
 	})
 	if err != nil {
 		c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
