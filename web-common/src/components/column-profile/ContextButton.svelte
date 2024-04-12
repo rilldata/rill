@@ -12,7 +12,9 @@
   export let builders: Builder[] = [];
 </script>
 
-<Tooltip distance={16} location="right" suppress={suppressTooltip}>
+<!-- Opening the ContextMenu causes this tooltip to flash in another location, likely due 
+  to a race condition. Disabling the tooltip for now.   -->
+<Tooltip distance={16} location="right" suppress={true}>
   <button
     {...getAttrs(builders)}
     aria-label={label}
