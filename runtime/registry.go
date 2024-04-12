@@ -184,8 +184,9 @@ func (r *registryCache) init(ctx context.Context) error {
 			return err
 		}
 	}
-	r.emitHeartbeats()
-
+	if r.rt.opts.EmitInstanceHeartbeat {
+		r.emitHeartbeats()
+	}
 	return nil
 }
 
