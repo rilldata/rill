@@ -2,13 +2,12 @@
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
-
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
     createRuntimeServiceListConnectorDrivers,
     V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
+  import { onMount } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
   import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
@@ -34,11 +33,9 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import { duplicateSourceName } from "../sources-store";
   import DuplicateSource from "./DuplicateSource.svelte";
-  import { addSourceModal } from "./add-source-visibility";
 
-  export let step = 1;
-  export let selectedConnector: null | V1ConnectorDriver = null;
-
+  let step = 0;
+  let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
 
   const TAB_ORDER = [
@@ -102,26 +99,43 @@
     },
   });
 
+  onMount(() => {
+    function listen(e: PopStateEvent) {
+      step = e.state?.step ?? 0;
+      requestConnector = e.state?.requestConnector ?? false;
+      selectedConnector = e.state?.selectedConnector ?? null;
+    }
+    window.addEventListener("popstate", listen);
+
+    return () => {
+      window.removeEventListener("popstate", listen);
+    };
+  });
+
   function goToConnectorForm(connector: V1ConnectorDriver) {
-    selectedConnector = connector;
-    step = 2;
+    const state = {
+      step: 2,
+      selectedConnector: connector,
+      requestConnector: false,
+    };
+    window.history.pushState(state, "", "");
+    dispatchEvent(new PopStateEvent("popstate", { state }));
   }
+
   function goToRequestConnector() {
-    requestConnector = true;
-    step = 2;
+    const state = { step: 2, requestConnector: true };
+    window.history.pushState(state, "", "");
+    dispatchEvent(new PopStateEvent("popstate", { state }));
   }
+
+  function back() {
+    window.history.back();
+  }
+
   function resetModal() {
-    requestConnector = false;
-    selectedConnector = null;
-    step = 1;
-    addSourceModal.close();
-  }
-
-  const dispatch = createEventDispatcher();
-
-  function onCompleteDialog() {
-    resetModal();
-    dispatch("close");
+    const state = { step: 0, selectedConnector: null, requestConnector: false };
+    window.history.pushState(state, "", "");
+    dispatchEvent(new PopStateEvent("popstate", { state: state }));
   }
 
   async function onCancelDialog() {
@@ -131,87 +145,78 @@
       $appScreen.type,
       MetricsEventSpace.Modal,
     );
+
     resetModal();
-    dispatch("close");
   }
 </script>
 
-<!-- This precise width fits exactly 3 connectors per line  -->
-<Dialog open on:close={onCancelDialog} widthOverride="w-[560px]">
-  <div slot="title">
-    {#if step === 1}
-      Add a source
-    {:else if step === 2}
-      <h2 class="flex gap-x-1 items-center">
-        <span>
-          {#if $duplicateSourceName !== null}
-            Duplicate source
-          {:else if selectedConnector}
-            {selectedConnector?.displayName}
-          {/if}
-
-          {#if requestConnector}
-            Request a connector
-          {/if}
-        </span>
-      </h2>
-    {/if}
-  </div>
-  <div slot="body" class="flex flex-col gap-y-4">
-    {#if $duplicateSourceName}
-      <DuplicateSource
-        on:cancel={onCompleteDialog}
-        on:complete={onCompleteDialog}
-      />
-    {:else if step === 1}
-      {#if $connectors.data}
-        <div class="grid grid-cols-3 gap-4">
-          {#each $connectors?.data?.connectors ?? [] as connector}
-            {#if connector.name}
-              <button
-                id={connector.name}
-                on:click={() => goToConnectorForm(connector)}
-                class="w-40 h-20 rounded border border-gray-300 justify-center items-center gap-2.5 inline-flex hover:bg-gray-100 cursor-pointer"
-              >
-                <svelte:component this={ICONS[connector.name]} />
-              </button>
+{#if step >= 1 || $duplicateSourceName}
+  <!-- This precise width fits exactly 3 connectors per line  -->
+  <Dialog open on:close={onCancelDialog} widthOverride="w-[560px]">
+    <div slot="title">
+      {#if step === 1}
+        Add a source
+      {:else}
+        <h2 class="flex gap-x-1 items-center">
+          <span>
+            {#if $duplicateSourceName !== null}
+              Duplicate source
+            {:else if selectedConnector}
+              {selectedConnector?.displayName}
+            {:else if requestConnector}
+              Request a connector
             {/if}
-          {/each}
-        </div>
+          </span>
+        </h2>
       {/if}
-      <div class="text-slate-500">
-        Don't see what you're looking for? <button
-          on:click={goToRequestConnector}
-          class="text-primary-500 hover:text-primary-600 font-medium"
-          >Request a new connector</button
-        >
-      </div>
-    {:else if step === 2}
-      {#if selectedConnector}
-        {#if $duplicateSourceName !== null}
-          <DuplicateSource
-            on:cancel={onCompleteDialog}
-            on:complete={onCompleteDialog}
-          />
-        {:else if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
-        {:else if selectedConnector.name === "clickhouse"}
-          <ClickHouseInstructions on:back={resetModal} />
-        {:else}
-          <RemoteSourceForm
-            connector={selectedConnector}
-            on:close={onCompleteDialog}
-            on:back={resetModal}
-          />
+    </div>
+    <div slot="body" class="flex flex-col gap-y-4">
+      {#if $duplicateSourceName}
+        <DuplicateSource on:cancel={resetModal} on:complete={resetModal} />
+      {:else if step === 1}
+        {#if $connectors.data}
+          <div class="grid grid-cols-3 gap-4">
+            {#each $connectors?.data?.connectors ?? [] as connector}
+              {#if connector.name}
+                <button
+                  id={connector.name}
+                  on:click={() => goToConnectorForm(connector)}
+                  class="w-40 h-20 rounded border border-gray-300 justify-center items-center gap-2.5 inline-flex hover:bg-gray-100 cursor-pointer"
+                >
+                  <svelte:component this={ICONS[connector.name]} />
+                </button>
+              {/if}
+            {/each}
+          </div>
+        {/if}
+        <div class="text-slate-500">
+          Don't see what you're looking for?
+          <button
+            class="text-primary-500 hover:text-primary-600 font-medium"
+            on:click={goToRequestConnector}
+          >
+            Request a new connector
+          </button>
+        </div>
+      {:else if step === 2}
+        {#if selectedConnector}
+          {#if selectedConnector.name === "local_file"}
+            <LocalSourceUpload on:close={resetModal} on:back={back} />
+          {:else if selectedConnector.name === "clickhouse"}
+            <ClickHouseInstructions on:back={back} />
+          {:else}
+            <RemoteSourceForm
+              connector={selectedConnector}
+              on:close={resetModal}
+              on:back={back}
+            />
+          {/if}
+        {/if}
+
+        {#if requestConnector}
+          <RequestConnectorForm on:close={resetModal} on:back={back} />
         {/if}
       {/if}
-
-      {#if requestConnector}
-        <RequestConnectorForm
-          on:close={onCompleteDialog}
-          on:back={resetModal}
-        />
-      {/if}
-    {/if}
-  </div>
-</Dialog>
+    </div>
+  </Dialog>
+{/if}
