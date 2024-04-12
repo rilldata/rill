@@ -6,7 +6,6 @@
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -21,7 +20,6 @@
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page@dashboard.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
@@ -92,9 +90,7 @@
   }
 </script>
 
-{#if initialLoading}
-  <Spinner status={EntityStatus.Running} />
-{:else if fileTypeUnsupported}
+{#if fileTypeUnsupported}
   <div class="size-full grid place-content-center">
     <div class="flex flex-col items-center gap-y-2">
       <AlertCircleOutline size="40px" />
