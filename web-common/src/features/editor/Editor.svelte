@@ -8,16 +8,19 @@
 
   const dispatch = createEventDispatcher();
 
-  export let content: string;
+  export let blob: string;
+  export let latest: string;
   export let extensions: Extension[] = [];
-  export let view: EditorView | undefined = undefined;
 
+  let editor: EditorView;
   let container: HTMLElement;
 
+  $: latest = blob;
+
   onMount(() => {
-    view = new EditorView({
+    editor = new EditorView({
       state: EditorState.create({
-        doc: content,
+        doc: blob,
         extensions: [
           // any extensions passed as props
           ...extensions,
@@ -32,10 +35,11 @@
   });
 
   function updateEditorContents(newContent: string) {
-    if (view && !view.hasFocus) {
-      let curContent = view.state.doc.toString();
+    if (editor && !editor.hasFocus) {
+      // NOTE: when changing files, we still want to update the editor
+      let curContent = editor.state.doc.toString();
       if (newContent != curContent) {
-        view.dispatch({
+        editor.dispatch({
           changes: {
             from: 0,
             to: curContent.length,
@@ -47,7 +51,7 @@
   }
 
   // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(content);
+  $: updateEditorContents(latest);
 </script>
 
 <div class="contents" bind:this={container} />

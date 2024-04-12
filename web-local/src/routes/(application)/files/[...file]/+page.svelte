@@ -120,7 +120,8 @@
       <div class="editor flex flex-col border border-gray-200 rounded h-full">
         <div class="grow flex bg-white overflow-y-auto rounded">
           <Editor
-            content={latest}
+            {blob}
+            bind:latest
             on:update={({ detail: { content } }) => debounceSave(content)}
           />
         </div>
