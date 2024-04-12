@@ -5,8 +5,7 @@ import {
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import { getLabel, removeLeadingSlash } from "./entity-mappers";
-import type { EntityType } from "./types";
+import { removeLeadingSlash } from "./entity-mappers";
 
 export async function renameFileArtifact(
   instanceId: string,
@@ -23,9 +22,6 @@ export async function renameFileArtifact(
     });
 
     httpRequestQueue.removeByName(fromName);
-    notifications.send({
-      message: `Renamed ${fromName} to ${toName}`,
-    });
   } catch (err) {
     notifications.send({
       message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
