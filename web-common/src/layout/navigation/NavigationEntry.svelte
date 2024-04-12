@@ -5,6 +5,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TableIcon from "../../components/icons/TableIcon.svelte";
   import { createCommandClickAction } from "../../lib/actions/command-click-action";
   import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { emitNavigationTelemetry } from "./navigation-utils";
@@ -53,6 +54,7 @@
     on:click={handleClick}
   >
     <Tooltip distance={8}>
+      <TableIcon size="14px" className="shrink-0 text-gray-400" />
       <div class="truncate">
         {name}
       </div>
@@ -96,7 +98,7 @@
 
 <style lang="postcss">
   .entry {
-    @apply w-full justify-between pl-4 pr-2;
+    @apply w-full justify-between pl-2 pr-2;
     @apply flex items-center h-6 select-none cursor-pointer;
   }
 

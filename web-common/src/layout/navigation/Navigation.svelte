@@ -91,7 +91,7 @@
   }
 
   .nav-wrapper {
-    @apply flex flex-col h-fit w-full gap-y-3;
+    @apply flex flex-col h-fit w-full gap-y-2;
   }
 
   .scroll-container {
