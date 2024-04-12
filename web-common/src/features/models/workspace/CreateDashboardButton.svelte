@@ -5,7 +5,8 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
+
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ReconcileStatus } from "../../../runtime-client";

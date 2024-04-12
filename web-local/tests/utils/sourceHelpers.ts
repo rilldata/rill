@@ -1,4 +1,8 @@
 import { expect } from "@playwright/test";
+import {
+  extractFileName,
+  splitFolderAndName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
@@ -68,8 +72,10 @@ export async function uploadFile(
 export async function createOrReplaceSource(
   page: Page,
   file: string,
-  name: string,
+  filePath: string,
 ) {
+  const [, fileName] = splitFolderAndName(filePath);
+  const name = extractFileName(filePath);
   try {
     await getEntityLink(page, name).waitFor({
       timeout: 100,
@@ -80,18 +86,20 @@ export async function createOrReplaceSource(
   }
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForFileEntry(page, `sources/${name}.yaml`, `${name}.yaml`, true),
+    waitForFileEntry(page, filePath, fileName, true),
   ]);
 }
 
 export async function waitForSource(
   page: Page,
-  name: string,
+  filePath: string,
   columns: Array<string>,
 ) {
+  const [, fileName] = splitFolderAndName(filePath);
+  const name = extractFileName(filePath);
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForFileEntry(page, `sources/${name}.yaml`, `${name}.yaml`, true),
+    waitForFileEntry(page, filePath, fileName, true),
     waitForProfiling(page, name, columns),
   ]);
 }

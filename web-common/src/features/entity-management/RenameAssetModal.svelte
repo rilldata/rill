@@ -4,8 +4,8 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";

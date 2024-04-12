@@ -1,8 +1,8 @@
 <script lang="ts">
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";

@@ -10,7 +10,7 @@ export enum TestEntityType {
 export async function openEntityMenu(page: Page, name: string) {
   const entityLocator = getEntityLink(page, name);
   await entityLocator.hover();
-  await entityLocator.locator("button").last().click();
+  await entityLocator.getByLabel(`${name} actions menu trigger`).click();
 }
 
 export async function clickModalButton(page: Page, text: string) {

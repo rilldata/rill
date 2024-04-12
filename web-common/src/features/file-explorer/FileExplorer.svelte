@@ -6,12 +6,12 @@
     deleteFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import {
     NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";

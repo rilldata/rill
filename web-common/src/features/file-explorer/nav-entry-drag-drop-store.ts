@@ -1,6 +1,6 @@
-import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
+import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
 import { get, writable } from "svelte/store";
 

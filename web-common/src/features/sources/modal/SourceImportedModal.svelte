@@ -7,7 +7,6 @@
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
@@ -16,7 +15,7 @@
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { extractFileName } from "../extract-file-name";
+  import { extractFileName, splitFolderAndName } from "../extract-file-name";
 
   export let sourcePath: string | null;
   $: [folder] = splitFolderAndName(sourcePath ?? "");

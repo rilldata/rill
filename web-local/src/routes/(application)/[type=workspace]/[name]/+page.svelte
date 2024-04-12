@@ -9,7 +9,6 @@
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -24,6 +23,7 @@
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
