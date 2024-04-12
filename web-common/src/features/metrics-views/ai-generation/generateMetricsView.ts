@@ -17,7 +17,10 @@ import {
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
 import { useDashboardFileNames } from "../../dashboards/selectors";
-import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+import {
+  getFilePathFromNameAndType,
+  removeLeadingSlash,
+} from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
 import { EntityType } from "../../entity-management/types";
 import { featureFlags } from "../../feature-flags";
@@ -129,7 +132,7 @@ export function useCreateDashboardFromTableUIAction(
       }
 
       // Preview
-      await goto(`/dashboard/${newDashboardName}`);
+      await goto(`/files/${removeLeadingSlash(newFilePath)}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,
