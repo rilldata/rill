@@ -18,6 +18,7 @@
   import { extractFileName, splitFolderAndName } from "../extract-file-name";
 
   export let sourcePath: string | null;
+
   $: [folder] = splitFolderAndName(sourcePath ?? "");
   $: sourceName = extractFileName(sourcePath ?? "");
 
