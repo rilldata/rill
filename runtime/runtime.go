@@ -41,10 +41,6 @@ type Runtime struct {
 	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
-
-	// ctx and cancel control background tasks
-	ctx    context.Context
-	cancel context.CancelFunc
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -52,7 +48,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		emailClient = email.New(email.NewNoopSender())
 	}
 
-	bgCtx, cancel := context.WithCancel(context.Background())
 	rt := &Runtime{
 		Email:          emailClient,
 		opts:           opts,
@@ -60,8 +55,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
-		ctx:            bgCtx,
-		cancel:         cancel,
 	}
 
 	rt.connCache = rt.newConnectionCache()
@@ -92,7 +85,6 @@ func (r *Runtime) AllowHostAccess() bool {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	r.cancel()
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation

@@ -542,3 +542,26 @@ func connectorsEqual(a, b *runtimev1.Connector) bool {
 	}
 	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
 }
+
+func Test_sizeOfDir(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want int64
+	}{
+		{
+			"first",
+			"../dev-cloud-state",
+			1000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sizeOfDir(tt.path)
+			fmt.Println(got)
+			if got < tt.want {
+				t.Errorf("sizeOfDir() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
