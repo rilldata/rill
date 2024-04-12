@@ -46,10 +46,13 @@ export class NavEntryDragDropStore {
     };
   }
 
-  public onMouseUp(
+  public async onMouseUp(
     e: MouseEvent,
     dragData: NavDragData | null,
-    dropSuccess: (fromDragData: NavDragData, toDragData: NavDragData) => void,
+    dropSuccess: (
+      fromDragData: NavDragData,
+      toDragData: NavDragData,
+    ) => Promise<void>,
   ) {
     e.preventDefault();
     e.stopPropagation();
@@ -57,7 +60,7 @@ export class NavEntryDragDropStore {
     const curDragData = get(this.navDragging);
 
     if (curDragData && dragData && curDragData.filePath !== dragData.filePath) {
-      dropSuccess(curDragData, dragData);
+      await dropSuccess(curDragData, dragData);
     }
 
     this.newDragData = null;

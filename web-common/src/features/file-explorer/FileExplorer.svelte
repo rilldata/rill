@@ -1,20 +1,24 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
+  import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
-  import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
+  import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import {
     NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
-  import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import NavDirectory from "./NavDirectory.svelte";
   import { transformFileList } from "./transform-file-list";
 
+  $: instanceId = $runtime.instanceId;
   $: getFileTree = createRuntimeServiceListFiles("default", undefined, {
     query: {
       select: (data) => {
@@ -37,11 +41,11 @@
       },
     },
   });
-  $: instanceId = $runtime.instanceId;
 
   let showRenameModelModal = false;
   let renameFilePath: string;
   let renameIsDir: boolean;
+
   function onRename(filePath: string, isDir: boolean) {
     showRenameModelModal = true;
     renameFilePath = filePath;
@@ -53,17 +57,24 @@
   }
 
   const { navDragging, offset, dragStart } = navEntryDragDropStore;
-  function handleDropSuccess(
+
+  async function handleDropSuccess(
     fromDragData: NavDragData,
     toDragData: NavDragData,
   ) {
+    const isCurrentFile = fromDragData.filePath === $page.params.file;
     const tarDir = toDragData.isDir
       ? toDragData.filePath
       : splitFolderAndName(toDragData.filePath)[0];
     const [, srcFile] = splitFolderAndName(fromDragData.filePath);
     const newFilePath = `${tarDir}/${srcFile}`;
+
     if (fromDragData.filePath !== newFilePath) {
-      void renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
+      await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
+
+      if (isCurrentFile) {
+        await goto(`/files/${removeLeadingSlash(newFilePath)}`);
+      }
     }
   }
 </script>
