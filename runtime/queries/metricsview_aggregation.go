@@ -396,8 +396,8 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 
 	var limitClause string
 	if q.Limit != nil {
-		limit := int64(0)
-		if *q.Limit == 0 {
+		limit := *q.Limit
+		if limit == 0 {
 			limit = 100
 		}
 		if q.Exporting && *q.Limit > 0 {
