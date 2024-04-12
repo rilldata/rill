@@ -67,7 +67,7 @@ Now, in order to actually commit these changes to your repo, you can take the fo
 - Click _Publish Branch_ on the top right - and that's it. Any future changes would follow the same two steps - add a comment, commit and publish!
 
 :::warning Avoid Syncing Data Files
-During the commit process, make sure to **uncheck** files you do not wish to sync to your cloud repo (or add the appropriate exclusions in your `.gitignore` file). In particular, if you were working with local data files, those will now be in the repo including ```tmp``` files and/or sources (e.g. parquet or CSV files). GitHub has a limit on cloud storage so instead consider adding that data to a [cloud object storage location]((/reference/connectors/connectors.md)) (S3, GCS, Azure).
+During the commit process, make sure to **uncheck** files you do not wish to sync to your cloud repo (or add the appropriate exclusions in your `.gitignore` file). In particular, if you were working with local data files, those will now be in the repo including ```tmp``` files and/or sources (e.g. parquet or CSV files). GitHub has a limit on cloud storage so instead consider adding that data to a [cloud object storage location](/reference/connectors/connectors.md) (S3, GCS, Azure).
 :::
 
 :::tip Make small changes directly in github
