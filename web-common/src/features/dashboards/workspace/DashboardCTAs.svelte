@@ -12,6 +12,7 @@
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import { featureFlags } from "../../feature-flags";
   import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
   import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
@@ -60,7 +61,7 @@
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
-        href={`/files/${filePath}`}
+        href={`/files/${removeLeadingSlash(filePath)}`}
         disabled={!dashboardIsIdle}
         on:click={fireTelemetry}
         type="secondary"
