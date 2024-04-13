@@ -29,19 +29,12 @@ export async function renameFileArtifact(
   }
 }
 
-export async function deleteFileArtifact(
-  instanceId: string,
-  filePath: string,
-  showNotification = true,
-) {
+export async function deleteFileArtifact(instanceId: string, filePath: string) {
   const name = extractFileName(filePath);
   try {
     await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
 
     httpRequestQueue.removeByName(name);
-    if (showNotification) {
-      notifications.send({ message: `Deleted ${name}` });
-    }
   } catch (err) {
     notifications.send({
       message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
