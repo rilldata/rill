@@ -65,7 +65,11 @@
 </script>
 
 <button
-  class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
+  class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
+  {isProtectedDirectory
+    ? 'text-gray-500'
+    : 'text-gray-900 hover:text-gray-900'} 
+  font-medium hover:bg-slate-100"
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}

@@ -48,9 +48,10 @@
 
 <button
   aria-label="{fileName} Nav Entry"
-  class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100 {isCurrentFile
-    ? 'bg-slate-100 text-gray-900'
-    : ''}"
+  class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center
+  {isProtectedDirectory ? 'text-gray-500' : 'text-gray-900 hover:text-gray-900'}
+  {isCurrentFile ? 'bg-slate-100' : ''} 
+  font-medium hover:bg-slate-100"
   {id}
   on:click={() => navigate(filePath)}
   on:mousedown={(e) =>
