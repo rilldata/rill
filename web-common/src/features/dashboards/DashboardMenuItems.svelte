@@ -3,7 +3,7 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import {
     useDashboard,
-    useDashboardFileNames,
+    useDashboardRoutes,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -28,8 +28,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
+  import { getNextRoute } from "../models/utils/navigate-to-next";
 
   export let metricsViewName: string;
+  export let open: boolean;
 
   $: filePath = getFileAPIPathFromNameAndType(
     metricsViewName,
@@ -42,9 +44,10 @@
   const { customDashboards } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
-  $: dashboardNames = useDashboardFileNames(instanceId);
   $: dashboardQuery = useDashboard(instanceId, metricsViewName);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: dashboardRoutesQuery = useDashboardRoutes(instanceId);
+  $: dashboardRoutes = $dashboardRoutesQuery.data ?? [];
 
   /**
    * Get the name of the dashboard's underlying model (if any).
@@ -82,12 +85,17 @@
   };
 
   const deleteMetricsDef = async () => {
-    await deleteFileArtifact(
-      instanceId,
-      filePath,
-      EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? [],
-    );
+    try {
+      await deleteFileArtifact(
+        instanceId,
+        filePath,
+        EntityType.MetricsDefinition,
+      );
+
+      if (open) await goto(getNextRoute(dashboardRoutes));
+    } catch (e) {
+      console.error(e);
+    }
   };
 </script>
 

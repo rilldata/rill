@@ -441,6 +441,7 @@ func (c *connection) reopenDB() error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
+		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)
 
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.

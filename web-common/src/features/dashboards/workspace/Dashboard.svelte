@@ -19,8 +19,6 @@
   import TimeControls from "../time-controls/TimeControls.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
-  import DashboardCTAs from "./DashboardCTAs.svelte";
-  import DashboardTitle from "./DashboardTitle.svelte";
 
   export let metricViewName: string;
 
@@ -49,7 +47,7 @@
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 </script>
 
-<section
+<article
   class="flex flex-col h-screen w-full overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
 >
@@ -58,19 +56,6 @@
     class="border-b w-fit min-w-full flex flex-col bg-slate-50 pl-4 slide"
     class:left-shift={extraLeftPadding}
   >
-    {#if isRillDeveloper}
-      <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header 
-        to accommodate the cloud dashboard. We should go back and reconcile these headers so we 
-        don't need to do this. -->
-      <div
-        class="flex items-center justify-between -mb-3 w-full pl-1 pr-4"
-        style:height="var(--header-height)"
-      >
-        <DashboardTitle {metricViewName} />
-        <DashboardCTAs {metricViewName} />
-      </div>
-    {/if}
-
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
@@ -91,44 +76,40 @@
 
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
+  {:else if showPivot}
+    <PivotDisplay />
   {:else}
-    <div class="size-full overflow-hidden">
-      {#if showPivot}
-        <PivotDisplay />
-      {:else}
-        <div
-          class="flex gap-x-1 gap-y-4 pt-3 size-full overflow-hidden pl-4 slide"
-          class:flex-col={expandedMeasureName}
-          class:flex-row={!expandedMeasureName}
-          class:left-shift={extraLeftPadding}
-        >
-          {#key metricViewName}
-            {#if hasTimeSeries}
-              <MetricsTimeSeriesCharts
-                {metricViewName}
-                workspaceWidth={exploreContainerWidth}
-              />
-            {:else}
-              <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-            {/if}
-          {/key}
+    <div
+      class="flex gap-x-1 gap-y-4 pt-3 size-full overflow-hidden pl-4 slide"
+      class:flex-col={expandedMeasureName}
+      class:flex-row={!expandedMeasureName}
+      class:left-shift={extraLeftPadding}
+    >
+      {#key metricViewName}
+        {#if hasTimeSeries}
+          <MetricsTimeSeriesCharts
+            {metricViewName}
+            workspaceWidth={exploreContainerWidth}
+          />
+        {:else}
+          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+        {/if}
+      {/key}
 
-          {#if expandedMeasureName}
-            <TimeDimensionDisplay {metricViewName} />
-          {:else if selectedDimensionName}
-            <DimensionDisplay />
-          {:else}
-            <LeaderboardDisplay />
-          {/if}
-        </div>
+      {#if expandedMeasureName}
+        <TimeDimensionDisplay {metricViewName} />
+      {:else if selectedDimensionName}
+        <DimensionDisplay />
+      {:else}
+        <LeaderboardDisplay />
       {/if}
     </div>
-
-    {#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !showPivot}
-      <RowsViewerAccordion {metricViewName} />
-    {/if}
   {/if}
-</section>
+</article>
+
+{#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !showPivot && !mockUserHasNoAccess}
+  <RowsViewerAccordion {metricViewName} />
+{/if}
 
 <style lang="postcss">
   .left-shift {

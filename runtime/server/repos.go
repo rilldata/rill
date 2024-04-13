@@ -70,7 +70,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 	defer release()
 
 	if req.Replay {
-		files, err := repo.ListRecursive(ss.Context(), "**", true)
+		files, err := repo.ListRecursive(ss.Context(), "**", false)
 		if err != nil {
 			return err
 		}
@@ -78,6 +78,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 			err = ss.Send(&runtimev1.WatchFilesResponse{
 				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
 				Path:  f.Path,
+				IsDir: f.IsDir,
 			})
 			if err != nil {
 				return err
@@ -87,14 +88,13 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 
 	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) {
 		for _, event := range events {
-			if !event.Dir {
-				err := ss.Send(&runtimev1.WatchFilesResponse{
-					Event: event.Type,
-					Path:  event.Path,
-				})
-				if err != nil {
-					s.logger.Info("failed to send watch event", zap.Error(err))
-				}
+			err := ss.Send(&runtimev1.WatchFilesResponse{
+				Event: event.Type,
+				Path:  event.Path,
+				IsDir: event.Dir,
+			})
+			if err != nil {
+				s.logger.Info("failed to send watch event", zap.Error(err))
 			}
 		}
 	})

@@ -170,7 +170,9 @@ export function createTableCellQuery(
   totalsRow: PivotDataRow,
   rowDimensionValues: string[],
 ) {
-  if (!rowDimensionValues.length) return readable(null);
+  const rowPage = config.pivot.rowPage;
+  if (rowDimensionValues.length === 0 && rowPage > 1) return readable(null);
+
   let allDimensions = config.colDimensionNames;
   if (anchorDimension) {
     allDimensions = config.colDimensionNames.concat([anchorDimension]);

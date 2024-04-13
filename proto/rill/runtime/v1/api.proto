@@ -429,6 +429,7 @@ message WatchFilesRequest {
 message WatchFilesResponse {
   FileEvent event = 1;
   string path = 2;
+  bool is_dir = 3;
 }
 
 // Request message for RuntimeService.GetFile

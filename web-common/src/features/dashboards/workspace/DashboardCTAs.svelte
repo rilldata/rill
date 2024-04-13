@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
@@ -33,35 +32,36 @@
     $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  async function viewMetrics(metricViewName: string) {
-    goto(`/dashboard/${metricViewName}/edit`);
-
-    behaviourEvent.fireNavigationEvent(
-      metricViewName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      MetricsEventScreenName.MetricsDefinition,
-    );
+  function fireTelemetry() {
+    behaviourEvent
+      .fireNavigationEvent(
+        metricViewName,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Workspace,
+        MetricsEventScreenName.Dashboard,
+        MetricsEventScreenName.MetricsDefinition,
+      )
+      .catch(console.error);
   }
 
   let showDeployDashboardModal = false;
 
-  function showDeployModal() {
-    behaviourEvent?.fireDeployIntentEvent();
+  async function showDeployModal() {
     showDeployDashboardModal = true;
+    await behaviourEvent?.fireDeployIntentEvent();
   }
 </script>
 
-<div class="flex gap-2 flex-shrink-0">
+<div class="flex gap-2 flex-shrink-0 ml-auto">
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
+        href={`/dashboard/${metricViewName}/edit`}
         disabled={!dashboardIsIdle}
-        on:click={() => viewMetrics(metricViewName)}
+        on:click={fireTelemetry}
         type="secondary"
       >
         Edit Metrics <MetricsIcon size="16px" />
