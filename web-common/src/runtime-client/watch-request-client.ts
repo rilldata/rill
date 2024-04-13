@@ -46,9 +46,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   watch(url: string) {
-    if (this.controller) this.cancel();
+    this.cancel();
     this.url = url;
-
     this.init();
     this.listen().catch(console.error);
   }
@@ -59,8 +58,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   init() {
-    if (!this.url) return;
-
+    if (!this.url) return console.error("Unable to reconnect without a URL.");
     this.controller = new AbortController();
     this.stream = this.getFetchStream(this.url, this.controller);
   }
@@ -76,11 +74,13 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.outOfFocusThrottler.cancel();
     }
 
+    // The stream was not cancelled, so don't reconnect
     if (this.controller && !this.controller.signal.aborted) return;
 
     this.init();
     this.listen().catch(console.error);
 
+    // Reconnecting, notify listeners
     this.listeners.get("reconnect")?.forEach((cb) => void cb());
   }
 
