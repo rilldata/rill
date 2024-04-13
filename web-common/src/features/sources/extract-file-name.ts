@@ -39,3 +39,7 @@ export function splitFolderAndName(
     fileName,
   ];
 }
+
+export function getTopLevelFolder(filePath: string): string {
+  return filePath.split(FILE_PATH_SPLIT_REGEX)[0];
+}

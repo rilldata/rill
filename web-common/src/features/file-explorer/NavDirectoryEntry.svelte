@@ -15,6 +15,8 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
+  import { getTopLevelFolder } from "../sources/extract-file-name";
+  import { PROTECTED_DIRECTORIES } from "./protected-directories";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -30,6 +32,8 @@
   $: expanded = $directoryState[dir.path];
   $: padding = getPaddingFromPath(dir.path);
   $: instanceId = $runtime.instanceId;
+  $: topLevelFolder = getTopLevelFolder(dir.path);
+  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     instanceId,
@@ -61,7 +65,7 @@
 </script>
 
 <button
-  class="pr-2 w-full text-left flex justify-between group gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
+  class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100"
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
@@ -72,36 +76,38 @@
     className="text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
   />
   <span class="truncate w-full">{dir.name}</span>
-  <DropdownMenu.Root bind:open={contextMenuOpen}>
-    <DropdownMenu.Trigger asChild let:builder>
-      <ContextButton
-        builders={[builder]}
-        id="more-actions-{dir.path}"
-        label="{dir.name} actions menu trigger"
-        suppressTooltip={contextMenuOpen}
-        tooltipText="More actions"
+  {#if !isProtectedDirectory}
+    <DropdownMenu.Root bind:open={contextMenuOpen}>
+      <DropdownMenu.Trigger asChild let:builder>
+        <ContextButton
+          builders={[builder]}
+          id="more-actions-{dir.path}"
+          label="{dir.name} actions menu trigger"
+          suppressTooltip={contextMenuOpen}
+          tooltipText="More actions"
+        >
+          <MoreHorizontal />
+        </ContextButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content
+        align="start"
+        class="border-none bg-gray-800 text-white min-w-60"
+        side="right"
+        sideOffset={16}
       >
-        <MoreHorizontal />
-      </ContextButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content
-      align="start"
-      class="border-none bg-gray-800 text-white min-w-60"
-      side="right"
-      sideOffset={16}
-    >
-      <NavigationMenuItem on:click={handleAddFolder}>
-        <Folder slot="icon" size="12px" />
-        New folder
-      </NavigationMenuItem>
-      <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
-        <EditIcon slot="icon" />
-        Rename...
-      </NavigationMenuItem>
-      <NavigationMenuItem on:click={() => onDelete(dir.path)}>
-        <Cancel slot="icon" />
-        Delete
-      </NavigationMenuItem>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+        <NavigationMenuItem on:click={handleAddFolder}>
+          <Folder slot="icon" size="12px" />
+          New folder
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
+          <EditIcon slot="icon" />
+          Rename...
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onDelete(dir.path)}>
+          <Cancel slot="icon" />
+          Delete
+        </NavigationMenuItem>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  {/if}
 </button>

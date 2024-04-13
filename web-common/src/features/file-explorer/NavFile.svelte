@@ -18,7 +18,9 @@
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
+  import { getTopLevelFolder } from "../sources/extract-file-name";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
+  import { PROTECTED_DIRECTORIES } from "./protected-directories";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -28,16 +30,16 @@
 
   let contextMenuOpen = false;
 
+  $: id = `${filePath}-nav-entry`;
   $: fileName = filePath.split("/").pop();
   $: isCurrentFile = filePath === $page.params.file;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   let name: Readable<V1ResourceName | undefined>;
   $: name = fileArtifact.name;
   $: resourceKind = $name?.kind as ResourceKind;
-
-  $: id = `${filePath}-nav-entry`;
-
   $: padding = getPaddingFromPath(filePath);
+  $: topLevelFolder = getTopLevelFolder(filePath);
+  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
@@ -46,7 +48,7 @@
 
 <button
   aria-label="{fileName} Nav Entry"
-  class="w-full group pr-2 text-left flex justify-between gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100 {isCurrentFile
+  class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center text-gray-900 font-medium hover:text-gray-900 hover:bg-slate-100 {isCurrentFile
     ? 'bg-slate-100 text-gray-900'
     : ''}"
   {id}
@@ -63,44 +65,46 @@
     size="14px"
   />
   <span class="truncate w-full">{fileName}</span>
-  <DropdownMenu.Root bind:open={contextMenuOpen}>
-    <DropdownMenu.Trigger asChild let:builder>
-      <ContextButton
-        builders={[builder]}
-        id="more-actions-{filePath}"
-        label="{fileName} actions menu trigger"
-        suppressTooltip={contextMenuOpen}
-        tooltipText="More actions"
+  {#if !isProtectedDirectory}
+    <DropdownMenu.Root bind:open={contextMenuOpen}>
+      <DropdownMenu.Trigger asChild let:builder>
+        <ContextButton
+          builders={[builder]}
+          id="more-actions-{filePath}"
+          label="{fileName} actions menu trigger"
+          suppressTooltip={contextMenuOpen}
+          tooltipText="More actions"
+        >
+          <MoreHorizontal />
+        </ContextButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content
+        align="start"
+        class="border-none bg-gray-800 text-white min-w-60"
+        side="right"
+        sideOffset={16}
       >
-        <MoreHorizontal />
-      </ContextButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content
-      align="start"
-      class="border-none bg-gray-800 text-white min-w-60"
-      side="right"
-      sideOffset={16}
-    >
-      {#if resourceKind}
-        {#if resourceKind === ResourceKind.Source}
-          <SourceMenuItems {filePath} />
-          <NavigationMenuSeparator />
-        {:else if resourceKind === ResourceKind.Model}
-          <ModelMenuItems {filePath} />
-          <NavigationMenuSeparator />
-        {:else if resourceKind === ResourceKind.Dashboard}
-          <DashboardMenuItems {filePath} />
-          <NavigationMenuSeparator />
+        {#if resourceKind}
+          {#if resourceKind === ResourceKind.Source}
+            <SourceMenuItems {filePath} />
+            <NavigationMenuSeparator />
+          {:else if resourceKind === ResourceKind.Model}
+            <ModelMenuItems {filePath} />
+            <NavigationMenuSeparator />
+          {:else if resourceKind === ResourceKind.Dashboard}
+            <DashboardMenuItems {filePath} />
+            <NavigationMenuSeparator />
+          {/if}
         {/if}
-      {/if}
-      <NavigationMenuItem on:click={() => onRename(filePath, false)}>
-        <EditIcon slot="icon" />
-        Rename...
-      </NavigationMenuItem>
-      <NavigationMenuItem on:click={() => onDelete(filePath)}>
-        <Cancel slot="icon" />
-        Delete
-      </NavigationMenuItem>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
+          <EditIcon slot="icon" />
+          Rename...
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onDelete(filePath)}>
+          <Cancel slot="icon" />
+          Delete
+        </NavigationMenuItem>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  {/if}
 </button>
