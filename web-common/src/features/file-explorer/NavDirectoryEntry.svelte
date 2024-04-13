@@ -1,15 +1,20 @@
 <script lang="ts">
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { Directory } from "@rilldata/web-common/features/file-explorer/transform-file-list";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import { Folder } from "lucide-svelte";
+  import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
+  import { getName } from "../entity-management/name-utils";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -18,14 +23,40 @@
   export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
-  $: expanded = $directoryState[dir.path];
 
-  $: padding = getPaddingFromPath(dir.path);
+  const createFolder = createRuntimeServiceCreateDirectory();
 
   $: id = `${dir.path}-nav-entry`;
+  $: expanded = $directoryState[dir.path];
+  $: padding = getPaddingFromPath(dir.path);
+  $: instanceId = $runtime.instanceId;
+
+  $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    instanceId,
+    dir.path,
+  );
 
   function toggleDirectory(directory: Directory): void {
     directoryState.toggle(directory.path);
+  }
+
+  /**
+   * Put a folder in the current directory
+   */
+  async function handleAddFolder() {
+    const nextFolderName = getName(
+      "untitled_folder",
+      $currentDirectoryDirectoryNamesQuery?.data ?? [],
+    );
+
+    await $createFolder.mutateAsync({
+      instanceId: instanceId,
+      path: `${dir.path}/${nextFolderName}`,
+      data: {
+        create: true,
+        createOnly: true,
+      },
+    });
   }
 </script>
 
@@ -59,6 +90,10 @@
       side="right"
       sideOffset={16}
     >
+      <NavigationMenuItem on:click={handleAddFolder}>
+        <Folder slot="icon" size="12px" />
+        New folder
+      </NavigationMenuItem>
       <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
         <EditIcon slot="icon" />
         Rename...
