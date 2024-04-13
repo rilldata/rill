@@ -33,7 +33,11 @@
           // sort alphabetically case-insensitive
           .sort((a, b) =>
             a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
-          );
+          )
+          // remove dotfiles and dot directories at the top level
+          .filter((file) => !file.path.startsWith("."))
+          // remove dotfiles and dot directories in subdirectories
+          .filter((file) => !file.path.includes("/."));
 
         const fileTree = transformFileList(files);
 
