@@ -8,7 +8,7 @@ export function buildStackedArea(
   const baseSpec = multiLayerBaseSpec();
 
   baseSpec.encoding = {
-    x: { field: timeField, type: "temporal" },
+    x: { field: timeField, type: "temporal", bandPosition: 0.5 },
     y: {
       field: quantitativeField,
       type: "quantitative",
@@ -25,19 +25,12 @@ export function buildStackedArea(
     {
       mark: { type: "line", strokeWidth: 1, clip: true },
       encoding: {
-        x: { field: timeField, type: "temporal" },
-        y: {
-          field: quantitativeField,
-          type: "quantitative",
-          stack: "zero",
-        },
         stroke: { field: nominalField, type: "nominal", legend: null },
       },
     },
     {
       mark: { type: "rule", color: "transparent" },
       encoding: {
-        x: { type: "temporal", field: timeField },
         tooltip: [
           { field: quantitativeField, type: "quantitative" },
           { field: "ts", type: "temporal", title: "Time" },
@@ -61,8 +54,6 @@ export function buildStackedArea(
       transform: [{ filter: { param: "x-hover", empty: false } }],
       mark: { type: "point", filled: true, opacity: 1, size: 40 },
       encoding: {
-        x: { type: "temporal", field: timeField },
-        y: { type: "quantitative", field: quantitativeField },
         color: { type: "nominal", field: nominalField },
       },
     },

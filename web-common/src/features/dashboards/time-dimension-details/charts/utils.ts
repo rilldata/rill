@@ -64,9 +64,10 @@ export function sanitizeSpecForTDD(
     xEncoding.scale = {
       domain: [xMin.toISOString(), xMax.toISOString()],
     };
-  } else if (sanitizedSpec?.layer?.[0].encoding) {
-    xEncoding = sanitizedSpec.layer[0].encoding.x;
-    yEncoding = sanitizedSpec.layer[0].encoding.y;
+  }
+
+  if (!xEncoding || !yEncoding) {
+    return sanitizedSpec;
   }
 
   // Set extents for x-axis
@@ -93,6 +94,7 @@ export function sanitizeSpecForTDD(
     const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
     xEncoding.timeUnit = timeUnit;
   }
+
   return sanitizedSpec;
 }
 
