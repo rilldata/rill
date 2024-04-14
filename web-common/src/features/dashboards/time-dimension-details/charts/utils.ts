@@ -38,7 +38,7 @@ export function getVegaSpec(
 }
 
 export function sanitizeSpecForTDD(
-  spec: VisualizationSpec,
+  spec,
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
@@ -46,19 +46,27 @@ export function sanitizeSpecForTDD(
 ): VisualizationSpec {
   if (!spec) return spec;
 
-  const sanitizedSpec: VisualizationSpec = structuredClone(spec);
+  /**
+   * Sub level types are not being exported from the vega-lite package.
+   * This makes it hard to modify the specs without breaking typescript
+   * interface. For now we have removed the types for the spec and will
+   * add them back when we have the support for it.
+   * More at https://github.com/vega/vega-lite/issues/9222
+   */
+
+  const sanitizedSpec = structuredClone(spec);
   let xEncoding;
   let yEncoding;
   if (sanitizedSpec.encoding) {
-    xEncoding = sanitizedSpec?.encoding?.x;
-    yEncoding = sanitizedSpec?.encoding?.y;
+    xEncoding = sanitizedSpec.encoding.x;
+    yEncoding = sanitizedSpec.encoding.y;
 
     xEncoding.scale = {
       domain: [xMin.toISOString(), xMax.toISOString()],
     };
   } else if (sanitizedSpec?.layer?.[0].encoding) {
-    xEncoding = sanitizedSpec?.layer?.[0].encoding?.x;
-    yEncoding = sanitizedSpec?.layer?.[0].encoding?.y;
+    xEncoding = sanitizedSpec.layer[0].encoding.x;
+    yEncoding = sanitizedSpec.layer[0].encoding.y;
   }
 
   // Set extents for x-axis
