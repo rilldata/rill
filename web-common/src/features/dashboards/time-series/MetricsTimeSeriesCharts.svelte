@@ -165,6 +165,7 @@
       interval,
       $timeControlsStore.selectedTimeRange?.name,
       $metricsView?.data?.defaultTimeRange,
+      $dashboardStore?.tdd.chartType,
     );
 
     if (adjustedChartValue?.start) {
