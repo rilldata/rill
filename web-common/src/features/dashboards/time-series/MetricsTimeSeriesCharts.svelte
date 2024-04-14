@@ -88,6 +88,7 @@
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
+  $: isCustomChart = tddChartType != TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
   $: renderedMeasures = $metricsView.data?.measures?.filter(
@@ -218,7 +219,11 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class:tdd-chart-header={isInTimeDimensionView} class="flex pl-1">
+  <div
+    class:tdd-chart-header={isInTimeDimensionView}
+    class:mb-6={isCustomChart}
+    class="flex pl-1"
+  >
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector
@@ -359,7 +364,7 @@
 
 <style lang="postcss">
   .tdd-chart-header {
-    @apply bg-slate-50 py-1 px-2 items-center h-7;
+    @apply bg-slate-50 py-1 px-2 items-center;
     @apply border border-slate-100 rounded-sm;
   }
 </style>

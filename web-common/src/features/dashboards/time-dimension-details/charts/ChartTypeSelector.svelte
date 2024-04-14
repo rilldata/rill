@@ -12,7 +12,6 @@
   export let isDimensional: boolean;
 
   const dimensionalCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
-  $: isCustomChart = chartType != TDDChart.DEFAULT;
 
   function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
     if (isDisabled) return;
@@ -42,7 +41,7 @@
   ];
 </script>
 
-<div class:mb-6={isCustomChart} class="chart-type-selector">
+<div class="chart-type-selector">
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
     {@const disabled = !isDimensional && dimensionalCharts.includes(id)}
