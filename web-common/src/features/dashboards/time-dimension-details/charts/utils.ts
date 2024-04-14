@@ -90,33 +90,20 @@ export function sanitizeSpecForTDD(
     chartType === TDDChart.GROUPED_BAR
   ) {
     // Set timeUnit for x-axis using timeGrain
-    switch (timeGrain) {
-      case V1TimeGrain.TIME_GRAIN_SECOND:
-        xEncoding.timeUnit = "yearmonthdatehoursminutesseconds";
-        break;
-      case V1TimeGrain.TIME_GRAIN_MINUTE:
-        xEncoding.timeUnit = "yearmonthdatehoursminutes";
-        break;
-      case V1TimeGrain.TIME_GRAIN_HOUR:
-        xEncoding.timeUnit = "yearmonthdatehours";
-        break;
-      case V1TimeGrain.TIME_GRAIN_DAY:
-        xEncoding.timeUnit = "yearmonthdate";
-        break;
-      case V1TimeGrain.TIME_GRAIN_WEEK:
-        xEncoding.timeUnit = "yearweek";
-        break;
-      case V1TimeGrain.TIME_GRAIN_MONTH:
-        xEncoding.timeUnit = "yearmonth";
-        break;
-      case V1TimeGrain.TIME_GRAIN_QUARTER:
-        xEncoding.timeUnit = "yearquarter";
-        break;
-      case V1TimeGrain.TIME_GRAIN_YEAR:
-        xEncoding.timeUnit = "year";
-        break;
-    }
+    const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
+    xEncoding.timeUnit = timeUnit;
   }
-
   return sanitizedSpec;
 }
+
+const timeGrainToVegaTimeUnitMap = {
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "yearmonthdatehours",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "yearmonthdate",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "yearweek",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "yearmonth",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "yearquarter",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
+};
