@@ -39,8 +39,11 @@
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
+  import { goto } from "$app/navigation";
+  import { getNextRoute } from "../../models/utils/navigate-to-next";
 
   export let sourceName: string;
+  export let open: boolean;
 
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
@@ -67,7 +70,8 @@
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceRoutes = useSourceRoutes($runtime.instanceId);
+  $: sourceRoutesQuery = useSourceRoutes($runtime.instanceId);
+  $: sourceRoutes = $sourceRoutesQuery.data ?? [];
   $: modelNames = useModelFileNames($runtime.instanceId);
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
@@ -81,12 +85,13 @@
   );
 
   const handleDeleteSource = async () => {
-    await deleteFileArtifact(
-      runtimeInstanceId,
-      filePath,
-      EntityType.Table,
-      $sourceRoutes.data ?? [],
-    );
+    try {
+      await deleteFileArtifact(runtimeInstanceId, filePath, EntityType.Table);
+
+      if (open) await goto(getNextRoute(sourceRoutes));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleCreateModel = async () => {

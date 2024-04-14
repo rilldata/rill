@@ -10,7 +10,7 @@ export async function createCustomDashboard(
     instanceId,
     getFileAPIPathFromNameAndType(newCustomDashboardName, EntityType.Dashboard),
     {
-      blob: "abc",
+      blob: `kind: dashboard\ncolumns: 10\ngap: 2\n`,
       createOnly: true,
     },
   );

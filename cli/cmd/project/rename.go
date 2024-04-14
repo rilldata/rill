@@ -32,7 +32,10 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+				name, err = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+				if err != nil {
+					return err
+				}
 			}
 
 			if ch.Interactive {
@@ -43,7 +46,11 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
-			if !cmdutil.ConfirmPrompt(msg, "", false) {
+			ok, err := cmdutil.ConfirmPrompt(msg, "", false)
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 

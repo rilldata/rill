@@ -13,7 +13,6 @@
   const { form } = formState;
 
   $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
-  $: console.log($hasSlackNotifier);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -59,14 +58,16 @@
     </FormSection>
   {:else}
     <FormSection title="Slack notifications">
-      <span class="text-sm text-slate-600">
-        Slack has not been configured for this project. Read the <a
-          href="https://docs.rilldata.com/reference/connectors/slack"
-          target="_blank"
-        >
-          docs
-        </a> to learn more.
-      </span>
+      <svelte:fragment slot="description">
+        <span class="text-sm text-slate-600">
+          Slack has not been configured for this project. Read the <a
+            href="https://docs.rilldata.com/explore/alerts/slack"
+            target="_blank"
+          >
+            docs
+          </a> to learn more.
+        </span>
+      </svelte:fragment>
     </FormSection>
   {/if}
   <FormSection

@@ -788,9 +788,9 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 	rows := q.Result.Data
 
 	require.Equal(t, q.Result.Schema.Fields[0].Name, "Domain")
-	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_Google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_Google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_Google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_google_Average bid price")
 
 	i := 0
 	require.Equal(t, "google.com", fieldsToString(rows[i], "Domain"))

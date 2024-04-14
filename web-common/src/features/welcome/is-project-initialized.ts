@@ -16,7 +16,7 @@ export function useIsProjectInitialized(instanceId: string) {
       query: {
         select: (data) => {
           // Return true if `rill.yaml` exists, else false
-          return data.paths.length === 1;
+          return data.files?.length === 1;
         },
         refetchOnWindowFocus: true,
       },
@@ -32,7 +32,7 @@ export async function isProjectInitialized(
   });
 
   // Return true if `rill.yaml` exists, else false
-  return data.paths.length === 1;
+  return data.files?.length === 1;
 }
 
 // V2 is an improvement because it uses the queryClient to cache the result
@@ -52,5 +52,5 @@ export async function isProjectInitializedV2(
   });
 
   // Return true if `rill.yaml` exists, else false
-  return rillYAMLFiles.paths.length === 1;
+  return rillYAMLFiles.files?.length === 1;
 }

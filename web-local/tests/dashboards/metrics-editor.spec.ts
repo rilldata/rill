@@ -43,7 +43,7 @@ test.describe("Metrics editor", () => {
 
     // the  button should be disabled.
     await expect(
-      await page.getByRole("button", { name: "Go to dashboard" }),
+      await page.getByRole("button", { name: "Preview" }),
     ).toBeDisabled();
 
     // the inspector should be empty.
@@ -74,7 +74,7 @@ test.describe("Metrics editor", () => {
 
     // go to teh dashboard and make sure the metrics and dimensions are there.
 
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.
     await expect(await page.getByText("Total Records 100.0k")).toBeVisible();
@@ -85,6 +85,6 @@ test.describe("Metrics editor", () => {
     ).toBeVisible();
 
     // go back to the metrics page.
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
   });
 });

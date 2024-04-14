@@ -21,8 +21,11 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel, useModelRoutes } from "../selectors";
+  import { goto } from "$app/navigation";
+  import { getNextRoute } from "../utils/navigate-to-next";
 
   export let modelName: string;
+  export let open: boolean;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
@@ -32,7 +35,8 @@
 
   const { customDashboards } = featureFlags;
 
-  $: modelRoutes = useModelRoutes($runtime.instanceId);
+  $: modelRoutesQuery = useModelRoutes($runtime.instanceId);
+  $: modelRoutes = $modelRoutesQuery.data ?? [];
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
@@ -55,13 +59,16 @@
   );
 
   const handleDeleteModel = async (modelName: string) => {
-    if ($modelRoutes.data) {
+    try {
       await deleteFileArtifact(
         $runtime.instanceId,
         getFileAPIPathFromNameAndType(modelName, EntityType.Model),
-        EntityType.Model,
-        $modelRoutes.data,
+        EntityType.MetricsDefinition,
       );
+
+      if (open) await goto(getNextRoute(modelRoutes));
+    } catch (e) {
+      console.error(e);
     }
   };
 </script>

@@ -36,12 +36,20 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		glob = "**"
 	}
 
-	paths, err := s.runtime.ListFiles(ctx, req.InstanceId, glob)
+	files, err := s.runtime.ListFiles(ctx, req.InstanceId, glob)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	return &runtimev1.ListFilesResponse{Paths: paths}, nil
+	var entries []*runtimev1.DirEntry
+	for _, file := range files {
+		entries = append(entries, &runtimev1.DirEntry{
+			Path:  file.Path,
+			IsDir: file.IsDir,
+		})
+	}
+
+	return &runtimev1.ListFilesResponse{Files: entries}, nil
 }
 
 // WatchFiles implements RuntimeService.
@@ -62,14 +70,15 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 	defer release()
 
 	if req.Replay {
-		paths, err := repo.ListRecursive(ss.Context(), "**")
+		files, err := repo.ListRecursive(ss.Context(), "**", false)
 		if err != nil {
 			return err
 		}
-		for _, p := range paths {
+		for _, f := range files {
 			err = ss.Send(&runtimev1.WatchFilesResponse{
 				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
-				Path:  p,
+				Path:  f.Path,
+				IsDir: f.IsDir,
 			})
 			if err != nil {
 				return err
@@ -79,14 +88,13 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 
 	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) {
 		for _, event := range events {
-			if !event.Dir {
-				err := ss.Send(&runtimev1.WatchFilesResponse{
-					Event: event.Type,
-					Path:  event.Path,
-				})
-				if err != nil {
-					s.logger.Info("failed to send watch event", zap.Error(err))
-				}
+			err := ss.Send(&runtimev1.WatchFilesResponse{
+				Event: event.Type,
+				Path:  event.Path,
+				IsDir: event.Dir,
+			})
+			if err != nil {
+				s.logger.Info("failed to send watch event", zap.Error(err))
 			}
 		}
 	})
@@ -134,6 +142,27 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 	}
 
 	return &runtimev1.PutFileResponse{}, nil
+}
+
+// CreateDirectory implements RuntimeService.
+func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirectoryRequest) (*runtimev1.CreateDirectoryResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.path", req.Path),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
+	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.CreateDirectoryResponse{}, nil
 }
 
 // DeleteFile implements RuntimeService.

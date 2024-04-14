@@ -5,6 +5,7 @@
     createAdminServiceCreateAlert,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
     AlertFormValues,
@@ -70,7 +71,7 @@
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
       snooze: SnoozeOptions[0].value, // Defaults to `Off`
-      enableSlackNotification: true,
+      enableSlackNotification: false,
       slackChannels: [
         {
           channel: "",
@@ -142,6 +143,12 @@
       }
     },
   });
+
+  const { form } = formState;
+  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: if ($hasSlackNotifier.data) {
+    $form["enableSlackNotification"] = true;
+  }
 </script>
 
 <Dialog

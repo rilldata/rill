@@ -9,7 +9,7 @@ import (
 	"path"
 	"path/filepath"
 
-	doublestar "github.com/bmatcuk/doublestar/v4"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -51,7 +51,7 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, error) {
+func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	err := c.cloneOrPull(ctx, true)
 	if err != nil {
 		return nil, err
@@ -60,21 +60,23 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, 
 	fsRoot := os.DirFS(c.projectdir)
 	glob = path.Clean(path.Join("./", glob))
 
-	var paths []string
+	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
-		// Don't track directories
-		if d.IsDir() {
+		if skipDirs && d.IsDir() {
 			return nil
 		}
 
 		// Exit if we reached the limit
-		if len(paths) == limit {
+		if len(entries) == limit {
 			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
 		}
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		paths = append(paths, p)
+		entries = append(entries, drivers.DirEntry{
+			Path:  p,
+			IsDir: d.IsDir(),
+		})
 
 		return nil
 	})
@@ -82,7 +84,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, 
 		return nil, err
 	}
 
-	return paths, nil
+	return entries, nil
 }
 
 // Get implements drivers.RepoStore.
@@ -123,17 +125,21 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 
 // Put implements drivers.RepoStore.
 func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader) error {
-	return fmt.Errorf("Put operation is unsupported")
+	return fmt.Errorf("put operation is unsupported")
+}
+
+func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
+	return fmt.Errorf("make dir operation is unsupported")
 }
 
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error {
-	return fmt.Errorf("Rename operation is unsupported")
+	return fmt.Errorf("rename operation is unsupported")
 }
 
 // Delete implements drivers.RepoStore.
 func (c *connection) Delete(ctx context.Context, filePath string) error {
-	return fmt.Errorf("Delete operation is unsupported")
+	return fmt.Errorf("delete operation is unsupported")
 }
 
 // Sync implements drivers.RepoStore.
