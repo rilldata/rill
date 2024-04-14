@@ -25,7 +25,6 @@
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
     xMax,
-    chartType,
   );
 </script>
 

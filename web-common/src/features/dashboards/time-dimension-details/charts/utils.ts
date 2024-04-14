@@ -4,7 +4,7 @@ import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { VisualizationSpec } from "svelte-vega";
-import { TDDChart, TDDCustomCharts } from "../types";
+import { TDDCustomCharts } from "../types";
 
 export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
   return dimensionData
@@ -42,7 +42,6 @@ export function sanitizeSpecForTDD(
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
-  chartType: TDDCustomCharts,
 ): VisualizationSpec {
   if (!spec) return spec;
 
@@ -86,14 +85,9 @@ export function sanitizeSpecForTDD(
   };
   yEncoding.axis = { title: "" };
 
-  if (
-    chartType === TDDChart.STACKED_BAR ||
-    chartType === TDDChart.GROUPED_BAR
-  ) {
-    // Set timeUnit for x-axis using timeGrain
-    const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
-    xEncoding.timeUnit = timeUnit;
-  }
+  // Set timeUnit for x-axis using timeGrain
+  const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
+  xEncoding.timeUnit = timeUnit;
 
   return sanitizedSpec;
 }
