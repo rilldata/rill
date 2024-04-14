@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "The definition for dashboard metrics view",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "The display name for the dashboard."
+    },
+    "model": {
+      "type": "string",
+      "description": "The model name powering the dashboard; used for Rill models. Required if 'table' is not provided."
+    },
+    "table": {
+      "type": "string",
+      "description": "The table name powering the dashboard; used instead of 'model' for dashboards created directly from sources or external OLAP tables. Required if 'model' is not provided."
+    },
+    "timeseries": {
+      "type": "string",
+      "description": "The timestamp column from your model for x-axis data in line charts. Optional; if not specified, line charts will not appear."
+    },
+    "default_time_range": {
+      "type": "string",
+      "description": "The default time range shown when a user initially loads the dashboard. Defaults to the full time range of the timeseries column if not specified."
+    },
+    "smallest_time_grain": {
+      "type": "string",
+      "enum": ["millisecond", "second", "minute", "hour", "day", "week", "month", "quarter", "year"],
+      "description": "The smallest time granularity allowed for viewing in the dashboard."
+    },
+    "available_time_zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Time zones to be pinned at the top of the time zone selector, making the dashboard time zone aware."
+    },
+    "first_day_of_week": {
+      "type": "integer",
+      "description": "The first day of the week for time grain aggregation. 1 for Monday through 7 for Sunday."
+    },
+    "first_month_of_year": {
+      "type": "integer",
+      "description": "The first month of the year for time grain aggregation. 1 for January through 12 for December."
+    },
+    "default_theme": {
+      "type": "string",
+      "description": "The default theme to apply to the dashboard. A valid theme must be defined in the project."
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A stable identifier for the dimension."
+          },
+          "label": {
+            "type": "string",
+            "description": "A label for the dashboard dimension."
+          },
+          "column": {
+            "type": "string",
+            "description": "A categorical column for the dimension. Required if 'expression' is not provided."
+          },
+          "expression": {
+            "type": "string",
+            "description": "A non-aggregate expression for the dimension. Required if 'column' is not provided."
+          },
+          "description": {
+            "type": "string",
+            "description": "A freeform text description of the dimension."
+          },
+          "ignore": {
+            "type": "boolean",
+            "description": "If true, hides the dimension from the dashboard."
+          },
+          "unnest": {
+            "type": "boolean",
+            "description": "Allows multi-valued dimensions to be unnested, switching filters to 'contains' instead of exact match."
+          }
+        },
+        "required": ["name"]
+      },
+      "description": "Definitions of dimensions for exploring segments and filtering the dashboard."
+    },
+    "measures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A stable identifier for the measure."
+          },
+          "label": {
+            "type": "string",
+            "description": "A label for the dashboard measure."
+          },
+          "expression": {
+            "type": "string",
+            "description": "An expression combining operators and functions for aggregations."
+          },
+          "description": {
+            "type": "string",
+            "description": "A freeform text description of the measure."
+          },
+          "format_preset": {
+            "type": "string",
+            "enum": ["humanize", "none", "currency_usd", "currency_eur", "percentage", "interval_ms"],
+            "description": "Controls the formatting of this measure in the dashboard."
+          },
+          "format_d3": {
+            "type": "string",
+            "description": "Controls the formatting of this measure using a d3-format string."
+          },
+          "ignore": {
+            "type": "boolean",
+            "description": "If true, hides the measure from the dashboard."
+          },
+          "valid_percent_of_total": {
+            "type": "boolean",
+            "description": "Indicates whether percent-of-total values should be rendered for this measure."
+          }
+        },
+        "required": ["name"]
+      },
+      "description": "Numeric aggregates of columns from your data model."
+    }
+  },
+  "required": ["title", "dimensions", "measures"]
+}
