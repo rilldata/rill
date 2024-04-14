@@ -61,12 +61,13 @@
   {#if showModels}
     <ol transition:slide={{ duration }} id="assets-model-list">
       {#each modelNames as modelName (modelName)}
+        {@const open = $page.url.pathname === `/model/${modelName}`}
         <li animate:flip={{ duration }} aria-label={modelName}>
           <NavigationEntry
             expandable
             name={modelName}
             href={`/model/${modelName}`}
-            open={$page.url.pathname === `/model/${modelName}`}
+            {open}
           >
             <div transition:slide={{ duration }} slot="more">
               <ColumnProfile indentLevel={1} objectName={modelName} />
@@ -75,6 +76,7 @@
             <ModelTooltip slot="tooltip-content" {modelName} />
 
             <ModelMenuItems
+              {open}
               slot="menu-items"
               {modelName}
               on:rename-asset={() => {

@@ -34,7 +34,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
+				orgName, err = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
+				if err != nil {
+					return err
+				}
 			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})

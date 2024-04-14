@@ -49,4 +49,4 @@ For more details about additional capabilities and/or how to utilize more advanc
 - **[Filters & Comparisons](filters/filters.md)**
 - **[Bookmarks & Sharing](bookmarks.md)**
 - **[Exports](exports.md)**
-- **[Alerts](alerts.md)**
+- **[Alerts](/explore/alerts/alerts.md)**

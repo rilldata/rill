@@ -218,7 +218,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class="flex pl-1">
+  <div class:tdd-chart-header={isInTimeDimensionView} class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector
@@ -356,3 +356,10 @@
     </div>
   {/if}
 </TimeSeriesChartContainer>
+
+<style lang="postcss">
+  .tdd-chart-header {
+    @apply bg-slate-50 py-1 px-2 items-center h-7;
+    @apply border border-slate-100 rounded-sm;
+  }
+</style>

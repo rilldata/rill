@@ -130,7 +130,7 @@ export function useCreateDashboardFromTableUIAction(
         });
       }
 
-      // Go to dashboard
+      // Preview
       await goto(`/dashboard/${newDashboardName}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,

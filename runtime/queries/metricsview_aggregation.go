@@ -40,8 +40,6 @@ type MetricsViewAggregation struct {
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
 
-var maxPivotCells = 1_000_000
-
 var _ runtime.Query = &MetricsViewAggregation{}
 
 func (q *MetricsViewAggregation) Key() string {
@@ -81,6 +79,11 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
+	cfg, err := rt.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
@@ -104,7 +107,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Build query
-	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security)
+	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security, cfg.PivotCellLimit)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -151,9 +154,9 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 					return err
 				}
 
-				if count > maxPivotCells/q.cols() {
+				if count > int(cfg.PivotCellLimit)/q.cols() {
 					res.Close()
-					return fmt.Errorf("PIVOT cells count exceeded %d", maxPivotCells)
+					return fmt.Errorf("PIVOT cells count exceeded %d", cfg.PivotCellLimit)
 				}
 			}
 			res.Close()
@@ -189,10 +192,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer rows.Close()
 
-	return q.pivotDruid(ctx, rows, mv)
+	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit)
 }
 
-func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec, pivotCellLimit int64) error {
 	pivotDB, err := sqlx.Connect("duckdb", "")
 	if err != nil {
 		return err
@@ -243,7 +246,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				scanValues[i] = new(interface{})
 			}
 			count := 0
-			maxCount := maxPivotCells / q.cols()
+			maxCount := int(pivotCellLimit) / q.cols()
 
 			for rows.Next() {
 				err = rows.Scan(scanValues...)
@@ -259,7 +262,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				}
 				count++
 				if count > maxCount {
-					return fmt.Errorf("PIVOT cells count limit exceeded %d", maxPivotCells)
+					return fmt.Errorf("PIVOT cells count limit exceeded %d", pivotCellLimit)
 				}
 
 				if count >= batchSize {
@@ -308,6 +311,10 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
 	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
 	aliasesMap := make(map[string]string)
+	pivotMap := make(map[string]bool)
+	for _, p := range q.PivotOn {
+		pivotMap[p] = true
+	}
 	if q.Exporting {
 		for _, e := range mv.Measures {
 			aliasesMap[e.Name] = e.Name
@@ -326,7 +333,11 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", safeName(d.Name), safeName(aliasesMap[d.Name])))
+				expr := safeName(d.Name)
+				if pivotMap[d.Name] {
+					expr = fmt.Sprintf("lower(%s)", safeName(d.Name))
+				}
+				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", expr, safeName(aliasesMap[d.Name])))
 			} else {
 				alias := d.Name
 				if d.Alias != "" {
@@ -463,7 +474,7 @@ func (q *MetricsViewAggregation) cols() int {
 	return len(q.Dimensions) + len(q.Measures)
 }
 
-func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, pivotCellLimit int64) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
@@ -628,7 +639,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	var sql string
 	if len(q.PivotOn) > 0 {
-		l := maxPivotCells / q.cols()
+		l := int(pivotCellLimit) / q.cols()
 		limitClause = fmt.Sprintf("LIMIT %d", l+1)
 
 		if q.Offset != 0 {

@@ -78,6 +78,14 @@ service RuntimeService {
     };
   }
 
+  // CreateDirectory create a directory for the given path
+  rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/create-dir/-/{path=**}",
+      body: "*"
+    };
+  }
+
   // DeleteFile deletes a file from a repo
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
     option (google.api.http) = {delete: "/v1/instances/{instance_id}/files/-/{path=**}"};
@@ -298,9 +306,6 @@ message Instance {
   map<string, string> annotations = 14;
   bool embed_catalog = 6;
   bool watch_repo = 15;
-  bool stage_changes = 16;
-  bool model_default_materialize = 17;
-  uint32 model_materialize_delay_seconds = 18;
 }
  
 message Connector {
@@ -351,9 +356,6 @@ message CreateInstanceRequest {
   map<string, string> annotations = 9;
   bool embed_catalog = 6;
   bool watch_repo = 11;
-  bool stage_changes = 12;
-  bool model_default_materialize = 13;
-  uint32 model_materialize_delay_seconds = 14;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -364,7 +366,6 @@ message CreateInstanceResponse {
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional bool drop_olap = 2;
 }
 
 // Response message for RuntimeService.DeleteInstance
@@ -384,9 +385,6 @@ message EditInstanceRequest {
   map<string, string> annotations = 10;
   optional bool embed_catalog = 6;
   optional bool watch_repo = 11;
-  optional bool stage_changes = 12;
-  optional bool model_default_materialize = 13;
-  optional uint32 model_materialize_delay_seconds = 14;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -406,7 +404,12 @@ message ListFilesRequest {
 
 // Response message for RuntimeService.ListFiles
 message ListFilesResponse {
-  repeated string paths = 1;
+  repeated DirEntry files = 1;
+}
+
+message DirEntry {
+  string path = 1;
+  bool is_dir = 2;
 }
 
 // FileEvent describes a file change.
@@ -426,6 +429,7 @@ message WatchFilesRequest {
 message WatchFilesResponse {
   FileEvent event = 1;
   string path = 2;
+  bool is_dir = 3;
 }
 
 // Request message for RuntimeService.GetFile
@@ -434,7 +438,7 @@ message GetFileRequest {
   string path = 2 [(validate.rules).string.min_len = 1];
 }
 
-// Reponse message for RuntimeService.GetFile
+// Response message for RuntimeService.GetFile
 message GetFileResponse {
   string blob = 1;
   google.protobuf.Timestamp updated_on = 2;
@@ -456,6 +460,15 @@ message PutFileRequest {
 message PutFileResponse {
   string file_path = 1; // TODO: Redundant, should be removed (but frontend currently uses it)
 }
+
+// Request message for RuntimeService.CreateDirectory
+message CreateDirectoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string path = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.CreateDirectory
+message CreateDirectoryResponse {}
 
 // Request message for RuntimeService.DeleteFile
 message DeleteFileRequest {
