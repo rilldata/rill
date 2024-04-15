@@ -42,8 +42,13 @@
 
   const editModel = async () => {
     if (!referenceModelName) return;
+    const artifact = fileArtifacts.findFileArtifact(
+      ResourceKind.Model,
+      referenceModelName,
+    );
+    if (!artifact) return;
     const previousActiveEntity = $appScreen?.type;
-    await goto(`/model/${referenceModelName}`);
+    await goto(`/files/${artifact.path}`);
     await behaviourEvent.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,

@@ -17,7 +17,6 @@ import {
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
 import { useDashboardFileNames } from "../../dashboards/selectors";
-import { removeLeadingSlash } from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
@@ -128,7 +127,7 @@ export function useCreateDashboardFromTableUIAction(
       }
 
       // Preview
-      await goto(`/files/${removeLeadingSlash(newFilePath)}`);
+      await goto(`/files/${newFilePath}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,

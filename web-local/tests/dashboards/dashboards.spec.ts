@@ -23,9 +23,9 @@ import { waitForFileEntry } from "../utils/waitHelpers";
 
 test.describe("dashboard", () => {
   test("Autogenerate dashboard from source", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createDashboardFromSource(page, "AdBids.yaml");
-    await waitForFileEntry(page, `sources/AdBids_dashboard.yaml`, true);
+    await waitForFileEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
     await page.getByRole("button", { name: "Preview" }).click();
     await assertAdBidsDashboard(page);
   });
@@ -33,7 +33,7 @@ test.describe("dashboard", () => {
   test("Autogenerate dashboard from model", async ({ page }) => {
     await createAdBidsModel(page);
     await Promise.all([
-      waitForFileEntry(page, `models/AdBids_model_dashboard.yaml`, true),
+      waitForFileEntry(page, `/dashboards/AdBids_model_dashboard.yaml`, true),
       createDashboardFromModel(page, "AdBids_model.sql"),
     ]);
     await Promise.all([
