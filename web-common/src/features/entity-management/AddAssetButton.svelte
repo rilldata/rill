@@ -18,6 +18,7 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { featureFlags } from "../feature-flags";
+  import { directoryState } from "../file-explorer/directory-store";
   import { handleEntityCreate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import { removeLeadingSlash } from "./entity-mappers";
@@ -101,6 +102,10 @@
         createOnly: true,
       },
     });
+
+    // Expand the directory to show the new folder
+    const pathWithLeadingSlash = `/${path}`;
+    directoryState.expand(pathWithLeadingSlash);
   }
 
   /**

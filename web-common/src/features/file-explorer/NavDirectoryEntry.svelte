@@ -67,6 +67,10 @@
         createOnly: true,
       },
     });
+
+    // Expand the directory to show the new folder
+    const pathWithLeadingSlash = `/${path}`;
+    directoryState.expand(pathWithLeadingSlash);
   }
 </script>
 
