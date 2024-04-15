@@ -4,8 +4,9 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -21,9 +22,10 @@
   export let isDir: boolean;
 
   let error: string;
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: allNamesQuery = useAllFileNames(queryClient, runtimeInstanceId);
 
   const [folder, assetName] = splitFolderAndName(filePath);
 

@@ -15,11 +15,10 @@
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { extractFileName, splitFolderAndName } from "../extract-file-name";
+  import { extractFileName } from "../extract-file-name";
 
   export let sourcePath: string | null;
 
-  $: [folder] = splitFolderAndName(sourcePath ?? "");
   $: sourceName = extractFileName(sourcePath ?? "");
 
   const queryClient = useQueryClient();
@@ -41,7 +40,7 @@
           "",
           "",
           sourceName,
-          folder,
+          "dashboards",
           BehaviourEventMedium.Button,
           MetricsEventSpace.Modal,
         )

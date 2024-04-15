@@ -4,6 +4,7 @@ import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceGetFile,
   runtimeServiceListFiles,
+  V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 
@@ -82,20 +83,56 @@ export function useMainEntityFiles(
   );
 }
 
+export async function fetchAllFiles(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const filesResp = await queryClient.fetchQuery<V1ListFilesResponse>({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+    queryFn: () => {
+      return runtimeServiceListFiles(instanceId, undefined);
+    },
+  });
+  return filesResp.files ?? [];
+}
+
+export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
+  return createRuntimeServiceListFiles(instanceId, undefined, {
+    query: {
+      queryClient,
+      select: (data) =>
+        data.files
+          ?.filter((f) => f.isDir)
+          .map((f) => f.path?.split("/").pop() ?? "") ?? [],
+    },
+  });
+}
+
+export async function fetchAllFileNames(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const files = await fetchAllFiles(queryClient, instanceId);
+  return files
+    .filter((f) => !f.isDir)
+    .map((f) => f.path?.split("/").pop() ?? "")
+    .filter(Boolean);
+}
+
 export async function fetchMainEntityFiles(
   queryClient: QueryClient,
   instanceId: string,
 ) {
-  const resp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
-      glob: "**/*.{yaml,yml,sql}",
-    }),
-    queryFn: () =>
-      runtimeServiceListFiles(instanceId, {
-        glob: "**/*.{yaml,yml,sql}",
-      }),
-  });
-  return resp.files?.filter((f) => !f.isDir).map((f) => f.path ?? "") ?? [];
+  const files = await fetchAllFiles(queryClient, instanceId);
+  return files
+    .filter(
+      (f) =>
+        !f.isDir &&
+        (f.path?.endsWith(".sql") ||
+          f.path?.endsWith(".yml") ||
+          f.path?.endsWith(".yaml")),
+    )
+    .map((f) => f.path ?? "");
 }
 
 export async function fetchFileContent(
@@ -124,7 +161,7 @@ export function useFileNamesInDirectory(
         select: (data) => {
           const files = data.files?.filter((file) => !file.isDir);
           const fileNames = files?.map((file) => {
-            return file.path?.replace(`/${directoryPath}/`, "") ?? "";
+            return file.path?.replace(`${directoryPath}/`, "") ?? "";
           });
           const sortedFileNames = fileNames?.sort((fileNameA, fileNameB) =>
             fileNameA.localeCompare(fileNameB, undefined, {
@@ -152,7 +189,7 @@ export function useDirectoryNamesInDirectory(
         select: (data) => {
           const files = data.files?.filter((file) => file.isDir);
           const directoryNames = files?.map((file) => {
-            return file.path?.replace(`/${directoryPath}/`, "") ?? "";
+            return file.path?.replace(`${directoryPath}/`, "") ?? "";
           });
           const sortedDirectoryNames = directoryNames?.sort(
             (dirNameA, dirNameB) =>

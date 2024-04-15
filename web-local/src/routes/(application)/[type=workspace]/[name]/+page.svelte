@@ -19,7 +19,7 @@
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
-  import { createModelFromSourceV2 } from "@rilldata/web-common/features/sources/createModel";
+  import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
@@ -212,7 +212,7 @@
   }
 
   async function handleCreateModelFromSource() {
-    const [newModelPath, newModelName] = await createModelFromSourceV2(
+    const [newModelPath, newModelName] = await createModelFromSource(
       queryClient,
       assetName,
       tableName ?? "",

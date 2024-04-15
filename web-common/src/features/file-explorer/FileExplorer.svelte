@@ -14,7 +14,6 @@
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import NavDirectory from "./NavDirectory.svelte";
   import { transformFileList } from "./transform-file-list";
 
@@ -25,23 +24,19 @@
         if (!data || !data.files?.length) return;
 
         const files = data.files
-          // remove leading slash
-          .map((file) => ({
-            path: file.path?.slice(1) ?? "",
-            isDir: !!file.isDir,
-          }))
           // sort alphabetically case-insensitive
-          .sort((a, b) =>
-            a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
+          .sort(
+            (a, b) =>
+              a.path?.localeCompare(b.path ?? "", undefined, {
+                sensitivity: "base",
+              }) ?? 0,
           )
           // remove dotfiles and dot directories at the top level
-          .filter((file) => !file.path.startsWith("."))
+          .filter((file) => !file.path?.startsWith("."))
           // remove dotfiles and dot directories in subdirectories
-          .filter((file) => !file.path.includes("/."));
+          .filter((file) => !file.path?.includes("/."));
 
-        const fileTree = transformFileList(files);
-
-        return fileTree;
+        return transformFileList(files);
       },
     },
   });
@@ -80,7 +75,7 @@
       await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files/${removeLeadingSlash(newFilePath)}`);
+        await goto(`/files/${newFilePath}`);
       }
     }
   }

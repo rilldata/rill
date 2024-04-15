@@ -104,6 +104,9 @@ export function getLabel(entityType: EntityType) {
 }
 
 // Remove a leading slash, if it exists
+// This is needed in 2 places right now,
+// 1. In certain backend APIs where path is part of the url.
+//    Leading slash leads to issues where the end point redirects to one without the slash.
 export function removeLeadingSlash(path: string): string {
   return path.replace(/^\//, "");
 }

@@ -1,47 +1,98 @@
-export const NEW_MODEL_FILE_CONTENT = `select a, b, c
+import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { get } from "svelte/store";
+
+export async function handleEntityCreate(kind: ResourceKind) {
+  if (!(kind in ResourceKindMap)) return;
+  const instanceId = get(runtime).instanceId;
+  const allNames = await fetchAllFileNames(queryClient, instanceId);
+  const newName = getName("baseName", allNames);
+  const { name, folder, baseContent, extension } = ResourceKindMap[kind];
+
+  const newPath = `${folder ?? name + "s"}/${newName}${extension ?? ".yaml"}`;
+
+  await runtimeServicePutFile(instanceId, newPath, {
+    blob: baseContent,
+    create: true,
+    createOnly: true,
+  });
+  return `/files/${newPath}`;
+}
+
+const ResourceKindMap: Record<
+  ResourceKind,
+  {
+    name: string;
+    folder?: string; // adds "s" to name by default
+    baseContent: string;
+    extension?: string;
+  }
+> = {
+  [ResourceKind.ProjectParser]: { baseContent: "", name: "" },
+  [ResourceKind.Source]: {
+    name: "source",
+    baseContent: "",
+  },
+  [ResourceKind.Model]: {
+    name: "model",
+    extension: ".sql",
+    baseContent: `-- @kind: model
+select a, b, c
 from table
-`;
+`,
+  },
+  [ResourceKind.MetricsView]: {
+    name: "dashboard",
+    baseContent: `kind: metrics_view
 
-export const NEW_DASHBOARD_FILE_CONTENT = `kind: dashboard
-
-title: Dashboard Title
-table: table_name
-timeseries: timestamp_column
-default_time_range: P7D
-dimensions:
-  - name: dimension_name
-    label: Dimension Name
-    column: column_name
-    description: Description
-measures:
-  - label: Measure Label
-    expression: count(*)
-`;
-
-export const NEW_API_FILE_CONTENT = `kind: api
+`,
+  },
+  [ResourceKind.API]: {
+    name: "api",
+    baseContent: `kind: api
 
 sql:
   select a, b, c
   from table
-`;
-
-export const NEW_CHART_FILE_CONTENT = `kind: chart
+`,
+  },
+  [ResourceKind.Chart]: {
+    name: "chart",
+    baseContent: `kind: chart
 
 ...
-`;
-
-export const NEW_THEME_FILE_CONTENT = `kind: theme
+`,
+  },
+  [ResourceKind.Dashboard]: {
+    name: "custom-dashboard",
+    baseContent: `kind: dashboard
+    
+...`,
+  },
+  [ResourceKind.Theme]: {
+    name: "theme",
+    baseContent: `kind: theme
 colors:
   primary: crimson 
   secondary: lime 
-`;
-
-export const NEW_REPORT_FILE_CONTENT = `kind: report
-
-...
-`;
-
-export const NEW_ALERT_FILE_CONTENT = `kind: alert
+`,
+  },
+  [ResourceKind.Report]: {
+    name: "report",
+    baseContent: `kind: report
 
 ...
-`;
+`,
+  },
+  [ResourceKind.Alert]: {
+    name: "alert",
+    baseContent: `kind: alert
+
+...
+`,
+  },
+};

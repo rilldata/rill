@@ -108,12 +108,7 @@
 </Tooltip>
 
 {#if availableDashboards?.length === 0}
-  <CreateDashboardButton
-    {collapse}
-    hasError={modelHasError}
-    {modelName}
-    {filePath}
-  />
+  <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
 {:else if availableDashboards?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button

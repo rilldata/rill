@@ -12,7 +12,9 @@ export async function renameFileArtifact(
   fromPath: string,
   toPath: string,
 ) {
+  // fromPath = removeLeadingSlash(fromPath);
   const fromName = extractFileName(fromPath);
+  // toPath = removeLeadingSlash(toPath);
   const toName = extractFileName(toPath);
 
   try {

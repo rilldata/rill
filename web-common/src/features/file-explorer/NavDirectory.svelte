@@ -31,6 +31,7 @@
 {/if}
 
 {#each directory.files as file}
-  {@const filePath = directory.path ? `${directory.path}/${file}` : file}
+  {@const filePath =
+    directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
   <NavFile {filePath} {onRename} {onDelete} {onMouseDown} {onMouseUp} />
 {/each}

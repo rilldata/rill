@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
@@ -13,7 +14,7 @@
   import { WandIcon } from "lucide-svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSourceV2 } from "../sources/createModel";
+  import { createModelFromSource } from "../sources/createModel";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   export let connector: string;
@@ -30,7 +31,7 @@
   const handleCreateModel = async () => {
     try {
       const previousActiveEntity = $appScreen?.type;
-      const [newModelPath, newModelName] = await createModelFromSourceV2(
+      const [newModelPath, newModelName] = await createModelFromSource(
         queryClient,
         tableName,
         tableName,
@@ -55,7 +56,7 @@
     database,
     databaseSchema,
     tableName,
-    "models",
+    "dashboards",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );

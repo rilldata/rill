@@ -1,4 +1,3 @@
-import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
 import {
   fetchFileContent,
@@ -113,9 +112,7 @@ export class FileArtifact {
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []
-          ).filter(
-            (e) => e.filePath && removeLeadingSlash(e.filePath) === this.path,
-          ),
+          ).filter((e) => e.filePath === this.path),
           ...(resource.data?.meta?.reconcileError
             ? [
                 {
@@ -226,9 +223,9 @@ export class FileArtifacts {
     }
 
     const files = await fetchMainEntityFiles(queryClient, instanceId);
-    const missingFiles = files
-      .map(removeLeadingSlash)
-      .filter((f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind);
+    const missingFiles = files.filter(
+      (f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind,
+    );
     await Promise.all(
       missingFiles.map((filePath) =>
         fetchFileContent(queryClient, instanceId, filePath).then(
@@ -245,7 +242,6 @@ export class FileArtifacts {
   }
 
   public async fileUpdated(filePath: string) {
-    filePath = removeLeadingSlash(filePath);
     if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
     this.artifacts[filePath] ??= new FileArtifact(filePath);
@@ -266,21 +262,21 @@ export class FileArtifacts {
   }
 
   public updateArtifacts(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
   public updateReconciling(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
   public updateLastUpdated(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
@@ -289,7 +285,7 @@ export class FileArtifacts {
   public wasRenaming(resource: V1Resource) {
     const finishedRename = !resource.meta?.renamedFrom;
     return (
-      resource.meta?.filePaths?.map(removeLeadingSlash).some((filePath) => {
+      resource.meta?.filePaths?.some((filePath) => {
         return this.artifacts[filePath].renaming && finishedRename;
       }) ?? false
     );
@@ -299,7 +295,7 @@ export class FileArtifacts {
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
   public deleteResource(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath]?.deleteResource();
     });
   }
@@ -307,7 +303,6 @@ export class FileArtifacts {
   // Selectors
 
   public getFileArtifact(filePath: string) {
-    filePath = removeLeadingSlash(filePath);
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     return this.artifacts[filePath];
   }

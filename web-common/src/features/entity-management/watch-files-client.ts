@@ -7,7 +7,6 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
-import { removeLeadingSlash } from "./entity-mappers";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export function createWatchFilesClient() {
@@ -22,22 +21,21 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
   if (!res?.path || res.path.includes(".db")) return;
 
   const instanceId = get(runtime).instanceId;
-  const cleanedPath = removeLeadingSlash(res.path);
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`
   switch (res.event) {
     case "FILE_EVENT_WRITE":
       void queryClient.resetQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
+        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
       );
-      fileArtifacts.fileUpdated(cleanedPath);
+      fileArtifacts.fileUpdated(res.path);
       break;
 
     case "FILE_EVENT_DELETE":
       void queryClient.resetQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
+        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
       );
-      fileArtifacts.fileDeleted(cleanedPath);
+      fileArtifacts.fileDeleted(res.path);
       break;
   }
   // TODO: should this be throttled?

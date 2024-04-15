@@ -6,7 +6,6 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import {
     useIsLocalFileConnector,
     useSourceFromYaml,
@@ -27,7 +26,7 @@
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSourceV2 } from "../createModel";
+  import { createModelFromSource } from "../createModel";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
@@ -35,7 +34,6 @@
 
   export let filePath: string;
 
-  $: [folder] = splitFolderAndName(filePath);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -66,7 +64,7 @@
     "",
     "",
     tableName,
-    folder,
+    "dashboards",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -74,11 +72,11 @@
   const handleCreateModel = async () => {
     try {
       const previousActiveEntity = $appScreen?.type;
-      const [newModelPath, newModelName] = await createModelFromSourceV2(
+      const [newModelPath, newModelName] = await createModelFromSource(
         queryClient,
         sourceName,
         tableName,
-        folder,
+        "models",
         true,
       );
       await goto(`/files/${newModelPath}`);

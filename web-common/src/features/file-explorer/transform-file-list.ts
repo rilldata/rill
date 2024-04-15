@@ -10,13 +10,14 @@ export interface Directory {
 export function transformFileList(files: V1DirEntry[]): Directory {
   const rootDirectory: Directory = {
     name: "",
-    path: "",
+    path: "/",
     directories: [],
     files: [],
   };
 
   for (const file of files) {
     const parts = file.path?.split("/") ?? [];
+    if (parts[0] === "") parts.shift(); // remove leading empty entry
     if (parts.length === 0) continue;
 
     const fileName = parts.pop();
@@ -25,7 +26,7 @@ export function transformFileList(files: V1DirEntry[]): Directory {
     parts.reduce((accPath, directoryName) => {
       const directoryPath = accPath
         ? `${accPath}/${directoryName}`
-        : directoryName;
+        : "/" + directoryName;
       let subDirectory = currentDirectory.directories.find(
         (dir) => dir.path === directoryPath,
       );

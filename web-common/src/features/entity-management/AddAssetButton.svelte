@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
@@ -17,23 +18,9 @@
     createRuntimeServicePutFile,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useAlertFileNames } from "../alerts/selectors";
-  import { useAPIFileNames } from "../apis/selectors";
-  import { useChartFileNames } from "../charts/selectors";
-  import { useDashboardFileNames } from "../dashboards/selectors";
   import { featureFlags } from "../feature-flags";
-  import {
-    NEW_ALERT_FILE_CONTENT,
-    NEW_API_FILE_CONTENT,
-    NEW_CHART_FILE_CONTENT,
-    NEW_MODEL_FILE_CONTENT,
-    NEW_REPORT_FILE_CONTENT,
-    NEW_THEME_FILE_CONTENT,
-  } from "../file-explorer/new-files";
-  import { useModelFileNames } from "../models/selectors";
-  import { useReportFileNames } from "../reports/selectors";
+  import { handleEntityCreate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
-  import { useThemeFileNames } from "../themes/selectors";
   import {
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
@@ -49,8 +36,9 @@
   $: instanceId = $runtime.instanceId;
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
-    ? currentFile.split("/").slice(0, -1).join("/") + "/"
+    ? currentFile.split("/").slice(0, -1).join("/")
     : "";
+  $: strippedCurrentDirectory = removeLeadingSlash(currentDirectory);
 
   // TODO: we should only fetch the existing names when needed
   // TODO: simplify all this
@@ -62,13 +50,6 @@
     instanceId,
     currentDirectory,
   );
-  $: modelFileNamesQuery = useModelFileNames(instanceId);
-  $: dashboardFileNamesQuery = useDashboardFileNames(instanceId);
-  $: apiFileNamesQuery = useAPIFileNames(instanceId);
-  $: chartFileNamesQuery = useChartFileNames(instanceId);
-  $: themeFileNamesQuery = useThemeFileNames(instanceId);
-  $: reportFileNamesQuery = useReportFileNames(instanceId);
-  $: alertFileNamesQuery = useAlertFileNames(instanceId);
 
   /**
    * Open the add source modal
@@ -88,41 +69,16 @@
    * Put an example Model file in the `models` directory
    */
   async function handleAddModel() {
-    const newModelName = getName("model", $modelFileNamesQuery?.data ?? []);
-
-    void $createFile.mutateAsync({
-      instanceId,
-      path: `models/${newModelName}.sql`,
-      data: {
-        blob: NEW_MODEL_FILE_CONTENT,
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/models/${newModelName}.sql`);
+    const newRoute = await handleEntityCreate(ResourceKind.Model);
+    if (newRoute) await goto(newRoute);
   }
 
   /**
    * Put an example Dashboard file in the `dashboards` directory
    */
   async function handleAddDashboard() {
-    const newDashboardName = getName(
-      "dashboard",
-      $dashboardFileNamesQuery?.data ?? [],
-    );
-
-    void $createFile.mutateAsync({
-      instanceId,
-      path: `dashboards/${newDashboardName}.yaml`,
-      data: {
-        blob: "",
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/dashboards/${newDashboardName}.yaml`);
+    const newRoute = await handleEntityCreate(ResourceKind.MetricsView);
+    if (newRoute) await goto(newRoute);
   }
 
   /**
@@ -136,7 +92,7 @@
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: `${currentDirectory}${nextFolderName}`,
+      path: `${strippedCurrentDirectory}/${nextFolderName}`,
       data: {
         create: true,
         createOnly: true,
@@ -155,7 +111,7 @@
 
     await $createFile.mutateAsync({
       instanceId: instanceId,
-      path: `${currentDirectory}${nextFileName}`,
+      path: `${strippedCurrentDirectory}/${nextFileName}`,
       data: {
         blob: undefined,
         create: true,
@@ -163,102 +119,47 @@
       },
     });
 
-    await goto(`/files/${currentDirectory}${nextFileName}`);
+    await goto(`/files/${strippedCurrentDirectory}/${nextFileName}`);
   }
 
   /**
    * Put an example API file in the `apis` directory
    */
   async function handleAddAPI() {
-    const nextFileName = getName("api", $apiFileNamesQuery?.data ?? []);
-
-    void $createFile.mutateAsync({
-      instanceId: instanceId,
-      path: `apis/${nextFileName}.yaml`,
-      data: {
-        blob: NEW_API_FILE_CONTENT,
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/apis/${nextFileName}.yaml`);
+    const newRoute = await handleEntityCreate(ResourceKind.API);
+    if (newRoute) await goto(newRoute);
   }
 
   /**
    * Put an example Chart file in the `charts` directory
    */
   async function handleAddChart() {
-    const nextFileName = getName("chart", $chartFileNamesQuery?.data ?? []);
-
-    void $createFile.mutateAsync({
-      instanceId: instanceId,
-      path: `charts/${nextFileName}.yaml`,
-      data: {
-        blob: NEW_CHART_FILE_CONTENT,
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/charts/${nextFileName}.yaml`);
+    const newRoute = await handleEntityCreate(ResourceKind.Chart);
+    if (newRoute) await goto(newRoute);
   }
 
   /**
    * Put an example Theme file in the `themes` directory
    */
   async function handleAddTheme() {
-    const nextFileName = getName("theme", $themeFileNamesQuery?.data ?? []);
-
-    void $createFile.mutateAsync({
-      instanceId: instanceId,
-      path: `themes/${nextFileName}.yaml`,
-      data: {
-        blob: NEW_THEME_FILE_CONTENT,
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/themes/${nextFileName}.yaml`);
+    const newRoute = await handleEntityCreate(ResourceKind.Theme);
+    if (newRoute) await goto(newRoute);
   }
 
   /**
    * Put an example Report file in the `reports` directory
    */
   async function handleAddReport() {
-    const nextFileName = getName("report", $reportFileNamesQuery?.data ?? []);
-
-    void $createFile.mutateAsync({
-      instanceId: instanceId,
-      path: `reports/${nextFileName}.yaml`,
-      data: {
-        blob: NEW_REPORT_FILE_CONTENT,
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/reports/${nextFileName}.yaml`);
+    const newRoute = await handleEntityCreate(ResourceKind.Report);
+    if (newRoute) await goto(newRoute);
   }
 
   /**
    * Put an example Alert file in the `alerts` directory
    */
   async function handleAddAlert() {
-    const nextFileName = getName("alert", $alertFileNamesQuery?.data ?? []);
-
-    void $createFile.mutateAsync({
-      instanceId: instanceId,
-      path: `alerts/${nextFileName}.yaml`,
-      data: {
-        blob: NEW_ALERT_FILE_CONTENT,
-        create: true,
-        createOnly: true,
-      },
-    });
-
-    await goto(`/files/alerts/${nextFileName}.yaml`);
+    const newRoute = await handleEntityCreate(ResourceKind.Alert);
+    if (newRoute) await goto(newRoute);
   }
 </script>
 

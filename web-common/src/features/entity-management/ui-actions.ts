@@ -1,11 +1,11 @@
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
+import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   INVALID_NAME_MESSAGE,
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
-import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
@@ -25,7 +25,7 @@ export async function handleEntityRename(
     return;
   }
 
-  const allNames = await fetchAllNames(queryClient, instanceId);
+  const allNames = await fetchAllFileNames(queryClient, instanceId);
 
   if (isDuplicateName(target.value, existingName, allNames)) {
     notifications.send({

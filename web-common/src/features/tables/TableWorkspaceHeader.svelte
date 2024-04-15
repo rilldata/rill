@@ -31,7 +31,7 @@
     database,
     databaseSchema,
     table,
-    "models", // TODO
+    "dashboards",
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
