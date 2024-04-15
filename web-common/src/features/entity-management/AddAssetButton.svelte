@@ -119,7 +119,7 @@
       },
     });
 
-    await goto(`/files/${strippedCurrentDirectory}/${nextFileName}`);
+    await goto(`/files/${currentDirectory}/${nextFileName}`);
   }
 
   /**
