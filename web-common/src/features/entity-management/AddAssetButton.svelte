@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
@@ -21,6 +20,7 @@
   import { featureFlags } from "../feature-flags";
   import { handleEntityCreate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { removeLeadingSlash } from "./entity-mappers";
   import {
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
@@ -38,7 +38,6 @@
   $: currentDirectory = currentFile
     ? currentFile.split("/").slice(0, -1).join("/")
     : "";
-  $: strippedCurrentDirectory = removeLeadingSlash(currentDirectory);
 
   // TODO: we should only fetch the existing names when needed
   // TODO: simplify all this
@@ -89,10 +88,14 @@
       "untitled_folder",
       $currentDirectoryDirectoryNamesQuery?.data ?? [],
     );
+    const path =
+      currentDirectory !== ""
+        ? `${removeLeadingSlash(currentDirectory)}/${nextFolderName}`
+        : nextFolderName;
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: `${strippedCurrentDirectory}/${nextFolderName}`,
+      path: path,
       data: {
         create: true,
         createOnly: true,
@@ -109,9 +112,14 @@
       $currentDirectoryFileNamesQuery?.data ?? [],
     );
 
+    const path =
+      currentDirectory !== ""
+        ? `${removeLeadingSlash(currentDirectory)}/${nextFileName}`
+        : nextFileName;
+
     await $createFile.mutateAsync({
       instanceId: instanceId,
-      path: `${strippedCurrentDirectory}/${nextFileName}`,
+      path: path,
       data: {
         blob: undefined,
         create: true,
