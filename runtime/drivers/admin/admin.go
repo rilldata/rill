@@ -242,9 +242,7 @@ func (h *Handle) cloneOrPull(ctx context.Context, onlyClone bool) error {
 func (h *Handle) cloneOrPullUnsafe(ctx context.Context) (err error) {
 	if h.cloned.Load() {
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
-		// This serves two purposes:
-		// a) to avoid issues in cases where go-git removes unstaged files,
-		// b) to support changes to the GitSubpath.
+		// See stashVirtual for details on why this is needed.
 		err := h.stashVirtual()
 		if err != nil {
 			return err
@@ -390,7 +388,12 @@ func (h *Handle) pullUnsafeGit() error {
 // It must run after a successful call to cloneUnsafeGit (which creates the directory).
 // Unsafe for concurrent use.
 func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
-	dst := h.virtualPath()
+	var dst string
+	if h.virtualStashPath == "" {
+		dst = generateVirtualPath(h.projPath)
+	} else {
+		dst = h.virtualStashPath
+	}
 
 	i := 0
 	n := 500
@@ -444,9 +447,11 @@ func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
 }
 
 // stashVirtualDir stashes the virtual directory in a temporary directory outside of the Git repository path.
-// This is needed since go-git has a bug where it removes unstaged files during "git pull" in certain cases.
-// For details, see: https://github.com/src-d/go-git/issues/1026#issue-382413262.
 // Its effect can be reversed by calling unstashVirtual.
+//
+// This is needed for two reasons:
+// a) to handle changes to the project path (i.e. if GitSubpath is changed in checkHandshake),
+// b) to handle a bug where go-git removes unstaged files during "git pull": https://github.com/src-d/go-git/issues/1026#issue-382413262.
 func (h *Handle) stashVirtual() error {
 	if h.virtualStashPath != "" {
 		return fmt.Errorf("stash virtual: virtual directory already stashed")
@@ -456,7 +461,7 @@ func (h *Handle) stashVirtual() error {
 		return fmt.Errorf("stash virtual: project path not set")
 	}
 
-	src := h.virtualPath()
+	src := generateVirtualPath(h.projPath)
 	if _, err := os.Stat(src); os.IsNotExist(err) {
 		// Nothing to stash.
 		// unstashVirtual gracefully handles when virtualStashPath is empty.
@@ -489,7 +494,7 @@ func (h *Handle) unstashVirtual() error {
 	}
 
 	src := h.virtualStashPath
-	dst := h.virtualPath()
+	dst := generateVirtualPath(h.projPath)
 
 	err := os.Rename(src, dst)
 	if err != nil {
@@ -500,9 +505,31 @@ func (h *Handle) unstashVirtual() error {
 	return nil
 }
 
-// virtualPath returns the path to the virtual directory in the Git repository.
-func (h *Handle) virtualPath() string {
-	return filepath.Join(h.projPath, "__virtual__")
+// generateVirtualPath generates a virtual path inside the project path.
+func generateVirtualPath(projPath string) string {
+	return filepath.Join(projPath, "__virtual__")
+}
+
+// generateTmpPath generates a temporary path with a random suffix.
+// It uses the format <dir>/<base><random><ext>.
+// The output path is absolute.
+func generateTmpPath(dir, base, ext string) (string, error) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("generate tmp path: %w", err)
+	}
+
+	r := hex.EncodeToString(b)
+
+	p := filepath.Join(dir, base+r+ext)
+
+	p, err = filepath.Abs(p)
+	if err != nil {
+		return "", fmt.Errorf("generate tmp path: %w", err)
+	}
+
+	return p, nil
 }
 
 // retryErrClassifier classifies Github request errors as retryable or not.
@@ -527,26 +554,4 @@ func (retryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Retry
-}
-
-// generateTmpPath generates a temporary path with a random suffix.
-// It uses the format <dir>/<base><random><ext>.
-// The output path is absolute.
-func generateTmpPath(dir, base, ext string) (string, error) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", fmt.Errorf("generate tmp path: %w", err)
-	}
-
-	r := hex.EncodeToString(b)
-
-	p := filepath.Join(dir, base+r+ext)
-
-	p, err = filepath.Abs(p)
-	if err != nil {
-		return "", fmt.Errorf("generate tmp path: %w", err)
-	}
-
-	return p, nil
 }
