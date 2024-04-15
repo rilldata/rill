@@ -257,9 +257,9 @@
           class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
           transition:fade={{ duration: 200 }}
         >
-          {#if $refreshSourceMutation.isLoading || !refreshedOn}
+          {#if $refreshSourceMutation.isLoading}
             Refreshing...
-          {:else}
+          {:else if refreshedOn}
             {verb} on {formatRefreshedOn(refreshedOn)}
           {/if}
         </p>
@@ -275,7 +275,6 @@
               {collapse}
               hasErrors={$hasErrors}
               {isLocalFileConnector}
-              isReconciling={resourceIsReconciling}
               on:save-source={save}
               on:revert-source={revert}
               on:refresh-source={refresh}
