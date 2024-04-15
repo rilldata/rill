@@ -39,7 +39,8 @@
     },
   });
 
-  $: yaml = $fileQuery.data?.blob || "";
+  let yaml = "";
+  $: yaml = $fileQuery.data?.blob ?? yaml;
 
   $: initLocalUserPreferenceStore(metricViewName);
 </script>

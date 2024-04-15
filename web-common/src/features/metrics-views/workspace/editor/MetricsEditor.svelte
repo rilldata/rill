@@ -66,6 +66,7 @@
     bind:view
     content={yaml}
     extensions={[placeholderElements.extension]}
+    whenFocused
     on:update={updateMetrics}
   />
 </MetricsEditorContainer>
