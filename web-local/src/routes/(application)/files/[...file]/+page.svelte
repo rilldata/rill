@@ -4,7 +4,10 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
-  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    addLeadingSlash,
+    removeLeadingSlash,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
@@ -77,7 +80,7 @@
       data: {
         blob: content,
       },
-      path: filePath,
+      path: removeLeadingSlash(filePath),
     });
   }
 

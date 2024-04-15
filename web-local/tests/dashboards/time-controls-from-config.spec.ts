@@ -82,8 +82,6 @@ default_comparison:
   });
 
   test("default_comparison", async ({ page }) => {
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
-
     // Set comparison to time
     await updateCodeEditor(
       page,
@@ -133,7 +131,6 @@ default_comparison:
   });
 
   test("available_time_ranges", async ({ page }) => {
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
     await updateCodeEditor(
       page,
       getDashboardYaml(`default_time_range: "P4W"
