@@ -13,6 +13,7 @@
   import { Folder } from "lucide-svelte";
   import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
   import { getTopLevelFolder } from "../sources/extract-file-name";
@@ -53,9 +54,14 @@
       $currentDirectoryDirectoryNamesQuery?.data ?? [],
     );
 
+    const path =
+      dir.path !== ""
+        ? `${removeLeadingSlash(dir.path)}/${nextFolderName}`
+        : nextFolderName;
+
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: `${dir.path}/${nextFolderName}`,
+      path: path,
       data: {
         create: true,
         createOnly: true,
