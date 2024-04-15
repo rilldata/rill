@@ -453,6 +453,9 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	q.Exporting = true
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timeout exceeded")
+		}
 		return err
 	}
 
