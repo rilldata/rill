@@ -86,7 +86,7 @@
     filePath = getFileAPIPathFromNameAndType(assetName, entity);
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
-  $: [folder, fileName] = splitFolderAndName(filePath);
+  $: [, fileName] = splitFolderAndName(filePath);
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -321,7 +321,6 @@
               {collapse}
               modelHasError={$hasErrors}
               modelName={assetName}
-              {filePath}
             />
           {/if}
         </div>

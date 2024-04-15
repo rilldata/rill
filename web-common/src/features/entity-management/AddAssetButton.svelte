@@ -138,10 +138,10 @@
   /**
    * Put an example API file in the `apis` directory
    */
-  async function handleAddAPI() {
-    const newRoute = await handleEntityCreate(ResourceKind.API);
-    if (newRoute) await goto(newRoute);
-  }
+  // async function handleAddAPI() {
+  //   const newRoute = await handleEntityCreate(ResourceKind.API);
+  //   if (newRoute) await goto(newRoute);
+  // }
 
   /**
    * Put an example Chart file in the `charts` directory
@@ -162,18 +162,18 @@
   /**
    * Put an example Report file in the `reports` directory
    */
-  async function handleAddReport() {
-    const newRoute = await handleEntityCreate(ResourceKind.Report);
-    if (newRoute) await goto(newRoute);
-  }
+  // async function handleAddReport() {
+  //   const newRoute = await handleEntityCreate(ResourceKind.Report);
+  //   if (newRoute) await goto(newRoute);
+  // }
 
   /**
    * Put an example Alert file in the `alerts` directory
    */
-  async function handleAddAlert() {
-    const newRoute = await handleEntityCreate(ResourceKind.Alert);
-    if (newRoute) await goto(newRoute);
-  }
+  // async function handleAddAlert() {
+  //   const newRoute = await handleEntityCreate(ResourceKind.Alert);
+  //   if (newRoute) await goto(newRoute);
+  // }
 </script>
 
 <div class="p-2">

@@ -17,7 +17,6 @@
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
-  export let filePath: string;
   export let modelName: string;
   export let suppressTooltips = false;
   export let modelHasError = false;
