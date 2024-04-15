@@ -15,8 +15,9 @@ class FeatureFlag {
   private _system = false;
   private state = writable(false);
 
-  constructor(scope: "user" | "system" = "user") {
+  constructor(scope: "user" | "system" = "user", initial = false) {
     this._system = scope === "system";
+    this.set(initial);
   }
 
   get system() {
@@ -33,7 +34,7 @@ type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 class FeatureFlags {
   adminServer = new FeatureFlag("system");
   readOnly = new FeatureFlag("system");
-  ai = new FeatureFlag("system");
+  ai = new FeatureFlag("system", true);
   pivot = new FeatureFlag();
   cloudDataViewer = new FeatureFlag();
   customDashboards = new FeatureFlag();
