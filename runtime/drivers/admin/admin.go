@@ -471,7 +471,7 @@ func (h *Handle) stashVirtual() error {
 		return nil
 	}
 
-	dst, err := generateTmpPath(h.config.TempDir, "admin_driver_virtual_stash", "")
+	dst, err := generateTmpPath(os.TempDir(), "admin_driver_virtual_stash", "")
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
