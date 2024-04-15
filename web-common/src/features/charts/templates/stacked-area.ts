@@ -14,13 +14,11 @@ export function buildStackedArea(
       type: "quantitative",
       stack: "zero",
     },
+    color: { field: nominalField, type: "nominal", legend: null },
   };
   baseSpec.layer = [
     {
       mark: { type: "area", clip: true },
-      encoding: {
-        color: { field: nominalField, type: "nominal", legend: null },
-      },
     },
     {
       mark: { type: "line", strokeWidth: 1, clip: true },
@@ -31,6 +29,7 @@ export function buildStackedArea(
     {
       mark: { type: "rule", color: "transparent", clip: true },
       encoding: {
+        color: { value: "transparent" },
         tooltip: [
           { field: quantitativeField, type: "quantitative" },
           { field: "ts", type: "temporal", title: "Time" },
@@ -53,9 +52,6 @@ export function buildStackedArea(
     {
       transform: [{ filter: { param: "x-hover", empty: false } }],
       mark: { type: "point", filled: true, opacity: 1, size: 40, clip: true },
-      encoding: {
-        color: { type: "nominal", field: nominalField },
-      },
     },
   ];
 

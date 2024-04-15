@@ -19,6 +19,11 @@ export function buildStackedBar(
       condition: { param: "hover", empty: false, value: 1 },
       value: 0.8,
     },
+    color: {
+      field: nominalField,
+      type: "nominal",
+      legend: null,
+    },
     tooltip: [
       {
         field: timeField,
@@ -31,11 +36,6 @@ export function buildStackedBar(
     ],
   };
 
-  baseSpec.encoding.color = {
-    field: nominalField,
-    type: "nominal",
-    legend: null,
-  };
   baseSpec.params = [
     {
       name: "hover",

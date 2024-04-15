@@ -1,5 +1,6 @@
 import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
 import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -42,6 +43,7 @@ export function sanitizeSpecForTDD(
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
+  selectedDimensionValues: (string | null)[] = [],
 ): VisualizationSpec {
   if (!spec) return spec;
 
@@ -56,9 +58,12 @@ export function sanitizeSpecForTDD(
   const sanitizedSpec = structuredClone(spec);
   let xEncoding;
   let yEncoding;
+  let colorEncoding;
   if (sanitizedSpec.encoding) {
     xEncoding = sanitizedSpec.encoding.x;
     yEncoding = sanitizedSpec.encoding.y;
+
+    colorEncoding = sanitizedSpec.encoding?.color;
 
     xEncoding.scale = {
       domain: [xMin.toISOString(), xMax.toISOString()],
@@ -67,6 +72,14 @@ export function sanitizeSpecForTDD(
 
   if (!xEncoding || !yEncoding) {
     return sanitizedSpec;
+  }
+
+  const selectedValuesLength = selectedDimensionValues.length;
+  if (colorEncoding && selectedValuesLength) {
+    colorEncoding.scale = {
+      domain: selectedDimensionValues,
+      range: COMPARIONS_COLORS.slice(0, selectedValuesLength),
+    };
   }
 
   // Set extents for x-axis

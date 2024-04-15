@@ -19,12 +19,14 @@
 
   $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
+  $: selectedValues = hasDimensionData ? dimensionData.map((d) => d.value) : [];
   $: vegaSpec = getVegaSpec(chartType, expandedMeasureName, hasDimensionData);
   $: sanitizedVegaSpec = sanitizeSpecForTDD(
     vegaSpec,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
     xMax,
+    selectedValues,
   );
 </script>
 
