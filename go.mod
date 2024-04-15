@@ -99,7 +99,7 @@ require (
 	google.golang.org/api v0.151.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
 	google.golang.org/grpc v1.60.1
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -321,5 +321,8 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 // the issue is supposed to be fixed in v1.8.1 but make sure apache/arrow/go/v15 doesn't cause any breaking changes
 // see the following PR: https://github.com/snowflakedb/gosnowflake/pull/1062
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
+
+// Fixes handling of double columns - https://github.com/rilldata/calcite-avatica-go/pull/3
+replace github.com/apache/calcite-avatica-go/v5 v5.3.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20240415134427-552564c85d84
 
 exclude modernc.org/sqlite v1.18.1
