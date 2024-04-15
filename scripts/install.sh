@@ -58,7 +58,7 @@ downloadBinary() {
 # Ask for preferred install option
 promtInstallChoice() {
     printf "\nWhere would you like to install rill?  (Default [1])\n\n"
-    printf "[1]  /usr/local/bin/rill  [requires sudo privileges]\n"
+    printf "[1]  /usr/local/bin/rill  [recommended, but requires sudo privileges]\n"
     printf "[2]  ~/.rill/rill         [directory will be created & path configured]\n"
     printf "[3]  ./rill               [download to the current directory]\n\n"
     printf "Install option: "
@@ -76,6 +76,18 @@ promtInstallChoice() {
             ;;
     esac
     printf "\n"
+}
+
+# Detect previous installation
+detectPreviousInstallation() {
+    if [ -x "$(command -v rill)" ] && [ -z "${INSTALL_DIR}" ]; then
+        INSTALLED_RILL="$(command -v rill)"
+        if [ "$INSTALLED_RILL" = "/usr/local/bin/rill" ]; then
+            INSTALL_DIR="/usr/local/bin"
+        elif [ "$INSTALLED_RILL" = "$HOME/.rill/rill" ]; then
+            INSTALL_DIR="$HOME/.rill"
+        fi
+    fi
 }
 
 # Check conflicting installation and exit with a help message
@@ -123,7 +135,7 @@ printStartHelp() {
     if [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
         printf "\nTo start a new project in Rill, execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff"
     elif [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
-        printf "\nTo start a new project in Rill, open a new terminal and execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff"
+        printf "\nTo start a new project in Rill, open a %snew terminal%s and execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff" "$boldon" "$boldoff"
     elif [ "$INSTALL_DIR" = "$(pwd)" ]; then
         printf "\nTo start a new project in Rill, execute the command:\n\n %s./rill start my-rill-project%s\n\n" "$boldon" "$boldoff"
     fi
@@ -171,8 +183,11 @@ installRill() {
     checkDependency shasum
     checkDependency unzip
     initPlatform
-    promtInstallChoice
-    checkConflictingInstallation
+    detectPreviousInstallation
+    if [ -z "${INSTALL_DIR}" ]; then
+        promtInstallChoice
+        checkConflictingInstallation
+    fi
     initTmpDir
     downloadBinary
     installBinary
@@ -211,6 +226,11 @@ case $1 in
         ;;
     --version)
         VERSION=${2:-latest}
+        installRill
+        ;;
+    --non-interactive)
+        INSTALL_DIR=${2:-"/usr/local/bin"}
+        VERSION=${3:-latest}
         installRill
         ;;
     *)
