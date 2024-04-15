@@ -15,15 +15,15 @@ import { test } from "./utils/test";
 
 test.describe("models", () => {
   test("Create and edit model", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createOrReplaceSource(
       page,
       "AdImpressions.tsv",
-      "sources/AdImpressions.yaml",
+      "/sources/AdImpressions.yaml",
     );
 
-    await createModel(page, "models/AdBids_model_t.sql");
-    await waitForFileEntry(page, "models/AdBids_model_t.sql", true);
+    await createModel(page, "/models/AdBids_model_t.sql");
+    await waitForFileEntry(page, "/models/AdBids_model_t.sql", true);
     await Promise.all([
       waitForProfiling(page, "AdBids_model_t", [
         "publisher",
@@ -45,7 +45,7 @@ test.describe("models", () => {
 
   test("Rename and delete model", async ({ page }) => {
     // make sure AdBids_rename_delete is present
-    await createModel(page, "models/AdBids_rename_delete.sql");
+    await createModel(page, "/models/AdBids_rename_delete.sql");
 
     // rename
     await renameEntityUsingMenu(
@@ -53,7 +53,7 @@ test.describe("models", () => {
       "AdBids_rename_delete.sql",
       "AdBids_rename_delete_new.sql",
     );
-    await waitForFileEntry(page, "models/AdBids_rename_delete_new.sql", true);
+    await waitForFileEntry(page, "/models/AdBids_rename_delete_new.sql", true);
     await entityNotPresent(page, "AdBids_rename_delete");
 
     // delete
@@ -63,7 +63,7 @@ test.describe("models", () => {
   });
 
   test("Create model from source", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     await Promise.all([
       waitForProfiling(page, "AdBids_model", [
@@ -74,13 +74,13 @@ test.describe("models", () => {
       openEntityMenu(page, "AdBids.yaml"),
       clickMenuButton(page, "Create New Model"),
     ]);
-    await waitForFileEntry(page, "sources/AdBids_model.sql", true);
+    await waitForFileEntry(page, "/models/AdBids_model.sql", true);
 
     // navigate to another source
     await createOrReplaceSource(
       page,
       "AdImpressions.tsv",
-      "sources/AdImpressions.yaml",
+      "/sources/AdImpressions.yaml",
     );
     // delete the source of model
     await deleteEntity(page, "AdBids.yaml");

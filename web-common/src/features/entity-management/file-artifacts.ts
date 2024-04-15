@@ -1,3 +1,4 @@
+import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
 import {
   fetchFileContent,
@@ -228,15 +229,17 @@ export class FileArtifacts {
     );
     await Promise.all(
       missingFiles.map((filePath) =>
-        fetchFileContent(queryClient, instanceId, filePath).then(
-          (fileContents) => {
-            const artifact =
-              this.artifacts[filePath] ?? new FileArtifact(filePath);
-            const newName = parseKindAndNameFromFile(filePath, fileContents);
-            if (newName) artifact.name.set(newName);
-            this.artifacts[filePath] ??= artifact;
-          },
-        ),
+        fetchFileContent(
+          queryClient,
+          instanceId,
+          removeLeadingSlash(filePath),
+        ).then((fileContents) => {
+          const artifact =
+            this.artifacts[filePath] ?? new FileArtifact(filePath);
+          const newName = parseKindAndNameFromFile(filePath, fileContents);
+          if (newName) artifact.name.set(newName);
+          this.artifacts[filePath] ??= artifact;
+        }),
       ),
     );
   }
@@ -248,7 +251,7 @@ export class FileArtifacts {
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
-      filePath,
+      removeLeadingSlash(filePath),
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);

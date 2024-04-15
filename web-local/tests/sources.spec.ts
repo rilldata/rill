@@ -16,7 +16,7 @@ import { test } from "./utils/test";
 test.describe("sources", () => {
   test("Import sources", async ({ page }) => {
     await Promise.all([
-      waitForSource(page, "sources/AdBids.yaml", [
+      waitForSource(page, "/sources/AdBids.yaml", [
         "publisher",
         "domain",
         "timestamp",
@@ -25,13 +25,13 @@ test.describe("sources", () => {
     ]);
 
     await Promise.all([
-      waitForSource(page, "sources/AdImpressions.yaml", ["city", "country"]),
+      waitForSource(page, "/sources/AdImpressions.yaml", ["city", "country"]),
       uploadFile(page, "AdImpressions.tsv"),
     ]);
 
     // upload existing table and keep both
     await Promise.all([
-      waitForSource(page, "sources/AdBids_1.yaml", [
+      waitForSource(page, "/sources/AdBids_1.yaml", [
         "publisher",
         "domain",
         "timestamp",
@@ -49,7 +49,7 @@ test.describe("sources", () => {
 
     // rename
     await renameEntityUsingMenu(page, "AdBids.yaml", "AdBids_new.yaml");
-    await waitForFileEntry(page, `sources/AdBids_new.yaml`, true);
+    await waitForFileEntry(page, `/sources/AdBids_new.yaml`, true);
     await entityNotPresent(page, "AdBids.yaml");
 
     // delete
@@ -63,9 +63,9 @@ test.describe("sources", () => {
     await createOrReplaceSource(
       page,
       "AdImpressions.tsv",
-      "sources/AdImpressions.yaml",
+      "/sources/AdImpressions.yaml",
     );
-    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // Edit source path to a non-existent file
     const nonExistentSource = `type: local_file

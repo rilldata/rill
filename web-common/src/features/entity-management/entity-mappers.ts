@@ -24,15 +24,15 @@ export function getFilePathFromNameAndType(
 ): string {
   switch (type) {
     case EntityType.Table:
-      return `/files/sources/${name}.yaml`;
+      return `/sources/${name}.yaml`;
     case EntityType.Model:
-      return `/files/models/${name}.sql`;
+      return `/models/${name}.sql`;
     case EntityType.MetricsDefinition:
-      return `/files/dashboards/${name}.yaml`;
+      return `/dashboards/${name}.yaml`;
     case EntityType.Chart:
-      return `/files/charts/${name}.yaml`;
+      return `/charts/${name}.yaml`;
     case EntityType.Dashboard:
-      return `/files/custom-dashboards/${name}.yaml`;
+      return `/custom-dashboards/${name}.yaml`;
     default:
       throw new Error("Unrecognized EntityType");
   }
@@ -104,11 +104,17 @@ export function getLabel(entityType: EntityType) {
 }
 
 // Remove a leading slash, if it exists
-// This is needed in 2 places right now,
-// 1. In certain backend APIs where path is part of the url.
-//    Leading slash leads to issues where the end point redirects to one without the slash.
+// In certain backend APIs where path is part of the url.
+// Leading slash leads to issues where the end point redirects to one without the slash.
 export function removeLeadingSlash(path: string): string {
   return path.replace(/^\//, "");
+}
+
+// Add a leading slash if it doesn't exist.
+// Temporary, we should eventually make sure this is added in all places
+export function addLeadingSlash(path: string): string {
+  if (path.startsWith("/")) return path;
+  return "/" + path;
 }
 
 export const FolderToResourceKind: Record<string, ResourceKind> = {

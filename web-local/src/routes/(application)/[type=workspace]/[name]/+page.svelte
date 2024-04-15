@@ -4,7 +4,10 @@
   import type { SelectionRange } from "@codemirror/state";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    removeLeadingSlash,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
@@ -169,7 +172,7 @@
 
     await $updateFile.mutateAsync({
       instanceId,
-      path: filePath,
+      path: removeLeadingSlash(filePath),
       data: {
         blob: latest,
       },
@@ -216,7 +219,7 @@
       queryClient,
       assetName,
       tableName ?? "",
-      folder,
+      "models",
     );
     await goto(`/files/${newModelPath}`);
     await behaviourEvent.fireNavigationEvent(

@@ -1,3 +1,4 @@
+import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
@@ -14,6 +15,8 @@ export async function createModelFromSource(
   notify = false,
 ): Promise<[string, string]> {
   const instanceId = get(runtime).instanceId;
+
+  folder = removeLeadingSlash(folder);
 
   // Get new model name
   const modelNames = await getModelNames(queryClient, instanceId);
@@ -34,5 +37,5 @@ select * from ${tableName}`,
   }
 
   // Done
-  return [newModelPath, newModelName];
+  return ["/" + newModelPath, newModelName];
 }

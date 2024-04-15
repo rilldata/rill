@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -63,11 +63,12 @@
         );
 
         await createSource(runtimeInstanceId, tableName, yaml);
-        await checkSourceImported(
-          queryClient,
-          getFileAPIPathFromNameAndType(tableName, EntityType.Table),
+        const newFilePath = getFilePathFromNameAndType(
+          tableName,
+          EntityType.Table,
         );
-        await goto(`/files/sources/${tableName}.yaml`);
+        await checkSourceImported(queryClient, newFilePath);
+        await goto(`/files/${newFilePath}`);
       } catch (err) {
         console.error(err);
       }

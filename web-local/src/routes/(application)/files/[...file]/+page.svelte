@@ -4,6 +4,7 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
@@ -24,7 +25,7 @@
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
 
-  $: filePath = $page.params.file;
+  $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 
@@ -46,8 +47,6 @@
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
-
-  $: initialLoading = !resourceKind && $fileQuery.isFetching;
 
   // TODO: optimistically update the get file cache
   const putFile = createRuntimeServicePutFile();

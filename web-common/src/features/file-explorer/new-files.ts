@@ -10,8 +10,8 @@ export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
   const instanceId = get(runtime).instanceId;
   const allNames = await fetchAllFileNames(queryClient, instanceId);
-  const newName = getName("baseName", allNames);
   const { name, folder, baseContent, extension } = ResourceKindMap[kind];
+  const newName = getName(name, allNames);
 
   const newPath = `${folder ?? name + "s"}/${newName}${extension ?? ".yaml"}`;
 
@@ -20,7 +20,7 @@ export async function handleEntityCreate(kind: ResourceKind) {
     create: true,
     createOnly: true,
   });
-  return `/files/${newPath}`;
+  return `/files//${newPath}`;
 }
 
 const ResourceKindMap: Record<

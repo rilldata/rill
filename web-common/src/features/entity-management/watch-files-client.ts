@@ -1,6 +1,7 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import {
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
   V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -23,20 +24,28 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
   const instanceId = get(runtime).instanceId;
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`
-  switch (res.event) {
-    case "FILE_EVENT_WRITE":
-      void queryClient.resetQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
-      );
-      fileArtifacts.fileUpdated(res.path);
-      break;
+  if (!res.isDir) {
+    switch (res.event) {
+      case "FILE_EVENT_WRITE":
+        void queryClient.resetQueries(
+          getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+        );
+        void fileArtifacts.fileUpdated(res.path);
+        if (res.path === "rill.yaml") {
+          // If it's a rill.yaml file, invalidate the dev JWT queries
+          void queryClient.invalidateQueries(
+            getRuntimeServiceIssueDevJWTQueryKey(),
+          );
+        }
+        break;
 
-    case "FILE_EVENT_DELETE":
-      void queryClient.resetQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
-      );
-      fileArtifacts.fileDeleted(res.path);
-      break;
+      case "FILE_EVENT_DELETE":
+        void queryClient.resetQueries(
+          getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+        );
+        fileArtifacts.fileDeleted(res.path);
+        break;
+    }
   }
   // TODO: should this be throttled?
   void queryClient.refetchQueries(
