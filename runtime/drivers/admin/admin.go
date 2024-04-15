@@ -2,6 +2,8 @@ package admin
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -110,6 +112,7 @@ type Handle struct {
 	gitURL               string
 	gitURLExpiresOn      time.Time
 	virtualNextPageToken string
+	virtualStashPath     string
 }
 
 var _ drivers.Handle = &Handle{}
@@ -236,8 +239,22 @@ func (h *Handle) cloneOrPull(ctx context.Context, onlyClone bool) error {
 }
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
-func (h *Handle) cloneOrPullUnsafe(ctx context.Context) error {
-	err := h.checkHandshake(ctx)
+func (h *Handle) cloneOrPullUnsafe(ctx context.Context) (err error) {
+	if h.cloned.Load() {
+		// Move the virtual directory out of the Git repository, and put it back after the pull.
+		// This serves two purposes:
+		// a) to avoid issues in cases where go-git removes unstaged files,
+		// b) to support changes to the GitSubpath.
+		err := h.stashVirtual()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			err = h.unstashVirtual()
+		}()
+	}
+
+	err = h.checkHandshake(ctx)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
@@ -373,7 +390,7 @@ func (h *Handle) pullUnsafeGit() error {
 // It must run after a successful call to cloneUnsafeGit (which creates the directory).
 // Unsafe for concurrent use.
 func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
-	dst := filepath.Join(h.projPath, "__virtual__")
+	dst := h.virtualPath()
 
 	i := 0
 	n := 500
@@ -426,6 +443,68 @@ func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
 	return nil
 }
 
+// stashVirtualDir stashes the virtual directory in a temporary directory outside of the Git repository path.
+// This is needed since go-git has a bug where it removes unstaged files during "git pull" in certain cases.
+// For details, see: https://github.com/src-d/go-git/issues/1026#issue-382413262.
+// Its effect can be reversed by calling unstashVirtual.
+func (h *Handle) stashVirtual() error {
+	if h.virtualStashPath != "" {
+		return fmt.Errorf("stash virtual: virtual directory already stashed")
+	}
+
+	if h.projPath == "" {
+		return fmt.Errorf("stash virtual: project path not set")
+	}
+
+	src := h.virtualPath()
+	if _, err := os.Stat(src); os.IsNotExist(err) {
+		// Nothing to stash.
+		// unstashVirtual gracefully handles when virtualStashPath is empty.
+		return nil
+	}
+
+	dst, err := generateTmpPath(h.config.TempDir, "admin_driver_virtual_stash", "")
+	if err != nil {
+		return fmt.Errorf("stash virtual: %w", err)
+	}
+
+	err = os.Rename(src, dst)
+	if err != nil {
+		return fmt.Errorf("stash virtual: %w", err)
+	}
+
+	h.virtualStashPath = dst
+	return nil
+}
+
+// unstashVirtual reverses the effect of stashVirtual.
+func (h *Handle) unstashVirtual() error {
+	if h.virtualStashPath == "" {
+		// Not returning an error since stashVirtual might not stash anything if there aren't any virtual files.
+		return nil
+	}
+
+	if h.projPath == "" {
+		return fmt.Errorf("unstash virtual: project path not set")
+	}
+
+	src := h.virtualStashPath
+	dst := h.virtualPath()
+
+	err := os.Rename(src, dst)
+	if err != nil {
+		return fmt.Errorf("unstash virtual: %w", err)
+	}
+
+	h.virtualStashPath = ""
+	return nil
+}
+
+// virtualPath returns the path to the virtual directory in the Git repository.
+func (h *Handle) virtualPath() string {
+	return filepath.Join(h.projPath, "__virtual__")
+}
+
 // retryErrClassifier classifies Github request errors as retryable or not.
 type retryErrClassifier struct{}
 
@@ -448,4 +527,26 @@ func (retryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Retry
+}
+
+// generateTmpPath generates a temporary path with a random suffix.
+// It uses the format <dir>/<base><random><ext>.
+// The output path is absolute.
+func generateTmpPath(dir, base, ext string) (string, error) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("generate tmp path: %w", err)
+	}
+
+	r := hex.EncodeToString(b)
+
+	p := filepath.Join(dir, base+r+ext)
+
+	p, err = filepath.Abs(p)
+	if err != nil {
+		return "", fmt.Errorf("generate tmp path: %w", err)
+	}
+
+	return p, nil
 }
