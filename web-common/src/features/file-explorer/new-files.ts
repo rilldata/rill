@@ -41,8 +41,7 @@ const ResourceKindMap: Record<
     name: "model",
     extension: ".sql",
     baseContent: `-- @kind: model
-select a, b, c
-from table
+select ...
 `,
   },
   [ResourceKind.MetricsView]: {
@@ -56,8 +55,7 @@ from table
     baseContent: `kind: api
 
 sql:
-  select a, b, c
-  from table
+  select ...
 `,
   },
   [ResourceKind.Chart]: {
