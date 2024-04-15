@@ -60,7 +60,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if runtimeVersion != "latest" {
 		_, err := version.NewVersion(runtimeVersion)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse version %q: %w", runtimeVersion, err)
 		}
 	}
 

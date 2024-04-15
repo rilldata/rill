@@ -63,11 +63,11 @@
         );
 
         await createSource(runtimeInstanceId, tableName, yaml);
-        checkSourceImported(
+        await checkSourceImported(
           queryClient,
           getFilePathFromNameAndType(tableName, EntityType.Table),
         );
-        goto(`/source/${tableName}`);
+        await goto(`/source/${tableName}`);
       } catch (err) {
         console.error(err);
       }
