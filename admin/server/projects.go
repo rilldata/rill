@@ -300,6 +300,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		prodTTL = &tmp
 	}
 
+	// Backwards compatibility: if prod version is not set, default to "latest"
+	if req.ProdVersion == "" {
+		req.ProdVersion = "latest"
+	}
+
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
