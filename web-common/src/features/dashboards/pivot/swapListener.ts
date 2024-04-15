@@ -3,7 +3,7 @@ import type { Writable } from "svelte/store";
 
 type Options = {
   condition: boolean;
-  ghostIndex: Writable<number | undefined>;
+  ghostIndex: Writable<number | null>;
   chipType: PivotChipType | undefined;
 };
 
