@@ -46,7 +46,7 @@ class FeatureFlags {
       Object.keys(this).forEach((key) => {
         const flag = this[key] as FeatureFlag;
         if (flag.system) return;
-        flag.set(userFlags.has(key));
+        if (userFlags.has(key)) flag.set(true);
       });
     }, 400);
 
@@ -72,7 +72,8 @@ class FeatureFlags {
         },
       }).subscribe((features) => {
         if (!Array.isArray(features?.data)) return;
-        updateFlags(new Set([...staticFlags, ...features.data]));
+        const yamlFlags = features.data;
+        updateFlags(new Set([...staticFlags, ...yamlFlags]));
       });
     });
   }
