@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
@@ -11,7 +12,11 @@
     NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
-  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
+  import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-directories";
+  import {
+    getTopLevelFolder,
+    splitFolderAndName,
+  } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import NavDirectory from "./NavDirectory.svelte";
@@ -72,6 +77,13 @@
     const newFilePath = `${tarDir}/${srcFile}`;
 
     if (fromDragData.filePath !== newFilePath) {
+      const newTopLevelPath = getTopLevelFolder(newFilePath);
+      if (PROTECTED_DIRECTORIES.includes(newTopLevelPath)) {
+        notifications.send({
+          message: "cannot move to restricted directories",
+        });
+        return;
+      }
       await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
 
       if (isCurrentFile) {

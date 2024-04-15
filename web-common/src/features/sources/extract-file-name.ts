@@ -41,5 +41,5 @@ export function splitFolderAndName(
 }
 
 export function getTopLevelFolder(filePath: string): string {
-  return filePath.split(FILE_PATH_SPLIT_REGEX)[0];
+  return "/" + filePath.split(FILE_PATH_SPLIT_REGEX)[1];
 }

@@ -1,1 +1,1 @@
-export const PROTECTED_DIRECTORIES = ["tmp"];
+export const PROTECTED_DIRECTORIES = ["/tmp"];
