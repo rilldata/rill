@@ -12,11 +12,15 @@ export type DerivedReadables<T> = {
 };
 
 class FeatureFlag {
-  system = false;
+  private _system = false;
   private state = writable(false);
 
   constructor(scope: "user" | "system" = "user") {
-    this.system = scope === "system";
+    this._system = scope === "system";
+  }
+
+  get system() {
+    return this._system;
   }
 
   subscribe = this.state.subscribe;
@@ -29,8 +33,8 @@ type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 class FeatureFlags {
   adminServer = new FeatureFlag("system");
   readOnly = new FeatureFlag("system");
+  ai = new FeatureFlag("system");
   pivot = new FeatureFlag();
-  ai = new FeatureFlag();
   cloudDataViewer = new FeatureFlag();
   customDashboards = new FeatureFlag();
 
