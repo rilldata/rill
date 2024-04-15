@@ -12,7 +12,6 @@
 
   export let hasErrors: boolean;
   export let hasUnsavedChanges: boolean;
-  export let isReconciling: boolean;
   export let isLocalFileConnector: boolean;
   export let collapse: boolean;
 
@@ -44,7 +43,6 @@
         dispatch("refresh-source");
       }
     }}
-    disabled={isReconciling}
     {label}
     {type}
   >
@@ -53,7 +51,7 @@
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} disabled={isReconciling} {label} {type}>
+      <Button builders={[builder]} {label} {type}>
         <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
       </Button>
     </DropdownMenu.Trigger>
