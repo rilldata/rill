@@ -3,8 +3,6 @@
   import { page } from "$app/stores";
   import type { SelectionRange } from "@codemirror/state";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
