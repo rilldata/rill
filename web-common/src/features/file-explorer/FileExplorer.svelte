@@ -29,17 +29,19 @@
         if (!data || !data.files?.length) return;
 
         const files = data.files
-          // sort alphabetically case-insensitive
+          // Sort alphabetically case-insensitive
           .sort(
             (a, b) =>
               a.path?.localeCompare(b.path ?? "", undefined, {
                 sensitivity: "base",
               }) ?? 0,
           )
-          // remove dotfiles and dot directories at the top level
+          // Hide dotfiles and dot directories at the top level
           .filter((file) => !file.path?.startsWith("."))
-          // remove dotfiles and dot directories in subdirectories
-          .filter((file) => !file.path?.includes("/."));
+          // Hide dotfiles and dot directories in subdirectories
+          .filter((file) => !file.path?.includes("/."))
+          // Hide the `tmp` directory
+          .filter((file) => !file.path?.startsWith("/tmp"));
 
         return transformFileList(files);
       },
