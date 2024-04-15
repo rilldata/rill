@@ -13,7 +13,7 @@
     },
     "table": {
       "type": "string",
-      "description": "The table name powering the dashboard; used instead of 'model' for dashboards created directly from sources or external OLAP tables. Required if 'model' is not provided."
+      "description": "The table name powering the dashboard; used instead of 'model' for dashboards created directly from sources or external OLAP tables."
     },
     "timeseries": {
       "type": "string",
@@ -62,7 +62,11 @@
           },
           "column": {
             "type": "string",
-            "description": "A categorical column for the dimension. Required if 'expression' is not provided."
+            "description": "A categorical column for the dimension."
+          },
+          "property": {
+            "type": "string",
+            "description": "A property reference for the dimension."
           },
           "expression": {
             "type": "string",
@@ -81,7 +85,11 @@
             "description": "Allows multi-valued dimensions to be unnested, switching filters to 'contains' instead of exact match."
           }
         },
-        "required": ["name"]
+        "oneOf": [
+          { "required": ["column"] },
+          { "required": ["property"] },
+          { "required": ["expression"] }
+        ]
       },
       "description": "Definitions of dimensions for exploring segments and filtering the dashboard."
     },
@@ -124,10 +132,14 @@
             "description": "Indicates whether percent-of-total values should be rendered for this measure."
           }
         },
-        "required": ["name"]
+        "required": ["expression"]
       },
       "description": "Numeric aggregates of columns from your data model."
     }
   },
+  "oneOf": [
+    { "required": ["model"] },
+    { "required": ["table"] }
+  ],
   "required": ["title", "dimensions", "measures"]
 }
