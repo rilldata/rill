@@ -58,8 +58,8 @@
       refetchOnWindowFocus: true,
     },
   });
-
-  $: yaml = $fileQuery.data?.blob || "";
+  let yaml = "";
+  $: yaml = $fileQuery.data?.blob ?? yaml;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);

@@ -44,6 +44,7 @@
     bind:view
     content={yaml}
     extensions={[placeholderElements.extension, yamlSchema(metricsJsonSchema)]}
+    whenFocused
     on:update={updateMetrics}
   />
 </MetricsEditorContainer>

@@ -31,10 +31,11 @@ type Callback<T, K extends keyof EventMap<T>> = (
 ) => void | Promise<void>;
 
 export class WatchRequestClient<Res extends WatchResponse> {
+  private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private tracker = ExponentialBackoffTracker.createBasicTracker();
-  private outOfFocusThrottler = new Throttler(5000);
+  private outOfFocusThrottler = new Throttler(10000);
   private listeners: Listeners<Res> = new Map([
     ["response", []],
     ["reconnect", []],
@@ -45,21 +46,26 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   watch(url: string) {
-    if (this.controller) this.abort();
-
-    this.controller = new AbortController();
-    this.stream = this.getFetchStream(url, this.controller);
+    this.cancel();
+    this.url = url;
+    this.init();
     this.listen().catch(console.error);
   }
 
-  abort() {
+  cancel() {
     this.controller?.abort();
     this.stream = this.controller = undefined;
   }
 
+  init() {
+    if (!this.url) return console.error("Unable to reconnect without a URL.");
+    this.controller = new AbortController();
+    this.stream = this.getFetchStream(this.url, this.controller);
+  }
+
   throttle() {
     this.outOfFocusThrottler.throttle(() => {
-      this.abort();
+      this.cancel();
     });
   }
 
@@ -68,16 +74,18 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.outOfFocusThrottler.cancel();
     }
 
-    if (!this.controller?.signal.aborted) return;
+    // The stream was not cancelled, so don't reconnect
+    if (this.controller && !this.controller.signal.aborted) return;
 
+    this.init();
     this.listen().catch(console.error);
 
+    // Reconnecting, notify listeners
     this.listeners.get("reconnect")?.forEach((cb) => void cb());
   }
 
   private async listen() {
     if (!this.stream) return;
-
     try {
       for await (const res of this.stream) {
         if (this.controller?.signal.aborted) break;
