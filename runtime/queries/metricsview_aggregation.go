@@ -337,7 +337,14 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 				aliasesMap[e.Name] = e.Label
 			}
 		}
-		aliasesMap[mv.TimeDimension] = mv.TimeDimension
+		for _, e := range q.Dimensions {
+			if e.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				aliasesMap[e.Name] = e.Name
+				if e.Alias != "" {
+					aliasesMap[e.Alias] = e.Alias
+				}
+			}
+		}
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
