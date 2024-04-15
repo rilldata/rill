@@ -16,7 +16,7 @@
     initialIndex: number;
   };
 
-  export const dragging = writable<null | DragData>(null);
+  export const dragDataStore = writable<null | DragData>(null);
   export const controllerStore = writable<AbortController | null>(null);
 </script>
 
@@ -28,10 +28,14 @@
   const isDropLocation = zone === "columns" || zone === "rows";
 
   const dispatch = createEventDispatcher();
-  const ghostIndex = writable<number | undefined>(undefined);
+  const ghostIndex = writable<number | null>(null);
 
-  $: dragData = $dragging;
-  $: currentlyDragging = Boolean(dragData);
+  let swap = false;
+  let container: HTMLDivElement;
+  let offset = { x: 0, y: 0 };
+  let dragStart = { left: 0, top: 0 };
+
+  $: dragData = $dragDataStore;
   $: source = dragData?.source;
   $: dragChip = dragData?.chip;
   $: ghostWidth = dragData?.width;
@@ -43,13 +47,8 @@
 
   $: isValidDropZone =
     isDropLocation &&
-    currentlyDragging &&
+    dragData &&
     (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
-
-  let swap = false;
-  let container: HTMLDivElement;
-  let offset = { x: 0, y: 0 };
-  let dragStart = { left: 0, top: 0 };
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     e.preventDefault();
@@ -95,7 +94,7 @@
       );
     }
 
-    dragging.set({
+    dragDataStore.set({
       chip: item,
       source: zone,
       width,
@@ -107,7 +106,7 @@
     if (zoneStartedDrag) $controllerStore?.abort();
 
     if (isValidDropZone) {
-      if (dragChip && $ghostIndex !== undefined) {
+      if (dragChip && $ghostIndex !== null) {
         const temp = [...items];
 
         temp.splice($ghostIndex, 0, dragChip);
@@ -118,11 +117,12 @@
       }
       swap = false;
     }
-    ghostIndex.set(undefined);
+    dragDataStore.set(null);
+    ghostIndex.set(null);
   }
 
   function handleDragEnter() {
-    if (!currentlyDragging) return;
+    if (!dragData) return;
 
     if (zoneStartedDrag && !isDropLocation) {
       ghostIndex.set(initialIndex);
@@ -142,8 +142,8 @@
   }
 
   function handleDragLeave() {
-    if (!currentlyDragging) return;
-    $ghostIndex = undefined;
+    if (!dragData) return;
+    $ghostIndex = null;
     swap = false;
   }
 </script>
@@ -184,7 +184,7 @@
       }}
     />
   {:else}
-    {#if $ghostIndex === undefined}
+    {#if $ghostIndex === null}
       <p>{placeholder}</p>
     {/if}
   {/each}
