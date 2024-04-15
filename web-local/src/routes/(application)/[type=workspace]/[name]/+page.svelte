@@ -3,6 +3,8 @@
   import { page } from "$app/stores";
   import type { SelectionRange } from "@codemirror/state";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -257,9 +259,9 @@
           class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
           transition:fade={{ duration: 200 }}
         >
-          {#if $refreshSourceMutation.isLoading || !refreshedOn}
+          {#if $refreshSourceMutation.isLoading}
             Refreshing...
-          {:else}
+          {:else if refreshedOn}
             {verb} on {formatRefreshedOn(refreshedOn)}
           {/if}
         </p>
@@ -275,7 +277,6 @@
               {collapse}
               hasErrors={$hasErrors}
               {isLocalFileConnector}
-              isReconciling={resourceIsReconciling}
               on:save-source={save}
               on:revert-source={revert}
               on:refresh-source={refresh}
