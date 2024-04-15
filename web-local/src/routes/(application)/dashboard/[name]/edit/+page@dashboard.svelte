@@ -70,9 +70,8 @@
       keepPreviousData: true,
     },
   });
-
   let yaml = "";
-  $: yaml = $fileQuery.isFetching ? yaml : $fileQuery.data?.blob || "";
+  $: yaml = $fileQuery.data?.blob ?? yaml;
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;

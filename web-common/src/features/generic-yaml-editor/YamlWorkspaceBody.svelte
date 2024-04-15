@@ -28,6 +28,9 @@
     },
   );
 
+  let content = "";
+  $: content = $file?.data?.blob ?? content;
+
   const debouncedUpdate = debounce(handleUpdate, 300);
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
@@ -69,7 +72,8 @@
       <YAMLEditor
         bind:this={editor}
         bind:view
-        content={$file?.data?.blob || ""}
+        {content}
+        whenFocused
         on:update={debouncedUpdate}
       />
     </div>

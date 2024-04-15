@@ -172,6 +172,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 				return err
 			}
 
+			if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
+				return fmt.Errorf("Limit exceeded %d", *q.Limit)
+			}
+
 			q.Result = &runtimev1.MetricsViewAggregationResponse{
 				Schema: schema,
 				Data:   data,
@@ -299,6 +303,10 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 			return err
 		}
 
+		if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
+			return fmt.Errorf("Limit exceeded %d", *q.Limit)
+		}
+
 		q.Result = &runtimev1.MetricsViewAggregationResponse{
 			Schema: schema,
 			Data:   data,
@@ -329,7 +337,14 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 				aliasesMap[e.Name] = e.Label
 			}
 		}
-		aliasesMap[mv.TimeDimension] = mv.TimeDimension
+		for _, e := range q.Dimensions {
+			if e.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				aliasesMap[e.Name] = e.Name
+				if e.Alias != "" {
+					aliasesMap[e.Alias] = e.Alias
+				}
+			}
+		}
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -388,13 +403,19 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
+		limit := *q.Limit
+		if limit == 0 {
+			limit = 100
 		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+		if q.Exporting && *q.Limit > 0 {
+			limit = *q.Limit + 1
+		}
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
 	}
 
-	//	PIVOT t ON year USING LAST(ap) ap;
+	// PIVOT (SELECT m1 as M1, d1 as D1, d2 as D2)
+	// ON D1 USING LAST(M1) as M1
+	// ORDER BY D2 LIMIT 10 OFFSET 0
 	selectList := "*"
 	if q.Exporting {
 		selectList = strings.Join(selectCols, ",")
@@ -439,6 +460,9 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	q.Exporting = true
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timeout exceeded")
+		}
 		return err
 	}
 
@@ -626,10 +650,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
+		limit := *q.Limit
+		if limit == 0 {
+			limit = 100
 		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
 	}
 
 	var args []any

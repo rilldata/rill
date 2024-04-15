@@ -39,8 +39,8 @@
     void fileArtifacts.init(queryClient, instanceId);
 
     return () => {
-      fileWatcher.abort();
-      resourceWatcher.abort();
+      fileWatcher.cancel();
+      resourceWatcher.cancel();
       stopJavascriptErrorListeners?.();
     };
   });

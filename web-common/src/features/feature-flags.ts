@@ -12,11 +12,16 @@ export type DerivedReadables<T> = {
 };
 
 class FeatureFlag {
-  system = false;
+  private _system = false;
   private state = writable(false);
 
-  constructor(scope: "user" | "system" = "user") {
-    this.system = scope === "system";
+  constructor(scope: "user" | "system" = "user", initial = false) {
+    this._system = scope === "system";
+    this.set(initial);
+  }
+
+  get system() {
+    return this._system;
   }
 
   subscribe = this.state.subscribe;
@@ -29,8 +34,8 @@ type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 class FeatureFlags {
   adminServer = new FeatureFlag("system");
   readOnly = new FeatureFlag("system");
+  ai = new FeatureFlag("system", true);
   pivot = new FeatureFlag();
-  ai = new FeatureFlag();
   cloudDataViewer = new FeatureFlag();
   customDashboards = new FeatureFlag();
 
@@ -46,7 +51,7 @@ class FeatureFlags {
       Object.keys(this).forEach((key) => {
         const flag = this[key] as FeatureFlag;
         if (flag.system) return;
-        flag.set(userFlags.has(key));
+        if (userFlags.has(key)) flag.set(true);
       });
     }, 400);
 
@@ -72,7 +77,8 @@ class FeatureFlags {
         },
       }).subscribe((features) => {
         if (!Array.isArray(features?.data)) return;
-        updateFlags(new Set([...staticFlags, ...features.data]));
+        const yamlFlags = features.data;
+        updateFlags(new Set([...staticFlags, ...yamlFlags]));
       });
     });
   }
