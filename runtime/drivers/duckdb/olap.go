@@ -593,7 +593,7 @@ func (c *connection) detachAndRemoveFile(db, dbFile string) {
 		return err
 	})
 	if err != nil {
-		c.logger.Warn("detach failed", zap.String("db", db), zap.Error(err))
+		c.logger.Debug("detach failed", zap.String("db", db), zap.Error(err))
 	}
 }
 
