@@ -74,7 +74,6 @@ export class FileArtifact {
   }
 
   public deleteResource() {
-    this.name.set(undefined);
     this.reconciling.set(false);
   }
 
