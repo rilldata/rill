@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"net/url"
 	"reflect"
@@ -133,16 +134,15 @@ func (r *rows) Next(dest []sqlDriver.Value) error {
 	if r.currIdx >= r.numRows {
 		return io.EOF
 	}
-	row := r.results.Rows[r.currIdx]
-	r.currIdx++
-	for i, v := range row {
-		dest[i] = v
+	for i := range len(r.Columns()) {
+		dest[i] = r.goValue(r.currIdx, i, r.results.GetColumnDataType(i))
 	}
+	r.currIdx++
 	return nil
 }
 
 func (r *rows) ColumnTypeScanType(index int) reflect.Type {
-	return r.columns[index].goType
+	return r.columns[index].scanType
 }
 
 func (r *rows) ColumnTypeDatabaseTypeName(index int) string {
@@ -152,7 +152,7 @@ func (r *rows) ColumnTypeDatabaseTypeName(index int) string {
 type column struct {
 	name      string
 	pinotType string
-	goType    reflect.Type
+	scanType  reflect.Type
 }
 
 func colSchema(results *pinot.ResultTable) []column {
@@ -161,13 +161,13 @@ func colSchema(results *pinot.ResultTable) []column {
 		cols = append(cols, column{
 			name:      results.GetColumnName(i),
 			pinotType: results.GetColumnDataType(i),
-			goType:    pinotToGoType(results.GetColumnDataType(i)),
+			scanType:  scanType(results.GetColumnDataType(i)),
 		})
 	}
 	return cols
 }
 
-func pinotToGoType(pinotType string) reflect.Type {
+func scanType(pinotType string) reflect.Type {
 	switch pinotType {
 	case "INT":
 		return reflect.TypeOf(int32(0))
@@ -180,13 +180,60 @@ func pinotToGoType(pinotType string) reflect.Type {
 	case "STRING":
 		return reflect.TypeOf("")
 	case "BYTES":
-		return reflect.TypeOf([]byte{})
+		return reflect.TypeOf("")
 	case "BIG_DECIMAL":
 		return reflect.TypeOf(big.Float{})
 	case "TIMESTAMP":
 		return reflect.TypeOf(time.Time{})
 	case "BOOLEAN":
 		return reflect.TypeOf(false)
+	default:
+		return reflect.TypeOf("")
+	}
+}
+
+func (r *rows) goValue(rowIdx, coldIdx int, pinotType string) interface{} {
+	if r.results.Get(rowIdx, coldIdx) == nil {
+		return nil
+	}
+	switch pinotType {
+	case "INT":
+		// check if interface is string as it may be NaN
+		if reflect.TypeOf(r.results.Get(rowIdx, coldIdx)).String() == "string" {
+			return int32(math.NaN())
+		}
+		return r.results.GetInt(rowIdx, coldIdx)
+	case "LONG":
+		if reflect.TypeOf(r.results.Get(rowIdx, coldIdx)).String() == "string" {
+			return int64(math.NaN())
+		}
+		return r.results.GetLong(rowIdx, coldIdx)
+	case "FLOAT":
+		if reflect.TypeOf(r.results.Get(rowIdx, coldIdx)).String() == "string" {
+			return float32(math.NaN())
+		}
+		return r.results.GetFloat(rowIdx, coldIdx)
+	case "DOUBLE":
+		if reflect.TypeOf(r.results.Get(rowIdx, coldIdx)).String() == "string" {
+			return math.NaN()
+		}
+		return r.results.GetDouble(rowIdx, coldIdx)
+	case "STRING":
+		return r.results.GetString(rowIdx, coldIdx)
+	case "BYTES":
+		// return hex string as it is
+		return r.results.GetString(rowIdx, coldIdx)
+	case "BIG_DECIMAL":
+		return r.results.Get(rowIdx, coldIdx)
+	case "TIMESTAMP":
+		// convert iso8601 formatted string to time.Time
+		t, err := time.Parse("2006-01-02 15:04:05.0", r.results.GetString(rowIdx, coldIdx))
+		if err != nil {
+			return err
+		}
+		return t
+	case "BOOLEAN":
+		return r.results.Get(rowIdx, coldIdx).(bool)
 	default:
 		return reflect.TypeOf("")
 	}

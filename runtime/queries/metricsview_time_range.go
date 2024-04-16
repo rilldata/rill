@@ -77,9 +77,9 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDruid, q.MetricsView), policyFilter, priority)
 	case drivers.DialectClickHouse:
-		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
+		return q.resolveClickHouseAndPinot(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
 	case drivers.DialectPinot:
-		return q.resolvePinot(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+		return q.resolveClickHouseAndPinot(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectPinot, q.MetricsView), policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -234,7 +234,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 	return nil
 }
 
-func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveClickHouseAndPinot(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
@@ -284,64 +284,6 @@ func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drive
 		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
 			TimeRangeSummary: summary,
 		}
-		return nil
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return err
-	}
-
-	return errors.New("no rows returned")
-}
-
-func (q *MetricsViewTimeRange) resolvePinot(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
-	if filter != "" {
-		filter = fmt.Sprintf(" WHERE %s", filter)
-	}
-
-	// casting to double to get epoch millis, cast to long fails with Pinot's mutli stage engine
-	rangeSQL := fmt.Sprintf(
-		"SELECT CAST(min(%[1]s) AS DOUBLE) AS \"min\", CAST(max(%[1]s) AS DOUBLE) AS \"max\" FROM %[2]s %[3]s",
-		safeName(timeDim),
-		safeName(tableName),
-		filter,
-	)
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            rangeSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		summary := &runtimev1.TimeRangeSummary{}
-		var minTime, maxTime *float64
-		err = rows.Scan(&minTime, &maxTime)
-		if err != nil {
-			return err
-		}
-
-		if minTime != nil {
-			summary.Min = timestamppb.New(time.UnixMilli(int64(*minTime)))
-		}
-		if maxTime != nil {
-			summary.Max = timestamppb.New(time.UnixMilli(int64(*maxTime)))
-		}
-		if minTime != nil && maxTime != nil {
-			summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-				Micros: int64(*maxTime-*minTime) * 1000,
-				Days:   int32(*maxTime-*minTime) / 86400000,
-			}
-		}
-		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
-			TimeRangeSummary: summary,
-		}
-
 		return nil
 	}
 

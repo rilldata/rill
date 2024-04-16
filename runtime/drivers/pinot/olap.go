@@ -172,11 +172,17 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		return nil, err
 	}
 
+	unsupportedCols := make(map[string]string)
 	var schemaFields []*runtimev1.StructType_Field
 	for _, field := range schemaResponse.DimensionFieldSpecs {
 		singleValueField := true
 		if field.SingleValueField != nil {
 			singleValueField = *field.SingleValueField
+		}
+		if !singleValueField {
+			// Skip array fields for now
+			unsupportedCols[field.Name] = field.DataType + "_ARRAY"
+			continue
 		}
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
@@ -185,14 +191,19 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		if field.SingleValueField != nil {
 			singleValueField = *field.SingleValueField
 		}
+		if !singleValueField {
+			// Skip array fields for now
+			unsupportedCols[field.Name] = field.DataType + "_ARRAY"
+			continue
+		}
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		singleValueField := true
-		if field.SingleValueField != nil {
-			singleValueField = *field.SingleValueField
+		if field.DataType != "TIMESTAMP" {
+			unsupportedCols[field.Name] = field.DataType
+			continue
 		}
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, true)})
 	}
 
 	// Mapping the schemaResponse to your Table structure
@@ -202,7 +213,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		Name:            name,
 		View:            false,
 		Schema:          &runtimev1.StructType{Fields: schemaFields},
-		UnsupportedCols: map[string]string{},
+		UnsupportedCols: unsupportedCols,
 	}
 
 	return table, nil
@@ -237,6 +248,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 func databaseTypeToPB(dbt string, nullable, singleValueField bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	if !singleValueField {
+		// currently we don't support array fields, so unreachable code
 		t.Code = runtimev1.Type_CODE_ARRAY
 		t.ArrayElementType = databaseTypeToPB(dbt, false, true)
 		return t

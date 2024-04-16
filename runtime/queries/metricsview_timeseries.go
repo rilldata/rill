@@ -169,15 +169,11 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			if v != nil {
 				t = *v
 			}
-		case json.Number:
+		case int64:
 			if olap.Dialect() != drivers.DialectPinot {
 				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 			}
-			val, err := v.Float64()
-			if err != nil {
-				return err
-			}
-			t = time.UnixMilli(int64(val))
+			t = time.UnixMilli(v)
 		default:
 			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 		}
