@@ -3,7 +3,7 @@ import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimensio
 /**
  * Type definitions for common chart types supported by Vega
  */
-export enum ChartTypes {
+export enum ChartType {
   BAR = "bar",
   STACKED_BAR = "stacked_bar",
   GROUPED_BAR = "grouped_bar",
@@ -17,7 +17,7 @@ export enum ChartTypes {
 }
 
 export const TDDChartMap = {
-  [TDDChart.GROUPED_BAR]: ChartTypes.GROUPED_BAR,
-  [TDDChart.STACKED_BAR]: ChartTypes.STACKED_BAR,
-  [TDDChart.STACKED_AREA]: ChartTypes.STACKED_AREA,
+  [TDDChart.GROUPED_BAR]: ChartType.GROUPED_BAR,
+  [TDDChart.STACKED_BAR]: ChartType.STACKED_BAR,
+  [TDDChart.STACKED_AREA]: ChartType.STACKED_AREA,
 };

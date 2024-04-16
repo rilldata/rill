@@ -8,6 +8,7 @@
   - continuously: If the user deletes the `rill.yaml` file, they are immediately redirected to the Welcome page.
 -->
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import {
@@ -50,11 +51,11 @@
     }
 
     // DuckDB-backed projects should head to the Welcome page for user-guided initialization
-    // if (olapConnector === "duckdb") {
-    //   ready = true;
-    //   await goto("/welcome");
-    //   return;
-    // }
+    if (olapConnector === "duckdb") {
+      ready = true;
+      await goto("/welcome");
+      return;
+    }
 
     // Clickhouse and Druid-backed projects should be initialized immediately
     await $unpackEmptyProject.mutateAsync({
