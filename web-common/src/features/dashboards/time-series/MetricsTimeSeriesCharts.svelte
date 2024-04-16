@@ -365,7 +365,7 @@
 
 <style lang="postcss">
   .tdd-chart-header {
-    @apply bg-slate-50 py-1 px-2 items-center;
+    @apply bg-slate-50 pl-2 items-center;
     @apply border border-slate-100 rounded-sm;
   }
 </style>
