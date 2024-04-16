@@ -3,18 +3,11 @@
   import { createWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
   import { createWatchResourceClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-  import type { Query } from "@tanstack/query-core";
-  import type { AxiosError } from "axios";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
 
   const fileWatcher = createWatchFilesClient();
   const resourceWatcher = createWatchResourceClient();
-
-  queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
-    query: Query,
-  ) => errorEventHandler?.requestErrorEventHandler(error, query);
 
   export let host: string;
   export let instanceId: string;
