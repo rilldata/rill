@@ -127,7 +127,6 @@ export async function updateCodeEditor(page: Page, code: string) {
   } else {
     await page.keyboard.press("Control+A");
   }
-  await page.keyboard.press("Delete");
   await page.keyboard.insertText(code);
 }
 
