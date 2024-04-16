@@ -1,10 +1,13 @@
 export enum TDDChart {
   DEFAULT = "default",
-  BAR = "bar",
   STACKED_BAR = "stacked_bar",
   GROUPED_BAR = "grouped_bar",
   STACKED_AREA = "stacked_area",
 }
+
+export type TDDAlternateCharts = Exclude<TDDChart, TDDChart.DEFAULT>;
+export type TDDBarCharts = Exclude<TDDAlternateCharts, TDDChart.STACKED_AREA>;
+
 export interface TDDState {
   /***
    * The name of the measure that is currently being expanded

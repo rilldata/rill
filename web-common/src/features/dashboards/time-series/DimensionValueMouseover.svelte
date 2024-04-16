@@ -1,11 +1,11 @@
 <script lang="ts">
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
+  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import type { TimeSeriesDatum } from "./timeseries-data-store";
-  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
   import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import type { TimeSeriesDatum } from "./timeseries-data-store";
 
   export let point: TimeSeriesDatum;
   export let xAccessor: string;
@@ -42,7 +42,7 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    if (!x) return { y: null, fillClass: undefined, name: "" };
+    if (!x) return { y: null, color: undefined, name: "" };
 
     const { entry: bisected } = bisectData(
       new Date(x),
@@ -50,12 +50,11 @@
       xAccessor,
       dimension?.data,
     );
-    if (bisected === undefined)
-      return { y: null, fillClass: undefined, name: "" };
+    if (bisected === undefined) return { y: null, color: undefined, name: "" };
     const y = bisected[yAccessor];
     return {
       y,
-      fillClass: dimension?.fillClass,
+      color: dimension?.color,
       name: dimension?.value,
     };
   });
@@ -84,7 +83,7 @@
         yOverrideStyleClass: `fill-gray-600 italic`,
         key: dimension.name === null ? "null" : dimension.name,
         label: hovered ? truncate(dimension.name || "null") : "",
-        pointColorClass: dimension.fillClass,
+        pointColor: dimension.color,
         valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",
         labelColorClass: "fill-gray-600",

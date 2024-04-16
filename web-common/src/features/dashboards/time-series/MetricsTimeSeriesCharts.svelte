@@ -14,7 +14,10 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
+  import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import {
     TimeSeriesDatum,
@@ -72,17 +75,20 @@
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
+  $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
-
+  $: isAllTime =
+    $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
+  $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
   $: renderedMeasures = $metricsView.data?.measures?.filter(
@@ -126,10 +132,9 @@
       $dashboardStore.selectedTimezone,
     );
 
-    const slicedData =
-      $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
-        ? formattedData?.slice(1)
-        : formattedData?.slice(1, -1);
+    const slicedData = isAllTime
+      ? formattedData?.slice(1)
+      : formattedData?.slice(1, -1);
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
@@ -160,6 +165,7 @@
       interval,
       $timeControlsStore.selectedTimeRange?.name,
       $metricsView?.data?.defaultTimeRange,
+      $dashboardStore?.tdd.chartType,
     );
 
     if (adjustedChartValue?.start) {
@@ -186,9 +192,7 @@
         mouseoverValue.x,
         "center",
         "ts_position",
-        $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
-          ? formattedData?.slice(1)
-          : formattedData?.slice(1, -1),
+        isAllTime ? formattedData?.slice(1) : formattedData?.slice(1, -1),
       );
 
       if ($chartInteractionColumn?.hover !== columnNum)
@@ -216,9 +220,18 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class:tdd-chart-header={isInTimeDimensionView} class="flex pl-1">
+  <div
+    class:tdd-chart-header={isInTimeDimensionView}
+    class:mb-6={isAlternateChart}
+    class="flex pl-1"
+  >
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
+      <ChartTypeSelector
+        isDimensional={!!dimensionData.length}
+        {metricViewName}
+        chartType={tddChartType}
+      />
     {:else}
       <SearchableFilterButton
         label="Measures"
@@ -232,29 +245,32 @@
     {/if}
   </div>
 
-  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-    <div class="relative w-full">
-      <ChartInteractions
-        {metricViewName}
-        {showComparison}
-        timeGrain={interval}
-      />
-      <div class="translate-x-5">
-        {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
-          <SimpleDataGraphic
-            height={26}
-            overflowHidden={false}
-            top={29}
-            bottom={0}
-            xMin={startValue}
-            xMax={endValue}
-          >
-            <Axis superlabel side="top" placement="start" />
-          </SimpleDataGraphic>
-        {/if}
+  {#if tddChartType == TDDChart.DEFAULT || !expandedMeasureName}
+    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+      <div class="relative w-full">
+        <ChartInteractions
+          {metricViewName}
+          {showComparison}
+          timeGrain={interval}
+        />
+        <div class="translate-x-5">
+          {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
+            <SimpleDataGraphic
+              height={26}
+              overflowHidden={false}
+              top={29}
+              bottom={0}
+              right={isInTimeDimensionView ? 10 : 25}
+              xMin={startValue}
+              xMax={endValue}
+            >
+              <Axis superlabel side="top" placement="start" />
+            </SimpleDataGraphic>
+          {/if}
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 
   <!-- bignumbers and line charts -->
   {#if renderedMeasures}
@@ -293,10 +309,21 @@
 
           {#if $timeSeriesDataStore?.isError}
             <div class="p-5"><CrossIcon /></div>
+          {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
+            <TDDAlternateChart
+              timeGrain={interval}
+              chartType={tddChartType}
+              {expandedMeasureName}
+              totalsData={formattedData}
+              {dimensionData}
+              xMin={startValue}
+              xMax={endValue}
+            />
           {:else if formattedData && interval}
             <MeasureChart
               bind:mouseoverValue
               {measure}
+              {isInTimeDimensionView}
               {isScrubbing}
               {scrubStart}
               {scrubEnd}
@@ -338,7 +365,7 @@
 
 <style lang="postcss">
   .tdd-chart-header {
-    @apply bg-slate-50 py-1 px-2 items-center h-7;
+    @apply bg-slate-50 pl-2 items-center;
     @apply border border-slate-100 rounded-sm;
   }
 </style>
