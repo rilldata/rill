@@ -23,7 +23,7 @@
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
-  import DashboardPage from "../../dashboard/[name]/edit/+page@dashboard.svelte";
+  import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
