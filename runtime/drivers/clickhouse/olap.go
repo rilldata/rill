@@ -125,6 +125,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		attrs := []attribute.KeyValue{
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
+			attribute.String("instance_id", c.instanceID),
 		}
 
 		attrSet := attribute.NewSet(attrs...)

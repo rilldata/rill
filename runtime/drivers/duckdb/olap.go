@@ -106,6 +106,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			attribute.String("db", c.config.DBFilePath),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
+			attribute.String("instance_id", c.instanceID),
 		}
 
 		attrSet := attribute.NewSet(attrs...)
