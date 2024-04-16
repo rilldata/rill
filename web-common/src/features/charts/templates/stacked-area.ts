@@ -1,20 +1,21 @@
+import { ChartField } from "./build-template";
 import { multiLayerBaseSpec } from "./utils";
 
 export function buildStackedArea(
-  timeField: string,
-  quantitativeField: string,
-  nominalField: string,
+  timeField: ChartField,
+  quantitativeField: ChartField,
+  nominalField: ChartField,
 ) {
   const baseSpec = multiLayerBaseSpec();
 
   baseSpec.encoding = {
-    x: { field: timeField, type: "temporal" },
+    x: { field: timeField.name, type: "temporal" },
     y: {
-      field: quantitativeField,
+      field: quantitativeField.name,
       type: "quantitative",
       stack: "zero",
     },
-    color: { field: nominalField, type: "nominal", legend: null },
+    color: { field: nominalField?.name, type: "nominal", legend: null },
   };
   baseSpec.layer = [
     {
@@ -23,17 +24,29 @@ export function buildStackedArea(
     {
       mark: { type: "line", strokeWidth: 1, clip: true },
       encoding: {
-        stroke: { field: nominalField, type: "nominal", legend: null },
+        stroke: { field: nominalField.name, type: "nominal", legend: null },
       },
     },
     {
-      mark: { type: "rule", color: "transparent", clip: true },
+      mark: {
+        type: "rule",
+        color: "transparent",
+        clip: true,
+      },
       encoding: {
         color: { value: "transparent" },
         tooltip: [
-          { field: quantitativeField, type: "quantitative" },
+          {
+            title: quantitativeField.label,
+            field: quantitativeField.name,
+            type: "quantitative",
+          },
           { field: "ts", type: "temporal", title: "Time" },
-          { field: nominalField, type: "nominal" },
+          {
+            title: nominalField.label,
+            field: nominalField.name,
+            type: "nominal",
+          },
         ],
       },
       params: [

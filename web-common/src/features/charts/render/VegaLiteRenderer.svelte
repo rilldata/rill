@@ -39,8 +39,22 @@
   />
 {/if}
 
-<style>
+<style lang="postcss">
   :global(.vega-embed) {
     width: 100%;
+  }
+
+  :global(#vg-tooltip-element) {
+    @apply shadow-md;
+    font-family: "Inter";
+    font-size: 12px;
+    background: rgba(250, 250, 250, 0.8);
+  }
+
+  :global(#vg-tooltip-element table tr td.value) {
+    @apply font-normal;
+  }
+  :global(#vg-tooltip-element table tr td.key) {
+    @apply text-gray-500;
   }
 </style>

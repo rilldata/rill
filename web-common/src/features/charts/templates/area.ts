@@ -1,12 +1,16 @@
+import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
 
-export function buildArea(timeField: string, quantitativeField: string) {
+export function buildArea(
+  timeField: ChartField,
+  quantitativeField: ChartField,
+) {
   const baseSpec = singleLayerBaseSpec();
 
   baseSpec.mark = { type: "area", clip: true };
   baseSpec.encoding = {
-    x: { field: timeField, type: "temporal" },
-    y: { field: quantitativeField, type: "quantitative" },
+    x: { field: timeField.name, type: "temporal" },
+    y: { field: quantitativeField.name, type: "quantitative" },
   };
 
   return baseSpec;
