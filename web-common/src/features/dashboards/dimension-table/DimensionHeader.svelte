@@ -24,7 +24,6 @@
   export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
-  export let enableSearch = true;
 
   const dispatch = createEventDispatcher();
 
@@ -121,7 +120,7 @@
           <Close />
         </button>
       </div>
-    {:else if enableSearch}
+    {:else}
       <button
         class="flex items-center gap-x-2 p-1.5 text-gray-700"
         in:fly|global={{ x: 10, duration: 300 }}

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getDimensionType } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/getDimensionType";
-
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -9,7 +7,6 @@
    */
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
@@ -58,12 +55,6 @@
   let searchText = "";
 
   $: instanceId = $runtime.instanceId;
-  $: dimensionType = getDimensionType(
-    instanceId,
-    $metricsViewName,
-    dimensionName,
-  );
-  $: stringLikeDimension = STRING_LIKES.has($dimensionType.data ?? "");
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
@@ -167,10 +158,9 @@
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
         on:search={(event) => {
-          if (stringLikeDimension) searchText = event.detail;
+          searchText = event.detail;
         }}
         on:toggle-all-search-items={() => toggleAllSearchItems()}
-        enableSearch={stringLikeDimension}
       />
     </div>
 

@@ -11,7 +11,6 @@
   export let excludeMode: boolean;
   export let selectedValues: string[];
   export let allValues: string[] | null = [];
-  export let enableSearch = true;
 
   let searchText = "";
 
@@ -38,27 +37,25 @@
 </script>
 
 <Menu
+  paddingTop={1}
+  paddingBottom={0}
+  rounded={false}
   focusOnMount={false}
-  maxHeight="400px"
   maxWidth="480px"
   minHeight="150px"
-  on:click-outside
+  maxHeight="400px"
   on:escape
-  paddingBottom={0}
-  paddingTop={1}
-  rounded={false}
+  on:click-outside
 >
-  {#if enableSearch}
-    <!-- the min-height is set to have about 3 entries in it -->
-    <div class="px-3 py-2">
-      <Search
-        bind:value={searchText}
-        on:input={onSearch}
-        label="Search list"
-        showBorderOnFocus={false}
-      />
-    </div>
-  {/if}
+  <!-- the min-height is set to have about 3 entries in it -->
+  <div class="px-3 py-2">
+    <Search
+      bind:value={searchText}
+      on:input={onSearch}
+      label="Search list"
+      showBorderOnFocus={false}
+    />
+  </div>
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
@@ -98,7 +95,7 @@
     {/if}
   </div>
   <Footer>
-    <Button on:click={toggleSelectAll} type="text">
+    <Button type="text" on:click={toggleSelectAll}>
       {#if allSelected}
         Deselect all
       {:else}
@@ -106,7 +103,7 @@
       {/if}
     </Button>
 
-    <Button on:click={() => dispatch("toggle")} type="secondary">
+    <Button type="secondary" on:click={() => dispatch("toggle")}>
       {#if excludeMode}
         Include
       {:else}

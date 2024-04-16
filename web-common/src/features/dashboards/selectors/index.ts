@@ -1,22 +1,17 @@
-import {
-  createInExpression,
-  createLikeExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
 import {
   RpcStatus,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
+  V1MetricsViewToplistResponse,
   createQueryServiceMetricsViewTimeRange,
+  createQueryServiceMetricsViewToplist,
   createQueryServiceMetricsViewSchema,
   type V1MetricsViewSchemaResponse,
-  createQueryServiceMetricsViewComparison,
-  V1MetricsViewComparisonResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
@@ -58,16 +53,12 @@ export const getFilterSearchList = (
     dimension,
     addNull,
     searchText,
-    type,
   }: {
     dimension: string;
     addNull: boolean;
     searchText: string;
-    type: string | undefined;
   },
-): Readable<
-  QueryObserverResult<V1MetricsViewComparisonResponse, RpcStatus>
-> => {
+): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
   return derived(
     [
       ctx.dashboardStore,
@@ -76,24 +67,27 @@ export const getFilterSearchList = (
       ctx.runtime,
     ],
     ([metricsExplorer, timeControls, metricViewName, runtime], set) => {
-      return createQueryServiceMetricsViewComparison(
+      return createQueryServiceMetricsViewToplist(
         runtime.instanceId,
         metricViewName,
         {
-          dimension: { name: dimension },
-          measures: [{ name: metricsExplorer.leaderboardMeasureName }],
-          timeRange: {
-            start: timeControls.timeStart,
-            end: timeControls.timeEnd,
-          },
+          dimensionName: dimension,
+          measureNames: [metricsExplorer.leaderboardMeasureName],
+          timeStart: timeControls.timeStart,
+          timeEnd: timeControls.timeEnd,
           limit: "100",
           offset: "0",
-          sort: [{ name: dimension }],
-          where: addNull
-            ? createInExpression(dimension, [null])
-            : STRING_LIKES.has(type ?? "")
-              ? createLikeExpression(dimension, `%${searchText}%`)
-              : undefined,
+          sort: [],
+          filter: {
+            include: [
+              {
+                name: dimension,
+                in: addNull ? [null] : [],
+                like: [`%${searchText}%`],
+              },
+            ],
+            exclude: [],
+          },
         },
         {
           query: {
