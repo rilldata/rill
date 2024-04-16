@@ -93,8 +93,8 @@
           bind:value={$form["newName"]}
           claimFocusOnMount
           error={$errors["newName"]}
-          id="file-name"
-          label="File name"
+          id={isDir ? "folder-name" : "file-name"}
+          label={isDir ? "Folder name" : "File name"}
         />
       </div>
     </form>
