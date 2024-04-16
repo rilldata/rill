@@ -8,6 +8,11 @@
   export let directory: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
+  export let onGenerateChart: (data: {
+    table?: string;
+    connector?: string;
+    metricsView?: string;
+  }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
   export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 </script>
@@ -23,6 +28,7 @@
         directory={dir}
         {onRename}
         {onDelete}
+        {onGenerateChart}
         {onMouseDown}
         {onMouseUp}
       />
@@ -33,5 +39,12 @@
 {#each directory.files as file}
   {@const filePath =
     directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
-  <NavFile {filePath} {onRename} {onDelete} {onMouseDown} {onMouseUp} />
+  <NavFile
+    {filePath}
+    {onRename}
+    {onDelete}
+    {onGenerateChart}
+    {onMouseDown}
+    {onMouseUp}
+  />
 {/each}

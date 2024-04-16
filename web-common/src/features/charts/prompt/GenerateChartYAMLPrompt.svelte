@@ -21,10 +21,6 @@
 
   async function createVegaConfig() {
     open = false;
-    const newChartName = getName(
-      `${table || metricsView}_chart`,
-      $chartFileNames.data ?? [],
-    );
     await generateVegaConfig(
       prompt,
       {
@@ -32,9 +28,8 @@
         connector,
         metricsView,
       },
-      newChartName,
+      getName(`${table || metricsView}_chart`, $chartFileNames.data ?? []),
     );
-    await goto(`/files/charts/${newChartName}`);
   }
 </script>
 

@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
@@ -65,6 +66,26 @@
     }
   }
 
+  let showGenerateChartModal = false;
+  let generateChartTable: string;
+  let generateChartConnector: string;
+  let generateChartMetricsView: string;
+
+  function onGenerateChart({
+    table,
+    connector,
+    metricsView,
+  }: {
+    table?: string;
+    connector?: string;
+    metricsView?: string;
+  }) {
+    showGenerateChartModal = true;
+    generateChartTable = table ?? "";
+    generateChartConnector = connector ?? "";
+    generateChartMetricsView = metricsView ?? "";
+  }
+
   const { navDragging, offset, dragStart } = navEntryDragDropStore;
 
   async function handleDropSuccess(
@@ -109,6 +130,7 @@
         directory={$getFileTree.data}
         {onRename}
         {onDelete}
+        {onGenerateChart}
         onMouseDown={(e, dragData) =>
           navEntryDragDropStore.onMouseDown(e, dragData)}
         onMouseUp={(e, dragData) =>
@@ -125,6 +147,13 @@
     isDir={renameIsDir}
   />
 {/if}
+
+<GenerateChartYAMLPrompt
+  bind:open={showGenerateChartModal}
+  connector={generateChartConnector}
+  metricsView={generateChartMetricsView}
+  table={generateChartTable}
+/>
 
 {#if $navDragging}
   <NavEntryPortal offset={$offset} position={$dragStart} />

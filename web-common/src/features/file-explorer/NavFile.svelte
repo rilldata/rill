@@ -25,6 +25,11 @@
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
+  export let onGenerateChart: (data: {
+    table?: string;
+    connector?: string;
+    metricsView?: string;
+  }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
   export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
@@ -87,13 +92,22 @@
       >
         {#if resourceKind}
           {#if resourceKind === ResourceKind.Source}
-            <SourceMenuItems {filePath} />
+            <SourceMenuItems
+              {filePath}
+              on:generate-chart={({ detail }) => onGenerateChart(detail)}
+            />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.Model}
-            <ModelMenuItems {filePath} />
+            <ModelMenuItems
+              {filePath}
+              on:generate-chart={({ detail }) => onGenerateChart(detail)}
+            />
             <NavigationMenuSeparator />
-          {:else if resourceKind === ResourceKind.Dashboard}
-            <DashboardMenuItems {filePath} />
+          {:else if resourceKind === ResourceKind.MetricsView}
+            <DashboardMenuItems
+              {filePath}
+              on:generate-chart={({ detail }) => onGenerateChart(detail)}
+            />
             <NavigationMenuSeparator />
           {/if}
         {/if}
