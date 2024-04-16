@@ -742,10 +742,9 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 
 	// The caller must either have ManageProjectMembers permission or be the user being removed.
 	claims := auth.GetClaims(ctx)
-	allow := false
-	allow = allow || claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers
-	allow = allow || (claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID)
-	if !allow {
+	isManager := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers
+	isSelf := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	if !isManager && !isSelf {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
 

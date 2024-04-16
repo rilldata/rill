@@ -447,10 +447,9 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 
 	// The caller must either have ManageOrgMembers permission or be the user being removed.
 	claims := auth.GetClaims(ctx)
-	allow := false
-	allow = allow || claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers
-	allow = allow || (claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID)
-	if !allow {
+	isManager := claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers
+	isSelf := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	if !isManager && !isSelf {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
