@@ -14,7 +14,7 @@
   export let basis = 200;
   export let resizing = false;
   export let absolute = true;
-  export let onMouseDown: (e: MouseEvent) => void;
+  export let onMouseDown: ((e: MouseEvent) => void) | null = null;
 
   let start = 0;
   let startingDimension = dimension;
@@ -29,7 +29,7 @@
       start = e.clientY;
     }
 
-    onMouseDown(e);
+    if (onMouseDown) onMouseDown(e);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
   }
