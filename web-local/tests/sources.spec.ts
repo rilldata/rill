@@ -10,8 +10,8 @@ import {
   uploadFile,
   waitForSource,
 } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
 import { test } from "./utils/test";
+import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
 
 test.describe("sources", () => {
   test("Import sources", async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe("sources", () => {
   });
 
   test("Rename and delete sources", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "sources/AdBids.yaml");
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // rename
     await renameEntityUsingMenu(page, "AdBids.yaml", "AdBids_new.yaml");
