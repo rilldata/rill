@@ -10,10 +10,9 @@ import { fileURLToPath } from "url";
 import {
   clickModalButton,
   getEntityLink,
-  TestEntityType,
   waitForProfiling,
 } from "./commonHelpers";
-import { waitForEntity, waitForFileEntry } from "./waitHelpers";
+import { waitForFileEntry } from "./waitHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
