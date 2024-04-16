@@ -7,7 +7,7 @@
   import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -53,14 +53,14 @@
     },
   });
 
-  $: dashboardsQuery = useValidDashboards(instanceId);
+  $: visualizationsQuery = useValidVisualizations(instanceId);
 
   $: alertsQuery = useAlerts(instanceId);
   $: reportsQuery = useReports(instanceId);
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
-  $: dashboards = $dashboardsQuery.data ?? [];
+  $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
@@ -73,12 +73,20 @@
     return map.set(label, { label });
   }, new Map<string, PathOption>());
 
-  $: dashboardPaths = dashboards.reduce((map, { meta, metricsView }) => {
-    const id = meta.name.name;
-    return map.set(id, {
-      label: metricsView?.state?.validSpec?.title || id,
-    });
-  }, new Map<string, PathOption>());
+  $: visualizationPaths = visualizations.reduce(
+    (map, { meta, metricsView, dashboard }) => {
+      const id = meta.name.name;
+      const isMetricsExplorer = !!metricsView;
+      return map.set(id, {
+        label:
+          (isMetricsExplorer
+            ? metricsView?.state?.validSpec?.title
+            : dashboard?.spec?.title) || id,
+        section: isMetricsExplorer ? undefined : "-/dashboards",
+      });
+    },
+    new Map<string, PathOption>(),
+  );
 
   $: alertPaths = alerts.reduce((map, alert) => {
     const id = alert.meta.name.name;
@@ -99,7 +107,7 @@
   $: pathParts = [
     organizationPaths,
     projectPaths,
-    dashboardPaths,
+    visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
 

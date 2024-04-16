@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import { page } from "$app/stores";
-  import type { PathOptions, PathOption } from "./Breadcrumbs.svelte";
+  import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
 
   const regex = /\[.*?\]/g;
 
@@ -30,7 +30,7 @@
       .slice(0, option?.depth ?? depth)
       .filter((p): p is string => !!p);
 
-    if (selected?.section) newPath.push(selected?.section);
+    if (option?.section) newPath.push(option.section);
 
     newPath.push(id);
 
