@@ -113,7 +113,9 @@
 {:else if isDashboard}
   <DashboardPage data={{ fileArtifact }} />
 {:else if isChart}
-  <ChartPage data={{ fileArtifact }} />
+  {#key $page.params.file}
+    <ChartPage data={{ fileArtifact }} />
+  {/key}
 {:else if isCustomDashboard}
   <CustomDashboardPage data={{ fileArtifact }} />
 {:else if isOther}

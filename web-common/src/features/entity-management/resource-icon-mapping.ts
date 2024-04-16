@@ -13,6 +13,7 @@ export const resourceIconMapping = {
   [ResourceKind.MetricsView]: DashboardIcon,
   [ResourceKind.API]: ApiIcon,
   [ResourceKind.Chart]: Chart,
+  [ResourceKind.Dashboard]: DashboardIcon, // TODO: show this be different?
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
   [ResourceKind.Alert]: AlertCircleOutline,

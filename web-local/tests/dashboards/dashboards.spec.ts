@@ -10,8 +10,8 @@ import {
   interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
   waitForComparisonTopLists,
-  waitForDashboard,
   waitForTimeSeries,
+  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import {
   assertAdBidsDashboard,
@@ -306,8 +306,7 @@ test.describe("dashboard", () => {
         description: ""
 
         `;
-    await updateCodeEditor(page, changeDisplayNameDoc);
-    await waitForDashboard(page);
+    await updateAndWaitForDashboard(page, changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -352,8 +351,7 @@ test.describe("dashboard", () => {
         description: ""
 
         `;
-    await updateCodeEditor(page, addBackTimestampColumnDoc);
-    await waitForDashboard(page);
+    await updateAndWaitForDashboard(page, addBackTimestampColumnDoc);
 
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();

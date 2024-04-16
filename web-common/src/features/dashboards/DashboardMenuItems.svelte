@@ -6,6 +6,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -22,6 +23,7 @@
   export let filePath: string;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: metricsView = extractFileName(filePath);
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
@@ -85,7 +87,9 @@
 {#if $customDashboards}
   <NavigationMenuItem
     on:click={() => {
-      dispatch("generate-chart");
+      dispatch("generate-chart", {
+        metricsView,
+      });
     }}
     disabled={$hasErrors}
   >

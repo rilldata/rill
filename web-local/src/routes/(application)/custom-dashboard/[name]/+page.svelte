@@ -10,11 +10,15 @@
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    removeLeadingSlash,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
@@ -76,7 +80,10 @@
   $: instanceId = $runtime.instanceId;
 
   $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    removeLeadingSlash(filePath),
+  );
   $: [, fileName] = splitFolderAndName(filePath);
 
   $: yaml = $fileQuery.data?.blob || "";
@@ -93,9 +100,11 @@
     }
   }
 
-  $: selectedChartFilePath =
-    selectedChartName &&
-    getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart);
+  $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
+    ResourceKind.Chart,
+    selectedChartName ?? "",
+  );
+  $: selectedChartFilePath = selectedChartFileArtifact?.path;
 
   $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
 
@@ -127,7 +136,7 @@
     try {
       await $updateFile.mutateAsync({
         instanceId,
-        path: filePath,
+        path: removeLeadingSlash(filePath),
         data: {
           blob: content,
         },
@@ -155,7 +164,7 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      newComponents,
+      components: newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));

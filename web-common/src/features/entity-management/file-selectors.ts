@@ -102,7 +102,7 @@ export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
       queryClient,
       select: (data) =>
         data.files
-          ?.filter((f) => f.isDir)
+          ?.filter((f) => !f.isDir)
           .map((f) => f.path?.split("/").pop() ?? "") ?? [],
     },
   });

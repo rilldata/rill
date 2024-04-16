@@ -44,4 +44,4 @@
   </svelte:fragment>
 </WorkspaceHeader>
 
-<GenerateVegaSpecPrompt bind:open={generateOpen} chart={chartName} />
+<GenerateVegaSpecPrompt bind:open={generateOpen} chart={chartName} {filePath} />

@@ -8,10 +8,15 @@
 
   export let open: boolean;
   export let chart: string;
+  export let filePath: string;
 
   let prompt: string;
 
-  $: generateVegaConfig = createChartGenerator($runtime.instanceId, chart);
+  $: generateVegaConfig = createChartGenerator(
+    $runtime.instanceId,
+    chart,
+    filePath,
+  );
 
   async function createVegaConfig() {
     open = false;

@@ -1,10 +1,9 @@
 import { expect } from "@playwright/test";
-import { updateCodeEditor } from "../utils/commonHelpers";
 import {
   createDashboardFromModel,
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  waitForDashboard,
+  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test } from "../utils/test";
@@ -64,8 +63,7 @@ test.describe("leaderboard context column", () => {
       column: domain
       description: ""
       `;
-    await updateCodeEditor(page, metricsWithValidPercentOfTotal);
-    await waitForDashboard(page);
+    await updateAndWaitForDashboard(page, metricsWithValidPercentOfTotal);
 
     async function clickMenuItem(itemName: string, wait = true) {
       await clickMenuButton(page, itemName);
