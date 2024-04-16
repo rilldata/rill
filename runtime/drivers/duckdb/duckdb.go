@@ -306,6 +306,8 @@ type connection struct {
 	cancel context.CancelFunc
 	// registration should be unregistered on close
 	registration metric.Registration
+
+	instanceID string
 }
 
 var _ drivers.OLAPStore = &connection{}
@@ -362,6 +364,7 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
+	c.instanceID = instanceID
 	return c, true
 }
 

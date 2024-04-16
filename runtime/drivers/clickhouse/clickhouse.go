@@ -122,10 +122,11 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db       *sqlx.DB
-	config   *configProperties
-	logger   *zap.Logger
-	activity *activity.Client
+	db         *sqlx.DB
+	config     *configProperties
+	logger     *zap.Logger
+	activity   *activity.Client
+	instanceID string
 
 	// logic around this copied from duckDB driver
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
@@ -182,6 +183,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	c.instanceID = instanceID
 	return c, true
 }
 
