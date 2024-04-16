@@ -467,6 +467,14 @@ func TestAdmin_RBAC(t *testing.T) {
 			Email:        viewerUser.Email,
 		})
 		require.NoError(t, err)
+
+		// Reverse the change
+		_, err = adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+			Organization: adminOrg.Organization.Name,
+			Email:        viewerUser.Email,
+			Role:         "viewer",
+		})
+		require.NoError(t, err)
 	})
 
 	// remove last admin tests
