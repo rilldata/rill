@@ -7,13 +7,13 @@ describe("transformFileList", () => {
     {
       description: "transforms a flat list of files",
       fileList: [
-        { path: "file1.yaml", isDir: false },
-        { path: "file2.py", isDir: false },
-        { path: "file3.md", isDir: false },
+        { path: "/file1.yaml", isDir: false },
+        { path: "/file2.py", isDir: false },
+        { path: "/file3.md", isDir: false },
       ] as V1DirEntry[],
       expectedStructure: {
         name: "",
-        path: "",
+        path: "/",
         directories: [],
         files: ["file1.yaml", "file2.py", "file3.md"],
       },
@@ -21,23 +21,23 @@ describe("transformFileList", () => {
     {
       description: "transforms a nested list of files into directories",
       fileList: [
-        { path: "dir1", isDir: true },
-        { path: "dir1/fileA.sql", isDir: false },
-        { path: "dir1/dir4", isDir: true },
-        { path: "dir2/dir3", isDir: true },
-        { path: "dir2/dir3/fileAB.sql", isDir: false },
+        { path: "/dir1", isDir: true },
+        { path: "/dir1/fileA.sql", isDir: false },
+        { path: "/dir1/dir4", isDir: true },
+        { path: "/dir2/dir3", isDir: true },
+        { path: "/dir2/dir3/fileAB.sql", isDir: false },
       ] as V1DirEntry[],
       expectedStructure: {
         name: "",
-        path: "",
+        path: "/",
         directories: [
           {
             name: "dir1",
-            path: "dir1",
+            path: "/dir1",
             directories: [
               {
                 name: "dir4",
-                path: "dir1/dir4",
+                path: "/dir1/dir4",
                 directories: [],
                 files: [],
               },
@@ -46,11 +46,11 @@ describe("transformFileList", () => {
           },
           {
             name: "dir2",
-            path: "dir2",
+            path: "/dir2",
             directories: [
               {
                 name: "dir3",
-                path: "dir2/dir3",
+                path: "/dir2/dir3",
                 directories: [],
                 files: ["fileAB.sql"],
               },
