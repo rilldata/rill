@@ -208,7 +208,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
 				DataDir:                      conf.DataDir,
-				EmitInstanceHeartbeat:        true,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,

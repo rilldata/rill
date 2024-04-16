@@ -25,6 +25,9 @@ import (
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
 var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
 
+// instanceHeartbeatInterval is the interval at which instance heartbeat events are emitted.
+const instanceHeartbeatInterval = time.Minute
+
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
 	return r.registryCache.list()
@@ -184,9 +187,9 @@ func (r *registryCache) init(ctx context.Context) error {
 			return err
 		}
 	}
-	if r.rt.opts.EmitInstanceHeartbeat {
-		r.emitHeartbeats()
-	}
+
+	go r.emitHeartbeats()
+
 	return nil
 }
 
@@ -507,7 +510,7 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 }
 
 func (r *registryCache) emitHeartbeats() {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(instanceHeartbeatInterval)
 	defer ticker.Stop()
 
 	for {
@@ -528,13 +531,13 @@ func (r *registryCache) emitHeartbeats() {
 }
 
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
-	attrs := []attribute.KeyValue{
+	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
+
+	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat",
 		attribute.String("instance_id", inst.ID),
-		attribute.Int("variable_count", len(inst.ResolveVariables())),
-		attribute.String("updated_on", inst.UpdatedOn.String()),
-		attribute.Int64("data_dir_size_bytes", sizeOfDir(filepath.Join(r.rt.opts.DataDir, inst.ID))),
-	}
-	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat", attrs...)
+		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
+		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
+	)
 }
 
 func sizeOfDir(path string) int64 {

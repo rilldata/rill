@@ -28,7 +28,6 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	DataDir                      string
-	EmitInstanceHeartbeat        bool
 }
 
 type Runtime struct {
