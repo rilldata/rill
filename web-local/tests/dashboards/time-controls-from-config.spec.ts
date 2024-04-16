@@ -1,9 +1,8 @@
 import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { updateCodeEditor } from "web-local/tests/utils/commonHelpers";
 import {
   interactWithTimeRangeMenu,
-  waitForDashboard,
+  updateAndWaitForDashboard,
 } from "web-local/tests/utils/dashboardHelpers";
 import { test } from "../utils/test";
 
@@ -13,14 +12,13 @@ test.describe("time controls settings from dashboard config", () => {
 
   test("default_time_range", async ({ page }) => {
     // Set a time range that is one of the supported presets
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
   mode: time
 `),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -32,14 +30,13 @@ default_comparison:
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set a time range that is one of the period to date preset
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "rill-WTD"
 default_comparison:
   mode: time
 `),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -63,14 +60,13 @@ default_comparison:
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set a time range that is not one of the supported presets
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "P2W"
 default_comparison:
   mode: time
 `),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -83,14 +79,13 @@ default_comparison:
 
   test("default_comparison", async ({ page }) => {
     // Set comparison to time
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
   mode: time
 `),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
@@ -99,7 +94,7 @@ default_comparison:
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set comparison to dimension
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
@@ -107,7 +102,6 @@ default_comparison:
   dimension: publisher
 `),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
@@ -116,14 +110,13 @@ default_comparison:
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Set comparison to none
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
   mode: none
 `),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // No Comparison
@@ -131,7 +124,7 @@ default_comparison:
   });
 
   test("available_time_ranges", async ({ page }) => {
-    await updateCodeEditor(
+    await updateAndWaitForDashboard(
       page,
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
@@ -146,7 +139,6 @@ available_time_ranges:
   - rill-WTD
   - rill-MTD`),
     );
-    await waitForDashboard(page);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
