@@ -1,7 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
 import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
-import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
 import { get, writable } from "svelte/store";
 
 export type NavDragData = {
@@ -13,31 +12,24 @@ export type NavDragData = {
 };
 
 export class NavEntryDragDropStore {
-  public readonly navDragging = writable<null | NavDragData>(null);
-  public readonly offset = writable({ x: 0, y: 0 });
-  public readonly dragStart = writable({ left: 0, top: 0 });
+  public readonly dragData = writable<null | NavDragData>(null);
+  public initialPosition = { left: 0, top: 0 };
+  public readonly position = writable({ left: 0, top: 0 });
+  public offset = { x: 0, y: 0 };
 
   private newDragData: NavDragData | null;
-  private readonly setDraggingDebouncer = createDebouncer();
 
   public onMouseDown(e: MouseEvent, dragData: NavDragData) {
     e.preventDefault();
     e.stopPropagation();
 
-    const dragItem = document.getElementById(dragData.id);
-    if (!dragItem) return;
+    const offsets = this.getOffsets(e, dragData);
+    if (!offsets) return;
+    const { left, top, x, y } = offsets;
 
-    const { left, top } = dragItem.getBoundingClientRect();
+    this.initialPosition = { left, top };
 
-    this.dragStart.set({
-      left: left + getPaddingFromPath(dragData.filePath),
-      top,
-    });
-
-    this.offset.set({
-      x: e.clientX - left - getPaddingFromPath(dragData.filePath),
-      y: e.clientY - top,
-    });
+    this.offset = { x, y };
 
     const [, fileName] = splitFolderAndName(dragData.filePath);
     this.newDragData = {
@@ -57,22 +49,45 @@ export class NavEntryDragDropStore {
     e.preventDefault();
     e.stopPropagation();
 
-    const curDragData = get(this.navDragging);
+    const curDragData = get(this.dragData);
 
     if (curDragData && dragData && curDragData.filePath !== dragData.filePath) {
       await dropSuccess(curDragData, dragData);
     }
 
     this.newDragData = null;
-    this.navDragging.set(null);
+    this.dragData.set(null);
   }
 
-  public onMouseMove() {
+  public onMouseMove(e: MouseEvent) {
     if (!this.newDragData) return;
-    this.navDragging.set(this.newDragData);
-    this.setDraggingDebouncer(() => {
-      if (this.newDragData) this.navDragging.set(this.newDragData);
-    }, 200);
+    const left = e.clientX - this.offset.x;
+    const top = e.clientY - this.offset.y;
+    this.position.set({ left, top });
+
+    if (get(this.dragData)) return;
+    const dist = Math.sqrt(
+      Math.pow(left - this.initialPosition.left, 2) +
+        Math.pow(top - this.initialPosition.top, 2),
+    );
+    if (dist < 20) return;
+    this.dragData.set(this.newDragData);
+  }
+
+  private getOffsets(e: MouseEvent, dragData: NavDragData) {
+    const dragItem = document.getElementById(dragData.id);
+    if (!dragItem) return;
+
+    const { left, top } = dragItem.getBoundingClientRect();
+    // 14 is the temporary offset for icon. we should add the icon eventually
+    const effectiveLeft = left + getPaddingFromPath(dragData.filePath);
+
+    return {
+      left: effectiveLeft,
+      top,
+      x: e.clientX - effectiveLeft,
+      y: e.clientY - top,
+    };
   }
 }
 

@@ -1,26 +1,13 @@
 <script lang="ts">
-  import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import File from "@rilldata/web-common/components/icons/File.svelte";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
+  import { Folder } from "lucide-svelte";
 
-  export let offset: { x: number; y: number };
   export let position = { left: 0, top: 0 };
-  const { navDragging } = navEntryDragDropStore;
-
-  function trackDragItem(e: MouseEvent) {
-    requestAnimationFrame(() => {
-      position = {
-        left: e.clientX - offset.x,
-        top: e.clientY - offset.y,
-      };
-    });
-  }
-
-  function onDragRelease() {
-    navDragging.set(null);
-  }
+  export let dragData: NavDragData;
 </script>
-
-<svelte:window on:mousemove={trackDragItem} on:mouseup={onDragRelease} />
 
 <div
   class="portal-item"
@@ -28,7 +15,18 @@
   style:top="{position.top}px"
   use:portal
 >
-  {$navDragging?.fileName ?? ""}
+  <div class="flex flex-row gap-x-1">
+    {#if dragData.isDir}
+      <Folder className="text-gray-400" size="14px" />
+    {:else}
+      <svelte:component
+        this={dragData.kind ? resourceIconMapping[dragData.kind] : File}
+        className="text-gray-400"
+        size="14px"
+      />
+    {/if}
+    <span>{dragData.fileName ?? ""}</span>
+  </div>
 </div>
 
 <style lang="postcss">
