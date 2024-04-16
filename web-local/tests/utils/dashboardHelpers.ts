@@ -1,7 +1,11 @@
 import { expect, type Locator } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
-import { clickMenuButton, openEntityMenu } from "./commonHelpers";
+import {
+  clickMenuButton,
+  openEntityMenu,
+  waitForValidResource,
+} from "./commonHelpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
@@ -193,6 +197,9 @@ export async function interactWithComparisonMenu(
 }
 
 export async function waitForDashboard(page: Page) {
-  await page.waitForTimeout(100);
-  await page.getByRole("button", { name: "Preview" }).waitFor();
+  return waitForValidResource(
+    page,
+    "AdBids_model_dashboard",
+    "rill.runtime.v1.MetricsView",
+  );
 }

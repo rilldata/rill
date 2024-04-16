@@ -138,18 +138,35 @@ export async function waitForValidResource(
 ) {
   await page.waitForResponse(async (response) => {
     if (
-      !response
+      response
         .url()
         .includes(
           `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
         )
-    )
-      return false;
-    try {
-      const resp = JSON.parse((await response.body()).toString());
-      return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
-    } catch (err) {
-      return false;
+    ) {
+      // try and check get a single resource response
+      try {
+        const resp = JSON.parse((await response.body()).toString());
+        return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+      } catch (err) {
+        return false;
+      }
+    } else if (
+      response
+        .url()
+        .includes(`/v1/instances/default/resource?name.kind=${kind}`)
+    ) {
+      // try and check get all resources response
+      try {
+        const resp = JSON.parse((await response.body()).toString());
+        return (
+          resp.resources.find((r) => r.meta?.name === name)?.meta
+            ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
+        );
+      } catch (err) {
+        return false;
+      }
     }
+    return false;
   });
 }
