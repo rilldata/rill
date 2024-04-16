@@ -19,13 +19,10 @@ export function buildStackedArea(
   };
   baseSpec.layer = [
     {
-      mark: { type: "area", clip: true },
+      mark: { type: "area", clip: true, opacity: 0.9 },
     },
     {
       mark: { type: "line", strokeWidth: 1, clip: true },
-      encoding: {
-        stroke: { field: nominalField.name, type: "nominal", legend: null },
-      },
     },
     {
       mark: {
@@ -34,7 +31,14 @@ export function buildStackedArea(
         clip: true,
       },
       encoding: {
-        color: { value: "transparent" },
+        color: {
+          condition: {
+            param: "x-hover",
+            empty: false,
+            value: "var(--color-primary-300)",
+          },
+          value: "transparent",
+        },
         tooltip: [
           {
             title: quantitativeField.label,
