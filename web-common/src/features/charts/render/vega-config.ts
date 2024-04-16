@@ -26,7 +26,7 @@ const CategoryColors = [
 
 const defaultMarkColor = MainLineColor;
 const gridColor = "#d1d5db"; // gray-300
-const axisLabelColor = "#374151"; // gray-700
+const axisLabelColor = "#4b5563"; // gray-600
 
 export const getRillTheme: () => Config = () => ({
   mark: {
@@ -63,15 +63,17 @@ export const getRillTheme: () => Config = () => ({
   symbol: { fill: defaultMarkColor },
 
   axisY: {
+    orient: "right",
     gridColor: gridColor,
     gridDash: [2],
     tickColor: gridColor,
     domain: false,
+    tickSize: 0,
     labelFont: "Inter, sans-serif",
-    labelFontSize: 10,
-    labelFontWeight: 500,
+    labelFontSize: 11,
+    labelFontWeight: 400,
     labelColor: axisLabelColor,
-    labelPadding: 5,
+    labelPadding: 10,
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
     titleFontSize: 12,
@@ -86,9 +88,11 @@ export const getRillTheme: () => Config = () => ({
     tickSize: 0,
     domain: false,
     labelFont: "Inter, sans-serif",
-    labelFontSize: 10,
-    labelFontWeight: 500,
-    labelPadding: 5,
+    labelFontSize: 11,
+    labelFontWeight: 400,
+    labelPadding: 12,
+    labelOverlap: "parity",
+    labelSeparation: 5,
     labelColor: axisLabelColor,
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
@@ -101,5 +105,9 @@ export const getRillTheme: () => Config = () => ({
   },
   range: {
     category: CategoryColors,
+  },
+  numberFormat: "s",
+  tooltipFormat: {
+    numberFormat: "d",
   },
 });
