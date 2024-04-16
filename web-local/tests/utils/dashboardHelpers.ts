@@ -1,7 +1,6 @@
 import { expect, type Locator } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
-import { waitForValidResource } from "web-local/tests/utils/commonHelpers";
 import { clickMenuButton, openEntityMenu } from "./commonHelpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
