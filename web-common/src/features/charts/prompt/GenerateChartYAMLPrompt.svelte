@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
