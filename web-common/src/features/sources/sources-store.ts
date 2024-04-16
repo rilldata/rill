@@ -13,4 +13,4 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 
 export const duplicateSourceName: Writable<string | null> = writable(null);
 
-export const sourceImportedName = writable<string | null>(null);
+export const sourceImportedPath = writable<string | null>(null);

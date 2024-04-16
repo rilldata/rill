@@ -17,6 +17,8 @@ test.describe("leaderboard and dimension table sorting", () => {
   useDashboardFlowTestSetup();
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
+    await page.getByRole("button", { name: "Preview" }).click();
+
     /**
      * LEADERBOARD
      */

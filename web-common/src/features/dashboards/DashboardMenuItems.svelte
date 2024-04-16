@@ -1,23 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import {
-    useDashboard,
-    useDashboardFileNames,
-  } from "@rilldata/web-common/features/dashboards/selectors";
-  import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -29,21 +20,17 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
 
-  export let metricsViewName: string;
+  export let filePath: string;
 
-  $: filePath = getFileAPIPathFromNameAndType(
-    metricsViewName,
-    EntityType.MetricsDefinition,
-  );
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: metricsView = extractFileName(filePath);
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
   const { customDashboards } = featureFlags;
 
   $: instanceId = $runtime.instanceId;
-  $: dashboardNames = useDashboardFileNames(instanceId);
-  $: dashboardQuery = useDashboard(instanceId, metricsViewName);
+  $: dashboardQuery = fileArtifact.getResource(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   /**
@@ -57,8 +44,13 @@
 
   const editModel = async () => {
     if (!referenceModelName) return;
+    const artifact = fileArtifacts.findFileArtifact(
+      ResourceKind.Model,
+      referenceModelName,
+    );
+    if (!artifact) return;
     const previousActiveEntity = $appScreen?.type;
-    await goto(`/model/${referenceModelName}`);
+    await goto(`/files/${artifact.path}`);
     await behaviourEvent.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
@@ -69,24 +61,15 @@
   };
 
   const editMetrics = async () => {
-    await goto(`/dashboard/${metricsViewName}/edit`);
+    await goto(`/files/${filePath}`);
 
     const previousActiveEntity = $appScreen?.type;
     await behaviourEvent.fireNavigationEvent(
-      metricsViewName,
+      ($dashboardQuery.data?.meta?.name as string) ?? "",
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousActiveEntity,
       MetricsEventScreenName.MetricsDefinition,
-    );
-  };
-
-  const deleteMetricsDef = async () => {
-    await deleteFileArtifact(
-      instanceId,
-      filePath,
-      EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? [],
     );
   };
 </script>
@@ -104,7 +87,9 @@
 {#if $customDashboards}
   <NavigationMenuItem
     on:click={() => {
-      dispatch("generate-chart");
+      dispatch("generate-chart", {
+        metricsView,
+      });
     }}
     disabled={$hasErrors}
   >
@@ -120,12 +105,3 @@
     </svelte:fragment>
   </NavigationMenuItem>
 {/if}
-<NavigationMenuSeparator />
-<NavigationMenuItem on:click={() => dispatch("rename")}>
-  <EditIcon slot="icon" />
-  Rename...
-</NavigationMenuItem>
-<NavigationMenuItem on:click={deleteMetricsDef}>
-  <Cancel slot="icon" />
-  Delete
-</NavigationMenuItem>

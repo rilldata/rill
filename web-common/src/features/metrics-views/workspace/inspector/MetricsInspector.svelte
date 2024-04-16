@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useModel,
     useModels,
@@ -16,12 +14,9 @@
   } from "../../utils";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
 
-  export let metricsDefName: string;
+  export let filePath: string;
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition),
-  );
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
   $: yaml = $fileQuery.data?.blob || "";
 
   // get file.
@@ -57,9 +52,8 @@
   />
 {:else}
   <div
-    class="px-4 py-24 italic ui-copy-disabled text-center"
+    class="px-4 py-24 italic ui-copy-disabled text-center w-full"
     style:text-wrap="balance"
-    style:max-inline-size="50ch"
   >
     {#if !yaml?.length}
       <p>Let's get started.</p>

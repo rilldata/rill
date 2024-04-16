@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
+  import {
+    COMPARIONS_COLORS,
+    SELECTED_NOT_COMPARED_COLOR,
+  } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
   import type {
     PivotPos,
@@ -140,8 +143,8 @@
 
     if (comparing === "time") {
       let icon = "";
-      if (y == 1) icon = SelectedCheckmark("fill-primary-500");
-      else if (y == 2) icon = SelectedCheckmark("fill-gray-300");
+      if (y == 1) icon = SelectedCheckmark("var(--color-primary-500)");
+      else if (y == 2) icon = SelectedCheckmark(SELECTED_NOT_COMPARED_COLOR);
       return { icon, muted: false };
     }
 
@@ -151,8 +154,9 @@
       else
         return {
           icon: SelectedCheckmark(
-            "fill-" +
-              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300"),
+            visibleIdx < 11
+              ? COMPARIONS_COLORS[visibleIdx]
+              : SELECTED_NOT_COMPARED_COLOR,
           ),
           muted: false,
         };

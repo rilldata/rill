@@ -2,7 +2,6 @@ package cmdutil
 
 import (
 	"fmt"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,7 +11,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func SelectPrompt(msg string, options []string, def string) string {
+func SelectPrompt(msg string, options []string, def string) (string, error) {
 	prompt := &survey.Select{
 		Message: msg,
 		Options: options,
@@ -24,13 +23,12 @@ func SelectPrompt(msg string, options []string, def string) string {
 
 	result := ""
 	if err := survey.AskOne(prompt, &result); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("prompt failed: %w", err)
 	}
-	return result
+	return result, nil
 }
 
-func ConfirmPrompt(msg, help string, def bool) bool {
+func ConfirmPrompt(msg, help string, def bool) (bool, error) {
 	prompt := &survey.Confirm{
 		Message: msg,
 		Default: def,
@@ -42,10 +40,9 @@ func ConfirmPrompt(msg, help string, def bool) bool {
 
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		return false, fmt.Errorf("prompt failed: %w", err)
 	}
-	return result
+	return result, nil
 }
 
 func InputPrompt(msg, def string) (string, error) {
@@ -55,15 +52,14 @@ func InputPrompt(msg, def string) (string, error) {
 	}
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		return "", err
+		return "", fmt.Errorf("prompt failed: %w", err)
 	}
 	return strings.TrimSpace(result), nil
 }
 
-func StringPromptIfEmpty(input *string, msg string) {
+func StringPromptIfEmpty(input *string, msg string) error {
 	if *input != "" {
-		return
+		return nil
 	}
 
 	prompt := []*survey.Question{{
@@ -71,17 +67,22 @@ func StringPromptIfEmpty(input *string, msg string) {
 		Validate: survey.Required,
 	}}
 	if err := survey.Ask(prompt, input); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("prompt failed: %w", err)
 	}
 	*input = strings.TrimSpace(*input)
+	return nil
 }
 
-func SelectPromptIfEmpty(input *string, msg string, options []string, def string) {
+func SelectPromptIfEmpty(input *string, msg string, options []string, def string) error {
 	if *input != "" {
-		return
+		return nil
 	}
-	*input = SelectPrompt(msg, options, def)
+	res, err := SelectPrompt(msg, options, def)
+	if err != nil {
+		return err
+	}
+	*input = res
+	return nil
 }
 
 func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {

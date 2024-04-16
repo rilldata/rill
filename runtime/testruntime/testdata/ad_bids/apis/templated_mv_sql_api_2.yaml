@@ -1,0 +1,9 @@
+kind : api
+metrics_sql: |
+  SELECT publisher, domain, measure_2 
+  FROM ad_bids_mini_metrics
+  WHERE
+    -- can access user attributes with templating
+    {{ if (ne .user.domain "") }} domain = '{{ .user.domain }}' {{ end }}
+    -- can use Sprig functions, e.g. to easily set defaults
+    {{ if (not .export) }} LIMIT {{ default 1 .args.pageSize }} {{ end }}

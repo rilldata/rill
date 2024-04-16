@@ -69,6 +69,8 @@ export function useIsLocalFileConnector(instanceId: string, filePath: string) {
           yaml?.type === "duckdb" && yaml?.sql?.includes("'data/"),
         );
       },
+      enabled:
+        !!filePath && (filePath.endsWith(".yaml") || filePath.endsWith(".yml")),
     },
   });
 }

@@ -21,6 +21,7 @@ export enum ResourceKind {
   Theme = "rill.runtime.v1.Theme",
   Chart = "rill.runtime.v1.Chart",
   Dashboard = "rill.runtime.v1.Dashboard",
+  API = "rill.runtime.v1.API",
 }
 export const SingletonProjectParserName = "parser";
 export const ResourceShortNameToKind: Record<string, ResourceKind> = {
@@ -100,41 +101,6 @@ export function useFilteredResourceNames(
   return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
     data.resources.map((res) => res.meta.name.name),
   );
-}
-
-export function useAllNames(instanceId: string) {
-  const select = (data: V1ListResourcesResponse) =>
-    // CAST SAFETY: must be a string[], because we filter
-    // out undefined values
-    (data?.resources
-      ?.map((res) => res?.meta?.name?.name)
-      .filter((name) => name !== undefined) ?? []) as string[];
-
-  return createRuntimeServiceListResources(
-    instanceId,
-    {},
-    {
-      query: {
-        select,
-      },
-    },
-  );
-}
-export async function fetchAllNames(
-  queryClient: QueryClient,
-  instanceId: string,
-) {
-  const resourcesResp = await queryClient.fetchQuery<V1ListResourcesResponse>({
-    queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, {}),
-    queryFn: () => {
-      return runtimeServiceListResources(instanceId, {});
-    },
-  });
-  // CAST SAFETY: must be a string[], because we filter
-  // out undefined values
-  return (resourcesResp.resources
-    ?.map((res) => res?.meta?.name?.name)
-    .filter((name) => name !== undefined) ?? []) as string[];
 }
 
 export function createSchemaForTable(

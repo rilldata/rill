@@ -12,7 +12,9 @@ export function makeFullyQualifiedTableName(
     case "druid":
       return `${databaseSchema}.${table}`;
     case "duckdb":
-      return `${database}.${databaseSchema}.${table}`;
+      // return `${database}.${databaseSchema}.${table}`;
+      // For now, only show the table name
+      return table;
     default:
       throw new Error(`Unsupported OLAP connector: ${connector}`);
   }

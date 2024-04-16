@@ -25,27 +25,24 @@
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { clamp } from "@rilldata/web-common/lib/clamp";
 
-  export let pivotDataStore: PivotDataStore;
-
+  // Distance threshold (in pixels) for triggering data fetch
+  const ROW_THRESHOLD = 200;
   const OVERSCAN = 60;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
   const MEASURE_PADDING = 16;
-  // Distance threshold (in pixels) for triggering data fetch
-  const ROW_THRESHOLD = 200;
   const MIN_COL_WIDTH = 150;
   const MAX_COL_WIDTH = 600;
   const MAX_INIT_COL_WIDTH = 400;
+  const MIN_MEASURE_WIDTH = 60;
+  const MAX_MEAUSRE_WIDTH = 300;
+  const INIT_MEASURE_WIDTH = 90;
+
+  export let pivotDataStore: PivotDataStore;
 
   const stateManagers = getStateManagers();
 
-  const {
-    dashboardStore,
-    metricsViewName,
-    selectors: {
-      pivot: { rows: rowPills },
-    },
-  } = stateManagers;
+  const { dashboardStore, metricsViewName } = stateManagers;
 
   const config = getPivotConfig(stateManagers);
 
@@ -83,19 +80,39 @@
   let containerRefElement: HTMLDivElement;
   let stickyRows = [0];
   let rowScrollOffset = 0;
+  let scrollLeft = 0;
+  let initialMeasureIndexOnResize = 0;
+  let initLengthOnResize = 0;
+  let initScrollOnResize = 0;
+  let percentOfChangeDuringResize = 0;
+  let resizingMeasure = false;
+
+  $: ({
+    expanded,
+    sorting,
+    rowPage,
+    columns,
+    rows: rowPills,
+  } = $pivotDashboardStore);
 
   $: timeDimension = $config.time.timeDimension;
-  $: hasDimension = $rowPills.dimension.length > 0;
-
+  $: hasDimension = rowPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
-  $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
-  $: rowPage = $dashboardStore?.pivot?.rowPage;
+  $: measureNames = columns.measure.map((measure) => measure.title) ?? [];
+  $: measureCount = measureNames.length;
+  $: measureLengths = measureNames.map((name) =>
+    Math.max(INIT_MEASURE_WIDTH, name.length * 7 + MEASURE_PADDING),
+  );
+  $: measureGroups = headerGroups[headerGroups.length - 2]?.headers?.slice(
+    hasDimension ? 1 : 0,
+  ) ?? [null];
+  $: measureGroupsLength = measureGroups.length;
+  $: totalMeasureWidth = measureLengths.reduce((acc, val) => acc + val, 0);
+  $: totalLength = measureGroupsLength * totalMeasureWidth;
+
   $: headerGroups = $table.getHeaderGroups();
-  $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
-  $: rows = $table.getRowModel().rows;
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
   $: headers = headerGroups[0].headers;
   $: firstColumnName = hasDimension
@@ -106,18 +123,7 @@
       ? calculateFirstColumnWidth(firstColumnName)
       : 0;
 
-  $: measureGroups = headerGroups[headerGroups.length - 2]?.headers?.slice(
-    hasDimension ? 1 : 0,
-  ) ?? [null];
-  $: measureGroupsLength = measureGroups.length;
-  $: measureLengths =
-    $dashboardStore.pivot?.columns?.measure?.map((measure) => {
-      return measure.title.length * 7 + MEASURE_PADDING;
-    }) ?? [];
-
-  $: totalMeasureWidth = measureLengths.reduce((acc, val) => acc + val, 0);
-  $: totalLength = measureGroupsLength * totalMeasureWidth;
-
+  $: rows = $table.getRowModel().rows;
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
@@ -145,6 +151,14 @@
       ]
     : [0, 0];
 
+  $: if (resizingMeasure && containerRefElement && measureLengths) {
+    containerRefElement.scrollTo({
+      left:
+        initScrollOnResize +
+        percentOfChangeDuringResize * (totalLength - initLengthOnResize),
+    });
+  }
+
   function onExpandedChange(updater: Updater<ExpandedState>) {
     // Something is off with tanstack's types
     //@ts-expect-error-free
@@ -166,6 +180,7 @@
     if (containerRefElement) {
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      scrollLeft = containerRefElement.scrollLeft;
 
       // Fetch more data when scrolling near the bottom end
       if (
@@ -198,6 +213,24 @@
 
     return final;
   }
+
+  function onResizeStart(e: MouseEvent) {
+    initLengthOnResize = totalLength;
+    initScrollOnResize = scrollLeft;
+
+    const offset =
+      e.clientX -
+      containerRefElement.getBoundingClientRect().left -
+      firstColumnWidth -
+      measureLengths.reduce((rollingSum, length, i) => {
+        return i <= initialMeasureIndexOnResize
+          ? rollingSum + length
+          : rollingSum;
+      }, 0) +
+      4;
+
+    percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
+  }
 </script>
 
 <div
@@ -228,20 +261,36 @@
     {/each}
 
     <thead>
-      {#each headerGroups as headerGroup (headerGroup.id)}
+      {#each headerGroups as headerGroup, group (headerGroup.id)}
         <tr>
           {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
-            {@const canResize = i === 0 && hasDimension}
+            {@const isFirstColumn = i === 0}
+            {@const canResize = hasDimension && (isFirstColumn || group !== 0)}
+            {@const measureIndex = (i - 1) % measureLengths.length}
             <th colSpan={header.colSpan}>
               {#if canResize}
                 <Resizer
-                  min={MIN_COL_WIDTH}
-                  max={MAX_COL_WIDTH}
-                  basis={MIN_COL_WIDTH}
-                  bind:dimension={firstColumnWidth}
                   side="right"
                   direction="EW"
+                  min={isFirstColumn ? MIN_COL_WIDTH : MIN_MEASURE_WIDTH}
+                  max={isFirstColumn ? MAX_COL_WIDTH : MAX_MEAUSRE_WIDTH}
+                  basis={isFirstColumn ? MIN_COL_WIDTH : INIT_MEASURE_WIDTH}
+                  dimension={isFirstColumn
+                    ? firstColumnWidth
+                    : measureLengths[measureIndex]}
+                  onMouseDown={(e) => {
+                    resizingMeasure = !isFirstColumn;
+                    initialMeasureIndexOnResize = measureIndex;
+                    if (resizingMeasure) onResizeStart(e);
+                  }}
+                  onUpdate={(d) => {
+                    if (isFirstColumn) {
+                      firstColumnWidth = d;
+                    } else {
+                      measureLengths[measureIndex] = d;
+                    }
+                  }}
                 />
               {/if}
 
@@ -252,7 +301,9 @@
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
-                  {header.column.columnDef.header}
+                  <p class="truncate">
+                    {header.column.columnDef.header}
+                  </p>
                   {#if sortDirection}
                     <span
                       class="transition-transform -mr-1"
@@ -340,7 +391,8 @@
     @apply border-r border-b relative;
   }
 
-  th:last-of-type {
+  th:last-of-type,
+  td:last-of-type {
     @apply border-r-0;
   }
 

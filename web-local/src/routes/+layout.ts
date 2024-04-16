@@ -1,13 +1,18 @@
 import { dev } from "$app/environment";
-
-// When testing, we need to use the relative path to the server
-const host = dev ? "http://localhost:9009" : "";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export const ssr = false;
 
+// When testing, we need to use the relative path to the server
+const HOST = dev ? "http://localhost:9009" : "";
+const INSTANCE_ID = "default";
+
+const runtimeInit = {
+  host: HOST,
+  instanceId: INSTANCE_ID,
+};
+
 export function load() {
-  return {
-    host,
-    instanceId: "default",
-  };
+  runtime.set(runtimeInit);
+  return runtimeInit;
 }

@@ -1,38 +1,41 @@
 import { expect } from "@playwright/test";
 import {
-  TestEntityType,
   deleteEntity,
   renameEntityUsingMenu,
   updateCodeEditor,
 } from "./utils/commonHelpers";
 import {
-  waitForAdBids,
-  waitForAdImpressions,
-} from "./utils/dataSpecifcHelpers";
-import {
   TestDataPath,
   createOrReplaceSource,
   uploadFile,
+  waitForSource,
 } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 import { test } from "./utils/test";
+import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
 
 test.describe("sources", () => {
   test("Import sources", async ({ page }) => {
     await Promise.all([
-      waitForAdBids(page, "AdBids"),
+      waitForSource(page, "/sources/AdBids.yaml", [
+        "publisher",
+        "domain",
+        "timestamp",
+      ]),
       uploadFile(page, "AdBids.csv"),
     ]);
 
     await Promise.all([
-      waitForAdImpressions(page, "AdImpressions"),
+      waitForSource(page, "/sources/AdImpressions.yaml", ["city", "country"]),
       uploadFile(page, "AdImpressions.tsv"),
     ]);
 
     // upload existing table and keep both
     await Promise.all([
-      waitForEntity(page, TestEntityType.Source, "AdBids", false),
-      waitForAdBids(page, "AdBids_1"),
+      waitForSource(page, "/sources/AdBids_1.yaml", [
+        "publisher",
+        "domain",
+        "timestamp",
+      ]),
       uploadFile(page, "AdBids.csv", true, true),
     ]);
 
@@ -42,23 +45,27 @@ test.describe("sources", () => {
   });
 
   test("Rename and delete sources", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // rename
-    await renameEntityUsingMenu(page, "AdBids", "AdBids_new");
-    await waitForEntity(page, TestEntityType.Source, "AdBids_new", true);
-    await entityNotPresent(page, "AdBids");
+    await renameEntityUsingMenu(page, "AdBids.yaml", "AdBids_new.yaml");
+    await waitForFileEntry(page, `/sources/AdBids_new.yaml`, true);
+    await entityNotPresent(page, "AdBids.yaml");
 
     // delete
-    await deleteEntity(page, "AdBids_new");
+    await deleteEntity(page, "AdBids_new.yaml");
     await entityNotPresent(page, "AdBids_new");
     await entityNotPresent(page, "AdBids");
   });
 
   test("Edit source", async ({ page }) => {
     // Upload data & create two sources
-    await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+    await createOrReplaceSource(
+      page,
+      "AdImpressions.tsv",
+      "/sources/AdImpressions.yaml",
+    );
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // Edit source path to a non-existent file
     const nonExistentSource = `type: local_file

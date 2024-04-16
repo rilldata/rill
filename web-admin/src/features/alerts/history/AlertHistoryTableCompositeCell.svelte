@@ -11,7 +11,6 @@
   export let timeZone: string;
   export let currentExecution: V1AlertExecution | null;
   export let result: V1AssertionResult;
-  $: console.log("result", result);
 </script>
 
 <div class="flex gap-x-2 items-center px-4 py-[10px]">
