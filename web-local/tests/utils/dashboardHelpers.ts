@@ -194,9 +194,6 @@ export async function interactWithComparisonMenu(
 }
 
 export async function waitForDashboard(page: Page) {
-  return waitForValidResource(
-    page,
-    "AdBids_model_dashboard",
-    "rill.runtime.v1.MetricsView",
-  );
+  await page.waitForTimeout(100);
+  await page.getByRole("button", { name: "Preview" }).waitFor();
 }
