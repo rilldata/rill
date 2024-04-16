@@ -1,3 +1,4 @@
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import {
   MainAreaColorGradientDark,
   MainAreaColorGradientLight,
@@ -6,23 +7,6 @@ import {
 import type { Config } from "vega-lite";
 
 const BarFill = "var(--color-primary-400)";
-const CategoryColors = [
-  "#75DAFF",
-  "#5FA9B9",
-  "#306B59",
-  "#3125AE",
-  "#757EFF",
-  "#875FB9",
-  "#F0A76A",
-  "#948476",
-  "#594159",
-  "#5774A1",
-  "#B7DAF0",
-  "#E29FE3",
-  "#FFCBDF",
-  "#BFF7E3",
-  "#FFFACB",
-];
 
 const defaultMarkColor = MainLineColor;
 const gridColor = "#d1d5db"; // gray-300
@@ -104,7 +88,7 @@ export const getRillTheme: () => Config = () => ({
     strokeWidth: 0,
   },
   range: {
-    category: CategoryColors,
+    category: COMPARIONS_COLORS,
   },
   numberFormat: "s",
   tooltipFormat: {

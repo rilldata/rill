@@ -19,6 +19,14 @@ export function buildGroupedBar(
       condition: { param: "hover", empty: false, value: 1 },
       value: 0.8,
     },
+    color: {
+      field: nominalField,
+      type: "nominal",
+      legend: null,
+    },
+    xOffset: {
+      field: nominalField,
+    },
     tooltip: [
       {
         field: timeField,
@@ -31,15 +39,6 @@ export function buildGroupedBar(
     ],
   };
 
-  baseSpec.encoding.color = {
-    field: nominalField,
-    type: "nominal",
-    legend: null,
-  };
-
-  baseSpec.encoding.xOffset = {
-    field: nominalField,
-  };
   baseSpec.params = [
     {
       name: "hover",
