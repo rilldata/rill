@@ -227,11 +227,7 @@
   >
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelector
-        isDimensional={!!dimensionData.length}
-        {metricViewName}
-        chartType={tddChartType}
-      />
+      <ChartTypeSelector {metricViewName} chartType={tddChartType} />
     {:else}
       <SearchableFilterButton
         label="Measures"

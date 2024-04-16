@@ -48,7 +48,7 @@
     @apply shadow-md;
     font-family: "Inter";
     font-size: 12px;
-    background: rgba(250, 250, 250, 0.8);
+    background: rgba(250, 250, 250, 0.9);
   }
 
   :global(#vg-tooltip-element table tr td.value) {
