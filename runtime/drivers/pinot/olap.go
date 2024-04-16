@@ -200,7 +200,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 	for _, field := range schemaResponse.DateTimeFieldSpecs {
 		if field.DataType != "TIMESTAMP" {
-			unsupportedCols[field.Name] = field.DataType
+			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
 			continue
 		}
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, true)})
