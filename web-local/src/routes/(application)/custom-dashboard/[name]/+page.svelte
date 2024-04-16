@@ -183,7 +183,7 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      newComponents,
+      components: newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
