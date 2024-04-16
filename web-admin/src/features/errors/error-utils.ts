@@ -2,7 +2,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
-  isDashboardPage,
+  isMetricsExplorerPage,
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
@@ -68,10 +68,10 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       }
     }
 
-    // Special handling for some errors on the Dashboard page
-    const onDashboardPage = isDashboardPage(get(page));
-    if (onDashboardPage) {
-      // Let the Dashboard page handle errors for runtime queries.
+    // Special handling for some errors on the Metrics Explorer page
+    const onMetricsExplorerPage = isMetricsExplorerPage(get(page));
+    if (onMetricsExplorerPage) {
+      // Let the Metrics Explorer page handle errors for runtime queries.
       // Individual components (e.g. a specific line chart or leaderboard) should display a localised error message.
       // NOTE: let's start with 400 errors, but we may want to include 500-level errors too.
       if (
