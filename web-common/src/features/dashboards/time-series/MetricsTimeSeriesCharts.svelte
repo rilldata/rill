@@ -15,7 +15,7 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
-  import CustomChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/CustomChart.svelte";
+  import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
@@ -88,7 +88,7 @@
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
-  $: isCustomChart = tddChartType != TDDChart.DEFAULT;
+  $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
   $: renderedMeasures = $metricsView.data?.measures?.filter(
@@ -222,7 +222,7 @@
 >
   <div
     class:tdd-chart-header={isInTimeDimensionView}
-    class:mb-6={isCustomChart}
+    class:mb-6={isAlternateChart}
     class="flex pl-1"
   >
     {#if isInTimeDimensionView}
@@ -310,7 +310,7 @@
           {#if $timeSeriesDataStore?.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
-            <CustomChart
+            <TDDAlternateChart
               timeGrain={interval}
               chartType={tddChartType}
               {expandedMeasureName}

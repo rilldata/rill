@@ -1,9 +1,5 @@
 import { expect } from "@playwright/test";
-import {
-  TestEntityType,
-  updateCodeEditor,
-  wrapRetryAssertion,
-} from "../utils/commonHelpers";
+import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   type RequestMatcher,
   assertLeaderboards,
@@ -23,27 +19,27 @@ import {
 } from "../utils/dataSpecifcHelpers";
 import { createOrReplaceSource } from "../utils/sourceHelpers";
 import { test } from "../utils/test";
-import { waitForEntity } from "../utils/waitHelpers";
+import { waitForFileEntry } from "../utils/waitHelpers";
 
 test.describe("dashboard", () => {
   test("Autogenerate dashboard from source", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
-    await createDashboardFromSource(page, "AdBids");
-    await waitForEntity(
-      page,
-      TestEntityType.Dashboard,
-      "AdBids_dashboard",
-      true,
-    );
+    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createDashboardFromSource(page, "AdBids.yaml");
+    await waitForFileEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
+    await page.getByRole("button", { name: "Preview" }).click();
     await assertAdBidsDashboard(page);
   });
 
   test("Autogenerate dashboard from model", async ({ page }) => {
     await createAdBidsModel(page);
     await Promise.all([
+      waitForFileEntry(page, `/dashboards/AdBids_model_dashboard.yaml`, true),
+      createDashboardFromModel(page, "AdBids_model.sql"),
+    ]);
+    await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard"),
       waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
-      createDashboardFromModel(page, "AdBids_model"),
+      page.getByRole("button", { name: "Preview" }).click(),
     ]);
     await assertAdBidsDashboard(page);
 
@@ -102,7 +98,8 @@ test.describe("dashboard", () => {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
+    await createDashboardFromModel(page, "AdBids_model.sql");
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100.0k")).toBeVisible();
@@ -287,6 +284,7 @@ test.describe("dashboard", () => {
 
     const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    kind: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -331,6 +329,7 @@ test.describe("dashboard", () => {
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    kind: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -367,6 +366,7 @@ test.describe("dashboard", () => {
 
     const deleteOnlyMeasureDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    kind: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -395,6 +395,7 @@ test.describe("dashboard", () => {
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    kind: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -419,6 +420,7 @@ test.describe("dashboard", () => {
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+kind: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
 default_time_range: ""

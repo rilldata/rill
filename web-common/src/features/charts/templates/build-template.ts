@@ -1,5 +1,5 @@
 import { VisualizationSpec } from "svelte-vega";
-import { ChartTypes } from "../types";
+import { ChartType } from "../types";
 import { buildArea } from "./area";
 import { buildGroupedBar } from "./grouped-bar";
 import { buildLine } from "./line";
@@ -8,17 +8,17 @@ import { buildStackedArea } from "./stacked-area";
 import { buildStackedBar } from "./stacked-bar";
 
 const BAR_LIKE_CHARTS = [
-  ChartTypes.BAR,
-  ChartTypes.GROUPED_BAR,
-  ChartTypes.STACKED_BAR,
+  ChartType.BAR,
+  ChartType.GROUPED_BAR,
+  ChartType.STACKED_BAR,
 ];
 const LINE_LIKE_CHARTS = [
-  ChartTypes.LINE,
-  ChartTypes.AREA,
-  ChartTypes.STACKED_AREA,
+  ChartType.LINE,
+  ChartType.AREA,
+  ChartType.STACKED_AREA,
 ];
 export function buildVegaLiteSpec(
-  chartType: ChartTypes,
+  chartType: ChartType,
   timeFields: string[],
   quantitativeFields: string[],
   nominalFields: string[] = [],
@@ -29,13 +29,13 @@ export function buildVegaLiteSpec(
   if (BAR_LIKE_CHARTS.includes(chartType)) {
     if (!hasNominalFields) {
       return buildSimpleBar(timeFields[0], quantitativeFields[0]);
-    } else if (chartType === ChartTypes.GROUPED_BAR) {
+    } else if (chartType === ChartType.GROUPED_BAR) {
       return buildGroupedBar(
         timeFields[0],
         quantitativeFields[0],
         nominalFields[0],
       );
-    } else if (chartType === ChartTypes.STACKED_BAR) {
+    } else if (chartType === ChartType.STACKED_BAR) {
       return buildStackedBar(
         timeFields[0],
         quantitativeFields[0],
@@ -43,11 +43,11 @@ export function buildVegaLiteSpec(
       );
     } else return buildSimpleBar(timeFields[0], quantitativeFields[0]);
   } else if (LINE_LIKE_CHARTS.includes(chartType)) {
-    if (chartType == ChartTypes.AREA) {
+    if (chartType == ChartType.AREA) {
       return buildArea(timeFields[0], quantitativeFields[0]);
-    } else if (chartType == ChartTypes.LINE) {
+    } else if (chartType == ChartType.LINE) {
       return buildLine(timeFields[0], quantitativeFields[0], nominalFields[0]);
-    } else if (chartType == ChartTypes.STACKED_AREA) {
+    } else if (chartType == ChartType.STACKED_AREA) {
       return buildStackedArea(
         timeFields[0],
         quantitativeFields[0],

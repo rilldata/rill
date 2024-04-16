@@ -2,7 +2,7 @@
   import PivotChip from "./PivotChip.svelte";
   import { type PivotChipData, PivotChipType } from "./types";
   import { portal } from "../../../lib/actions/portal";
-  import { dragging } from "./DragList.svelte";
+  import { dragDataStore } from "./DragList.svelte";
 
   export let item: PivotChipData;
   export let removable: boolean;
@@ -19,7 +19,7 @@
   }
 
   function onDragRelease() {
-    dragging.set(null);
+    dragDataStore.set(null);
   }
 </script>
 

@@ -15,6 +15,6 @@ export function useDashboardFlowTestSetup() {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
+    await createDashboardFromModel(page, "AdBids_model.sql");
   });
 }

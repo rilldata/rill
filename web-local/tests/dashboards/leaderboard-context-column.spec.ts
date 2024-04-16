@@ -24,10 +24,7 @@ test.describe("leaderboard context column", () => {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
-
-    // Open Edit Metrics
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    await createDashboardFromModel(page, "AdBids_model.sql");
 
     // Close the navigation sidebar to give the code editor more space
     await page.getByRole("button", { name: "Close sidebar" }).click();
@@ -41,6 +38,7 @@ test.describe("leaderboard context column", () => {
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+  kind: metrics_view
   title: "AdBids_model_dashboard"
   model: "AdBids_model"
   default_time_range: ""

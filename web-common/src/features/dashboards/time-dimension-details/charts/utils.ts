@@ -5,7 +5,7 @@ import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { VisualizationSpec } from "svelte-vega";
-import { TDDCustomCharts } from "../types";
+import { TDDAlternateCharts } from "../types";
 
 export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
   return dimensionData
@@ -18,8 +18,8 @@ export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
     .flat();
 }
 
-export function getVegaSpec(
-  chartType: TDDCustomCharts,
+export function getVegaSpecForTDD(
+  chartType: TDDAlternateCharts,
   expandedMeasureName: string,
   isDimensional: boolean,
 ): VisualizationSpec {

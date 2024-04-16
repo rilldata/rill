@@ -1,10 +1,10 @@
 <script lang="ts" context="module">
+  import { goto } from "$app/navigation";
+  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
+  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
-  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
-  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
-  import { goto } from "$app/navigation";
   import Component from "./Component.svelte";
 
   const zIndex = writable(0);
@@ -81,7 +81,7 @@
     <ContextMenu.Item>Delete</ContextMenu.Item>
     <ContextMenu.Item
       on:click={async () => {
-        await goto(`/chart/${chartName}`);
+        await goto(`/files/charts/${chartName}`);
       }}
     >
       Go to {chartName}.yaml
