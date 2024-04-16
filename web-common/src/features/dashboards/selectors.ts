@@ -30,8 +30,10 @@ export function useDashboardFileNames(instanceId: string) {
 }
 
 export function useDashboardRoutes(instanceId: string) {
-  return useMainEntityFiles(instanceId, "dashboards", (name) =>
-    getRouteFromName(name, EntityType.MetricsDefinition),
+  return useMainEntityFiles(
+    instanceId,
+    "dashboards",
+    (name) => getRouteFromName(name, EntityType.MetricsDefinition) + "/edit",
   );
 }
 

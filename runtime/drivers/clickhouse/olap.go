@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -60,6 +59,18 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
 	}
 
+	// We use the meta conn for dry run queries
+	if stmt.DryRun {
+		conn, release, err := c.acquireMetaConn(ctx)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = release() }()
+
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		return err
+	}
+
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
 	if err != nil {
 		return err
@@ -94,15 +105,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		}
 		defer func() { _ = release() }()
 
-		// TODO: Find way to validate with args
-
-		name := uuid.NewString()
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
 		return nil, err
 	}
 
@@ -122,6 +125,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		attrs := []attribute.KeyValue{
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
+			attribute.String("instance_id", c.instanceID),
 		}
 
 		attrSet := attribute.NewSet(attrs...)

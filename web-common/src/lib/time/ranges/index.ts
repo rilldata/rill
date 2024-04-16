@@ -5,6 +5,7 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   addZoneOffset,
@@ -377,6 +378,7 @@ export function getAdjustedChartTime(
   interval: V1TimeGrain | undefined,
   timePreset: TimeRangePreset | TimeComparisonOption | undefined,
   defaultTimeRange: string | undefined,
+  chartType: TDDChart,
 ) {
   if (!start || !end || !interval)
     return {
@@ -417,6 +419,20 @@ export function getAdjustedChartTime(
     );
   }
 
+  if (
+    chartType === TDDChart.GROUPED_BAR ||
+    chartType === TDDChart.STACKED_BAR
+  ) {
+    adjustedStart = getOffset(
+      adjustedStart,
+      offsetDuration,
+      TimeOffsetType.SUBTRACT,
+    );
+  }
+
+  /**
+   * We need to remove the offset from the end to remove whitespace
+   */
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
   return {

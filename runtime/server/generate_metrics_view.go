@@ -188,6 +188,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
+	doc.Kind = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
 	if isModel {
@@ -307,6 +308,7 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
 func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
 	doc := &metricsViewYAML{
+		Kind:          "metrics_view",
 		Title:         identifierToTitle(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(schema),
@@ -385,6 +387,7 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metr
 // metricsViewYAML is a struct for generating a metrics view YAML file.
 // We do not use the parser's structs since they are not suitable for generating pretty output YAML.
 type metricsViewYAML struct {
+	Kind               string                      `yaml:"kind,omitempty"`
 	Title              string                      `yaml:"title,omitempty"`
 	Connector          string                      `yaml:"connector,omitempty"`
 	Database           string                      `yaml:"database,omitempty"`

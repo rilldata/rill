@@ -689,11 +689,6 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
    */
   instanceId = "";
 
-  /**
-   * @generated from field: optional bool drop_olap = 2;
-   */
-  dropOlap?: boolean;
-
   constructor(data?: PartialMessage<DeleteInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -703,7 +698,6 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.DeleteInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "drop_olap", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteInstanceRequest {
@@ -947,9 +941,9 @@ export class ListFilesRequest extends Message<ListFilesRequest> {
  */
 export class ListFilesResponse extends Message<ListFilesResponse> {
   /**
-   * @generated from field: repeated string paths = 1;
+   * @generated from field: repeated rill.runtime.v1.DirEntry files = 1;
    */
-  paths: string[] = [];
+  files: DirEntry[] = [];
 
   constructor(data?: PartialMessage<ListFilesResponse>) {
     super();
@@ -959,7 +953,7 @@ export class ListFilesResponse extends Message<ListFilesResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ListFilesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "files", kind: "message", T: DirEntry, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListFilesResponse {
@@ -976,6 +970,49 @@ export class ListFilesResponse extends Message<ListFilesResponse> {
 
   static equals(a: ListFilesResponse | PlainMessage<ListFilesResponse> | undefined, b: ListFilesResponse | PlainMessage<ListFilesResponse> | undefined): boolean {
     return proto3.util.equals(ListFilesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DirEntry
+ */
+export class DirEntry extends Message<DirEntry> {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * @generated from field: bool is_dir = 2;
+   */
+  isDir = false;
+
+  constructor(data?: PartialMessage<DirEntry>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DirEntry";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "is_dir", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DirEntry {
+    return new DirEntry().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DirEntry {
+    return new DirEntry().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DirEntry {
+    return new DirEntry().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DirEntry | PlainMessage<DirEntry> | undefined, b: DirEntry | PlainMessage<DirEntry> | undefined): boolean {
+    return proto3.util.equals(DirEntry, a, b);
   }
 }
 
@@ -1040,6 +1077,11 @@ export class WatchFilesResponse extends Message<WatchFilesResponse> {
    */
   path = "";
 
+  /**
+   * @generated from field: bool is_dir = 3;
+   */
+  isDir = false;
+
   constructor(data?: PartialMessage<WatchFilesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1050,6 +1092,7 @@ export class WatchFilesResponse extends Message<WatchFilesResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event", kind: "enum", T: proto3.getEnumType(FileEvent) },
     { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "is_dir", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchFilesResponse {
@@ -1115,7 +1158,7 @@ export class GetFileRequest extends Message<GetFileRequest> {
 }
 
 /**
- * Reponse message for RuntimeService.GetFile
+ * Response message for RuntimeService.GetFile
  *
  * @generated from message rill.runtime.v1.GetFileResponse
  */
@@ -1265,6 +1308,84 @@ export class PutFileResponse extends Message<PutFileResponse> {
 
   static equals(a: PutFileResponse | PlainMessage<PutFileResponse> | undefined, b: PutFileResponse | PlainMessage<PutFileResponse> | undefined): boolean {
     return proto3.util.equals(PutFileResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.CreateDirectory
+ *
+ * @generated from message rill.runtime.v1.CreateDirectoryRequest
+ */
+export class CreateDirectoryRequest extends Message<CreateDirectoryRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path = "";
+
+  constructor(data?: PartialMessage<CreateDirectoryRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CreateDirectoryRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDirectoryRequest {
+    return new CreateDirectoryRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateDirectoryRequest {
+    return new CreateDirectoryRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateDirectoryRequest {
+    return new CreateDirectoryRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateDirectoryRequest | PlainMessage<CreateDirectoryRequest> | undefined, b: CreateDirectoryRequest | PlainMessage<CreateDirectoryRequest> | undefined): boolean {
+    return proto3.util.equals(CreateDirectoryRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.CreateDirectory
+ *
+ * @generated from message rill.runtime.v1.CreateDirectoryResponse
+ */
+export class CreateDirectoryResponse extends Message<CreateDirectoryResponse> {
+  constructor(data?: PartialMessage<CreateDirectoryResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CreateDirectoryResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDirectoryResponse {
+    return new CreateDirectoryResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateDirectoryResponse {
+    return new CreateDirectoryResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateDirectoryResponse {
+    return new CreateDirectoryResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateDirectoryResponse | PlainMessage<CreateDirectoryResponse> | undefined, b: CreateDirectoryResponse | PlainMessage<CreateDirectoryResponse> | undefined): boolean {
+    return proto3.util.equals(CreateDirectoryResponse, a, b);
   }
 }
 

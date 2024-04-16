@@ -87,10 +87,6 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	return c, nil
 }
 
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
-}
-
 func (d driver) Spec() drivers.Spec {
 	return spec
 }

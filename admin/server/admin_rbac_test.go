@@ -460,6 +460,23 @@ func TestAdmin_RBAC(t *testing.T) {
 		})
 	}
 
+	// The viewer should be able to remove themselves from the org
+	t.Run("remove yourself from org", func(t *testing.T) {
+		_, err := viewerClient.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+			Organization: adminOrg.Organization.Name,
+			Email:        viewerUser.Email,
+		})
+		require.NoError(t, err)
+
+		// Reverse the change
+		_, err = adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+			Organization: adminOrg.Organization.Name,
+			Email:        viewerUser.Email,
+			Role:         "viewer",
+		})
+		require.NoError(t, err)
+	})
+
 	// remove last admin tests
 	t.Run("test remove last admin", func(t *testing.T) {
 		_, err := adminClient.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
@@ -469,7 +486,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 		require.Error(t, err)
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
-		require.ErrorContains(t, err, "cannot remove the last owner")
+		require.ErrorContains(t, err, "cannot remove the last admin member")
 	})
 	t.Run("test leave last admin", func(t *testing.T) {
 		_, err := adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{

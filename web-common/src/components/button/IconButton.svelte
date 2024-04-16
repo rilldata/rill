@@ -8,6 +8,7 @@
   export let bgDark = false;
   export let active = false;
   export let disableTooltip = false;
+  export let disableHover = false;
 
   export let tooltipDistance = 8;
   export let tooltipLocation = "bottom";
@@ -30,7 +31,11 @@
     class="{marginClasses} grid place-items-center
 {active ? 'bg-gray-200 dark:bg-gray-800' : ''}
 {disabled ? 'text-gray-400' : 'text-gray-800'}
-{disabled ? '' : bgDark ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}"
+{disableHover || disabled
+      ? ''
+      : bgDark
+        ? 'hover:bg-gray-600'
+        : 'hover:bg-gray-100'}"
     style:width="{compact ? 20 : 24}px"
     style:height="{compact ? 20 : 24}px"
     style:font-size="18px"

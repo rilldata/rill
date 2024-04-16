@@ -300,6 +300,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		prodTTL = &tmp
 	}
 
+	// Backwards compatibility: if prod version is not set, default to "latest"
+	if req.ProdVersion == "" {
+		req.ProdVersion = "latest"
+	}
+
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -706,17 +711,20 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
-	}
-
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		// check if there is a pending invite
+
+		// Only admins can remove pending invites.
+		// NOTE: If we change invites to accept/decline (instead of auto-accept on signup), we need to revisit this.
+		claims := auth.GetClaims(ctx)
+		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
+		}
+
+		// Check if there is a pending invite
 		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -724,11 +732,20 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 			}
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
 		err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &adminv1.RemoveProjectMemberResponse{}, nil
+	}
+
+	// The caller must either have ManageProjectMembers permission or be the user being removed.
+	claims := auth.GetClaims(ctx)
+	isManager := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers
+	isSelf := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	if !isManager && !isSelf {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
 
 	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)

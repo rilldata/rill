@@ -116,8 +116,8 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 		}
 	}
 
-	if cfg.ExtTableStorage {
-		if err := os.Mkdir(cfg.ExtStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+	if cfg.DBStoragePath != "" {
+		if err := os.MkdirAll(cfg.DBStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return nil, err
 		}
 	}
@@ -196,8 +196,8 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-	if cfg.ExtStoragePath != "" {
-		return os.RemoveAll(cfg.ExtStoragePath)
+	if cfg.DBStoragePath != "" {
+		return os.RemoveAll(cfg.DBStoragePath)
 	}
 	if cfg.DBFilePath != "" {
 		err = os.Remove(cfg.DBFilePath)
@@ -306,6 +306,8 @@ type connection struct {
 	cancel context.CancelFunc
 	// registration should be unregistered on close
 	registration metric.Registration
+
+	instanceID string
 }
 
 var _ drivers.OLAPStore = &connection{}
@@ -362,6 +364,7 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
+	c.instanceID = instanceID
 	return c, true
 }
 
@@ -441,6 +444,7 @@ func (c *connection) reopenDB() error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
+		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)
 
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
@@ -521,7 +525,7 @@ func (c *connection) reopenDB() error {
 	// Load the version.txt from each sub-directory
 	// If version.txt is found, attach only the .db file matching the version.txt.
 	// If attach fails, log the error and delete the version.txt and .db file (e.g. might be DuckDB version change)
-	entries, err := os.ReadDir(c.config.ExtStoragePath)
+	entries, err := os.ReadDir(c.config.DBStoragePath)
 	if err != nil {
 		return err
 	}
@@ -529,7 +533,7 @@ func (c *connection) reopenDB() error {
 		if !entry.IsDir() {
 			continue
 		}
-		path := filepath.Join(c.config.ExtStoragePath, entry.Name())
+		path := filepath.Join(c.config.DBStoragePath, entry.Name())
 		version, exist, err := c.tableVersion(entry.Name())
 		if err != nil {
 			c.logger.Error("error in fetching db version", zap.String("table", entry.Name()), zap.Error(err))

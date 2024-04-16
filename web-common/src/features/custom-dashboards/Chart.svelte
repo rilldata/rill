@@ -1,11 +1,11 @@
 <script lang="ts">
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
   import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
+  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import type { VisualizationSpec } from "svelte-vega";
-  import { createRuntimeServiceGetChartData } from "../../runtime-client/manual-clients";
 
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -58,8 +58,8 @@
 </script>
 
 <div
-  class="h-full w-full overflow-hidden pointer-events-none"
   bind:this={container}
+  class="h-full w-full overflow-hidden pointer-events-none"
 >
   {#if error}
     <p>{error}</p>

@@ -1,33 +1,62 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import CustomDashboard from "@rilldata/web-common/features/custom-dashboards/CustomDashboard.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
+  import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
+  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
+  import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
+  import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
+  import {
+    getFileAPIPathFromNameAndType,
+    removeLeadingSlash,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    FileArtifact,
+    fileArtifacts,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
-  import { notifications } from "@rilldata/web-common/components/notifications";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import type {
+    V1DashboardComponent,
+    V1DashboardSpec,
+  } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import { parse, stringify } from "yaml";
-  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
-  import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
-  import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
-  import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { parse, stringify } from "yaml";
+
+  export let data: { fileArtifact?: FileArtifact } = {};
+
+  let fileArtifact: FileArtifact;
+  let filePath: string;
+  let customDashboardName: string;
+  $: if (data.fileArtifact) {
+    fileArtifact = data.fileArtifact;
+    filePath = fileArtifact.path;
+    customDashboardName = fileArtifact.getEntityName();
+  } else {
+    customDashboardName = $page.params.name;
+    filePath = getFileAPIPathFromNameAndType(
+      customDashboardName,
+      EntityType.Dashboard,
+    );
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  }
 
   const DEFAULT_EDITOR_HEIGHT = 300;
   const DEFAULT_EDITOR_WIDTH = 400;
@@ -50,36 +79,34 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: customDashboardName = $page.params.name;
-
-  $: filePath = getFileAPIPathFromNameAndType(
-    customDashboardName,
-    EntityType.Dashboard,
-  );
-
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    removeLeadingSlash(filePath),
+  );
+  $: [, fileName] = splitFolderAndName(filePath);
 
   $: yaml = $fileQuery.data?.blob || "";
 
   $: if (yaml) {
     try {
-      dashboard = parse(yaml) as V1DashboardSpec;
+      const potentialDb = parse(yaml) as V1DashboardSpec;
+      dashboard = {
+        ...potentialDb,
+        components: potentialDb.components?.filter(isComponent) ?? [],
+      };
     } catch {
       // Unable to parse YAML, no-op
     }
   }
 
-  $: selectedChartFilePath =
-    selectedChartName &&
-    getFileAPIPathFromNameAndType(selectedChartName, EntityType.Chart);
+  $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
+    ResourceKind.Chart,
+    selectedChartName ?? "",
+  );
+  $: selectedChartFilePath = selectedChartFileArtifact?.path;
 
-  $: ({
-    columns,
-    gap,
-    components: charts = [],
-  } = dashboard ?? ({} as V1DashboardSpec));
+  $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
 
   const onChangeCallback = async (
     e: Event & {
@@ -99,8 +126,7 @@
       instanceId,
       e.currentTarget,
       filePath,
-
-      EntityType.Dashboard,
+      customDashboardName,
     );
   };
 
@@ -110,7 +136,7 @@
     try {
       await $updateFile.mutateAsync({
         instanceId,
-        path: filePath,
+        path: removeLeadingSlash(filePath),
         data: {
           blob: content,
         },
@@ -127,26 +153,26 @@
       dimensions: Vector;
     }>,
   ) {
-    const components = [...charts];
+    const newComponents = [...components];
 
-    components[e.detail.index].width = e.detail.dimensions[0];
-    components[e.detail.index].height = e.detail.dimensions[1];
+    newComponents[e.detail.index].width = e.detail.dimensions[0];
+    newComponents[e.detail.index].height = e.detail.dimensions[1];
 
-    components[e.detail.index].x = e.detail.position[0];
-    components[e.detail.index].y = e.detail.position[1];
+    newComponents[e.detail.index].x = e.detail.position[0];
+    newComponents[e.detail.index].y = e.detail.position[1];
 
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components,
+      components: newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const components = [...charts];
-    components.push({
+    const newComponents = [...components];
+    newComponents.push({
       chart: e.detail.chartName,
       height: 4,
       width: 4,
@@ -157,10 +183,16 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components,
+      components: newComponents,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
+  }
+
+  function isComponent(
+    component: V1DashboardComponent | null | undefined,
+  ): component is V1DashboardComponent {
+    return !!component;
   }
 </script>
 
@@ -168,21 +200,21 @@
   <title>Rill Developer | {customDashboardName}</title>
 </svelte:head>
 
-<WorkspaceContainer inspector={false} bind:width={containerWidth}>
+<WorkspaceContainer bind:width={containerWidth} inspector={false}>
   <WorkspaceHeader
-    slot="header"
-    titleInput={customDashboardName}
-    showInspectorToggle={false}
     on:change={onChangeCallback}
+    showInspectorToggle={false}
+    slot="header"
+    titleInput={fileName}
   >
-    <div slot="workspace-controls" class="flex gap-x-4 items-center">
+    <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
 
       <div
         class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
       >
-        <Switch small id="snap" bind:checked={snap} />
-        <Label for="snap" class="font-normal text-xs">Snap on change</Label>
+        <Switch bind:checked={snap} id="snap" small />
+        <Label class="font-normal text-xs" for="snap">Snap on change</Label>
       </div>
 
       {#if selectedView === "split" || selectedView === "viz"}
@@ -264,10 +296,10 @@
     {/if}
 
     {#if selectedView == "viz" || selectedView == "split"}
-      <CustomDashboard
+      <CustomDashboardPreview
         {snap}
         {gap}
-        {charts}
+        {components}
         {columns}
         {showGrid}
         bind:selectedChartName

@@ -7,10 +7,10 @@ export enum TestEntityType {
   Dashboard = "dashboard",
 }
 
-export async function openEntityMenu(page: Page, name: string) {
-  const entityLocator = getEntityLink(page, name);
+export async function openEntityMenu(page: Page, fileName: string) {
+  const entityLocator = getEntityLink(page, fileName);
   await entityLocator.hover();
-  await entityLocator.locator("button").last().click();
+  await entityLocator.getByLabel(`${fileName} actions menu trigger`).click();
 }
 
 export async function clickModalButton(page: Page, text: string) {
@@ -43,7 +43,7 @@ export async function waitForProfiling(
 }
 
 export function getEntityLink(page: Page, name: string) {
-  return page.getByRole("listitem", { name, exact: true });
+  return page.getByLabel(`${name} Nav Entry`);
 }
 
 /**
@@ -80,11 +80,11 @@ export async function gotoEntity(page: Page, name: string) {
 
 export async function renameEntityUsingMenu(
   page: Page,
-  name: string,
-  toName: string,
+  fileName: string,
+  toFileName: string,
 ) {
   // open context menu and click rename
-  await openEntityMenu(page, name);
+  await openEntityMenu(page, fileName);
   await clickMenuButton(page, "Rename...");
 
   // wait for rename modal to open
@@ -94,8 +94,8 @@ export async function renameEntityUsingMenu(
     })
     .waitFor();
 
-  // type new name and submit
-  await page.locator("#rill-portal input").fill(toName);
+  // type new fileName and submit
+  await page.locator("#rill-portal input").fill(toFileName);
   await Promise.all([
     page.waitForResponse(/rename/),
     clickModalButton(page, "Change Name"),
@@ -127,7 +127,6 @@ export async function updateCodeEditor(page: Page, code: string) {
   } else {
     await page.keyboard.press("Control+A");
   }
-  await page.keyboard.press("Delete");
   await page.keyboard.insertText(code);
 }
 
@@ -138,18 +137,35 @@ export async function waitForValidResource(
 ) {
   await page.waitForResponse(async (response) => {
     if (
-      !response
+      response
         .url()
         .includes(
           `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
         )
-    )
-      return false;
-    try {
-      const resp = JSON.parse((await response.body()).toString());
-      return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
-    } catch (err) {
-      return false;
+    ) {
+      // try and check get a single resource response
+      try {
+        const resp = JSON.parse((await response.body()).toString());
+        return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+      } catch (err) {
+        return false;
+      }
+    } else if (
+      response
+        .url()
+        .includes(`/v1/instances/default/resource?name.kind=${kind}`)
+    ) {
+      // try and check get all resources response
+      try {
+        const resp = JSON.parse((await response.body()).toString());
+        return (
+          resp.resources.find((r) => r.meta?.name === name)?.meta
+            ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
+        );
+      } catch (err) {
+        return false;
+      }
     }
+    return false;
   });
 }

@@ -151,10 +151,20 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 			SinkInterval:   time.Second,
 		})
 
-		// Wrap the intake sink in a filter sink that omits metrics events (since they are quite chatty and potentially sensitive).
+		// Wrap the intake sink in a filter sink that omits events we don't want to send from local.
 		// (Remember, this telemetry client will only be used on local.)
 		sink := activity.NewFilterSink(intakeSink, func(e activity.Event) bool {
-			return e.EventType != activity.EventTypeMetric
+			// Omit metrics events (since they are quite chatty and potentially sensitive).
+			if e.EventType == activity.EventTypeMetric {
+				return false
+			}
+
+			// Omit instance heartbeats
+			if e.EventType == activity.EventTypeLog && e.EventName == "instance_heartbeat" {
+				return false
+			}
+
+			return true
 		})
 
 		// Create the telemetry client with metadata about the current environment.

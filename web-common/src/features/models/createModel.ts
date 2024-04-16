@@ -16,5 +16,5 @@ export async function createModel(
       createOnly: true,
     },
   );
-  goto(`/model/${newModelName}?focus`);
+  await goto(`/files/models/${newModelName}?focus`);
 }

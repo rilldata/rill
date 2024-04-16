@@ -7,10 +7,9 @@
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -25,11 +24,21 @@
   const { readOnly } = featureFlags;
 
   $: metricViewName = $page.params.name;
-  $: filePath = getFilePathFromNameAndType(
+
+  $: fileArtifact = fileArtifacts.findFileArtifact(
+    ResourceKind.MetricsView,
     metricViewName,
-    EntityType.MetricsDefinition,
   );
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: if (!fileArtifact) {
+    // wait for the artifact to be created
+    setTimeout(() => {
+      fileArtifact = fileArtifacts.findFileArtifact(
+        ResourceKind.MetricsView,
+        metricViewName,
+      );
+    }, 200);
+  }
+  $: filePath = fileArtifact?.path ?? "";
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: {
@@ -43,7 +52,7 @@
     },
   });
 
-  $: resourceStatusStore = fileArtifact.getResourceStatusStore(
+  $: resourceStatusStore = fileArtifact?.getResourceStatusStore(
     queryClient,
     $runtime.instanceId,
     (res) => !!res?.metricsView?.state?.validSpec,
@@ -86,7 +95,7 @@
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 
-{#if ($fileQuery.data && $resourceStatusStore.status === ResourceStatus.Idle) || showErrorPage}
+{#if ($fileQuery.data && $resourceStatusStore?.status === ResourceStatus.Idle) || showErrorPage}
   {#key metricViewName}
     <StateManagersProvider metricsViewName={metricViewName}>
       <DashboardStateProvider {metricViewName}>
@@ -98,7 +107,7 @@
       </DashboardStateProvider>
     </StateManagersProvider>
   {/key}
-{:else if $resourceStatusStore.status === ResourceStatus.Busy}
+{:else if $resourceStatusStore?.status === ResourceStatus.Busy}
   <div class="grid h-screen w-full place-content-center">
     <ReconcilingSpinner />
   </div>

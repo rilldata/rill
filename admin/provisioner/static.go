@@ -19,7 +19,6 @@ type StaticSpec struct {
 type StaticRuntimeSpec struct {
 	Host     string `json:"host"`
 	Slots    int    `json:"slots"`
-	DataDir  string `json:"data_dir"`
 	Audience string `json:"audience_url"`
 }
 
@@ -72,7 +71,6 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	return &Allocation{
 		Host:         target.Host,
 		Audience:     target.Audience,
-		DataDir:      target.DataDir,
 		CPU:          1 * opts.Slots,
 		MemoryGB:     2 * opts.Slots,
 		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),

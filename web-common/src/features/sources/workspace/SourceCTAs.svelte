@@ -1,18 +1,19 @@
 <script lang="ts">
+  import {
+    Button,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { createEventDispatcher } from "svelte";
+  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import ButtonContent from "./ButtonContent.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let hasErrors: boolean;
   export let hasUnsavedChanges: boolean;
-  export let isReconciling: boolean;
   export let isLocalFileConnector: boolean;
   export let collapse: boolean;
 
@@ -44,7 +45,6 @@
         dispatch("refresh-source");
       }
     }}
-    disabled={isReconciling}
     {label}
     {type}
   >
@@ -53,7 +53,7 @@
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <Button builders={[builder]} disabled={isReconciling} {label} {type}>
+      <Button builders={[builder]} {label} {type}>
         <ButtonContent {collapse} {hasUnsavedChanges} {isLocalFileConnector} />
       </Button>
     </DropdownMenu.Trigger>
@@ -76,6 +76,7 @@
 <Button
   disabled={hasUnsavedChanges || hasErrors}
   on:click={() => dispatch("create-model")}
+  type="brand"
 >
   <ResponsiveButtonText {collapse}>Create model</ResponsiveButtonText>
   <IconSpaceFixer pullLeft pullRight={collapse}>

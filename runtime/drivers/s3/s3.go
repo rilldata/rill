@@ -119,11 +119,6 @@ func (d driver) Open(cfgMap map[string]any, shared bool, client *activity.Client
 	return conn, nil
 }
 
-// Drop implements drivers.Driver
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
-}
-
 func (d driver) Spec() drivers.Spec {
 	return spec
 }
