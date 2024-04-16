@@ -84,6 +84,8 @@
     });
   }
 
+  $: console.log($fileQuery.data?.blob?.length);
+
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one
   function expandDirectory(filePath: string) {
