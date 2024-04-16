@@ -1,11 +1,11 @@
 <script>
   import YamlWorkspace from "@rilldata/web-common/features/generic-yaml-editor/YamlWorkspace.svelte";
 
-  const fileName = "rill.yaml";
+  const filePath = "/rill.yaml";
 </script>
 
 <svelte:head>
-  <title>{fileName}</title>
+  <title>{filePath}</title>
 </svelte:head>
 
-<YamlWorkspace {fileName} />
+<YamlWorkspace {filePath} />

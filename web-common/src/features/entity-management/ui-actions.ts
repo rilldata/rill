@@ -1,53 +1,49 @@
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   INVALID_NAME_MESSAGE,
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
-import { fetchAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { extractFileExtension } from "../sources/extract-file-name";
 
 export async function handleEntityRename(
   instanceId: string,
   target: HTMLInputElement,
   existingPath: string,
-  entityType: EntityType, // temporary param
+  existingName: string,
 ) {
-  const [folder, fileName] = splitFolderAndName(existingPath);
-  const extension = extractFileExtension(existingPath);
+  const [folder] = splitFolderAndName(existingPath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
     notifications.send({
       message: INVALID_NAME_MESSAGE,
     });
-    target.value = fileName; // resets the input
+    target.value = existingName; // resets the input
     return;
   }
 
-  const allNames = await fetchAllNames(queryClient, instanceId);
+  const allNames = await fetchAllFileNames(queryClient, instanceId);
 
-  if (isDuplicateName(target.value, fileName, allNames)) {
+  if (isDuplicateName(target.value, existingName, allNames)) {
     notifications.send({
       message: `Name ${target.value} is already in use`,
     });
-    target.value = fileName; // resets the input
+    target.value = existingName; // resets the input
     return;
   }
 
   try {
     const toName = target.value;
 
-    const newAPIPath = (folder ? `${folder}/` : "") + toName + extension;
+    const newFilePath = (folder ? `${folder}/` : "/") + toName;
 
-    await renameFileArtifact(instanceId, existingPath, newAPIPath, entityType);
+    await renameFileArtifact(instanceId, existingPath, newFilePath);
 
-    return getRouteFromName(toName, entityType);
+    return `/files/${newFilePath}`;
   } catch (err) {
-    console.error(err.response.data.message);
+    console.error(err.response?.data?.message ?? err);
   }
 }

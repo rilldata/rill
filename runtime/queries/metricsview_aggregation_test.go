@@ -332,10 +332,51 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 	require.Equal(t, "Yahoo", fieldsToString(rows[i], "pub"))
 }
 
-func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T) {
+func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns_limit_exceeded_error(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+				Alias:     "day",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+		PivotOn: []string{
+			"timestamp",
+		},
+		Limit:     &limit,
+		Exporting: true,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.Error(t, err)
+}
+
+func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(1000)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -788,9 +829,9 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 	rows := q.Result.Data
 
 	require.Equal(t, q.Result.Schema.Fields[0].Name, "Domain")
-	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_Google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_Google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_Google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_google_Average bid price")
 
 	i := 0
 	require.Equal(t, "google.com", fieldsToString(rows[i], "Domain"))

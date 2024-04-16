@@ -1,7 +1,7 @@
 import type { Readable } from "svelte/store";
 import { derived, writable } from "svelte/store";
 
-const NOTIFICATION_TIMEOUT = 2000;
+const NOTIFICATION_TIMEOUT = 3500;
 
 interface NotificationStore extends Readable<NotificationMessage> {
   timeoutID: ReturnType<typeof setTimeout>;

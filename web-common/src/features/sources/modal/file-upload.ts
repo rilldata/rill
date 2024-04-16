@@ -58,7 +58,7 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName && goToIfSuccessful) {
-    goto(`/source/${lastTableName}`);
+    await goto(`/files/sources/${lastTableName}`);
   }
 
   if (invalidFiles.length) {

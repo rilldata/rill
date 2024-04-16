@@ -12,9 +12,6 @@ import (
 // ErrNotFound indicates the resource wasn't found.
 var ErrNotFound = errors.New("driver: not found")
 
-// ErrDropNotSupported indicates the driver doesn't support dropping its state.
-var ErrDropNotSupported = errors.New("driver: drop not supported")
-
 // ErrNotImplemented indicates the driver doesn't support the requested operation.
 var ErrNotImplemented = errors.New("driver: not implemented")
 
@@ -50,16 +47,6 @@ func Open(driver string, config map[string]any, shared bool, client *activity.Cl
 	return conn, nil
 }
 
-// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
-func Drop(driver string, config map[string]any, logger *zap.Logger) error {
-	d, ok := Drivers[driver]
-	if !ok {
-		return fmt.Errorf("unknown driver: %s", driver)
-	}
-
-	return d.Drop(config, logger)
-}
-
 // Driver represents an external service that Rill can connect to.
 type Driver interface {
 	// Spec returns metadata about the driver, such as which configuration properties it supports.
@@ -67,9 +54,6 @@ type Driver interface {
 
 	// Open opens a new handle.
 	Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (Handle, error)
-
-	// Drop removes all state in a handle. Drivers that do not support it should return ErrDropNotSupported.
-	Drop(config map[string]any, logger *zap.Logger) error
 
 	// HasAnonymousSourceAccess returns true if the driver can access the data identified by srcProps without any additional configuration.
 	HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error)

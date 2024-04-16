@@ -117,6 +117,6 @@ const appStoreReducers = {
   },
 };
 
-const appStore: typeof appStoreReducers = {
+export const appStore: typeof appStoreReducers = {
   ...appStoreReducers,
 };

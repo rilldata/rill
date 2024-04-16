@@ -5,18 +5,22 @@
   import { deleteFileArtifact } from "../entity-management/actions";
   import { EntityType } from "../entity-management/types";
   import { useChartRoutes } from "./selectors";
+  import { getNextRoute } from "../models/utils/navigate-to-next";
+  import { goto } from "$app/navigation";
 
   export let chartName: string;
+  export let open: boolean;
 
-  $: chartRoutes = useChartRoutes($runtime.instanceId);
+  $: chartRoutesQuery = useChartRoutes($runtime.instanceId);
+  $: chartRoutes = $chartRoutesQuery.data ?? [];
 
   async function handleDeleteChart() {
     await deleteFileArtifact(
       $runtime.instanceId,
       getFileAPIPathFromNameAndType(chartName, EntityType.Chart),
-      EntityType.Chart,
-      $chartRoutes.data ?? [],
     );
+
+    if (open) await goto(getNextRoute(chartRoutes));
   }
 </script>
 

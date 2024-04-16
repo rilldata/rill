@@ -64,7 +64,7 @@ func TestAll(t *testing.T) {
 }
 
 func withDuckDB(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error {
-	fn("duckdb", false, map[string]any{"dsn": "?access_mode=read_write", "pool_size": 4})
+	fn("duckdb", false, map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4})
 	return nil
 }
 

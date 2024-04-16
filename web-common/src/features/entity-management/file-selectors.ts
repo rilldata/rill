@@ -4,6 +4,7 @@ import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceGetFile,
   runtimeServiceListFiles,
+  V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 
@@ -13,11 +14,24 @@ import type { QueryClient } from "@tanstack/svelte-query";
  */
 export function useMainEntityFiles(
   instanceId: string,
-  prefix: "sources" | "models" | "dashboards" | "charts" | "custom-dashboards",
+  prefix:
+    | "sources"
+    | "models"
+    | "dashboards"
+    | "charts"
+    | "custom-dashboards"
+    | "apis"
+    | "themes"
+    | "alerts"
+    | "reports",
   transform = (name: string) => name,
 ) {
   let extension: string;
   switch (prefix) {
+    case "apis":
+    case "themes":
+    case "alerts":
+    case "reports":
     case "sources":
     case "dashboards":
     case "charts":
@@ -33,7 +47,7 @@ export function useMainEntityFiles(
     instanceId,
     {
       // We still use opinionated folder names. So we still need this filter
-      glob: "{sources,models,dashboards,charts,custom-dashboards}/*.{yaml,sql}",
+      glob: "{apis,themes,alerts,reports,sources,models,dashboards,charts,custom-dashboards}/*.{yaml,sql}",
     },
     {
       query: {
@@ -69,20 +83,56 @@ export function useMainEntityFiles(
   );
 }
 
+export async function fetchAllFiles(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const filesResp = await queryClient.fetchQuery<V1ListFilesResponse>({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+    queryFn: () => {
+      return runtimeServiceListFiles(instanceId, undefined);
+    },
+  });
+  return filesResp.files ?? [];
+}
+
+export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
+  return createRuntimeServiceListFiles(instanceId, undefined, {
+    query: {
+      queryClient,
+      select: (data) =>
+        data.files
+          ?.filter((f) => f.isDir)
+          .map((f) => f.path?.split("/").pop() ?? "") ?? [],
+    },
+  });
+}
+
+export async function fetchAllFileNames(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  const files = await fetchAllFiles(queryClient, instanceId);
+  return files
+    .filter((f) => !f.isDir)
+    .map((f) => f.path?.split("/").pop() ?? "")
+    .filter(Boolean);
+}
+
 export async function fetchMainEntityFiles(
   queryClient: QueryClient,
   instanceId: string,
 ) {
-  const resp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
-      glob: ".{yaml,sql}",
-    }),
-    queryFn: () =>
-      runtimeServiceListFiles(instanceId, {
-        glob: ".{yaml,sql}",
-      }),
-  });
-  return resp.files?.filter((f) => !f.isDir).map((f) => f.path ?? "") ?? [];
+  const files = await fetchAllFiles(queryClient, instanceId);
+  return files
+    .filter(
+      (f) =>
+        !f.isDir &&
+        (f.path?.endsWith(".sql") ||
+          f.path?.endsWith(".yml") ||
+          f.path?.endsWith(".yaml")),
+    )
+    .map((f) => f.path ?? "");
 }
 
 export async function fetchFileContent(
@@ -97,13 +147,59 @@ export async function fetchFileContent(
   return resp.blob ?? "";
 }
 
-const FILE_PATH_SPLIT_REGEX = /\//;
-export function splitFolderAndName(
-  filePath: string,
-): [folder: string, fileName: string] {
-  const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
-  return [
-    filePath.substring(0, filePath.length - fileName.length - 1),
-    fileName,
-  ];
+export function useFileNamesInDirectory(
+  instanceId: string,
+  directoryPath: string,
+) {
+  return createRuntimeServiceListFiles(
+    instanceId,
+    {
+      glob: `${directoryPath}/*`,
+    },
+    {
+      query: {
+        select: (data) => {
+          const files = data.files?.filter((file) => !file.isDir);
+          const fileNames = files?.map((file) => {
+            return file.path?.replace(`${directoryPath}/`, "") ?? "";
+          });
+          const sortedFileNames = fileNames?.sort((fileNameA, fileNameB) =>
+            fileNameA.localeCompare(fileNameB, undefined, {
+              sensitivity: "base",
+            }),
+          );
+          return sortedFileNames ?? [];
+        },
+      },
+    },
+  );
+}
+
+export function useDirectoryNamesInDirectory(
+  instanceId: string,
+  directoryPath: string,
+) {
+  return createRuntimeServiceListFiles(
+    instanceId,
+    {
+      glob: `${directoryPath}/*`,
+    },
+    {
+      query: {
+        select: (data) => {
+          const files = data.files?.filter((file) => file.isDir);
+          const directoryNames = files?.map((file) => {
+            return file.path?.replace(`${directoryPath}/`, "") ?? "";
+          });
+          const sortedDirectoryNames = directoryNames?.sort(
+            (dirNameA, dirNameB) =>
+              dirNameA.localeCompare(dirNameB, undefined, {
+                sensitivity: "base",
+              }),
+          );
+          return sortedDirectoryNames ?? [];
+        },
+      },
+    },
+  );
 }

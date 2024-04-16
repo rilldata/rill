@@ -450,9 +450,7 @@ export type RuntimeServiceEditInstanceBody = {
   watchRepo?: boolean;
 };
 
-export type RuntimeServiceDeleteInstanceBody = {
-  dropOlap?: boolean;
-};
+export type RuntimeServiceDeleteInstanceBody = { [key: string]: any };
 
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
@@ -525,6 +523,7 @@ export interface V1WatchLogsResponse {
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
+  isDir?: boolean;
 }
 
 export interface V1UnpackExampleResponse {

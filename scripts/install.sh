@@ -1,21 +1,17 @@
 #!/usr/bin/env sh
-set -e
-
-CDN="cdn.rilldata.com"
-INSTALL_DIR="/usr/local/bin"
 
 # Determine the platform using 'OS' and 'ARCH'
 initPlatform() {
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
-    if [ $OS = "darwin" ] && [ $ARCH = "arm64" ]; then
+    if [ "$OS" = "darwin" ] && [ "$ARCH" = "arm64" ]; then
         PLATFORM="darwin_arm64"
-    elif [ $OS = "darwin" ] && [ $ARCH = "x86_64" ]; then
+    elif [ "$OS" = "darwin" ] && [ "$ARCH" = "x86_64" ]; then
         PLATFORM="darwin_amd64"
-    elif [ $OS = "linux" ] && [ $ARCH = "x86_64" ]; then
+    elif [ "$OS" = "linux" ] && [ "$ARCH" = "x86_64" ]; then
         PLATFORM="linux_amd64"
     else
-        printf "Platform not supported: os=$OS arch=$ARCH\n"
+        printf "Platform not supported: os=%s arch=%s\n" "$OS" "$ARCH"
         exit 1
     fi
 }
@@ -24,19 +20,21 @@ initPlatform() {
 initTmpDir() {
     TMP_DIR=$(mktemp -d)
     trap 'rm -rf -- "${TMP_DIR}"' EXIT
-    cd $TMP_DIR
+    cd "$TMP_DIR"
 }
 
 # Ensure that dependency is installed and executable, exit and print help message if not
 checkDependency() {
-    if ! [ -x "$(command -v $1)" ]; then
-        printf "'$1' could not be found, this script depends on it, please install and try again.\n"
+    if ! [ -x "$(command -v "$1")" ]; then
+        printf "'%s' could not be found, this script depends on it, please install and try again.\n" "$1"
         exit 1
     fi
 }
 
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
+    CDN="cdn.rilldata.com"
+
     LATEST_URL="https://${CDN}/rill/latest.txt"
     if [ "${VERSION}" = "latest" ]; then
         VERSION=$(curl --silent --show-error ${LATEST_URL})
@@ -44,17 +42,52 @@ downloadBinary() {
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
-    printf "Downloading binary: ${BINARY_URL}\n"
+    printf "Downloading binary: %s\n" "$BINARY_URL"
     curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.zip
 
-    printf "\nDownloading checksum: ${CHECKSUM_URL}\n"
+    printf "\nDownloading checksum: %s\n" "$CHECKSUM_URL"
     curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
 
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
     shasum --algorithm 256 --ignore-missing --check checksums.txt
 
-    printf "\nUnpacking rill_${PLATFORM}.zip\n"
+    printf "\nUnpacking rill_%s.zip\n" "$PLATFORM"
     unzip -q rill_${PLATFORM}.zip
+}
+
+# Ask for preferred install option
+promtInstallChoice() {
+    printf "\nWhere would you like to install rill?  (Default [1])\n\n"
+    printf "[1]  /usr/local/bin/rill  [recommended, but requires sudo privileges]\n"
+    printf "[2]  ~/.rill/rill         [directory will be created & path configured]\n"
+    printf "[3]  ./rill               [download to the current directory]\n\n"
+    printf "Install option: "
+
+    read -r ans </dev/tty;
+    case $ans in
+        2)
+            INSTALL_DIR="$HOME/.rill"
+            ;;
+        3)
+            INSTALL_DIR=$(pwd)
+            ;;
+        *)
+            INSTALL_DIR="/usr/local/bin"
+            ;;
+    esac
+    printf "\n"
+}
+
+# Detect previous installation
+detectPreviousInstallation() {
+    if [ -x "$(command -v rill)" ] && [ -z "${INSTALL_DIR}" ]; then
+        INSTALLED_RILL="$(command -v rill)"
+        if [ "$INSTALLED_RILL" = "/usr/local/bin/rill" ]; then
+            INSTALL_DIR="/usr/local/bin"
+        elif [ "$INSTALLED_RILL" = "$HOME/.rill/rill" ]; then
+            INSTALL_DIR="$HOME/.rill"
+        fi
+    fi
 }
 
 # Check conflicting installation and exit with a help message
@@ -66,44 +99,142 @@ checkConflictingInstallation() {
             printf "To upgrade using Brew, run 'brew upgrade rilldata/tap/rill'.\n\n"
             printf "To use this script to install Rill, run 'brew remove rilldata/tap/rill' to remove the conflicting version and try again.\n"
             exit 1
-        elif [ $INSTALLED_RILL != "${INSTALL_DIR}/rill" ]; then
-            printf "There is a conflicting version of Rill installed at '${INSTALLED_RILL}'\n\n"
+        elif [ "$INSTALLED_RILL" != "${INSTALL_DIR}/rill" ]; then
+            printf "There is a conflicting version of Rill installed at '%s'\n\n" "$INSTALLED_RILL"
             printf "To use this script to install Rill, remove the conflicting version and try again.\n"
             exit 1
         fi
     fi
 }
 
-# Ask for elevated permissions to install the binary
+# Install the binary and ask for elevated permissions if needed
 installBinary() {
-    printf "\nElevated permissions required to install the Rill binary to: ${INSTALL_DIR}/rill\n"
-    sudo install -d ${INSTALL_DIR}
-    sudo install rill "${INSTALL_DIR}/"
+    if [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
+        printf "\nElevated permissions required to install the Rill binary to: %s/rill\n" "$INSTALL_DIR"
+        sudo install -d "$INSTALL_DIR"
+        sudo install rill "$INSTALL_DIR"
+    else
+        install -d "$INSTALL_DIR"
+        install rill "$INSTALL_DIR"
+    fi
+    cd - > /dev/null
 }
 
 # Run the installed binary and print the version
 testInstalledBinary() {
-    RILL_VERSION=$(rill version)
-    rill verify-install 1>/dev/null || true
-    boldon=`tput smso`
-    boldoff=`tput rmso`
-    printf "\nInstallation of ${RILL_VERSION} completed!\n"
-    printf "\nTo start a new project in Rill, execute the command:\n\n ${boldon}rill start my-rill-project${boldoff}\n\n"
+    RILL_VERSION=$("$INSTALL_DIR"/rill version)
+    "$INSTALL_DIR"/rill verify-install 1>/dev/null || true
+    printf "\nInstallation of %s completed!\n" "$RILL_VERSION"
 }
+
+# Print 'rill start' help intrcutions
+printStartHelp() {
+    boldon=$(tput smso)
+    boldoff=$(tput rmso)
+
+    if [ "$INSTALL_DIR" = "/usr/local/bin" ]; then
+        printf "\nTo start a new project in Rill, execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff"
+    elif [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
+        printf "\nTo start a new project in Rill, open a %snew terminal%s and execute the command:\n\n %srill start my-rill-project%s\n\n" "$boldon" "$boldoff" "$boldon" "$boldoff"
+    elif [ "$INSTALL_DIR" = "$(pwd)" ]; then
+        printf "\nTo start a new project in Rill, execute the command:\n\n %s./rill start my-rill-project%s\n\n" "$boldon" "$boldoff"
+    fi
+}
+
+# Add the Rill binary to the PATH via configuration of the shells we detect on the system
+addPathConfigEntries() {
+    PATH_CONFIG_LINE="export PATH=\$HOME/.rill:\$PATH # Added by Rill install"
+
+    if [ "$INSTALL_DIR" = "$HOME/.rill" ]; then
+        for f in "$HOME/.bashrc" "$HOME/.zshrc"; do
+            if [ -f "$f" ]; then
+                if ! grep -Fxq "$PATH_CONFIG_LINE" "$f"; then
+                    printf "\nWould you like to add 'rill' to your PATH by adding an entry in '%s'? (Y/n)\n" "$f"
+                    read -r ans </dev/tty;
+                    case $ans in
+                        n)
+                            ;;
+                        *)
+                            printf "\n%s\n" "$PATH_CONFIG_LINE" >> "$f"
+                            ;;
+                    esac
+                fi
+            fi
+        done
+    fi
+}
+
+# Remove PATH configurations, we have to do handle this slightly different based on OS because of platform variations in 'sed' behaviour
+removePathConfigEntries() {
+    for f in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [ -f "$f" ]; then
+            if [ "$OS" = "darwin" ]; then
+                sed -i "" -e '/# Added by Rill install/d' "$f"
+            elif [ "$OS" = "linux" ]; then
+                sed -i -e '/# Added by Rill install/d' "$f"
+            fi
+        fi
+    done
+}
+
+# Install Rill on the system
+installRill() {
+    checkDependency curl
+    checkDependency shasum
+    checkDependency unzip
+    initPlatform
+    detectPreviousInstallation
+    if [ -z "${INSTALL_DIR}" ]; then
+        promtInstallChoice
+        checkConflictingInstallation
+    fi
+    initTmpDir
+    downloadBinary
+    installBinary
+    testInstalledBinary
+    addPathConfigEntries
+    printStartHelp
+}
+
+# Uninstall Rill from the system, this function is aware of both the privileged and unprivileged install methods
+uninstallRill() {
+    checkDependency sed
+    initPlatform
+
+    if [ -f "/usr/local/bin/rill" ]
+    then
+        printf "\nElevated permissions required to uninstall the Rill binary from: '/usr/local/bin/rill'\n"
+        sudo rm /usr/local/bin/rill
+    fi
+
+    rm -f "$HOME/.rill/rill"
+    removePathConfigEntries
+
+    printf "Uninstall of Rill completed\n"
+}
+
+set -e
 
 # Parse input flag
 case $1 in
-    --nightly) VERSION=nightly;;
-    --version) VERSION=${2:-latest};;
-    *) VERSION=latest;;
+    --uninstall)
+        uninstallRill
+        ;;
+    --nightly)
+        VERSION=nightly
+        installRill
+        ;;
+    --version)
+        VERSION=${2:-latest}
+        installRill
+        ;;
+    --non-interactive)
+        INSTALL_DIR=${2:-"/usr/local/bin"}
+        VERSION=${3:-latest}
+        installRill
+        ;;
+    *)
+        VERSION=latest
+        installRill
+        ;;
 esac
-
-checkDependency curl
-checkDependency shasum
-checkDependency unzip
-initPlatform
-checkConflictingInstallation
-initTmpDir
-downloadBinary
-installBinary
-testInstalledBinary

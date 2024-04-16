@@ -34,7 +34,7 @@
       },
       newChartName,
     );
-    await goto(`/chart/${newChartName}`);
+    await goto(`/files/charts/${newChartName}`);
   }
 </script>
 
