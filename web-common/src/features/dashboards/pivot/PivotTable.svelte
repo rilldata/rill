@@ -108,10 +108,29 @@
     hasDimension ? 1 : 0,
   ) ?? [null];
   $: measureGroupsLength = measureGroups.length;
-  $: measureLengths =
-    $dashboardStore.pivot?.columns?.measure?.map((measure) => {
-      return measure.title.length * 7 + MEASURE_PADDING;
-    }) ?? [];
+
+  const columnSizes = (() => {
+    const sizes = new Map<string, number[]>();
+    return {
+      get: (key: string, calculator: () => number[]): number[] => {
+        let array = sizes.get(key);
+        if (!array) {
+          array = calculator();
+          sizes.set(key, array);
+        }
+        return array;
+      },
+      set: (key: string, value: number[]) => sizes.set(key, value),
+    };
+  })();
+
+  $: measureLengths = columnSizes.get("measureWidths", () => {
+    return (
+      $dashboardStore.pivot?.columns?.measure?.map((measure) => {
+        return Math.max(90, measure.title.length * 7 + MEASURE_PADDING);
+      }) ?? []
+    );
+  });
 
   $: totalMeasureWidth = measureLengths.reduce((acc, val) => acc + val, 0);
   $: totalLength = measureGroupsLength * totalMeasureWidth;
@@ -160,10 +179,12 @@
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
 
+  let scrollLeft = 0;
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      scrollLeft = containerRefElement.scrollLeft;
 
       // Fetch more data when scrolling near the bottom end
       if (
@@ -218,6 +239,36 @@
 
     return [...first, ...middle, ...last];
   }
+
+  let initialMeasureIndex = 0;
+  let initLengthOnResize = 0;
+  let initScrollOnResize = 0;
+  let percentOfChange = 0;
+  let resizingMeasure = false;
+
+  $: if (resizingMeasure && containerRefElement && measureLengths) {
+    containerRefElement.scrollTo({
+      left:
+        initScrollOnResize +
+        percentOfChange * (totalLength - initLengthOnResize),
+    });
+  }
+
+  function onMouseDown(e: MouseEvent) {
+    initLengthOnResize = totalLength;
+    initScrollOnResize = scrollLeft;
+
+    const offset =
+      e.clientX -
+      containerRefElement.getBoundingClientRect().left -
+      firstColumnWidth -
+      measureLengths.reduce((acc, val, i) => {
+        return i <= initialMeasureIndex ? acc + val : acc;
+      }, 0) +
+      4;
+
+    percentOfChange = (scrollLeft + offset) / totalLength;
+  }
 </script>
 
 <div
@@ -248,21 +299,42 @@
     {/each}
 
     <thead>
-      {#each headerGroups as headerGroup (headerGroup.id)}
+      {#each headerGroups as headerGroup, group (headerGroup.id)}
         <tr>
           {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
-            {@const canResize = i === 0 && hasDimension}
+            {@const canResize =
+              (hasDimension && group === 0 && i === 0) || group !== 0}
+            {@const measureIndex = (i - 1) % measureLengths.length}
             <th colSpan={header.colSpan}>
               {#if canResize}
-                <Resizer
-                  min={MIN_COL_WIDTH}
-                  max={MAX_COL_WIDTH}
-                  basis={MIN_COL_WIDTH}
-                  bind:dimension={firstColumnWidth}
-                  side="right"
-                  direction="EW"
-                />
+                {#if i === 0}
+                  <Resizer
+                    min={MIN_COL_WIDTH}
+                    max={MAX_COL_WIDTH}
+                    basis={MIN_COL_WIDTH}
+                    bind:dimension={firstColumnWidth}
+                    side="right"
+                    direction="EW"
+                    onMouseDown={() => {
+                      resizingMeasure = false;
+                    }}
+                  />
+                {:else}
+                  <Resizer
+                    min={60}
+                    max={300}
+                    basis={MIN_COL_WIDTH}
+                    bind:dimension={measureLengths[measureIndex]}
+                    side="right"
+                    direction="EW"
+                    onMouseDown={(e) => {
+                      resizingMeasure = true;
+                      initialMeasureIndex = measureIndex;
+                      onMouseDown(e);
+                    }}
+                  />
+                {/if}
               {/if}
 
               <button
@@ -272,7 +344,9 @@
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
-                  {header.column.columnDef.header}
+                  <p class="truncate">
+                    {header.column.columnDef.header}
+                  </p>
                   {#if sortDirection}
                     <span
                       class="transition-transform -mr-1"
@@ -360,7 +434,8 @@
     @apply border-r border-b relative;
   }
 
-  th:last-of-type {
+  th:last-of-type,
+  td:last-of-type {
     @apply border-r-0;
   }
 
