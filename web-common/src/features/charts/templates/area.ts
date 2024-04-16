@@ -23,7 +23,7 @@ export function buildArea(
       mark: { type: "rule", color: "royalblue", strokeWidth: 3 },
     },
     {
-      mark: { type: "point", filled: true, size: 50 },
+      mark: { type: "point", filled: true, size: 50, clip: true },
       encoding: {
         opacity: {
           condition: { param: "hover", value: 1, empty: false },
