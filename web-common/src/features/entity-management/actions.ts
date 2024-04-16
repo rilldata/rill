@@ -5,44 +5,46 @@ import {
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import { getLabel, removeLeadingSlash } from "./entity-mappers";
-import type { EntityType } from "./types";
+import { removeLeadingSlash } from "./entity-mappers";
 
 export async function renameFileArtifact(
   instanceId: string,
   fromPath: string,
   toPath: string,
-  type: EntityType,
 ) {
-  await runtimeServiceRenameFile(instanceId, {
-    fromPath,
-    toPath,
-  });
-
+  // fromPath = removeLeadingSlash(fromPath);
   const fromName = extractFileName(fromPath);
+  // toPath = removeLeadingSlash(toPath);
   const toName = extractFileName(toPath);
 
-  httpRequestQueue.removeByName(fromName);
-  notifications.send({
-    message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
-  });
+  try {
+    await runtimeServiceRenameFile(instanceId, {
+      fromPath,
+      toPath,
+    });
+
+    httpRequestQueue.removeByName(fromName);
+  } catch (err) {
+    notifications.send({
+      message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+    });
+  }
 }
 
-export async function deleteFileArtifact(
-  instanceId: string,
-  filePath: string,
-  type: EntityType,
-  showNotification = true,
-) {
+export async function deleteFileArtifact(instanceId: string, filePath: string) {
   const name = extractFileName(filePath);
   try {
     await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
 
     httpRequestQueue.removeByName(name);
-    if (showNotification) {
-      notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
-    }
   } catch (err) {
-    console.error(err);
+    notifications.send({
+      message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
+    });
   }
+}
+
+function extractMessage(msg: string) {
+  if (msg.endsWith("directory not empty")) return "directory not empty";
+  return msg;
 }

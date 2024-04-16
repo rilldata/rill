@@ -1,16 +1,8 @@
 <script lang="ts">
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -18,59 +10,39 @@
   import { createEventDispatcher } from "svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { useModel, useModelRoutes } from "../selectors";
-  import { goto } from "$app/navigation";
-  import { getNextRoute } from "../utils/navigate-to-next";
 
-  export let modelName: string;
-  export let open: boolean;
+  export let filePath: string;
 
-  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: fileArtifact = fileArtifacts.getFileArtifact(modelPath);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const { customDashboards } = featureFlags;
 
-  $: modelRoutesQuery = useModelRoutes($runtime.instanceId);
-  $: modelRoutes = $modelRoutesQuery.data ?? [];
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
     $runtime.instanceId,
   );
-  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
   $: connector = $modelQuery.data?.model?.spec?.connector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
+  $: tableName = $modelQuery.data?.model?.state?.table ?? "";
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector as string,
     "",
     "",
-    modelName,
+    tableName,
+    "dashboards",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
-
-  const handleDeleteModel = async (modelName: string) => {
-    try {
-      await deleteFileArtifact(
-        $runtime.instanceId,
-        getFileAPIPathFromNameAndType(modelName, EntityType.Model),
-        EntityType.MetricsDefinition,
-      );
-
-      if (open) await goto(getNextRoute(modelRoutes));
-    } catch (e) {
-      console.error(e);
-    }
-  };
 </script>
 
 <NavigationMenuItem
@@ -114,18 +86,3 @@
     </svelte:fragment>
   </NavigationMenuItem>
 {/if}
-
-<NavigationMenuSeparator />
-
-<NavigationMenuItem
-  on:click={() => {
-    dispatch("rename-asset");
-  }}
->
-  <EditIcon slot="icon" />
-  Rename...
-</NavigationMenuItem>
-<NavigationMenuItem on:click={() => handleDeleteModel(modelName)}>
-  <Cancel slot="icon" />
-  Delete
-</NavigationMenuItem>

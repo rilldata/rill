@@ -4,19 +4,29 @@
   import type { SelectionRange } from "@codemirror/state";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import {
+    getFileAPIPathFromNameAndType,
+    removeLeadingSlash,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    FileArtifact,
+    fileArtifacts,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    ResourceKind,
+    resourceIsLoading,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
-  import { createModelFromSourceV2 } from "@rilldata/web-common/features/sources/createModel";
+  import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
+  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
@@ -50,8 +60,33 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext, onMount } from "svelte";
-  import type { Writable } from "svelte/store";
+  import { get, type Writable } from "svelte/store";
   import { fade, slide } from "svelte/transition";
+
+  export let data: { fileArtifact?: FileArtifact } = {};
+
+  let filePath: string;
+  let assetName: string;
+  let type: "model" | "source";
+  let entity: EntityType;
+  let fileArtifact: FileArtifact;
+
+  $: if (data.fileArtifact) {
+    fileArtifact = data.fileArtifact;
+    filePath = fileArtifact.path;
+    assetName = fileArtifact.getEntityName();
+    type =
+      get(fileArtifact.name)?.kind === ResourceKind.Model ? "model" : "source";
+    entity = type === "model" ? EntityType.Model : EntityType.Table;
+  } else {
+    // needed for backwards compatibility for now
+    assetName = $page.params.name;
+    type = $page.params.type as "model" | "source";
+    entity = type === "model" ? EntityType.Model : EntityType.Table;
+    filePath = getFileAPIPathFromNameAndType(assetName, entity);
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  }
+  $: [, fileName] = splitFolderAndName(filePath);
 
   const QUERY_DEBOUNCE_TIME = 400;
 
@@ -72,9 +107,6 @@
     if ($readOnly) await goto("/");
   });
 
-  $: assetName = $page.params.name;
-  $: type = $page.params.type as "model" | "source";
-  $: entity = type === "model" ? EntityType.Model : EntityType.Table;
   $: verb = type === "source" ? "Ingested" : "Computed";
 
   $: pathname = $page.url.pathname;
@@ -83,7 +115,6 @@
   $: tableVisible = workspace.table.visible;
 
   $: instanceId = $runtime.instanceId;
-  $: filePath = getFileAPIPathFromNameAndType(assetName, entity);
 
   $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
@@ -91,14 +122,14 @@
     },
   });
 
-  $: blob = $fileQuery.data?.blob ?? "";
+  let blob = "";
+  $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
   // This gets updated via binding below
   $: latest = blob;
 
   $: hasUnsavedChanges = latest !== blob;
 
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
@@ -128,6 +159,8 @@
   const debounceSave = debounce(save, QUERY_DEBOUNCE_TIME);
 
   async function save() {
+    if (!hasUnsavedChanges) return;
+
     if (type === "source") {
       overlay.set({ title: `Importing ${filePath}` });
     } else {
@@ -139,7 +172,7 @@
 
     await $updateFile.mutateAsync({
       instanceId,
-      path: getFileAPIPathFromNameAndType(assetName, entity),
+      path: removeLeadingSlash(filePath),
       data: {
         blob: latest,
       },
@@ -164,7 +197,7 @@
       instanceId,
       e.currentTarget,
       filePath,
-      entity,
+      assetName,
     );
 
     if (newRoute) await goto(newRoute);
@@ -182,13 +215,15 @@
   }
 
   async function handleCreateModelFromSource() {
-    const modelName = await createModelFromSourceV2(
+    const [newModelPath, newModelName] = await createModelFromSource(
       queryClient,
+      assetName,
       tableName ?? "",
+      "models",
     );
-    await goto(`/model/${modelName}`);
+    await goto(`/files/${newModelPath}`);
     await behaviourEvent.fireNavigationEvent(
-      modelName,
+      newModelName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
       MetricsEventScreenName.Source,
@@ -247,7 +282,7 @@
   <WorkspaceContainer>
     <WorkspaceHeader
       slot="header"
-      titleInput={assetName}
+      titleInput={fileName}
       showTableToggle
       {hasUnsavedChanges}
       on:change={handleNameChange}

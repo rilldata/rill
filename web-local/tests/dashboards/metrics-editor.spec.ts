@@ -17,10 +17,7 @@ test.describe("Metrics editor", () => {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
-
-    // Open Edit Metrics
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    await createDashboardFromModel(page, "AdBids_model.sql");
 
     // Close the navigation sidebar to give the code editor more space
     await page.getByRole("button", { name: "Close sidebar" }).click();

@@ -8,6 +8,8 @@ test.describe("dimension and measure selectors", () => {
   useDashboardFlowTestSetup();
 
   test("dimension and measure selectors flow", async ({ page }) => {
+    await page.getByRole("button", { name: "Preview" }).click();
+
     const measuresButton = page.getByRole("button", {
       name: "Choose measures to display",
     });
