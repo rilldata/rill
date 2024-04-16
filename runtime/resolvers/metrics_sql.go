@@ -47,7 +47,12 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes)
+	args := &sqlArgs{}
+	if err := mapstructure.Decode(opts.Args, args); err != nil {
+		return nil, err
+	}
+
+	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes, args.Priority)
 	sql, connector, refs, err := compiler.Compile(ctx, props.SQL)
 	if err != nil {
 		return nil, err
