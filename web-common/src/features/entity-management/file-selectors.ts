@@ -1,4 +1,3 @@
-import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
   createRuntimeServiceListFiles,
   getRuntimeServiceGetFileQueryKey,
