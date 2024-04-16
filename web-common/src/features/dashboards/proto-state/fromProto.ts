@@ -133,6 +133,9 @@ export function getDashboardStateFromProto(
     entity.lastDefinedScrubRange = fromTimeRangeProto(
       dashboard.scrubRange,
     ) as ScrubRange;
+  } else {
+    entity.selectedScrubRange = undefined;
+    entity.lastDefinedScrubRange = undefined;
   }
 
   if (dashboard.leaderboardMeasure) {
