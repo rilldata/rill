@@ -16,8 +16,7 @@
   $: projectTitleQuery = useProjectTitle(instanceId);
   $: dashboardsQuery = useValidDashboards(instanceId);
 
-  $: projectName =
-    ($projectTitleQuery.data as string | undefined) ?? "Dashboard";
+  $: projectName = ($projectTitleQuery.data as string | undefined) ?? "Project";
   $: dashboards = $dashboardsQuery.data ?? [];
 
   $: dashboardOptions = dashboards.reduce((map, dimension) => {
