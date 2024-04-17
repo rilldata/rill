@@ -398,6 +398,7 @@ type metricsViewYAML struct {
 	Dimensions         []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
 	Measures           []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
 	AvailableTimeZones []string                    `yaml:"available_time_zones,omitempty"`
+	AvailableTimeRanges []string                   `yaml:"available_time_ranges,omitempty"`
 }
 
 type metricsViewDimensionYAML struct {
@@ -429,6 +430,27 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 		"Asia/Tokyo",
 		"Australia/Sydney",
 	}
+
+	doc.AvailableTimeRanges = []string{
+		"PT6H",
+		"PT24H",
+		"P7D",
+		"P14D",
+		"P4W",
+		"P3M",
+		"P12M",
+		"rill-TD",
+		"rill-WTD",
+		"rill-MTD",
+		"rill-QTD",
+		"rill-YTD",
+		"rill-PDC",
+		"rill-PWC",
+		"rill-PMC",
+		"rill-PQC",
+		"rill-PYC",
+	}
+
 
 	buf := new(bytes.Buffer)
 
