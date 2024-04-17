@@ -88,10 +88,11 @@ type configProperties struct {
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("azure driver does not support shared connections")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("azure driver can't be shared")
 	}
+
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -115,12 +116,11 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
-	if err != nil {
-		return false, err
+	conn := &Connection{
+		config: &configProperties{},
+		logger: logger,
 	}
 
-	conn := c.(*Connection)
 	bucketObj, err := conn.openBucketWithNoCredentials(ctx, conf)
 	if err != nil {
 		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
