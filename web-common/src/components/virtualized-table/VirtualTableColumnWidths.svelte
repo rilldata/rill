@@ -20,9 +20,9 @@
 
   <col style:width="{paddingLeft}px" />
 
-  {#each { length: renderedColumns } as _, i (i)}
+  {#each { length: renderedColumns } as _, i (startColumn + i)}
     {#if !pinnedColumns.has(startColumn + i)}
-      <col style:width="{columnWidths[i]}px" />
+      <col style:width="{columnWidths[startColumn + i]}px" />
     {/if}
   {/each}
 
