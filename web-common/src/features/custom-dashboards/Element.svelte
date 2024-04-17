@@ -89,9 +89,3 @@
     <ContextMenu.Item>Show details</ContextMenu.Item>
   </ContextMenu.Content>
 </ContextMenu.Root>
-
-<style lang="postcss">
-  .wrapper {
-    @apply absolute;
-  }
-</style>

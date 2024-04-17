@@ -22,7 +22,7 @@
   import { onMount } from "svelte";
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
   import ChartPage from "../../chart/[name]/+page.svelte";
-  import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
+  import CustomDashboardPage from "../custom-dashboards/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
@@ -83,8 +83,6 @@
       path: removeLeadingSlash(filePath),
     });
   }
-
-  $: console.log($fileQuery.data?.blob?.length);
 
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one

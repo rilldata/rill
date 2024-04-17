@@ -21,6 +21,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
@@ -94,8 +95,7 @@
   });
   $: [, fileName] = splitFolderAndName(filePath);
 
-  // let yaml = "";
-  $: yaml = $fileQuery.data?.blob;
+  $: yaml = $fileQuery.data?.blob ?? "";
 
   $: if (yaml) {
     try {
@@ -140,7 +140,6 @@
   };
 
   async function updateChartFile(e: CustomEvent<string>) {
-    console.log("update");
     const content = e.detail;
     if (!content) return;
     try {
@@ -237,7 +236,12 @@
       {/if}
 
       <AddChartMenu on:add-chart={addChart} />
-      <Button>Preview</Button>
+
+      <PreviewButton
+        disabled={Boolean($errors.length)}
+        dashboardName={customDashboardName}
+        type="custom"
+      />
     </div>
   </WorkspaceHeader>
 
