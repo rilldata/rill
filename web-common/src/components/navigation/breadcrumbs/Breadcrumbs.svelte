@@ -19,6 +19,7 @@
   export let currentPath: (string | undefined)[] = [];
 
   $: currentPage = currentPath.findLastIndex(Boolean);
+  $: console.log(pathParts);
 </script>
 
 <nav class="flex gap-x-0 pl-1.5 items-center">

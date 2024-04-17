@@ -1,16 +1,31 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-project-initialized";
-  import Welcome from "@rilldata/web-common/features/welcome/Welcome.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
-
-  onMount(async () => {
-    const initialized = await isProjectInitialized($runtime.instanceId);
-
-    if (!initialized) return;
-    await goto("/");
-  });
+  import { fly } from "svelte/transition";
+  import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
+  import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
+  import UserTestCta from "@rilldata/web-common/features/welcome/UserTestCTA.svelte";
 </script>
 
-<Welcome />
+<div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
+  <div class="wrapper column p-10 2xl:py-16">
+    <TitleContent />
+    <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
+      <ProjectCards />
+      <UserTestCta />
+    </div>
+  </div>
+</div>
+
+<style lang="postcss">
+  .scroll {
+    @apply size-full overflow-x-hidden overflow-y-auto;
+  }
+
+  .wrapper {
+    @apply w-screen h-fit min-h-screen bg-no-repeat bg-cover;
+    background-image: url("$img/welcome-bg-art.png");
+  }
+
+  .column {
+    @apply flex flex-col items-center gap-y-6;
+  }
+</style>
