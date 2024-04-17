@@ -47,7 +47,9 @@
     {:else if !parsedVegaSpec}
       <p>Chart not available</p>
     {:else}
-      <VegaLiteRenderer {data} spec={parsedVegaSpec} />
+      <div class="w-full h-1/2">
+        <VegaLiteRenderer {data} spec={parsedVegaSpec} />
+      </div>
     {/if}
   </ChartPromptStatusDisplay>
 </div>

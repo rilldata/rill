@@ -1,28 +1,15 @@
 <script lang="ts">
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
-  import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { onDestroy, onMount } from "svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { VisualizationSpec } from "svelte-vega";
-
-  const observer = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      const { width, height } = entry.contentRect;
-      clientHeight = height;
-      clientWidth = width;
-    }
-  });
-  const queryClient = useQueryClient();
+  import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
 
   export let chartName: string;
 
-  let clientHeight: number;
-  let clientWidth: number;
-  let container: HTMLDivElement;
-  let error: unknown = "";
-  let parsedVegaSpec: VisualizationSpec | undefined = undefined;
+  let error: string | null = null;
+  let parsedVegaSpec: VisualizationSpec | null = null;
 
   $: chart = useChart($runtime.instanceId, chartName);
 
@@ -31,10 +18,10 @@
   $: try {
     parsedVegaSpec = vegaSpec
       ? (JSON.parse(vegaSpec) as VisualizationSpec)
-      : undefined;
-    error = "";
+      : null;
+    error = null;
   } catch (e: unknown) {
-    error = e;
+    error = JSON.stringify(e);
   }
 
   $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
@@ -47,30 +34,8 @@
   );
 
   $: data = $chartDataQuery?.data;
-
-  onMount(() => {
-    observer.observe(container);
-  });
-
-  onDestroy(() => {
-    observer.disconnect();
-  });
 </script>
 
-<div
-  bind:this={container}
-  class="h-full w-full overflow-hidden pointer-events-none"
->
-  {#if error}
-    <p>{error}</p>
-  {:else if !parsedVegaSpec}
-    <p>Chart not available</p>
-  {:else}
-    <DashVegaRenderer
-      data={{ table: data }}
-      spec={parsedVegaSpec}
-      height={clientHeight - 31}
-      width={clientWidth}
-    />
-  {/if}
-</div>
+{#if parsedVegaSpec}
+  <VegaLiteRenderer data={{ table: data }} spec={parsedVegaSpec} {error} />
+{/if}
