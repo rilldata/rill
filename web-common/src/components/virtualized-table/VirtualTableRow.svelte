@@ -81,6 +81,7 @@
 <style lang="postcss">
   td {
     @apply truncate p-0 bg-white;
+    height: var(--row-height);
   }
 
   :global(.cell-borders td) {

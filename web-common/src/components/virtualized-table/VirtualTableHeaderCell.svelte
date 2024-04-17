@@ -1,10 +1,10 @@
 <script lang="ts">
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import type VirtualTableHeaderCell from "./VirtualTableHeaderCellContent.svelte";
+  import type VirtualTableHeaderCellContent from "./VirtualTableHeaderCellContent.svelte";
   import type { ComponentType } from "svelte";
   import { HEADER_HEIGHT } from "./VirtualTable.svelte";
 
-  export let HeaderCell: ComponentType<VirtualTableHeaderCell>;
+  export let HeaderCell: ComponentType<VirtualTableHeaderCellContent>;
   export let index: number;
   export let sorted: boolean;
   export let type: string | undefined;
@@ -51,6 +51,7 @@
 <style lang="postcss">
   th {
     @apply truncate p-0 bg-white;
+    height: var(--header-height);
   }
 
   th:nth-last-of-type(2) {

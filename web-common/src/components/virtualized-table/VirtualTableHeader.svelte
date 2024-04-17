@@ -80,6 +80,7 @@
 
   th {
     @apply truncate p-0 bg-white;
+    height: var(--header-height);
   }
 
   .row-number {
