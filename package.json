@@ -24,12 +24,10 @@
   },
   "devDependencies": {
     "@types/eslint": "^8.56.9",
-    "@typescript-eslint/eslint-plugin": "^7.7.0",
-    "@typescript-eslint/parser": "^7.7.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-svelte": "^2.37.0",
     "eslint-plugin-playwright": "^1.6.0",
+    "eslint-plugin-svelte": "^2.37.0",
     "eslint-plugin-vitest": "^0.5.3",
     "prettier": "^3.1.1",
     "prettier-plugin-svelte": "^3.1.2",
