@@ -35,7 +35,7 @@ func Register(name string, driver Driver) {
 // Open opens a new connection.
 // If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
 // If instanceID is not empty, the connection is considered instance-specific and its As...() functions will only be invoked with the same instance ID.
-func Open(driver string, instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (Handle, error) {
+func Open(driver, instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)

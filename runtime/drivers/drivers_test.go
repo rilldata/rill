@@ -20,7 +20,7 @@ import (
 // This should be the only "real" test in the package. Other tests should be added
 // as subtests of TestAll.
 func TestAll(t *testing.T) {
-	var matrix = []func(t *testing.T, fn func(driver string, instanceID string, cfg map[string]any)) error{
+	var matrix = []func(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error{
 		withDuckDB,
 		withFile,
 		withPostgres,
@@ -29,7 +29,7 @@ func TestAll(t *testing.T) {
 	}
 
 	for _, withDriver := range matrix {
-		err := withDriver(t, func(driver string, instanceID string, cfg map[string]any) {
+		err := withDriver(t, func(driver, instanceID string, cfg map[string]any) {
 			// Open
 			conn, err := drivers.Open(driver, instanceID, cfg, activity.NewNoopClient(), zap.NewNop())
 			require.NoError(t, err)
@@ -63,18 +63,18 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func withDuckDB(t *testing.T, fn func(driver string, instanceID string, cfg map[string]any)) error {
+func withDuckDB(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
 	fn("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4})
 	return nil
 }
 
-func withFile(t *testing.T, fn func(driver string, instanceID string, cfg map[string]any)) error {
+func withFile(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
 	dsn := t.TempDir()
 	fn("file", "default", map[string]any{"dsn": dsn})
 	return nil
 }
 
-func withPostgres(t *testing.T, fn func(driver string, instanceID string, cfg map[string]any)) error {
+func withPostgres(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
@@ -82,7 +82,7 @@ func withPostgres(t *testing.T, fn func(driver string, instanceID string, cfg ma
 	return nil
 }
 
-func withSQLite(t *testing.T, fn func(driver string, instanceID string, cfg map[string]any)) error {
+func withSQLite(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
 	fn("sqlite", "", map[string]any{"dsn": ":memory:"})
 	return nil
 }
