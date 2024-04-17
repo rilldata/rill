@@ -10,7 +10,7 @@
 
   export let selected: boolean;
   export let rowHeaders: boolean;
-  export let index: number;
+  export let rowIndex: number;
   export let pinnedColumns: Map<number, number>;
   export let RowHeader: ComponentType<VirtualTableRowHeader>;
   export let PinnedCell: ComponentType<VirtualTableCell>;
@@ -27,27 +27,27 @@
 <tr class:selected>
   {#if rowHeaders}
     <td class="row-number">
-      <svelte:component this={RowHeader} index={index + 1} />
+      <svelte:component this={RowHeader} index={rowIndex + 1} />
     </td>
   {/if}
 
-  {#each pinnedColumns as [index, position], i (i)}
-    {@const column = columns[index]}
+  {#each pinnedColumns as [columnIndex, position], i (i)}
+    {@const column = columns[columnIndex]}
     {@const columnLabel = String(column[columnAccessor])}
     <td
       class="pinned"
       class:last-pinned={i === pinnedColumns.size - 1}
-      data-index={index}
+      data-index={columnIndex}
       data-column={columnLabel}
       style:left="{position}px"
       on:mouseenter
     >
       <svelte:component
         this={PinnedCell}
-        sorted={columns[index].name === sortedColumn}
+        sorted={column.name === sortedColumn}
         {selected}
         value={cells[valueAccessor(columnLabel)] ?? cells[columnLabel]}
-        type={columns[index].type}
+        type={column.type}
         formattedValue={cells[valueAccessor(columnLabel)]}
       />
     </td>
@@ -56,20 +56,20 @@
   <td title="left-pad" />
 
   {#each { length: renderedColumns } as _, i (i)}
-    {@const index = startColumn + i}
-    {@const column = columns[index]}
+    {@const columnIndex = startColumn + i}
+    {@const column = columns[columnIndex]}
     {@const columnLabel = String(column[columnAccessor])}
-    {@const sorted = columns[index].name === sortedColumn}
-    {@const pinned = pinnedColumns.has(index)}
+    {@const sorted = columns[columnIndex].name === sortedColumn}
+    {@const pinned = pinnedColumns.has(columnIndex)}
     {#if !pinned}
-      <td data-index={index} data-column={columnLabel} on:mouseenter>
+      <td data-index={rowIndex} data-column={columnLabel} on:mouseenter>
         <svelte:component
           this={Cell}
           {sorted}
           {selected}
           value={cells[columnLabel]}
           formattedValue={cells[valueAccessor(columnLabel)]}
-          type={columns[index].type}
+          type={column.type}
         />
       </td>
     {/if}

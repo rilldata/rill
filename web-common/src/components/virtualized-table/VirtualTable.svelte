@@ -380,7 +380,7 @@
             {pinnedColumns}
             {rowHeaders}
             {selected}
-            index={rowIndex}
+            {rowIndex}
             {renderedColumns}
             {PinnedCell}
             {RowHeader}
