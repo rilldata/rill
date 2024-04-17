@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -47,7 +48,10 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("snowflake driver can't be shared")
+	}
 	// actual db connection is opened during query
 	return &connection{
 		config: config,

@@ -1,11 +1,9 @@
 <script lang="ts">
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
-
   import {
     importOverlayVisible,
     overlay,
@@ -22,55 +20,45 @@
   }
 </script>
 
-<div class="body">
-  {#if $importOverlayVisible}
-    <PreparingImport />
-  {:else if showDropOverlay}
-    <FileDrop bind:showDropOverlay />
-  {:else if $overlay !== null}
-    <BlockingOverlayContainer
-      bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-    >
-      <div slot="title" class="font-bold">
-        {$overlay?.title}
-      </div>
-      <svelte:fragment slot="detail">
-        {#if $overlay?.detail}
-          <svelte:component
-            this={$overlay.detail.component}
-            {...$overlay.detail.props}
-          />
-        {/if}
-      </svelte:fragment>
-    </BlockingOverlayContainer>
-  {/if}
+<main
+  role="application"
+  class="index-body absolute w-screen h-screen flex overflow-hidden"
+  on:drag|preventDefault|stopPropagation
+  on:drop|preventDefault|stopPropagation
+  on:dragenter|preventDefault|stopPropagation
+  on:dragleave|preventDefault|stopPropagation
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
+  }}
+>
+  <Navigation />
+  <section class="size-full overflow-hidden">
+    <slot />
+  </section>
+</main>
 
-  <AddSourceModal />
-  <SourceImportedModal sourcePath={$sourceImportedPath} />
-
-  <main
-    role="application"
-    class="index-body absolute w-screen h-screen flex overflow-hidden"
-    on:drag|preventDefault|stopPropagation
-    on:drop|preventDefault|stopPropagation
-    on:dragenter|preventDefault|stopPropagation
-    on:dragleave|preventDefault|stopPropagation
-    on:dragover|preventDefault|stopPropagation={(e) => {
-      if (isEventWithFiles(e)) showDropOverlay = true;
-    }}
+{#if $importOverlayVisible}
+  <PreparingImport />
+{:else if showDropOverlay}
+  <FileDrop bind:showDropOverlay />
+{:else if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
   >
-    <Navigation />
-    <section class="size-full overflow-hidden">
-      <slot />
-    </section>
-  </main>
-</div>
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
 
+<AddSourceModal />
+<SourceImportedModal sourcePath={$sourceImportedPath} />
 <NotificationCenter />
-
-<style>
-  /* Prevent trackpad navigation (like other code editors, like vscode.dev). */
-  :global(body) {
-    overscroll-behavior: none;
-  }
-</style>

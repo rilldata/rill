@@ -151,55 +151,59 @@ export function useFileNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: `${directoryPath}/*`,
-    },
-    {
-      query: {
-        select: (data) => {
-          const files = data.files?.filter((file) => !file.isDir);
-          const fileNames = files?.map((file) => {
-            return file.path?.replace(`${directoryPath}/`, "") ?? "";
-          });
-          const sortedFileNames = fileNames?.sort((fileNameA, fileNameB) =>
-            fileNameA.localeCompare(fileNameB, undefined, {
-              sensitivity: "base",
-            }),
-          );
-          return sortedFileNames ?? [];
-        },
+  directoryPath += "/";
+  return createRuntimeServiceListFiles(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        const files = data.files?.filter(
+          (file) => !file.isDir && file.path?.startsWith(directoryPath),
+        );
+        const fileNames = files
+          ?.map((file) => {
+            return file.path?.replace(directoryPath, "") ?? "";
+          })
+          // filter out files in subdirectories
+          .filter((filePath) => !filePath.includes("/"));
+        const sortedFileNames = fileNames?.sort((fileNameA, fileNameB) =>
+          fileNameA.localeCompare(fileNameB, undefined, {
+            sensitivity: "base",
+          }),
+        );
+        return sortedFileNames ?? [];
       },
     },
-  );
+  });
 }
 
 export function useDirectoryNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: `${directoryPath}/*`,
-    },
-    {
-      query: {
-        select: (data) => {
-          const files = data.files?.filter((file) => file.isDir);
-          const directoryNames = files?.map((file) => {
-            return file.path?.replace(`${directoryPath}/`, "") ?? "";
-          });
-          const sortedDirectoryNames = directoryNames?.sort(
-            (dirNameA, dirNameB) =>
-              dirNameA.localeCompare(dirNameB, undefined, {
-                sensitivity: "base",
-              }),
-          );
-          return sortedDirectoryNames ?? [];
-        },
+  directoryPath += "/";
+  return createRuntimeServiceListFiles(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        const files =
+          data.files?.filter(
+            (file) =>
+              file.isDir &&
+              file.path?.startsWith(directoryPath) &&
+              file.path !== directoryPath,
+          ) ?? [];
+        const directoryNames = files
+          ?.map((file) => {
+            return file.path?.replace(directoryPath, "") ?? "";
+          })
+          // filter out dirs in subdirectories
+          .filter((filePath) => !filePath.includes("/"));
+        const sortedDirectoryNames = directoryNames?.sort(
+          (dirNameA, dirNameB) =>
+            dirNameA.localeCompare(dirNameB, undefined, {
+              sensitivity: "base",
+            }),
+        );
+        return sortedDirectoryNames ?? [];
       },
     },
-  );
+  });
 }

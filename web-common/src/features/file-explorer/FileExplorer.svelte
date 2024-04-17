@@ -86,7 +86,7 @@
     generateChartMetricsView = metricsView ?? "";
   }
 
-  const { navDragging, offset, dragStart } = navEntryDragDropStore;
+  const { dragData, position } = navEntryDragDropStore;
 
   async function handleDropSuccess(
     fromDragData: NavDragData,
@@ -117,7 +117,7 @@
 </script>
 
 <svelte:window
-  on:mousemove={() => navEntryDragDropStore.onMouseMove()}
+  on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
   on:mouseup={(e) =>
     navEntryDragDropStore.onMouseUp(e, null, handleDropSuccess)}
 />
@@ -155,6 +155,6 @@
   table={generateChartTable}
 />
 
-{#if $navDragging}
-  <NavEntryPortal offset={$offset} position={$dragStart} />
+{#if $dragData}
+  <NavEntryPortal position={$position} dragData={$dragData} />
 {/if}

@@ -101,13 +101,13 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(cfgMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("s3 driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("s3 driver can't be shared")
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.WeakDecode(cfgMap, cfg)
+	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -129,12 +129,11 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
-	if err != nil {
-		return false, err
+	conn := &Connection{
+		config: &configProperties{},
+		logger: logger,
 	}
 
-	conn := c.(*Connection)
 	bucketObj, err := conn.openBucket(ctx, conf, conf.url.Host, credentials.AnonymousCredentials)
 	if err != nil {
 		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
