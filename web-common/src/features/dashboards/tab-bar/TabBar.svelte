@@ -32,7 +32,6 @@
     {
       label: "Pivot",
       Icon: Pivot,
-      beta: true,
     },
   ];
 
