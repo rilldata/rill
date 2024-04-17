@@ -189,7 +189,10 @@ type druidRows struct {
 	currentValues []any
 }
 
-var _ driver.Rows = &druidRows{}
+var (
+	_ driver.Rows                           = &druidRows{}
+	_ driver.RowsColumnTypeDatabaseTypeName = &druidRows{}
+)
 
 func (dr *druidRows) Columns() []string {
 	return dr.columns
