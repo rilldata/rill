@@ -62,9 +62,9 @@ export function initColumnWidths<K>(params: {
     const pixelLength = Math.ceil(lengthBasis * 7);
 
     if (columnNameLength > averageCharacterLength) {
-      return clamp(minWidth, pixelLength, maxWidth) + 60;
+      return clamp(minWidth, pixelLength + 60, maxWidth);
     } else {
-      return clamp(minWidth, pixelLength, maxWidth) + 60;
+      return clamp(minWidth, pixelLength + 60, maxWidth);
     }
   });
 }
