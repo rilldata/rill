@@ -5,7 +5,7 @@ import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
 import tsEslint from "typescript-eslint";
 import eslintPluginSvelte from "eslint-plugin-svelte";
-import vitest from "eslint-plugin-vitest";
+// import vitest from "eslint-plugin-vitest";
 import playwright from "eslint-plugin-playwright";
 
 export default [
@@ -17,7 +17,7 @@ export default [
     ...playwright.configs["flat/playwright"],
     files: ["**/tests/**"],
   },
-  vitest.configs.recommended,
+  //   vitest.configs.recommended,
   ...eslintPluginSvelte.configs["flat/prettier"],
   {
     languageOptions: {
@@ -68,6 +68,8 @@ export default [
       "**/node_modules",
       "**/playwright.config.js",
       "**/svelte.config.js",
+      "**/gen/*",
+      "**/.storybook/*",
     ],
   },
   {
@@ -77,15 +79,17 @@ export default [
   {
     files: ["**/*.svelte"],
     rules: {
-      "svelte/no-target-blank": "warn",
-      "svelte/no-at-html-tags": "error",
+      // ERRORS
       "svelte/no-at-debug-tags": "error",
+      "svelte/valid-prop-names-in-kit-pages": "error",
+      // WARNINGS (some will be promoted to errors)
+      "svelte/no-at-html-tags": "warn",
+      "svelte/no-target-blank": "warn",
       "svelte/require-each-key": "warn",
       "svelte/prefer-destructured-store-props": "warn",
       "svelte/require-optimized-style-attribute": "warn",
       "svelte/prefer-class-directive": "warn",
       "svelte/require-store-reactive-access": "warn",
-      "svelte/valid-prop-names-in-kit-pages": "warn",
       //   "svelte/require-event-dispatcher-types": "warn",
       //   "svelte/sort-attributes": "warn",
     },
