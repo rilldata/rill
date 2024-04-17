@@ -49,6 +49,11 @@
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
   }
+
+  function handleMouseDown(e: MouseEvent) {
+    if (fileName === "rill.yaml") return;
+    onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
+  }
 </script>
 
 <button
@@ -59,8 +64,7 @@
   font-medium hover:bg-slate-100"
   {id}
   on:click={() => navigate(filePath)}
-  on:mousedown={(e) =>
-    onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind })}
+  on:mousedown={handleMouseDown}
   on:mouseup={(e) =>
     onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
   style:padding-left="{padding}px"
