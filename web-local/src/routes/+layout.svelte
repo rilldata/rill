@@ -17,6 +17,11 @@
   import type { Writable } from "svelte/store";
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
 
+  /** This function will initialize the existing node stores and will connect them
+   * to the Node server.
+   */
+  initializeNodeStoreContexts();
+
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
 
@@ -24,11 +29,6 @@
     error: AxiosError,
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
-
-  /** This function will initialize the existing node stores and will connect them
-   * to the Node server.
-   */
-  initializeNodeStoreContexts();
 
   beforeNavigate(retainFeaturesFlags);
 
@@ -54,8 +54,17 @@
   <QueryClientProvider client={queryClient}>
     <WelcomePageRedirect>
       <ResourceWatcher host={data.host} instanceId={data.instanceId}>
-        <slot />
+        <div class="body h-screen w-screen overflow-hidden">
+          <slot />
+        </div>
       </ResourceWatcher>
     </WelcomePageRedirect>
   </QueryClientProvider>
 </RillTheme>
+
+<style>
+  /* Prevent trackpad navigation (like other code editors, like vscode.dev). */
+  :global(body) {
+    overscroll-behavior: none;
+  }
+</style>
