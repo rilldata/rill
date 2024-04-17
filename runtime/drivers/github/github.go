@@ -56,9 +56,9 @@ type configProperties struct {
 	TempDir string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("github driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("github driver can't be shared")
 	}
 
 	conf := &configProperties{}
@@ -102,7 +102,6 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		tempdir:      tempdir,
 		projectdir:   projectDir,
 		singleflight: &singleflight.Group{},
-		shared:       shared,
 	}, nil
 }
 
