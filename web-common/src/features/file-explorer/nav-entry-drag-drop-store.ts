@@ -12,6 +12,7 @@ export type NavDragData = {
 };
 
 export class NavEntryDragDropStore {
+  private static readonly MIN_DRAG_DISTANCE = 9;
   public readonly dragData = writable<null | NavDragData>(null);
   public initialPosition = { left: 0, top: 0 };
   public readonly position = writable({ left: 0, top: 0 });
@@ -70,7 +71,7 @@ export class NavEntryDragDropStore {
       Math.pow(left - this.initialPosition.left, 2) +
         Math.pow(top - this.initialPosition.top, 2),
     );
-    if (dist < 20) return;
+    if (dist < NavEntryDragDropStore.MIN_DRAG_DISTANCE) return;
     this.dragData.set(this.newDragData);
   }
 
