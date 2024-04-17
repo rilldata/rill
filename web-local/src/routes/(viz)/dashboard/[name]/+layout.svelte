@@ -16,7 +16,8 @@
   $: projectTitleQuery = useProjectTitle(instanceId);
   $: dashboardsQuery = useValidDashboards(instanceId);
 
-  $: projectName = ($projectTitleQuery.data as string | undefined) ?? null;
+  $: projectName =
+    ($projectTitleQuery.data as string | undefined) ?? "Dashboard";
   $: dashboards = $dashboardsQuery.data ?? [];
 
   $: dashboardOptions = dashboards.reduce((map, dimension) => {
@@ -29,12 +30,12 @@
   }, new Map<string, PathOption>());
 
   $: projectOptions = new Map<string, PathOption>([
-    [projectName ?? "", { label: projectName ?? "", href: "/" }],
+    [projectName, { label: projectName, href: "/" }],
   ]);
 
   $: pathParts = [projectOptions, dashboardOptions];
 
-  $: currentPath = [projectName ?? "", dashboardName];
+  $: currentPath = [projectName, dashboardName];
 </script>
 
 <div class="flex flex-col size-full">
