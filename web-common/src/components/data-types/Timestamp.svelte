@@ -8,9 +8,11 @@
   export let dark;
   export let type;
   export let value;
+  export let truncate;
 </script>
 
 <Base
+  {truncate}
   {isNull}
   classes="ui-copy-number font-semibold {customStyle} {dark
     ? 'text-slate-200'
