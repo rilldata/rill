@@ -19,7 +19,7 @@ export function buildStackedArea(
   };
   baseSpec.layer = [
     {
-      mark: { type: "area", clip: true, opacity: 0.9 },
+      mark: { type: "area", clip: true, opacity: 0.7 },
     },
     {
       mark: { type: "line", strokeWidth: 1, clip: true },
@@ -27,7 +27,6 @@ export function buildStackedArea(
     {
       mark: {
         type: "rule",
-        color: "transparent",
         clip: true,
       },
       encoding: {
@@ -39,6 +38,8 @@ export function buildStackedArea(
           },
           value: "transparent",
         },
+        y: { value: -400 },
+
         tooltip: [
           {
             title: quantitativeField.label,
@@ -68,7 +69,15 @@ export function buildStackedArea(
     },
     {
       transform: [{ filter: { param: "x-hover", empty: false } }],
-      mark: { type: "point", filled: true, opacity: 1, size: 40, clip: true },
+      mark: {
+        type: "point",
+        filled: true,
+        opacity: 1,
+        size: 40,
+        clip: true,
+        stroke: "white",
+        strokeWidth: 1,
+      },
     },
   ];
 
