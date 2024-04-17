@@ -110,7 +110,7 @@
     initColumnWidths({
       columns,
       rows,
-      maxWidth: MAX_COL_WIDTH,
+      maxWidth: maxColWidth,
       minWidth: minColWidth,
       columnAccessor,
       resizableColumns,
@@ -127,19 +127,19 @@
 
   $: rowChunk = Math.ceil(rowBuffer / 2);
 
-  $: visibleRows = Math.ceil(clientHeight / ROW_HEIGHT);
+  $: visibleRows = Math.ceil(clientHeight / rowHeight);
   $: renderedRows = Math.min(visibleRows + rowBuffer, rowCount);
   $: maxRowStart = rowCount - renderedRows;
-  $: scrolledRows = Math.floor(scrollTop / ROW_HEIGHT);
+  $: scrolledRows = Math.floor(scrollTop / rowHeight);
   $: rowTurnover = Math.floor((scrolledRows - rowChunk) / rowChunk);
   $: startRow = clamp(0, rowTurnover * rowChunk, maxRowStart);
-  $: paddingTop = startRow * ROW_HEIGHT;
+  $: paddingTop = startRow * rowHeight;
 
-  $: visibleColumns = Math.ceil(clientWidth / MIN_COL_WIDTH);
+  $: visibleColumns = Math.ceil(clientWidth / minColWidth);
   $: renderedColumns = Math.min(visibleColumns + columnBuffer, columnCount);
   $: maxColStart = columnCount - renderedColumns;
 
-  $: totalRowSize = rowCount * ROW_HEIGHT;
+  $: totalRowSize = rowCount * rowHeight;
   $: totalColumnSize = columnWidths
     .slice(1)
     .reduce((acc, width) => acc + width, 0);
@@ -336,7 +336,7 @@
       class="relative"
       class:pointer-events-none={resizing}
       style:width="{totalColumnSize}px"
-      style:height="{totalRowSize + HEADER_HEIGHT}px"
+      style:height="{totalRowSize + headerHeight}px"
     >
       <ColumnWidths
         {rowHeaders}
