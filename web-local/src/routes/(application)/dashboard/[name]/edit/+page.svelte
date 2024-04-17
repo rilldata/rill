@@ -138,7 +138,7 @@
           </TooltipContent>
         </Tooltip>
         <PreviewButton
-          {metricViewName}
+          dashboardName={metricViewName}
           status={previewStatus}
           disabled={previewDisbaled}
         />

@@ -21,6 +21,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
@@ -35,33 +36,29 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
+    getRuntimeServiceGetFileQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import { parse, stringify } from "yaml";
+
+  const DEFAULT_EDITOR_HEIGHT = 300;
+  const DEFAULT_EDITOR_WIDTH = 400;
+
+  const updateFile = createRuntimeServicePutFile({
+    mutation: {
+      onMutate({ instanceId, path, data }) {
+        const key = getRuntimeServiceGetFileQueryKey(instanceId, path);
+        queryClient.setQueryData(key, data);
+      },
+    },
+  });
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
   let fileArtifact: FileArtifact;
   let filePath: string;
   let customDashboardName: string;
-  $: if (data.fileArtifact) {
-    fileArtifact = data.fileArtifact;
-    filePath = fileArtifact.path;
-    customDashboardName = fileArtifact.getEntityName();
-  } else {
-    customDashboardName = $page.params.name;
-    filePath = getFileAPIPathFromNameAndType(
-      customDashboardName,
-      EntityType.Dashboard,
-    );
-    fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  }
-
-  const DEFAULT_EDITOR_HEIGHT = 300;
-  const DEFAULT_EDITOR_WIDTH = 400;
-
-  const updateFile = createRuntimeServicePutFile();
 
   let selectedView = "split";
   let showGrid = true;
@@ -77,16 +74,28 @@
     components: [],
   };
 
+  $: if (data.fileArtifact) {
+    fileArtifact = data.fileArtifact;
+    filePath = fileArtifact.path;
+    customDashboardName = fileArtifact.getEntityName();
+  } else {
+    customDashboardName = $page.params.name;
+    filePath = getFileAPIPathFromNameAndType(
+      customDashboardName,
+      EntityType.Dashboard,
+    );
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  }
+
   $: instanceId = $runtime.instanceId;
 
   $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    removeLeadingSlash(filePath),
-  );
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+    query: { keepPreviousData: true },
+  });
   $: [, fileName] = splitFolderAndName(filePath);
 
-  $: yaml = $fileQuery.data?.blob || "";
+  $: yaml = $fileQuery.data?.blob ?? "";
 
   $: if (yaml) {
     try {
@@ -227,7 +236,12 @@
       {/if}
 
       <AddChartMenu on:add-chart={addChart} />
-      <Button>Preview</Button>
+
+      <PreviewButton
+        disabled={Boolean($errors.length)}
+        dashboardName={customDashboardName}
+        type="custom"
+      />
     </div>
   </WorkspaceHeader>
 

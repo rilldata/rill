@@ -69,8 +69,8 @@
     components[selectedIndex].y =
       dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
 
-    components[selectedIndex].width = Math.abs(dimensions[0]);
-    components[selectedIndex].height = Math.abs(dimensions[1]);
+    components[selectedIndex].width = Math.abs(Math.max(1, dimensions[0]));
+    components[selectedIndex].height = Math.abs(Math.max(1, dimensions[1]));
 
     dispatch("update", {
       index: selectedIndex,
@@ -182,7 +182,7 @@
   {#each components as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
-    {#if component.chart}
+    {#if component.chart && component.width && component.height}
       <Element
         {scale}
         {i}

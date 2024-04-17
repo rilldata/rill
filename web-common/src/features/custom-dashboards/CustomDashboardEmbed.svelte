@@ -28,9 +28,10 @@
   width={DEFAULT_WIDTH}
   height={maxBottom * gridCell}
   bind:contentRect
+  color="bg-gray-100"
 >
   {#each components as component, i (i)}
-    {#if component.chart}
+    {#if component.chart && component.width && component.height}
       <Component
         embed
         {i}

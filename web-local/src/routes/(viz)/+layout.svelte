@@ -47,7 +47,9 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
-    <DashboardCtAs metricViewName={dashboardName} />
+    {#if $page.route.id?.includes("dashboard")}
+      <DashboardCtAs metricViewName={dashboardName} />
+    {/if}
   </header>
   <slot />
 </div>
