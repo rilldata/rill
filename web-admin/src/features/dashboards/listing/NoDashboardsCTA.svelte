@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
+  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
 </script>
 
 <div
@@ -7,7 +7,7 @@
 >
   <div class="flex flex-col justify-center items-center">
     <div class="relative">
-      <DashboardIcon className="text-slate-300 w-12 h-12" />
+      <MetricsExplorerIcon className="text-slate-300 w-12 h-12" />
     </div>
   </div>
   <div

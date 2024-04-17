@@ -15,7 +15,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
+  import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
 

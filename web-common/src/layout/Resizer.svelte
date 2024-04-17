@@ -14,6 +14,8 @@
   export let basis = 200;
   export let resizing = false;
   export let absolute = true;
+  export let onMouseDown: ((e: MouseEvent) => void) | null = null;
+  export let onUpdate: ((dimension: number) => void) | null = null;
 
   let start = 0;
   let startingDimension = dimension;
@@ -28,6 +30,7 @@
       start = e.clientY;
     }
 
+    if (onMouseDown) onMouseDown(e);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
   }
@@ -51,6 +54,7 @@
     }
     requestAnimationFrame(() => {
       dimension = Math.min(max, Math.max(min, startingDimension + delta));
+      if (onUpdate) onUpdate(dimension);
     });
   }
 
@@ -62,6 +66,7 @@
 
   function handleDoubleClick() {
     dimension = basis;
+    if (onUpdate) onUpdate(dimension);
   }
 </script>
 

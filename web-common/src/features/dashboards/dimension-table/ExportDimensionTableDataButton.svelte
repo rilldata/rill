@@ -95,7 +95,7 @@
     >
       Export as XLSX
     </MenuItem>
-    {#if includeScheduledReport}
+    {#if includeScheduledReport && $scheduledReportsQueryArgs}
       <MenuItem
         on:select={() => {
           toggleFloatingElement();
@@ -110,7 +110,7 @@
 
 <!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
   down the form state when the dialog closes -->
-{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
+{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog && $scheduledReportsQueryArgs}
   <svelte:component
     this={CreateScheduledReportDialog}
     queryName="MetricsViewComparison"

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
   import { useChart } from "@rilldata/web-common/features/charts/selectors";
+  import DashVegaRenderer from "@rilldata/web-common/features/custom-dashboards/DashVegaRenderer.svelte";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import type { VisualizationSpec } from "svelte-vega";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -14,10 +14,9 @@
       clientWidth = width;
     }
   });
+  const queryClient = useQueryClient();
 
   export let chartName: string;
-
-  const queryClient = useQueryClient();
 
   let clientHeight: number;
   let clientWidth: number;

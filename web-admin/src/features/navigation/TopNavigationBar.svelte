@@ -2,9 +2,14 @@
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
@@ -13,20 +18,15 @@
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
+  import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useReports } from "../scheduled-reports/selectors";
-  import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
-  import { isDashboardPage, isProjectPage } from "./nav-utils";
-  import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import { useAlerts } from "../alerts/selectors";
-  import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+  import { isMetricsExplorerPage, isProjectPage } from "./nav-utils";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -36,7 +36,7 @@
   $: ({ organization, project, dashboard, alert, report } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
-  $: onDashboardPage = isDashboardPage($page);
+  $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -53,14 +53,14 @@
     },
   });
 
-  $: dashboardsQuery = useValidDashboards(instanceId);
+  $: visualizationsQuery = useValidVisualizations(instanceId);
 
   $: alertsQuery = useAlerts(instanceId);
   $: reportsQuery = useReports(instanceId);
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
-  $: dashboards = $dashboardsQuery.data ?? [];
+  $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
@@ -73,12 +73,20 @@
     return map.set(label, { label });
   }, new Map<string, PathOption>());
 
-  $: dashboardPaths = dashboards.reduce((map, { meta, metricsView }) => {
-    const id = meta.name.name;
-    return map.set(id, {
-      label: metricsView?.state?.validSpec?.title || id,
-    });
-  }, new Map<string, PathOption>());
+  $: visualizationPaths = visualizations.reduce(
+    (map, { meta, metricsView, dashboard }) => {
+      const id = meta.name.name;
+      const isMetricsExplorer = !!metricsView;
+      return map.set(id, {
+        label:
+          (isMetricsExplorer
+            ? metricsView?.state?.validSpec?.title
+            : dashboard?.spec?.title) || id,
+        section: isMetricsExplorer ? undefined : "-/dashboards",
+      });
+    },
+    new Map<string, PathOption>(),
+  );
 
   $: alertPaths = alerts.reduce((map, alert) => {
     const id = alert.meta.name.name;
@@ -99,7 +107,7 @@
   $: pathParts = [
     organizationPaths,
     projectPaths,
-    dashboardPaths,
+    visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
@@ -128,7 +136,7 @@
     {#if onProjectPage}
       <ShareProjectButton {organization} {project} />
     {/if}
-    {#if onDashboardPage}
+    {#if onMetricsExplorerPage}
       <StateManagersProvider metricsViewName={dashboard}>
         <LastRefreshedDate {dashboard} />
         {#if $user.isSuccess && $user.data.user}
