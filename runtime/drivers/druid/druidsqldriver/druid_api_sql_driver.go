@@ -151,7 +151,10 @@ type druidRows struct {
 	currentValues []any
 }
 
-var _ driver.Rows = &druidRows{}
+var (
+	_ driver.Rows                           = &druidRows{}
+	_ driver.RowsColumnTypeDatabaseTypeName = &druidRows{}
+)
 
 func (dr *druidRows) Columns() []string {
 	return dr.columns
@@ -177,6 +180,10 @@ func (dr *druidRows) Next(dest []driver.Value) error {
 	}
 
 	return nil
+}
+
+func (dr *druidRows) ColumnTypeDatabaseTypeName(index int) string {
+	return dr.types[index]
 }
 
 type stmt struct {
