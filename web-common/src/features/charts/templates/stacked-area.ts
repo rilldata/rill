@@ -1,12 +1,55 @@
 import { ChartField } from "./build-template";
 import { multiLayerBaseSpec } from "./utils";
 
+/** Temporary solution for the lack of vega lite type exports */
+interface TooltipValue {
+  title?: string;
+  field: string;
+  format?: string;
+  type: "quantitative" | "temporal" | "nominal" | "ordinal";
+}
 export function buildStackedArea(
   timeField: ChartField,
   quantitativeField: ChartField,
   nominalField: ChartField,
 ) {
   const baseSpec = multiLayerBaseSpec();
+
+  const defaultTooltipChannel: TooltipValue[] = [
+    {
+      title: quantitativeField.label,
+      field: quantitativeField.name,
+      type: "quantitative",
+    },
+    {
+      field: timeField.name,
+      type: "temporal",
+      title: "Time",
+      format: "%b %d, %Y %H:%M",
+    },
+    {
+      title: nominalField.label,
+      field: nominalField.name,
+      type: "nominal",
+    },
+  ];
+
+  const multiValueTooltipChannel: TooltipValue[] | undefined =
+    nominalField?.values?.map((value) => {
+      return {
+        field: value === null ? "null" : value,
+        type: "quantitative",
+      };
+    });
+
+  if (multiValueTooltipChannel?.length) {
+    multiValueTooltipChannel.unshift({
+      field: timeField.name,
+      type: "temporal",
+      title: "Time",
+      format: "%b %d, %Y %H:%M",
+    });
+  }
 
   baseSpec.encoding = {
     x: { field: timeField.name, type: "temporal" },
@@ -25,6 +68,16 @@ export function buildStackedArea(
       mark: { type: "line", strokeWidth: 1, clip: true },
     },
     {
+      transform: multiValueTooltipChannel?.length
+        ? [
+            {
+              pivot: nominalField.name,
+              value: quantitativeField.name,
+              groupby: [timeField.name],
+            },
+          ]
+        : [],
+
       mark: {
         type: "rule",
         clip: true,
@@ -40,19 +93,9 @@ export function buildStackedArea(
         },
         y: { value: -400 },
 
-        tooltip: [
-          {
-            title: quantitativeField.label,
-            field: quantitativeField.name,
-            type: "quantitative",
-          },
-          { field: "ts", type: "temporal", title: "Time" },
-          {
-            title: nominalField.label,
-            field: nominalField.name,
-            type: "nominal",
-          },
-        ],
+        tooltip: multiValueTooltipChannel?.length
+          ? multiValueTooltipChannel
+          : defaultTooltipChannel,
       },
       params: [
         {

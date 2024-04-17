@@ -21,6 +21,7 @@ const LINE_LIKE_CHARTS = [
 export interface ChartField {
   name: string;
   label: string;
+  values?: (string | null)[];
 }
 
 export function buildVegaLiteSpec(

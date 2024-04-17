@@ -37,6 +37,7 @@
     expandedMeasureLabel,
     hasDimensionData,
     comparedDimensionLabel,
+    selectedValues,
   );
   $: sanitizedVegaSpec = sanitizeSpecForTDD(
     vegaSpec,

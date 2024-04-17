@@ -24,11 +24,16 @@ export function getVegaSpecForTDD(
   measureLabel: string,
   isDimensional: boolean,
   dimensionName: string | undefined,
+  comparedValues: (string | null)[] | undefined,
 ): VisualizationSpec {
   const temporalFields = [{ name: "ts", label: "Time" }];
   const measureFields = [{ name: expandedMeasureName, label: measureLabel }];
   const nominalFields = [
-    { name: "dimension", label: dimensionName || "dimension" },
+    {
+      name: "dimension",
+      label: dimensionName || "dimension",
+      values: comparedValues,
+    },
   ];
 
   const builderChartType = TDDChartMap[chartType];
