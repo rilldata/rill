@@ -40,8 +40,6 @@
     ? currentFile.split("/").slice(0, -1).join("/")
     : "";
 
-  // TODO: we should only fetch the existing names when needed
-  // TODO: simplify all this
   $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
     instanceId,
     currentDirectory,

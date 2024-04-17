@@ -49,7 +49,7 @@
 
   $: projectsQuery = listProjects(organization, undefined, {
     query: {
-      enabled: !!organizations.length,
+      enabled: !!organization,
     },
   });
 

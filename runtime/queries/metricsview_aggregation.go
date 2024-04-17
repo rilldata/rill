@@ -262,7 +262,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				}
 				err = appender.AppendRow(appendValues...)
 				if err != nil {
-					return err
+					return fmt.Errorf("duckdb append failed: %w", err)
 				}
 				count++
 				if count > maxCount {
