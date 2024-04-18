@@ -67,6 +67,13 @@ const LeaderboardContextColumnReverseMap: Record<
     LeaderboardContextColumn.HIDDEN,
 };
 
+const TDDChartTypeReverseMap: Record<string, TDDChart> = {
+  default: TDDChart.DEFAULT,
+  stacked_bar: TDDChart.STACKED_BAR,
+  grouped_bar: TDDChart.GROUPED_BAR,
+  stacked_area: TDDChart.STACKED_AREA,
+};
+
 export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsView,
@@ -133,6 +140,9 @@ export function getDashboardStateFromProto(
     entity.lastDefinedScrubRange = fromTimeRangeProto(
       dashboard.scrubRange,
     ) as ScrubRange;
+  } else {
+    entity.selectedScrubRange = undefined;
+    entity.lastDefinedScrubRange = undefined;
   }
 
   if (dashboard.leaderboardMeasure) {
@@ -380,11 +390,11 @@ function correctComparisonTimeRange(
   }
 }
 
-function chartTypeMap(chartType: string | undefined) {
-  if (!chartType || !TDDChart[chartType as keyof typeof TDDChart]) {
+function chartTypeMap(chartType: string | undefined): TDDChart {
+  if (!chartType || !TDDChartTypeReverseMap[chartType]) {
     return TDDChart.DEFAULT;
   }
-  return TDDChart[chartType as keyof typeof TDDChart];
+  return TDDChartTypeReverseMap[chartType];
 }
 
 function fromTimeProto(timestamp: Timestamp) {

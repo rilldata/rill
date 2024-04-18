@@ -1,8 +1,12 @@
 import { expect, type Locator } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
-import { waitForValidResource } from "web-local/tests/utils/commonHelpers";
-import { clickMenuButton, openEntityMenu } from "./commonHelpers";
+import {
+  clickMenuButton,
+  openEntityMenu,
+  updateCodeEditor,
+  waitForValidResource,
+} from "./commonHelpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
@@ -199,4 +203,15 @@ export async function waitForDashboard(page: Page) {
     "AdBids_model_dashboard",
     "rill.runtime.v1.MetricsView",
   );
+}
+
+export async function updateAndWaitForDashboard(page: Page, code: string) {
+  return Promise.all([
+    updateCodeEditor(page, code),
+    waitForValidResource(
+      page,
+      "AdBids_model_dashboard",
+      "rill.runtime.v1.MetricsView",
+    ),
+  ]);
 }

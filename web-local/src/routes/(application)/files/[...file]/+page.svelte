@@ -1,6 +1,7 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import { yaml } from "@rilldata/web-common/components/editor/presets/yaml";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
@@ -22,8 +23,8 @@
   import { onMount } from "svelte";
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
   import ChartPage from "../../chart/[name]/+page.svelte";
-  import CustomDashboardPage from "../../custom-dashboard/[name]/+page.svelte";
-  import DashboardPage from "../../dashboard/[name]/edit/+page@dashboard.svelte";
+  import CustomDashboardPage from "../custom-dashboards/[name]/+page.svelte";
+  import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
@@ -51,6 +52,8 @@
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
 
+  $: isYaml = filePath.endsWith(".yaml") || filePath.endsWith(".yml");
+
   // TODO: optimistically update the get file cache
   const putFile = createRuntimeServicePutFile();
 
@@ -68,9 +71,8 @@
 
   const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
   let blob = "";
-  $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
+  $: blob = $fileQuery.data?.blob ?? blob;
 
-  // This gets updated via binding below
   $: latest = blob;
 
   function save(content: string) {
@@ -113,7 +115,9 @@
 {:else if isDashboard}
   <DashboardPage data={{ fileArtifact }} />
 {:else if isChart}
-  <ChartPage data={{ fileArtifact }} />
+  {#key $page.params.file}
+    <ChartPage data={{ fileArtifact }} />
+  {/key}
 {:else if isCustomDashboard}
   <CustomDashboardPage data={{ fileArtifact }} />
 {:else if isOther}
@@ -122,13 +126,12 @@
     <div class="editor-pane size-full" slot="body">
       <div class="editor flex flex-col border border-gray-200 rounded h-full">
         <div class="grow flex bg-white overflow-y-auto rounded">
-          {#key $page.params.file}
-            <Editor
-              {blob}
-              bind:latest
-              on:update={({ detail: { content } }) => debounceSave(content)}
-            />
-          {/key}
+          <Editor
+            {blob}
+            bind:latest
+            extensions={isYaml ? [yaml()] : []}
+            on:update={({ detail: { content } }) => debounceSave(content)}
+          />
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
   import { getTopLevelFolder } from "../sources/extract-file-name";
-  import { PROTECTED_DIRECTORIES } from "./protected-directories";
+  import { PROTECTED_DIRECTORIES } from "./protected-paths";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;

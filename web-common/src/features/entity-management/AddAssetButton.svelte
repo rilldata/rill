@@ -40,8 +40,6 @@
     ? currentFile.split("/").slice(0, -1).join("/")
     : "";
 
-  // TODO: we should only fetch the existing names when needed
-  // TODO: simplify all this
   $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
     instanceId,
     currentDirectory,
@@ -152,6 +150,14 @@
   }
 
   /**
+   * Put an example Custom Dashboard file in the `custom-dashbaords` directory
+   */
+  async function handleAddCustomDashboard() {
+    const newRoute = await handleEntityCreate(ResourceKind.Dashboard);
+    if (newRoute) await goto(newRoute);
+  }
+
+  /**
    * Put an example Theme file in the `themes` directory
    */
   async function handleAddTheme() {
@@ -258,6 +264,17 @@
                 size="16px"
               />
               Chart
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              class="flex gap-x-2"
+              on:click={handleAddCustomDashboard}
+            >
+              <svelte:component
+                this={resourceIconMapping[ResourceKind.Dashboard]}
+                className="text-gray-900"
+                size="16px"
+              />
+              Custom Dashboard
             </DropdownMenu.Item>
           {/if}
           <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>

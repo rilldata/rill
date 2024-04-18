@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import type {
     V1MetricsViewSpec,
@@ -7,7 +8,6 @@
   import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
-  import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
 
   export let instanceId: string;
   export let activeResourceName: string;

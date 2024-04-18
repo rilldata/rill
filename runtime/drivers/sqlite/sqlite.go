@@ -22,7 +22,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open sqlite connection")
@@ -47,7 +47,6 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	return &connection{
 		db:     dbx,
 		config: config,
-		shared: shared,
 	}, nil
 }
 
@@ -89,7 +88,6 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type connection struct {
 	db     *sqlx.DB
 	config map[string]any
-	shared bool
 }
 
 var _ drivers.Handle = &connection{}

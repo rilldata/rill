@@ -28,11 +28,12 @@
     {
       label: "Explore",
       Icon: Chart,
+      beta: false,
     },
     {
       label: "Pivot",
       Icon: Pivot,
-      beta: true,
+      beta: false,
     },
   ];
 

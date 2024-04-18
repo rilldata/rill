@@ -16,6 +16,7 @@ import {
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -52,6 +53,13 @@ const LeaderboardContextColumnMap: Record<
     DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE,
   [LeaderboardContextColumn.HIDDEN]:
     DashboardState_LeaderboardContextColumn.HIDDEN,
+};
+
+const TDDChartTypeMap: Record<TDDChart, string> = {
+  [TDDChart.DEFAULT]: "default",
+  [TDDChart.STACKED_BAR]: "stacked_bar",
+  [TDDChart.GROUPED_BAR]: "grouped_bar",
+  [TDDChart.STACKED_AREA]: "stacked_area",
 };
 
 export function getProtoFromDashboardState(
@@ -103,7 +111,7 @@ export function getProtoFromDashboardState(
     state.pinIndex = metrics.tdd.pinIndex;
   }
   if (metrics.tdd.chartType !== undefined) {
-    state.chartType = metrics.tdd.chartType;
+    state.chartType = TDDChartTypeMap[metrics.tdd.chartType];
   }
 
   if (metrics.allMeasuresVisible) {

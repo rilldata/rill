@@ -4,7 +4,10 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import {
+    useAllFileNames,
+    useDirectoryNamesInDirectory,
+  } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
@@ -29,6 +32,11 @@
 
   const [folder, assetName] = splitFolderAndName(filePath);
 
+  $: existingDirectories = useDirectoryNamesInDirectory(
+    runtimeInstanceId,
+    folder,
+  );
+
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
       newName: assetName,
@@ -42,6 +50,18 @@
     }),
     onSubmit: async (values) => {
       if (
+        isDir &&
+        isDuplicateName(
+          values?.newName,
+          assetName,
+          $existingDirectories?.data ?? [],
+        )
+      ) {
+        error = `An existing folder with name ${values.newName} already exists`;
+        return;
+      }
+      if (
+        !isDir &&
         isDuplicateName(values?.newName, assetName, $allNamesQuery?.data ?? [])
       ) {
         error = `Name ${values.newName} is already in use`;

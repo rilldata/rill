@@ -20,11 +20,16 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import { getTopLevelFolder } from "../sources/extract-file-name";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { PROTECTED_DIRECTORIES } from "./protected-directories";
+  import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
+  export let onGenerateChart: (data: {
+    table?: string;
+    connector?: string;
+    metricsView?: string;
+  }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
   export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
@@ -40,22 +45,30 @@
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: isDotFile = fileName && fileName.startsWith(".");
+  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
+  }
+
+  function handleMouseDown(e: MouseEvent) {
+    if (fileName === "rill.yaml") return;
+    onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
   }
 </script>
 
 <button
   aria-label="{fileName} Nav Entry"
   class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center
-  {isProtectedDirectory ? 'text-gray-500' : 'text-gray-900 hover:text-gray-900'}
+  {isProtectedDirectory || isDotFile
+    ? 'text-gray-500'
+    : 'text-gray-900 hover:text-gray-900'}
   {isCurrentFile ? 'bg-slate-100' : ''} 
   font-medium hover:bg-slate-100"
   {id}
   on:click={() => navigate(filePath)}
-  on:mousedown={(e) =>
-    onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind })}
+  on:mousedown={handleMouseDown}
   on:mouseup={(e) =>
     onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
   style:padding-left="{padding}px"
@@ -66,7 +79,7 @@
     size="14px"
   />
   <span class="truncate w-full">{fileName}</span>
-  {#if !isProtectedDirectory}
+  {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
@@ -87,13 +100,22 @@
       >
         {#if resourceKind}
           {#if resourceKind === ResourceKind.Source}
-            <SourceMenuItems {filePath} />
+            <SourceMenuItems
+              {filePath}
+              on:generate-chart={({ detail }) => onGenerateChart(detail)}
+            />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.Model}
-            <ModelMenuItems {filePath} />
+            <ModelMenuItems
+              {filePath}
+              on:generate-chart={({ detail }) => onGenerateChart(detail)}
+            />
             <NavigationMenuSeparator />
-          {:else if resourceKind === ResourceKind.Dashboard}
-            <DashboardMenuItems {filePath} />
+          {:else if resourceKind === ResourceKind.MetricsView}
+            <DashboardMenuItems
+              {filePath}
+              on:generate-chart={({ detail }) => onGenerateChart(detail)}
+            />
             <NavigationMenuSeparator />
           {/if}
         {/if}

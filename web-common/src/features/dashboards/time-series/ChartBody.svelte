@@ -97,7 +97,7 @@
           $timeRangeKey !== $previousTimeRangeKey
             ? 0
             : 200}
-          lineClasses={d?.strokeClass}
+          lineColor={d?.color}
           data={d?.data || []}
           {xAccessor}
           {yAccessor}
