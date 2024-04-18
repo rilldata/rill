@@ -37,10 +37,15 @@
                 sensitivity: "base",
               }) ?? 0,
           )
-          // Hide dotfiles and dot directories at the top level
-          .filter((file) => !file.path?.startsWith("."))
-          // Hide dotfiles and dot directories in subdirectories
-          .filter((file) => !file.path?.includes("/."))
+          // Hide dot directories
+          .filter(
+            (file) =>
+              !(
+                file.isDir &&
+                // Check both the top-level directory and subdirectories
+                (file.path?.startsWith(".") || file.path?.includes("/."))
+              ),
+          )
           // Hide the `tmp` directory
           .filter((file) => !file.path?.startsWith("/tmp"));
 
