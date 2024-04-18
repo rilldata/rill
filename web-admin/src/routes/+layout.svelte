@@ -35,12 +35,6 @@
   onMount(() => errorEventHandler?.addJavascriptErrorListeners());
 
   $: isEmbed = $page.url.pathname === "/-/embed";
-
-  // The Dashboard (Metrics Explorer) component assumes a page height of `h-screen`. This is somehow motivated by
-  // making the line charts and leaderboards scroll independently.
-  // However, `h-screen` screws up overflow/scroll on all other pages, so we only apply it to the dashboard.
-  // (This all feels hacky and should not be considered optimal.)
-  $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 </script>
 
 <svelte:head>
@@ -49,9 +43,7 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main
-      class="flex flex-col min-h-screen {onMetricsExplorerPage && 'h-screen'}"
-    >
+    <main class="flex flex-col min-h-screen h-screen">
       {#if !isEmbed}
         <TopNavigationBar />
       {/if}
