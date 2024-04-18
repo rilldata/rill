@@ -100,7 +100,9 @@
     fromDragData: NavDragData,
     toDragData: NavDragData,
   ) {
-    const isCurrentFile = fromDragData.filePath === $page.params.file;
+    const isCurrentFile =
+      removeLeadingSlash(fromDragData.filePath) ===
+      removeLeadingSlash($page.params.file);
     const tarDir = toDragData.isDir
       ? toDragData.filePath
       : splitFolderAndName(toDragData.filePath)[0];

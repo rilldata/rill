@@ -1,5 +1,6 @@
 import { notifications } from "@rilldata/web-common/components/notifications";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
+import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   INVALID_NAME_MESSAGE,
@@ -42,7 +43,7 @@ export async function handleEntityRename(
 
     await renameFileArtifact(instanceId, existingPath, newFilePath);
 
-    return `/files${newFilePath}`;
+    return `/files/${removeLeadingSlash(newFilePath)}`;
   } catch (err) {
     console.error(err.response?.data?.message ?? err);
   }
