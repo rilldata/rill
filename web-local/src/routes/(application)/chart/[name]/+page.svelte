@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ChartDisplay from "@rilldata/web-common/features/charts/ChartDisplay.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
