@@ -14,14 +14,12 @@ Rill supports connecting to an existing Pinot cluster and using it as an OLAP en
 ## Connection string (DSN)
 
 Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<host>:<port>`. 
-`host`and `port` should be of Pinot Controller server. If `user` or `password` contain special characters they should be URL encoded (ie `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
+`host`and `port` should be of the Pinot Controller server. If `user` or `password` contain special characters they should be URL encoded (i.e. `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
 
 As an example, this typically looks something like:
 
 ```bash
-
 connector.pinot.dsn="https://username:password@localhost:9000"
-
 ```
 
 :::info Need help connecting to Pinot?
