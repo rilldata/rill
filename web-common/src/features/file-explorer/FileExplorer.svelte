@@ -13,7 +13,7 @@
     NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
-  import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-directories";
+  import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import {
     getTopLevelFolder,
     splitFolderAndName,
