@@ -70,7 +70,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 
 	r.DashboardSpec.Components = make([]*runtimev1.DashboardComponent, len(tmp.Components))
 	for i, component := range tmp.Components {
-
 		r.DashboardSpec.Components[i] = &runtimev1.DashboardComponent{
 			Chart:    component.Chart,
 			X:        component.X,
@@ -80,7 +79,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 			FontSize: component.FontSize,
 			Markdown: component.Markdown,
 		}
-
 	}
 
 	return nil
