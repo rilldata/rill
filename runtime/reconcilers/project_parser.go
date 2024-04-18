@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -173,15 +174,24 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
+		deletedPaths := make([]string, 0)
 		for _, e := range events {
 			if e.Dir {
 				continue
 			}
 			if parser.IsIgnored(e.Path) {
+				if !strings.HasPrefix(e.Path, "/tmp") && e.Type == runtimev1.FileEvent_FILE_EVENT_DELETE {
+					// only check for deleted folders that are not inside /tmp
+					deletedPaths = append(deletedPaths, parser.FindFilesInDir(e.Path)...)
+				}
 				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
 		}
+
+		// prepend deleted paths and dedupe
+		deletedPaths = append(deletedPaths, changedPaths...)
+		changedPaths = arrayutil.Dedupe(deletedPaths)
 
 		if len(changedPaths) == 0 {
 			return

@@ -246,6 +246,16 @@ func (p *Parser) IsIgnored(path string) bool {
 	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
+func (p *Parser) FindFilesInDir(dir string) []string {
+	var files []string
+	for path := range p.resourcesForPath {
+		if strings.HasPrefix(path, dir) {
+			files = append(files, path)
+		}
+	}
+	return files
+}
+
 // reload resets the parser's state and then parses the entire project.
 func (p *Parser) reload(ctx context.Context) error {
 	// Reset state
