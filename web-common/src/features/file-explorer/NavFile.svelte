@@ -45,6 +45,7 @@
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: isDotFile = fileName && fileName.startsWith(".");
 
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
@@ -59,7 +60,9 @@
 <button
   aria-label="{fileName} Nav Entry"
   class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center
-  {isProtectedDirectory ? 'text-gray-500' : 'text-gray-900 hover:text-gray-900'}
+  {isProtectedDirectory || isDotFile
+    ? 'text-gray-500'
+    : 'text-gray-900 hover:text-gray-900'}
   {isCurrentFile ? 'bg-slate-100' : ''} 
   font-medium hover:bg-slate-100"
   {id}
