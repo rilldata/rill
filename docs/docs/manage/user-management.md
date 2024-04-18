@@ -73,3 +73,32 @@ rill project edit --public=true
 Warning: If you make a project public, make sure it does not expose any confidential data.
 
 :::
+
+## Logging into Rill Cloud
+
+In order to access a deployed project and/or view a shared dashboard, users will need to first login to [Rill Cloud](https://ui.rilldata.com/). When you first navigate to https://ui.rilldata.com/, you will see a few different options to login, including:
+- Google SSO
+- Microsoft SSO
+- Email _(basic auth)_
+
+:::info SAML Authentication
+
+Rill Cloud **does** support SAML authentication for our enterprise customers. If this is a requirement, [please get in contact](contact.md) with us and we can discuss appropriate next steps to help you with your setup.
+
+:::
+
+If this is the first time you are accessing Rill Cloud, you will want to sign up instead.
+
+![Signing Up](/img/manage/user-management/sign-up.png)
+
+:::tip Signing up with basic auth
+
+If you are unsure which option to select, select `Continue with Email` and set up basic authentication (email address / password).
+
+:::
+
+Afterwards, you should receive an email verification to complete the sign up process. 
+
+![Verification Email](/img/manage/user-management/verification-email.png)
+
+You should now be authenticated with Rill Cloud and be able to sign-in directly going forward!
