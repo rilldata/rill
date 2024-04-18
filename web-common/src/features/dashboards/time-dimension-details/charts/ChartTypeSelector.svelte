@@ -9,12 +9,8 @@
 
   export let metricViewName: string;
   export let chartType: TDDChart;
-  export let isDimensional: boolean;
 
-  const dimensionalCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
-
-  function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
-    if (isDisabled) return;
+  function handleChartTypeChange(type: TDDChart) {
     metricsExplorerStore.setTDDChartType(metricViewName, type);
   }
   const chartTypeTabs = [
@@ -44,17 +40,15 @@
 <div class="chart-type-selector">
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
-    {@const disabled = !isDimensional && dimensionalCharts.includes(id)}
     <div class:bg-primary-100={active} class="chart-icon-wrapper">
       <IconButton
-        {disabled}
         disableHover
         tooltipLocation="top"
-        on:click={() => handleChartTypeChange(id, disabled)}
+        on:click={() => handleChartTypeChange(id)}
       >
         <Icon
-          primaryColor={disabled ? "#64748b" : "var(--color-primary-700)"}
-          secondaryColor={disabled ? " #cbd5e1 " : "var(--color-primary-300)"}
+          primaryColor="var(--color-primary-700)"
+          secondaryColor="var(--color-primary-300)"
           size="20px"
         />
         <svelte:fragment slot="tooltip-content">

@@ -20,7 +20,7 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import { getTopLevelFolder } from "../sources/extract-file-name";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { PROTECTED_DIRECTORIES } from "./protected-directories";
+  import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -46,6 +46,7 @@
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
   $: isDotFile = fileName && fileName.startsWith(".");
+  $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   async function navigate(filePath: string) {
     await goto(`/files/${filePath}`);
@@ -78,7 +79,7 @@
     size="14px"
   />
   <span class="truncate w-full">{fileName}</span>
-  {#if !isProtectedDirectory}
+  {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
