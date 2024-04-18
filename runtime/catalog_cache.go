@@ -154,59 +154,58 @@ func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (
 }
 
 // list returns a list of resources in the catalog.
+// It optionally supports filtering by kind, path, and soft-deleted status.
 // The returned list is not sorted.
 // The returned list is always safe to manipulate (e.g. sort/filter), but the resource pointers must not be edited unless clone=true.
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
-func (c *catalogCache) list(kind string, withDeleted, clone bool) ([]*runtimev1.Resource, error) {
-	if kind != "" {
-		n := len(c.resources[kind])
-		res := make([]*runtimev1.Resource, 0, n)
-		if withDeleted {
-			for _, r := range c.resources[kind] {
-				if clone {
-					r = c.clone(r)
-				}
-				res = append(res, r)
-			}
-		} else {
-			for _, r := range c.resources[kind] {
-				if r.Meta.DeletedOn == nil {
-					if clone {
-						r = c.clone(r)
-					}
-					res = append(res, r)
-				}
-			}
-		}
-
-		return res, nil
-	}
-
+func (c *catalogCache) list(kind, path string, withDeleted, clone bool) ([]*runtimev1.Resource, error) {
+	// Estimate number of resources to list
 	n := 0
-	for _, rs := range c.resources {
-		n += len(rs)
-	}
-
-	res := make([]*runtimev1.Resource, 0, n)
-	if withDeleted {
+	if path != "" {
+		n = 1
+	} else if kind == "" {
 		for _, rs := range c.resources {
-			for _, r := range rs {
-				if clone {
-					r = c.clone(r)
-				}
-				res = append(res, r)
-			}
+			n += len(rs)
 		}
 	} else {
-		for _, rs := range c.resources {
-			for _, r := range rs {
-				if r.Meta.DeletedOn == nil {
-					if clone {
-						r = c.clone(r)
+		n = len(c.resources[kind])
+	}
+
+	// Alloc slice for resources
+	res := make([]*runtimev1.Resource, 0, n)
+
+	// Find resources matching the filters and append to slice
+	for k, rs := range c.resources {
+		// Skip if doesn't match kind filter
+		if kind != "" && k != kind {
+			continue
+		}
+
+		for _, r := range rs {
+			// Skip if doesn't match withDeleted filter
+			if !withDeleted && r.Meta.DeletedOn != nil {
+				continue
+			}
+
+			// Skip if doesn't match path filter
+			if path != "" {
+				found := false
+				for _, p := range r.Meta.FilePaths {
+					if p == path {
+						found = true
+						break
 					}
-					res = append(res, r)
+				}
+				if !found {
+					continue
 				}
 			}
+
+			// Append to res
+			if clone {
+				r = c.clone(r)
+			}
+			res = append(res, r)
 		}
 	}
 

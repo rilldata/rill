@@ -2417,10 +2417,17 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to list resources from.
           in: path
           required: true
           type: string
         - name: kind
+          description: Filter by resource kind (optional).
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: Filter by resource path (optional).
           in: query
           required: false
           type: string

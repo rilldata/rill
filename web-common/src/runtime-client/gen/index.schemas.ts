@@ -53,7 +53,10 @@ export type RuntimeServiceWatchResourcesParams = {
   level?: string;
 };
 
-export type RuntimeServiceListResourcesParams = { kind?: string };
+export type RuntimeServiceListResourcesParams = {
+  kind?: string;
+  path?: string;
+};
 
 export type RuntimeServiceGetResourceParams = {
   "name.kind"?: string;

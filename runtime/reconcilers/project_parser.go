@@ -87,7 +87,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		r.C.Lock(ctx)
 		defer r.C.Unlock(ctx)
 
-		resources, err := r.C.List(ctx, "", false)
+		resources, err := r.C.List(ctx, "", "", false)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -348,7 +348,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 	var deleteResources []*runtimev1.Resource
 
 	// Pass over all existing resources in the catalog.
-	resources, err := r.C.List(ctx, "", false)
+	resources, err := r.C.List(ctx, "", "", false)
 	if err != nil {
 		return err
 	}
