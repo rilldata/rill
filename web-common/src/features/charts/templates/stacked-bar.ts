@@ -1,9 +1,10 @@
+import { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
 
 export function buildStackedBar(
-  timeField: string,
-  quantitativeField: string,
-  nominalField: string,
+  timeField: ChartField,
+  quantitativeField: ChartField,
+  nominalField: ChartField,
 ) {
   const baseSpec = singleLayerBaseSpec();
 
@@ -13,26 +14,30 @@ export function buildStackedBar(
     clip: true,
   };
   baseSpec.encoding = {
-    x: { field: timeField, type: "temporal", bandPosition: 0 },
-    y: { field: quantitativeField, type: "quantitative" },
+    x: { field: timeField.name, type: "temporal", bandPosition: 0 },
+    y: { field: quantitativeField.name, type: "quantitative" },
     opacity: {
       condition: { param: "hover", empty: false, value: 1 },
       value: 0.8,
     },
     color: {
-      field: nominalField,
+      field: nominalField.name,
       type: "nominal",
       legend: null,
     },
     tooltip: [
       {
-        field: timeField,
+        field: timeField.name,
         type: "temporal",
         title: "Time",
         format: "%b %d, %Y %H:%M",
       },
-      { field: quantitativeField, type: "quantitative" },
-      { field: nominalField, type: "nominal" },
+      {
+        title: quantitativeField.label,
+        field: quantitativeField.name,
+        type: "quantitative",
+      },
+      { title: nominalField.label, field: nominalField.name, type: "nominal" },
     ],
   };
 
