@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"net/http"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/sync/errgroup"
 )
 
 var _ drivers.OLAPStore = &connection{}
@@ -160,7 +160,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			return nil
 		})
 	}
-	if err = g.Wait(); err != nil {
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 

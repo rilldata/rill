@@ -3,14 +3,12 @@ package pinot
 import (
 	"context"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
-
-	// Load Pinot sql driver
-	_ "github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 )
 
 func init() {

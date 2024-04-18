@@ -1,7 +1,6 @@
-package pinot
+package sqldriver
 
 import (
-	"github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 	"testing"
 	"time"
 
@@ -15,7 +14,7 @@ func Test_main(t *testing.T) {
 		{Ordinal: 1, Value: 123},
 		{Ordinal: 2, Value: "John"},
 	}
-	q, err := sqldriver.completeQuery(query, args)
+	q, err := completeQuery(query, args)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT * FROM users WHERE id = 123 AND name = 'John'", q)
 
@@ -23,7 +22,7 @@ func Test_main(t *testing.T) {
 		{Ordinal: 1, Value: 123.5},
 		{Ordinal: 2, Value: ""},
 	}
-	q, err = sqldriver.completeQuery(query, args)
+	q, err = completeQuery(query, args)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT * FROM users WHERE id = 123.5 AND name = ''", q)
 
@@ -32,7 +31,7 @@ func Test_main(t *testing.T) {
 		{Ordinal: 1, Value: now},
 		{Ordinal: 2, Value: true},
 	}
-	q, err = sqldriver.completeQuery(query, args)
+	q, err = completeQuery(query, args)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT * FROM users WHERE id = '"+now.Format("2006-01-02 15:04:05.000Z")+"' AND name = true", q)
 }
