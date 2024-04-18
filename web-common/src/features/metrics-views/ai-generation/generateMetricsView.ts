@@ -127,7 +127,7 @@ export function useCreateDashboardFromTableUIAction(
       }
 
       // Preview
-      await goto(`/files/${newFilePath}`);
+      await goto(`/files${newFilePath}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,

@@ -42,7 +42,7 @@ export async function handleEntityRename(
 
     await renameFileArtifact(instanceId, existingPath, newFilePath);
 
-    return `/files/${newFilePath}`;
+    return `/files${newFilePath}`;
   } catch (err) {
     console.error(err.response?.data?.message ?? err);
   }

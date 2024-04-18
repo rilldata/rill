@@ -49,11 +49,11 @@
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   async function navigate(filePath: string) {
-    await goto(`/files/${filePath}`);
+    await goto(`/files${filePath}`);
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (fileName === "rill.yaml") return;
+    if (PROTECTED_FILES.includes(filePath)) return;
     onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
   }
 </script>

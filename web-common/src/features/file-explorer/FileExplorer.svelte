@@ -115,7 +115,7 @@
       await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files/${newFilePath}`);
+        await goto(`/files${newFilePath}`);
       }
     }
   }
