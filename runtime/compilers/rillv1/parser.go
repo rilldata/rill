@@ -246,14 +246,24 @@ func (p *Parser) IsIgnored(path string) bool {
 	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
-func (p *Parser) FindFilesInDir(dir string) []string {
-	var files []string
+func (p *Parser) IsInRestrictedDir(path string) bool {
+	return strings.HasPrefix(path, "/tmp")
+}
+
+// TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
+func (p *Parser) TrackedPathsInDir(dir string) []string {
+	// Ensure dir has a trailing path separator
+	if dir != "" && dir[len(dir)-1] != '/' {
+		dir += "/"
+	}
+	// Find paths
+	var paths []string
 	for path := range p.resourcesForPath {
 		if strings.HasPrefix(path, dir) {
-			files = append(files, path)
+			paths = append(paths, path)
 		}
 	}
-	return files
+	return paths
 }
 
 // reload resets the parser's state and then parses the entire project.

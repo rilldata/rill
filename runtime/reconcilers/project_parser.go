@@ -174,24 +174,30 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
-		deletedPaths := make([]string, 0)
+		hasDeletedPaths := false
 		for _, e := range events {
-			if e.Dir {
+			if e.Dir || parser.IsInRestrictedDir(e.Path) {
 				continue
 			}
 			if parser.IsIgnored(e.Path) {
-				if !strings.HasPrefix(e.Path, "/tmp") && e.Type == runtimev1.FileEvent_FILE_EVENT_DELETE {
-					// only check for deleted folders that are not inside /tmp
-					deletedPaths = append(deletedPaths, parser.FindFilesInDir(e.Path)...)
+				if e.Type == runtimev1.FileEvent_FILE_EVENT_DELETE {
+					// deleted folders are not marked as `Dir` since os.Stat won't be available
+					// so only check for deleted paths when an ignored path is deleted
+					deletedPaths := parser.TrackedPathsInDir(e.Path)
+					if len(deletedPaths) > 0 {
+						changedPaths = append(changedPaths, deletedPaths...)
+						hasDeletedPaths = true
+					}
 				}
 				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
 		}
 
-		// prepend deleted paths and dedupe
-		deletedPaths = append(deletedPaths, changedPaths...)
-		changedPaths = arrayutil.Dedupe(deletedPaths)
+		if hasDeletedPaths {
+			// dedupe paths only when there were some deleted ones.
+			changedPaths = arrayutil.Dedupe(changedPaths)
+		}
 
 		if len(changedPaths) == 0 {
 			return
