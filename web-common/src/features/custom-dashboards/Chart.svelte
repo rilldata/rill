@@ -22,6 +22,7 @@
     error = null;
   } catch (e: unknown) {
     error = JSON.stringify(e);
+    console.error(error);
   }
 
   $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
