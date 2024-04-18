@@ -37,5 +37,10 @@
 </script>
 
 {#if parsedVegaSpec}
-  <VegaLiteRenderer data={{ table: data }} spec={parsedVegaSpec} {error} />
+  <VegaLiteRenderer
+    dashboard
+    data={{ table: data }}
+    spec={parsedVegaSpec}
+    {error}
+  />
 {/if}

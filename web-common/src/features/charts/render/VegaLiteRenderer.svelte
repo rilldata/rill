@@ -13,20 +13,21 @@
   export let spec: VisualizationSpec;
   export let signalListeners: SignalListeners = {};
   export let error: string | null = null;
+  export let dashboard = false;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let viewVL: View;
 
   $: width = contentRect.width;
-  $: height = contentRect.height - 30;
+  $: height = contentRect.height * 0.8;
 
   $: options = <EmbedOptions>{
     config: getRillTheme(),
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors
-    width,
-    height,
+    width: dashboard ? width : undefined,
+    height: dashboard ? height : undefined,
   };
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
@@ -36,11 +37,13 @@
 
 <div
   bind:contentRect
+  class:bg-white={dashboard}
+  class:p-4={dashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
 >
   {#if error}
     <div
-      class="size-full bg-white text-[3.2em] flex flex-col items-center justify-center gap-y-2"
+      class="size-full text-[3.2em] flex flex-col items-center justify-center gap-y-2"
     >
       <CancelCircle />
       {error}
@@ -57,22 +60,8 @@
   {/if}
 </div>
 
-<style lang="postcss">
+<style>
   :global(.vega-embed) {
     width: 100%;
-  }
-
-  :global(#vg-tooltip-element) {
-    @apply shadow-md;
-    font-family: "Inter";
-    font-size: 12px;
-    background: rgba(250, 250, 250, 0.9);
-  }
-
-  :global(#vg-tooltip-element table tr td.value) {
-    @apply font-normal;
-  }
-  :global(#vg-tooltip-element table tr td.key) {
-    @apply text-gray-500;
   }
 </style>

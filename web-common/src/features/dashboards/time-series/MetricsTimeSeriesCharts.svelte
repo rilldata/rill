@@ -286,10 +286,7 @@
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
 
-        <div
-          class="flex flex-row gap-x-7"
-          style:height="{expandedMeasureName ? 220 : 128}px"
-        >
+        <div class="flex flex-row gap-x-7">
           <MeasureBigNumber
             {measure}
             value={bigNum}
