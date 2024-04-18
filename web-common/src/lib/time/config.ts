@@ -271,6 +271,30 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
       ],
     },
   },
+  [TimeRangePreset.QUARTER_TO_DATE]: {
+    label: "Quarter to Date",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    start: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        {
+          period: Period.QUARTER,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
   [TimeRangePreset.YEAR_TO_DATE]: {
     label: "Year to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
