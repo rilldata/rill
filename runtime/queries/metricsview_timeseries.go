@@ -357,10 +357,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 func (q *MetricsViewTimeSeries) buildPinotSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause, timezone string) string {
 	dateTruncSpecifier := drivers.DialectPinot.ConvertToDateTruncSpecifier(q.TimeGranularity)
 
-	// TODO: handle shift later, does not looks like any native support for time shift using time grain specifiers is available
-	if (q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1) || (q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1) {
-		panic("time shift not supported for Pinot dialect yet")
-	}
+	// TODO: handle shift, currently we add validation error for this, see runtime/validate.go
 
 	timeClause := fmt.Sprintf("DATETRUNC('%s', %s,'MILLISECONDS','%s')", dateTruncSpecifier, safeName(mv.TimeDimension), timezone)
 	sql := fmt.Sprintf(
@@ -425,14 +422,14 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 					GROUP BY %[3]s
 					%[8]s
 					ORDER BY %[3]s`,
-			dateTruncSpecifier,             // 1
-			safeName(mv.TimeDimension),     // 2
-			tsAlias,                        // 3
-			strings.Join(selectCols, ", "), // 4
+			dateTruncSpecifier,                                    // 1
+			safeName(mv.TimeDimension),                            // 2
+			tsAlias,                                               // 3
+			strings.Join(selectCols, ", "),                        // 4
 			escapeMetricsViewTable(drivers.DialectClickHouse, mv), // 5
-			whereClause,  // 6
-			timezone,     // 7
-			havingClause, // 8
+			whereClause,                                           // 6
+			timezone,                                              // 7
+			havingClause,                                          // 8
 		)
 	} else {
 		sql = fmt.Sprintf(
@@ -445,15 +442,15 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 				GROUP BY %[3]s
 				%[9]s
 				ORDER BY %[3]s`,
-			dateTruncSpecifier,             // 1
-			safeName(mv.TimeDimension),     // 2
-			tsAlias,                        // 3
-			strings.Join(selectCols, ", "), // 4
+			dateTruncSpecifier,                                    // 1
+			safeName(mv.TimeDimension),                            // 2
+			tsAlias,                                               // 3
+			strings.Join(selectCols, ", "),                        // 4
 			escapeMetricsViewTable(drivers.DialectClickHouse, mv), // 5
-			whereClause,  // 6
-			timezone,     // 7
-			shift,        // 8
-			havingClause, // 9
+			whereClause,                                           // 6
+			timezone,                                              // 7
+			shift,                                                 // 8
+			havingClause,                                          // 9
 		)
 	}
 
@@ -487,14 +484,14 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 					GROUP BY 1
 					%[8]s
 					ORDER BY 1`,
-				dateTruncSpecifier,             // 1
-				safeName(mv.TimeDimension),     // 2
-				tsAlias,                        // 3
-				strings.Join(selectCols, ", "), // 4
+				dateTruncSpecifier,                                // 1
+				safeName(mv.TimeDimension),                        // 2
+				tsAlias,                                           // 3
+				strings.Join(selectCols, ", "),                    // 4
 				escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
-				whereClause,  // 6
-				timezone,     // 7
-				havingClause, // 8
+				whereClause,                                       // 6
+				timezone,                                          // 7
+				havingClause,                                      // 8
 			)
 		} else { // date_trunc is faster than time_bucket for year, month, week
 			sql = fmt.Sprintf(
@@ -507,14 +504,14 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 					GROUP BY 1
 					%[8]s
 					ORDER BY 1`,
-				dateTruncSpecifier,             // 1
-				safeName(mv.TimeDimension),     // 2
-				tsAlias,                        // 3
-				strings.Join(selectCols, ", "), // 4
+				dateTruncSpecifier,                                // 1
+				safeName(mv.TimeDimension),                        // 2
+				tsAlias,                                           // 3
+				strings.Join(selectCols, ", "),                    // 4
 				escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
-				whereClause,  // 6
-				timezone,     // 7
-				havingClause, // 8
+				whereClause,                                       // 6
+				timezone,                                          // 7
+				havingClause,                                      // 8
 			)
 		}
 	} else {
@@ -528,15 +525,15 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				GROUP BY 1
 				%[9]s
 				ORDER BY 1`,
-			dateTruncSpecifier,             // 1
-			safeName(mv.TimeDimension),     // 2
-			tsAlias,                        // 3
-			strings.Join(selectCols, ", "), // 4
+			dateTruncSpecifier,                                // 1
+			safeName(mv.TimeDimension),                        // 2
+			tsAlias,                                           // 3
+			strings.Join(selectCols, ", "),                    // 4
 			escapeMetricsViewTable(drivers.DialectDuckDB, mv), // 5
-			whereClause,  // 6
-			timezone,     // 7
-			shift,        // 8
-			havingClause, // 9
+			whereClause,                                       // 6
+			timezone,                                          // 7
+			shift,                                             // 8
+			havingClause,                                      // 9
 		)
 	}
 

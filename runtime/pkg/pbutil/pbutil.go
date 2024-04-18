@@ -1,7 +1,6 @@
 package pbutil
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -169,12 +168,6 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(*v), nil
 	case *net.IP:
 		return structpb.NewStringValue(v.String()), nil
-	case json.Number:
-		v2, err := v.Float64()
-		if err != nil {
-			return nil, err
-		}
-		return structpb.NewNumberValue(v2), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {

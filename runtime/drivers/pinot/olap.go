@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 
 	"github.com/jmoiron/sqlx"
@@ -95,7 +96,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil, err
 	}
 
@@ -104,7 +104,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil
 	})
 
@@ -121,10 +120,12 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
-	var tableNames []string
-	// Get table names
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables", http.NoBody)
-	resp, err := i.c.metaClient.Do(req)
+	for k, v := range i.c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -134,21 +135,33 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var respBody map[string][]string
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	var tablesResp pinotTables
+	err = json.NewDecoder(resp.Body).Decode(&tablesResp)
 	if err != nil {
 		return nil, err
 	}
-	tableNames = respBody["tables"]
 
-	var tables []*drivers.Table
-	for _, tableName := range tableNames {
-		table, err := i.Lookup(ctx, "", "", tableName)
-		if err != nil {
-			fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
-			continue
-		}
-		tables = append(tables, table)
+	tables := make([]*drivers.Table, 0, len(tablesResp.Tables))
+	// fetch table schemas in parallel with concurrency of 5
+	g, ctx := errgroup.WithContext(ctx)
+	sem := make(chan struct{}, 5)
+	for _, tableName := range tablesResp.Tables {
+		tableName := tableName
+		g.Go(func() error {
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			table, err := i.Lookup(ctx, "", "", tableName)
+			if err != nil {
+				fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
+				return nil
+			}
+			tables = append(tables, table)
+			return nil
+		})
+	}
+	if err = g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return tables, nil
@@ -156,7 +169,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables/"+name+"/schema", http.NoBody)
-	resp, err := i.c.metaClient.Do(req)
+	for k, v := range i.c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +191,13 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 
 	unsupportedCols := make(map[string]string)
 	var schemaFields []*runtimev1.StructType_Field
+	for _, field := range schemaResponse.DateTimeFieldSpecs {
+		if field.DataType != "TIMESTAMP" {
+			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
+			continue
+		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, true)})
+	}
 	for _, field := range schemaResponse.DimensionFieldSpecs {
 		singleValueField := true
 		if field.SingleValueField != nil {
@@ -197,13 +221,6 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 			continue
 		}
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
-	}
-	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		if field.DataType != "TIMESTAMP" {
-			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
-			continue
-		}
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, true)})
 	}
 
 	// Mapping the schemaResponse to your Table structure
@@ -279,6 +296,10 @@ func databaseTypeToPB(dbt string, nullable, singleValueField bool) *runtimev1.Ty
 	}
 
 	return t
+}
+
+type pinotTables struct {
+	Tables []string `json:"tables"`
 }
 
 type pinotSchema struct {

@@ -1088,9 +1088,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 				return err
 			}
 		}
-	case drivers.DialectDruid:
-	case drivers.DialectClickHouse:
-	case drivers.DialectPinot:
+	case drivers.DialectDruid, drivers.DialectClickHouse, drivers.DialectPinot:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
 			return err
 		}

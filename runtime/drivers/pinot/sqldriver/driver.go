@@ -1,4 +1,4 @@
-package pinot
+package sqldriver
 
 import (
 	"context"
@@ -21,37 +21,20 @@ import (
 type pinotDriver struct{}
 
 func (d *pinotDriver) Open(dsn string) (sqlDriver.Conn, error) {
-	// validate dsn - it should be a valid URL, may contain basic auth credentials
-	u, err := url.Parse(dsn)
+	address, headers, err := ParseDSN(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("invalid DSN: %w", err)
+		return nil, err
 	}
-
-	var authHeader map[string]string
-	if u.User != nil {
-		uname := u.User.Username()
-		pwd, passwordSet := u.User.Password()
-		if uname == "" || !passwordSet {
-			return nil, fmt.Errorf("DSN should contain valid basic auth credentials")
-		}
-		// clear user info from URL so that u.String() doesn't include it
-		u.User = nil
-		authString := fmt.Sprintf("%s:%s", uname, pwd)
-		authHeader = map[string]string{
-			"Authorization": fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(authString))),
-		}
-	}
-
 	pinotConn, err := pinot.NewWithConfig(&pinot.ClientConfig{
-		ExtraHTTPHeader: authHeader,
+		ExtraHTTPHeader: headers,
 		ControllerConfig: &pinot.ControllerConfig{
-			ControllerAddress: u.String(),
+			ControllerAddress: address,
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	// TODO check if it needs to be configurable
+	// We have joins and nested queries which are supported by multistage engine
 	pinotConn.UseMultistageEngine(true)
 	return &conn{pinotConn: pinotConn}, nil
 }
@@ -90,9 +73,12 @@ func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.
 		return nil, err
 	}
 	if resp.Exceptions != nil && len(resp.Exceptions) > 0 {
+		if len(resp.Exceptions) == 1 {
+			return nil, fmt.Errorf("query error: %q: %q", resp.Exceptions[0].ErrorCode, resp.Exceptions[0].Message)
+		}
 		errMsg := "query errors:\n"
 		for _, e := range resp.Exceptions {
-			errMsg += fmt.Sprintf("\tcode: %q message: %q\n", e.ErrorCode, e.Message)
+			errMsg += fmt.Sprintf("\t%q: %q\n", e.ErrorCode, e.Message)
 		}
 		return nil, errors.New(errMsg)
 	}
@@ -239,6 +225,31 @@ func (r *rows) goValue(rowIdx, coldIdx int, pinotType string) interface{} {
 	}
 }
 
+// ParseDSN parses the DSN string to extract the controller address and basic auth credentials
+func ParseDSN(dsn string) (string, map[string]string, error) {
+	// validate dsn - it should be a valid URL, may contain basic auth credentials
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid DSN: %w", err)
+	}
+
+	var authHeader map[string]string
+	if u.User != nil {
+		uname := u.User.Username()
+		pwd, passwordSet := u.User.Password()
+		if uname == "" || !passwordSet {
+			return "", nil, fmt.Errorf("DSN should contain valid basic auth credentials")
+		}
+		// clear user info from URL so that u.String() doesn't include it
+		u.User = nil
+		authString := fmt.Sprintf("%s:%s", uname, pwd)
+		authHeader = map[string]string{
+			"Authorization": fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(authString))),
+		}
+	}
+	return u.String(), authHeader, nil
+}
+
 func completeQuery(query string, args []sqlDriver.NamedValue) (string, error) {
 	parts := strings.Split(query, "?")
 	if len(parts)-1 != len(args) {
@@ -263,7 +274,7 @@ func completeQuery(query string, args []sqlDriver.NamedValue) (string, error) {
 func formatArg(value sqlDriver.Value) (string, error) {
 	switch v := value.(type) {
 	case string, *big.Int, *big.Float:
-		// For pinot types - STRING, BIG_DECIMAL and BYTES - enclose in single quotes
+		// For pinot types - STRING, BIG_INT and BIG_DECIMAL - enclose in single quotes
 		return fmt.Sprintf("'%v'", v), nil
 	case []byte:
 		// For pinot type - BYTES - convert to Hex string and enclose in single quotes

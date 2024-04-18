@@ -152,9 +152,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 				return err
 			}
 		}
-	case drivers.DialectDruid:
-	case drivers.DialectClickHouse:
-	case drivers.DialectPinot:
+	case drivers.DialectDruid, drivers.DialectClickHouse, drivers.DialectPinot:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 			return err
 		}

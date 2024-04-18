@@ -3,12 +3,14 @@ package pinot
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+
+	// Load Pinot sql driver
+	_ "github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 )
 
 func init() {
@@ -58,11 +60,16 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		return nil, fmt.Errorf("pinot: %w", err)
 	}
 
+	controller, headers, err := sqldriver.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+
 	conn := &connection{
-		db:         db,
-		config:     config,
-		metaClient: &http.Client{},
-		baseURL:    "http://localhost:9000", // TODO parse from dsn
+		db:      db,
+		config:  config,
+		baseURL: controller,
+		headers: headers,
 	}
 	return conn, nil
 }
@@ -80,10 +87,10 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db         *sqlx.DB
-	config     map[string]any
-	metaClient *http.Client // client for metadata operations
-	baseURL    string
+	db      *sqlx.DB
+	config  map[string]any
+	baseURL string
+	headers map[string]string
 }
 
 // Driver implements drivers.Connection.
