@@ -26,6 +26,8 @@
       on:input={onChange}
     />
   {:else}
-    {@html DOMPurify.sanitize(marked(markdown))}
+    {#await marked(markdown) then content}
+      {@html DOMPurify.sanitize(content)}
+    {/await}
   {/if}
 </div>
