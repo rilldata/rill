@@ -125,14 +125,16 @@ export async function fetchMainEntityFiles(
 ) {
   const files = await fetchAllFiles(queryClient, instanceId);
   return files
-    .filter(
-      (f) =>
-        !f.isDir &&
-        (f.path?.endsWith(".sql") ||
-          f.path?.endsWith(".yml") ||
-          f.path?.endsWith(".yaml")),
-    )
+    .filter((f) => !f.isDir && fileIsMainEntity(f.path ?? ""))
     .map((f) => f.path ?? "");
+}
+
+export function fileIsMainEntity(filePath: string) {
+  return (
+    filePath.endsWith(".sql") ||
+    filePath.endsWith(".yml") ||
+    filePath.endsWith(".yaml")
+  );
 }
 
 export async function fetchFileContent(

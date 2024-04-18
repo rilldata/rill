@@ -54,7 +54,7 @@
   <QueryClientProvider client={queryClient}>
     <WelcomePageRedirect>
       <ResourceWatcher host={data.host} instanceId={data.instanceId}>
-        <div class="body h-screen w-screen overflow-hidden">
+        <div class="body h-screen w-screen overflow-hidden absolute">
           <slot />
         </div>
       </ResourceWatcher>

@@ -7,9 +7,10 @@
   export let customStyle = "";
   export let type;
   export let value;
+  export let truncate = false;
 </script>
 
-<Base classes="{customStyle} {inTable && 'text-left'}" {dark}>
+<Base {truncate} classes="{customStyle} {inTable && 'text-left'}" {dark}>
   <slot name="value">
     {#if isNull}
       <span class="opacity-60 italic">null</span>

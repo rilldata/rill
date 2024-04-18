@@ -21,10 +21,20 @@ export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
 export function getVegaSpecForTDD(
   chartType: TDDAlternateCharts,
   expandedMeasureName: string,
+  measureLabel: string,
   isDimensional: boolean,
+  dimensionName: string | undefined,
+  comparedValues: (string | null)[] | undefined,
 ): VisualizationSpec {
-  const temporalFields = ["ts"];
-  const measureFields = [expandedMeasureName];
+  const temporalFields = [{ name: "ts", label: "Time" }];
+  const measureFields = [{ name: expandedMeasureName, label: measureLabel }];
+  const nominalFields = [
+    {
+      name: "dimension",
+      label: dimensionName || "dimension",
+      values: comparedValues,
+    },
+  ];
 
   const builderChartType = TDDChartMap[chartType];
 
@@ -32,7 +42,7 @@ export function getVegaSpecForTDD(
     builderChartType,
     temporalFields,
     measureFields,
-    isDimensional ? ["dimension"] : [],
+    isDimensional ? nominalFields : [],
   );
 
   return spec;

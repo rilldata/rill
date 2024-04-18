@@ -56,14 +56,6 @@
       tableColumns = $tableQuery.data.meta as VirtualizedTableColumns[];
     }
   }
-
-  let rowOverscanAmount = 0;
-  let columnOverscanAmount = 0;
-
-  const configOverride = {
-    indexWidth: 72,
-    rowHeight: 32,
-  };
 </script>
 
 <div
@@ -74,9 +66,8 @@
     <PreviewTable
       {rows}
       columnNames={tableColumns}
-      {rowOverscanAmount}
-      {columnOverscanAmount}
-      {configOverride}
+      rowHeight={32}
+      name={metricViewName}
     />
   {/if}
 </div>
