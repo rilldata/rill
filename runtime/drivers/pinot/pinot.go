@@ -36,8 +36,8 @@ var spec = drivers.Spec{
 type driver struct{}
 
 // Open a connection to Apache Pinot using HTTP API.
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}
 	dsn, ok := config["dsn"].(string)
