@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
@@ -66,7 +67,9 @@
 
   async function onDelete(filePath: string) {
     await deleteFileArtifact(instanceId, filePath);
-    if ($page.params.file === filePath) {
+    if (
+      removeLeadingSlash($page.params.file) === removeLeadingSlash(filePath)
+    ) {
       await goto("/");
     }
   }
