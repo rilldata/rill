@@ -189,7 +189,7 @@
   ) {
     hoverPosition = e.currentTarget.getBoundingClientRect();
     const isHeader = Boolean(e.currentTarget.tagName === "TH");
-    const isPin = e.currentTarget.tagName === "BUTTON";
+    const isPin = e.currentTarget.classList.contains("pin-button");
     const description = e.currentTarget.dataset.description;
 
     const column = String(e.currentTarget.dataset.column);

@@ -30,7 +30,9 @@
       data-index={index}
       data-column={name}
       slot="pin-button"
-      class="transition-colors duration-100 justify-self-end group-hover:block hidden text-gray-900"
+      title={"Toggle pin column"}
+      aria-label={pinned ? "Unpin column" : "Pin column"}
+      class="pin-button transition-colors duration-100 justify-self-end group-hover:block hidden text-gray-900"
       on:mouseenter
       on:click
     >
