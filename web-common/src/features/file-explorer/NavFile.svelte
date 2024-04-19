@@ -9,7 +9,15 @@
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+    ResourceKindToScreenMap,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
@@ -52,7 +60,15 @@
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   async function navigate(filePath: string) {
+    const previousScreenName = getScreenNameFromPage();
     await goto(`/files${filePath}`);
+    await behaviourEvent.fireNavigationEvent(
+      $name?.name ?? "",
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      previousScreenName,
+      ResourceKindToScreenMap[resourceKind] ?? MetricsEventScreenName.Unknown,
+    );
   }
 
   function handleMouseDown(e: MouseEvent) {

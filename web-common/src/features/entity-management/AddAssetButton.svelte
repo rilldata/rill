@@ -2,10 +2,10 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
-  import { appScreen } from "../../layout/app-store";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -49,6 +49,18 @@
     currentDirectory,
   );
 
+  async function wrapNavigation(toPath: string | undefined) {
+    if (!toPath) return;
+    const previousScreenName = getScreenNameFromPage();
+    await goto(toPath);
+    await behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.Navigate,
+      BehaviourEventMedium.Button,
+      previousScreenName,
+      MetricsEventSpace.LeftPanel,
+    );
+  }
+
   /**
    * Open the add source modal
    */
@@ -58,7 +70,7 @@
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      $appScreen.type,
+      getScreenNameFromPage(),
       MetricsEventSpace.LeftPanel,
     );
   }
@@ -68,7 +80,7 @@
    */
   async function handleAddModel() {
     const newRoute = await handleEntityCreate(ResourceKind.Model);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -76,7 +88,7 @@
    */
   async function handleAddDashboard() {
     const newRoute = await handleEntityCreate(ResourceKind.MetricsView);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -146,7 +158,7 @@
    */
   async function handleAddChart() {
     const newRoute = await handleEntityCreate(ResourceKind.Chart);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -154,7 +166,7 @@
    */
   async function handleAddCustomDashboard() {
     const newRoute = await handleEntityCreate(ResourceKind.Dashboard);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -162,7 +174,7 @@
    */
   async function handleAddTheme() {
     const newRoute = await handleEntityCreate(ResourceKind.Theme);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
