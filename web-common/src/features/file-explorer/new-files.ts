@@ -89,7 +89,10 @@ gap: 2`,
   },
   [ResourceKind.Theme]: {
     name: "theme",
-    baseContent: `kind: theme
+    baseContent: `# To apply your theme to a dashboard, add \`default_theme: <name of theme>\` to your dashboard YAML.
+# See more: https://docs.rilldata.com/reference/project-files/themes
+
+kind: theme
 colors:
   primary: crimson 
   secondary: lime 
