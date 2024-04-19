@@ -103,8 +103,10 @@ class IntervalStore {
     Interval.invalid("Uninitialized"),
   );
 
-  constructor(start?: DateTime, end?: DateTime) {
-    if (start && end) this._interval.update((i) => i.set({ start, end }));
+  private _isMax: boolean;
+
+  constructor(isMax?: boolean) {
+    this._isMax = !!isMax;
   }
 
   subscribe = this._interval.subscribe;
@@ -125,28 +127,31 @@ class IntervalStore {
     this._interval.update((i) => i.set({ start }));
   }
 
-  updateZone(zone: IANAZone) {
-    this._interval.update((i) => i.mapEndpoints((e) => e.setZone(zone)));
+  updateZone(zone: IANAZone, keepLocalTime = false) {
+    this._interval.update((i) =>
+      i.mapEndpoints((e) => e.setZone(zone, { keepLocalTime: keepLocalTime })),
+    );
   }
 }
 
 class MetricsTimeControls {
+  private _maxRange = new IntervalStore(true);
   private _zone: Writable<IANAZone> = writable(new IANAZone("UTC"));
   private _selected = writable<NamedRange | ISODurationString>(
     ALL_TIME_RANGE_ALIAS,
   );
-  private _subrange: IntervalStore = new IntervalStore();
-  private _visibleRange: IntervalStore = new IntervalStore();
-  private _comparisonRange: IntervalStore = new IntervalStore();
+  private _visibleRange = new IntervalStore();
+  private _subrange = new IntervalStore();
+  private _comparisonRange = new IntervalStore();
   private _showComparison: Writable<boolean> = writable(false);
-  private _maxRange: Interval = Interval.fromDateTimes(
-    DateTime.fromMillis(0),
-    DateTime.utc(),
-  );
 
   constructor(maxStart: DateTime, maxEnd: DateTime) {
-    this._maxRange = Interval.fromDateTimes(maxStart, maxEnd);
-    this._visibleRange.updateInterval(this._maxRange);
+    const maxInterval = Interval.fromDateTimes(
+      maxStart.setZone("UTC"),
+      maxEnd.setZone("UTC"),
+    );
+    this._maxRange.updateInterval(maxInterval);
+    this._visibleRange.updateInterval(maxInterval);
   }
 
   private applySubrange = () => {
@@ -156,11 +161,23 @@ class MetricsTimeControls {
   };
 
   private applyISODuration = (iso: ISODurationString) => {
-    if (this._maxRange?.end) {
-      const interval = deriveInterval(iso, this._maxRange.end);
+    const rightAnchor = get(this._maxRange).end;
+    if (rightAnchor) {
+      const interval = deriveInterval(iso, rightAnchor);
       if (interval?.isValid) {
         this._visibleRange.updateInterval(interval);
         this._selected.set(iso);
+      }
+    }
+  };
+
+  private applyNamedRange = (name: NamedRange) => {
+    const rightAnchor = get(this._maxRange).end;
+    if (rightAnchor) {
+      const interval = deriveInterval(name, rightAnchor);
+      if (interval?.isValid) {
+        this._visibleRange.updateInterval(interval);
+        this._selected.set(name);
       }
     }
   };
@@ -170,49 +187,47 @@ class MetricsTimeControls {
     this._selected.set(CUSTOM_TIME_RANGE_ALIAS);
   };
 
-  private applyNamedRange = (name: NamedRange) => {
-    if (this._maxRange?.end) {
-      const interval = deriveInterval(name, this._maxRange.end);
-      if (interval?.isValid) {
-        this._visibleRange.updateInterval(interval);
-        this._selected.set(name);
-      }
-    }
-  };
-
-  private applyUnknown = (string: string | undefined) => {
+  private applyRange = (string: NamedRange | ISODurationString | undefined) => {
     if (!string) return;
 
-    if (isValidISODuration(string)) {
+    if (string === ALL_TIME_RANGE_ALIAS) {
+      this.applyAllTime();
+    } else if (isRillPeriodToDate(string) || isRillPreviousPeriod(string)) {
+      this.applyNamedRange(string);
+    } else if (isValidISODuration(string)) {
       this.applyISODuration(string);
-    } else {
-      this.applyNamedRange(string as NamedRange);
+    } else if (string === CUSTOM_TIME_RANGE_ALIAS) {
+      throw new Error("Custom time range requires start and end dates");
     }
   };
 
   private applyAllTime = () => {
-    if (this._maxRange.start && this._maxRange.end) {
-      this._visibleRange.updateInterval(
-        Interval.fromDateTimes(this._maxRange.start, this._maxRange.end),
-      );
+    const maxInterval = get(this._maxRange);
+    if (maxInterval) {
+      this._visibleRange.updateInterval(maxInterval);
       this._selected.set(ALL_TIME_RANGE_ALIAS);
     }
   };
 
   updateZone = (zone: IANAZone) => {
     this._zone.set(zone);
-    // Actual zone change logic is an active discussion with the team
-    // But what this does is just say give me this relative interval in a different zone
-    // Currently, we shift the underlying interval to the new zone, which seems wrong
-    this._visibleRange.updateZone(zone);
+    const rangeAlias = get(this._selected);
+    this._maxRange.updateZone(zone);
+
+    if (rangeAlias === CUSTOM_TIME_RANGE_ALIAS) {
+      // If you've specified a custom range
+      // We want to maintain the local time of the start and end
+      this._visibleRange.updateZone(zone, true);
+    } else {
+      // Otherwise, we need to re-derive the interval based on the selection
+      this.applyRange(rangeAlias);
+    }
   };
 
   apply = {
     subrange: this.applySubrange,
-    isoDuration: this.applyISODuration,
     customRange: this.applyCustomRange,
-    namedRange: this.applyNamedRange,
-    unknown: this.applyUnknown,
+    range: this.applyRange,
     allTime: this.applyAllTime,
   };
 
@@ -331,6 +346,8 @@ export function getSmallestUnit(
 
   return null;
 }
+
+const DONT_KEEP_LOCAL_TIME = ["minute", "hour", "second", "millisecond"];
 
 export function isValidISODuration(duration: string) {
   const luxonDuration = Duration.fromISO(duration);
