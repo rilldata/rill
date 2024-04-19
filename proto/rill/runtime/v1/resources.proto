@@ -436,6 +436,8 @@ message DashboardComponent {
   uint32 y = 3;
   uint32 width = 4;
   uint32 height = 5;
+  string markdown = 6;
+  uint32 font_size = 7;
 }
 
 // API defines a custom operation for querying data stored in Rill.
