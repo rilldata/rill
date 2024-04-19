@@ -11,11 +11,13 @@
 </script>
 
 <script lang="ts">
+  import Markdown from "./Markdown.svelte";
+
   const dispatch = createEventDispatcher();
 
   export let i: number;
   export let gapSize: number;
-  export let chart: V1DashboardComponent;
+  export let component: V1DashboardComponent;
   export let selected: boolean;
   export let interacting: boolean;
   export let width: number;
@@ -27,7 +29,7 @@
 
   let localZIndex = 0;
 
-  $: chartName = chart.chart ?? "No chart name";
+  $: chartName = component.chart;
 
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
@@ -72,7 +74,14 @@
       on:contextmenu
       on:change
     >
-      <Chart {chartName} />
+      {#if component.markdown}
+        <Markdown
+          markdown={component.markdown}
+          fontSize={component.fontSize ?? 40}
+        />
+      {:else if chartName}
+        <Chart {chartName} />
+      {/if}
     </Component>
   </ContextMenu.Trigger>
 

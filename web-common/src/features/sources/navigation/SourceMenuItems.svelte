@@ -6,11 +6,11 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import {
     useIsLocalFileConnector,
     useSourceFromYaml,
   } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -71,7 +71,7 @@
 
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appScreen?.type;
+      const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createModelFromSource(
         queryClient,
         sourceName,

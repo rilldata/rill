@@ -615,8 +615,12 @@ message WatchLogsResponse {
 }
 
 message ListResourcesRequest {
+  // Instance to list resources from.
   string instance_id = 1;
+  // Filter by resource kind (optional).
   string kind = 2;
+  // Filter by resource path (optional).
+  string path = 3;
 }
 
 message ListResourcesResponse {

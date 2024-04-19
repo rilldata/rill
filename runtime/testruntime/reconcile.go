@@ -95,7 +95,7 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", false)
+	rs, err := ctrl.List(context.Background(), "", "", false)
 	require.NoError(t, err)
 
 	var reconcileErrs, parseErrs []string
@@ -185,7 +185,7 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", false)
+	rs, err := ctrl.List(context.Background(), "", "", false)
 	require.NoError(t, err)
 
 	for _, r := range rs {

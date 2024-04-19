@@ -297,7 +297,7 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	rs, err := ctrl.List(ctx, runtime.ResourceKindSource, false)
+	rs, err := ctrl.List(ctx, runtime.ResourceKindSource, "", false)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -528,7 +528,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 }
 
 func (s *Server) controllerToLegacyReconcileStatus(ctx context.Context, ctrl *runtime.Controller, since time.Time) (*runtimev1.ReconcileResponse, error) {
-	rs, err := ctrl.List(ctx, "", false)
+	rs, err := ctrl.List(ctx, "", "", false)
 	if err != nil {
 		return nil, err
 	}

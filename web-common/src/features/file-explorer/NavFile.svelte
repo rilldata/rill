@@ -8,7 +8,15 @@
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+    ResourceKindToScreenMap,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
@@ -50,6 +58,19 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
+  function fireTelemetry() {
+    const previousScreenName = getScreenNameFromPage();
+    behaviourEvent
+      .fireNavigationEvent(
+        $name?.name ?? "",
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousScreenName,
+        ResourceKindToScreenMap[resourceKind] ?? MetricsEventScreenName.Unknown,
+      )
+      .catch(console.error);
+  }
+
   function handleMouseDown(e: MouseEvent) {
     if (PROTECTED_FILES.includes(filePath)) return;
     onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
@@ -66,6 +87,7 @@
   font-medium hover:bg-slate-100"
   {id}
   href={`/files${filePath}`}
+  on:click={fireTelemetry}
   on:mousedown={handleMouseDown}
   on:mouseup={(e) =>
     onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}

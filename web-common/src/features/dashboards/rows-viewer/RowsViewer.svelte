@@ -8,6 +8,7 @@
   import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
+  import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
   export let metricViewName = "";
   export let height: number;
@@ -58,10 +59,7 @@
   }
 </script>
 
-<div
-  class="overflow-y-auto bg-gray-100 border-t border-gray-200"
-  style="height: {height}px"
->
+<div class="overflow-hidden border-t" style:height="{height}px">
   {#if rows}
     <PreviewTable
       {rows}
@@ -69,5 +67,7 @@
       rowHeight={32}
       name={metricViewName}
     />
+  {:else}
+    <ReconcilingSpinner />
   {/if}
 </div>

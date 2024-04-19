@@ -1,7 +1,7 @@
+import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
-import { appScreen } from "../../../layout/app-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
   BehaviourEventAction,
@@ -39,7 +39,7 @@ export async function submitRemoteSourceForm(
   await behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
-    get(appScreen).type,
+    getScreenNameFromPage(),
     MetricsEventSpace.Modal,
   );
 

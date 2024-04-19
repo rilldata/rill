@@ -14,6 +14,7 @@
   resizableColumns
   cellBorders
   stickyBorders
+  rightBorder
   {name}
   {rows}
   {rowHeight}

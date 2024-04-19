@@ -2400,14 +2400,25 @@ export class WatchLogsResponse extends Message<WatchLogsResponse> {
  */
 export class ListResourcesRequest extends Message<ListResourcesRequest> {
   /**
+   * Instance to list resources from.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
+   * Filter by resource kind (optional).
+   *
    * @generated from field: string kind = 2;
    */
   kind = "";
+
+  /**
+   * Filter by resource path (optional).
+   *
+   * @generated from field: string path = 3;
+   */
+  path = "";
 
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
@@ -2419,6 +2430,7 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
