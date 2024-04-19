@@ -894,10 +894,11 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 	return &adminv1.Project{
 		Id:               p.ID,
 		Name:             p.Name,
-		Description:      p.Description,
-		Public:           p.Public,
 		OrgId:            p.OrganizationID,
 		OrgName:          orgName,
+		Description:      p.Description,
+		Public:           p.Public,
+		CreatedByUserId:  safeStr(p.CreatedByUserID),
 		Provisioner:      p.Provisioner,
 		ProdVersion:      p.ProdVersion,
 		ProdOlapDriver:   p.ProdOLAPDriver,
