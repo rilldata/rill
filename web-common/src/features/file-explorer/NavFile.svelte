@@ -8,6 +8,7 @@
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
+  import { emitNavigationEventFromKindAndName } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { Readable } from "svelte/store";
@@ -49,6 +50,7 @@
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
   async function navigate(filePath: string) {
+    void emitNavigationEventFromKindAndName(resourceKind, $name?.name ?? "");
     await goto(`/files/${filePath}`);
   }
 

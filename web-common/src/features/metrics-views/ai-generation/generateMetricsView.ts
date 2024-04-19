@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
+import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { get } from "svelte/store";
 import { notifications } from "../../../components/notifications";
-import { appScreen } from "../../../layout/app-store";
 import { overlay } from "../../../layout/overlay-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -127,12 +127,13 @@ export function useCreateDashboardFromTableUIAction(
       }
 
       // Preview
+      const previousScreenName = getScreenNameFromPage();
       await goto(`/files/${newFilePath}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,
         metricsEventSpace,
-        get(appScreen)?.type,
+        previousScreenName,
         MetricsEventScreenName.Dashboard,
       );
     } catch (err) {
