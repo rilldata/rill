@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
@@ -51,36 +50,34 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  async function navigate(filePath: string) {
-    await goto(`/files${filePath}`);
-  }
-
   function handleMouseDown(e: MouseEvent) {
     if (PROTECTED_FILES.includes(filePath)) return;
     onMouseDown(e, { id, filePath, isDir: false, kind: resourceKind });
   }
 </script>
 
-<button
+<a
   aria-label="{fileName} Nav Entry"
   class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center
   {isProtectedDirectory || isDotFile
-    ? 'text-gray-500'
+    ? 'text-gray-500 hover:text-gray-500'
     : 'text-gray-900 hover:text-gray-900'}
   {isCurrentFile ? 'bg-slate-100' : ''} 
   font-medium hover:bg-slate-100"
   {id}
-  on:click={() => navigate(filePath)}
+  href={`/files${filePath}`}
   on:mousedown={handleMouseDown}
   on:mouseup={(e) =>
     onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
   style:padding-left="{padding}px"
 >
-  <svelte:component
-    this={resourceKind ? resourceIconMapping[resourceKind] : File}
-    className="text-gray-400"
-    size="14px"
-  />
+  <div class="flex-none">
+    <svelte:component
+      this={resourceKind ? resourceIconMapping[resourceKind] : File}
+      className="text-gray-400"
+      size="14px"
+    />
+  </div>
   <span class="truncate w-full">{fileName}</span>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
@@ -133,4 +130,4 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   {/if}
-</button>
+</a>
