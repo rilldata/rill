@@ -98,7 +98,9 @@
   }
 </script>
 
-<div class="relative w-screen flex-none overflow-hidden flex flex-col">
+<div
+  class="relative w-screen flex-none overflow-hidden flex flex-col bg-gray-100"
+>
   <Resizer
     disabled={!isOpen}
     dimension={height}

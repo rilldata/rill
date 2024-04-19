@@ -74,6 +74,7 @@
   export let cellBorders = false;
   export let stickyBorders = false;
   export let headerBorders = false;
+  export let rightBorder = false;
   export let rowHeaders = true;
   export let resizableColumns = false;
   export let sortable = false;
@@ -319,6 +320,7 @@
   <div
     role="presentation"
     class="table-wrapper"
+    class:border-r={rightBorder}
     class:cursor-col-resize={resizing}
     class:has-selection={selectedIndexes.length > 0}
     class:cell-borders={cellBorders}
