@@ -58,7 +58,7 @@
       direction="NS"
       side="top"
       min={10}
-      basis={MIN_HEIGHT}
+      basis={showTables ? startingHeight : MIN_HEIGHT}
       max={2000}
       absolute={false}
     />
