@@ -38,7 +38,7 @@
 
 {#if parsedVegaSpec}
   <VegaLiteRenderer
-    dashboard
+    customDashboard
     data={{ table: data }}
     spec={parsedVegaSpec}
     {error}

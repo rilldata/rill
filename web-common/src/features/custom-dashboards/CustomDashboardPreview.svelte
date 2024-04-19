@@ -16,6 +16,7 @@
   export let showGrid = false;
   export let snap = false;
   export let selectedChartName: string | null;
+  export let chartView = false;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -69,8 +70,8 @@
     components[selectedIndex].y =
       dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
 
-    components[selectedIndex].width = Math.abs(Math.max(1, dimensions[0]));
-    components[selectedIndex].height = Math.abs(Math.max(1, dimensions[1]));
+    components[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
+    components[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
     dispatch("update", {
       index: selectedIndex,
@@ -184,6 +185,7 @@
     {@const interacting = selected && changing}
     {#if component.chart && component.width && component.height}
       <Element
+        {chartView}
         {scale}
         {i}
         chart={component}

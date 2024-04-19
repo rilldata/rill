@@ -13,7 +13,7 @@
   export let spec: VisualizationSpec;
   export let signalListeners: SignalListeners = {};
   export let error: string | null = null;
-  export let dashboard = false;
+  export let customDashboard = false;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let viewVL: View;
@@ -26,8 +26,8 @@
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors
-    width: dashboard ? width : undefined,
-    height: dashboard ? height : undefined,
+    width: customDashboard ? width : undefined,
+    height: customDashboard ? height : undefined,
   };
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
@@ -37,8 +37,8 @@
 
 <div
   bind:contentRect
-  class:bg-white={dashboard}
-  class:p-4={dashboard}
+  class:bg-white={customDashboard}
+  class:p-4={customDashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
 >
   {#if error}

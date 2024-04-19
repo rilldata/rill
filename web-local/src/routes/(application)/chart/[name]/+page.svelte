@@ -67,6 +67,7 @@
       </div>
       <ChartPromptStatusDisplay {chartName}>
         <CustomDashboardPreview
+          chartView
           snap
           selectedChartName={chartName}
           gap={8}
