@@ -103,12 +103,6 @@ class IntervalStore {
     Interval.invalid("Uninitialized"),
   );
 
-  private _isMax: boolean;
-
-  constructor(isMax?: boolean) {
-    this._isMax = !!isMax;
-  }
-
   subscribe = this._interval.subscribe;
 
   clear = () => {
@@ -135,7 +129,7 @@ class IntervalStore {
 }
 
 class MetricsTimeControls {
-  private _maxRange = new IntervalStore(true);
+  private _maxRange = new IntervalStore();
   private _zone: Writable<IANAZone> = writable(new IANAZone("UTC"));
   private _selected = writable<NamedRange | ISODurationString>(
     ALL_TIME_RANGE_ALIAS,
