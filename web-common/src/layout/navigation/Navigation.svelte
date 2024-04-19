@@ -2,7 +2,7 @@
   export const navigationOpen = (() => {
     const store = writable(true);
     return {
-      ...store,
+      subscribe: store.subscribe,
       toggle: () => store.update((open) => !open),
     };
   })();
