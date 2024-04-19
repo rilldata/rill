@@ -160,27 +160,52 @@ export function useFileNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
+  // Ensure the directory path starts with a slash
   if (!directoryPath.startsWith("/")) {
-    directoryPath += "/";
+    directoryPath = `/${directoryPath}`;
   }
+
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
-        const files = data.files?.filter(
-          (file) => !file.isDir && file.path?.startsWith(directoryPath),
-        );
-        const fileNames = files
-          ?.map((file) => {
-            return file.path?.replace(directoryPath, "") ?? "";
+        if (!data.files) {
+          return [];
+        }
+
+        const fileNames = data.files
+          // Filter out directories and files that are not in the given directory
+          .filter((file) => {
+            if (!file.path) {
+              return false;
+            }
+
+            const isNotDirectory = !file.isDir;
+            const startsWithDirectory = file.path?.startsWith(directoryPath);
+            const doesNotHaveSubdirectory =
+              directoryPath === "/"
+                ? file.path?.indexOf("/", 1) === -1
+                : file.path?.lastIndexOf("/") === directoryPath.length;
+
+            return (
+              isNotDirectory && startsWithDirectory && doesNotHaveSubdirectory
+            );
           })
-          // filter out files in subdirectories
-          .filter((filePath) => !filePath.includes("/"));
-        const sortedFileNames = fileNames?.sort((fileNameA, fileNameB) =>
-          fileNameA.localeCompare(fileNameB, undefined, {
-            sensitivity: "base",
-          }),
-        );
-        return sortedFileNames ?? [];
+
+          // Remove the directory path from each file path
+          .map((file) => {
+            const startIdx =
+              directoryPath === "/" ? 1 : directoryPath.length + 1;
+            return file.path?.substring(startIdx) ?? "";
+          })
+
+          // Sort filenames alphabetically, case-insensitive
+          .sort((fileNameA, fileNameB) =>
+            fileNameA.localeCompare(fileNameB, undefined, {
+              sensitivity: "base",
+            }),
+          );
+
+        return fileNames;
       },
     },
   });
@@ -191,7 +216,7 @@ export function useDirectoryNamesInDirectory(
   directoryPath: string,
 ) {
   if (!directoryPath.startsWith("/")) {
-    directoryPath += "/";
+    directoryPath = "/" + directoryPath;
   }
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
