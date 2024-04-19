@@ -6,6 +6,7 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -37,7 +38,9 @@
 
   $: id = `${filePath}-nav-entry`;
   $: fileName = filePath.split("/").pop();
-  $: isCurrentFile = filePath === $page.params.file;
+  $: isCurrentFile =
+    removeLeadingSlash(filePath) ===
+    removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   let name: Readable<V1ResourceName | undefined>;
   $: name = fileArtifact.name;

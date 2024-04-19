@@ -94,7 +94,6 @@
     query: { keepPreviousData: true },
   });
   $: [, fileName] = splitFolderAndName(filePath);
-  $: console.log(filePath, fileName);
 
   $: yaml = $fileQuery.data?.blob ?? "";
 

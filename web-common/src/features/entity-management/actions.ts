@@ -3,7 +3,7 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   extractFileName,
-  splitFolderAndName,
+  getTopLevelFolder,
 } from "@rilldata/web-common/features/sources/extract-file-name";
 import {
   runtimeServiceDeleteFile,
@@ -49,14 +49,14 @@ export async function renameFileArtifact(
     });
 
     httpRequestQueue.removeByName(fromName);
+    const topLevelFromFolder = getTopLevelFolder(addLeadingSlash(fromPath));
+    const topLevelToFolder = getTopLevelFolder(addLeadingSlash(toPath));
 
-    const [fromFolder] = splitFolderAndName(fromPath);
-    const [toFolder] = splitFolderAndName(toPath);
     if (
       fromResName?.kind &&
-      FolderToResourceKind[removeLeadingSlash(fromFolder)] ===
-        fromResName.kind &&
-      fromFolder !== toFolder
+      topLevelFromFolder !== topLevelToFolder &&
+      FolderToResourceKind[removeLeadingSlash(topLevelFromFolder)] ===
+        fromResName?.kind
     ) {
       notifications.send({
         message: `Moving ${fromName} out of native folder. Please make sure to add "kind" key to denote the type.`,
