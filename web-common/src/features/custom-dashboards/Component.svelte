@@ -59,7 +59,7 @@
   on:mousedown|capture
 >
   <div class="size-full relative">
-    {#if ResizeHandleComponent && !embed && !chartView}
+    {#if ResizeHandleComponent && !embed}
       {#each allSides as side}
         <ResizeHandleComponent
           {scale}

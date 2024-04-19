@@ -7,6 +7,7 @@
   import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
 
   export let chartName: string;
+  export let chartView = false;
 
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
@@ -38,6 +39,7 @@
 
 {#if parsedVegaSpec}
   <VegaLiteRenderer
+    {chartView}
     customDashboard
     data={{ table: data }}
     spec={parsedVegaSpec}

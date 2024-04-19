@@ -8,6 +8,7 @@
   export let columns = 20;
   export let components: V1DashboardComponent[];
   export let gap = 4;
+  export let chartView = false;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
 
@@ -33,6 +34,7 @@
   {#each components as component, i (i)}
     {#if component.chart && component.width && component.height}
       <Component
+        {chartView}
         embed
         {i}
         {scale}
@@ -43,7 +45,7 @@
         left={Number(component.x) * gridCell}
         top={Number(component.y) * gridCell}
       >
-        <Chart chartName={component.chart} />
+        <Chart chartName={component.chart} {chartView} />
       </Component>
     {/if}
   {/each}

@@ -24,7 +24,6 @@
   export let left: number;
   export let radius: number;
   export let scale: number;
-  export let chartView = false;
 
   let localZIndex = 0;
 
@@ -42,7 +41,7 @@
   });
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0 || chartView) return;
+    if (e.button !== 0) return;
     localZIndex = $zIndex;
     zIndex.set(++localZIndex);
     dispatch("change", {
@@ -58,7 +57,6 @@
 <ContextMenu.Root>
   <ContextMenu.Trigger asChild let:builder>
     <Component
-      {chartView}
       builders={[builder]}
       left={finalLeft}
       top={finalTop}

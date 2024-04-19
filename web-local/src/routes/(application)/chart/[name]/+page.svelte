@@ -13,6 +13,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
+  import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
   export let data: { fileArtifact?: FileArtifact } = {};
 
   const DEFAULT_EDITOR_WIDTH = 400;
@@ -66,13 +67,11 @@
         <ChartsEditor {filePath} />
       </div>
       <ChartPromptStatusDisplay {chartName}>
-        <CustomDashboardPreview
+        <CustomDashboardEmbed
           chartView
-          snap
-          selectedChartName={chartName}
           gap={8}
           columns={10}
-          components={[{ width: 10, height: 5, x: 0, y: 0, chart: chartName }]}
+          components={[{ width: 10, height: 10, x: 0, y: 0, chart: chartName }]}
         />
       </ChartPromptStatusDisplay>
     </div>

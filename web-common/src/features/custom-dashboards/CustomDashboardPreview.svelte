@@ -16,7 +16,6 @@
   export let showGrid = false;
   export let snap = false;
   export let selectedChartName: string | null;
-  export let chartView = false;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -185,7 +184,6 @@
     {@const interacting = selected && changing}
     {#if component.chart && component.width && component.height}
       <Element
-        {chartView}
         {scale}
         {i}
         chart={component}

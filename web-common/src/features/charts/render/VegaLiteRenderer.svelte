@@ -14,12 +14,13 @@
   export let signalListeners: SignalListeners = {};
   export let error: string | null = null;
   export let customDashboard = false;
+  export let chartView = false;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let viewVL: View;
 
   $: width = contentRect.width;
-  $: height = contentRect.height * 0.8;
+  $: height = contentRect.height * 0.9 - 100;
 
   $: options = <EmbedOptions>{
     config: getRillTheme(),
@@ -27,7 +28,7 @@
     actions: false,
     logLevel: 0, // only show errors
     width: customDashboard ? width : undefined,
-    height: customDashboard ? height : undefined,
+    height: chartView || !customDashboard ? undefined : height,
   };
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
