@@ -120,6 +120,7 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 
 	return &drivers.RepoObjectStat{
 		LastUpdated: info.ModTime(),
+		IsDir:       info.IsDir(),
 	}, nil
 }
 
