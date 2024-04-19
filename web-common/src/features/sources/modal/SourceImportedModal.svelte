@@ -51,7 +51,7 @@
   }
 
   async function goToSource() {
-    await goto(`/files/${$sourceImportedPath ?? ""}`);
+    await goto(`/files${$sourceImportedPath ?? ""}`);
     close();
   }
 
