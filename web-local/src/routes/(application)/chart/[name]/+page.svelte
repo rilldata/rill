@@ -11,7 +11,6 @@
   import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
   import { error } from "@sveltejs/kit";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
   export let data: { fileArtifact?: FileArtifact } = {};
