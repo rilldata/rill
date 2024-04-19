@@ -69,8 +69,8 @@
     components[selectedIndex].y =
       dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
 
-    components[selectedIndex].width = Math.abs(Math.max(1, dimensions[0]));
-    components[selectedIndex].height = Math.abs(Math.max(1, dimensions[1]));
+    components[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
+    components[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
     dispatch("update", {
       index: selectedIndex,

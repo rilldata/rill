@@ -28,6 +28,7 @@
   export let height: number;
   export let i: number;
   export let localZIndex = 0;
+  export let chartView = false;
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -46,14 +47,14 @@
   use:builderActions={{ builders }}
   role="presentation"
   data-index={i}
-  class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto cursor"
+  class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
   style:z-index={localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
   style:width="{width}px"
-  style:height="{height}px"
+  style:height={chartView ? undefined : `${height}px`}
   on:contextmenu
   on:mousedown|capture
 >
