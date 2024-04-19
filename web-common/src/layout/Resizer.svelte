@@ -16,6 +16,7 @@
   export let absolute = true;
   export let onMouseDown: ((e: MouseEvent) => void) | null = null;
   export let onUpdate: ((dimension: number) => void) | null = null;
+  export let disabled = false;
 
   let start = 0;
   let startingDimension = dimension;
@@ -71,6 +72,7 @@
 </script>
 
 <button
+  {disabled}
   class:absolute
   class="{direction} {side}"
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
@@ -83,6 +85,10 @@
   button {
     @apply z-10 flex-none;
     /* @apply bg-red-400; */
+  }
+
+  button:disabled {
+    @apply cursor-default;
   }
 
   .NS {
