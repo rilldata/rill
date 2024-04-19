@@ -111,11 +111,18 @@ export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
 export async function fetchAllFileNames(
   queryClient: QueryClient,
   instanceId: string,
+  includeExtensions = true,
 ) {
   const files = await fetchAllFiles(queryClient, instanceId);
   return files
     .filter((f) => !f.isDir)
     .map((f) => f.path?.split("/").pop() ?? "")
+    .map((fileName) => {
+      if (!includeExtensions) {
+        return fileName.split(".").slice(0, -1).join(".");
+      }
+      return fileName;
+    })
     .filter(Boolean);
 }
 
@@ -153,7 +160,9 @@ export function useFileNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
-  directoryPath += "/";
+  if (!directoryPath.startsWith("/")) {
+    directoryPath += "/";
+  }
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
@@ -181,7 +190,9 @@ export function useDirectoryNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
-  directoryPath += "/";
+  if (!directoryPath.startsWith("/")) {
+    directoryPath += "/";
+  }
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
