@@ -188,14 +188,13 @@
         </CtaButton>
       {/each}
 
-      {#if !isRillCloud}
-        <SSOForm
-          disabled={isSSODisabled}
-          on:ssoSubmit={(e) => {
-            handleSSOLogin(e.detail);
-          }}
-        />
-      {/if}
+      <SSOForm
+        disabled={isSSODisabled}
+        on:ssoSubmit={(e) => {
+          handleSSOLogin(e.detail);
+        }}
+      />
+
       <EmailPassForm
         {isLoginPage}
         disabled={isEmailDisabled}

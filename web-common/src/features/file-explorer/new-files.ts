@@ -20,7 +20,7 @@ export async function handleEntityCreate(kind: ResourceKind) {
     create: true,
     createOnly: true,
   });
-  return `/files//${newPath}`;
+  return `/files/${newPath}`;
 }
 
 const ResourceKindMap: Record<

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
@@ -126,6 +127,13 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 	delete(sess.Values, cookieFieldState)
 
+	// Check for errors in the auth flow
+	if errStr := r.URL.Query().Get("error"); errStr != "" {
+		description := r.URL.Query().Get("error_description")
+		http.Error(w, fmt.Sprintf("auth error of type %q: %s", errStr, description), http.StatusUnauthorized)
+		return
+	}
+
 	// Exchange authorization code for an oauth2 token
 	oauthToken, err := a.oauth2.Exchange(r.Context(), r.URL.Query().Get("code"))
 	if err != nil {
@@ -163,8 +171,17 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 	emailVerified, ok := profile["email_verified"].(bool)
 	if !ok {
-		http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
-		return
+		// For SAML flows, it is passed as a string
+		emailVerifiedStr, ok := profile["email_verified"].(string)
+		if !ok {
+			http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
+			return
+		}
+		emailVerified, err = strconv.ParseBool(emailVerifiedStr)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("claim 'email_verified' could not be parsed as a boolean (got %q)", emailVerifiedStr), http.StatusInternalServerError)
+			return
+		}
 	}
 	name, ok := profile["name"].(string)
 	if !ok {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Button from "web-common/src/components/button/Button.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -238,8 +238,8 @@
       <AddChartMenu on:add-chart={addChart} />
 
       <PreviewButton
-        disabled={Boolean($errors.length)}
         dashboardName={customDashboardName}
+        disabled={Boolean($errors.length)}
         type="custom"
       />
     </div>

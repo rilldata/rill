@@ -81,7 +81,7 @@
             );
           }
         } else {
-          await goto(`/files/${newPath}`, {
+          await goto(`/files${newPath}`, {
             replaceState: true,
           });
         }

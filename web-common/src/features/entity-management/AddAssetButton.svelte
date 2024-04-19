@@ -130,7 +130,7 @@
       },
     });
 
-    await goto(`/files/${currentDirectory}/${nextFileName}`);
+    await goto(`/files/${path}`);
   }
 
   /**

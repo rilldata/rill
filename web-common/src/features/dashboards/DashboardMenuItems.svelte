@@ -50,7 +50,7 @@
     );
     if (!artifact) return;
     const previousActiveEntity = $appScreen?.type;
-    await goto(`/files/${artifact.path}`);
+    await goto(`/files${artifact.path}`);
     await behaviourEvent.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
@@ -61,7 +61,7 @@
   };
 
   const editMetrics = async () => {
-    await goto(`/files/${filePath}`);
+    await goto(`/files${filePath}`);
 
     const previousActiveEntity = $appScreen?.type;
     await behaviourEvent.fireNavigationEvent(
