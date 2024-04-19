@@ -347,8 +347,6 @@ export function getSmallestUnit(
   return null;
 }
 
-const DONT_KEEP_LOCAL_TIME = ["minute", "hour", "second", "millisecond"];
-
 export function isValidISODuration(duration: string) {
   const luxonDuration = Duration.fromISO(duration);
 
