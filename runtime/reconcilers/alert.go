@@ -699,7 +699,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	if msg != nil {
 		if adminMeta != nil {
 			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
-			msg.OpenLink = adminMeta.OpenURL
+			msg.OpenLink = fmt.Sprintf("%s?execution_time=%s", adminMeta.OpenURL, executionTime.UTC().Format(time.RFC3339))
 			msg.EditLink = adminMeta.EditURL
 		}
 

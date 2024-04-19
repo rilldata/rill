@@ -1,11 +1,15 @@
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import {
+  SortDirection,
+  SortType,
+} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -22,8 +26,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeSeriesRequest,
   type V1MetricsViewToplistRequest,
-  type V1Resource,
-  V1TimeRange,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -54,10 +57,11 @@ type DashboardStateForReport = {
  * Hence we are building the state from the query args in the report.
  */
 export function getDashboardStateForReport(
-  reportResource: V1Resource,
-  executionTime: string,
+  queryName: string | undefined,
+  queryArgsJson: string | undefined,
+  executionTime: string | undefined,
 ): CompoundQueryResult<DashboardStateForReport> {
-  if (!reportResource?.report?.spec?.queryName)
+  if (!queryName)
     return readable({
       isFetching: false,
       error: "",
@@ -65,14 +69,14 @@ export function getDashboardStateForReport(
 
   let metricsViewName: string = "";
   const req: ReportQueryRequest = convertRequestKeysToCamelCase(
-    JSON.parse(reportResource.report.spec.queryArgsJson),
+    JSON.parse(queryArgsJson ?? "{}"),
   );
   let getDashboardState: (
     args: QueryMapperArgs<ReportQueryRequest>,
   ) => MetricsExplorerEntity;
 
   // get metrics view name and the query mapper function based on the query name.
-  switch (reportResource.report.spec.queryName) {
+  switch (queryName) {
     case "MetricsViewAggregation":
       metricsViewName = (req as V1MetricsViewAggregationRequest).metricsView;
       getDashboardState = getDashboardFromAggregationRequest;
@@ -181,10 +185,63 @@ function convertRequestKeysToCamelCase(
 function getDashboardFromAggregationRequest({
   req,
   dashboard,
+  timeRangeSummary,
+  executionTime,
+  metricsView,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
-  // TODO
+  if (req.having) {
+    dashboard.dimensionThresholdFilters = [
+      {
+        name: req.dimensions?.[0]?.name ?? metricsView.dimensions[0]?.name,
+        filter:
+          req.having.cond?.exprs?.length === 1
+            ? req.having.cond.exprs[0]
+            : req.having,
+      },
+    ];
+  }
 
+  if (req.timeRange) {
+    dashboard.selectedTimeRange = getSelectedTimeRange(
+      req.timeRange,
+      timeRangeSummary,
+      req.timeRange.isoDuration,
+      executionTime,
+    );
+  }
+
+  if (req.timeRange?.timeZone) {
+    dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
+  }
+
+  dashboard.visibleMeasureKeys = new Set(req.measures.map((m) => m.name));
+
+  // if the selected sort is a measure set it to leaderboardMeasureName
+  if (
+    req.sort?.length &&
+    metricsView.measures.findIndex((m) => m.name === req.sort[0].name) >= 0
+  ) {
+    dashboard.leaderboardMeasureName = req.sort[0].name;
+    dashboard.sortDirection = req.sort[0].desc
+      ? SortDirection.DESCENDING
+      : SortDirection.ASCENDING;
+    dashboard.dashboardSortType = SortType.VALUE;
+  }
+
+  if (req.dimensions?.length) {
+    dashboard.selectedDimensionName = req.dimensions[0].name;
+    dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+  } else {
+    dashboard.tdd = {
+      chartType: TDDChart.DEFAULT,
+      expandedMeasureName: req.measures[0].name,
+      pinIndex: -1,
+    };
+    dashboard.activePage = DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+  }
+
+  console.log(dashboard);
   return dashboard;
 }
 

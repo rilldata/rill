@@ -1,37 +1,35 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import { getDashboardStateForReport } from "@rilldata/web-admin/features/scheduled-reports/get-dashboard-state-for-report";
-  import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-  $: reportId = $page.params.report;
+  $: alertId = $page.params.alert;
   $: executionTime = $page.url.searchParams.get("execution_time");
 
-  $: report = useReport($runtime.instanceId, reportId);
+  $: alert = useAlert($runtime.instanceId, alertId);
 
   let dashboardStateForReport: ReturnType<typeof getDashboardStateForReport>;
   $: dashboardStateForReport = getDashboardStateForReport(
-    $report.data?.resource?.report?.spec?.queryName,
-    $report.data?.resource?.report?.spec?.queryArgsJson,
+    $alert.data?.resource?.alert?.spec?.queryName,
+    $alert.data?.resource?.alert?.spec?.queryArgsJson,
     executionTime,
   );
 
   $: if ($dashboardStateForReport.data) {
     goto(
-      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${$dashboardStateForReport.data.state}`,
+      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${encodeURIComponent($dashboardStateForReport.data.state)}`,
     );
   }
-
-  // TODO: error handling
 </script>
 
 <CtaLayoutContainer>
@@ -48,11 +46,10 @@
         </CtaMessage>
       </div>
       <CtaButton
-        on:click={() =>
-          goto(`/${organization}/${project}/-/reports/${reportId}`)}
+        on:click={() => goto(`/${organization}/${project}/-/alerts/${alert}`)}
         variant="primary-outline"
       >
-        Go to report page
+        Go to Alerts page
       </CtaButton>
     {/if}
   </CtaContentContainer>
