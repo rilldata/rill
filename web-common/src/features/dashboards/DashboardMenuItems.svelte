@@ -50,7 +50,7 @@
     );
     if (!artifact) return;
     const previousScreenName = getScreenNameFromPage();
-    await goto(`/files/${artifact.path}`);
+    await goto(`/files${artifact.path}`);
     await behaviourEvent.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
@@ -62,7 +62,7 @@
 
   const editMetrics = async () => {
     const previousScreenName = getScreenNameFromPage();
-    await goto(`/files/${filePath}`);
+    await goto(`/files${filePath}`);
     await behaviourEvent.fireNavigationEvent(
       ($dashboardQuery.data?.meta?.name as string) ?? "",
       BehaviourEventMedium.Menu,

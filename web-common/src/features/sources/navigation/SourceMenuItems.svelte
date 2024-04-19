@@ -79,7 +79,7 @@
         "models",
         true,
       );
-      await goto(`/files/${newModelPath}`);
+      await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,

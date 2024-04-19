@@ -24,7 +24,7 @@ export async function waitForFileEntry(
   const [, fileName] = splitFolderAndName(filePath);
   await page.getByLabel(`${fileName} Nav Entry`).waitFor();
   if (navigated) {
-    await page.waitForURL(new RegExp(`/files/${filePath}`));
+    await page.waitForURL(new RegExp(`/files${filePath}`));
   }
 }
 

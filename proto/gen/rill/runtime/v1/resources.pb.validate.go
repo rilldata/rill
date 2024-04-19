@@ -7755,6 +7755,10 @@ func (m *DashboardComponent) validate(all bool) error {
 
 	// no validation rules for Height
 
+	// no validation rules for Markdown
+
+	// no validation rules for FontSize
+
 	if len(errors) > 0 {
 		return DashboardComponentMultiError(errors)
 	}

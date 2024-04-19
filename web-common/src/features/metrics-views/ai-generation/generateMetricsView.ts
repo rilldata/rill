@@ -128,7 +128,7 @@ export function useCreateDashboardFromTableUIAction(
 
       // Preview
       const previousScreenName = getScreenNameFromPage();
-      await goto(`/files/${newFilePath}`);
+      await goto(`/files${newFilePath}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,

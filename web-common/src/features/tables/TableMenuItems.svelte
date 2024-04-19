@@ -37,7 +37,7 @@
         tableName,
         "models",
       );
-      await goto(`/file/${newModelPath}`);
+      await goto(`/file${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
