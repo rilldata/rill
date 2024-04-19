@@ -247,8 +247,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
+	userID := claims.OwnerID()
 
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -288,7 +289,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Check Github app is installed and caller has access on the repo
-	installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, claims.OwnerID())
+	installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -306,11 +307,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
+	proj, err := s.admin.CreateProject(ctx, org, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
 		Description:          req.Description,
 		Public:               req.Public,
+		CreatedByUserID:      &userID,
 		Provisioner:          req.Provisioner,
 		ProdVersion:          req.ProdVersion,
 		ProdOLAPDriver:       req.ProdOlapDriver,
