@@ -5901,6 +5901,8 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for Kind
 
+	// no validation rules for Path
+
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
 	}
