@@ -37,6 +37,7 @@ type WatchEvent struct {
 
 type RepoObjectStat struct {
 	LastUpdated time.Time
+	IsDir       bool
 }
 
 var ErrFileAlreadyExists = errors.New("file already exists")

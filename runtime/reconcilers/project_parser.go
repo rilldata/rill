@@ -174,28 +174,39 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
-		hasDeletedPaths := false
+		hasDuplicates := false
 		for _, e := range events {
-			if e.Dir || parser.IsInRestrictedDir(e.Path) {
+			if e.Dir {
 				continue
 			}
 			if parser.IsIgnored(e.Path) {
+				continue
+			}
+			if parser.IsSkippable(e.Path) {
+				// We do not get events for files in deleted/renamed directories.
+				// So we need to manually find paths we're tracking in the directory and add them to changedPaths.
+				//
+				// Note that e.Dir is always false for deletes, so we don't actually know if the path was a directory.
+				// Calling TrackedPathsInDir is safe even if the given path isn't a directory.
+				//
+				// NOTE: This is nested under IsSkippable as an optimization because IsSkippable is true for directories.
+				// This is pretty hacky and should be refactored (probably more fundamentally in the watcher itself).
 				if e.Type == runtimev1.FileEvent_FILE_EVENT_DELETE {
-					// deleted folders are not marked as `Dir` since os.Stat won't be available
-					// so only check for deleted paths when an ignored path is deleted
-					deletedPaths := parser.TrackedPathsInDir(e.Path)
-					if len(deletedPaths) > 0 {
-						changedPaths = append(changedPaths, deletedPaths...)
-						hasDeletedPaths = true
+					ps := parser.TrackedPathsInDir(e.Path)
+					if len(ps) > 0 {
+						changedPaths = append(changedPaths, ps...)
+						hasDuplicates = true
 					}
+					continue
 				}
+
 				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
 		}
 
-		if hasDeletedPaths {
-			// dedupe paths only when there were some deleted ones.
+		// Small optimization to avoid deduplicating if we know we didn't append to it.
+		if hasDuplicates {
 			changedPaths = arrayutil.Dedupe(changedPaths)
 		}
 
