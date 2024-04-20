@@ -173,7 +173,7 @@ export function useFileNamesInDirectory(
         }
 
         const fileNames = data.files
-          // Filter out directories and files that are not in the given directory
+          // Filter for files in the immediate directory
           .filter((file) => {
             if (!file.path) {
               return false;
@@ -215,32 +215,62 @@ export function useDirectoryNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
+  // Ensure the directory path starts with a slash
   if (!directoryPath.startsWith("/")) {
-    directoryPath = "/" + directoryPath;
+    directoryPath = `/${directoryPath}`;
   }
+
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
-        const files =
-          data.files?.filter(
-            (file) =>
-              file.isDir &&
-              file.path?.startsWith(directoryPath) &&
-              file.path !== directoryPath,
-          ) ?? [];
-        const directoryNames = files
-          ?.map((file) => {
-            return file.path?.replace(directoryPath, "") ?? "";
+        if (!data.files) {
+          return [];
+        }
+
+        const directoryNames = data.files
+          // Filter for directories in the immediate directory
+          .filter((file) => {
+            if (!file.path) {
+              return false;
+            }
+
+            const isDirectory = file.isDir;
+            const startsWithDirectory = file.path?.startsWith(directoryPath);
+            const existsAtSameDirectoryLevel =
+              directoryPath === "/"
+                ? file.path?.indexOf("/", 1) === -1
+                : file.path?.lastIndexOf("/") === directoryPath.length;
+            const isNotSameDirectory = file.path !== directoryPath;
+
+            return (
+              isDirectory &&
+              startsWithDirectory &&
+              existsAtSameDirectoryLevel &&
+              isNotSameDirectory
+            );
           })
-          // filter out dirs in subdirectories
-          .filter((filePath) => !filePath.includes("/"));
-        const sortedDirectoryNames = directoryNames?.sort(
-          (dirNameA, dirNameB) =>
-            dirNameA.localeCompare(dirNameB, undefined, {
+
+          // Extract the directory name from the path
+          .map((file) => {
+            if (!file.path) {
+              return "";
+            }
+
+            const startIdx = directoryPath.length + 1;
+            return directoryPath === "/"
+              ? file.path.substring(1)
+              : file.path.substring(startIdx);
+          })
+
+          // Sort directory names alphabetically, case-insensitive
+          .sort((dirNameA, dirNameB) => {
+            if (!dirNameA || !dirNameB) return 0;
+            return dirNameA.localeCompare(dirNameB, undefined, {
               sensitivity: "base",
-            }),
-        );
-        return sortedDirectoryNames ?? [];
+            });
+          });
+
+        return directoryNames;
       },
     },
   });
