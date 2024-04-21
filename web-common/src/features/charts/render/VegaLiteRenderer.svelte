@@ -5,9 +5,11 @@
     SignalListeners,
     VegaLite,
     View,
-    type EmbedOptions,
     VisualizationSpec,
+    type EmbedOptions,
   } from "svelte-vega";
+  import { VLTooltipFormatter } from "../types";
+  import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -15,12 +17,19 @@
   export let error: string | null = null;
   export let customDashboard = false;
   export let chartView = false;
+  export let tooltipFormatter: VLTooltipFormatter | undefined;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let viewVL: View;
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.9 - 100;
+
+  $: if (viewVL && tooltipFormatter) {
+    const handler = new VegaLiteTooltipHandler(tooltipFormatter).handleTooltip;
+    viewVL.tooltip(handler);
+    viewVL.runAsync();
+  }
 
   $: options = <EmbedOptions>{
     config: getRillTheme(),
