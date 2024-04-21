@@ -1,22 +1,20 @@
 import { expect } from "@playwright/test";
-import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
-import { getEntityLink } from "./commonHelpers";
+import { getFileNavEntry } from "./commonHelpers";
 
-export async function waitForFileEntry(
+export async function waitForFileNavEntry(
   page: Page,
   filePath: string,
   navigated: boolean,
 ) {
-  const [, fileName] = splitFolderAndName(filePath);
-  await page.getByLabel(`${fileName} Nav Entry`).waitFor();
+  await page.getByLabel(`${filePath} Nav Entry`).waitFor();
   if (navigated) {
     await page.waitForURL(new RegExp(`/files${filePath}`));
   }
 }
 
-export async function entityNotPresent(page: Page, name: string) {
+export async function fileNotPresent(page: Page, filePath: string) {
   await asyncWait(100);
-  await expect(getEntityLink(page, name)).toBeHidden();
+  await expect(getFileNavEntry(page, filePath)).toBeHidden();
 }

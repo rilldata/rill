@@ -78,7 +78,7 @@
 </script>
 
 <li
-  aria-label="{fileName} Nav Entry"
+  aria-label="{filePath} Nav Entry"
   class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center
   {isCurrentFile ? 'bg-slate-100' : ''} 
    hover:bg-slate-100"
@@ -111,7 +111,7 @@
         <ContextButton
           builders={[builder]}
           id="more-actions-{filePath}"
-          label="{fileName} actions menu trigger"
+          label="{filePath} actions menu trigger"
           suppressTooltip={contextMenuOpen}
           tooltipText="More actions"
         >
