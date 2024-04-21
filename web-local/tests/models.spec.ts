@@ -1,7 +1,7 @@
 import {
   clickMenuButton,
   deleteEntity,
-  gotoEntity,
+  goToFile,
   openEntityMenu,
   renameEntityUsingMenu,
   updateCodeEditor,
@@ -10,8 +10,8 @@ import {
 } from "./utils/commonHelpers";
 import { createModel, modelHasError } from "./utils/modelHelpers";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
 import { test } from "./utils/test";
+import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
 
 test.describe("models", () => {
   test("Create and edit model", async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe("models", () => {
     // delete the source of model
     await deleteEntity(page, "AdBids.yaml");
     // go to model
-    await gotoEntity(page, "AdBids_model.sql");
+    await goToFile(page, "/models/AdBids_model.sql");
     // make sure error has propagated
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });

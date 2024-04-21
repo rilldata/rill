@@ -74,8 +74,9 @@ export async function wrapRetryAssertion(
   if (lastError) throw lastError;
 }
 
-export async function gotoEntity(page: Page, name: string) {
-  await getEntityLink(page, name).click();
+export async function goToFile(page: Page, filePath: string) {
+  const link = page.locator(`a[id="${filePath}-nav-link"]`);
+  await link.click();
 }
 
 export async function renameEntityUsingMenu(

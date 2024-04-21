@@ -43,7 +43,7 @@
 
   let contextMenuOpen = false;
 
-  $: id = `${filePath}-nav-entry`;
+  $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
   $: isCurrentFile =
     removeLeadingSlash(filePath) ===
@@ -77,30 +77,34 @@
   }
 </script>
 
-<a
+<li
   aria-label="{fileName} Nav Entry"
-  class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center
-  {isProtectedDirectory || isDotFile
-    ? 'text-gray-500 hover:text-gray-500'
-    : 'text-gray-900 hover:text-gray-900'}
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center
   {isCurrentFile ? 'bg-slate-100' : ''} 
-  font-medium hover:bg-slate-100"
-  {id}
-  href={`/files${filePath}`}
-  on:click={fireTelemetry}
-  on:mousedown={handleMouseDown}
-  on:mouseup={(e) =>
-    onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
-  style:padding-left="{padding}px"
+   hover:bg-slate-100"
 >
-  <div class="flex-none">
-    <svelte:component
-      this={resourceKind ? resourceIconMapping[resourceKind] : File}
-      className="text-gray-400"
-      size="14px"
-    />
-  </div>
-  <span class="truncate w-full">{fileName}</span>
+  <a
+    {id}
+    href={`/files${filePath}`}
+    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
+    isDotFile
+      ? 'text-gray-500 hover:text-gray-500'
+      : 'text-gray-900 hover:text-gray-900'}"
+    style:padding-left="{padding}px"
+    on:click={fireTelemetry}
+    on:mousedown={handleMouseDown}
+    on:mouseup={(e) =>
+      onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
+  >
+    <div class="flex-none">
+      <svelte:component
+        this={resourceKind ? resourceIconMapping[resourceKind] : File}
+        className="text-gray-400"
+        size="14px"
+      />
+    </div>
+    <span class="truncate w-full">{fileName}</span>
+  </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
@@ -152,4 +156,4 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   {/if}
-</a>
+</li>
