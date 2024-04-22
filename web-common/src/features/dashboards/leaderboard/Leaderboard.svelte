@@ -30,7 +30,6 @@
   const observer = new IntersectionObserver(
     ([entry]) => {
       visible = entry.isIntersecting;
-      if (visible) observer.disconnect();
     },
     {
       root: parentElement,
