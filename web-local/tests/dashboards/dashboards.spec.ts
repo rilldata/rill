@@ -3,7 +3,6 @@ import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   type RequestMatcher,
   assertLeaderboards,
-  clickOnFilter,
   createDashboardFromModel,
   createDashboardFromSource,
   interactWithComparisonMenu,
@@ -59,7 +58,7 @@ test.describe("dashboard", () => {
         domainFilterMatcher,
       ),
       // click on publisher=Facebook leaderboard value
-      clickOnFilter(page, "Publisher", "Facebook"),
+      page.getByRole("button", { name: "Facebook 19.3K" }).click(),
     ]);
     await wrapRetryAssertion(() =>
       assertLeaderboards(page, [

@@ -1,4 +1,4 @@
-import { expect, Locator } from "@playwright/test";
+import { expect, type Locator } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { test } from "../utils/test";
 
@@ -6,11 +6,11 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
   const topB = await locB.boundingBox().then((box) => box?.y);
 
-  await expect(topA).toBeDefined();
-  await expect(topB).toBeDefined();
+  expect(topA).toBeDefined();
+  expect(topB).toBeDefined();
 
   // Safety: topB is defined
-  await expect(topA).toBeLessThan(topB as number);
+  expect(topA).toBeLessThan(topB as number);
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
@@ -27,15 +27,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("button", { name: "Microsoft 10.4k" }),
     );
 
-    // toggle sort by value
-    await page
-      .locator("svelte-virtual-list-row")
-      .filter({
-        hasText:
-          "Publisher # null 32.9k Facebook 19.3k Google 18.8k Yahoo 18.6k Microsoft 10.4k",
-      })
-      .getByRole("button", { name: "Toggle sort leaderboards by value" })
-      .click();
+    await page.getByLabel("Toggle sort leaderboards by value").first().click();
 
     await assertAAboveB(
       page.getByRole("button", { name: "Microsoft 10.4k" }),
@@ -72,14 +64,8 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     //toggle sort by pct of total
     await page
-      .locator("svelte-virtual-list-row")
-      .filter({
-        hasText:
-          "Domain # % news.google.com 12.9k 13% sports.yahoo.com 12.9k 13% instagram.com 13",
-      })
-      .getByRole("button", {
-        name: "Toggle sort leaderboards by context column",
-      })
+      .getByLabel("publisher leaderboard")
+      .getByLabel("Toggle sort leaderboards by context column")
       .click();
 
     await assertAAboveB(
@@ -113,17 +99,6 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("button", { name: /^Facebook/ }),
     );
 
-    // toggle sort by pct change
-    await page
-      .locator("svelte-virtual-list-row")
-      .filter({
-        hasText:
-          "Publisher # % Facebook 283 -4% Microsoft 237 ~0% null 383 0% Yahoo 103 3% Google",
-      })
-      .getByRole("button", {
-        name: "Toggle sort leaderboards by context column",
-      });
-
     await assertAAboveB(
       page.getByRole("button", { name: "news.yahoo.com 89 16%" }),
       page.getByRole("button", { name: "sports.yahoo.com 67 -27%" }),
@@ -140,10 +115,10 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     // toggle sort by absolute change
     await page
+      .getByLabel("publisher leaderboard")
       .getByRole("button", {
         name: "Toggle sort leaderboards by context column",
       })
-      .nth(1)
       .click();
 
     await assertAAboveB(
