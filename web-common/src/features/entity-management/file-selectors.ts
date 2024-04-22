@@ -168,47 +168,51 @@ export function useFileNamesInDirectory(
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
-        if (!data.files) {
-          return [];
-        }
-
-        const fileNames = data.files
-          // Filter for files in the immediate directory
-          .filter((file) => {
-            if (!file.path) {
-              return false;
-            }
-
-            const isNotDirectory = !file.isDir;
-            const startsWithDirectory = file.path?.startsWith(directoryPath);
-            const doesNotHaveSubdirectory =
-              directoryPath === "/"
-                ? file.path?.indexOf("/", 1) === -1
-                : file.path?.lastIndexOf("/") === directoryPath.length;
-
-            return (
-              isNotDirectory && startsWithDirectory && doesNotHaveSubdirectory
-            );
-          })
-
-          // Remove the directory path from each file path
-          .map((file) => {
-            const startIdx =
-              directoryPath === "/" ? 1 : directoryPath.length + 1;
-            return file.path?.substring(startIdx) ?? "";
-          })
-
-          // Sort filenames alphabetically, case-insensitive
-          .sort((fileNameA, fileNameB) =>
-            fileNameA.localeCompare(fileNameB, undefined, {
-              sensitivity: "base",
-            }),
-          );
-
-        return fileNames;
+        return useFileNamesInDirectorySelector(data, directoryPath);
       },
     },
   });
+}
+
+export function useFileNamesInDirectorySelector(
+  data: V1ListFilesResponse,
+  directoryPath: string,
+) {
+  if (!data.files) {
+    return [];
+  }
+
+  const fileNames = data.files
+    // Filter for files in the immediate directory
+    .filter((file) => {
+      if (!file.path) {
+        return false;
+      }
+
+      const isNotDirectory = !file.isDir;
+      const startsWithDirectory = file.path?.startsWith(directoryPath);
+      const doesNotHaveSubdirectory =
+        directoryPath === "/"
+          ? file.path?.indexOf("/", 1) === -1
+          : file.path?.lastIndexOf("/") === directoryPath.length;
+
+      return isNotDirectory && startsWithDirectory && doesNotHaveSubdirectory;
+    })
+
+    // Remove the directory path from each file path
+    .map((file) => {
+      const startIdx = directoryPath === "/" ? 1 : directoryPath.length + 1;
+      return file.path?.substring(startIdx) ?? "";
+    })
+
+    // Sort filenames alphabetically, case-insensitive
+    .sort((fileNameA, fileNameB) =>
+      fileNameA.localeCompare(fileNameB, undefined, {
+        sensitivity: "base",
+      }),
+    );
+
+  return fileNames;
 }
 
 export function useDirectoryNamesInDirectory(
