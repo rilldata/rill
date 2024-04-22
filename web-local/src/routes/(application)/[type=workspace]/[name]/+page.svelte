@@ -52,7 +52,6 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
-    createRuntimeServiceRefreshAndReconcile,
     type V1ModelV2,
     type V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
@@ -90,7 +89,6 @@
 
   const QUERY_DEBOUNCE_TIME = 400;
 
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const updateFile = createRuntimeServicePutFile();
 
   const queryHighlight = getContext<Writable<QueryHighlightState>>(
@@ -292,9 +290,7 @@
           class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
           transition:fade={{ duration: 200 }}
         >
-          {#if $refreshSourceMutation.isLoading}
-            Refreshing...
-          {:else if refreshedOn}
+          {#if refreshedOn}
             {verb} on {formatRefreshedOn(refreshedOn)}
           {/if}
         </p>
