@@ -4,30 +4,25 @@ import {
 } from "@rilldata/web-common/lib/place-element";
 import { VLTooltipFormatter } from "../types";
 
-const TOOLTIP_ID = "vg-tooltip-element";
+const TOOLTIP_ID = "rill-vg-tooltip";
 
 export class VegaLiteTooltipHandler {
-  location = "bottom";
+  location = "left";
   alignment = "middle";
   distance = 0;
   pad = 8;
-  private valueFormatter: VLTooltipFormatter;
+  public valueFormatter: VLTooltipFormatter;
 
-  constructor(valueFormatter) {
+  constructor(valueFormatter, colorMap = {}) {
     this.valueFormatter = valueFormatter;
-  }
-
-  removeTooltip() {
-    const el = document.getElementById(TOOLTIP_ID);
-    if (el) {
-      el.remove();
-    }
+    this.handleTooltip = this.handleTooltip.bind(this);
   }
 
   handleTooltip(view, event, item, value) {
-    this.removeTooltip();
-
-    // Hide tooltip for null, undefined, or empty string values
+    const existingEl = document.getElementById(TOOLTIP_ID);
+    if (existingEl) {
+      existingEl.remove();
+    }
     if (value == null || value === "") {
       return;
     }
@@ -36,10 +31,7 @@ export class VegaLiteTooltipHandler {
     el.setAttribute("id", TOOLTIP_ID);
 
     const formattedValue = this.valueFormatter(value);
-    console.log(formattedValue); // Display formatted value to console
-    el.innerHTML = formattedValue; // Set inner HTML of the tooltip element
-
-    // Add to DOM to calculate tooltip size
+    el.innerHTML = formattedValue;
     document.body.appendChild(el);
 
     const parentBoundingClientRect = mouseLocationToBoundingRect({

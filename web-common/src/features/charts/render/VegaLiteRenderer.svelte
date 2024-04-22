@@ -17,7 +17,7 @@
   export let error: string | null = null;
   export let customDashboard = false;
   export let chartView = false;
-  export let tooltipFormatter: VLTooltipFormatter | undefined;
+  export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let viewVL: View;
@@ -26,8 +26,8 @@
   $: height = contentRect.height * 0.9 - 100;
 
   $: if (viewVL && tooltipFormatter) {
-    const handler = new VegaLiteTooltipHandler(tooltipFormatter).handleTooltip;
-    viewVL.tooltip(handler);
+    const handler = new VegaLiteTooltipHandler(tooltipFormatter);
+    viewVL.tooltip(handler.handleTooltip);
     viewVL.runAsync();
   }
 
@@ -70,8 +70,34 @@
   {/if}
 </div>
 
-<style>
+<style lang="postcss">
   :global(.vega-embed) {
     width: 100%;
+  }
+
+  :global(#rill-vg-tooltip) {
+    @apply absolute border border-gray-200 p-3 rounded-lg;
+    background: rgba(255, 255, 255, 0.8);
+    & h2 {
+      @apply text-slate-500 text-sm font-bold mb-2;
+    }
+
+    & table {
+      @apply border-spacing-0;
+    }
+
+    & td {
+      @apply truncate py-0.5;
+    }
+
+    & td.key {
+      @apply text-right px-1 font-normal truncate;
+      max-width: 250px;
+    }
+
+    & td.value {
+      @apply text-left truncate font-semibold ui-copy-number;
+      max-width: 250px;
+    }
   }
 </style>

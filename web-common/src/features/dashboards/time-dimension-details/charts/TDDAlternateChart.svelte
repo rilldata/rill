@@ -4,6 +4,7 @@
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { TDDAlternateCharts } from "../types";
+  import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
     getVegaSpecForTDD,
     reduceDimensionData,
@@ -46,8 +47,14 @@
     xMax,
     selectedValues,
   );
+
+  $: tooltipFormatter = tddTooltipFormatter(chartType, selectedValues);
 </script>
 
 {#if sanitizedVegaSpec && data}
-  <VegaLiteRenderer data={{ table: data }} spec={sanitizedVegaSpec} />
+  <VegaLiteRenderer
+    {tooltipFormatter}
+    data={{ table: data }}
+    spec={sanitizedVegaSpec}
+  />
 {/if}
