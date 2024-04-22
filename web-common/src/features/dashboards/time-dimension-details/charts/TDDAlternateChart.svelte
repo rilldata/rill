@@ -48,7 +48,12 @@
     selectedValues,
   );
 
-  $: tooltipFormatter = tddTooltipFormatter(chartType, selectedValues);
+  $: tooltipFormatter = tddTooltipFormatter(
+    chartType,
+    expandedMeasureLabel,
+    comparedDimensionLabel,
+    selectedValues,
+  );
 </script>
 
 {#if sanitizedVegaSpec && data}

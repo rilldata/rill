@@ -1,4 +1,5 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import { TDDAlternateCharts, TDDChart } from "../types";
 
 export function escapeHTML(value: any): string {
@@ -7,12 +8,15 @@ export function escapeHTML(value: any): string {
 
 export function tddTooltipFormatter(
   chartType: TDDAlternateCharts,
+  measureLabel: string,
+  dimensionLabel: string | undefined,
   selectedDimensionValues: (string | null)[],
 ) {
   let colorMap: Record<string, string> = {};
   selectedDimensionValues.forEach((dimValue, i) => {
     colorMap[String(dimValue)] = COMPARIONS_COLORS[i];
   });
+  colorMap[measureLabel] = MainLineColor;
 
   return (value: Record<string, any>) => {
     let content = "";
@@ -47,15 +51,23 @@ export function tddTooltipFormatter(
             </tr>`;
         }
       } else {
-        for (const key of keys) {
-          let val = rest[key];
+        const key =
+          selectedValuesLength && dimensionLabel
+            ? rest[dimensionLabel]
+            : measureLabel;
+        const val = rest[measureLabel];
 
-          content += `
-            <tr>
-              <td class="key">${escapeHTML(key)}</td>
-              <td class="value">${escapeHTML(String(val))}</td>
-            </tr>`;
-        }
+        content += `
+          <tr>
+          <td class="color">
+            <svg width="16" height="16">
+              <circle cx="8" cy="8" r="6" style="fill:${colorMap[String(key)] || "#000"};">
+              </reccit>
+            </svg>
+          </td>
+            <td class="key">${escapeHTML(key)}</td>
+            <td class="value">${escapeHTML(String(val))}</td>
+          </tr>`;
       }
       content += `</table>`;
     }

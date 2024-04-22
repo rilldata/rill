@@ -76,10 +76,10 @@
   }
 
   :global(#rill-vg-tooltip) {
-    @apply absolute border border-gray-200 p-3 rounded-lg;
+    @apply absolute border border-slate-300 p-3 rounded-lg;
     background: rgba(255, 255, 255, 0.8);
     & h2 {
-      @apply text-slate-500 text-sm font-bold mb-2;
+      @apply text-slate-500 text-sm font-semibold mb-2;
     }
 
     & table {
