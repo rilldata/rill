@@ -206,27 +206,42 @@ func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 // If it succeeds, r.repoMu.RUnlock() should be called when done reading from the cloned repo.
 // It is safe to call this function concurrently.
 func (h *Handle) rlockEnsureCloned(ctx context.Context) error {
+	// Take read lock
 	err := h.repoMu.RLock(ctx)
 	if err != nil {
 		return err
 	}
 
+	// If already cloned, we're done
 	if h.cloned {
-		h.repoMu.RUnlock()
 		return nil
 	}
 
+	// Release read lock and take write lock
+	h.repoMu.RUnlock()
 	err = h.repoMu.Lock(ctx)
 	if err != nil {
 		return err
 	}
-	defer h.repoMu.Unlock()
 
+	// Check if another goroutine did the clone while we were waiting for the write lock
 	if h.cloned {
-		return nil
+		// Release write lock and take write lock
+		h.repoMu.Unlock()
+		return h.repoMu.RLock(ctx)
 	}
 
-	return h.cloneOrPull(ctx)
+	// Clone the repo
+	err = h.cloneOrPull(ctx)
+	if err != nil {
+		// Need to release write lock in case of failure
+		h.repoMu.Unlock()
+		return err
+	}
+
+	// Release write lock and take read lock
+	h.repoMu.Unlock()
+	return h.repoMu.RLock(ctx)
 }
 
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
