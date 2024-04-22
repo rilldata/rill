@@ -13,12 +13,12 @@ export class VegaLiteTooltipHandler {
   pad = 8;
   public valueFormatter: VLTooltipFormatter;
 
-  constructor(valueFormatter, colorMap = {}) {
+  constructor(valueFormatter) {
     this.valueFormatter = valueFormatter;
     this.handleTooltip = this.handleTooltip.bind(this);
   }
 
-  handleTooltip(view, event, item, value) {
+  handleTooltip(_view, event, _item, value) {
     const existingEl = document.getElementById(TOOLTIP_ID);
     if (existingEl) {
       existingEl.remove();
