@@ -2,7 +2,7 @@
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import type { SelectionRange } from "@codemirror/state";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -268,14 +268,7 @@
 </svelte:head>
 
 {#if fileNotFound}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>
-        Unable to find file {assetName}
-      </h1>
-    </div>
-  </div>
+  <WorkspaceError message="File not found." />
 {:else}
   <WorkspaceContainer>
     <WorkspaceHeader

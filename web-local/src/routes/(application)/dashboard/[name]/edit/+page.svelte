@@ -1,8 +1,8 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -114,12 +114,7 @@
 </svelte:head>
 
 {#if fileNotFound}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>Page not found</h1>
-    </div>
-  </div>
+  <WorkspaceError message="File not found." />
 {:else}
   <WorkspaceContainer inspector={isModelingSupported}>
     <WorkspaceHeader
