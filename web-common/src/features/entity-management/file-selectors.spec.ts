@@ -1,4 +1,7 @@
-import { useFileNamesInDirectorySelector } from "@rilldata/web-common/features/entity-management/file-selectors";
+import {
+  useDirectoryNamesInDirectorySelector,
+  useFileNamesInDirectorySelector,
+} from "@rilldata/web-common/features/entity-management/file-selectors";
 import { describe, expect, it } from "vitest";
 
 describe("useFileNamesInDirectorySelector", () => {
@@ -57,5 +60,64 @@ describe("useFileNamesInDirectorySelector", () => {
     const directoryPath = "/a";
     const result = useFileNamesInDirectorySelector(data, directoryPath);
     expect(result).toEqual(["alpha.txt", "beta.txt", "zeta.txt"]);
+  });
+});
+
+describe("useDirectoryNamesInDirectorySelector", () => {
+  it("returns an empty array if no files are present", () => {
+    const data = { files: undefined };
+    const directoryPath = "/";
+    const result = useDirectoryNamesInDirectorySelector(data, directoryPath);
+    expect(result).toEqual([]);
+  });
+
+  it("filters out non-directory entries", () => {
+    const data = {
+      files: [
+        { path: "/a/file.txt", isDir: false },
+        { path: "/a/b", isDir: true },
+      ],
+    };
+    const directoryPath = "/a";
+    const result = useDirectoryNamesInDirectorySelector(data, directoryPath);
+    expect(result).toEqual(["b"]);
+  });
+
+  it("excludes directories not directly under the specified path", () => {
+    const data = {
+      files: [
+        { path: "/a/b", isDir: true },
+        { path: "/a/b/c", isDir: true },
+      ],
+    };
+    const directoryPath = "/a";
+    const result = useDirectoryNamesInDirectorySelector(data, directoryPath);
+    expect(result).toEqual(["b"]);
+  });
+
+  it("does not include the same directory or nested deeper levels", () => {
+    const data = {
+      files: [
+        { path: "/a", isDir: true },
+        { path: "/a/b", isDir: true },
+        { path: "/a/b/c", isDir: true },
+      ],
+    };
+    const directoryPath = "/a";
+    const result = useDirectoryNamesInDirectorySelector(data, directoryPath);
+    expect(result).toEqual(["b"]);
+  });
+
+  it("sorts directory names alphabetically and case-insensitively", () => {
+    const data = {
+      files: [
+        { path: "/a/Zeta", isDir: true },
+        { path: "/a/alpha", isDir: true },
+        { path: "/a/Beta", isDir: true },
+      ],
+    };
+    const directoryPath = "/a";
+    const result = useDirectoryNamesInDirectorySelector(data, directoryPath);
+    expect(result).toEqual(["alpha", "Beta", "Zeta"]);
   });
 });
