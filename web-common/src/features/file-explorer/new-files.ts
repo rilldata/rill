@@ -40,9 +40,10 @@ const ResourceKindMap: Record<
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
-    baseContent: `-- @kind: model
-select ...
-`,
+    baseContent: `SELECT 'Hello, World!' AS Greeting
+
+-- The \`@kind: model\` decorator registers your Model if this file is moved out of the \`/models\` directory.
+--@kind: model`,
   },
   [ResourceKind.MetricsView]: {
     name: "dashboard",
