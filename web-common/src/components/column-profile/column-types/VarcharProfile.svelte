@@ -14,8 +14,9 @@
   import ColumnCardinalitySpark from "./sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
-  export let columnName: string;
+  export let connector: string;
   export let objectName: string;
+  export let columnName: string;
   export let example: any;
   export let type: string;
 
@@ -32,6 +33,7 @@
 
   $: nulls = getNullPercentage(
     $runtime?.instanceId,
+    connector,
     objectName,
     columnName,
     enableProfiling,
@@ -39,6 +41,7 @@
 
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
+    connector,
     objectName,
     columnName,
     enableProfiling,
@@ -46,6 +49,7 @@
 
   $: topK = getTopK(
     $runtime?.instanceId,
+    connector,
     objectName,
     columnName,
     enableProfiling,

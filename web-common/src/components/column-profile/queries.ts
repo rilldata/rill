@@ -28,8 +28,9 @@ export type ColumnSummary = V1ProfileColumn & {
 
 /** for each entry in a profile column results, return the null count and the column cardinality */
 export function getSummaries(
-  objectName: string,
   instanceId: string,
+  connector: string,
+  objectName: string,
   profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
 ): Readable<Array<ColumnSummary>> {
   return derived(
@@ -40,22 +41,28 @@ export function getSummaries(
           createQueryServiceColumnNullCount(
             instanceId,
             objectName,
-            { columnName: column.name },
+            {
+              connector,
+              columnName: column.name,
+            },
             {
               query: {
                 keepPreviousData: true,
-                enabled: !profileColumnResponse.isFetching,
+                enabled: !!connector && !profileColumnResponse.isFetching,
               },
             },
           ),
           createQueryServiceColumnCardinality(
             instanceId,
             objectName,
-            { columnName: column.name },
+            {
+              connector,
+              columnName: column.name,
+            },
             {
               query: {
                 keepPreviousData: true,
-                enabled: !profileColumnResponse.isFetching,
+                enabled: !!connector && !profileColumnResponse.isFetching,
               },
             },
           ),
@@ -82,6 +89,7 @@ export function getSummaries(
 
 export function getNullPercentage(
   instanceId: string,
+  connector: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -90,21 +98,24 @@ export function getNullPercentage(
     instanceId,
     objectName,
     {
+      connector,
       columnName,
     },
     {
       query: {
-        enabled,
+        enabled: enabled && !!connector,
       },
     },
   );
   const totalRowsQuery = createQueryServiceTableCardinality(
     instanceId,
     objectName,
-    {},
+    {
+      connector,
+    },
     {
       query: {
-        enabled,
+        enabled: enabled && !!connector,
       },
     },
   );
@@ -123,6 +134,7 @@ export function getNullPercentage(
 
 export function getCountDistinct(
   instanceId: string,
+  connector: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -130,18 +142,22 @@ export function getCountDistinct(
   const cardinalityQuery = createQueryServiceColumnCardinality(
     instanceId,
     objectName,
-    { columnName },
+    { connector, columnName },
     {
-      query: { enabled },
+      query: {
+        enabled: enabled && !!connector,
+      },
     },
   );
 
   const totalRowsQuery = createQueryServiceTableCardinality(
     instanceId,
     objectName,
-    {},
+    { connector },
     {
-      query: { enabled },
+      query: {
+        enabled: enabled && !!connector,
+      },
     },
   );
 
@@ -163,6 +179,7 @@ export function getCountDistinct(
 
 export function getTopK(
   instanceId: string,
+  connector: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -172,6 +189,7 @@ export function getTopK(
     instanceId,
     objectName,
     {
+      connector,
       columnName: columnName,
       agg: "count(*)",
       k: 75,
@@ -179,7 +197,7 @@ export function getTopK(
     },
     {
       query: {
-        enabled,
+        enabled: enabled && !!connector,
       },
     },
   );
@@ -190,6 +208,7 @@ export function getTopK(
 
 export function getTimeSeriesAndSpark(
   instanceId: string,
+  connector: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -200,6 +219,7 @@ export function getTimeSeriesAndSpark(
     objectName,
     // FIXME: convert pixel back to number once the API
     {
+      connector,
       timestampColumnName: columnName,
       measures: [
         {
@@ -216,9 +236,15 @@ export function getTimeSeriesAndSpark(
   const estimatedInterval = createQueryServiceColumnRollupInterval(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("rollup-interval", active) },
     {
-      query: { enabled },
+      connector,
+      columnName,
+      priority: getPriorityForColumn("rollup-interval", active),
+    },
+    {
+      query: {
+        enabled: enabled && !!connector,
+      },
     },
   );
 
@@ -226,11 +252,14 @@ export function getTimeSeriesAndSpark(
     instanceId,
     objectName,
     {
+      connector,
       columnName,
       priority: getPriorityForColumn("smallest-time-grain", active),
     },
     {
-      query: { enabled },
+      query: {
+        enabled: enabled && !!connector,
+      },
     },
   );
 
@@ -266,6 +295,7 @@ export function getTimeSeriesAndSpark(
 
 export function getNumericHistogram(
   instanceId: string,
+  connector: string,
   objectName: string,
   columnName: string,
   histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
@@ -276,6 +306,7 @@ export function getNumericHistogram(
     instanceId,
     objectName,
     {
+      connector,
       columnName,
       histogramMethod,
       priority: getPriorityForColumn("numeric-histogram", active),
@@ -285,7 +316,7 @@ export function getNumericHistogram(
         select(query) {
           return query?.numericSummary?.numericHistogramBins?.bins;
         },
-        enabled,
+        enabled: enabled && !!connector,
       },
     },
   );

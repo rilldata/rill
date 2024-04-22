@@ -382,8 +382,9 @@
     </div>
 
     <svelte:fragment slot="inspector">
-      {#if tableName && resource}
+      {#if connector && tableName && resource}
         <WorkspaceInspector
+          {connector}
           {tableName}
           hasErrors={$hasErrors}
           {hasUnsavedChanges}

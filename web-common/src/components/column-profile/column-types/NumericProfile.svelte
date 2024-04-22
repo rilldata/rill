@@ -27,6 +27,7 @@
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
 
+  export let connector: string;
   export let columnName: string;
   export let objectName: string;
   export let type: string;
@@ -43,6 +44,7 @@
 
   $: nulls = getNullPercentage(
     $runtime?.instanceId,
+    connector,
     objectName,
     columnName,
     enableProfiling,
@@ -50,6 +52,7 @@
 
   $: diagnosticHistogram = getNumericHistogram(
     $runtime?.instanceId,
+    connector,
     objectName,
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
@@ -60,6 +63,7 @@
   $: if (isFloat(type)) {
     fdHistogram = getNumericHistogram(
       $runtime?.instanceId,
+      connector,
       objectName,
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
@@ -96,6 +100,7 @@
   );
   $: topK = getTopK(
     $runtime?.instanceId,
+    connector,
     objectName,
     columnName,
     enableProfiling,
@@ -106,6 +111,7 @@
       $runtime?.instanceId,
       objectName,
       {
+        connector,
         columnName: columnName,
         priority: getPriorityForColumn("descriptive-statistics", active),
       },

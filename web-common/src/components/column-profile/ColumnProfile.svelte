@@ -10,6 +10,7 @@
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
 
+  export let connector: string;
   export let containerWidth = 0;
   export let objectName: string;
   export let indentLevel = 0;
@@ -29,7 +30,9 @@
   $: profileColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
     objectName,
-    {},
+    {
+      connector,
+    },
     { query: { keepPreviousData: true } },
   );
 
@@ -38,13 +41,15 @@
     $runtime?.instanceId,
     objectName,
     {
+      connector,
       limit: 1,
     },
   );
 
   $: nestedColumnProfileQuery = getSummaries(
-    objectName,
     $runtime?.instanceId,
+    connector,
+    objectName,
     $profileColumns,
   );
 
@@ -101,6 +106,7 @@
         containerWidth < COLUMN_PROFILE_CONFIG.compactBreakpoint}
       <svelte:component
         this={getColumnType(column.type)}
+        {connector}
         type={column.type}
         {objectName}
         columnName={column.name}
