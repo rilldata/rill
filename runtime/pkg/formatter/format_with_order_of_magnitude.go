@@ -7,11 +7,11 @@ import (
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"golang.org/x/text/number"
+	xnumber "golang.org/x/text/number"
 )
 
 // orderOfMagnitudeEng rounds the order of magnitude to the nearest number divisible by 3.
-func orderOfMagnitudeEng[T Number](x T) int {
+func orderOfMagnitudeEng[T number](x T) int {
 	return int(math.Floor(float64(orderOfMagnitude(float64(x)))/3) * 3)
 }
 
@@ -39,7 +39,7 @@ func orderOfMagnitude(x float64) int {
 }
 
 // formatNumWithOrderOfMag formats a number according to the given order of magnitude and formatting rules.
-func formatNumWithOrderOfMag[T Number](x T,
+func formatNumWithOrderOfMag[T number](x T,
 	newOrder int,
 	fractionDigits int,
 	// Set to true to pad with insignificant zeros.
@@ -54,13 +54,13 @@ func formatNumWithOrderOfMag[T Number](x T,
 ) numberParts {
 	if isFloat(x) {
 		if math.IsInf(float64(x), 1) {
-			return numberParts{Int: "∞"}
+			return numberParts{integer: "∞"}
 		}
 		if math.IsInf(float64(x), -1) {
-			return numberParts{Neg: "-", Int: "∞"}
+			return numberParts{neg: "-", integer: "∞"}
 		}
 		if math.IsNaN(float64(x)) {
-			return numberParts{Int: "NaN"}
+			return numberParts{integer: "NaN"}
 		}
 	}
 
@@ -70,7 +70,7 @@ func formatNumWithOrderOfMag[T Number](x T,
 		if padInsignificantZeros {
 			frac = strings.Repeat("0", fractionDigits)
 		}
-		return numberParts{Int: "0", Dot: ".", Frac: frac, Suffix: suffix}
+		return numberParts{integer: "0", dot: ".", frac: frac, suffix: suffix}
 	}
 
 	if !padInsignificantZeros {
@@ -88,11 +88,11 @@ func formatNumWithOrderOfMag[T Number](x T,
 
 	// Format number with potential trailing dot
 	p := message.NewPrinter(language.English)
-	formatter := number.Decimal(
+	nf := xnumber.Decimal(
 		adjustedNumber,
-		number.Scale(fractionDigits),
+		xnumber.Scale(fractionDigits),
 	)
-	formatted := p.Sprint(formatter)
+	formatted := p.Sprint(nf)
 	intPart, fracPart := splitFormattedNumber(formatted)
 
 	if stripCommas {
@@ -112,7 +112,7 @@ func formatNumWithOrderOfMag[T Number](x T,
 		dot = "."
 	}
 
-	return numberParts{Neg: neg, Int: intPart, Dot: dot, Frac: fracPart, Suffix: suffix}
+	return numberParts{neg: neg, integer: intPart, dot: dot, frac: fracPart, suffix: suffix}
 }
 
 func splitFormattedNumber(formatted string) (intPart, fracPart string) {

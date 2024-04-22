@@ -92,12 +92,12 @@ func TestPerRangeFormatterDefaultPercent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.input), func(t *testing.T) {
-			formatter, err := NewPerRangeFormatter(defaultPercentOptions())
+			formatter, err := newPerRangeFormatter(defaultPercentOptions())
 			if err != nil {
 				t.Errorf("failed: %v", err)
 			}
 			if got, _ := formatter.stringFormat(tt.input); got != tt.expected {
-				t.Errorf("PerRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
+				t.Errorf("perRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
 			}
 		})
 	}

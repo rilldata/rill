@@ -6,78 +6,81 @@ import (
 
 	// "d3-format" equivalent needed
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"go.uber.org/zap"
 )
 
-type MeasureValueFormatter interface {
-	Format(value any) string
+// MeasureValueFormatter formats measure values
+// The code is based on the logic implemented on the frontend
+// Type and file names are kept mostly the same for consistency and ease of updating
+type MeasureValueFormatter struct {
+	formatter
+	logger *zap.Logger
 }
 
-type HumanReadableFormatter struct {
-	formatter formatter
-}
-
-func (f *HumanReadableFormatter) Format(value any) string {
-	if res, err := f.formatter.stringFormat(value); err == nil {
-		return res
+func (f *MeasureValueFormatter) Format(value any) string {
+	str, err := f.stringFormat(value)
+	if err == nil {
+		return str
 	}
-	return fallBackFormatter.Format(value)
-}
-
-type D3Formatter struct {
-	format string
-}
-
-func (f *D3Formatter) Format(value any) string {
-	// TODO: Simulate d3 formatter application
-	return fmt.Sprintf(f.format, value)
-}
-
-type FallBackFormatter struct{}
-
-func (f *FallBackFormatter) Format(value any) string {
+	f.logger.Warn("failed to format value, returning non-formatted value", zap.Any("value", value), zap.Error(err))
 	return fmt.Sprintf("%v", value)
 }
 
-var fallBackFormatter MeasureValueFormatter = &FallBackFormatter{}
+type d3Formatter struct {
+	format string
+}
 
-func NewMeasureValueFormatter(measureSpec *runtimev1.MetricsViewSpec_MeasureV2, useUnabridged bool) (MeasureValueFormatter, error) {
+func (f *d3Formatter) stringFormat(value any) (string, error) {
+	// TODO: Simulate d3 formatter application
+	return fmt.Sprintf(f.format, value), nil
+}
+
+func NewMeasureValueFormatter(measureSpec *runtimev1.MetricsViewSpec_MeasureV2, useUnabridged bool, logger *zap.Logger) (*MeasureValueFormatter, error) {
 	if measureSpec == nil {
 		return nil, fmt.Errorf("measureSpec is nil")
 	}
 
 	if measureSpec.FormatD3 != "" {
-		return &D3Formatter{format: measureSpec.FormatD3}, nil
+		return &MeasureValueFormatter{formatter: &d3Formatter{format: measureSpec.FormatD3}, logger: logger}, nil
 	}
 
-	formatter, err := presetFormatter(measureSpec.FormatPreset, useUnabridged)
+	f, err := presetFormatter(measureSpec.FormatPreset, useUnabridged)
 	if err != nil {
 		return nil, err
 	}
-	return &HumanReadableFormatter{formatter}, nil
+	return &MeasureValueFormatter{f, logger}, nil
+}
+
+func NewMeasureValuePresetFormatter(preset string, useUnabridged bool, logger *zap.Logger) (*MeasureValueFormatter, error) {
+	f, err := presetFormatter(preset, useUnabridged)
+	if err != nil {
+		return nil, err
+	}
+	return &MeasureValueFormatter{f, logger}, nil
 }
 
 func presetFormatter(preset string, useUnabridged bool) (formatter, error) {
 	if useUnabridged {
 		if preset == "humanize" {
-			return &IntervalExpFormatter{}, nil
+			return &intervalExpFormatter{}, nil
 		}
-		return NewNonFormatter(defaultNoneOptions()), nil
+		return newNonFormatter(), nil
 	}
 
 	switch strings.ToLower(strings.TrimSpace(preset)) {
 	case "none":
-		return NewNonFormatter(defaultNoneOptions()), nil
+		return newNonFormatter(), nil
 	case "humanize", "":
-		return NewPerRangeFormatter(defaultGenericNumOptions())
+		return newPerRangeFormatter(defaultGenericNumOptions())
 	case "currency_usd":
-		return NewPerRangeFormatter(defaultCurrencyOptions(DOLLAR))
+		return newPerRangeFormatter(defaultCurrencyOptions(numDollar))
 	case "currency_eur":
-		return NewPerRangeFormatter(defaultCurrencyOptions(EURO))
+		return newPerRangeFormatter(defaultCurrencyOptions(numEuro))
 	case "percentage":
-		return NewPerRangeFormatter(defaultPercentOptions())
+		return newPerRangeFormatter(defaultPercentOptions())
 	case "interval_ms":
-		return &IntervalFormatter{}, nil
+		return &intervalFormatter{}, nil
 	default:
-		return NewPerRangeFormatter(defaultGenericNumOptions())
+		return newPerRangeFormatter(defaultGenericNumOptions())
 	}
 }

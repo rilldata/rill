@@ -6,32 +6,28 @@ import (
 )
 
 func TestPerRangeFormatterInvalidRange(t *testing.T) {
-	tests := []FormatterRangeSpecsStrategy{
+	tests := []formatterRangeSpecsStrategy{
 		{
-			formatterOptionsCommon: formatterOptionsCommon{
-				NumberKind: ANY,
-			},
-			RangeSpecs: []rangeFormatSpec{
+			rangeSpecs: []rangeFormatSpec{
 				*NewRangeFormatSpec1(3, 3, 0),
 				*NewRangeFormatSpec1(-3, 3, 3),
 			},
-			DefaultMaxDigitsRight: 2,
+			numKind:               numAny,
+			defaultMaxDigitsRight: 2,
 		},
 		{
-			formatterOptionsCommon: formatterOptionsCommon{
-				NumberKind: ANY,
-			},
-			RangeSpecs: []rangeFormatSpec{
+			rangeSpecs: []rangeFormatSpec{
 				*NewRangeFormatSpec1(3, 2, 0),
 				*NewRangeFormatSpec1(-3, 3, 3),
 			},
-			DefaultMaxDigitsRight: 2,
+			numKind:               numAny,
+			defaultMaxDigitsRight: 2,
 		},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("invalid range #%v", i), func(t *testing.T) {
-			if _, err := NewPerRangeFormatter(tt); err == nil {
+			if _, err := newPerRangeFormatter(tt); err == nil {
 				t.Errorf("failed: invalid range #%v", i)
 			}
 		})
@@ -39,34 +35,30 @@ func TestPerRangeFormatterInvalidRange(t *testing.T) {
 }
 
 func TestPerRangeFormatterOverlappingRanges(t *testing.T) {
-	tests := []FormatterRangeSpecsStrategy{
+	tests := []formatterRangeSpecsStrategy{
 		{
-			formatterOptionsCommon: formatterOptionsCommon{
-				NumberKind: ANY,
-			},
-			RangeSpecs: []rangeFormatSpec{
+			rangeSpecs: []rangeFormatSpec{
 				*NewRangeFormatSpec1(2, 6, 0),
 				*NewRangeFormatSpec1(-3, 3, 3),
 			},
-			DefaultMaxDigitsRight: 2,
+			numKind:               numAny,
+			defaultMaxDigitsRight: 2,
 		},
 		{
-			formatterOptionsCommon: formatterOptionsCommon{
-				NumberKind: ANY,
-			},
-			RangeSpecs: []rangeFormatSpec{
+			rangeSpecs: []rangeFormatSpec{
 				*NewRangeFormatSpec1(2, 6, 0),
 				*NewRangeFormatSpec1(-3, 3, 3),
 				*NewRangeFormatSpec1(-6, -3, 0),
 				*NewRangeFormatSpec1(6, 10, 0),
 			},
-			DefaultMaxDigitsRight: 2,
+			numKind:               numAny,
+			defaultMaxDigitsRight: 2,
 		},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("invalid range #%v", i), func(t *testing.T) {
-			if _, err := NewPerRangeFormatter(tt); err == nil {
+			if _, err := newPerRangeFormatter(tt); err == nil {
 				t.Errorf("failed: overlapping ranges #%v", i)
 			}
 		})
@@ -74,22 +66,20 @@ func TestPerRangeFormatterOverlappingRanges(t *testing.T) {
 }
 
 func TestPerRangeFormatterGapInRangeCoverage(t *testing.T) {
-	tests := []FormatterRangeSpecsStrategy{
+	tests := []formatterRangeSpecsStrategy{
 		{
-			formatterOptionsCommon: formatterOptionsCommon{
-				NumberKind: ANY,
-			},
-			RangeSpecs: []rangeFormatSpec{
+			rangeSpecs: []rangeFormatSpec{
 				*NewRangeFormatSpec1(6, 9, 0),
 				*NewRangeFormatSpec1(-3, 3, 3),
 			},
-			DefaultMaxDigitsRight: 2,
+			numKind:               numAny,
+			defaultMaxDigitsRight: 2,
 		},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("invalid range #%v", i), func(t *testing.T) {
-			if _, err := NewPerRangeFormatter(tt); err == nil {
+			if _, err := newPerRangeFormatter(tt); err == nil {
 				t.Errorf("failed: gap in range coverage #%v", i)
 			}
 		})
@@ -97,15 +87,13 @@ func TestPerRangeFormatterGapInRangeCoverage(t *testing.T) {
 }
 
 func TestPerRangeFormatter1(t *testing.T) {
-	ops := FormatterRangeSpecsStrategy{
-		formatterOptionsCommon: formatterOptionsCommon{
-			NumberKind: ANY,
-		},
-		RangeSpecs: []rangeFormatSpec{
+	ops := formatterRangeSpecsStrategy{
+		rangeSpecs: []rangeFormatSpec{
 			*newRangeFormatSpec(3, 6, 6, 0, 0, true),
 			*newRangeFormatSpec(-3, 3, 3, 3, 0, true),
 		},
-		DefaultMaxDigitsRight: 2,
+		numKind:               numAny,
+		defaultMaxDigitsRight: 2,
 	}
 	tests := []struct {
 		input    any
@@ -178,27 +166,25 @@ func TestPerRangeFormatter1(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.input), func(t *testing.T) {
-			formatter, err := NewPerRangeFormatter(ops)
+			formatter, err := newPerRangeFormatter(ops)
 			if err != nil {
 				t.Errorf("failed: %v", err)
 			}
 			if got, _ := formatter.stringFormat(tt.input); got != tt.expected {
-				t.Errorf("PerRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
+				t.Errorf("perRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
 			}
 		})
 	}
 }
 
 func TestPerRangeFormatter2(t *testing.T) {
-	ops := FormatterRangeSpecsStrategy{
-		formatterOptionsCommon: formatterOptionsCommon{
-			NumberKind: ANY,
-		},
-		RangeSpecs: []rangeFormatSpec{
+	ops := formatterRangeSpecsStrategy{
+		rangeSpecs: []rangeFormatSpec{
 			*newRangeFormatSpec(3, 6, 6, 0, 0, false),
 			*newRangeFormatSpec(-3, 3, 3, 3, 0, false),
 		},
-		DefaultMaxDigitsRight: 2,
+		numKind:               numAny,
+		defaultMaxDigitsRight: 2,
 	}
 	tests := []struct {
 		input    any
@@ -237,27 +223,25 @@ func TestPerRangeFormatter2(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.input), func(t *testing.T) {
-			formatter, err := NewPerRangeFormatter(ops)
+			formatter, err := newPerRangeFormatter(ops)
 			if err != nil {
 				t.Errorf("failed: %v", err)
 			}
 			if got, _ := formatter.stringFormat(tt.input); got != tt.expected {
-				t.Errorf("PerRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
+				t.Errorf("perRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
 			}
 		})
 	}
 }
 
 func TestPerRangeFormatter3(t *testing.T) {
-	ops := FormatterRangeSpecsStrategy{
-		formatterOptionsCommon: formatterOptionsCommon{
-			NumberKind: ANY,
-		},
-		RangeSpecs: []rangeFormatSpec{
+	ops := formatterRangeSpecsStrategy{
+		rangeSpecs: []rangeFormatSpec{
 			*NewRangeFormatSpec3(3, 6, 6, 0, 0, true, false),
 			*newRangeFormatSpec(-3, 3, 3, 3, 0, true),
 		},
-		DefaultMaxDigitsRight: 2,
+		numKind:               numAny,
+		defaultMaxDigitsRight: 2,
 	}
 	tests := []struct {
 		input    any
@@ -276,21 +260,21 @@ func TestPerRangeFormatter3(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.input), func(t *testing.T) {
-			formatter, err := NewPerRangeFormatter(ops)
+			formatter, err := newPerRangeFormatter(ops)
 			if err != nil {
 				t.Errorf("failed: %v", err)
 			}
 			if got, _ := formatter.stringFormat(tt.input); got != tt.expected {
-				t.Errorf("PerRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
+				t.Errorf("perRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
 			}
 		})
 	}
 }
 
 func NewRangeFormatSpec1(minMag, supMag, maxDigitsRight int) *rangeFormatSpec {
-	return &rangeFormatSpec{MinMag: minMag, SupMag: supMag, MaxDigitsLeft: 3, MaxDigitsRight: maxDigitsRight, BaseMagnitude: orderOfMagnitudeEng(float64(minMag)), PadWithInsignificantZeros: true, UseTrailingDot: true}
+	return &rangeFormatSpec{minMag: minMag, supMag: supMag, maxDigitsLeft: 3, maxDigitsRight: maxDigitsRight, baseMagnitude: orderOfMagnitudeEng(float64(minMag)), padWithInsignificantZeros: true, useTrailingDot: true}
 }
 
 func NewRangeFormatSpec3(minMag, supMag, maxDigitsLeft, maxDigitsRight, baseMagnitude int, padWithInsignificantZeros, useTrailingDot bool) *rangeFormatSpec {
-	return &rangeFormatSpec{MinMag: minMag, SupMag: supMag, MaxDigitsLeft: maxDigitsLeft, MaxDigitsRight: maxDigitsRight, BaseMagnitude: baseMagnitude, PadWithInsignificantZeros: padWithInsignificantZeros, UseTrailingDot: useTrailingDot}
+	return &rangeFormatSpec{minMag: minMag, supMag: supMag, maxDigitsLeft: maxDigitsLeft, maxDigitsRight: maxDigitsRight, baseMagnitude: baseMagnitude, padWithInsignificantZeros: padWithInsignificantZeros, useTrailingDot: useTrailingDot}
 }

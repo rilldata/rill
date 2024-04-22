@@ -9,9 +9,13 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+type number interface {
+	constraints.Integer | constraints.Float
+}
+
 // returns the smallest order of magnitude to which a number has precision --
 // basically, the smallest OoM that has a non-zero digit.
-func smallestPrecisionMagnitude[T Number](x T) int {
+func smallestPrecisionMagnitude[T number](x T) int {
 	if isUnsigned(x) {
 		return smallestPrecisionMagnitudeInt(uint64(x))
 	}
@@ -67,11 +71,7 @@ func smallestPrecisionMagnitudeLargeNumber(n float64) int {
 	return i
 }
 
-type Number interface {
-	constraints.Integer | constraints.Float
-}
-
-func asNumber[T Number](x any) (T, bool) {
+func asNumber[T number](x any) (T, bool) {
 	switch x := x.(type) {
 	case int:
 		return T(x), true

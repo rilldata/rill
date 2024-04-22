@@ -46,115 +46,115 @@ func TestFormatNumWithOrderOfMag(t *testing.T) {
 	}{
 		{
 			[]interface{}{math.Inf(1), 3, 4, true, false, false},
-			numberParts{Int: "∞", Dot: "", Frac: "", Suffix: ""},
+			numberParts{integer: "∞", dot: "", frac: "", suffix: ""},
 		},
 		{
 			[]interface{}{math.Inf(-1), 3, 4, true, false, false},
-			numberParts{Neg: "-", Int: "∞", Dot: "", Frac: "", Suffix: ""},
+			numberParts{neg: "-", integer: "∞", dot: "", frac: "", suffix: ""},
 		},
 		{
 			[]interface{}{math.NaN(), 3, 4, true, false, false},
-			numberParts{Int: "NaN", Dot: "", Frac: "", Suffix: ""},
+			numberParts{integer: "NaN", dot: "", frac: "", suffix: ""},
 		},
 		{
 			[]interface{}{0.001, 0, 5, false, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "001", Suffix: "E0"},
+			numberParts{integer: "0", dot: ".", frac: "001", suffix: "E0"},
 		},
 		{
 			[]interface{}{0.001, 0, 5, true, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "00100", Suffix: "E0"},
+			numberParts{integer: "0", dot: ".", frac: "00100", suffix: "E0"},
 		},
 		{
 			[]interface{}{0.001, -3, 5, false, false, false},
-			numberParts{Int: "1", Dot: "", Frac: "", Suffix: "E-3"},
+			numberParts{integer: "1", dot: "", frac: "", suffix: "E-3"},
 		},
 		{
 			[]interface{}{0.001, -3, 5, true, false, false},
-			numberParts{Int: "1", Dot: ".", Frac: "00000", Suffix: "E-3"},
+			numberParts{integer: "1", dot: ".", frac: "00000", suffix: "E-3"},
 		},
 		// yes trailing dot
 		{
 			[]interface{}{710.272337956, 0, 0, true, true, false},
-			numberParts{Int: "710", Dot: ".", Frac: "", Suffix: "E0"},
+			numberParts{integer: "710", dot: ".", frac: "", suffix: "E0"},
 		},
 		{
 			[]interface{}{710.272337956, 0, 0, false, true, false},
-			numberParts{Int: "710", Dot: ".", Frac: "", Suffix: "E0"},
+			numberParts{integer: "710", dot: ".", frac: "", suffix: "E0"},
 		},
 
 		// no trailing dot
 		{
 			[]interface{}{710.272337956, 0, 0, true, false, false},
-			numberParts{Int: "710", Dot: "", Frac: "", Suffix: "E0"},
+			numberParts{integer: "710", dot: "", frac: "", suffix: "E0"},
 		},
 		{
 			[]interface{}{710.272337956, 0, 0, false, false, false},
-			numberParts{Int: "710", Dot: "", Frac: "", Suffix: "E0"},
+			numberParts{integer: "710", dot: "", frac: "", suffix: "E0"},
 		},
 
 		{
 			[]interface{}{710.7237956, 0, 2, true, false, false},
-			numberParts{Int: "710", Dot: ".", Frac: "72", Suffix: "E0"},
+			numberParts{integer: "710", dot: ".", frac: "72", suffix: "E0"},
 		},
 		{
 			[]interface{}{710.7237956, 0, 2, false, false, false},
-			numberParts{Int: "710", Dot: ".", Frac: "72", Suffix: "E0"},
+			numberParts{integer: "710", dot: ".", frac: "72", suffix: "E0"},
 		},
 
 		// not stripping commas
 		{
 			[]interface{}{523523710.7237956, 0, 5, true, false, false},
-			numberParts{Int: "523,523,710", Dot: ".", Frac: "72380", Suffix: "E0"},
+			numberParts{integer: "523,523,710", dot: ".", frac: "72380", suffix: "E0"},
 		},
 		{
 			[]interface{}{523523710.7237956, 0, 5, false, false, false},
-			numberParts{Int: "523,523,710", Dot: ".", Frac: "72380", Suffix: "E0"},
+			numberParts{integer: "523,523,710", dot: ".", frac: "72380", suffix: "E0"},
 		},
 		// yes stripping commas
 		{
 			[]interface{}{523523710.7237956, 0, 5, true, false, true},
-			numberParts{Int: "523523710", Dot: ".", Frac: "72380", Suffix: "E0"},
+			numberParts{integer: "523523710", dot: ".", frac: "72380", suffix: "E0"},
 		},
 		{
 			[]interface{}{523523710.7237956, 0, 5, false, false, true},
-			numberParts{Int: "523523710", Dot: ".", Frac: "72380", Suffix: "E0"},
+			numberParts{integer: "523523710", dot: ".", frac: "72380", suffix: "E0"},
 		},
 
 		{
 			[]interface{}{0.00087000001, -3, 5, false, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "87000", Suffix: "E-3"},
+			numberParts{integer: "0", dot: ".", frac: "87000", suffix: "E-3"},
 		},
 		{
 			[]interface{}{0.00087000001, -3, 5, true, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "87000", Suffix: "E-3"},
+			numberParts{integer: "0", dot: ".", frac: "87000", suffix: "E-3"},
 		},
 
 		{
 			[]interface{}{0.00087, -3, 5, false, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "87", Suffix: "E-3"},
+			numberParts{integer: "0", dot: ".", frac: "87", suffix: "E-3"},
 		},
 		{
 			[]interface{}{0.00087, -3, 5, true, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "87000", Suffix: "E-3"},
+			numberParts{integer: "0", dot: ".", frac: "87000", suffix: "E-3"},
 		},
 
 		// same as above but negative
 		{
 			[]interface{}{-0.00087000001, -3, 5, false, false, false},
-			numberParts{Neg: "-", Int: "0", Dot: ".", Frac: "87000", Suffix: "E-3"},
+			numberParts{neg: "-", integer: "0", dot: ".", frac: "87000", suffix: "E-3"},
 		},
 		{
 			[]interface{}{-0.00087000001, -3, 5, true, false, false},
-			numberParts{Neg: "-", Int: "0", Dot: ".", Frac: "87000", Suffix: "E-3"},
+			numberParts{neg: "-", integer: "0", dot: ".", frac: "87000", suffix: "E-3"},
 		},
 
 		{
 			[]interface{}{-0.00087, -3, 5, false, false, false},
-			numberParts{Neg: "-", Int: "0", Dot: ".", Frac: "87", Suffix: "E-3"},
+			numberParts{neg: "-", integer: "0", dot: ".", frac: "87", suffix: "E-3"},
 		},
 		{
 			[]interface{}{-0.00087, -3, 5, true, false, false},
-			numberParts{Neg: "-", Int: "0", Dot: ".", Frac: "87000", Suffix: "E-3"},
+			numberParts{neg: "-", integer: "0", dot: ".", frac: "87000", suffix: "E-3"},
 		},
 	}
 
@@ -180,44 +180,44 @@ func TestFormatNumWithOrderOfMag(t *testing.T) {
 	}{
 		{
 			[]interface{}{0, 5, 4, false, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "", Suffix: "E5"},
+			numberParts{integer: "0", dot: ".", frac: "", suffix: "E5"},
 		},
 		{
 			[]interface{}{0, 5, 4, true, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "0000", Suffix: "E5"},
+			numberParts{integer: "0", dot: ".", frac: "0000", suffix: "E5"},
 		},
 		{
 			[]interface{}{0, -5, 2, true, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "00", Suffix: "E-5"},
+			numberParts{integer: "0", dot: ".", frac: "00", suffix: "E-5"},
 		},
 
 		{
 			[]interface{}{1, 3, 5, false, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "001", Suffix: "E3"},
+			numberParts{integer: "0", dot: ".", frac: "001", suffix: "E3"},
 		},
 		{
 			[]interface{}{1, 3, 5, true, false, false},
-			numberParts{Int: "0", Dot: ".", Frac: "00100", Suffix: "E3"},
+			numberParts{integer: "0", dot: ".", frac: "00100", suffix: "E3"},
 		},
 
 		//  stripCommas = true
 		{
 			[]interface{}{1, -3, 5, false, false, true},
-			numberParts{Int: "1000", Dot: "", Frac: "", Suffix: "E-3"},
+			numberParts{integer: "1000", dot: "", frac: "", suffix: "E-3"},
 		},
 		{
 			[]interface{}{1, -3, 5, true, false, true},
-			numberParts{Int: "1000", Dot: ".", Frac: "00000", Suffix: "E-3"},
+			numberParts{integer: "1000", dot: ".", frac: "00000", suffix: "E-3"},
 		},
 
 		// stripCommas = false (by default)
 		{
 			[]interface{}{1, -3, 5, false, false, false},
-			numberParts{Int: "1,000", Dot: "", Frac: "", Suffix: "E-3"},
+			numberParts{integer: "1,000", dot: "", frac: "", suffix: "E-3"},
 		},
 		{
 			[]interface{}{1, -3, 5, true, false, false},
-			numberParts{Int: "1,000", Dot: ".", Frac: "00000", Suffix: "E-3"},
+			numberParts{integer: "1,000", dot: ".", frac: "00000", suffix: "E-3"},
 		},
 	}
 

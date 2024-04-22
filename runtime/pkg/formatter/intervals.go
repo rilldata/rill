@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"golang.org/x/text/number"
+	xnumber "golang.org/x/text/number"
 )
 
 // Constants for time calculations
@@ -31,17 +31,13 @@ const (
 	tuYear  timeunit = "y"
 )
 
-type IntervalFormatter struct{}
+type intervalFormatter struct{}
 
-func (f *IntervalFormatter) stringFormat(x any) (string, error) {
+func (f *intervalFormatter) stringFormat(x any) (string, error) {
 	if v, ok := asNumber[float64](x); ok {
 		return formatMsInterval(v), nil
 	}
 	return "", fmt.Errorf("not a number: %v", x)
-}
-
-func (f *IntervalFormatter) partsFormat(any) (numberParts, error) {
-	return numberParts{}, fmt.Errorf("not implemented")
 }
 
 /**
@@ -65,25 +61,25 @@ func formatMsInterval(ms float64) string {
 	// Helper function to format number based on unit and check digits
 	format := func(value float64, tu timeunit) string {
 		p := message.NewPrinter(language.English)
-		var formatter number.Formatter
+		var formatter xnumber.Formatter
 		// https://github.com/golang/go/issues/31254
 		if value < 1 {
-			formatter = number.Decimal(
+			formatter = xnumber.Decimal(
 				value,
-				number.MaxFractionDigits(2),
-				number.MinFractionDigits(1),
+				xnumber.MaxFractionDigits(2),
+				xnumber.MinFractionDigits(1),
 			)
 		} else if value < 10 {
-			formatter = number.Decimal(
+			formatter = xnumber.Decimal(
 				value,
-				number.MaxFractionDigits(1),
-				number.MinFractionDigits(0),
-				number.Precision(2),
+				xnumber.MaxFractionDigits(1),
+				xnumber.MinFractionDigits(0),
+				xnumber.Precision(2),
 			)
 		} else {
-			formatter = number.Decimal(
+			formatter = xnumber.Decimal(
 				value,
-				number.Scale(0),
+				xnumber.Scale(0),
 			)
 		}
 		valueStr := p.Sprint(formatter)
@@ -117,17 +113,13 @@ func formatMsInterval(ms float64) string {
 	}
 }
 
-type IntervalExpFormatter struct{}
+type intervalExpFormatter struct{}
 
-func (f *IntervalExpFormatter) stringFormat(x any) (string, error) {
+func (f *intervalExpFormatter) stringFormat(x any) (string, error) {
 	if v, ok := asNumber[float64](x); ok {
 		return formatMsToDuckDbIntervalString(v, "short"), nil
 	}
 	return "", fmt.Errorf("not a number: %v", x)
-}
-
-func (f *IntervalExpFormatter) partsFormat(any) (numberParts, error) {
-	return numberParts{}, fmt.Errorf("not implemented")
 }
 
 /**
