@@ -326,7 +326,6 @@ describe("dashboard-stores", () => {
       createAdBidsMirrorInStore(get(mock).data);
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(AD_BIDS_MIRROR_NAME, {
-        name: "AdBids",
         measures: [
           {
             name: AD_BIDS_IMPRESSIONS_MEASURE,

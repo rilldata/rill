@@ -1,9 +1,4 @@
-import type {
-  V1ConnectorDriver,
-  V1ReconcileError,
-} from "@rilldata/web-common/runtime-client";
-import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
-import { EntityType } from "../entity-management/types";
+import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   extractFileExtension,
   sanitizeEntityName,
@@ -114,10 +109,4 @@ export function getFileTypeFromPath(fileName) {
   }
 
   return fileType;
-}
-
-export function getSourceError(errors: V1ReconcileError[], sourceName) {
-  const path = getFilePathFromNameAndType(sourceName, EntityType.Table);
-
-  return errors?.find((error) => error?.filePath === path);
 }
