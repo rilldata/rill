@@ -27,7 +27,10 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("button", { name: "Microsoft 10.4k" }),
     );
 
-    await page.getByLabel("Toggle sort leaderboards by value").first().click();
+    await page
+      .getByLabel("publisher leaderboard")
+      .getByLabel("Toggle sort leaderboards by value")
+      .click();
 
     await assertAAboveB(
       page.getByRole("button", { name: "Microsoft 10.4k" }),
