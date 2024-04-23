@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import Tooltip from "../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
-  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import { createQueryServiceTableColumns } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
 
@@ -22,7 +20,7 @@
   );
 </script>
 
-<ul class="schema-list" transition:slide={{ duration }}>
+<ul class="schema-list">
   {#if $columnsQuery.isError}
     <div>
       Error loading schema: {$columnsQuery.error?.response.data.message}
