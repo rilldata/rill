@@ -59,9 +59,13 @@
       />
     </button>
     <div class="flex flex-col overflow-y-auto">
-      {#if showTables}
+      {#if showTables && typedTables}
         <ol transition:slide={{ duration }}>
-          {#if typedTables && typedTables.length > 0}
+          {#if typedTables.length === 0}
+            <div class="pl-2 pr-3.5 pt-2 pb-2 text-gray-500">
+              No tables found
+            </div>
+          {:else}
             {#each typedTables as tableInfo (tableInfo)}
               <TableEntry
                 {connectorInstanceId}

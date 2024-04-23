@@ -87,7 +87,7 @@
   style:padding-left="{padding}px"
 >
   <CaretDownIcon
-    className="text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
+    className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
   />
   <span class="truncate w-full">{dir.name}</span>
   {#if !isProtectedDirectory}

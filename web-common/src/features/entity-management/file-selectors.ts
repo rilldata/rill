@@ -111,11 +111,18 @@ export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
 export async function fetchAllFileNames(
   queryClient: QueryClient,
   instanceId: string,
+  includeExtensions = true,
 ) {
   const files = await fetchAllFiles(queryClient, instanceId);
   return files
     .filter((f) => !f.isDir)
     .map((f) => f.path?.split("/").pop() ?? "")
+    .map((fileName) => {
+      if (!includeExtensions) {
+        return fileName.split(".").slice(0, -1).join(".");
+      }
+      return fileName;
+    })
     .filter(Boolean);
 }
 
@@ -153,59 +160,129 @@ export function useFileNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
-  directoryPath += "/";
+  // Ensure the directory path starts with a slash
+  if (!directoryPath.startsWith("/")) {
+    directoryPath = `/${directoryPath}`;
+  }
+
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
-        const files = data.files?.filter(
-          (file) => !file.isDir && file.path?.startsWith(directoryPath),
-        );
-        const fileNames = files
-          ?.map((file) => {
-            return file.path?.replace(directoryPath, "") ?? "";
-          })
-          // filter out files in subdirectories
-          .filter((filePath) => !filePath.includes("/"));
-        const sortedFileNames = fileNames?.sort((fileNameA, fileNameB) =>
-          fileNameA.localeCompare(fileNameB, undefined, {
-            sensitivity: "base",
-          }),
-        );
-        return sortedFileNames ?? [];
+        return useFileNamesInDirectorySelector(data, directoryPath);
       },
     },
   });
+}
+
+export function useFileNamesInDirectorySelector(
+  data: V1ListFilesResponse,
+  directoryPath: string,
+) {
+  if (!data.files) {
+    return [];
+  }
+
+  const fileNames = data.files
+    // Filter for files in the immediate directory
+    .filter((file) => {
+      if (!file.path) {
+        return false;
+      }
+
+      const isNotDirectory = !file.isDir;
+      const startsWithDirectory = file.path?.startsWith(directoryPath);
+      const doesNotHaveSubdirectory =
+        directoryPath === "/"
+          ? file.path?.indexOf("/", 1) === -1
+          : file.path?.lastIndexOf("/") === directoryPath.length;
+
+      return isNotDirectory && startsWithDirectory && doesNotHaveSubdirectory;
+    })
+
+    // Remove the directory path from each file path
+    .map((file) => {
+      const startIdx = directoryPath === "/" ? 1 : directoryPath.length + 1;
+      return file.path?.substring(startIdx) ?? "";
+    })
+
+    // Sort filenames alphabetically, case-insensitive
+    .sort((fileNameA, fileNameB) =>
+      fileNameA.localeCompare(fileNameB, undefined, {
+        sensitivity: "base",
+      }),
+    );
+
+  return fileNames;
 }
 
 export function useDirectoryNamesInDirectory(
   instanceId: string,
   directoryPath: string,
 ) {
-  directoryPath += "/";
+  // Ensure the directory path starts with a slash
+  if (!directoryPath.startsWith("/")) {
+    directoryPath = `/${directoryPath}`;
+  }
+
   return createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
-        const files =
-          data.files?.filter(
-            (file) =>
-              file.isDir &&
-              file.path?.startsWith(directoryPath) &&
-              file.path !== directoryPath,
-          ) ?? [];
-        const directoryNames = files
-          ?.map((file) => {
-            return file.path?.replace(directoryPath, "") ?? "";
-          })
-          // filter out dirs in subdirectories
-          .filter((filePath) => !filePath.includes("/"));
-        const sortedDirectoryNames = directoryNames?.sort(
-          (dirNameA, dirNameB) =>
-            dirNameA.localeCompare(dirNameB, undefined, {
-              sensitivity: "base",
-            }),
-        );
-        return sortedDirectoryNames ?? [];
+        return useDirectoryNamesInDirectorySelector(data, directoryPath);
       },
     },
   });
+}
+
+export function useDirectoryNamesInDirectorySelector(
+  data: V1ListFilesResponse,
+  directoryPath: string,
+) {
+  if (!data.files) {
+    return [];
+  }
+
+  const directoryNames = data.files
+    // Filter for directories in the immediate directory
+    .filter((file) => {
+      if (!file.path) {
+        return false;
+      }
+
+      const isDirectory = file.isDir;
+      const startsWithDirectory = file.path?.startsWith(directoryPath);
+      const existsAtSameDirectoryLevel =
+        directoryPath === "/"
+          ? file.path?.indexOf("/", 1) === -1
+          : file.path?.lastIndexOf("/") === directoryPath.length;
+      const isNotSameDirectory = file.path !== directoryPath;
+
+      return (
+        isDirectory &&
+        startsWithDirectory &&
+        existsAtSameDirectoryLevel &&
+        isNotSameDirectory
+      );
+    })
+
+    // Extract the directory name from the path
+    .map((file) => {
+      if (!file.path) {
+        return "";
+      }
+
+      const startIdx = directoryPath.length + 1;
+      return directoryPath === "/"
+        ? file.path.substring(1)
+        : file.path.substring(startIdx);
+    })
+
+    // Sort directory names alphabetically, case-insensitive
+    .sort((dirNameA, dirNameB) => {
+      if (!dirNameA || !dirNameB) return 0;
+      return dirNameA.localeCompare(dirNameB, undefined, {
+        sensitivity: "base",
+      });
+    });
+
+  return directoryNames;
 }
