@@ -155,7 +155,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"country":   "Denmark",
-					"measure_0": "4",
+					"measure_0": 4,
 				})),
 			},
 			SentNotifications: true,
@@ -309,7 +309,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"country":   "Denmark",
-					"measure_0": "4",
+					"measure_0": 4,
 				})),
 			},
 			SentNotifications: true,

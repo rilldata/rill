@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
-	"github.com/rilldata/rill/runtime/pkg/formatter"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
@@ -538,13 +537,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Build query proto
-	qpb, metricsViewName, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
+	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query: %w", err)
-	}
-	metricsView, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}, false)
-	if err != nil {
-		return nil, err
 	}
 
 	// Evaluate query attributes
@@ -567,7 +562,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	}
 
 	// Extract result row
-	row, ok, err := extractQueryResultFirstRow(q, metricsView.GetMetricsView().Spec.Measures, r.C.Logger)
+	row, ok, err := extractQueryResultFirstRow(q)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract query result: %w", err)
 	}
@@ -887,24 +882,12 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 
 // extractQueryResultFirstRow extracts the first row from a query result.
 // TODO: This should function more like an export, i.e. use dimension/measure labels instead of names.
-func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (map[string]any, bool, error) {
+func extractQueryResultFirstRow(q runtime.Query) (map[string]any, bool, error) {
 	switch q := q.(type) {
 	case *queries.MetricsViewAggregation:
 		if q.Result != nil && len(q.Result.Data) > 0 {
 			row := q.Result.Data[0]
-			m := row.AsMap()
-			for k, v := range m {
-				for _, measure := range measures {
-					if k == measure.Name {
-						f, err := formatter.NewMeasureValueFormatter(measure, false, logger)
-						if err != nil {
-							return nil, false, err
-						}
-						m[k] = f.Format(v)
-					}
-				}
-			}
-			return m, true, nil
+			return row.AsMap(), true, nil
 		}
 		return nil, false, nil
 	case *queries.MetricsViewComparison:
@@ -913,42 +896,15 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 			res := make(map[string]any)
 			res[q.DimensionName] = row.DimensionValue
 			for _, v := range row.MeasureValues {
-				var f *formatter.MeasureValueFormatter
-				for _, measure := range measures {
-					if v.MeasureName == measure.Name {
-						var err error
-						f, err = formatter.NewMeasureValueFormatter(measure, false, logger)
-						if err != nil {
-							return nil, false, err
-						}
-					}
+				res[v.MeasureName] = v.BaseValue.AsInterface()
+				if v.ComparisonValue != nil {
+					res[v.MeasureName+" (prev)"] = v.ComparisonValue.AsInterface()
 				}
-				if f != nil {
-					res[v.MeasureName] = f.Format(v.BaseValue.AsInterface())
-					if v.ComparisonValue != nil {
-						res[v.MeasureName+" (prev)"] = f.Format(v.ComparisonValue.AsInterface())
-					}
-					if v.DeltaAbs != nil {
-						res[v.MeasureName+" (Δ)"] = f.Format(v.DeltaAbs.AsInterface())
-					}
-					if v.DeltaRel != nil {
-						fp, err := formatter.NewMeasureValuePresetFormatter("percent", false, nil)
-						if err != nil {
-							return nil, false, err
-						}
-						res[v.MeasureName+" (Δ%)"] = fp.Format(v.DeltaRel.AsInterface())
-					}
-				} else {
-					res[v.MeasureName] = v.BaseValue.AsInterface()
-					if v.ComparisonValue != nil {
-						res[v.MeasureName+" (prev)"] = v.ComparisonValue.AsInterface()
-					}
-					if v.DeltaAbs != nil {
-						res[v.MeasureName+" (Δ)"] = v.DeltaAbs.AsInterface()
-					}
-					if v.DeltaRel != nil {
-						res[v.MeasureName+" (Δ%)"] = v.DeltaRel.AsInterface()
-					}
+				if v.DeltaAbs != nil {
+					res[v.MeasureName+" (Δ)"] = v.DeltaAbs.AsInterface()
+				}
+				if v.DeltaRel != nil {
+					res[v.MeasureName+" (Δ%)"] = v.DeltaRel.AsInterface()
 				}
 			}
 			return res, true, nil

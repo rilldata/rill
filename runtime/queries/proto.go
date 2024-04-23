@@ -62,18 +62,16 @@ func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, erro
 }
 
 // ProtoFromJSON builds a proto query from a query name, JSON args, and optional execution time.
-func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runtimev1.Query, string, error) {
+func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runtimev1.Query, error) {
 	qry := &runtimev1.Query{}
-	var metricsView string
 	switch qryName {
 	case "MetricsViewAggregation":
 		req := &runtimev1.MetricsViewAggregationRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewAggregationRequest{MetricsViewAggregationRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
-			return nil, "", fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
 		}
-		metricsView = req.MetricsView
 		if executionTime != nil {
 			req.TimeRange = overrideTimeRange(req.TimeRange, *executionTime)
 		}
@@ -82,41 +80,37 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
-			return nil, "", fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
 		}
-		metricsView = req.MetricsViewName
 	case "MetricsViewRows":
 		req := &runtimev1.MetricsViewRowsRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewRowsRequest{MetricsViewRowsRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
-			return nil, "", fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
 		}
-		metricsView = req.MetricsViewName
 	case "MetricsViewTimeSeries":
 		req := &runtimev1.MetricsViewTimeSeriesRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
-			return nil, "", fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
 		}
-		metricsView = req.MetricsViewName
 	case "MetricsViewComparison":
 		req := &runtimev1.MetricsViewComparisonRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewComparisonRequest{MetricsViewComparisonRequest: req}
 		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
 		if err != nil {
-			return nil, "", fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
 		}
 		if executionTime != nil {
 			req.TimeRange = overrideTimeRange(req.TimeRange, *executionTime)
 		}
-		metricsView = req.MetricsViewName
 	default:
-		return nil, "", fmt.Errorf("query %q not supported for reports", qryName)
+		return nil, fmt.Errorf("query %q not supported for reports", qryName)
 	}
 
-	return qry, metricsView, nil
+	return qry, nil
 }
 
 func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRange {
