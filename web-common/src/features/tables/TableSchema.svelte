@@ -44,10 +44,7 @@
 
 <style lang="postcss">
   .schema-list {
-    padding-left: 30px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-    @apply pr-4;
+    @apply pl-[30px] pr-4 py-1.5;
     @apply flex flex-col gap-y-0.5;
   }
 
