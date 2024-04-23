@@ -53,7 +53,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 		{"/nested/bar.sql", false},
 	}, files)
 
-	err = repo.Delete(ctx, "nested/bar.sql")
+	err = repo.Delete(ctx, "nested/bar.sql", false)
 	require.NoError(t, err)
 
 	files, err = repo.ListRecursive(ctx, "**", false)
@@ -65,7 +65,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	}, files)
 
 	// deleting a directory
-	err = repo.Delete(ctx, "nested")
+	err = repo.Delete(ctx, "nested", false)
 	require.NoError(t, err)
 
 	files, err = repo.ListRecursive(ctx, "**", false)

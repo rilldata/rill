@@ -32,7 +32,7 @@
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
-  export let onDelete: (filePath: string) => void;
+  export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
     table?: string;
     connector?: string;
@@ -84,17 +84,17 @@
    hover:bg-slate-100"
 >
   <a
-    {id}
-    href={`/files${filePath}`}
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
     isDotFile
       ? 'text-gray-500 hover:text-gray-500'
       : 'text-gray-900 hover:text-gray-900'}"
-    style:padding-left="{padding}px"
+    href={`/files${filePath}`}
+    {id}
     on:click={fireTelemetry}
     on:mousedown={handleMouseDown}
     on:mouseup={(e) =>
       onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
+    style:padding-left="{padding}px"
   >
     <div class="flex-none">
       <svelte:component
@@ -149,7 +149,7 @@
           <EditIcon slot="icon" />
           Rename...
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(filePath)}>
+        <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

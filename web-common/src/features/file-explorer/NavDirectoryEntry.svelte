@@ -21,7 +21,7 @@
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
-  export let onDelete: (filePath: string) => void;
+  export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
   export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
@@ -117,7 +117,7 @@
           <EditIcon slot="icon" />
           Rename...
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(dir.path)}>
+        <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

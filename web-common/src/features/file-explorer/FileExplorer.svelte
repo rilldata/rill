@@ -9,12 +9,14 @@
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmation.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import {
     NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
+  import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import {
     getTopLevelFolder,
     splitFolderAndName,
@@ -22,7 +24,7 @@
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import NavDirectory from "./NavDirectory.svelte";
-  import { transformFileList } from "./transform-file-list";
+  import { findDirectory, transformFileList } from "./transform-file-list";
 
   $: instanceId = $runtime.instanceId;
   $: getFileTree = createRuntimeServiceListFiles("default", undefined, {
@@ -65,12 +67,28 @@
     renameIsDir = isDir;
   }
 
-  async function onDelete(filePath: string) {
+  let forceDeletePath: string;
+  let showForceDelete = false;
+
+  async function onDelete(filePath: string, isDir: boolean) {
+    if (isDir) {
+      const dir = findDirectory($getFileTree.data, filePath);
+      if (dir?.directories?.length || dir?.files?.length) {
+        forceDeletePath = filePath;
+        showForceDelete = true;
+        return;
+      }
+    }
     await deleteFileArtifact(instanceId, filePath);
-    if (
-      !!$page.params.file &&
-      removeLeadingSlash($page.params.file) === removeLeadingSlash(filePath)
-    ) {
+    if (isCurrentActivePage($page.params.file, filePath, isDir)) {
+      await goto("/");
+    }
+  }
+
+  async function onForceDelete() {
+    await deleteFileArtifact(instanceId, forceDeletePath, true);
+    // onForceDelete is only called on folders, so isDir is always true
+    if (isCurrentActivePage($page.params.file, forceDeletePath, true)) {
       await goto("/");
     }
   }
@@ -169,3 +187,5 @@
 {#if $dragData}
   <NavEntryPortal position={$position} dragData={$dragData} />
 {/if}
+
+<ForceDeleteConfirmation bind:open={showForceDelete} onDelete={onForceDelete} />

@@ -126,7 +126,7 @@ func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {
 	return fmt.Errorf("rename operation is unsupported")
 }
 
-func (h *Handle) Delete(ctx context.Context, filePath string) error {
+func (h *Handle) Delete(ctx context.Context, filePath string, force bool) error {
 	return fmt.Errorf("delete operation is unsupported")
 }
 

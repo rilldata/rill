@@ -7,7 +7,7 @@
 
   export let directory: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
-  export let onDelete: (filePath: string) => void;
+  export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
     table?: string;
     connector?: string;

@@ -556,6 +556,10 @@ paths:
           required: true
           type: string
           pattern: .+
+        - name: force
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
     post:
