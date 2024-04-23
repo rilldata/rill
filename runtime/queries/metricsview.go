@@ -286,13 +286,14 @@ func dimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_
 	}
 
 	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := tempName("tbl")
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
-		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, dialect.EscapeTable(db, dbSchema, table), colName, unnestColName)
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, dialect.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
 	}
 
-	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) tbl(%s)`, dim.Expression, unnestColName)
+	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
 func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
