@@ -35,7 +35,7 @@
 </script>
 
 <li aria-label={fullyQualifiedTableName} class="entry group" class:open>
-  <div class="header-wrapper">
+  <div class="entry-header">
     <TableIcon size="14px" className="shrink-0 text-gray-400" />
     <Tooltip alignment="start" location="right" distance={8}>
       <button
@@ -93,15 +93,22 @@
     @apply flex flex-col;
   }
 
-  .header-wrapper {
+  .entry-header {
     @apply flex justify-between items-center gap-x-2;
     @apply px-2;
-    @apply sticky top-0;
-    @apply z-10 bg-white;
+    @apply sticky top-0 z-10;
   }
 
   .open {
     @apply bg-slate-100;
+  }
+
+  .entry.open .entry-header {
+    @apply bg-slate-100;
+  }
+
+  .entry:not(.open) .entry-header {
+    @apply bg-white;
   }
 
   .clickable-text {
