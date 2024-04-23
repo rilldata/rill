@@ -68,6 +68,7 @@
   async function onDelete(filePath: string) {
     await deleteFileArtifact(instanceId, filePath);
     if (
+      !!$page.params.file &&
       removeLeadingSlash($page.params.file) === removeLeadingSlash(filePath)
     ) {
       await goto("/");

@@ -14,7 +14,7 @@ import PercentOfTotal from "./PercentOfTotal.svelte";
 
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
-  MetricsViewDimension,
+  MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1Expression,
   V1MetricsViewComparisonRow,
@@ -237,7 +237,7 @@ export function prepareVirtualizedDimTableColumns(
   dash: MetricsExplorerEntity,
   allMeasures: MetricsViewSpecMeasureV2[],
   measureTotals: { [key: string]: number },
-  dimension: MetricsViewDimension,
+  dimension: MetricsViewSpecDimensionV2,
   timeComparison: boolean,
   validPercentOfTotal: boolean,
 ): VirtualizedTableColumns[] {
