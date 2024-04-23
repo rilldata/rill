@@ -278,7 +278,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
+	qry, _, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
 	if err != nil {
 		return false, fmt.Errorf("failed to build export request: %w", err)
 	}
