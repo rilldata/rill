@@ -33,8 +33,8 @@
   {:else if $columnsQuery.data && $columnsQuery.data.profileColumns}
     {#each $columnsQuery.data.profileColumns as column}
       <li class="flex justify-between gap-x-2 cursor-pointer">
-        <span class="font-mono truncate">{column.name}</span>
         <Tooltip distance={4}>
+          <span class="font-mono truncate">{column.name}</span>
           <TooltipContent slot="tooltip-content">
             {column.name}
           </TooltipContent>
