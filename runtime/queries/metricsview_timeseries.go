@@ -315,6 +315,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 
 	havingClause := ""
 	if q.Having != nil {
+		markIdents(q.Having)
 		clause, clauseArgs, err := buildExpression(mv, q.Having, nil, olap.Dialect())
 		if err != nil {
 			return "", "", nil, err

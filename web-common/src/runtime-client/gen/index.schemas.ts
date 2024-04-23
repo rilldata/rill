@@ -1717,6 +1717,7 @@ export interface V1Expression {
   ident?: string;
   val?: unknown;
   cond?: V1Condition;
+  having?: boolean;
 }
 
 export interface V1ExportResponse {

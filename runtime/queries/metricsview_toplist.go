@@ -244,6 +244,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
+		markIdents(q.Having)
 		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
@@ -287,4 +288,23 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	)
 
 	return sql, args, nil
+}
+
+func markIdents(expr *runtimev1.Expression) {
+	if expr == nil {
+		return
+	}
+
+	switch e := expr.Expression.(type) {
+	case *runtimev1.Expression_Val:
+		return
+	case *runtimev1.Expression_Ident:
+		expr.Having = true
+		return
+	case *runtimev1.Expression_Cond:
+		for _, ie := range e.Cond.Exprs {
+			markIdents(ie)
+		}
+		return
+	}
 }

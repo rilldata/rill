@@ -10,6 +10,7 @@ message Expression {
     google.protobuf.Value val = 2;
     Condition cond = 3;
   }
+  bool having = 4;
 }
 
 message Condition {

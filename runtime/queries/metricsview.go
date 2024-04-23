@@ -228,7 +228,8 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string) (string, bool) {
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, expr *runtimev1.Expression) (string, bool) {
+	name := expr.GetIdent()
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
 		if dim.Name == name {
@@ -260,7 +261,11 @@ func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtim
 	// check if identifier is measure but not passed as alias
 	for _, mes := range mv.Measures {
 		if mes.Name == name {
-			return safeName(mes.Name), true
+			if !expr.Having {
+				return safeName(mes.Name), true
+			}
+
+			return mes.Expression, true
 		}
 	}
 
@@ -309,7 +314,7 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident)
+		expr, isIdent := columnIdentifierExpression(mv, aliases, expr)
 		if !isIdent {
 			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}

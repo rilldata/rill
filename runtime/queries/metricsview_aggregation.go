@@ -618,10 +618,16 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause = "WHERE 1=1" + whereClause
 	}
 
-	havingClause := ""
-	var havingClauseArgs []any
+	var havingClause, extraWhereClause string
+	var havingClauseArgs, extraWhereClauseArgs []any
 	if q.Having != nil {
 		var err error
+		extraWhereClause, extraWhereClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+
+		markIdents(q.Having)
 		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
@@ -705,7 +711,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
 		*/
 		if filterCount == 1 {
-			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, dialect)
+			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, extraWhereClause, extraWhereClauseArgs, dialect)
 		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
@@ -723,7 +729,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	return sql, args, nil
 }
 
-func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, extraWhereClause string, extraWhereClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
 	joinConditions := make([]string, 0, len(q.Dimensions))
 	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
 	finalProjection := make([]string, 0, len(q.Dimensions)+1)
@@ -752,19 +758,28 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	}
 
 	measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
-	var extraWhere string
-	var extraWhereArgs []any
-	if q.Having != nil {
-		extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, nil, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		extraWhere = "WHERE " + extraWhere
+	if extraWhereClause != "" {
+		extraWhereClause = "WHERE " + extraWhereClause
 	}
 	druidGroupBy := ""
 	if dialect == drivers.DialectDruid {
 		druidGroupBy = groupClause
 	}
+
+	/*
+		SQL example:
+		SELECT "pub","measure_1" FROM (
+			SELECT "ad_bids"."pub", self_join3ba680fe589e49ceabf404f6c6d920e7."measure_1" as "measure_1" FROM (
+				SELECT ("publisher") as "pub", COUNT(*) as "measure_1" FROM "ad_bids"  WHERE 1=1 GROUP BY 1
+			) "ad_bids"
+			LEFT JOIN (
+				SELECT ("publisher") as "pub", COUNT(*) as "measure_1" FROM "ad_bids"  WHERE 1=1 AND (("domain") = (?)) GROUP BY 1
+			) self_join3ba680fe589e49ceabf404f6c6d920e7
+			ON (COALESCE("ad_bids"."pub", 'non_nulle9c9dae4c90746978d24a838c88b9879') = COALESCE(self_join3ba680fe589e49ceabf404f6c6d920e7."pub", 'non_nulle9c9dae4c90746978d24a838c88b9879'))
+		)
+		ORDER BY "pub" NULLS LAST
+		OFFSET 0
+	*/
 
 	sql := fmt.Sprintf(`
 					SELECT %[16]s FROM (
@@ -795,7 +810,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 		limitClause,                           // 11
 		q.Offset,                              // 12
 		orderClause,                           // 13
-		extraWhere,                            // 14
+		extraWhereClause,                      // 14
 		druidGroupBy,                          // 15
 		strings.Join(finalProjection, ","),    // 16
 	)
@@ -807,7 +822,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	args = append(args, whereArgs...)
 	args = append(args, measureWhereArgs...)
 	args = append(args, havingClauseArgs...)
-	args = append(args, extraWhereArgs...)
+	args = append(args, extraWhereClauseArgs...)
 
 	return sql, args, nil
 }

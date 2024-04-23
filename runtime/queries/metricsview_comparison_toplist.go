@@ -498,6 +498,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
+		markIdents(q.Having)
 		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
@@ -736,16 +737,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		comparisonWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
 
-	havingClause := "1=1"
-	if q.Having != nil {
-		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		args = append(args, havingClauseArgs...)
-	}
-
 	var orderClauses []string
 	var subQueryOrderClauses []string
 	for _, s := range q.Sort {
@@ -869,7 +860,14 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		} else {
 			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
 		}
-		if havingClause != "" {
+		if q.Having != nil {
+			var havingClauseArgs []any
+			havingClause, havingClauseArgs, err := buildExpression(mv, q.Having, q.Aliases, dialect)
+			if err != nil {
+				return "", nil, err
+			}
+			args = append(args, havingClauseArgs...)
+
 			// measure filter could include the base measure name.
 			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
 			// to keep the clause builder consistent we add an outer query here.
@@ -1001,6 +999,17 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			}
 		}
 
+		havingClause := ""
+		if q.Having != nil {
+			var havingClauseArgs []any
+			havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+			if err != nil {
+				return "", nil, err
+			}
+			havingClause = "HAVING " + havingClause
+			args = append(args, havingClauseArgs...)
+		}
+
 		sql = fmt.Sprintf(`
 				WITH %[11]s AS (
 					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY 1 %[13]s %[10]s OFFSET %[8]d
@@ -1009,7 +1018,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
-				HAVING %[15]s
+				%[15]s
 				%[6]s
 				%[7]s
 				OFFSET %[8]d
