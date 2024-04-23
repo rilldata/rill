@@ -3,12 +3,12 @@
   import { page } from "$app/stores";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
-  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import {
     NavDragData,
@@ -68,6 +68,7 @@
   async function onDelete(filePath: string) {
     await deleteFileArtifact(instanceId, filePath);
     if (
+      !!$page.params.file &&
       removeLeadingSlash($page.params.file) === removeLeadingSlash(filePath)
     ) {
       await goto("/");
