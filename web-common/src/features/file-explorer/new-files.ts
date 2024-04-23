@@ -36,15 +36,17 @@ const ResourceKindMap: Record<
   [ResourceKind.Source]: {
     name: "source",
     extension: ".yaml",
-    baseContent: "",
+    baseContent: "", // This is constructed in the `features/sources/modal` directory
   },
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
-    baseContent: `SELECT 'Hello, World!' AS Greeting
+    baseContent: `# Model SQL
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- The \`@kind: model\` decorator registers your Model if this file is moved out of the \`/models\` directory.
---@kind: model`,
+--@kind: model
+
+SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
     name: "dashboard",
@@ -52,32 +54,30 @@ const ResourceKindMap: Record<
     baseContent: `# Dashboard YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
-table: example_table # Choose a table to underpin your dashboard
+kind: metrics_view
 
 title: "Dashboard Title"
+table: example_table # Choose a table to underpin your dashboard
+timeseries: timestamp_column # Select an actual timestamp column (if any) from your table
 
-timeseries: timestamp # Replace with an actual timestamp column (if any) from your table
-
-# Configure the dashboard's dimensions...
 dimensions:
   - column: category
     label: "Category"
     description: "Description of the dimension"
 
-# Configure the dashboard's measures...
 measures:
   - expression: "SUM(revenue)"
     label: "Total Revenue"
     description: "Total revenue generated"
-
-# \`kind: metrics_view\` registers your Dashboard if this file is moved out of the \`/dashboards\` directory.
-kind: metrics_view
 `,
   },
   [ResourceKind.API]: {
     name: "api",
     extension: ".yaml",
-    baseContent: `kind: api
+    baseContent: `# API YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+
+kind: api
 
 sql:
   select ...
@@ -86,7 +86,11 @@ sql:
   [ResourceKind.Chart]: {
     name: "chart",
     extension: ".yaml",
-    baseContent: `kind: chart
+    baseContent: `# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    
+kind: chart
+
 data:
   metrics_sql: |
     SELECT advertiser_name, AGGREGATE(measure_2)
@@ -117,7 +121,11 @@ gap: 2`,
   [ResourceKind.Theme]: {
     name: "theme",
     extension: ".yaml",
-    baseContent: `kind: theme
+    baseContent: `# Theme YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/themes
+
+kind: theme
+
 colors:
   primary: crimson 
   secondary: lime 
@@ -126,7 +134,10 @@ colors:
   [ResourceKind.Report]: {
     name: "report",
     extension: ".yaml",
-    baseContent: `kind: report
+    baseContent: `# Report YAML
+# Reference documentation: TODO
+
+kind: report
 
 ...
 `,
@@ -134,7 +145,10 @@ colors:
   [ResourceKind.Alert]: {
     name: "alert",
     extension: ".yaml",
-    baseContent: `kind: alert
+    baseContent: `# Alert YAML
+# Reference documentation: TODO
+
+kind: alert
 
 ...
 `,
