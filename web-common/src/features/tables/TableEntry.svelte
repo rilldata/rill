@@ -34,11 +34,8 @@
   $: open = $page.url.pathname === href;
 </script>
 
-<li aria-label={fullyQualifiedTableName} class="entry group">
-  <div
-    class="header-wrapper flex justify-between items-center gap-x-2 pl-2 pr-2"
-    class:open
-  >
+<li aria-label={fullyQualifiedTableName} class="entry group" class:open>
+  <div class="header-wrapper">
     <TableIcon size="14px" className="shrink-0 text-gray-400" />
     <Tooltip alignment="start" location="right" distance={8}>
       <button
@@ -96,15 +93,13 @@
     @apply flex flex-col;
   }
 
-  .entry:focus {
-    @apply outline-none;
+  .header-wrapper {
+    @apply flex justify-between items-center gap-x-2;
+    @apply px-2;
+    @apply sticky top-0;
+    @apply z-10 bg-white;
   }
 
-  /* .entry:hover:not(.open) {
-    @apply text-gray-900;
-  } */
-
-  .entry:focus,
   .open {
     @apply bg-slate-100;
   }
@@ -116,10 +111,5 @@
   }
   .clickable-text:hover {
     @apply text-gray-900;
-  }
-
-  .header-wrapper {
-    @apply sticky top-0;
-    @apply z-10 bg-white;
   }
 </style>

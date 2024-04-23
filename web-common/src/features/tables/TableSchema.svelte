@@ -22,17 +22,14 @@
   );
 </script>
 
-<ul
-  class="pt-1.5 pb-1.5 pl-[30px] pr-4 flex flex-col gap-y-0.5"
-  transition:slide={{ duration }}
->
+<ul class="schema-list" transition:slide={{ duration }}>
   {#if $columnsQuery.isError}
     <div>
       Error loading schema: {$columnsQuery.error?.response.data.message}
     </div>
   {:else if $columnsQuery.data && $columnsQuery.data.profileColumns}
     {#each $columnsQuery.data.profileColumns as column}
-      <li class="flex justify-between gap-x-2">
+      <li>
         <Tooltip distance={4}>
           <span class="font-mono truncate">{column.name}</span>
           <TooltipContent slot="tooltip-content">
@@ -44,3 +41,17 @@
     {/each}
   {/if}
 </ul>
+
+<style lang="postcss">
+  .schema-list {
+    padding-left: 30px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    @apply pr-4;
+    @apply flex flex-col gap-y-0.5;
+  }
+
+  .schema-list li {
+    @apply flex justify-between gap-x-2;
+  }
+</style>
