@@ -1,7 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
 import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
-import NavDirectory from "@rilldata/web-common/features/file-explorer/NavDirectory.svelte";
 import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { get, writable } from "svelte/store";
 
