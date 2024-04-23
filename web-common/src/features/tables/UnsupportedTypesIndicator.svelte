@@ -2,24 +2,19 @@
   import WarningIcon from "../../components/icons/WarningIcon.svelte";
   import Tooltip from "../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
-  import {
-    V1TableInfo,
-    createQueryServiceTableColumns,
-  } from "../../runtime-client";
+  import { createQueryServiceTableColumns } from "../../runtime-client";
 
   export let instanceId: string;
   export let connector: string;
-  export let tableInfo: V1TableInfo;
+  export let database: string = "";
+  export let databaseSchema: string = "";
+  export let table: string;
 
-  $: tableColumns = createQueryServiceTableColumns(
-    instanceId,
-    tableInfo.name as string,
-    {
-      connector: connector,
-      database: tableInfo.database,
-      databaseSchema: tableInfo.databaseSchema,
-    },
-  );
+  $: tableColumns = createQueryServiceTableColumns(instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
+  });
 
   $: unsupportedColumnsMap = $tableColumns.data?.unsupportedColumns;
   $: unsupportedColumns = unsupportedColumnsMap
