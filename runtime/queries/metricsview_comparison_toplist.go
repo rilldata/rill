@@ -1018,21 +1018,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				%[7]s
 				OFFSET %[8]d
 			`,
-			subSelectClause,                             // 1
-			colName,                                     // 2
-			escapeMetricsViewTable(dialect, mv),         // 3
-			leftWhereClause,                             // 4
-			rightWhereClause,                            // 5
-			orderByClause,                               // 6
-			limitClause,                                 // 7
-			q.Offset,                                    // 8
-			finalSelectClause,                           // 9
-			twiceTheLimitClause,                         // 10
-			leftSubQueryAlias,                           // 11
-			rightSubQueryAlias,                          // 12
-			subQueryOrderByClause,                       // 13
-			finalDimName,                                // 14
-			havingClause,                                // 15
+			subSelectClause,                     // 1
+			colName,                             // 2
+			escapeMetricsViewTable(dialect, mv), // 3
+			leftWhereClause,                     // 4
+			rightWhereClause,                    // 5
+			orderByClause,                       // 6
+			limitClause,                         // 7
+			q.Offset,                            // 8
+			finalSelectClause,                   // 9
+			twiceTheLimitClause,                 // 10
+			leftSubQueryAlias,                   // 11
+			rightSubQueryAlias,                  // 12
+			subQueryOrderByClause,               // 13
+			finalDimName,                        // 14
+			havingClause,                        // 15
 			dialect.MetricsViewDimensionExpression(dim), // 16
 			subComparisonSelectClause,                   // 17
 		)
