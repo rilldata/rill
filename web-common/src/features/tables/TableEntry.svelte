@@ -40,7 +40,7 @@
     class:open
   >
     <TableIcon size="14px" className="shrink-0 text-gray-400" />
-    <Tooltip alignment="start" distance={4}>
+    <Tooltip alignment="start" location="right" distance={8}>
       <button
         class="clickable-text"
         on:click={() => (showSchema = !showSchema)}
@@ -48,20 +48,21 @@
         <span class="truncate">
           {fullyQualifiedTableName}
         </span>
-        {#if hasUnsupportedDataTypes}
-          <UnsupportedTypesIndicator
-            instanceId={connectorInstanceId}
-            {connector}
-            {database}
-            {databaseSchema}
-            {table}
-          />
-        {/if}
       </button>
       <TooltipContent slot="tooltip-content">
         {showSchema ? "Hide schema" : "Show schema"}
       </TooltipContent>
     </Tooltip>
+    {#if hasUnsupportedDataTypes}
+      <UnsupportedTypesIndicator
+        instanceId={connectorInstanceId}
+        {connector}
+        {database}
+        {databaseSchema}
+        {table}
+      />
+    {/if}
+    <div class="flex-grow" />
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
@@ -110,7 +111,7 @@
 
   .clickable-text {
     @apply select-none cursor-pointer;
-    @apply w-full flex items-center gap-x-2 truncate;
+    @apply w-fit flex items-center gap-x-2 truncate;
     @apply text-gray-900;
   }
   .clickable-text:hover {
