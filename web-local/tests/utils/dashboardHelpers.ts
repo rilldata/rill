@@ -29,8 +29,8 @@ export async function assertLeaderboards(
   }>,
 ) {
   for (const { label, values } of leaderboards) {
-    const leaderboardBlock = page.locator("svelte-virtual-list-row", {
-      hasText: label,
+    const leaderboardBlock = page.getByRole("grid", {
+      name: `${label} leaderboard`,
     });
     await expect(leaderboardBlock).toBeVisible();
 
@@ -39,19 +39,6 @@ export async function assertLeaderboards(
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
-}
-
-export async function clickOnFilter(
-  page: Page,
-  dimensionLabel: string,
-  value: string,
-) {
-  await page
-    .locator("svelte-virtual-list-row", {
-      hasText: dimensionLabel,
-    })
-    .getByText(value)
-    .click();
 }
 
 export type RequestMatcher = (response: Response) => boolean;
