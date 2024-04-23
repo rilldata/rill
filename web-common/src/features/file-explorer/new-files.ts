@@ -41,15 +41,37 @@ const ResourceKindMap: Record<
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
-    baseContent: `-- @kind: model
-select ...
-`,
+    baseContent: `SELECT 'Hello, World!' AS Greeting
+
+-- The \`@kind: model\` decorator registers your Model if this file is moved out of the \`/models\` directory.
+--@kind: model`,
   },
   [ResourceKind.MetricsView]: {
     name: "dashboard",
     extension: ".yaml",
-    baseContent: `kind: metrics_view
+    baseContent: `# Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
+table: example_table # Choose a table to underpin your dashboard
+
+title: "Dashboard Title"
+
+timeseries: timestamp # Replace with an actual timestamp column (if any) from your table
+
+# Configure the dashboard's dimensions...
+dimensions:
+  - column: category
+    label: "Category"
+    description: "Description of the dimension"
+
+# Configure the dashboard's measures...
+measures:
+  - expression: "SUM(revenue)"
+    label: "Total Revenue"
+    description: "Total revenue generated"
+
+# \`kind: metrics_view\` registers your Dashboard if this file is moved out of the \`/dashboards\` directory.
+kind: metrics_view
 `,
   },
   [ResourceKind.API]: {

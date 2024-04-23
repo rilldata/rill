@@ -76,9 +76,13 @@
       />
     </button>
     <div class="h-fit flex flex-col overflow-y-auto">
-      {#if showTables}
+      {#if tables && showTables}
         <ol transition:slide={{ duration }}>
-          {#if tables && tables.length > 0}
+          {#if tables.length === 0}
+            <div class="pl-2 pr-3.5 pt-2 pb-2 text-gray-500">
+              No tables found
+            </div>
+          {:else}
             {#each tables as tableInfo (tableInfo)}
               {@const fullyQualifiedTableName = makeFullyQualifiedTableName(
                 olapConnector,

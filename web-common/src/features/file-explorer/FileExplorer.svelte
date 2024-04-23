@@ -135,7 +135,7 @@
 
 <div class="flex flex-col items-start gap-y-2">
   <!-- File tree -->
-  <div class="flex flex-col w-full items-start justify-start overflow-auto">
+  <ul class="flex flex-col w-full items-start justify-start overflow-auto">
     {#if $getFileTree.data}
       <NavDirectory
         directory={$getFileTree.data}
@@ -148,7 +148,7 @@
           navEntryDragDropStore.onMouseUp(e, dragData, handleDropSuccess)}
       />
     {/if}
-  </div>
+  </ul>
 </div>
 
 {#if showRenameModelModal}
