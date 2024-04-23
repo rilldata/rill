@@ -5,7 +5,7 @@
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import TableAsset from "./TableAsset.svelte";
+  import TableEntry from "./TableEntry.svelte";
   import { useTables } from "./selectors";
 
   export let startingHeight: number;
@@ -63,7 +63,7 @@
         <ol transition:slide={{ duration }}>
           {#if typedTables && typedTables.length > 0}
             {#each typedTables as tableInfo (tableInfo)}
-              <TableAsset
+              <TableEntry
                 {connectorInstanceId}
                 connector={olapConnector}
                 database={tableInfo.database}
