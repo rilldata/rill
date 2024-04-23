@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -181,4 +182,37 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	}
 	sb.WriteString(d.EscapeIdentifier(table))
 	return sb.String()
+}
+
+func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (dimSelect, unnestClause string) {
+	colName := d.EscapeIdentifier(dim.Name)
+	if !dim.Unnest || d == DialectDruid {
+		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+	}
+
+	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := tempName("tbl")
+	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
+	if dim.Expression == "" {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+	}
+
+	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+}
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if dimension.Expression != "" {
+		return dimension.Expression
+	}
+	if dimension.Column != "" {
+		return d.EscapeIdentifier(dimension.Column)
+	}
+	// backwards compatibility for older projects that have not run reconcile on this dashboard
+	// in that case `column` will not be present
+	return d.EscapeIdentifier(dimension.Name)
 }

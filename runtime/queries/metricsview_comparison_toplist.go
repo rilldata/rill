@@ -437,7 +437,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
+	dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -595,7 +595,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	var selectCols []string
 	var comparisonSelectCols []string
-	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
+	dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 	selectCols = append(selectCols, dimSel)
 	comparisonSelectCols = append(comparisonSelectCols, dimSel)
 
@@ -1018,23 +1018,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				%[7]s
 				OFFSET %[8]d
 			`,
-			subSelectClause,                     // 1
-			colName,                             // 2
-			escapeMetricsViewTable(dialect, mv), // 3
-			leftWhereClause,                     // 4
-			rightWhereClause,                    // 5
-			orderByClause,                       // 6
-			limitClause,                         // 7
-			q.Offset,                            // 8
-			finalSelectClause,                   // 9
-			twiceTheLimitClause,                 // 10
-			leftSubQueryAlias,                   // 11
-			rightSubQueryAlias,                  // 12
-			subQueryOrderByClause,               // 13
-			finalDimName,                        // 14
-			havingClause,                        // 15
-			metricsViewDimensionExpression(dim), // 16
-			subComparisonSelectClause,           // 17
+			subSelectClause,                             // 1
+			colName,                                     // 2
+			escapeMetricsViewTable(dialect, mv),         // 3
+			leftWhereClause,                             // 4
+			rightWhereClause,                            // 5
+			orderByClause,                               // 6
+			limitClause,                                 // 7
+			q.Offset,                                    // 8
+			finalSelectClause,                           // 9
+			twiceTheLimitClause,                         // 10
+			leftSubQueryAlias,                           // 11
+			rightSubQueryAlias,                          // 12
+			subQueryOrderByClause,                       // 13
+			finalDimName,                                // 14
+			havingClause,                                // 15
+			dialect.MetricsViewDimensionExpression(dim), // 16
+			subComparisonSelectClause,                   // 17
 		)
 	}
 
