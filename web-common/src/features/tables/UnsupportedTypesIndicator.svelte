@@ -26,7 +26,7 @@
 </script>
 
 <Tooltip distance={8} alignment="start">
-  <WarningIcon />
+  <WarningIcon className="text-gray-500" />
   <TooltipContent slot="tooltip-content">
     This table contains columns with unsupported data types:
 
