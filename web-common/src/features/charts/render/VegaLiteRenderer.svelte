@@ -91,7 +91,7 @@
     }
 
     & td.key {
-      @apply text-right px-1 font-normal truncate;
+      @apply text-left px-1 font-normal truncate;
       max-width: 250px;
     }
 
