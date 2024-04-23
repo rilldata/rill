@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -23,6 +24,9 @@ import (
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
 var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
+
+// instanceHeartbeatInterval is the interval at which instance heartbeat events are emitted.
+const instanceHeartbeatInterval = time.Minute
 
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -183,6 +187,8 @@ func (r *registryCache) init(ctx context.Context) error {
 			return err
 		}
 	}
+
+	go r.emitHeartbeats()
 
 	return nil
 }
@@ -501,4 +507,55 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if err != nil {
 		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
+}
+
+func (r *registryCache) emitHeartbeats() {
+	ticker := time.NewTicker(instanceHeartbeatInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			instances, err := r.list()
+			if err != nil {
+				r.logger.Error("failed to send instance heartbeat event, instance listing failed", zap.Error(err))
+				continue
+			}
+			for _, instance := range instances {
+				r.emitHeartbeatForInstance(instance)
+			}
+		case <-r.baseCtx.Done():
+			return
+		}
+	}
+}
+
+func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
+	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
+
+	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat",
+		attribute.String("instance_id", inst.ID),
+		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
+		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
+	)
+}
+
+func sizeOfDir(path string) int64 {
+	var size int64
+	_ = fs.WalkDir(os.DirFS(path), ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		f, err := d.Info()
+		if err != nil {
+			return err
+		}
+		size += f.Size()
+		return nil
+	})
+	return size
 }

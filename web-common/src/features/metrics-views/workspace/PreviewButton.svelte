@@ -12,13 +12,14 @@
   import { Play } from "lucide-svelte";
 
   export let disabled: boolean;
-  export let status: string[];
-  export let metricViewName: string;
+  export let status: string[] = [];
+  export let dashboardName: string;
+  export let type: "dashboard" | "custom" = "dashboard";
 
   const viewDashboard = () => {
     behaviourEvent
       .fireNavigationEvent(
-        metricViewName,
+        dashboardName,
         BehaviourEventMedium.Button,
         MetricsEventSpace.Workspace,
         MetricsEventScreenName.MetricsDefinition,
@@ -28,11 +29,16 @@
   };
 </script>
 
-<Tooltip alignment="middle" distance={5} location="right">
+<Tooltip
+  alignment="middle"
+  distance={5}
+  location="right"
+  suppress={!status.length}
+>
   <Button
     {disabled}
     label="Preview"
-    href={`/dashboard/${metricViewName}`}
+    href={`/${type}/${dashboardName}`}
     on:click={viewDashboard}
     type="brand"
     loading={!!$navigating}
@@ -40,6 +46,7 @@
     <Play size="10px" />
     Preview
   </Button>
+
   <TooltipContent slot="tooltip-content">
     {#each status as message}
       <div>{message}</div>

@@ -1,7 +1,7 @@
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   QueryServiceMetricsViewComparisonBody,
-  MetricsViewDimension,
+  MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationMeasure,
   V1Expression,
@@ -24,7 +24,9 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
  * becuase it is used in a few places and we want to make sure we
  * are consistent in how we handle this.
  */
-export function getDimensionColumn(dimension: MetricsViewDimension): string {
+export function getDimensionColumn(
+  dimension: MetricsViewSpecDimensionV2,
+): string {
   return dimension?.column || dimension?.name;
 }
 

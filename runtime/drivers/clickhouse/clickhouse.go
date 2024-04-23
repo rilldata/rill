@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -54,13 +55,13 @@ type configProperties struct {
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(confMap map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("clickhouse driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("clickhouse driver can't be shared")
 	}
 
 	conf := &configProperties{}
-	err := mapstructure.WeakDecode(confMap, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +123,11 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db       *sqlx.DB
-	config   *configProperties
-	logger   *zap.Logger
-	activity *activity.Client
+	db         *sqlx.DB
+	config     *configProperties
+	logger     *zap.Logger
+	activity   *activity.Client
+	instanceID string
 
 	// logic around this copied from duckDB driver
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
@@ -182,6 +184,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	c.instanceID = instanceID
 	return c, true
 }
 

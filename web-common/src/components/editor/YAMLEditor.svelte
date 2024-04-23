@@ -55,4 +55,4 @@
   $: updateEditorContents(content);
 </script>
 
-<div class="contents" bind:this={container} />
+<div bind:this={container} class="contents" />

@@ -1,15 +1,14 @@
 import { expect } from "@playwright/test";
+import {
+  extractFileName,
+  splitFolderAndName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
 import { fileURLToPath } from "url";
-import {
-  clickModalButton,
-  getEntityLink,
-  TestEntityType,
-  waitForProfiling,
-} from "./commonHelpers";
-import { waitForEntity } from "./waitHelpers";
+import { clickModalButton, waitForProfiling } from "./commonHelpers";
+import { waitForFileNavEntry } from "./waitHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,8 +27,10 @@ export async function uploadFile(
   isDuplicate = false,
   keepBoth = false,
 ) {
-  // add table button
-  await page.locator("button#add-table").click();
+  // add asset button
+  await page.getByLabel("Add Asset").click();
+  // add source menu item
+  await page.getByLabel("Add Source").click();
   // click local file button
   await page.locator("button#local_file").click();
   // wait for file chooser while clicking on upload button
@@ -41,6 +42,7 @@ export async function uploadFile(
   const fileUploadPromise = fileChooser.setFiles([
     path.join(TestDataPath, file),
   ]);
+  const fileRespWaitPromise = page.waitForResponse(/files\/-\//);
 
   // TODO: infer duplicate
   if (isDuplicate) {
@@ -53,42 +55,34 @@ export async function uploadFile(
       // else click on `Replace Existing Source`
       duplicatePromise = clickModalButton(page, "Replace Existing Source");
     }
-    await Promise.all([page.waitForResponse(/files\/-\//), duplicatePromise]);
+    await Promise.all([fileRespWaitPromise, duplicatePromise]);
   } else {
-    await Promise.all([page.waitForResponse(/files\/-\//), fileUploadPromise]);
+    await Promise.all([fileRespWaitPromise, fileUploadPromise]);
     // if not duplicate wait and make sure `Duplicate source name` modal is not open
     await asyncWait(100);
     await expect(page.getByText("Duplicate source name")).toBeHidden();
   }
 }
 
-export async function createOrReplaceSource(
-  page: Page,
-  file: string,
-  name: string,
-) {
-  try {
-    await getEntityLink(page, name).waitFor({
-      timeout: 100,
-    });
-    await uploadFile(page, file, true, false);
-  } catch (err) {
-    await uploadFile(page, file);
-  }
+export async function createSource(page: Page, file: string, filePath: string) {
+  await uploadFile(page, file);
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForEntity(page, TestEntityType.Source, name, true),
+    waitForFileNavEntry(page, filePath, true),
   ]);
 }
 
 export async function waitForSource(
   page: Page,
-  name: string,
+  filePath: string,
   columns: Array<string>,
 ) {
+  const [, fileName] = splitFolderAndName(filePath);
+  const name = extractFileName(fileName);
+
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForEntity(page, TestEntityType.Source, name, true),
+    waitForFileNavEntry(page, filePath, true),
     waitForProfiling(page, name, columns),
   ]);
 }

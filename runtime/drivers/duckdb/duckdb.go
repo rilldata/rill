@@ -87,9 +87,9 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("duckdb driver can't be shared")
+func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("duckdb driver can't be shared")
 	}
 
 	cfg, err := newConfig(cfgMap)
@@ -130,6 +130,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
+		instanceID:     instanceID,
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
@@ -139,7 +140,6 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 		dbCond:         sync.NewCond(&sync.Mutex{}),
 		driverConfig:   cfgMap,
 		driverName:     d.name,
-		shared:         shared,
 		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
@@ -266,7 +266,8 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db *sqlx.DB
+	instanceID string
+	db         *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -296,7 +297,6 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
-	shared      bool
 	// State for maintaining connection acquire times, which enables periodically checking for hanging DuckDB queries (we have previously seen deadlocks in DuckDB).
 	connTimesMu sync.Mutex
 	nextConnID  int
@@ -334,10 +334,6 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 
 // AsCatalogStore Catalog implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	if c.shared {
-		// duckdb catalog is instance specific
-		return nil, false
-	}
 	return c, true
 }
 
@@ -358,10 +354,6 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	if c.shared {
-		// duckdb olap is instance specific
-		return nil, false
-	}
 	return c, true
 }
 

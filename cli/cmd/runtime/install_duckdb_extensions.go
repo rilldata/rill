@@ -17,7 +17,7 @@ func InstallDuckDBExtensionsCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use: "install-duckdb-extensions",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := map[string]any{"dsn": ":memory:"} // In-memory
-			h, err := drivers.Open("duckdb", cfg, false, activity.NewNoopClient(), zap.NewNop())
+			h, err := drivers.Open("duckdb", "default", cfg, activity.NewNoopClient(), zap.NewNop())
 			if err != nil {
 				return fmt.Errorf("failed to open ephemeral duckdb: %w", err)
 			}

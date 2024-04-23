@@ -40,7 +40,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	rs, err := ctrl.List(ctx, req.Kind, false)
+	rs, err := ctrl.List(ctx, req.Kind, req.Path, false)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -95,7 +95,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 	}
 
 	if req.Replay {
-		rs, err := ctrl.List(ss.Context(), req.Kind, false)
+		rs, err := ctrl.List(ss.Context(), req.Kind, "", false)
 		if err != nil {
 			return status.Error(codes.InvalidArgument, err.Error())
 		}

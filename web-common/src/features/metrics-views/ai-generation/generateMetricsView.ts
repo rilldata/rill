@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
+import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { get } from "svelte/store";
 import { notifications } from "../../../components/notifications";
-import { appScreen } from "../../../layout/app-store";
 import { overlay } from "../../../layout/overlay-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -17,9 +17,7 @@ import {
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
 import { useDashboardFileNames } from "../../dashboards/selectors";
-import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
 import { getName } from "../../entity-management/name-utils";
-import { EntityType } from "../../entity-management/types";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
@@ -53,6 +51,7 @@ export function useCreateDashboardFromTableUIAction(
   database: string,
   databaseSchema: string,
   tableName: string,
+  folder: string,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
@@ -85,10 +84,7 @@ export function useCreateDashboardFromTableUIAction(
       `${tableName}_dashboard`,
       get(dashboardNames).data ?? [],
     );
-    const newFilePath = getFilePathFromNameAndType(
-      newDashboardName,
-      EntityType.MetricsDefinition,
-    );
+    const newFilePath = `/${folder}/${newDashboardName}.yaml`;
 
     try {
       // First, request an AI-generated dashboard
@@ -131,12 +127,13 @@ export function useCreateDashboardFromTableUIAction(
       }
 
       // Preview
-      await goto(`/dashboard/${newDashboardName}`);
+      const previousScreenName = getScreenNameFromPage();
+      await goto(`/files${newFilePath}`);
       void behaviourEvent.fireNavigationEvent(
         newDashboardName,
         behaviourEventMedium,
         metricsEventSpace,
-        get(appScreen)?.type,
+        previousScreenName,
         MetricsEventScreenName.Dashboard,
       );
     } catch (err) {
@@ -159,7 +156,7 @@ export function useCreateDashboardFromTableUIAction(
 export async function createDashboardFromTableInMetricsEditor(
   instanceId: string,
   modelName: string,
-  metricsViewName: string,
+  filePath: string,
 ) {
   const isAiEnabled = get(featureFlags.ai);
 
@@ -180,10 +177,6 @@ export async function createDashboardFromTableInMetricsEditor(
     },
   });
 
-  const filePath = getFilePathFromNameAndType(
-    metricsViewName,
-    EntityType.MetricsDefinition,
-  );
   try {
     // First, request an AI-generated dashboard
     void runtimeServiceGenerateMetricsViewFileWithSignal(

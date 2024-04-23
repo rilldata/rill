@@ -1,11 +1,11 @@
 <script lang="ts">
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
-  import ExpanderButton from "@rilldata/web-common/components/column-profile/ExpanderButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TableIcon from "../../components/icons/TableIcon.svelte";
   import { createCommandClickAction } from "../../lib/actions/command-click-action";
   import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { emitNavigationTelemetry } from "./navigation-utils";
@@ -13,19 +13,13 @@
   export let name: string;
   export let href: string;
   export let open = false;
-  export let expandable = false;
   export let showContextMenu = true;
 
   const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
 
-  let showDetails = false;
   let contextMenuOpen = false;
   let mousedown = false;
-
-  function onShowDetails() {
-    showDetails = !showDetails;
-  }
 
   async function shiftClickHandler() {
     await navigator.clipboard.writeText(name);
@@ -43,21 +37,12 @@
 
   function handleClick() {
     if (!open) return emitNavigationTelemetry(href, name);
-
-    if (expandable) onShowDetails();
   }
 </script>
 
 <div class="entry group w-full flex gap-x-2" class:open={open || mousedown}>
-  {#if expandable}
-    <ExpanderButton rotated={showDetails} on:click={onShowDetails} />
-  {/if}
-
-  <svelte:element
-    this={open && expandable ? "button" : "a"}
-    role="link"
+  <a
     class="clickable-text"
-    class:expandable
     class:open
     tabindex={open ? -1 : 0}
     href={open ? undefined : href}
@@ -69,6 +54,7 @@
     on:click={handleClick}
   >
     <Tooltip distance={8}>
+      <TableIcon size="14px" className="shrink-0 text-gray-400" />
       <div class="truncate">
         {name}
       </div>
@@ -83,7 +69,7 @@
         {/if}
       </svelte:fragment>
     </Tooltip>
-  </svelte:element>
+  </a>
 
   {#if showContextMenu}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
@@ -110,13 +96,9 @@
   {/if}
 </div>
 
-{#if showDetails}
-  <slot name="more" />
-{/if}
-
 <style lang="postcss">
   .entry {
-    @apply w-full justify-between pl-2.5 pr-2;
+    @apply w-full justify-between pl-2 pr-2;
     @apply flex items-center h-6 select-none cursor-pointer;
   }
 
@@ -134,11 +116,7 @@
   }
 
   .clickable-text {
-    @apply text-left size-full overflow-hidden pl-6 flex items-center;
+    @apply text-left size-full overflow-hidden flex items-center;
     @apply text-gray-900 gap-x-2;
-  }
-
-  .expandable {
-    @apply pl-0;
   }
 </style>

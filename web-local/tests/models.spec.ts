@@ -1,28 +1,29 @@
 import {
-  TestEntityType,
-  deleteEntity,
-  gotoEntity,
-  renameEntityUsingMenu,
+  clickMenuButton,
+  deleteFile,
+  goToFile,
+  openFileNavEntryContextMenu,
+  renameFileUsingMenu,
   updateCodeEditor,
   waitForProfiling,
   wrapRetryAssertion,
 } from "./utils/commonHelpers";
-import {
-  createModel,
-  createModelFromSource,
-  modelHasError,
-} from "./utils/modelHelpers";
-import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
+import { createModel, modelHasError } from "./utils/modelHelpers";
+import { createSource } from "./utils/sourceHelpers";
 import { test } from "./utils/test";
+import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("models", () => {
   test("Create and edit model", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
-    await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
+    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createSource(
+      page,
+      "AdImpressions.tsv",
+      "/sources/AdImpressions.yaml",
+    );
 
-    await createModel(page, "AdBids_model_t");
-    await waitForEntity(page, TestEntityType.Model, "AdBids_model_t", true);
+    await createModel(page, "AdBids_model_t.sql");
+    await waitForFileNavEntry(page, "/models/AdBids_model_t.sql", true);
     await Promise.all([
       waitForProfiling(page, "AdBids_model_t", [
         "publisher",
@@ -44,30 +45,29 @@ test.describe("models", () => {
 
   test("Rename and delete model", async ({ page }) => {
     // make sure AdBids_rename_delete is present
-    await createModel(page, "AdBids_rename_delete");
+    await createModel(page, "AdBids_rename_delete.sql");
 
     // rename
-    await renameEntityUsingMenu(
+    await renameFileUsingMenu(
       page,
-      "AdBids_rename_delete",
-      "AdBids_rename_delete_new",
+      "/models/AdBids_rename_delete.sql",
+      "AdBids_rename_delete_new.sql",
     );
-    await waitForEntity(
+    await waitForFileNavEntry(
       page,
-      TestEntityType.Model,
-      "AdBids_rename_delete_new",
+      "/models/AdBids_rename_delete_new.sql",
       true,
     );
-    await entityNotPresent(page, "AdBids_rename_delete");
+    await fileNotPresent(page, "/models/AdBids_rename_delete.sql");
 
     // delete
-    await deleteEntity(page, "AdBids_rename_delete_new");
-    await entityNotPresent(page, "AdBids_rename_delete_new");
-    await entityNotPresent(page, "AdBids_rename_delete");
+    await deleteFile(page, "/models/AdBids_rename_delete_new.sql");
+    await fileNotPresent(page, "/models/AdBids_rename_delete_new.sql");
+    await fileNotPresent(page, "/models/AdBids_rename_delete.sql");
   });
 
   test("Create model from source", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     await Promise.all([
       waitForProfiling(page, "AdBids_model", [
@@ -75,16 +75,21 @@ test.describe("models", () => {
         "domain",
         "timestamp",
       ]),
-      createModelFromSource(page, "AdBids"),
+      openFileNavEntryContextMenu(page, "/sources/AdBids.yaml"),
+      clickMenuButton(page, "Create New Model"),
     ]);
-    await waitForEntity(page, TestEntityType.Model, "AdBids_model", true);
+    await waitForFileNavEntry(page, "/models/AdBids_model.sql", true);
 
     // navigate to another source
-    await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
+    await createSource(
+      page,
+      "AdImpressions.tsv",
+      "/sources/AdImpressions.yaml",
+    );
     // delete the source of model
-    await deleteEntity(page, "AdBids");
+    await deleteFile(page, "/sources/AdBids.yaml");
     // go to model
-    await gotoEntity(page, "AdBids_model");
+    await goToFile(page, "/models/AdBids_model.sql");
     // make sure error has propagated
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });

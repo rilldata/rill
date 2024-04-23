@@ -2,7 +2,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { Builder } from "bits-ui";
-  import { getAttrs, builderActions } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
 
   // utilize the ID for easier UI testing.
   export let id: string;
@@ -12,14 +12,16 @@
   export let builders: Builder[] = [];
 </script>
 
-<Tooltip location="right" distance={16} suppress={suppressTooltip}>
+<!-- Opening the ContextMenu causes this tooltip to flash in another location, likely due 
+  to a race condition. Disabling the tooltip for now.   -->
+<Tooltip distance={16} location="right" suppress={true}>
   <button
-    {id}
-    class="group-hover:opacity-100"
-    class:!opacity-100={suppressTooltip}
-    aria-label={label}
     {...getAttrs(builders)}
-    on:click|preventDefault
+    aria-label={label}
+    class="group-hover:opacity-100"
+    class:!group-hover:opacity-100={suppressTooltip}
+    {id}
+    on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
   >
     <slot />
@@ -31,7 +33,7 @@
 
 <style lang="postcss">
   button {
-    @apply h-full aspect-square;
+    @apply h-full aspect-square p-1.5;
     @apply grid place-content-center;
     @apply text-gray-500 opacity-0;
     @apply transition-transform duration-100;
@@ -39,6 +41,6 @@
 
   button:hover,
   button:focus {
-    @apply outline-none bg-gray-300;
+    @apply outline-none bg-slate-300;
   }
 </style>

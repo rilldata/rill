@@ -13,17 +13,18 @@
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
+  import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import DeployDashboardCta from "./DeployDashboardCTA.svelte";
 
   export let metricViewName: string;
 
   $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+  $: filePath = $dashboardQuery.data?.meta?.filePaths?.[0] ?? "";
 
   $: dashboardPolicyCheck = useDashboardPolicyCheck(
     $runtime.instanceId,
-    $dashboardQuery.data?.meta?.filePaths?.[0] ?? "",
+    filePath,
   );
 
   const { readOnly } = featureFlags;
@@ -59,7 +60,7 @@
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
-        href={`/dashboard/${metricViewName}/edit`}
+        href={`/files${filePath}`}
         disabled={!dashboardIsIdle}
         on:click={fireTelemetry}
         type="secondary"
@@ -75,7 +76,7 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
+      <Button on:click={() => showDeployModal()} type="brand">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

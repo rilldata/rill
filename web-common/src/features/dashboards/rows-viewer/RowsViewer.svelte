@@ -8,6 +8,7 @@
   import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
+  import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
   export let metricViewName = "";
   export let height: number;
@@ -56,27 +57,17 @@
       tableColumns = $tableQuery.data.meta as VirtualizedTableColumns[];
     }
   }
-
-  let rowOverscanAmount = 0;
-  let columnOverscanAmount = 0;
-
-  const configOverride = {
-    indexWidth: 72,
-    rowHeight: 32,
-  };
 </script>
 
-<div
-  class="overflow-y-auto bg-gray-100 border-t border-gray-200"
-  style="height: {height}px"
->
+<div class="overflow-hidden border-t" style:height="{height}px">
   {#if rows}
     <PreviewTable
       {rows}
       columnNames={tableColumns}
-      {rowOverscanAmount}
-      {columnOverscanAmount}
-      {configOverride}
+      rowHeight={32}
+      name={metricViewName}
     />
+  {:else}
+    <ReconcilingSpinner />
   {/if}
 </div>

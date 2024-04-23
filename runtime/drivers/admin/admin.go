@@ -2,6 +2,8 @@ package admin
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -61,13 +63,13 @@ type configProperties struct {
 	TempDir     string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("admin driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("admin driver can't be shared")
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.WeakDecode(cfgMap, cfg)
+	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +112,7 @@ type Handle struct {
 	gitURL               string
 	gitURLExpiresOn      time.Time
 	virtualNextPageToken string
+	virtualStashPath     string
 }
 
 var _ drivers.Handle = &Handle{}
@@ -236,8 +239,20 @@ func (h *Handle) cloneOrPull(ctx context.Context, onlyClone bool) error {
 }
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
-func (h *Handle) cloneOrPullUnsafe(ctx context.Context) error {
-	err := h.checkHandshake(ctx)
+func (h *Handle) cloneOrPullUnsafe(ctx context.Context) (err error) {
+	if h.cloned.Load() {
+		// Move the virtual directory out of the Git repository, and put it back after the pull.
+		// See stashVirtual for details on why this is needed.
+		err := h.stashVirtual()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			err = h.unstashVirtual()
+		}()
+	}
+
+	err = h.checkHandshake(ctx)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
@@ -373,7 +388,12 @@ func (h *Handle) pullUnsafeGit() error {
 // It must run after a successful call to cloneUnsafeGit (which creates the directory).
 // Unsafe for concurrent use.
 func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
-	dst := filepath.Join(h.projPath, "__virtual__")
+	var dst string
+	if h.virtualStashPath == "" {
+		dst = generateVirtualPath(h.projPath)
+	} else {
+		dst = h.virtualStashPath
+	}
 
 	i := 0
 	n := 500
@@ -424,6 +444,92 @@ func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// stashVirtualDir stashes the virtual directory in a temporary directory outside of the Git repository path.
+// Its effect can be reversed by calling unstashVirtual.
+//
+// This is needed for two reasons:
+// a) to handle changes to the project path (i.e. if GitSubpath is changed in checkHandshake),
+// b) to handle a bug where go-git removes unstaged files during "git pull": https://github.com/src-d/go-git/issues/1026#issue-382413262.
+func (h *Handle) stashVirtual() error {
+	if h.virtualStashPath != "" {
+		return fmt.Errorf("stash virtual: virtual directory already stashed")
+	}
+
+	if h.projPath == "" {
+		return fmt.Errorf("stash virtual: project path not set")
+	}
+
+	src := generateVirtualPath(h.projPath)
+	if _, err := os.Stat(src); os.IsNotExist(err) {
+		// Nothing to stash.
+		// unstashVirtual gracefully handles when virtualStashPath is empty.
+		return nil
+	}
+
+	dst, err := generateTmpPath(h.config.TempDir, "admin_driver_virtual_stash", "")
+	if err != nil {
+		return fmt.Errorf("stash virtual: %w", err)
+	}
+
+	err = os.Rename(src, dst)
+	if err != nil {
+		return fmt.Errorf("stash virtual: %w", err)
+	}
+
+	h.virtualStashPath = dst
+	return nil
+}
+
+// unstashVirtual reverses the effect of stashVirtual.
+func (h *Handle) unstashVirtual() error {
+	if h.virtualStashPath == "" {
+		// Not returning an error since stashVirtual might not stash anything if there aren't any virtual files.
+		return nil
+	}
+
+	if h.projPath == "" {
+		return fmt.Errorf("unstash virtual: project path not set")
+	}
+
+	src := h.virtualStashPath
+	dst := generateVirtualPath(h.projPath)
+
+	err := os.Rename(src, dst)
+	if err != nil {
+		return fmt.Errorf("unstash virtual: %w", err)
+	}
+
+	h.virtualStashPath = ""
+	return nil
+}
+
+// generateVirtualPath generates a virtual path inside the project path.
+func generateVirtualPath(projPath string) string {
+	return filepath.Join(projPath, "__virtual__")
+}
+
+// generateTmpPath generates a temporary path with a random suffix.
+// It uses the format <dir>/<base><random><ext>.
+// The output path is absolute.
+func generateTmpPath(dir, base, ext string) (string, error) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("generate tmp path: %w", err)
+	}
+
+	r := hex.EncodeToString(b)
+
+	p := filepath.Join(dir, base+r+ext)
+
+	p, err = filepath.Abs(p)
+	if err != nil {
+		return "", fmt.Errorf("generate tmp path: %w", err)
+	}
+
+	return p, nil
 }
 
 // retryErrClassifier classifies Github request errors as retryable or not.

@@ -2,20 +2,15 @@ import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-
 import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  waitForDashboard,
+  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import { expect } from "@playwright/test";
-
-import { updateCodeEditor } from "../utils/commonHelpers";
 import { test } from "../utils/test";
 
 test.describe("smoke tests for number formatting", () => {
   useDashboardFlowTestSetup();
 
   test("smoke tests for number formatting", async ({ page }) => {
-    // open metrics editor
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
-
     // This is a metrics spec with all available formatting options
     const formatterFlowDashboard = `# Visit https://title: "AdBids_model_dashboard"
 model: "AdBids_model"
@@ -69,9 +64,7 @@ dimensions:
 `;
 
     // update the code editor with the new spec
-    await updateCodeEditor(page, formatterFlowDashboard);
-    // wait for the dashboard to update
-    await waitForDashboard(page);
+    await updateAndWaitForDashboard(page, formatterFlowDashboard);
 
     // make the viewport big enough to see the whole dashboard
     await page.setViewportSize({ width: 1920, height: 1200 });

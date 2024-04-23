@@ -29,7 +29,6 @@ export function parseChartYaml(chartContent: string): V1ChartSpec {
   let resolver = "";
   const resolverProperties: Record<string, string> = {};
 
-  console.log(chartYaml);
   if (chartYaml.data?.sql) {
     resolver = "sql";
     resolverProperties.sql = chartYaml.data?.sql;

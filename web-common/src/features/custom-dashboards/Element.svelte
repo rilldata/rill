@@ -1,21 +1,23 @@
 <script lang="ts" context="module">
+  import { goto } from "$app/navigation";
+  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
+  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
-  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
-  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
-  import { goto } from "$app/navigation";
   import Component from "./Component.svelte";
 
   const zIndex = writable(0);
 </script>
 
 <script lang="ts">
+  import Markdown from "./Markdown.svelte";
+
   const dispatch = createEventDispatcher();
 
   export let i: number;
   export let gapSize: number;
-  export let chart: V1DashboardComponent;
+  export let component: V1DashboardComponent;
   export let selected: boolean;
   export let interacting: boolean;
   export let width: number;
@@ -27,7 +29,7 @@
 
   let localZIndex = 0;
 
-  $: chartName = chart.chart ?? "No chart name";
+  $: chartName = component.chart;
 
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
@@ -72,7 +74,14 @@
       on:contextmenu
       on:change
     >
-      <Chart {chartName} />
+      {#if component.markdown}
+        <Markdown
+          markdown={component.markdown}
+          fontSize={component.fontSize ?? 40}
+        />
+      {:else if chartName}
+        <Chart {chartName} />
+      {/if}
     </Component>
   </ContextMenu.Trigger>
 
@@ -81,7 +90,7 @@
     <ContextMenu.Item>Delete</ContextMenu.Item>
     <ContextMenu.Item
       on:click={async () => {
-        await goto(`/chart/${chartName}`);
+        await goto(`/files/charts/${chartName}`);
       }}
     >
       Go to {chartName}.yaml
@@ -89,9 +98,3 @@
     <ContextMenu.Item>Show details</ContextMenu.Item>
   </ContextMenu.Content>
 </ContextMenu.Root>
-
-<style lang="postcss">
-  .wrapper {
-    @apply absolute;
-  }
-</style>

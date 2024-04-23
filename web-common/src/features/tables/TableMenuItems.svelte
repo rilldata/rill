@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -10,6 +10,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
@@ -21,22 +22,22 @@
   export let databaseSchema: string;
   export let table: string;
 
+  const queryClient = useQueryClient();
+
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
   $: tableName = table;
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: modelNames = useModelFileNames($runtime.instanceId);
 
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appScreen?.type;
-      const newModelName = await createModelFromSource(
-        runtimeInstanceId,
-        $modelNames.data ?? [],
+      const previousActiveEntity = getScreenNameFromPage();
+      const [newModelPath, newModelName] = await createModelFromSource(
+        queryClient,
         tableName,
         tableName,
+        "models",
       );
-
+      await goto(`/file${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
@@ -55,6 +56,7 @@
     database,
     databaseSchema,
     tableName,
+    "dashboards",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );

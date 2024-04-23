@@ -1,21 +1,20 @@
 import { expect } from "@playwright/test";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
-import { getEntityLink, TestEntityType } from "./commonHelpers";
+import { getFileNavEntry } from "./commonHelpers";
 
-export async function waitForEntity(
+export async function waitForFileNavEntry(
   page: Page,
-  type: TestEntityType,
-  name: string,
+  filePath: string,
   navigated: boolean,
 ) {
-  await getEntityLink(page, name).waitFor();
+  await page.getByLabel(`${filePath} Nav Entry`).waitFor();
   if (navigated) {
-    await page.waitForURL(new RegExp(`/${type}/${name}`));
+    await page.waitForURL(new RegExp(`/files${filePath}`));
   }
 }
 
-export async function entityNotPresent(page: Page, name: string) {
+export async function fileNotPresent(page: Page, filePath: string) {
   await asyncWait(100);
-  await expect(getEntityLink(page, name)).toBeHidden();
+  await expect(getFileNavEntry(page, filePath)).toBeHidden();
 }

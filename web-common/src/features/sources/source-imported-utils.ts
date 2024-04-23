@@ -1,6 +1,6 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { waitForResourceUpdate } from "@rilldata/web-common/features/entity-management/resource-status-utils";
-import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
+import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
@@ -19,5 +19,5 @@ export async function checkSourceImported(
   );
 
   if (!success) return;
-  sourceImportedName.set(filePath);
+  sourceImportedPath.set(filePath);
 }

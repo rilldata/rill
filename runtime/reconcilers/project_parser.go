@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -87,7 +88,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		r.C.Lock(ctx)
 		defer r.C.Unlock(ctx)
 
-		resources, err := r.C.List(ctx, "", false)
+		resources, err := r.C.List(ctx, "", "", false)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -173,6 +174,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
+		hasDuplicates := false
 		for _, e := range events {
 			if e.Dir {
 				continue
@@ -180,7 +182,32 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if parser.IsIgnored(e.Path) {
 				continue
 			}
+			if parser.IsSkippable(e.Path) {
+				// We do not get events for files in deleted/renamed directories.
+				// So we need to manually find paths we're tracking in the directory and add them to changedPaths.
+				//
+				// Note that e.Dir is always false for deletes, so we don't actually know if the path was a directory.
+				// Calling TrackedPathsInDir is safe even if the given path isn't a directory.
+				//
+				// NOTE: This is nested under IsSkippable as an optimization because IsSkippable is true for directories.
+				// This is pretty hacky and should be refactored (probably more fundamentally in the watcher itself).
+				if e.Type == runtimev1.FileEvent_FILE_EVENT_DELETE {
+					ps := parser.TrackedPathsInDir(e.Path)
+					if len(ps) > 0 {
+						changedPaths = append(changedPaths, ps...)
+						hasDuplicates = true
+					}
+					continue
+				}
+
+				continue
+			}
 			changedPaths = append(changedPaths, e.Path)
+		}
+
+		// Small optimization to avoid deduplicating if we know we didn't append to it.
+		if hasDuplicates {
+			changedPaths = arrayutil.Dedupe(changedPaths)
 		}
 
 		if len(changedPaths) == 0 {
@@ -348,7 +375,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 	var deleteResources []*runtimev1.Resource
 
 	// Pass over all existing resources in the catalog.
-	resources, err := r.C.List(ctx, "", false)
+	resources, err := r.C.List(ctx, "", "", false)
 	if err != nil {
 		return err
 	}

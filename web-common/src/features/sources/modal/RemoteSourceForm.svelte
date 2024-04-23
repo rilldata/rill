@@ -38,7 +38,7 @@
           if (connector.name === undefined)
             throw new Error("connector name is undefined");
           await submitRemoteSourceForm(queryClient, connector.name, values);
-          goto(`/source/${values.sourceName}`);
+          await goto(`/files/sources/${values.sourceName}.yaml`);
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;
@@ -83,7 +83,7 @@
       Need help? Refer to our
       <a
         href="https://docs.rilldata.com/build/connect"
-        rel="noreferrer"
+        rel="noreferrer noopener"
         target="_blank">docs</a
       > for more information.
     </div>

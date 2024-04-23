@@ -45,3 +45,41 @@ Models can also be cross-referenced between each other to produce the final outp
 - Lookups for id/name joins
 - Unnesting and merging complex data types
 - Combining multiple sources with data cleansing or transformation requirements
+
+## Working with Pivots
+
+Pivots deserve their own section as using the [Pivot](https://duckdb.org/docs/sql/statements/pivot) statement while modeling deserves its own considerations. Notably, there are a few existing DuckDB limitations to consider:
+- DuckDB's [SQL to JSON serializer](https://duckdb.org/docs/extensions/json.html#serializing-and-deserializing-sql-to-json-and-vice-versa) doesn't support `PIVOT` without the `IN` [filter](https://duckdb.org/docs/sql/statements/pivot#in-filter-for-on-clause)
+- DuckDB doesn't support creating views based on `PIVOT` without an `IN` filter (and all models are materialized as views by default in Rill)
+
+Fortunately, there are a few workarounds that we can leverage to circumvent these limitations.
+
+### Passing the `IN` filter with your `PIVOT` statement
+
+If you know the _exact values_ that you are trying to pivot on, you can simply pass in these values as part of your pivot query by using an `IN` filter with your `ON` clause ([link to DuckDB documentation](https://duckdb.org/docs/sql/statements/pivot#in-filter-for-on-clause)). For example, rather than:
+
+```sql
+PIVOT table_name ON column_name USING SUM(measure)
+```
+
+You can use the following `PIVOT` statement:
+
+```sql
+PIVOT table_name ON column_name IN (value_a, value_b, value_c) USING SUM(measure)
+```
+
+### Materializing the model as a table and then utilizing the `ref` function
+
+If you <u>need</u> to use the `PIVOT` statement specifically but don't want to specify an `IN` filter, then you will need to inform Rill to materialize this model as a table **and** to leverage the `ref` function as well (for proper DAG resolution). Using the same example, this would instead look something like:
+
+```sql
+-- @materialize: true
+
+PIVOT {{ ref "table_name" }} ON column_name USING SUM(measure)
+```
+
+:::info A note on model materialization
+
+The `-- @materialize: true` at the top of your model SQL file informs Rill to materialize the model as a table in the underlying OLAP engine (instead of the default view). More details about materializing models can be found in our [model reference page](/reference/project-files/models#model-materialization).
+
+:::
