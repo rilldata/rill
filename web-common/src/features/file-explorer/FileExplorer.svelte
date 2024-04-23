@@ -103,7 +103,7 @@
   ) {
     const isCurrentFile =
       removeLeadingSlash(fromDragData.filePath) ===
-      removeLeadingSlash($page.params.file);
+      removeLeadingSlash($page.params.file ?? "");
     const tarDir = toDragData.isDir
       ? toDragData.filePath
       : splitFolderAndName(toDragData.filePath)[0];
