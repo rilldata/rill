@@ -47,14 +47,6 @@ const (
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
-	RuntimeService_ListCatalogEntries_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
-	RuntimeService_GetCatalogEntry_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
-	RuntimeService_TriggerRefresh_FullMethodName          = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
-	RuntimeService_Reconcile_FullMethodName               = "/rill.runtime.v1.RuntimeService/Reconcile"
-	RuntimeService_PutFileAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/PutFileAndReconcile"
-	RuntimeService_DeleteFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
-	RuntimeService_RenameFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
-	RuntimeService_RefreshAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 )
 
@@ -122,27 +114,6 @@ type RuntimeServiceClient interface {
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
-	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
-	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
-	// GetCatalogEntry returns information about a specific entry in the catalog
-	GetCatalogEntry(ctx context.Context, in *GetCatalogEntryRequest, opts ...grpc.CallOption) (*GetCatalogEntryResponse, error)
-	// TriggerRefresh triggers a refresh of a refreshable catalog object.
-	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
-	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
-	TriggerRefresh(ctx context.Context, in *TriggerRefreshRequest, opts ...grpc.CallOption) (*TriggerRefreshResponse, error)
-	// Reconcile applies a full set of artifacts from a repo to the catalog and infra.
-	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
-	// artifacts will be deleted.
-	Reconcile(ctx context.Context, in *ReconcileRequest, opts ...grpc.CallOption) (*ReconcileResponse, error)
-	// PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
-	// It is equivalent to calling the two RPCs sequentially.
-	PutFileAndReconcile(ctx context.Context, in *PutFileAndReconcileRequest, opts ...grpc.CallOption) (*PutFileAndReconcileResponse, error)
-	// DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-	DeleteFileAndReconcile(ctx context.Context, in *DeleteFileAndReconcileRequest, opts ...grpc.CallOption) (*DeleteFileAndReconcileResponse, error)
-	// RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-	RenameFileAndReconcile(ctx context.Context, in *RenameFileAndReconcileRequest, opts ...grpc.CallOption) (*RenameFileAndReconcileResponse, error)
-	RefreshAndReconcile(ctx context.Context, in *RefreshAndReconcileRequest, opts ...grpc.CallOption) (*RefreshAndReconcileResponse, error)
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 }
 
@@ -475,78 +446,6 @@ func (c *runtimeServiceClient) ListNotifierConnectors(ctx context.Context, in *L
 	return out, nil
 }
 
-func (c *runtimeServiceClient) ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error) {
-	out := new(ListCatalogEntriesResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_ListCatalogEntries_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) GetCatalogEntry(ctx context.Context, in *GetCatalogEntryRequest, opts ...grpc.CallOption) (*GetCatalogEntryResponse, error) {
-	out := new(GetCatalogEntryResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GetCatalogEntry_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) TriggerRefresh(ctx context.Context, in *TriggerRefreshRequest, opts ...grpc.CallOption) (*TriggerRefreshResponse, error) {
-	out := new(TriggerRefreshResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_TriggerRefresh_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) Reconcile(ctx context.Context, in *ReconcileRequest, opts ...grpc.CallOption) (*ReconcileResponse, error) {
-	out := new(ReconcileResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_Reconcile_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) PutFileAndReconcile(ctx context.Context, in *PutFileAndReconcileRequest, opts ...grpc.CallOption) (*PutFileAndReconcileResponse, error) {
-	out := new(PutFileAndReconcileResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_PutFileAndReconcile_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) DeleteFileAndReconcile(ctx context.Context, in *DeleteFileAndReconcileRequest, opts ...grpc.CallOption) (*DeleteFileAndReconcileResponse, error) {
-	out := new(DeleteFileAndReconcileResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_DeleteFileAndReconcile_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) RenameFileAndReconcile(ctx context.Context, in *RenameFileAndReconcileRequest, opts ...grpc.CallOption) (*RenameFileAndReconcileResponse, error) {
-	out := new(RenameFileAndReconcileResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_RenameFileAndReconcile_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) RefreshAndReconcile(ctx context.Context, in *RefreshAndReconcileRequest, opts ...grpc.CallOption) (*RefreshAndReconcileResponse, error) {
-	out := new(RefreshAndReconcileResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_RefreshAndReconcile_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error) {
 	out := new(IssueDevJWTResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_IssueDevJWT_FullMethodName, in, out, opts...)
@@ -620,27 +519,6 @@ type RuntimeServiceServer interface {
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
-	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
-	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
-	// GetCatalogEntry returns information about a specific entry in the catalog
-	GetCatalogEntry(context.Context, *GetCatalogEntryRequest) (*GetCatalogEntryResponse, error)
-	// TriggerRefresh triggers a refresh of a refreshable catalog object.
-	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
-	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
-	TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error)
-	// Reconcile applies a full set of artifacts from a repo to the catalog and infra.
-	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
-	// artifacts will be deleted.
-	Reconcile(context.Context, *ReconcileRequest) (*ReconcileResponse, error)
-	// PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
-	// It is equivalent to calling the two RPCs sequentially.
-	PutFileAndReconcile(context.Context, *PutFileAndReconcileRequest) (*PutFileAndReconcileResponse, error)
-	// DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-	DeleteFileAndReconcile(context.Context, *DeleteFileAndReconcileRequest) (*DeleteFileAndReconcileResponse, error)
-	// RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-	RenameFileAndReconcile(context.Context, *RenameFileAndReconcileRequest) (*RenameFileAndReconcileResponse, error)
-	RefreshAndReconcile(context.Context, *RefreshAndReconcileRequest) (*RefreshAndReconcileResponse, error)
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
@@ -732,30 +610,6 @@ func (UnimplementedRuntimeServiceServer) AnalyzeConnectors(context.Context, *Ana
 }
 func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNotifierConnectors not implemented")
-}
-func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GetCatalogEntry(context.Context, *GetCatalogEntryRequest) (*GetCatalogEntryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCatalogEntry not implemented")
-}
-func (UnimplementedRuntimeServiceServer) TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefresh not implemented")
-}
-func (UnimplementedRuntimeServiceServer) Reconcile(context.Context, *ReconcileRequest) (*ReconcileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Reconcile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) PutFileAndReconcile(context.Context, *PutFileAndReconcileRequest) (*PutFileAndReconcileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PutFileAndReconcile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) DeleteFileAndReconcile(context.Context, *DeleteFileAndReconcileRequest) (*DeleteFileAndReconcileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteFileAndReconcile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) RenameFileAndReconcile(context.Context, *RenameFileAndReconcileRequest) (*RenameFileAndReconcileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenameFileAndReconcile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) RefreshAndReconcile(context.Context, *RefreshAndReconcileRequest) (*RefreshAndReconcileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RefreshAndReconcile not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -1286,150 +1140,6 @@ func _RuntimeService_ListNotifierConnectors_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_ListCatalogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListCatalogEntriesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListCatalogEntries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_ListCatalogEntries_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListCatalogEntries(ctx, req.(*ListCatalogEntriesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_GetCatalogEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCatalogEntryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetCatalogEntry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GetCatalogEntry_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetCatalogEntry(ctx, req.(*GetCatalogEntryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_TriggerRefresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerRefreshRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).TriggerRefresh(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_TriggerRefresh_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).TriggerRefresh(ctx, req.(*TriggerRefreshRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_Reconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReconcileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).Reconcile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_Reconcile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).Reconcile(ctx, req.(*ReconcileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_PutFileAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PutFileAndReconcileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).PutFileAndReconcile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_PutFileAndReconcile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).PutFileAndReconcile(ctx, req.(*PutFileAndReconcileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_DeleteFileAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteFileAndReconcileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).DeleteFileAndReconcile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_DeleteFileAndReconcile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).DeleteFileAndReconcile(ctx, req.(*DeleteFileAndReconcileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_RenameFileAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenameFileAndReconcileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).RenameFileAndReconcile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_RenameFileAndReconcile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).RenameFileAndReconcile(ctx, req.(*RenameFileAndReconcileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_RefreshAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RefreshAndReconcileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).RefreshAndReconcile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_RefreshAndReconcile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).RefreshAndReconcile(ctx, req.(*RefreshAndReconcileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueDevJWTRequest)
 	if err := dec(in); err != nil {
@@ -1554,38 +1264,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListNotifierConnectors",
 			Handler:    _RuntimeService_ListNotifierConnectors_Handler,
-		},
-		{
-			MethodName: "ListCatalogEntries",
-			Handler:    _RuntimeService_ListCatalogEntries_Handler,
-		},
-		{
-			MethodName: "GetCatalogEntry",
-			Handler:    _RuntimeService_GetCatalogEntry_Handler,
-		},
-		{
-			MethodName: "TriggerRefresh",
-			Handler:    _RuntimeService_TriggerRefresh_Handler,
-		},
-		{
-			MethodName: "Reconcile",
-			Handler:    _RuntimeService_Reconcile_Handler,
-		},
-		{
-			MethodName: "PutFileAndReconcile",
-			Handler:    _RuntimeService_PutFileAndReconcile_Handler,
-		},
-		{
-			MethodName: "DeleteFileAndReconcile",
-			Handler:    _RuntimeService_DeleteFileAndReconcile_Handler,
-		},
-		{
-			MethodName: "RenameFileAndReconcile",
-			Handler:    _RuntimeService_RenameFileAndReconcile_Handler,
-		},
-		{
-			MethodName: "RefreshAndReconcile",
-			Handler:    _RuntimeService_RefreshAndReconcile_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",

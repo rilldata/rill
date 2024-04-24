@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
@@ -44,7 +43,7 @@
 
   let contextMenuOpen = false;
 
-  $: id = `${filePath}-nav-entry`;
+  $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
   $: isCurrentFile =
     removeLeadingSlash(filePath) ===
@@ -59,16 +58,17 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  async function navigate(filePath: string) {
+  function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
-    await goto(`/files${filePath}`);
-    await behaviourEvent.fireNavigationEvent(
-      $name?.name ?? "",
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      previousScreenName,
-      ResourceKindToScreenMap[resourceKind] ?? MetricsEventScreenName.Unknown,
-    );
+    behaviourEvent
+      .fireNavigationEvent(
+        $name?.name ?? "",
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousScreenName,
+        ResourceKindToScreenMap[resourceKind] ?? MetricsEventScreenName.Unknown,
+      )
+      .catch(console.error);
   }
 
   function handleMouseDown(e: MouseEvent) {
@@ -77,34 +77,41 @@
   }
 </script>
 
-<button
-  aria-label="{fileName} Nav Entry"
-  class="w-full h-6 group pr-2 text-left flex justify-between gap-x-1 items-center
-  {isProtectedDirectory || isDotFile
-    ? 'text-gray-500'
-    : 'text-gray-900 hover:text-gray-900'}
+<li
+  aria-label="{filePath} Nav Entry"
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center
   {isCurrentFile ? 'bg-slate-100' : ''} 
-  font-medium hover:bg-slate-100"
-  {id}
-  on:click={() => navigate(filePath)}
-  on:mousedown={handleMouseDown}
-  on:mouseup={(e) =>
-    onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
-  style:padding-left="{padding}px"
+   hover:bg-slate-100"
 >
-  <svelte:component
-    this={resourceKind ? resourceIconMapping[resourceKind] : File}
-    className="text-gray-400"
-    size="14px"
-  />
-  <span class="truncate w-full">{fileName}</span>
+  <a
+    {id}
+    href={`/files${filePath}`}
+    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
+    isDotFile
+      ? 'text-gray-500 hover:text-gray-500'
+      : 'text-gray-900 hover:text-gray-900'}"
+    style:padding-left="{padding}px"
+    on:click={fireTelemetry}
+    on:mousedown={handleMouseDown}
+    on:mouseup={(e) =>
+      onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
+  >
+    <div class="flex-none">
+      <svelte:component
+        this={resourceKind ? resourceIconMapping[resourceKind] : File}
+        className="text-gray-400"
+        size="14px"
+      />
+    </div>
+    <span class="truncate w-full">{fileName}</span>
+  </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
           builders={[builder]}
           id="more-actions-{filePath}"
-          label="{fileName} actions menu trigger"
+          label="{filePath} actions menu trigger"
           suppressTooltip={contextMenuOpen}
           tooltipText="More actions"
         >
@@ -149,4 +156,4 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   {/if}
-</button>
+</li>

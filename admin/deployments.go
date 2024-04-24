@@ -316,7 +316,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	for _, depl := range depls {
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.Logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("hibernate: find project error", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 

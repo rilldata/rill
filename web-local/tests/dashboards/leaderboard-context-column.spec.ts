@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { clickMenuButton } from "../utils/commonHelpers";
 import {
   createDashboardFromModel,
   interactWithComparisonMenu,
@@ -7,7 +8,6 @@ import {
 } from "../utils/dashboardHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test } from "../utils/test";
-import { clickMenuButton } from "../utils/commonHelpers";
 
 test.describe("leaderboard context column", () => {
   test.beforeEach(async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe("leaderboard context column", () => {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model.sql");
+    await createDashboardFromModel(page, "/models/AdBids_model.sql");
 
     // Close the navigation sidebar to give the code editor more space
     await page.getByRole("button", { name: "Close sidebar" }).click();

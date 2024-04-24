@@ -1,8 +1,8 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import { yaml } from "@rilldata/web-common/components/editor/presets/yaml";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import {
@@ -95,21 +95,9 @@
 </script>
 
 {#if fileTypeUnsupported}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>Unsupported file type.</h1>
-    </div>
-  </div>
+  <WorkspaceError message="Unsupported file type." />
 {:else if fileError}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>
-        Error loading file: {fileErrorMessage}
-      </h1>
-    </div>
-  </div>
+  <WorkspaceError message={`Error loading file: ${fileErrorMessage}`} />
 {:else if isSource || isModel}
   <SourceModelPage data={{ fileArtifact }} />
 {:else if isDashboard}

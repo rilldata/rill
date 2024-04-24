@@ -1,17 +1,17 @@
 import { expect } from "@playwright/test";
 import {
-  deleteEntity,
-  renameEntityUsingMenu,
+  deleteFile,
+  renameFileUsingMenu,
   updateCodeEditor,
 } from "./utils/commonHelpers";
 import {
   TestDataPath,
-  createOrReplaceSource,
+  createSource,
   uploadFile,
   waitForSource,
 } from "./utils/sourceHelpers";
 import { test } from "./utils/test";
-import { entityNotPresent, waitForFileEntry } from "./utils/waitHelpers";
+import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("sources", () => {
   test("Import sources", async ({ page }) => {
@@ -41,31 +41,31 @@ test.describe("sources", () => {
 
     // upload existing table and replace
     await uploadFile(page, "AdBids.csv", true, false);
-    await entityNotPresent(page, "AdBids_2");
+    await fileNotPresent(page, "AdBids_2");
   });
 
   test("Rename and delete sources", async ({ page }) => {
-    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // rename
-    await renameEntityUsingMenu(page, "AdBids.yaml", "AdBids_new.yaml");
-    await waitForFileEntry(page, `/sources/AdBids_new.yaml`, true);
-    await entityNotPresent(page, "AdBids.yaml");
+    await renameFileUsingMenu(page, "/sources/AdBids.yaml", "AdBids_new.yaml");
+    await waitForFileNavEntry(page, `/sources/AdBids_new.yaml`, true);
+    await fileNotPresent(page, "/sources/AdBids.yaml");
 
     // delete
-    await deleteEntity(page, "AdBids_new.yaml");
-    await entityNotPresent(page, "AdBids_new");
-    await entityNotPresent(page, "AdBids");
+    await deleteFile(page, "/sources/AdBids_new.yaml");
+    await fileNotPresent(page, "/sources/AdBids_new");
+    await fileNotPresent(page, "/sources/AdBids");
   });
 
   test("Edit source", async ({ page }) => {
     // Upload data & create two sources
-    await createOrReplaceSource(
+    await createSource(
       page,
       "AdImpressions.tsv",
       "/sources/AdImpressions.yaml",
     );
-    await createOrReplaceSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // Edit source path to a non-existent file
     const nonExistentSource = `type: local_file
