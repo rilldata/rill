@@ -22,7 +22,6 @@ import type {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
-  V1MetricsView,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -76,7 +75,7 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
 }
 
 function syncMeasures(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   const measuresMap = getMapFromArray(
@@ -134,7 +133,7 @@ function syncMeasures(
 }
 
 function syncDimensions(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
@@ -198,7 +197,7 @@ const metricViewReducers = {
   syncFromUrl(
     name: string,
     urlState: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
@@ -221,7 +220,7 @@ const metricViewReducers = {
     });
   },
 
-  sync(name: string, metricsView: V1MetricsView) {
+  sync(name: string, metricsView: V1MetricsViewSpec) {
     if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures

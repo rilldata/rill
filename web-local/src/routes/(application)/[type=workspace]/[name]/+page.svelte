@@ -2,7 +2,7 @@
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import type { SelectionRange } from "@codemirror/state";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -52,7 +52,6 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
-    createRuntimeServiceRefreshAndReconcile,
     type V1ModelV2,
     type V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
@@ -90,7 +89,6 @@
 
   const QUERY_DEBOUNCE_TIME = 400;
 
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const updateFile = createRuntimeServicePutFile();
 
   const queryHighlight = getContext<Writable<QueryHighlightState>>(
@@ -270,14 +268,7 @@
 </svelte:head>
 
 {#if fileNotFound}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>
-        Unable to find file {assetName}
-      </h1>
-    </div>
-  </div>
+  <WorkspaceError message="File not found." />
 {:else}
   <WorkspaceContainer>
     <WorkspaceHeader
@@ -292,9 +283,7 @@
           class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
           transition:fade={{ duration: 200 }}
         >
-          {#if $refreshSourceMutation.isLoading}
-            Refreshing...
-          {:else if refreshedOn}
+          {#if refreshedOn}
             {verb} on {formatRefreshedOn(refreshedOn)}
           {/if}
         </p>
@@ -361,7 +350,11 @@
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
           {:else if tableName}
-            <ConnectedPreviewTable {connector} table={tableName} />
+            <ConnectedPreviewTable
+              {connector}
+              table={tableName}
+              loading={resourceIsReconciling}
+            />
           {/if}
           <svelte:fragment slot="error">
             {#if type === "model"}
