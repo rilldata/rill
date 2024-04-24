@@ -440,9 +440,9 @@ func (s *Service) ValidateRuntimeVersion(ver string) error {
 		_, err := version.NewVersion(ver)
 		if err != nil {
 			// Not a valid SemVer, try as a full commit hash
-			matched, err2 := regexp.MatchString(`\b([a-f0-9]{40})\b`, ver)
-			if err2 != nil {
-				return err2
+			matched, err := regexp.MatchString(`\b([a-f0-9]{40})\b`, ver)
+			if err != nil {
+				return err
 			}
 			if !matched {
 				return fmt.Errorf("not a valid version %q", ver)
