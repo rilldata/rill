@@ -217,48 +217,40 @@ func (h *Handle) rlockEnsureCloned(ctx context.Context) error {
 		return nil
 	}
 
-	// Release read lock and take write lock
+	// Release read lock and clone (which uses a singleflight)
 	h.repoMu.RUnlock()
-	err = h.repoMu.Lock(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Check if another goroutine did the clone while we were waiting for the write lock
-	if h.cloned {
-		// Release write lock and take write lock
-		h.repoMu.Unlock()
-		return h.repoMu.RLock(ctx)
-	}
 
 	// Clone the repo
 	err = h.cloneOrPull(ctx)
 	if err != nil {
-		// Need to release write lock in case of failure
-		h.repoMu.Unlock()
 		return err
 	}
 
-	// Release write lock and take read lock
-	h.repoMu.Unlock()
+	// We know it's cloned now. Take read lock and return.
 	return h.repoMu.RLock(ctx)
 }
 
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
 // After the first time it returns successfully, h.repoPath is safe to access.
-// Unsafe for concurrent use.
+// Safe for concurrent invocation (but must not be called while holding h.repoMu).
 func (h *Handle) cloneOrPull(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "cloneOrPull")
 	defer span.End()
 
 	// Using a SingleFlight to ensure that the clone keeps running even if the caller's ctx is cancelled.
-	// (Since more than one caller may be waiting on the lock, and the current caller is just the lucky one who got the lock first.)
+	// (Since more than one caller may be waiting on the clone concurrently.)
 	ch := h.repoSF.DoChan("cloneOrPull", func() (any, error) {
+		err := h.repoMu.Lock(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		defer h.repoMu.Unlock()
+
 		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		err := r.Run(func() error { return h.cloneOrPullInner(ctx) })
+		err = r.Run(func() error { return h.cloneOrPullInner(ctx) })
 		if err != nil {
 			return nil, err
 		}

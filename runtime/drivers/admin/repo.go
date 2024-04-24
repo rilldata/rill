@@ -135,13 +135,6 @@ func (h *Handle) Delete(ctx context.Context, filePath string) error {
 }
 
 func (h *Handle) Sync(ctx context.Context) error {
-	// Note: Taking a write lock
-	err := h.repoMu.Lock(ctx)
-	if err != nil {
-		return err
-	}
-	defer h.repoMu.Unlock()
-
 	return h.cloneOrPull(ctx)
 }
 
