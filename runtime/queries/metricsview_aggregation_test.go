@@ -1541,7 +1541,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "measure_0",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1552,7 +1552,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 					Exprs: []*runtimev1.Expression{
 						{
 							Expression: &runtimev1.Expression_Ident{
-								Ident: "measure_1",
+								Ident: "measure_0",
 							},
 						},
 						{
@@ -1577,9 +1577,9 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 	rows := q.Result.Data
 	require.Equal(t, 2, len(rows))
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
 func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
@@ -1647,8 +1647,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
-				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+				Name: "measure_0",
 			},
 		},
 		Having: &runtimev1.Expression{
@@ -1658,7 +1657,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 					Exprs: []*runtimev1.Expression{
 						{
 							Expression: &runtimev1.Expression_Ident{
-								Ident: "measure_1",
+								Ident: "measure_0",
 							},
 						},
 						{
@@ -1683,7 +1682,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 	rows := q.Result.Data
 	require.Equal(t, 1, len(rows))
 	i := 0
-	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
 func TestMetricsViewsAggregation_where(t *testing.T) {
@@ -1724,7 +1723,6 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
-				Desc: true,
 			},
 		},
 	}
@@ -1822,8 +1820,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
-				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+				Name: "measure_0",
 				Filter: &runtimev1.Expression{
 					Expression: &runtimev1.Expression_Cond{
 						Cond: &runtimev1.Condition{
@@ -1857,15 +1854,15 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "Yahoo,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Yahoo,null", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "null,4296", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "null,4296", fieldsToString(rows[i], "pub", "measure_0"))
 
 	// ================= check m1 > 5000
 
@@ -1876,7 +1873,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 				Exprs: []*runtimev1.Expression{
 					{
 						Expression: &runtimev1.Expression_Ident{
-							Ident: "measure_1",
+							Ident: "measure_0",
 						},
 					},
 					{
@@ -1896,7 +1893,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 	rows = q.Result.Data
 	require.Equal(t, 1, len(rows))
 	i = 0
-	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_0"))
 
 	// ================= check m1 < 5000
 
@@ -1907,7 +1904,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 				Exprs: []*runtimev1.Expression{
 					{
 						Expression: &runtimev1.Expression_Ident{
-							Ident: "measure_1",
+							Ident: "measure_0",
 						},
 					},
 					{
@@ -1944,8 +1941,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 		}),
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
-				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+				Name: "measure_0",
 			},
 		},
 		Sort: []*runtimev1.MetricsViewAggregationSort{
@@ -1960,11 +1956,11 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "null,9359", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "null,9359", fieldsToString(rows[i], "pub", "measure_0"))
 
 	// ================= check measure filter
 
@@ -1995,11 +1991,11 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 	rows = q.Result.Data
 	require.Equal(t, 3, len(rows))
 	i = 0
-	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_0"))
 	i++
-	require.Equal(t, "null,4239", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "null,4239", fieldsToString(rows[i], "pub", "measure_0"))
 
 	// ================= check having m1 > 5000
 
@@ -2010,7 +2006,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 				Exprs: []*runtimev1.Expression{
 					{
 						Expression: &runtimev1.Expression_Ident{
-							Ident: "measure_1",
+							Ident: "measure_0",
 						},
 					},
 					{
@@ -2030,7 +2026,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 	rows = q.Result.Data
 	require.Equal(t, 1, len(rows))
 	i = 0
-	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
 func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {

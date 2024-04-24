@@ -331,7 +331,6 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
-
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
@@ -882,7 +881,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 							SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 						) comparison
 					ON
-							%[17]s
+						%[17]s
 					%[6]s
 					%[7]s
 					OFFSET
@@ -918,7 +917,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				SELECT %[15]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				%[16]s)
+			%[16]s
 		%[6]s
 		%[7]s
 		OFFSET
