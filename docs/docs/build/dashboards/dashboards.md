@@ -51,6 +51,7 @@ When you add a metrics definition using the UI, a code definition will automatic
 In your Rill project directory, a `dashboard_name.yaml` file is created in the `dashboards` directory and its definition its definition can be adapted from the following template:
 
 ```yaml
+kind: metrics_view
 model: model_name
 title: Dashboard name
 default_time_range: ""

@@ -35,6 +35,7 @@ For example, let's say we had `sourceA` and `sourceB` defined that point to diff
 
 **sourceA.yaml**:
 ```yaml
+kind: source
 connector: "snowflake-a"
 dsn: "user:password@account_identifier/DB_A/SCHEMA_A?warehouse=COMPUTE_WH&role=ACCOUNTADMIN"
 sql: "select * from table_A"
@@ -42,6 +43,7 @@ sql: "select * from table_A"
 
 **sourceB.yaml**:
 ```yaml
+kind: source
 connector: "snowflake-b"
 dsn: "user:password@account_identifier/DB_B/SCHEMA_B?warehouse=COMPUTE_WH&role=ACCOUNTADMIN"
 sql: "select * from table_B"

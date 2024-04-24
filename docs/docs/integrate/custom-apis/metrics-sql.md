@@ -17,6 +17,7 @@ Metrics SQL transforms queries that reference `dimensions` and `measures` within
 
 Consider a metrics view configured as follows:
 ```
+kind: metrics_view
 title: Ad Bids
 model: ad_bids
 timeseries: timestamp

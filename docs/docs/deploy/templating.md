@@ -42,6 +42,7 @@ When you use templating in a SQL model, Rill loses the ability to analyze the SQ
 To avoid this scenario, whenever you use templating in a model's SQL, it is <u>strongly recommended</u> to incorporate `ref` tags whenever you need to reference another resource in your project in SQL. For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. As an example:
 
 ```sql
+-- @kind: model
 # models/my_model.sql
 SELECT *
 FROM {{ ref "my_source" }}
@@ -64,7 +65,8 @@ Let's say that we have a [Snowflake](/reference/connectors/snowflake.md) source 
 
 In this hypothetical scenario, our `source.yaml` might look something like the following:
 ```yaml
-type: "snowflake"
+kind: source
+connector: "snowflake"
 sql: "select * from <table_name> {{if dev}} limit 1 {{end}}"
 dsn: "{{if dev}}SUPPORT_TEST{{else}}PROD_USER{{end}}@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>N&authenticator=SNOWFLAKE_JWT&privateKey=..."
 ```
@@ -76,7 +78,8 @@ dsn: "{{if dev}}SUPPORT_TEST{{else}}PROD_USER{{end}}@<account_identifier>/<datab
 Let's say that we have a [GCS](/reference/connectors/gcs.md) source created where Rill is reading in some CSV data (in this case we have some sample [Citi Bike trip data](https://citibikenyc.com/system-data) loaded onto both a "test" and "prod" GCS bucket). In this case, let's imagine that we want to connect to this "test" bucket for local development purposes but we want to make sure that our production data hosted on our "prod" bucket is what's being used to power this same source once the project has been deployed to Rill Cloud. In such a scenario, our `source.yaml` might look like:
 
 ```yaml
-type: "duckdb"
+kind: source
+connector: "duckdb"
 sql: "select * from read_csv('gs://{{if dev}}<test_bucket>{{else}}<prod_bucket>{{end}}/201306-citibike-tripdata.csv', auto_detect=true, ignore_errors=1, header=true)"
 ```
 
@@ -90,6 +93,7 @@ In another example, let's say we had a [S3](/reference/connectors/s3.md) source 
 Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like:
 
 ```yaml
+kind: source
 connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where updated_at >= '2024-03-01' AND updated_at < '2024-03-07' {{ end }}
 ```
@@ -107,6 +111,8 @@ Following a similar vein to our previous example, let's say that we wanted to ap
 In our `model.sql` file, we could leverage templating logic to check the environment is `dev` and apply a `LIMIT 1000` to the query:
 
 ```sql
+-- @kind: model
+
 -- A bunch of CTEs, complex joins, etc.
 
 SELECT * FROM final
@@ -132,6 +138,7 @@ vars:
 Furthermore, our `model.sql` file contains the following SQL:
 
 ```sql
+-- @kind: model
 SELECT * FROM {{ ref "data_source" }}
 WHERE original_language = '{{ .vars.language }}'
 {{if dev}} LIMIT {{ .vars.local_limit }} {{end}}
