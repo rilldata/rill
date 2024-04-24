@@ -23,7 +23,7 @@ export class NavEntryDragDropStore {
   public initialPosition = { left: 0, top: 0 };
   public readonly position = writable({ left: 0, top: 0 });
   public offset = { x: 0, y: 0 };
-  public readonly dropFolders = writable<Array<string>>([]);
+  public readonly dropDirs = writable<Array<string>>([]);
 
   private newDragData: NavDragData | null;
 
@@ -48,19 +48,16 @@ export class NavEntryDragDropStore {
 
   public async onMouseUp(
     e: MouseEvent,
-    dragData: NavDragData | null,
-    dropSuccess: (
-      fromDragData: NavDragData,
-      toDragData: NavDragData,
-    ) => Promise<void>,
+    dropSuccess: (fromPath: string, toDir: string) => Promise<void>,
   ) {
     e.preventDefault();
     e.stopPropagation();
 
     const curDragData = get(this.dragData);
-
-    if (curDragData && dragData && curDragData.filePath !== dragData.filePath) {
-      await dropSuccess(curDragData, dragData);
+    const dropDirs = get(this.dropDirs);
+    const toDir = dropDirs[dropDirs.length - 1];
+    if (curDragData?.filePath && toDir) {
+      await dropSuccess(curDragData.filePath, toDir);
     }
 
     this.newDragData = null;
@@ -83,7 +80,7 @@ export class NavEntryDragDropStore {
   }
 
   public onMouseEnter(dir: string) {
-    this.dropFolders.update((d) => {
+    this.dropDirs.update((d) => {
       d.push(dir);
       return d;
     });
@@ -95,7 +92,7 @@ export class NavEntryDragDropStore {
   }
 
   public onMouseLeave() {
-    this.dropFolders.update((d) => {
+    this.dropDirs.update((d) => {
       d.pop();
       return d;
     });
@@ -118,7 +115,7 @@ export class NavEntryDragDropStore {
   }
 
   private expandDirectory(dir: string) {
-    const dropFolders = get(this.dropFolders);
+    const dropFolders = get(this.dropDirs);
     if (dir !== dropFolders[dropFolders.length - 1]) return;
     directoryState.expand(dir);
   }

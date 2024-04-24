@@ -17,12 +17,11 @@
     metricsView?: string;
   }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
-  export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
   $: expanded = $directoryState[directory.path];
-  const { dragData, dropFolders } = navEntryDragDropStore;
+  const { dragData, dropDirs } = navEntryDragDropStore;
   $: isDragDropHover =
-    $dragData && $dropFolders[$dropFolders.length - 1] === directory.path;
+    $dragData && $dropDirs[$dropDirs.length - 1] === directory.path;
 </script>
 
 <div
@@ -33,13 +32,7 @@
   role="directory"
 >
   {#if directory.path !== "/"}
-    <NavDirectoryEntry
-      dir={directory}
-      {onDelete}
-      {onMouseDown}
-      {onMouseUp}
-      {onRename}
-    />
+    <NavDirectoryEntry dir={directory} {onDelete} {onMouseDown} {onRename} />
   {/if}
 
   {#if expanded}
@@ -52,7 +45,6 @@
           {onDelete}
           {onGenerateChart}
           {onMouseDown}
-          {onMouseUp}
         />
       {/each}
     {/if}
@@ -66,7 +58,6 @@
         {onDelete}
         {onGenerateChart}
         {onMouseDown}
-        {onMouseUp}
       />
     {/each}
   {/if}

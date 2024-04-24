@@ -97,20 +97,14 @@
 
   const { dragData, position } = navEntryDragDropStore;
 
-  async function handleDropSuccess(
-    fromDragData: NavDragData,
-    toDragData: NavDragData,
-  ) {
+  async function handleDropSuccess(fromPath: string, toDir: string) {
     const isCurrentFile =
-      removeLeadingSlash(fromDragData.filePath) ===
-      removeLeadingSlash($page.params.file ?? "");
-    const tarDir = toDragData.isDir
-      ? toDragData.filePath
-      : splitFolderAndName(toDragData.filePath)[0];
-    const [, srcFile] = splitFolderAndName(fromDragData.filePath);
-    const newFilePath = `${tarDir}/${srcFile}`;
+      $page.params.file && // handle case when user is on home page
+      removeLeadingSlash(fromPath) === removeLeadingSlash($page.params.file);
+    const [, srcFile] = splitFolderAndName(fromPath);
+    const newFilePath = `${toDir === "/" ? toDir : toDir + "/"}${srcFile}`;
 
-    if (fromDragData.filePath !== newFilePath) {
+    if (fromPath !== newFilePath) {
       const newTopLevelPath = getTopLevelFolder(newFilePath);
       if (PROTECTED_DIRECTORIES.includes(newTopLevelPath)) {
         notifications.send({
@@ -118,7 +112,7 @@
         });
         return;
       }
-      await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
+      await renameFileArtifact(instanceId, fromPath, newFilePath);
 
       if (isCurrentFile) {
         await goto(`/files${newFilePath}`);
@@ -129,8 +123,7 @@
 
 <svelte:window
   on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
-  on:mouseup={(e) =>
-    navEntryDragDropStore.onMouseUp(e, null, handleDropSuccess)}
+  on:mouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
 />
 
 <div class="flex flex-col items-start gap-y-2">
@@ -144,8 +137,6 @@
         {onGenerateChart}
         onMouseDown={(e, dragData) =>
           navEntryDragDropStore.onMouseDown(e, dragData)}
-        onMouseUp={(e, dragData) =>
-          navEntryDragDropStore.onMouseUp(e, dragData, handleDropSuccess)}
       />
     {/if}
   </ul>
