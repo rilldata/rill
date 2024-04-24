@@ -347,6 +347,13 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 			Config: c.Defaults,
 		})
 	}
+	conns = append(conns, &runtimev1.Connector{
+		Type: "file",
+		Name: "repo",
+		Config: map[string]string{
+			"ignore_paths": strings.Join(parser.RillYAML.IgnorePaths, ","),
+		},
+	})
 	inst.ProjectConnectors = conns
 
 	vars := make(map[string]string)

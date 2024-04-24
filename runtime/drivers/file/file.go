@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
@@ -52,6 +53,7 @@ type driver struct {
 type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	IgnorePaths     []string
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -65,6 +67,14 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
+	ignorePaths, ok := config["ignore_paths"]
+	if ok {
+		ignorePathsStr, ok := ignorePaths.(string)
+		if ok {
+			conf.IgnorePaths = strings.Split(ignorePathsStr, ",")
+		}
+	}
+
 	path, err := fileutil.ExpandHome(conf.DSN)
 	if err != nil {
 		return nil, err
@@ -74,6 +84,8 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("file", conf)
 
 	c := &connection{
 		logger:       logger,
