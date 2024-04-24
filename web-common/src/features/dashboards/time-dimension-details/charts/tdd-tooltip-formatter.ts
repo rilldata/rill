@@ -1,5 +1,7 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { TDDAlternateCharts, TDDChart } from "../types";
 
 export function escapeHTML(value: any): string {
@@ -11,6 +13,7 @@ export function tddTooltipFormatter(
   measureLabel: string,
   dimensionLabel: string | undefined,
   selectedDimensionValues: (string | null)[],
+  interval: V1TimeGrain | undefined,
 ) {
   let colorMap: Record<string, string> = {};
   selectedDimensionValues.forEach((dimValue, i) => {
@@ -23,7 +26,13 @@ export function tddTooltipFormatter(
     const { Time, ...rest } = value;
 
     if (Time) {
-      content += `<h2>${Time}</h2>`;
+      const formattedTime = interval
+        ? new Date(Time).toLocaleDateString(
+            undefined,
+            TIME_GRAIN[interval].formatDate,
+          )
+        : Time.toString();
+      content += `<h2>${formattedTime}</h2>`;
     }
 
     const keys = Object.keys(rest);

@@ -53,6 +53,7 @@
     expandedMeasureLabel,
     comparedDimensionLabel,
     selectedValues,
+    timeGrain,
   );
 </script>
 
