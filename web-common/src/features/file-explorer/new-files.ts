@@ -41,8 +41,8 @@ const ResourceKindMap: Record<
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
-    baseContent: `# Model SQL
-# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+    baseContent: `-- Model SQL
+-- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 -- @kind: model
 

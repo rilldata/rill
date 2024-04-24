@@ -25,8 +25,8 @@ export async function createModelFromSource(
 
   // Create model
   await runtimeServicePutFile(instanceId, newModelPath, {
-    blob: `# Model SQL
-# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+    blob: `-- Model SQL
+-- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 -- @kind: model
 
