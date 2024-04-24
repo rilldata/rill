@@ -201,10 +201,6 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
-func tempName(prefix string) string {
-	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
-}
-
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
 	if dimension.Expression != "" {
 		return dimension.Expression
@@ -215,4 +211,8 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	// backwards compatibility for older projects that have not run reconcile on this dashboard
 	// in that case `column` will not be present
 	return d.EscapeIdentifier(dimension.Name)
+}
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
 }
