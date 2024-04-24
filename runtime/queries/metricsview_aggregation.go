@@ -599,8 +599,13 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		whereClause += clause
 	}
+
+	whereBuilder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+		clause, clauseArgs, err := whereBuilder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}
@@ -622,13 +627,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var havingClauseArgs, extraWhereClauseArgs []any
 	if q.Having != nil {
 		var err error
-		extraWhereClause, extraWhereClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		// HAVING expression is converted to WHERE expression here
+		extraWhereClause, extraWhereClauseArgs, err = whereBuilder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}
 
-		markIdents(q.Having)
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		havingBuilder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+			having:  true,
+		}
+		havingClause, havingClauseArgs, err = havingBuilder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}
@@ -747,8 +757,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(q.Measures[0].Name)))
 	}
 	selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
-
-	measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+	builder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
+	measureExpression, measureWhereArgs, err := builder.buildExpression(q.Measures[0].Filter)
 	if err != nil {
 		return "", nil, err
 	}

@@ -483,7 +483,11 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	baseWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		clause, clauseArgs, err := builder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}
@@ -501,8 +505,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		markIdents(q.Having)
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+			having:  true,
+			aliases: q.Aliases,
+		}
+		havingClause, havingClauseArgs, err = builder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}
@@ -708,7 +717,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		td = fmt.Sprintf("%s::TIMESTAMP", td)
 	}
 
-	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+	builder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
+	whereClause, whereClauseArgs, err := builder.buildExpression(q.Where)
 	if err != nil {
 		return "", nil, err
 	}
@@ -865,7 +878,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		}
 		if q.Having != nil {
 			var havingClauseArgs []any
-			havingClause, havingClauseArgs, err := buildExpression(mv, q.Having, q.Aliases, dialect)
+			builder := &ExpressionBuilder{
+				mv:      mv,
+				dialect: dialect,
+				aliases: q.Aliases,
+				having:  true,
+			}
+			havingClause, havingClauseArgs, err := builder.buildExpression(q.Having)
 			if err != nil {
 				return "", nil, err
 			}
@@ -1005,7 +1024,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		havingClause := ""
 		if q.Having != nil {
 			var havingClauseArgs []any
-			havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+			builder := &ExpressionBuilder{
+				mv:      mv,
+				dialect: dialect,
+				aliases: q.Aliases,
+				having:  true,
+			}
+			havingClause, havingClauseArgs, err = builder.buildExpression(q.Having)
 			if err != nil {
 				return "", nil, err
 			}
