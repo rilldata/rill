@@ -10,10 +10,7 @@
   } from "@rilldata/web-common/features/entity-management/actions";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
-  import {
-    NavDragData,
-    navEntryDragDropStore,
-  } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import {
     getTopLevelFolder,
