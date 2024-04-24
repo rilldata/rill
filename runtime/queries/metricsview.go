@@ -228,12 +228,12 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, expr *runtimev1.Expression) (string, bool) {
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, expr *runtimev1.Expression, dialect drivers.Dialect) (string, bool) {
 	name := expr.GetIdent()
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
 		if dim.Name == name {
-			return metricsViewDimensionExpression(dim), true
+			return dialect.MetricsViewDimensionExpression(dim), true
 		}
 	}
 
@@ -245,15 +245,15 @@ func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtim
 				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
 				splits := strings.Split(alias.Name, ".")
 				if len(splits) > 1 {
-					return safeName(splits[0]) + "." + safeName(splits[1]), true
+					return dialect.EscapeIdentifier(splits[0]) + "." + dialect.EscapeIdentifier(splits[1]), true
 				}
-				return safeName(alias.Name), true
+				return dialect.EscapeIdentifier(alias.Name), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-				return safeName(alias.Name + "__previous"), true
+				return dialect.EscapeIdentifier(alias.Name + "__previous"), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-				return safeName(alias.Name + "__delta_abs"), true
+				return dialect.EscapeIdentifier(alias.Name + "__delta_abs"), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-				return safeName(alias.Name + "__delta_rel"), true
+				return dialect.EscapeIdentifier(alias.Name + "__delta_rel"), true
 			}
 		}
 	}
@@ -284,22 +284,6 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 	return false
 }
 
-func dimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
-	colName := safeName(dim.Name)
-	if !dim.Unnest || dialect == drivers.DialectDruid {
-		return fmt.Sprintf(`(%s) as %s`, metricsViewDimensionExpression(dim), colName), ""
-	}
-
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
-	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
-	if dim.Expression == "" {
-		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, dialect.EscapeTable(db, dbSchema, table), colName, unnestColName)
-	}
-
-	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) tbl(%s)`, dim.Expression, unnestColName)
-}
-
 func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	if expr == nil {
 		return "", nil, nil
@@ -314,7 +298,7 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		expr, isIdent := columnIdentifierExpression(mv, aliases, expr)
+		expr, isIdent := columnIdentifierExpression(mv, aliases, expr, dialect)
 		if !isIdent {
 			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
@@ -633,18 +617,6 @@ func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runti
 		}
 	}
 	return nil, fmt.Errorf("dimension %s not found", dimName)
-}
-
-func metricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
-	if dimension.Expression != "" {
-		return dimension.Expression
-	}
-	if dimension.Column != "" {
-		return safeName(dimension.Column)
-	}
-	// backwards compatibility for older projects that have not run reconcile on this dashboard
-	// in that case `column` will not be present
-	return safeName(dimension.Name)
 }
 
 func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {

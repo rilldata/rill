@@ -1,7 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { isDashboardPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import {
@@ -9,6 +8,7 @@
     retainFeaturesFlags,
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
@@ -16,7 +16,6 @@
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -35,12 +34,6 @@
   onMount(() => errorEventHandler?.addJavascriptErrorListeners());
 
   $: isEmbed = $page.url.pathname === "/-/embed";
-
-  // The Dashboard component assumes a page height of `h-screen`. This is somehow motivated by
-  // making the line charts and leaderboards scroll independently.
-  // However, `h-screen` screws up overflow/scroll on all other pages, so we only apply it to the dashboard.
-  // (This all feels hacky and should not be considered optimal.)
-  $: onDashboardPage = isDashboardPage($page);
 </script>
 
 <svelte:head>
@@ -49,7 +42,7 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col min-h-screen {onDashboardPage && 'h-screen'}">
+    <main class="flex flex-col min-h-screen h-screen">
       {#if !isEmbed}
         <TopNavigationBar />
       {/if}

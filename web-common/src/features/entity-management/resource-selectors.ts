@@ -23,6 +23,10 @@ export enum ResourceKind {
   Dashboard = "rill.runtime.v1.Dashboard",
   API = "rill.runtime.v1.API",
 }
+export type UserFacingResourceKinds = Exclude<
+  ResourceKind,
+  ResourceKind.ProjectParser
+>;
 export const SingletonProjectParserName = "parser";
 export const ResourceShortNameToKind: Record<string, ResourceKind> = {
   source: ResourceKind.Source,

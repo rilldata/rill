@@ -17,7 +17,7 @@
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
   import { getTopLevelFolder } from "../sources/extract-file-name";
-  import { PROTECTED_DIRECTORIES } from "./protected-directories";
+  import { PROTECTED_DIRECTORIES } from "./protected-paths";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -87,7 +87,7 @@
   style:padding-left="{padding}px"
 >
   <CaretDownIcon
-    className="text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
+    className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
   />
   <span class="truncate w-full">{dir.name}</span>
   {#if !isProtectedDirectory}

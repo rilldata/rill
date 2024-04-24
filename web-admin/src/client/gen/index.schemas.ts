@@ -510,6 +510,7 @@ export interface V1Project {
   orgName?: string;
   description?: string;
   public?: boolean;
+  createdByUserId?: string;
   provisioner?: string;
   githubUrl?: string;
   subpath?: string;

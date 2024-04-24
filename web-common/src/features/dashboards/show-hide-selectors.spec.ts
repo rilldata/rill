@@ -30,7 +30,7 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -358,7 +358,7 @@ describe("Show/Hide Selectors", () => {
 });
 
 function assertVisiblePartsWithMirroring(
-  metrics: V1MetricsView,
+  metrics: V1MetricsViewSpec,
   measures: Array<string> | undefined,
   dimensions: Array<string> | undefined,
 ) {

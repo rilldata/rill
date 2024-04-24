@@ -50,8 +50,26 @@
     }
   }
 
+  function updateEditorExtensions(newExtensions: Extension[]) {
+    editor.setState(
+      EditorState.create({
+        doc: blob,
+        extensions: [
+          // any extensions passed as props
+          ...newExtensions,
+          // establish a basic editor
+          base(),
+          // this will catch certain events and dispatch them to the parent
+          bindEditorEventsToDispatcher(dispatch),
+        ],
+      }),
+    );
+  }
+
   // reactive statements to dynamically update the editor when inputs change
   $: updateEditorContents(latest);
+
+  $: if (editor) updateEditorExtensions(extensions);
 </script>
 
 <div bind:this={container} class="contents" />

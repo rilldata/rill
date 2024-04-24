@@ -7,9 +7,11 @@
   export let customStyle = "";
   export let type;
   export let value;
+  export let truncate = false;
 </script>
 
 <Base
+  {truncate}
   {isNull}
   classes="ui-copy-number font-normal {customStyle} {inTable &&
     'block text-right'}"

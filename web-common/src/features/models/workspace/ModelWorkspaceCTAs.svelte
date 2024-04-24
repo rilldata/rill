@@ -111,6 +111,7 @@
 {:else if availableDashboards?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button
+      type="brand"
       on:click={async () => {
         if (availableDashboards[0]?.meta?.filePaths?.[0]) {
           await goto(`/files/${availableDashboards[0].meta.filePaths[0]}`);
@@ -120,7 +121,7 @@
       <IconSpaceFixer pullLeft pullRight={collapse}>
         <Forward />
       </IconSpaceFixer>
-      <ResponsiveButtonText {collapse}>Preview</ResponsiveButtonText>
+      <ResponsiveButtonText {collapse}>Go to dashboard</ResponsiveButtonText>
     </Button>
     <TooltipContent slot="tooltip-content">
       Go to the dashboard associated with this model
@@ -133,11 +134,11 @@
       distance={8}
       alignment="end"
     >
-      <Button on:click={toggleFloatingElement}>
+      <Button on:click={toggleFloatingElement} type="brand">
         <IconSpaceFixer pullLeft pullRight={collapse}>
-          <Forward /></IconSpaceFixer
-        >
-        <ResponsiveButtonText {collapse}>Preview</ResponsiveButtonText>
+          <Forward />
+        </IconSpaceFixer>
+        <ResponsiveButtonText {collapse}>Go to dashboard</ResponsiveButtonText>
       </Button>
       <Menu
         dark

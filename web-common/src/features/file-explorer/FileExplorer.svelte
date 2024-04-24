@@ -8,12 +8,13 @@
     deleteFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import {
     NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
-  import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-directories";
+  import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import {
     getTopLevelFolder,
     splitFolderAndName,
@@ -37,10 +38,15 @@
                 sensitivity: "base",
               }) ?? 0,
           )
-          // Hide dotfiles and dot directories at the top level
-          .filter((file) => !file.path?.startsWith("."))
-          // Hide dotfiles and dot directories in subdirectories
-          .filter((file) => !file.path?.includes("/."))
+          // Hide dot directories
+          .filter(
+            (file) =>
+              !(
+                file.isDir &&
+                // Check both the top-level directory and subdirectories
+                (file.path?.startsWith(".") || file.path?.includes("/."))
+              ),
+          )
           // Hide the `tmp` directory
           .filter((file) => !file.path?.startsWith("/tmp"));
 
@@ -61,7 +67,10 @@
 
   async function onDelete(filePath: string) {
     await deleteFileArtifact(instanceId, filePath);
-    if ($page.params.file === filePath) {
+    if (
+      !!$page.params.file &&
+      removeLeadingSlash($page.params.file) === removeLeadingSlash(filePath)
+    ) {
       await goto("/");
     }
   }
@@ -86,13 +95,15 @@
     generateChartMetricsView = metricsView ?? "";
   }
 
-  const { navDragging, offset, dragStart } = navEntryDragDropStore;
+  const { dragData, position } = navEntryDragDropStore;
 
   async function handleDropSuccess(
     fromDragData: NavDragData,
     toDragData: NavDragData,
   ) {
-    const isCurrentFile = fromDragData.filePath === $page.params.file;
+    const isCurrentFile =
+      removeLeadingSlash(fromDragData.filePath) ===
+      removeLeadingSlash($page.params.file);
     const tarDir = toDragData.isDir
       ? toDragData.filePath
       : splitFolderAndName(toDragData.filePath)[0];
@@ -110,21 +121,21 @@
       await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files/${newFilePath}`);
+        await goto(`/files${newFilePath}`);
       }
     }
   }
 </script>
 
 <svelte:window
-  on:mousemove={() => navEntryDragDropStore.onMouseMove()}
+  on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
   on:mouseup={(e) =>
     navEntryDragDropStore.onMouseUp(e, null, handleDropSuccess)}
 />
 
 <div class="flex flex-col items-start gap-y-2">
   <!-- File tree -->
-  <div class="flex flex-col w-full items-start justify-start overflow-auto">
+  <ul class="flex flex-col w-full items-start justify-start overflow-auto">
     {#if $getFileTree.data}
       <NavDirectory
         directory={$getFileTree.data}
@@ -137,7 +148,7 @@
           navEntryDragDropStore.onMouseUp(e, dragData, handleDropSuccess)}
       />
     {/if}
-  </div>
+  </ul>
 </div>
 
 {#if showRenameModelModal}
@@ -155,6 +166,6 @@
   table={generateChartTable}
 />
 
-{#if $navDragging}
-  <NavEntryPortal offset={$offset} position={$dragStart} />
+{#if $dragData}
+  <NavEntryPortal position={$position} dragData={$dragData} />
 {/if}

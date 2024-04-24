@@ -2,10 +2,10 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
-  import { appScreen } from "../../layout/app-store";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -21,6 +21,7 @@
   import { directoryState } from "../file-explorer/directory-store";
   import { handleEntityCreate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../tables/selectors";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
     useDirectoryNamesInDirectory,
@@ -40,8 +41,6 @@
     ? currentFile.split("/").slice(0, -1).join("/")
     : "";
 
-  // TODO: we should only fetch the existing names when needed
-  // TODO: simplify all this
   $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
     instanceId,
     currentDirectory,
@@ -50,6 +49,21 @@
     instanceId,
     currentDirectory,
   );
+
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
+
+  async function wrapNavigation(toPath: string | undefined) {
+    if (!toPath) return;
+    const previousScreenName = getScreenNameFromPage();
+    await goto(toPath);
+    await behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.Navigate,
+      BehaviourEventMedium.Button,
+      previousScreenName,
+      MetricsEventSpace.LeftPanel,
+    );
+  }
 
   /**
    * Open the add source modal
@@ -60,7 +74,7 @@
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      $appScreen.type,
+      getScreenNameFromPage(),
       MetricsEventSpace.LeftPanel,
     );
   }
@@ -70,7 +84,7 @@
    */
   async function handleAddModel() {
     const newRoute = await handleEntityCreate(ResourceKind.Model);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -78,7 +92,7 @@
    */
   async function handleAddDashboard() {
     const newRoute = await handleEntityCreate(ResourceKind.MetricsView);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -132,7 +146,7 @@
       },
     });
 
-    await goto(`/files/${currentDirectory}/${nextFileName}`);
+    await goto(`/files/${path}`);
   }
 
   /**
@@ -148,7 +162,7 @@
    */
   async function handleAddChart() {
     const newRoute = await handleEntityCreate(ResourceKind.Chart);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -156,7 +170,7 @@
    */
   async function handleAddCustomDashboard() {
     const newRoute = await handleEntityCreate(ResourceKind.Dashboard);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -164,7 +178,7 @@
    */
   async function handleAddTheme() {
     const newRoute = await handleEntityCreate(ResourceKind.Theme);
-    if (newRoute) await goto(newRoute);
+    await wrapNavigation(newRoute);
   }
 
   /**
@@ -202,30 +216,32 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-[240px]">
-      <DropdownMenu.Item
-        aria-label="Add Source"
-        class="flex gap-x-2"
-        on:click={handleAddSource}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Source]}
-          className="text-gray-900"
-          size="16px"
-        />
-        Source
-      </DropdownMenu.Item>
-      <DropdownMenu.Item
-        aria-label="Add Model"
-        class="flex gap-x-2"
-        on:click={handleAddModel}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Model]}
-          className="text-gray-900"
-          size="16px"
-        />
-        Model
-      </DropdownMenu.Item>
+      {#if $isModelingSupportedForCurrentOlapDriver.data}
+        <DropdownMenu.Item
+          aria-label="Add Source"
+          class="flex gap-x-2"
+          on:click={handleAddSource}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Source]}
+            className="text-gray-900"
+            size="16px"
+          />
+          Source
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Add Model"
+          class="flex gap-x-2"
+          on:click={handleAddModel}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Model]}
+            className="text-gray-900"
+            size="16px"
+          />
+          Model
+        </DropdownMenu.Item>
+      {/if}
       <DropdownMenu.Item
         aria-label="Add Dashboard"
         class="flex gap-x-2"

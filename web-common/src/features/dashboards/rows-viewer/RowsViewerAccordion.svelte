@@ -1,18 +1,15 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { drag } from "../../../layout/drag";
-  import type { LayoutElement } from "../../../layout/workspace/types";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
 
   export let metricViewName: string;
 
@@ -21,9 +18,8 @@
   const MAX_HEIGHT_EXPANDED = 1000;
 
   let isOpen = false;
-  const toggle = () => {
-    isOpen = !isOpen;
-  };
+  let label = "";
+  let height = INITIAL_HEIGHT_EXPANDED;
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -89,8 +85,6 @@
     },
   );
 
-  let label = "";
-
   $: {
     if ($totalsQuery.data && $filteredTotalsQuery.data) {
       label = `${formatCompactInteger(
@@ -99,35 +93,32 @@
     }
   }
 
-  const rowsViewerLayout = writable<LayoutElement>({
-    value: INITIAL_HEIGHT_EXPANDED,
-    visible: true,
-  });
+  function toggle() {
+    isOpen = !isOpen;
+  }
 </script>
 
-<div>
-  <div
-    class="flex items-center px-2 h-7 w-full bg-gray-100 border-t border-t-gray-200 {isOpen
-      ? '!cursor-ns-resize'
-      : '!cursor-default'}"
-    use:drag={{
-      store: rowsViewerLayout,
-      minSize: MIN_HEIGHT_EXPANDED,
-      maxSize: MAX_HEIGHT_EXPANDED,
-      orientation: "vertical",
-      reverse: true,
-    }}
-  >
+<div
+  class="relative w-screen flex-none overflow-hidden flex flex-col bg-gray-100"
+>
+  <Resizer
+    disabled={!isOpen}
+    dimension={height}
+    min={MIN_HEIGHT_EXPANDED}
+    max={MAX_HEIGHT_EXPANDED}
+    basis={INITIAL_HEIGHT_EXPANDED}
+    onUpdate={(dimension) => (height = dimension)}
+    direction="NS"
+  />
+  <div class="bar">
     <button
       aria-label="Toggle rows viewer"
       class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
       on:click={toggle}
     >
-      {#if isOpen}
+      <span class:rotate-180={isOpen}>
         <CaretDownIcon size="14px" />
-      {:else}
-        <CaretUpIcon size="14px" />
-      {/if}
+      </span>
       <span class="font-bold">Model Data</span>
       {label}
     </button>
@@ -137,6 +128,12 @@
   </div>
 
   {#if isOpen}
-    <RowsViewer {metricViewName} height={$rowsViewerLayout.value} />
+    <RowsViewer {metricViewName} {height} />
   {/if}
 </div>
+
+<style lang="postcss">
+  .bar {
+    @apply flex items-center px-2 h-7 w-full bg-gray-100 border-t;
+  }
+</style>

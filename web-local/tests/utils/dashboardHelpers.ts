@@ -3,18 +3,21 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import {
   clickMenuButton,
-  openEntityMenu,
+  openFileNavEntryContextMenu,
   updateCodeEditor,
   waitForValidResource,
 } from "./commonHelpers";
 
-export async function createDashboardFromSource(page: Page, source: string) {
-  await openEntityMenu(page, source);
+export async function createDashboardFromSource(
+  page: Page,
+  sourcePath: string,
+) {
+  await openFileNavEntryContextMenu(page, sourcePath);
   await clickMenuButton(page, "Generate dashboard");
 }
 
-export async function createDashboardFromModel(page: Page, model: string) {
-  await openEntityMenu(page, model);
+export async function createDashboardFromModel(page: Page, modelPath: string) {
+  await openFileNavEntryContextMenu(page, modelPath);
   await clickMenuButton(page, "Generate dashboard");
 }
 
@@ -26,8 +29,8 @@ export async function assertLeaderboards(
   }>,
 ) {
   for (const { label, values } of leaderboards) {
-    const leaderboardBlock = page.locator("svelte-virtual-list-row", {
-      hasText: label,
+    const leaderboardBlock = page.getByRole("grid", {
+      name: `${label} leaderboard`,
     });
     await expect(leaderboardBlock).toBeVisible();
 
@@ -36,19 +39,6 @@ export async function assertLeaderboards(
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
-}
-
-export async function clickOnFilter(
-  page: Page,
-  dimensionLabel: string,
-  value: string,
-) {
-  await page
-    .locator("svelte-virtual-list-row", {
-      hasText: dimensionLabel,
-    })
-    .getByText(value)
-    .click();
 }
 
 export type RequestMatcher = (response: Response) => boolean;

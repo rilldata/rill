@@ -27,11 +27,11 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
   if (!res.isDir) {
     switch (res.event) {
       case "FILE_EVENT_WRITE":
-        void queryClient.resetQueries(
+        void queryClient.refetchQueries(
           getRuntimeServiceGetFileQueryKey(instanceId, res.path),
         );
         void fileArtifacts.fileUpdated(res.path);
-        if (res.path === "rill.yaml") {
+        if (res.path === "/rill.yaml") {
           // If it's a rill.yaml file, invalidate the dev JWT queries
           void queryClient.invalidateQueries(
             getRuntimeServiceIssueDevJWTQueryKey(),

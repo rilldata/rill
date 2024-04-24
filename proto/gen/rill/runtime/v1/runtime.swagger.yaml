@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: rill/runtime/v1/schema.proto
+  title: rill/runtime/v1/export_format.proto
   version: version not set
 tags:
   - name: RuntimeService
@@ -134,27 +134,6 @@ paths:
           type: string
       tags:
         - ConnectorService
-  /v1/delete-and-reconcile:
-    post:
-      summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-      operationId: RuntimeService_DeleteFileAndReconcile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteFileAndReconcileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
-      tags:
-        - RuntimeService
   /v1/dev-jwt:
     get:
       operationId: RuntimeService_IssueDevJWT
@@ -460,88 +439,6 @@ paths:
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/catalog:
-    get:
-      summary: ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
-      operationId: RuntimeService_ListCatalogEntries
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListCatalogEntriesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: type
-          in: query
-          required: false
-          type: string
-          enum:
-            - OBJECT_TYPE_UNSPECIFIED
-            - OBJECT_TYPE_TABLE
-            - OBJECT_TYPE_SOURCE
-            - OBJECT_TYPE_MODEL
-            - OBJECT_TYPE_METRICS_VIEW
-          default: OBJECT_TYPE_UNSPECIFIED
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/catalog/{name}:
-    get:
-      summary: GetCatalogEntry returns information about a specific entry in the catalog
-      operationId: RuntimeService_GetCatalogEntry
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetCatalogEntryResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/catalog/{name}/refresh:
-    post:
-      summary: |-
-        TriggerRefresh triggers a refresh of a refreshable catalog object.
-        It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
-        It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
-      operationId: RuntimeService_TriggerRefresh
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerRefreshResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
@@ -2319,61 +2216,6 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
-  /v1/instances/{instanceId}/reconcile:
-    post:
-      summary: |-
-        Reconcile applies a full set of artifacts from a repo to the catalog and infra.
-        It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-        the desired state expressed in the artifacts. Any existing objects not described in the submitted
-        artifacts will be deleted.
-      operationId: RuntimeService_Reconcile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ReconcileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to reconcile
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              changedPaths:
-                type: array
-                items:
-                  type: string
-                description: |-
-                  Changed paths provides a way to "hint" what files have changed in the repo, enabling
-                  reconciliation to execute faster by not scanning all code artifacts for changes.
-              forcedPaths:
-                type: array
-                items:
-                  type: string
-                description: |-
-                  Forced paths is used to force run reconcile on certain files.
-                  This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
-              dry:
-                type: boolean
-                title: If true, will validate the file artifacts, but not actually execute any migrations
-              strict:
-                type: boolean
-                title: |-
-                  If true, will not execute any migrations if any artifact fails to validate.
-                  Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-                  artifacts that fail to validate.)
-            title: Request message for RuntimeService.Reconcile
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/resource:
     get:
       summary: GetResource looks up a specific catalog resource
@@ -2417,10 +2259,17 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to list resources from.
           in: path
           required: true
           type: string
         - name: kind
+          description: Filter by resource kind (optional).
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: Filter by resource path (optional).
           in: query
           required: false
           type: string
@@ -2533,70 +2382,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - RuntimeService
-  /v1/put-and-reconcile:
-    post:
-      summary: |-
-        PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
-        It is equivalent to calling the two RPCs sequentially.
-      operationId: RuntimeService_PutFileAndReconcile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1PutFileAndReconcileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1PutFileAndReconcileRequest'
-      tags:
-        - RuntimeService
-  /v1/refresh-and-reconcile:
-    post:
-      operationId: RuntimeService_RefreshAndReconcile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RefreshAndReconcileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1RefreshAndReconcileRequest'
-      tags:
-        - RuntimeService
-  /v1/rename-and-reconcile:
-    post:
-      summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-      operationId: RuntimeService_RenameFileAndReconcile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RenameFileAndReconcileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1RenameFileAndReconcileRequest'
       tags:
         - RuntimeService
   /v1/s3/bucket/{bucket}/metadata:
@@ -2802,18 +2587,6 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type of the property
-  MetricsViewDimension:
-    type: object
-    properties:
-      name:
-        type: string
-      label:
-        type: string
-      description:
-        type: string
-      column:
-        type: string
-    title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
     properties:
@@ -2826,43 +2599,6 @@ definitions:
         type: array
         items:
           type: string
-  MetricsViewMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-      label:
-        type: string
-      expression:
-        type: string
-      description:
-        type: string
-      format:
-        type: string
-      validPercentOfTotal:
-        type: boolean
-    title: Measures are aggregated computed values
-  MetricsViewSecurity:
-    type: object
-    properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: row level access condition
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityFieldCondition'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityFieldCondition'
-    title: Security for the metrics view
   MetricsViewSpecAvailableComparisonOffset:
     type: object
     properties:
@@ -2945,13 +2681,6 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityV2FieldConditionV2'
     title: Security for the dashboard
-  ModelDialect:
-    type: string
-    enum:
-      - DIALECT_UNSPECIFIED
-      - DIALECT_DUCKDB
-    default: DIALECT_UNSPECIFIED
-    title: Dialects supported for models
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -2987,16 +2716,6 @@ definitions:
       count:
         type: integer
         format: int32
-  SecurityFieldCondition:
-    type: object
-    properties:
-      condition:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-    title: Dimension/measure access condition
   SecurityV2FieldConditionV2:
     type: object
     properties:
@@ -3035,6 +2754,38 @@ definitions:
         type: number
         format: double
         title: Not optional, not null
+  TypeCode:
+    type: string
+    enum:
+      - CODE_UNSPECIFIED
+      - CODE_BOOL
+      - CODE_INT8
+      - CODE_INT16
+      - CODE_INT32
+      - CODE_INT64
+      - CODE_INT128
+      - CODE_INT256
+      - CODE_UINT8
+      - CODE_UINT16
+      - CODE_UINT32
+      - CODE_UINT64
+      - CODE_UINT128
+      - CODE_UINT256
+      - CODE_FLOAT32
+      - CODE_FLOAT64
+      - CODE_TIMESTAMP
+      - CODE_DATE
+      - CODE_TIME
+      - CODE_STRING
+      - CODE_BYTES
+      - CODE_ARRAY
+      - CODE_STRUCT
+      - CODE_MAP
+      - CODE_DECIMAL
+      - CODE_JSON
+      - CODE_UUID
+    default: CODE_UNSPECIFIED
+    title: Code enumerates all the types that can be represented in a schema
   protobufAny:
     type: object
     properties:
@@ -3066,17 +2817,11 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
-  runtimev1CharLocation:
-    type: object
-    properties:
-      line:
-        type: integer
-        format: int64
   runtimev1Type:
     type: object
     properties:
       code:
-        $ref: '#/definitions/v1TypeCode'
+        $ref: '#/definitions/TypeCode'
         title: Code designates the type
       nullable:
         type: boolean
@@ -3325,44 +3070,6 @@ definitions:
       - BUILTIN_MEASURE_COUNT
       - BUILTIN_MEASURE_COUNT_DISTINCT
     default: BUILTIN_MEASURE_UNSPECIFIED
-  v1CatalogEntry:
-    type: object
-    properties:
-      name:
-        type: string
-      table:
-        $ref: '#/definitions/v1Table'
-      source:
-        $ref: '#/definitions/v1Source'
-      model:
-        $ref: '#/definitions/v1Model'
-      metricsView:
-        $ref: '#/definitions/v1MetricsView'
-      path:
-        type: string
-      embedded:
-        type: boolean
-        description: Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
-      parents:
-        type: array
-        items:
-          type: string
-        title: Immediate parent entries in the DAG
-      children:
-        type: array
-        items:
-          type: string
-        title: Immediate child entries in the DAG
-      createdOn:
-        type: string
-        format: date-time
-      updatedOn:
-        type: string
-        format: date-time
-      refreshedOn:
-        type: string
-        format: date-time
-    title: CatalogEntry contains information about an object in the catalog
   v1CategoricalSummary:
     type: object
     properties:
@@ -3371,6 +3078,12 @@ definitions:
       cardinality:
         type: number
         format: double
+  v1CharLocation:
+    type: object
+    properties:
+      line:
+        type: integer
+        format: int64
   v1Chart:
     type: object
     properties:
@@ -3832,6 +3545,11 @@ definitions:
       height:
         type: integer
         format: int64
+      markdown:
+        type: string
+      fontSize:
+        type: integer
+        format: int64
   v1DashboardSpec:
     type: object
     properties:
@@ -3850,43 +3568,6 @@ definitions:
           $ref: '#/definitions/v1DashboardComponent'
   v1DashboardState:
     type: object
-  v1DeleteFileAndReconcileRequest:
-    type: object
-    properties:
-      instanceId:
-        type: string
-        title: Instance to store file in and reconcile
-      path:
-        type: string
-        title: Path to store the file at
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-      strict:
-        type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-          artifacts that fail to validate.)
-  v1DeleteFileAndReconcileResponse:
-    type: object
-    properties:
-      errors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the reconciliation. If changed_paths was empty, this will include all
-          code artifacts in the repo.
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4004,12 +3685,6 @@ definitions:
         type: string
       resolverProperties:
         type: object
-  v1GetCatalogEntryResponse:
-    type: object
-    properties:
-      entry:
-        $ref: '#/definitions/v1CatalogEntry'
-    title: Response message for RuntimeService.GetCatalogEntry
   v1GetFileResponse:
     type: object
     properties:
@@ -4114,15 +3789,6 @@ definitions:
       jwt:
         type: string
     title: Response message for RuntimeService.IssueDevJWT
-  v1ListCatalogEntriesResponse:
-    type: object
-    properties:
-      entries:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1CatalogEntry'
-    title: Response message for RuntimeService.ListCatalogEntries
   v1ListConnectorDriversResponse:
     type: object
     properties:
@@ -4209,57 +3875,6 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
-  v1MetricsView:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Name of the metrics view
-      model:
-        type: string
-        title: Name of the source or model that the metrics view is based on
-      timeDimension:
-        type: string
-        title: Name of the primary time dimension, used for rendering time series
-      dimensions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewDimension'
-        title: Dimensions in the metrics view
-      measures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewMeasure'
-        title: Measures in the metrics view
-      label:
-        type: string
-        title: User friendly label for the dashboard
-      description:
-        type: string
-        title: Brief description of the dashboard
-      smallestTimeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: Smallest time grain to show in the dashboard
-      defaultTimeRange:
-        type: string
-        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-      availableTimeZones:
-        type: array
-        items:
-          type: string
-        description: Available time zones list preferred time zones using IANA location identifiers.
-      security:
-        $ref: '#/definitions/MetricsViewSecurity'
-        title: Security for the dashboard
-      firstDayOfWeek:
-        type: integer
-        format: int64
-      firstMonthOfYear:
-        type: integer
-        format: int64
-    title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewAggregationDimension:
     type: object
     properties:
@@ -4911,25 +4526,6 @@ definitions:
       version:
         type: integer
         format: int64
-  v1Model:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Name of the model
-      sql:
-        type: string
-        title: SQL is a SELECT statement representing the model
-      dialect:
-        $ref: '#/definitions/ModelDialect'
-        title: Dialect of the SQL statement
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Detected schema of the model
-      materialize:
-        type: boolean
-        title: To materialize model or not
-    title: Model is the internal representation of a model definition
   v1ModelSpec:
     type: object
     properties:
@@ -5052,16 +4648,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
-  v1ObjectType:
-    type: string
-    enum:
-      - OBJECT_TYPE_UNSPECIFIED
-      - OBJECT_TYPE_TABLE
-      - OBJECT_TYPE_SOURCE
-      - OBJECT_TYPE_MODEL
-      - OBJECT_TYPE_METRICS_VIEW
-    default: OBJECT_TYPE_UNSPECIFIED
-    title: ObjectType represents the different kinds of catalog objects
   v1Operation:
     type: string
     enum:
@@ -5087,7 +4673,7 @@ definitions:
       filePath:
         type: string
       startLocation:
-        $ref: '#/definitions/runtimev1CharLocation'
+        $ref: '#/definitions/v1CharLocation'
       external:
         type: boolean
   v1PingResponse:
@@ -5146,54 +4732,6 @@ definitions:
     type: object
   v1PullTriggerState:
     type: object
-  v1PutFileAndReconcileRequest:
-    type: object
-    properties:
-      instanceId:
-        type: string
-        title: Instance to store file in and reconcile
-      path:
-        type: string
-        title: Path to store the file at
-      blob:
-        type: string
-        title: Contents to save to the file
-      create:
-        type: boolean
-        title: Create indicates whether to create the file if it doesn't already exist
-      createOnly:
-        type: boolean
-        description: |-
-          create_only will cause the operation to fail if a file already exists at path.
-          It should only be set when create = true.
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-      strict:
-        type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-          artifacts that fail to validate.)
-  v1PutFileAndReconcileResponse:
-    type: object
-    properties:
-      errors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the reconciliation. If changed_paths was empty, this will include all
-          code artifacts in the repo.
   v1PutFileResponse:
     type: object
     properties:
@@ -5302,88 +4840,6 @@ definitions:
         $ref: '#/definitions/v1TableColumnsResponse'
       tableRowsResponse:
         $ref: '#/definitions/v1TableRowsResponse'
-  v1ReconcileError:
-    type: object
-    properties:
-      code:
-        $ref: '#/definitions/v1ReconcileErrorCode'
-        title: Code denotes the category of error
-      message:
-        type: string
-        title: Message is a developer-friendly error message
-      filePath:
-        type: string
-        title: File path of the code artifact that this error relates to (if any)
-      propertyPath:
-        type: array
-        items:
-          type: string
-        description: |-
-          Property path of the error in the code artifact (if any).
-          It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-          It only applies to structured code artifacts (i.e. YAML).
-          Only applicable if file_path is set.
-      startLocation:
-        $ref: '#/definitions/v1ReconcileErrorCharLocation'
-        description: |-
-          Start location of the error in the code artifact (if any).
-          Only applicable if file_path is set.
-      endLocation:
-        $ref: '#/definitions/v1ReconcileErrorCharLocation'
-        description: |-
-          End location of the error in the code artifact (if any).
-          Only applicable if file_path and start_location is set.
-    description: ReconcileError represents an error encountered while running Reconcile.
-  v1ReconcileErrorCharLocation:
-    type: object
-    properties:
-      line:
-        type: integer
-        format: int64
-      column:
-        type: integer
-        format: int64
-    title: CharLocation is a line and column in a code artifact
-  v1ReconcileErrorCode:
-    type: string
-    enum:
-      - CODE_UNSPECIFIED
-      - CODE_SYNTAX
-      - CODE_VALIDATION
-      - CODE_DEPENDENCY
-      - CODE_OLAP
-      - CODE_SOURCE
-      - CODE_SOURCE_PERMISSION_DENIED
-    default: CODE_UNSPECIFIED
-    description: |-
-      - CODE_UNSPECIFIED: Unspecified error
-       - CODE_SYNTAX: Code artifact failed to parse
-       - CODE_VALIDATION: Code artifact has internal validation errors
-       - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
-       - CODE_OLAP: Error returned from the OLAP database
-       - CODE_SOURCE: Error encountered during source inspection or ingestion
-       - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
-    title: Code represents different categories of reconciliation errors
-  v1ReconcileResponse:
-    type: object
-    properties:
-      errors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the reconciliation. If changed_paths was empty, this will include all
-          code artifacts in the repo.
-    title: Response message for RuntimeService.Reconcile
   v1ReconcileStatus:
     type: string
     enum:
@@ -5392,43 +4848,6 @@ definitions:
       - RECONCILE_STATUS_PENDING
       - RECONCILE_STATUS_RUNNING
     default: RECONCILE_STATUS_UNSPECIFIED
-  v1RefreshAndReconcileRequest:
-    type: object
-    properties:
-      instanceId:
-        type: string
-        title: Instance to store file in and reconcile
-      path:
-        type: string
-        title: Current path of the file
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-      strict:
-        type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-          artifacts that fail to validate.)
-  v1RefreshAndReconcileResponse:
-    type: object
-    properties:
-      errors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the reconciliation. If changed_paths was empty, this will include all
-          code artifacts in the repo.
   v1RefreshTrigger:
     type: object
     properties:
@@ -5446,46 +4865,6 @@ definitions:
           $ref: '#/definitions/v1ResourceName'
   v1RefreshTriggerState:
     type: object
-  v1RenameFileAndReconcileRequest:
-    type: object
-    properties:
-      instanceId:
-        type: string
-        title: Instance to store file in and reconcile
-      fromPath:
-        type: string
-        title: Current path of the file
-      toPath:
-        type: string
-        title: New path of the file
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-      strict:
-        type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-          artifacts that fail to validate.)
-  v1RenameFileAndReconcileResponse:
-    type: object
-    properties:
-      errors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the reconciliation. If changed_paths was empty, this will include all
-          code artifacts in the repo.
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
@@ -5712,26 +5091,6 @@ definitions:
         format: int64
       timeZone:
         type: string
-  v1Source:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Name of the source
-      connector:
-        type: string
-        title: Connector used by the source
-      properties:
-        type: object
-        title: Connector properties assigned in the source
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Detected schema of the source
-      timeoutSeconds:
-        type: integer
-        format: int32
-        title: timeout for source ingestion in seconds
-    title: Source is the internal representation of a source definition
   v1SourceSpec:
     type: object
     properties:
@@ -5781,24 +5140,6 @@ definitions:
           type: object
           $ref: '#/definitions/StructTypeField'
     title: StructType is a type composed of ordered, named and typed sub-fields
-  v1Table:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Table name
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Table schema
-      managed:
-        type: boolean
-        description: |-
-          Managed is true if the table was created through a runtime migration, false if it was discovered in by
-          scanning the database's information schema.
-    description: |-
-      Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
-      scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
-      have managed = false.
   v1TableCardinalityRequest:
     type: object
     properties:
@@ -6017,41 +5358,6 @@ definitions:
           type: object
           $ref: '#/definitions/TopKEntry'
         title: Not optional, not null
-  v1TriggerRefreshResponse:
-    type: object
-    title: Response message for RuntimeService.TriggerRefresh
-  v1TypeCode:
-    type: string
-    enum:
-      - CODE_UNSPECIFIED
-      - CODE_BOOL
-      - CODE_INT8
-      - CODE_INT16
-      - CODE_INT32
-      - CODE_INT64
-      - CODE_INT128
-      - CODE_INT256
-      - CODE_UINT8
-      - CODE_UINT16
-      - CODE_UINT32
-      - CODE_UINT64
-      - CODE_UINT128
-      - CODE_UINT256
-      - CODE_FLOAT32
-      - CODE_FLOAT64
-      - CODE_TIMESTAMP
-      - CODE_DATE
-      - CODE_TIME
-      - CODE_STRING
-      - CODE_BYTES
-      - CODE_ARRAY
-      - CODE_STRUCT
-      - CODE_MAP
-      - CODE_DECIMAL
-      - CODE_JSON
-      - CODE_UUID
-    default: CODE_UNSPECIFIED
-    title: Code enumerates all the types that can be represented in a schema
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

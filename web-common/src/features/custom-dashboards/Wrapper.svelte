@@ -13,6 +13,7 @@
   export let gridCell = 0;
   export let radius = 0;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  export let color = "bg-gray-100";
 
   let GridLinesComponent: ComponentType<GridLines>;
 
@@ -23,7 +24,7 @@
   });
 </script>
 
-<div bind:contentRect class="wrapper">
+<div bind:contentRect class="wrapper {color}">
   {#if GridLinesComponent && (showGrid || changing)}
     <GridLinesComponent {gridCell} {scrollOffset} {gapSize} {radius} {scale} />
   {/if}

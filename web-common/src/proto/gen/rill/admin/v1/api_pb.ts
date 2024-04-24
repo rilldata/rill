@@ -7360,6 +7360,11 @@ export class Project extends Message<Project> {
   public = false;
 
   /**
+   * @generated from field: string created_by_user_id = 22;
+   */
+  createdByUserId = "";
+
+  /**
    * @generated from field: string provisioner = 7;
    */
   provisioner = "";
@@ -7443,6 +7448,7 @@ export class Project extends Message<Project> {
     { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },

@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -30,14 +30,14 @@
 
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appScreen?.type;
+      const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createModelFromSource(
         queryClient,
         tableName,
         tableName,
         "models",
       );
-      await goto(`/file/${newModelPath}`);
+      await goto(`/file${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,

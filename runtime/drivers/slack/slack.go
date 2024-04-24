@@ -35,8 +35,8 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
 		return nil, fmt.Errorf("slack driver can't be shared")
 	}
 	conf := &configProperties{}
