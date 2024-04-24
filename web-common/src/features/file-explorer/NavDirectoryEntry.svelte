@@ -23,7 +23,6 @@
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
-  export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
 
@@ -83,7 +82,6 @@
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
-  on:mouseup={(e) => onMouseUp(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
 >
   <CaretDownIcon

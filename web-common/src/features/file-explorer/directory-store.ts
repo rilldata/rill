@@ -12,7 +12,9 @@ interface CustomWritable<T> extends Writable<T> {
 }
 
 const createDirectoryStore = (): CustomWritable<DirectoryState> => {
-  const { subscribe, set, update } = writable<DirectoryState>({});
+  const { subscribe, set, update } = writable<DirectoryState>({
+    "/": true,
+  });
 
   return {
     subscribe,
@@ -42,7 +44,7 @@ const createDirectoryStore = (): CustomWritable<DirectoryState> => {
       update((state) => ({ ...state, [directoryPath]: !state[directoryPath] }));
     },
     reset: () => {
-      set({});
+      set({ "/": true });
     },
   };
 };
