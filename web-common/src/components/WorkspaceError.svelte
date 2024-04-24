@@ -7,7 +7,7 @@
 <div class="size-full grid place-content-center">
   <div class="flex flex-col items-center gap-y-2">
     <AlertCircleOutline size="40px" />
-    <h1>
+    <h1 class="text-center">
       {message}
     </h1>
   </div>
