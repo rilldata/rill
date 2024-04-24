@@ -267,7 +267,7 @@ func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (strin
 	// check if identifier is measure but not passed as alias
 	for _, mes := range builder.mv.Measures {
 		if mes.Name == name {
-			if builder.having {
+			if !builder.having {
 				return safeName(mes.Name), true
 			}
 
