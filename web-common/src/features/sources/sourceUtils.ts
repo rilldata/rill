@@ -1,14 +1,17 @@
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   extractFileExtension,
   sanitizeEntityName,
 } from "@rilldata/web-common/features/sources/extract-file-name";
+import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string,
 ) {
-  const topLineComment = `# Visit https://docs.rilldata.com/reference/project-files/sources to learn more about Rill source files.`;
+  const topOfFile = `# Source YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+
+kind: source`;
 
   switch (connectorName) {
     case "s3":
@@ -43,7 +46,7 @@ export function compileCreateSourceYAML(
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
-  return `${topLineComment}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
+  return `${topOfFile}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
 }
 
 function buildDuckDbQuery(path: string): string {
