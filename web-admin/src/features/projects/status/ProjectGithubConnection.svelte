@@ -39,7 +39,7 @@
             href={$proj.data?.project?.githubUrl}
             class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
-            rel="noreferrer"
+            rel="noreferrer noopener"
           >
             {repoName}
           </a>

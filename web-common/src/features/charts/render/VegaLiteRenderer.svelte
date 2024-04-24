@@ -1,60 +1,68 @@
 <script lang="ts">
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
   import {
     SignalListeners,
     VegaLite,
     View,
     type EmbedOptions,
+    VisualizationSpec,
   } from "svelte-vega";
 
   export let data: Record<string, unknown> = {};
-  export let spec; // VisualizationSpec;
+  export let spec: VisualizationSpec;
   export let signalListeners: SignalListeners = {};
+  export let error: string | null = null;
+  export let customDashboard = false;
+  export let chartView = false;
 
-  let options: EmbedOptions = {
+  let contentRect = new DOMRect(0, 0, 0, 0);
+  let viewVL: View;
+
+  $: width = contentRect.width;
+  $: height = contentRect.height * 0.9 - 100;
+
+  $: options = <EmbedOptions>{
     config: getRillTheme(),
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors
+    width: customDashboard ? width : undefined,
+    height: chartView || !customDashboard ? undefined : height,
   };
-
-  let viewVL: View;
-  $: error = "";
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
 </script>
 
-{#if error}
-  <p>{error}</p>
-{:else}
-  <VegaLite
-    {data}
-    {spec}
-    {signalListeners}
-    {options}
-    bind:view={viewVL}
-    on:onError={onError}
-  />
-{/if}
+<div
+  bind:contentRect
+  class:bg-white={customDashboard}
+  class:p-4={customDashboard}
+  class="overflow-hidden size-full flex flex-col items-center justify-center"
+>
+  {#if error}
+    <div
+      class="size-full text-[3.2em] flex flex-col items-center justify-center gap-y-2"
+    >
+      <CancelCircle />
+      {error}
+    </div>
+  {:else}
+    <VegaLite
+      {data}
+      {spec}
+      {signalListeners}
+      {options}
+      bind:view={viewVL}
+      on:onError={onError}
+    />
+  {/if}
+</div>
 
-<style lang="postcss">
+<style>
   :global(.vega-embed) {
     width: 100%;
-  }
-
-  :global(#vg-tooltip-element) {
-    @apply shadow-md;
-    font-family: "Inter";
-    font-size: 12px;
-    background: rgba(250, 250, 250, 0.9);
-  }
-
-  :global(#vg-tooltip-element table tr td.value) {
-    @apply font-normal;
-  }
-  :global(#vg-tooltip-element table tr td.key) {
-    @apply text-gray-500;
   }
 </style>

@@ -1,3 +1,4 @@
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 
 export interface CommonFields {
@@ -61,6 +62,16 @@ export const ScreenToEntityMap = {
   [MetricsEventScreenName.MetricsDefinition]: EntityType.MetricsDefinition,
   [MetricsEventScreenName.Home]: EntityType.Application,
   [MetricsEventScreenName.Splash]: EntityType.Application,
+};
+
+export const ResourceKindToScreenMap: Partial<
+  Record<ResourceKind, MetricsEventScreenName>
+> = {
+  [ResourceKind.Source]: MetricsEventScreenName.Source,
+  [ResourceKind.Model]: MetricsEventScreenName.Model,
+  [ResourceKind.MetricsView]: MetricsEventScreenName.Dashboard,
+  [ResourceKind.Chart]: MetricsEventScreenName.Chart,
+  [ResourceKind.Dashboard]: MetricsEventScreenName.CustomDashboard,
 };
 
 export interface ActiveEvent extends MetricsEvent {

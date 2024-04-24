@@ -3,6 +3,6 @@
   <a
     href="https://docs.rilldata.com/home/get-started"
     target="_blank"
-    rel="noreferrer">Quickstart to create your first project</a
+    rel="noreferrer noopener">Quickstart to create your first project</a
   >.
 </p>

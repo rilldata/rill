@@ -20,7 +20,7 @@
         style="transform:translateY(-.5px)"
         {href}
         target="_blank"
-        rel="noreferrer"
+        rel="noreferrer noopener"
       >
         <InfoCircle size="13px" />
       </a>

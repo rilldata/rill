@@ -86,9 +86,11 @@ export function prepareMeasureFilterResolutions(
         // then add a `false` in the condition to not match any rows
         return {
           ready: true,
-          filter: {
-            val: false,
-          },
+          filter: createAndExpression([
+            {
+              val: false,
+            },
+          ]),
         };
       }
 

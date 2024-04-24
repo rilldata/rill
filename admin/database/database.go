@@ -259,6 +259,7 @@ type Project struct {
 	Name                 string
 	Description          string
 	Public               bool
+	CreatedByUserID      *string `db:"created_by_user_id"`
 	Provisioner          string
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
@@ -282,6 +283,7 @@ type InsertProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	CreatedByUserID      *string
 	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`

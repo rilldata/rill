@@ -153,6 +153,7 @@
     <AlertFilters
       metricsViewName={$dashboardName.data}
       filters={metricsViewAggregationRequest?.where}
+      timeRange={metricsViewAggregationRequest?.timeRange}
     />
 
     <!-- Criteria -->

@@ -112,17 +112,19 @@ export function leaderboardSortedQueryOptions(
 ): (
   dimensionName: string,
   resolvedMeasureFilter: ResolvedMeasureFilter,
+  enabled: boolean,
 ) => { query: { enabled: boolean } } {
   return (
     dimensionName: string,
     resolvedMeasureFilter: ResolvedMeasureFilter,
+    enabled: boolean,
   ) => {
     const sortedQueryEnabled =
       timeControlsState(dashData).ready === true &&
       !!getFiltersForOtherDimensions(dashData)(dimensionName);
     return {
       query: {
-        enabled: sortedQueryEnabled && resolvedMeasureFilter.ready,
+        enabled: enabled && sortedQueryEnabled && resolvedMeasureFilter.ready,
       },
     };
   };

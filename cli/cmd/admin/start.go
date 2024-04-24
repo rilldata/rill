@@ -242,6 +242,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				DefaultProvisioner: conf.DefaultProvisioner,
 				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
 				VersionNumber:      ch.Version.Number,
+				VersionCommit:      ch.Version.Commit,
 				MetricsProjectOrg:  metricsProjectOrg,
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,

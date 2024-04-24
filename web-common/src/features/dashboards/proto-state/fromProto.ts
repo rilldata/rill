@@ -45,7 +45,6 @@ import type {
   MetricsViewSpecDimensionV2,
   StructTypeField,
   V1Expression,
-  V1MetricsView,
   V1MetricsViewSpec,
   V1StructType,
 } from "@rilldata/web-common/runtime-client";
@@ -76,7 +75,7 @@ const TDDChartTypeReverseMap: Record<string, TDDChart> = {
 
 export function getDashboardStateFromUrl(
   urlState: string,
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(

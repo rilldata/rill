@@ -528,7 +528,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
+			dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
@@ -828,7 +828,7 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 			// TODO: we should add support for this in a future PR
 			return "", nil, fmt.Errorf("expression dimension not supported as time column")
 		}
-		col = metricsViewDimensionExpression(d)
+		col = dialect.MetricsViewDimensionExpression(d)
 	}
 
 	switch dialect {
