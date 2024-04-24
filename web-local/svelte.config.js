@@ -11,6 +11,11 @@ const config = {
     adapter: adapter({
       fallback: "index.html",
     }),
+    csp: {
+      directives: {
+        "script-src": ["self"],
+      },
+    },
     files: {
       assets: "../web-common/static",
     },

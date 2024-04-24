@@ -5,9 +5,10 @@
     SignalListeners,
     VegaLite,
     View,
-    type EmbedOptions,
     VisualizationSpec,
+    type EmbedOptions,
   } from "svelte-vega";
+  import { expressionInterpreter } from "vega-interpreter";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -25,6 +26,8 @@
   $: options = <EmbedOptions>{
     config: getRillTheme(),
     renderer: "svg",
+    ast: true,
+    expr: expressionInterpreter,
     actions: false,
     logLevel: 0, // only show errors
     width: customDashboard ? width : undefined,
