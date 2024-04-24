@@ -877,22 +877,22 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
 		}
 		if q.Having != nil {
-			var havingClauseArgs []any
+			// measure filter could include the base measure name.
+			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
+			// to keep the clause builder consistent we add an outer query here.
+
+			var whereClauseArgs []any
 			builder := &ExpressionBuilder{
 				mv:      mv,
 				dialect: dialect,
 				aliases: q.Aliases,
-				having:  true,
 			}
-			havingClause, havingClauseArgs, err := builder.buildExpression(q.Having)
+			whereClause, whereClauseArgs, err := builder.buildExpression(q.Having)
 			if err != nil {
 				return "", nil, err
 			}
-			args = append(args, havingClauseArgs...)
+			args = append(args, whereClauseArgs...)
 
-			// measure filter could include the base measure name.
-			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
-			// to keep the clause builder consistent we add an outer query here.
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
@@ -925,7 +925,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				baseLimitClause,                     // 12
 				comparisonLimitClause,               // 13
 				unnestClause,                        // 14
-				havingClause,                        // 15
+				whereClause,                         // 15
 				subComparisonSelectClause,           // 16
 				joinOnClause,                        // 17
 			)
@@ -1071,6 +1071,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		)
 	}
 
+	fmt.Println(sql, args)
 	return sql, args, nil
 }
 
