@@ -304,7 +304,7 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 			return err
 		}
 		h.cloned = true
-		return err
+		return nil
 	}
 
 	err = h.pullGit()
