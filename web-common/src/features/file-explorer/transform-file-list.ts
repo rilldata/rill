@@ -63,7 +63,7 @@ export function transformFileList(files: V1DirEntry[]): Directory {
   return rootDirectory;
 }
 
-export function findDirectory(root: Directory | undefined, filePath: string) {
+export function findDirectory(root: Directory, filePath: string) {
   const folderTree = removeLeadingSlash(filePath).split("/");
   let dir: Directory | undefined = root;
   for (let i = 0; i < folderTree.length && dir; i++) {

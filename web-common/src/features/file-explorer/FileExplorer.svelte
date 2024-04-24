@@ -9,7 +9,7 @@
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmation.svelte";
+  import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import {
     NavDragData,
@@ -71,6 +71,8 @@
   let showForceDelete = false;
 
   async function onDelete(filePath: string, isDir: boolean) {
+    if (!$getFileTree.data) return;
+
     if (isDir) {
       const dir = findDirectory($getFileTree.data, filePath);
       if (dir?.directories?.length || dir?.files?.length) {
@@ -80,7 +82,7 @@
       }
     }
     await deleteFileArtifact(instanceId, filePath);
-    if (isCurrentActivePage($page.params.file, filePath, isDir)) {
+    if (isCurrentActivePage(filePath, isDir)) {
       await goto("/");
     }
   }
@@ -88,7 +90,7 @@
   async function onForceDelete() {
     await deleteFileArtifact(instanceId, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
-    if (isCurrentActivePage($page.params.file, forceDeletePath, true)) {
+    if (isCurrentActivePage(forceDeletePath, true)) {
       await goto("/");
     }
   }

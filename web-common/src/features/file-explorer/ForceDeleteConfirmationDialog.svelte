@@ -11,8 +11,9 @@
 </script>
 
 <Dialog on:close={handleClose} {open}>
-  <div slot="title">
-    Folder is not empty. Are you sure you want to delete everything?
+  <div slot="title">Are you sure you want to delete everything?</div>
+  <div slot="body">
+    This folder is not empty. All contained items will be deleted.
   </div>
   <div class="flex flex-row mt-4 gap-2" slot="footer">
     <div class="grow" />
