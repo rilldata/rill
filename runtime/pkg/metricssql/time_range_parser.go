@@ -20,7 +20,7 @@ func (t *transformer) transformTimeRangeStart(ctx context.Context, node *ast.Fun
 		return exprResult{}, fmt.Errorf("metrics sql: time_range_start() function expects at most 3 arguments")
 	}
 	// identify optional unit and colName args
-	var unit int64
+	var unit int
 	var colName string
 
 	// identify column name
@@ -44,9 +44,57 @@ func (t *transformer) transformTimeRangeStart(ctx context.Context, node *ast.Fun
 		if err != nil {
 			return exprResult{}, err
 		}
-		unit, err = strconv.ParseInt(expr.expr, 10, 64)
+		i, err := strconv.ParseInt(expr.expr, 10, 64)
 		if err != nil {
 			return exprResult{}, err
+		}
+		unit = int(i)
+	}
+
+	expr, err := t.transformExprNode(ctx, node.Args[0])
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	d, err := duration.ParseISO8601(strings.TrimSuffix(strings.TrimPrefix(expr.expr, "'"), "'"))
+	if err != nil {
+		return exprResult{}, fmt.Errorf("metrics sql: invalid ISO8601 duration %s", expr.expr)
+	}
+
+	watermark, col, err := t.getWatermark(ctx, colName)
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	for i := 1; i <= unit; i++ {
+		watermark = d.Sub(watermark)
+	}
+	return exprResult{
+		expr:    "?",
+		sqlArgs: []any{watermark},
+		columns: []string{col},
+		types:   []string{"DIMENSION"},
+	}, nil
+}
+
+func (t *transformer) transformTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
+	if len(node.Args) == 0 {
+		return exprResult{}, fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
+	}
+	if len(node.Args) > 3 {
+		return exprResult{}, fmt.Errorf("metrics sql: time_range_end() function expects at most 3 arguments")
+	}
+	// identify optional colName arg
+	var colName string
+	if len(node.Args) == 3 {
+		expr, err := t.transformExprNode(ctx, node.Args[2])
+		if err != nil {
+			return exprResult{}, err
+		}
+		var ok bool
+		colName, ok = t.dimsToExpr[expr.expr]
+		if !ok {
+			return exprResult{}, fmt.Errorf("referenced columns %q is not a valid column", expr.expr)
 		}
 	}
 
@@ -60,15 +108,21 @@ func (t *transformer) transformTimeRangeStart(ctx context.Context, node *ast.Fun
 		return exprResult{}, fmt.Errorf("metrics sql: invalid ISO8601 duration %s", expr.expr)
 	}
 
-	// todo add support for unit
-	_ = unit
 	watermark, col, err := t.getWatermark(ctx, colName)
 	if err != nil {
 		return exprResult{}, err
 	}
 
+	var end time.Time
+	if std, ok := d.(duration.StandardDuration); ok {
+		end = std.EndTime(watermark)
+	} else {
+		end = watermark
+	}
+
 	return exprResult{
-		expr:    fmt.Sprintf("'%s'", d.Sub(watermark).Format("2006-01-02 15:04:05")), // todo get exact format
+		expr:    "?",
+		sqlArgs: []any{end},
 		columns: []string{col},
 		types:   []string{"DIMENSION"},
 	}, nil
@@ -99,6 +153,7 @@ func (t *transformer) getWatermark(ctx context.Context, colName string) (waterma
 	if err != nil {
 		return watermark, column, err
 	}
+	defer result.Close()
 
 	for result.Next() {
 		if err := result.Scan(&watermark); err != nil {

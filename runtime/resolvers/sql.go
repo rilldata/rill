@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -22,7 +23,9 @@ func init() {
 }
 
 type sqlResolver struct {
-	sql                 string
+	sql string
+	// sqlArgs are placeholders in the sql query. Used only for metrics_sql resolver
+	sqlArgs             []any
 	refs                []*runtimev1.ResourceName
 	olap                drivers.OLAPStore
 	olapRelease         func()
@@ -112,6 +115,7 @@ func newSQLSimple(ctx context.Context, opts *runtime.ResolverOptions, refs []*ru
 
 	return &sqlResolver{
 		sql:                 props.SQL,
+		sqlArgs:             opts.SQLArgs,
 		refs:                refs,
 		olap:                olap,
 		olapRelease:         release,
@@ -126,7 +130,11 @@ func (r *sqlResolver) Close() error {
 }
 
 func (r *sqlResolver) Key() string {
-	return r.sql
+	var sb strings.Builder
+	for _, arg := range r.sqlArgs {
+		sb.WriteString(fmt.Sprintf("%v, ", arg))
+	}
+	return r.sql + sb.String()
 }
 
 func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
@@ -149,6 +157,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 	res, err := r.olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
 		Priority: r.priority,
+		Args:     r.sqlArgs,
 	})
 	if err != nil {
 		return nil, err

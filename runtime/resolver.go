@@ -62,6 +62,8 @@ type ResolverOptions struct {
 	Args           map[string]any
 	UserAttributes map[string]any
 	ForExport      bool
+	// internal use only
+	SQLArgs []any
 }
 
 // ResolverInitializer is a function that initializes a resolver.
