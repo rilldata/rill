@@ -1,5 +1,5 @@
 import { getChartYaml } from "@rilldata/web-common/features/charts/chartYaml";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const VegaLiteSpec = `{
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
@@ -18,7 +18,10 @@ describe("getChartYaml", () => {
         sql: `select * from AdBids
 where publisher is not null`,
       }),
-    ).toEqual(`kind: chart
+    ).toEqual(`# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+kind: chart
 data:
   sql: |-
     select * from AdBids
@@ -34,7 +37,10 @@ ${VegaLiteSpec.replace(/^/gm, "  ")}
         sql: `select * from AdBids
 where publisher is not null`,
       }),
-    ).toEqual(`kind: chart
+    ).toEqual(`# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+
+kind: chart
 data:
   metrics_sql: |-
     select * from AdBids

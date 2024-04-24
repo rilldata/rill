@@ -7,10 +7,7 @@ export function getChartYaml(
   resolverProperties: Record<string, any> | undefined,
 ) {
   const doc = new Document();
-  doc.commentBefore = `# Chart YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
-  
-  `;
+  doc.commentBefore = ` Chart YAML\n Reference documentation: https://docs.rilldata.com/reference/project-files/charts`;
   doc.set("kind", "chart");
 
   // TODO: more fields from resolverProperties
