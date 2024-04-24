@@ -187,8 +187,9 @@ export function getColumnDefForPivot(
 
   const rowDimensions = rowDimensionNames.map((d) => {
     let label =
-      config.allDimensions.find((dimension) => dimension.column === d)?.label ||
-      d;
+      config.allDimensions.find(
+        (dimension) => dimension.name === d || dimension.column === d,
+      )?.label || d;
     if (isTimeDimension(d, config.time.timeDimension)) {
       const timeGrain = getTimeGrainFromDimension(d);
       const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
