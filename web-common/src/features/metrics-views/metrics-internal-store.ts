@@ -2,7 +2,10 @@ import { parseDocument } from "yaml";
 
 export function initBlankDashboardYAML(dashboardTitle: string) {
   const metricsTemplate = `
-# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+# Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+
+kind: metrics_view
 
 title: ""
 table: ""
