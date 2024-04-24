@@ -15,7 +15,7 @@ export function tddTooltipFormatter(
   selectedDimensionValues: (string | null)[],
   interval: V1TimeGrain | undefined,
 ) {
-  let colorMap: Record<string, string> = {};
+  const colorMap: Record<string, string> = {};
   selectedDimensionValues.forEach((dimValue, i) => {
     colorMap[String(dimValue)] = COMPARIONS_COLORS[i];
   });
@@ -43,7 +43,7 @@ export function tddTooltipFormatter(
       const selectedValuesLength = selectedDimensionValues.length;
       if (chartType === TDDChart.STACKED_AREA && selectedValuesLength) {
         for (const key of keys) {
-          let val = rest[key];
+          const val = rest[key];
 
           if (val === null || val === "NaN") continue;
 
