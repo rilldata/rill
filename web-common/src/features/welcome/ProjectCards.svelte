@@ -59,7 +59,6 @@
       },
     });
     await goto(firstPage);
-    //  consider additionally opening up the project in a new tab
   }
 </script>
 
