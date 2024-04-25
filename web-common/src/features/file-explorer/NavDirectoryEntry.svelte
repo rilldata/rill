@@ -21,9 +21,8 @@
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
-  export let onDelete: (filePath: string) => void;
+  export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
-  export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
 
@@ -83,11 +82,10 @@
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
-  on:mouseup={(e) => onMouseUp(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
 >
   <CaretDownIcon
-    className="text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
+    className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
   />
   <span class="truncate w-full">{dir.name}</span>
   {#if !isProtectedDirectory}
@@ -117,7 +115,7 @@
           <EditIcon slot="icon" />
           Rename...
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(dir.path)}>
+        <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

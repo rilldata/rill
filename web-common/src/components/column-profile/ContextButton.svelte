@@ -34,7 +34,7 @@
 <style lang="postcss">
   button {
     @apply h-full aspect-square p-1.5;
-    @apply grid place-content-center;
+    @apply flex justify-center items-center;
     @apply text-gray-500 opacity-0;
     @apply transition-transform duration-100;
   }

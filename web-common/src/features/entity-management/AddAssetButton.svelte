@@ -21,6 +21,7 @@
   import { directoryState } from "../file-explorer/directory-store";
   import { handleEntityCreate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../tables/selectors";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
     useDirectoryNamesInDirectory,
@@ -48,6 +49,9 @@
     instanceId,
     currentDirectory,
   );
+
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -212,30 +216,32 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-[240px]">
-      <DropdownMenu.Item
-        aria-label="Add Source"
-        class="flex gap-x-2"
-        on:click={handleAddSource}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Source]}
-          className="text-gray-900"
-          size="16px"
-        />
-        Source
-      </DropdownMenu.Item>
-      <DropdownMenu.Item
-        aria-label="Add Model"
-        class="flex gap-x-2"
-        on:click={handleAddModel}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Model]}
-          className="text-gray-900"
-          size="16px"
-        />
-        Model
-      </DropdownMenu.Item>
+      {#if $isModelingSupportedForCurrentOlapDriver.data}
+        <DropdownMenu.Item
+          aria-label="Add Source"
+          class="flex gap-x-2"
+          on:click={handleAddSource}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Source]}
+            className="text-gray-900"
+            size="16px"
+          />
+          Source
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Add Model"
+          class="flex gap-x-2"
+          on:click={handleAddModel}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Model]}
+            className="text-gray-900"
+            size="16px"
+          />
+          Model
+        </DropdownMenu.Item>
+      {/if}
       <DropdownMenu.Item
         aria-label="Add Dashboard"
         class="flex gap-x-2"

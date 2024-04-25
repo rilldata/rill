@@ -1371,6 +1371,7 @@ message Project {
   string org_name = 4;
   string description = 5;
   bool public = 6;
+  string created_by_user_id = 22;
   string provisioner = 7;
   string github_url = 8;
   string subpath = 17;

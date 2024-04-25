@@ -86,28 +86,4 @@ export async function submitRemoteSourceForm(
     queryClient,
     getFilePathFromNameAndType(values.sourceName, EntityType.Table),
   );
-
-  // TODO: telemetry
-  // Emit telemetry
-  // const hasSourceYAMLErrors = resp.errors.length > 0;
-  // if (hasSourceYAMLErrors) {
-  //   // Error
-  //   const sourceError = getSourceError(resp.errors, values.sourceName);
-  //   emitSourceErrorTelemetry(
-  //     MetricsEventSpace.Modal,
-  //     get(appScreen),
-  //     sourceError?.message,
-  //     connectorToSourceConnectionType[connectorName],
-  //     formValues?.uri || ""
-  //   );
-  // } else {
-  //   // Success
-  //   emitSourceSuccessTelemetry(
-  //     MetricsEventSpace.Modal,
-  //     get(appScreen),
-  //     BehaviourEventMedium.Button,
-  //     connectorToSourceConnectionType[connectorName],
-  //     formValues?.uri || ""
-  //   );
-  // }
 }

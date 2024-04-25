@@ -21,7 +21,7 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { render } from "@testing-library/svelte";
@@ -373,7 +373,7 @@ describe("time-control-store", () => {
     unmount();
   });
 
-  function initTimeControlStoreTest(resp: V1MetricsView) {
+  function initTimeControlStoreTest(resp: V1MetricsViewSpec) {
     const { stateManagers, queryClient } = initStateManagers(
       dashboardFetchMocks,
       resp,

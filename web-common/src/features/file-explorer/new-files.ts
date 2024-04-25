@@ -1,6 +1,9 @@
 import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  ResourceKind,
+  UserFacingResourceKinds,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -9,11 +12,10 @@ import { get } from "svelte/store";
 export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
   const instanceId = get(runtime).instanceId;
-  const allNames = await fetchAllFileNames(queryClient, instanceId);
-  const { name, folder, baseContent, extension } = ResourceKindMap[kind];
+  const allNames = await fetchAllFileNames(queryClient, instanceId, false);
+  const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
-
-  const newPath = `${folder ?? name + "s"}/${newName}${extension ?? ".yaml"}`;
+  const newPath = `${name + "s"}/${newName}${extension}`;
 
   await runtimeServicePutFile(instanceId, newPath, {
     blob: baseContent,
@@ -24,35 +26,58 @@ export async function handleEntityCreate(kind: ResourceKind) {
 }
 
 const ResourceKindMap: Record<
-  ResourceKind,
+  UserFacingResourceKinds,
   {
     name: string;
-    folder?: string; // adds "s" to name by default
+    extension: string;
     baseContent: string;
-    extension?: string;
   }
 > = {
-  [ResourceKind.ProjectParser]: { baseContent: "", name: "" },
   [ResourceKind.Source]: {
     name: "source",
-    baseContent: "",
+    extension: ".yaml",
+    baseContent: "", // This is constructed in the `features/sources/modal` directory
   },
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
-    baseContent: `-- @kind: model
-select ...
-`,
+    baseContent: `-- Model SQL
+-- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+-- @kind: model
+
+SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
     name: "dashboard",
-    baseContent: `kind: metrics_view
+    extension: ".yaml",
+    baseContent: `# Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
+kind: metrics_view
+
+title: "Dashboard Title"
+table: example_table # Choose a table to underpin your dashboard
+timeseries: timestamp_column # Select an actual timestamp column (if any) from your table
+
+dimensions:
+  - column: category
+    label: "Category"
+    description: "Description of the dimension"
+
+measures:
+  - expression: "SUM(revenue)"
+    label: "Total Revenue"
+    description: "Total revenue generated"
 `,
   },
   [ResourceKind.API]: {
     name: "api",
-    baseContent: `kind: api
+    extension: ".yaml",
+    baseContent: `# API YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+
+kind: api
 
 sql:
   select ...
@@ -60,7 +85,12 @@ sql:
   },
   [ResourceKind.Chart]: {
     name: "chart",
-    baseContent: `kind: chart
+    extension: ".yaml",
+    baseContent: `# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    
+kind: chart
+
 data:
   metrics_sql: |
     SELECT advertiser_name, AGGREGATE(measure_2)
@@ -83,16 +113,19 @@ vega_lite: |
   },
   [ResourceKind.Dashboard]: {
     name: "custom-dashboard",
+    extension: ".yaml",
     baseContent: `kind: dashboard
 columns: 10
 gap: 2`,
   },
   [ResourceKind.Theme]: {
     name: "theme",
-    baseContent: `# To apply your theme to a dashboard, add \`default_theme: <name of theme>\` to your dashboard YAML.
-# See more: https://docs.rilldata.com/reference/project-files/themes
+    extension: ".yaml",
+    baseContent: `# Theme YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/themes
 
 kind: theme
+
 colors:
   primary: plum
   secondary: violet 
@@ -100,14 +133,22 @@ colors:
   },
   [ResourceKind.Report]: {
     name: "report",
-    baseContent: `kind: report
+    extension: ".yaml",
+    baseContent: `# Report YAML
+# Reference documentation: TODO
+
+kind: report
 
 ...
 `,
   },
   [ResourceKind.Alert]: {
     name: "alert",
-    baseContent: `kind: alert
+    extension: ".yaml",
+    baseContent: `# Alert YAML
+# Reference documentation: TODO
+
+kind: alert
 
 ...
 `,

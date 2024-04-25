@@ -1,6 +1,6 @@
-import { test } from "../utils/test";
 import { createDashboardFromModel } from "web-local/tests/utils/dashboardHelpers";
 import { createAdBidsModel } from "web-local/tests/utils/dataSpecifcHelpers";
+import { test } from "../utils/test";
 
 export function useDashboardFlowTestSetup() {
   test.beforeEach(async ({ page }) => {
@@ -15,6 +15,6 @@ export function useDashboardFlowTestSetup() {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model.sql");
+    await createDashboardFromModel(page, "/models/AdBids_model.sql");
   });
 }
