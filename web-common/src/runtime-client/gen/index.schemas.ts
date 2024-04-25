@@ -401,6 +401,8 @@ It should only be set when create = true. */
   createOnly?: boolean;
 };
 
+export type RuntimeServiceDeleteFileParams = { force?: boolean };
+
 export type RuntimeServiceListFilesParams = { glob?: string };
 
 export type RuntimeServiceEditInstanceBodyAnnotations = {

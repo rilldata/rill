@@ -1,3 +1,4 @@
+import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { V1DirEntry } from "@rilldata/web-common/runtime-client";
 
 export interface Directory {
@@ -60,4 +61,13 @@ export function transformFileList(files: V1DirEntry[]): Directory {
   }
 
   return rootDirectory;
+}
+
+export function findDirectory(root: Directory, filePath: string) {
+  const folderTree = removeLeadingSlash(filePath).split("/");
+  let dir: Directory | undefined = root;
+  for (let i = 0; i < folderTree.length && dir; i++) {
+    dir = dir.directories.find((d) => d.name === folderTree[i]);
+  }
+  return dir;
 }

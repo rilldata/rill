@@ -32,7 +32,7 @@
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
-  export let onDelete: (filePath: string) => void;
+  export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
     table?: string;
     connector?: string;
@@ -146,7 +146,7 @@
           <EditIcon slot="icon" />
           Rename...
         </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDelete(filePath)}>
+        <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
           <Cancel slot="icon" />
           Delete
         </NavigationMenuItem>

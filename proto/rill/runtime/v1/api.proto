@@ -409,6 +409,7 @@ message CreateDirectoryResponse {}
 message DeleteFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string path = 2 [(validate.rules).string.min_len = 1];
+  bool force = 3;
 }
 
 // Response message for RuntimeService.DeleteFile
