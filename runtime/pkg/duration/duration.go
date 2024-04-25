@@ -274,7 +274,9 @@ func (d TruncToDateDuration) SubWithUnit(t time.Time, unit int) time.Time {
 	}
 	for i := 1; i <= unit; i++ {
 		t = timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
-		t = t.AddDate(0, 0, -1)
+		if i != unit {
+			t = t.AddDate(0, 0, -1)
+		}
 	}
 	return t
 }
