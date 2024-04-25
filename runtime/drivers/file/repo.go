@@ -54,10 +54,10 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
+		// Do not send files for ignored paths
 		if drivers.IsIgnored(p, c.ignorePaths) {
 			return nil
 		}
-
 		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),

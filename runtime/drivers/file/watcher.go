@@ -176,6 +176,7 @@ func (w *watcher) runInner() error {
 			path = filepath.Join("/", path)
 			we.Path = path
 
+			// Do not send files for ignored paths
 			if drivers.IsIgnored(path, w.ignorePaths) {
 				continue
 			}
