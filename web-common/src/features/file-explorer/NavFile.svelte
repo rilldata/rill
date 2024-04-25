@@ -39,7 +39,6 @@
     metricsView?: string;
   }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
-  export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
 
@@ -92,8 +91,6 @@
     {id}
     on:click={fireTelemetry}
     on:mousedown={handleMouseDown}
-    on:mouseup={(e) =>
-      onMouseUp(e, { id, filePath, isDir: false, kind: resourceKind })}
     style:padding-left="{padding}px"
   >
     <div class="flex-none">

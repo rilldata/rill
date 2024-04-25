@@ -453,7 +453,8 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 
 	buf := new(bytes.Buffer)
 
-	buf.WriteString("# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.\n")
+	buf.WriteString("# Dashboard YAML\n")
+	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards\n")
 	if aiPowered {
 		buf.WriteString("# This file was generated using AI.\n")
 	}

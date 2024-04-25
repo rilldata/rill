@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import {
+    NavDragData,
+    navEntryDragDropStore,
+  } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import NavDirectoryEntry from "@rilldata/web-common/features/file-explorer/NavDirectoryEntry.svelte";
   import NavFile from "./NavFile.svelte";
   import { directoryState } from "./directory-store";
@@ -14,37 +17,48 @@
     metricsView?: string;
   }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
-  export let onMouseUp: (e: MouseEvent, dragData: NavDragData) => void;
+
+  $: expanded = $directoryState[directory.path];
+  const { dragData, dropDirs } = navEntryDragDropStore;
+  $: isDragDropHover =
+    $dragData && $dropDirs[$dropDirs.length - 1] === directory.path;
 </script>
 
-{#if directory?.directories}
-  {#each directory.directories as dir}
-    {@const expanded = $directoryState[dir.path]}
-    <NavDirectoryEntry {dir} {onRename} {onDelete} {onMouseDown} {onMouseUp} />
+<div
+  class="w-full"
+  class:bg-slate-100={isDragDropHover}
+  on:mouseenter={() => navEntryDragDropStore.onMouseEnter(directory.path)}
+  on:mouseleave={() => navEntryDragDropStore.onMouseLeave()}
+  role="directory"
+>
+  {#if directory.path !== "/"}
+    <NavDirectoryEntry dir={directory} {onDelete} {onMouseDown} {onRename} />
+  {/if}
 
-    {#if expanded}
-      <!-- Recursive call to display subdirectories -->
-      <svelte:self
-        directory={dir}
+  {#if expanded}
+    {#if directory?.directories}
+      {#each directory.directories as dir}
+        <!-- Recursive call to display subdirectories -->
+        <svelte:self
+          directory={dir}
+          {onRename}
+          {onDelete}
+          {onGenerateChart}
+          {onMouseDown}
+        />
+      {/each}
+    {/if}
+
+    {#each directory.files as file}
+      {@const filePath =
+        directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
+      <NavFile
+        {filePath}
         {onRename}
         {onDelete}
         {onGenerateChart}
         {onMouseDown}
-        {onMouseUp}
       />
-    {/if}
-  {/each}
-{/if}
-
-{#each directory.files as file}
-  {@const filePath =
-    directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
-  <NavFile
-    {filePath}
-    {onRename}
-    {onDelete}
-    {onGenerateChart}
-    {onMouseDown}
-    {onMouseUp}
-  />
-{/each}
+    {/each}
+  {/if}
+</div>
