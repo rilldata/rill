@@ -178,7 +178,7 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
+	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path, req.Force)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -142,7 +142,7 @@ func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error 
 }
 
 // Delete implements drivers.RepoStore.
-func (c *connection) Delete(ctx context.Context, filePath string) error {
+func (c *connection) Delete(ctx context.Context, filePath string, force bool) error {
 	return fmt.Errorf("delete operation is unsupported")
 }
 

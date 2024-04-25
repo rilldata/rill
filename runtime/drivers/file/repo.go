@@ -149,8 +149,11 @@ func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error 
 }
 
 // Delete implements drivers.RepoStore.
-func (c *connection) Delete(ctx context.Context, filePath string) error {
+func (c *connection) Delete(ctx context.Context, filePath string, force bool) error {
 	filePath = filepath.Join(c.root, filePath)
+	if force {
+		return os.RemoveAll(filePath)
+	}
 	return os.Remove(filePath)
 }
 

@@ -71,14 +71,14 @@ func (r *Runtime) MakeDir(ctx context.Context, instanceID, path string) error {
 	return nil
 }
 
-func (r *Runtime) DeleteFile(ctx context.Context, instanceID, path string) error {
+func (r *Runtime) DeleteFile(ctx context.Context, instanceID, path string, force bool) error {
 	repo, release, err := r.Repo(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	err = repo.Delete(ctx, path)
+	err = repo.Delete(ctx, path, force)
 	if err != nil {
 		return err
 	}
