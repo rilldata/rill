@@ -8,21 +8,17 @@ import { assertLeaderboards } from "./dashboardHelpers";
 import { createModel } from "./modelHelpers";
 import { uploadFile, waitForSource } from "./sourceHelpers";
 
-export async function waitForAdBids(page: Page, name: string) {
-  return waitForSource(page, name, ["publisher", "domain", "timestamp"]);
-}
-
-export async function waitForAdImpressions(page: Page, name: string) {
-  return waitForSource(page, name, ["city", "country"]);
-}
-
 export async function createAdBidsModel(page: Page) {
   await Promise.all([
-    waitForAdBids(page, "AdBids"),
+    waitForSource(page, "/sources/AdBids.yaml", [
+      "publisher",
+      "domain",
+      "timestamp",
+    ]),
     uploadFile(page, "AdBids.csv"),
   ]);
 
-  await createModel(page, "AdBids_model");
+  await createModel(page, "AdBids_model.sql");
   await Promise.all([
     waitForProfiling(page, "AdBids_model", [
       "publisher",

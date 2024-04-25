@@ -1,13 +1,13 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import {
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
   V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
-import { removeLeadingSlash } from "./entity-mappers";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export function createWatchFilesClient() {
@@ -21,32 +21,31 @@ export function createWatchFilesClient() {
 function handleWatchFileResponse(res: V1WatchFilesResponse) {
   if (!res?.path || res.path.includes(".db")) return;
 
-  // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
-  if (
-    !res.path.endsWith(".sql") &&
-    !res.path.endsWith(".yaml") &&
-    !res.path.endsWith(".yml")
-  )
-    return;
-
   const instanceId = get(runtime).instanceId;
-  const cleanedPath = removeLeadingSlash(res.path);
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`
-  switch (res.event) {
-    case "FILE_EVENT_WRITE":
-      void queryClient.refetchQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
-      );
-      fileArtifacts.fileUpdated(cleanedPath);
-      break;
+  if (!res.isDir) {
+    switch (res.event) {
+      case "FILE_EVENT_WRITE":
+        void queryClient.refetchQueries(
+          getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+        );
+        void fileArtifacts.fileUpdated(res.path);
+        if (res.path === "/rill.yaml") {
+          // If it's a rill.yaml file, invalidate the dev JWT queries
+          void queryClient.invalidateQueries(
+            getRuntimeServiceIssueDevJWTQueryKey(),
+          );
+        }
+        break;
 
-    case "FILE_EVENT_DELETE":
-      queryClient.removeQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, cleanedPath),
-      );
-      fileArtifacts.fileDeleted(cleanedPath);
-      break;
+      case "FILE_EVENT_DELETE":
+        void queryClient.resetQueries(
+          getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+        );
+        fileArtifacts.fileDeleted(res.path);
+        break;
+    }
   }
   // TODO: should this be throttled?
   void queryClient.refetchQueries(

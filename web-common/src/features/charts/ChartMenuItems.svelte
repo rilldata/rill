@@ -18,7 +18,6 @@
     await deleteFileArtifact(
       $runtime.instanceId,
       getFileAPIPathFromNameAndType(chartName, EntityType.Chart),
-      EntityType.Chart,
     );
 
     if (open) await goto(getNextRoute(chartRoutes));

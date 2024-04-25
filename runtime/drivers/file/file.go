@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -53,9 +54,9 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("file driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("file driver can't be shared")
 	}
 
 	conf := &configProperties{}
@@ -79,7 +80,6 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		root:         absPath,
 		driverConfig: conf,
 		driverName:   d.name,
-		shared:       shared,
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -120,7 +120,6 @@ type connection struct {
 	root         string
 	driverConfig *configProperties
 	driverName   string
-	shared       bool
 
 	watcherMu    sync.Mutex
 	watcherCount int
@@ -151,9 +150,6 @@ func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bo
 
 // AsRepoStore implements drivers.Connection.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
-	if c.shared {
-		return nil, false
-	}
 	return c, true
 }
 

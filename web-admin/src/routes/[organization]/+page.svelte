@@ -7,7 +7,9 @@
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectCards from "../../features/projects/ProjectCards.svelte";
 
-  $: orgName = $page.params.organization;
+  $: ({
+    params: { organization: orgName },
+  } = $page);
 
   $: org = createAdminServiceGetOrganization(orgName);
   $: projs = createAdminServiceListProjectsForOrganization(orgName, undefined, {
@@ -29,12 +31,12 @@
         >This organization has no projects yet. <a
           href="https://docs.rilldata.com/home/get-started"
           target="_blank"
-          rel="noreferrer">See docs</a
+          rel="noreferrer noopener">See docs</a
         ></span
       >
     {:else}
       <div class="py-2 px-1.5">
-        <ProjectCards organization={$page.params.organization} />
+        <ProjectCards organization={orgName} />
       </div>
     {/if}
   </section>

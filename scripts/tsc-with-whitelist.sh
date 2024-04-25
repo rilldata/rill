@@ -19,6 +19,7 @@ web-admin/src/features/scheduled-reports/selectors.ts: error TS2345
 web-admin/src/features/view-as-user/clearViewedAsUser.ts: error TS18047
 web-admin/src/features/view-as-user/clearViewedAsUser.ts: error TS2322
 web-admin/src/features/view-as-user/setViewedAsUser.ts: error TS2322
+web-admin/src/routes/[organization]/[project]/-/dashboards/+page.ts: error TS2307
 web-common/src/components/button-group/ButtonGroup.spec.ts: error TS2345
 web-common/src/components/data-graphic/actions/mouse-position-to-domain-action-factory.ts: error TS2322
 web-common/src/components/data-graphic/actions/outline.ts: error TS18047

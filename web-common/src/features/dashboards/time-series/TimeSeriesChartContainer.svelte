@@ -3,17 +3,19 @@ A container GraphicContext for the time series in a metrics dashboard.
 -->
 <script lang="ts">
   import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
-  import { MEASURE_CONFIG } from "../config";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import { MEASURE_CONFIG } from "../config";
   export let start: Date;
   export let end: Date;
   export let workspaceWidth: number;
   export let enableFullWidth = false;
 
   const paddingForFullWidth = 80;
+
+  $: paddingRight = enableFullWidth ? "pr-6" : "pr-2";
 </script>
 
-<div class="w-fit max-w-full h-fit pr-2 flex flex-col max-h-full">
+<div class={`max-w-full h-fit flex flex-col max-h-full ${paddingRight}`}>
   <GraphicContext
     bottom={4}
     height={enableFullWidth

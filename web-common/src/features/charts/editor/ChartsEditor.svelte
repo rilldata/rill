@@ -3,6 +3,7 @@
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -38,7 +39,7 @@
     try {
       await $updateFile.mutateAsync({
         instanceId: $runtime.instanceId,
-        path: filePath,
+        path: removeLeadingSlash(filePath),
         data: {
           blob: content,
         },

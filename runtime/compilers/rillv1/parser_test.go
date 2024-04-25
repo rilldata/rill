@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -14,8 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	"reflect"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 )
@@ -1478,7 +1477,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")
@@ -1498,7 +1497,7 @@ func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 
 func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
-		err := repo.Delete(context.Background(), path)
+		err := repo.Delete(context.Background(), path, false)
 		require.NoError(t, err)
 	}
 }

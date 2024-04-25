@@ -29,3 +29,17 @@ export function extractFileExtension(filePath: string): string {
 export function sanitizeEntityName(entityName: string): string {
   return entityName.replace(INVALID_CHARS, "_");
 }
+
+export function splitFolderAndName(
+  filePath: string,
+): [folder: string, fileName: string] {
+  const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
+  return [
+    filePath.substring(0, filePath.length - fileName.length - 1),
+    fileName,
+  ];
+}
+
+export function getTopLevelFolder(filePath: string): string {
+  return "/" + (filePath.split(FILE_PATH_SPLIT_REGEX)[1] ?? "");
+}

@@ -66,12 +66,12 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	_, err := db.ExecContext(ctx, sqlStmt)
 	require.NoError(t, err)
 
-	handle, err := drivers.Open("postgres", map[string]any{"database_url": dbURL}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("postgres", "default", map[string]any{"database_url": dbURL}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, handle)
 
 	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": ":memory:"}, false, activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 

@@ -9,8 +9,8 @@ import {
 } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
 import { useChart } from "@rilldata/web-common/features/charts/selectors";
 import {
-  getFilePathFromNameAndType,
-  getRouteFromName,
+  getFileAPIPathFromNameAndType,
+  removeLeadingSlash,
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
@@ -22,11 +22,14 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
-export function createChartGenerator(instanceId: string, chart: string) {
+export function createChartGenerator(
+  instanceId: string,
+  chart: string,
+  filePath: string,
+) {
   const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
   const chartQuery = useChart(instanceId, chart);
-  const chartPath = getFilePathFromNameAndType(chart, EntityType.Chart);
-  const chartContent = createRuntimeServiceGetFile(instanceId, chartPath);
+  const chartContent = createRuntimeServiceGetFile(instanceId, filePath);
 
   return async (prompt: string) => {
     try {
@@ -44,7 +47,7 @@ export function createChartGenerator(instanceId: string, chart: string) {
         },
       });
       chartPromptsStore.updatePromptStatus(chart, ChartPromptStatus.Idle);
-      await runtimeServicePutFile(instanceId, chartPath, {
+      await runtimeServicePutFile(instanceId, removeLeadingSlash(filePath), {
         blob: getChartYaml(resp.vegaLiteSpec, resolver, resolverProperties),
       });
     } catch (e) {
@@ -69,13 +72,13 @@ export function createFullChartGenerator(instanceId: string) {
     }: { table?: string; connector?: string; metricsView?: string },
     newChartName: string,
   ) => {
-    const chartPath = getFilePathFromNameAndType(
+    const filePath = getFileAPIPathFromNameAndType(
       newChartName,
       EntityType.Chart,
     );
     try {
       // add an empty chart
-      await runtimeServicePutFile(instanceId, chartPath, {
+      await runtimeServicePutFile(instanceId, filePath, {
         blob: `kind: chart`,
       });
       chartPromptsStore.startPrompt(
@@ -83,7 +86,7 @@ export function createFullChartGenerator(instanceId: string) {
         newChartName,
         prompt,
       );
-      await goto(getRouteFromName(newChartName, EntityType.Chart));
+      await goto(`/files//${filePath}`);
       const resolverResp = await get(generateResolver).mutateAsync({
         instanceId,
         data: {
@@ -95,7 +98,7 @@ export function createFullChartGenerator(instanceId: string) {
       });
 
       // add a chart with just the resolver
-      await runtimeServicePutFile(instanceId, chartPath, {
+      await runtimeServicePutFile(instanceId, filePath, {
         blob: getChartYaml(
           "{}",
           resolverResp.resolver,
@@ -119,7 +122,7 @@ export function createFullChartGenerator(instanceId: string) {
         newChartName,
         ChartPromptStatus.Idle,
       );
-      await runtimeServicePutFile(instanceId, chartPath, {
+      await runtimeServicePutFile(instanceId, filePath, {
         blob: getChartYaml(
           resp.vegaLiteSpec,
           resolverResp.resolver,

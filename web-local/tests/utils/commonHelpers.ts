@@ -7,10 +7,13 @@ export enum TestEntityType {
   Dashboard = "dashboard",
 }
 
-export async function openEntityMenu(page: Page, name: string) {
-  const entityLocator = getEntityLink(page, name);
+export async function openFileNavEntryContextMenu(
+  page: Page,
+  filePath: string,
+) {
+  const entityLocator = getFileNavEntry(page, filePath);
   await entityLocator.hover();
-  await entityLocator.locator("button").last().click();
+  await entityLocator.getByLabel(`${filePath} actions menu trigger`).click();
 }
 
 export async function clickModalButton(page: Page, text: string) {
@@ -42,8 +45,8 @@ export async function waitForProfiling(
   );
 }
 
-export function getEntityLink(page: Page, name: string) {
-  return page.getByRole("listitem", { name, exact: true });
+export function getFileNavEntry(page: Page, filePath: string) {
+  return page.getByLabel(`${filePath} Nav Entry`);
 }
 
 /**
@@ -74,17 +77,18 @@ export async function wrapRetryAssertion(
   if (lastError) throw lastError;
 }
 
-export async function gotoEntity(page: Page, name: string) {
-  await getEntityLink(page, name).click();
+export async function goToFile(page: Page, filePath: string) {
+  const link = page.locator(`a[id="${filePath}-nav-link"]`);
+  await link.click();
 }
 
-export async function renameEntityUsingMenu(
+export async function renameFileUsingMenu(
   page: Page,
-  name: string,
-  toName: string,
+  filePath: string,
+  toFileName: string,
 ) {
   // open context menu and click rename
-  await openEntityMenu(page, name);
+  await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Rename...");
 
   // wait for rename modal to open
@@ -94,26 +98,26 @@ export async function renameEntityUsingMenu(
     })
     .waitFor();
 
-  // type new name and submit
-  await page.locator("#rill-portal input").fill(toName);
+  // type new fileName and submit
+  await page.locator("#rill-portal input").fill(toFileName);
   await Promise.all([
     page.waitForResponse(/rename/),
     clickModalButton(page, "Change Name"),
   ]);
 }
 
-export async function renameEntityUsingTitle(page: Page, toName: string) {
+export async function renameFileUsingTitle(page: Page, toName: string) {
   await page.locator("#model-title-input").fill(toName);
   await page.keyboard.press("Enter");
 }
 
-export async function deleteEntity(page: Page, name: string) {
+export async function deleteFile(page: Page, filePath: string) {
   // open context menu and click rename
-  await openEntityMenu(page, name);
+  await openFileNavEntryContextMenu(page, filePath);
   await Promise.all([
     page.waitForResponse(
       (response) =>
-        response.url().includes(name) &&
+        response.url().includes(filePath) &&
         response.request().method() === "DELETE",
     ),
     clickMenuButton(page, "Delete"),
@@ -127,7 +131,6 @@ export async function updateCodeEditor(page: Page, code: string) {
   } else {
     await page.keyboard.press("Control+A");
   }
-  await page.keyboard.press("Delete");
   await page.keyboard.insertText(code);
 }
 
@@ -138,18 +141,35 @@ export async function waitForValidResource(
 ) {
   await page.waitForResponse(async (response) => {
     if (
-      !response
+      response
         .url()
         .includes(
           `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
         )
-    )
-      return false;
-    try {
-      const resp = JSON.parse((await response.body()).toString());
-      return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
-    } catch (err) {
-      return false;
+    ) {
+      // try and check get a single resource response
+      try {
+        const resp = JSON.parse((await response.body()).toString());
+        return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+      } catch (err) {
+        return false;
+      }
+    } else if (
+      response
+        .url()
+        .includes(`/v1/instances/default/resource?name.kind=${kind}`)
+    ) {
+      // try and check get all resources response
+      try {
+        const resp = JSON.parse((await response.body()).toString());
+        return (
+          resp.resources.find((r) => r.meta?.name === name)?.meta
+            ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
+        );
+      } catch (err) {
+        return false;
+      }
     }
+    return false;
   });
 }

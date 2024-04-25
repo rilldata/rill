@@ -120,6 +120,7 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 
 	return &drivers.RepoObjectStat{
 		LastUpdated: info.ModTime(),
+		IsDir:       info.IsDir(),
 	}, nil
 }
 
@@ -138,7 +139,7 @@ func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error 
 }
 
 // Delete implements drivers.RepoStore.
-func (c *connection) Delete(ctx context.Context, filePath string) error {
+func (c *connection) Delete(ctx context.Context, filePath string, force bool) error {
 	return fmt.Errorf("delete operation is unsupported")
 }
 

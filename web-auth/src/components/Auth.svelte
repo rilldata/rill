@@ -174,7 +174,7 @@
       {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
     </div>
     <div class="flex flex-col gap-y-4" style:width="400px">
-      {#each LOGIN_OPTIONS as { label, icon, style, connection }}
+      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
           on:click={() => authorize(connection)}
@@ -188,14 +188,13 @@
         </CtaButton>
       {/each}
 
-      {#if !isRillCloud}
-        <SSOForm
-          disabled={isSSODisabled}
-          on:ssoSubmit={(e) => {
-            handleSSOLogin(e.detail);
-          }}
-        />
-      {/if}
+      <SSOForm
+        disabled={isSSODisabled}
+        on:ssoSubmit={(e) => {
+          handleSSOLogin(e.detail);
+        }}
+      />
+
       <EmailPassForm
         {isLoginPage}
         disabled={isEmailDisabled}

@@ -1,24 +1,20 @@
 import { expect } from "@playwright/test";
 import type { Page } from "playwright";
-import {
-  clickMenuButton,
-  openEntityMenu,
-  renameEntityUsingTitle,
-  TestEntityType,
-} from "./commonHelpers";
-import { waitForEntity } from "./waitHelpers";
+import { renameFileUsingTitle } from "./commonHelpers";
+import { waitForFileNavEntry } from "./waitHelpers";
 
-export async function createModel(page: Page, name: string) {
-  // add model button
-  await page.locator("button#create-model-button").click();
-  await waitForEntity(page, TestEntityType.Model, "model", true);
-  await renameEntityUsingTitle(page, name);
-  await waitForEntity(page, TestEntityType.Model, name, true);
-}
+export async function createModel(page: Page, modelFileName: string) {
+  // add asset button
+  await page.getByLabel("Add Asset").click();
+  // add model menu item
+  await page.getByLabel("Add Model").click();
 
-export async function createModelFromSource(page: Page, source: string) {
-  await openEntityMenu(page, source);
-  await clickMenuButton(page, "Create New Model");
+  // Wait for default model
+  await waitForFileNavEntry(page, "/models/model.sql", true);
+
+  // Rename model
+  await renameFileUsingTitle(page, modelFileName);
+  await waitForFileNavEntry(page, `/models/${modelFileName}`, true);
 }
 
 export async function modelHasError(page: Page, hasError: boolean, error = "") {

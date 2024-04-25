@@ -1,65 +1,64 @@
 <script lang="ts">
-  import { beforeNavigate } from "$app/navigation";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { createWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
-  import { createWatchResourceClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
-  import { retainFeaturesFlags } from "@rilldata/web-common/features/feature-flags";
-  import RillDeveloperLayout from "@rilldata/web-common/layout/RillDeveloperLayout.svelte";
-  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-  import type { Query } from "@tanstack/query-core";
-  import { QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
-  import { onMount } from "svelte";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
+  import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
+  import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import {
+    importOverlayVisible,
+    overlay,
+  } from "@rilldata/web-common/layout/overlay-store";
+  import PreparingImport from "@rilldata/web-common/features/sources/modal/PreparingImport.svelte";
+  import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
 
-  const fileWatcher = createWatchFilesClient();
-  const resourceWatcher = createWatchResourceClient();
+  let showDropOverlay = false;
 
-  queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
-    query: Query,
-  ) => errorEventHandler?.requestErrorEventHandler(error, query);
-
-  export let data;
-
-  $: host = data.host;
-  $: instanceId = data.instanceId;
-
-  $: fileWatcher.watch(`${host}/v1/instances/${instanceId}/files/watch`);
-
-  $: resourceWatcher.watch(
-    `${host}/v1/instances/${instanceId}/resources/-/watch`,
-  );
-
-  beforeNavigate(retainFeaturesFlags);
-
-  onMount(() => {
-    const stopJavascriptErrorListeners =
-      errorEventHandler?.addJavascriptErrorListeners();
-    void fileArtifacts.init(queryClient, instanceId);
-
-    return () => {
-      fileWatcher.cancel();
-      resourceWatcher.cancel();
-      stopJavascriptErrorListeners?.();
-    };
-  });
-
-  function handleVisibilityChange() {
-    if (document.visibilityState === "visible") {
-      fileWatcher.reconnect();
-      resourceWatcher.reconnect();
-    } else {
-      fileWatcher.throttle();
-      resourceWatcher.throttle();
-    }
+  function isEventWithFiles(event: DragEvent) {
+    let types = event?.dataTransfer?.types;
+    return types && types.indexOf("Files") != -1;
   }
 </script>
 
-<svelte:window on:visibilitychange={handleVisibilityChange} />
-
-<QueryClientProvider client={queryClient}>
-  <RillDeveloperLayout>
+<main
+  role="application"
+  class="index-body absolute w-screen h-screen flex overflow-hidden"
+  on:drag|preventDefault|stopPropagation
+  on:drop|preventDefault|stopPropagation
+  on:dragenter|preventDefault|stopPropagation
+  on:dragleave|preventDefault|stopPropagation
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
+  }}
+>
+  <Navigation />
+  <section class="size-full overflow-hidden">
     <slot />
-  </RillDeveloperLayout>
-</QueryClientProvider>
+  </section>
+</main>
+
+{#if $importOverlayVisible}
+  <PreparingImport />
+{:else if showDropOverlay}
+  <FileDrop bind:showDropOverlay />
+{:else if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+  >
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
+
+<AddSourceModal />
+<SourceImportedModal sourcePath={$sourceImportedPath} />
+<NotificationCenter />

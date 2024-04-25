@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -20,9 +19,8 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
@@ -63,13 +61,13 @@ type configProperties struct {
 	TempDir     string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("admin driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("admin driver can't be shared")
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.WeakDecode(cfgMap, cfg)
+	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,10 +78,11 @@ func (d driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 	}
 
 	h := &Handle{
-		config:       cfg,
-		logger:       logger,
-		admin:        admin,
-		singleflight: &singleflight.Group{},
+		config: cfg,
+		logger: logger,
+		admin:  admin,
+		repoMu: ctxsync.NewRWMutex(),
+		repoSF: &singleflight.Group{},
 	}
 
 	return h, nil
@@ -105,8 +104,9 @@ type Handle struct {
 	config               *configProperties
 	logger               *zap.Logger
 	admin                *client.Client
-	singleflight         *singleflight.Group
-	cloned               atomic.Bool
+	repoMu               ctxsync.RWMutex
+	repoSF               *singleflight.Group
+	cloned               bool
 	repoPath             string
 	projPath             string
 	gitURL               string
@@ -202,31 +202,59 @@ func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 	return nil, drivers.ErrNotNotifier
 }
 
-// cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
-// If onlyClone is false, it's a cheap operation on anything but the first call.
-// After it returns successfully, h.repoPath is safe to access.
-// It's safe for concurrent calls, which are deduplicated.
-func (h *Handle) cloneOrPull(ctx context.Context, onlyClone bool) error {
-	if onlyClone && h.cloned.Load() {
+// rlockEnsureCloned ensures that the repo is cloned and locks h.repoMu for reading.
+// If it succeeds, r.repoMu.RUnlock() should be called when done reading from the cloned repo.
+// It is safe to call this function concurrently.
+func (h *Handle) rlockEnsureCloned(ctx context.Context) error {
+	// Take read lock
+	err := h.repoMu.RLock(ctx)
+	if err != nil {
+		return err
+	}
+
+	// If already cloned, we're done
+	if h.cloned {
 		return nil
 	}
 
-	ctx, span := tracer.Start(ctx, "cloneOrPull", trace.WithAttributes(attribute.Bool("onlyClone", onlyClone)))
+	// Release read lock and clone (which uses a singleflight)
+	h.repoMu.RUnlock()
+
+	// Clone the repo
+	err = h.cloneOrPull(ctx)
+	if err != nil {
+		return err
+	}
+
+	// We know it's cloned now. Take read lock and return.
+	return h.repoMu.RLock(ctx)
+}
+
+// cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
+// After the first time it returns successfully, h.repoPath is safe to access.
+// Safe for concurrent invocation (but must not be called while holding h.repoMu).
+func (h *Handle) cloneOrPull(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "cloneOrPull")
 	defer span.End()
 
-	ch := h.singleflight.DoChan("cloneOrPull", func() (interface{}, error) {
-		if onlyClone && h.cloned.Load() {
-			return nil, nil
+	// Using a SingleFlight to ensure that the clone keeps running even if the caller's ctx is cancelled.
+	// (Since more than one caller may be waiting on the clone concurrently.)
+	ch := h.repoSF.DoChan("cloneOrPull", func() (any, error) {
+		err := h.repoMu.Lock(context.Background())
+		if err != nil {
+			return nil, err
 		}
+		defer h.repoMu.Unlock()
 
 		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		err := r.Run(func() error { return h.cloneOrPullUnsafe(ctx) })
+		err = r.Run(func() error { return h.cloneOrPullInner(ctx) })
 		if err != nil {
 			return nil, err
 		}
+
 		return nil, nil
 	})
 
@@ -239,8 +267,9 @@ func (h *Handle) cloneOrPull(ctx context.Context, onlyClone bool) error {
 }
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
-func (h *Handle) cloneOrPullUnsafe(ctx context.Context) (err error) {
-	if h.cloned.Load() {
+// Unsafe for concurrent use.
+func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
+	if h.cloned {
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
 		// See stashVirtual for details on why this is needed.
 		err := h.stashVirtual()
@@ -257,23 +286,32 @@ func (h *Handle) cloneOrPullUnsafe(ctx context.Context) (err error) {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
-	if !h.cloned.Load() {
-		err := h.cloneUnsafeGit()
-		if err == nil {
-			err = h.pullUnsafeVirtual(ctx)
+	if !h.cloned {
+		err := h.cloneGit()
+		if err != nil {
+			return err
 		}
-		h.cloned.Store(err == nil)
-		return err
+		err = h.pullVirtual(ctx)
+		if err != nil {
+			return err
+		}
+		h.cloned = true
+		return nil
 	}
 
-	err = h.pullUnsafeGit()
-	if err == nil {
-		err = h.pullUnsafeVirtual(ctx)
+	err = h.pullGit()
+	if err != nil {
+		return err
 	}
-	return err
+	err = h.pullVirtual(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.
+// Unsafe for concurrent use.
 func (h *Handle) checkHandshake(ctx context.Context) error {
 	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
@@ -318,7 +356,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 
 // cloneUnsafe clones the Git repository. It removes any existing repository at the repoPath (in case a previous clone failed in a dirty state).
 // Unsafe for concurrent use.
-func (h *Handle) cloneUnsafeGit() error {
+func (h *Handle) cloneGit() error {
 	_, err := os.Stat(h.repoPath)
 	if err == nil {
 		_ = os.RemoveAll(h.repoPath)
@@ -334,7 +372,7 @@ func (h *Handle) cloneUnsafeGit() error {
 
 // pullUnsafeGit pulls changes from the Git repo. It must run after a successful call to cloneUnsafeGit.
 // Unsafe for concurrent use.
-func (h *Handle) pullUnsafeGit() error {
+func (h *Handle) pullGit() error {
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
 		return err
@@ -387,7 +425,7 @@ func (h *Handle) pullUnsafeGit() error {
 // It places files from the virtual repo in a sub-directory __virtual__ of the Git repository.
 // It must run after a successful call to cloneUnsafeGit (which creates the directory).
 // Unsafe for concurrent use.
-func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
+func (h *Handle) pullVirtual(ctx context.Context) error {
 	var dst string
 	if h.virtualStashPath == "" {
 		dst = generateVirtualPath(h.projPath)
@@ -448,6 +486,7 @@ func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
 
 // stashVirtualDir stashes the virtual directory in a temporary directory outside of the Git repository path.
 // Its effect can be reversed by calling unstashVirtual.
+// Unsafe for concurrent use.
 //
 // This is needed for two reasons:
 // a) to handle changes to the project path (i.e. if GitSubpath is changed in checkHandshake),
@@ -483,6 +522,7 @@ func (h *Handle) stashVirtual() error {
 }
 
 // unstashVirtual reverses the effect of stashVirtual.
+// Unsafe for concurrent use.
 func (h *Handle) unstashVirtual() error {
 	if h.virtualStashPath == "" {
 		// Not returning an error since stashVirtual might not stash anything if there aren't any virtual files.

@@ -59,11 +59,12 @@
           "local_file",
         );
         await createSource(runtimeInstanceId, tableName, yaml);
-        checkSourceImported(
-          queryClient,
-          getFilePathFromNameAndType(tableName, EntityType.Table),
+        const newFilePath = getFilePathFromNameAndType(
+          tableName,
+          EntityType.Table,
         );
-        goto(`/source/${tableName}`);
+        await checkSourceImported(queryClient, newFilePath);
+        await goto(`/files${newFilePath}`);
       } catch (err) {
         console.error(err);
       }

@@ -1,11 +1,12 @@
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   openFileUploadDialog,
   uploadFile,
 } from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
 import {
+  runtimeServiceCreateTrigger,
   runtimeServicePutFile,
-  runtimeServiceTriggerRefresh,
 } from "@rilldata/web-common/runtime-client";
 
 export async function refreshSource(
@@ -15,7 +16,11 @@ export async function refreshSource(
   instanceId: string,
 ) {
   if (connector !== "local_file") {
-    return runtimeServiceTriggerRefresh(instanceId, sourceName);
+    return runtimeServiceCreateTrigger(instanceId, {
+      refreshTriggerSpec: {
+        onlyNames: [{ kind: ResourceKind.Source, name: sourceName }],
+      },
+    });
   }
 
   // different logic for the file connector
