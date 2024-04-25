@@ -93,15 +93,13 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 
 	// Read rill.yaml and fill in `ignore_paths`
 	rawYaml, err := c.Get(context.Background(), "/rill.yaml")
-	if err != nil {
-		return nil, err
+	if err == nil {
+		yml := &rillYAML{}
+		err = yaml.Unmarshal([]byte(rawYaml), yml)
+		if err == nil {
+			c.ignorePaths = yml.IgnorePaths
+		}
 	}
-	yml := &rillYAML{}
-	err = yaml.Unmarshal([]byte(rawYaml), yml)
-	if err != nil {
-		return nil, err
-	}
-	c.ignorePaths = yml.IgnorePaths
 
 	return c, nil
 }
