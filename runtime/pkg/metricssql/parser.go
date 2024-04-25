@@ -383,8 +383,6 @@ func (t *transformer) transformFuncCallExpr(ctx context.Context, node *ast.FuncC
 		return t.transformTimeRangeStart(ctx, node)
 	case "time_range_end":
 		return t.transformTimeRangeEnd(ctx, node)
-	case "time_range":
-		return t.transformTimeRange(ctx, node)
 	}
 
 	// generic functions that do not require translation

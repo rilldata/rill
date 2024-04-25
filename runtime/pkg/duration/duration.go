@@ -268,6 +268,17 @@ func (d TruncToDateDuration) Sub(t time.Time) time.Time {
 	return timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
 }
 
+func (d TruncToDateDuration) SubWithUnit(t time.Time, unit int) time.Time {
+	if unit <= 0 {
+		return t
+	}
+	for i := 1; i <= unit; i++ {
+		t = timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
+		t = t.AddDate(0, 0, -1)
+	}
+	return t
+}
+
 func (d TruncToDateDuration) EstimateNative() (time.Duration, bool) {
 	return 0, false
 }
