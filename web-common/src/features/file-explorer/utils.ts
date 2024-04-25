@@ -9,6 +9,6 @@ export function isCurrentActivePage(filePath: string, isDir: boolean) {
   filePath = removeLeadingSlash(filePath);
   currentFile = removeLeadingSlash(currentFile ?? "");
   return (
-    currentFile === filePath || (isDir && filePath.startsWith(currentFile))
+    currentFile === filePath || (isDir && currentFile.startsWith(filePath))
   );
 }
