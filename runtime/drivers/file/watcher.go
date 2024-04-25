@@ -176,7 +176,7 @@ func (w *watcher) runInner() error {
 			path = filepath.Join("/", path)
 			we.Path = path
 
-			if isIgnored(path, w.ignorePaths) {
+			if drivers.IsIgnored(path, w.ignorePaths) {
 				continue
 			}
 

@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -54,6 +55,11 @@ type configProperties struct {
 	DSN string `mapstructure:"dsn"`
 	// TempDir is the directory where temporary files will be stored
 	TempDir string `mapstructure:"temp_dir"`
+}
+
+// a smaller subset of relevant parts of rill.yaml
+type rillYAML struct {
+	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -127,6 +133,7 @@ type connection struct {
 	cloneURLRefreshedOn time.Time
 	singleflight        *singleflight.Group
 	cloned              atomic.Bool
+	ignorePaths         []string
 }
 
 // Close implements drivers.Connection.
@@ -225,6 +232,18 @@ func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {
 		if err != nil {
 			return nil, err
 		}
+
+		rawYaml, err := c.Get(ctx, "/rill.yaml")
+		if err != nil {
+			return nil, err
+		}
+		yml := &rillYAML{}
+		err = yaml.Unmarshal([]byte(rawYaml), yml)
+		if err != nil {
+			return nil, err
+		}
+		c.ignorePaths = yml.IgnorePaths
+
 		return nil, nil
 	})
 

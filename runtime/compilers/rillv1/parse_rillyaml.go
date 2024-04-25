@@ -18,7 +18,6 @@ type RillYAML struct {
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
 	Features      []string
-	IgnorePaths   []string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -66,8 +65,6 @@ type rillYAML struct {
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags
 	Features []string `yaml:"features"`
-	// Ignore Paths for file explorer
-	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -150,8 +147,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			ResourceKindMetricsView: tmp.Dashboards,
 			ResourceKindMigration:   tmp.Migrations,
 		},
-		Features:    tmp.Features,
-		IgnorePaths: tmp.IgnorePaths,
+		Features: tmp.Features,
 	}
 
 	for i, c := range tmp.Connectors {

@@ -54,7 +54,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		if isIgnored(p, c.driverConfig.IgnorePaths) {
+		if drivers.IsIgnored(p, c.ignorePaths) {
 			return nil
 		}
 
@@ -163,7 +163,7 @@ func (c *connection) Sync(ctx context.Context) error {
 func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	c.watcherMu.Lock()
 	if c.watcher == nil {
-		w, err := newWatcher(c.root, c.driverConfig.IgnorePaths, c.logger)
+		w, err := newWatcher(c.root, c.ignorePaths, c.logger)
 		if err != nil {
 			c.watcherMu.Unlock()
 			return err
@@ -184,32 +184,4 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 	}()
 
 	return c.watcher.subscribe(ctx, cb)
-}
-
-// ignoredPaths is a list of paths that are ignored by the parser.
-var ignoredPaths = []string{
-	"/tmp",
-	"/.git",
-	"/node_modules",
-}
-
-// IsIgnored returns true if the path (and any files in nested directories) should be ignored.
-func isIgnored(path string, ignorePathsConfig []string) bool {
-	for _, dir := range ignoredPaths {
-		if path == dir {
-			return true
-		}
-		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
-			return true
-		}
-	}
-	for _, dir := range ignorePathsConfig {
-		if path == dir {
-			return true
-		}
-		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
-			return true
-		}
-	}
-	return false
 }

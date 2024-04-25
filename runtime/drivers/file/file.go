@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
@@ -14,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 func init() {
@@ -53,7 +53,11 @@ type driver struct {
 type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	IgnorePaths     []string
+}
+
+// a smaller subset of relevant parts of rill.yaml
+type rillYAML struct {
+	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -67,14 +71,6 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	ignorePaths, ok := config["ignore_paths"]
-	if ok {
-		ignorePathsStr, ok := ignorePaths.(string)
-		if ok {
-			conf.IgnorePaths = strings.Split(ignorePathsStr, ",")
-		}
-	}
-
 	path, err := fileutil.ExpandHome(conf.DSN)
 	if err != nil {
 		return nil, err
@@ -85,8 +81,6 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	fmt.Println("file", conf)
-
 	c := &connection{
 		logger:       logger,
 		root:         absPath,
@@ -96,6 +90,19 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	if err := c.checkRoot(); err != nil {
 		return nil, err
 	}
+
+	// Read rill.yaml and fill in `ignore_paths`
+	rawYaml, err := c.Get(context.Background(), "/rill.yaml")
+	if err != nil {
+		return nil, err
+	}
+	yml := &rillYAML{}
+	err = yaml.Unmarshal([]byte(rawYaml), yml)
+	if err != nil {
+		return nil, err
+	}
+	c.ignorePaths = yml.IgnorePaths
+
 	return c, nil
 }
 
@@ -136,6 +143,8 @@ type connection struct {
 	watcherMu    sync.Mutex
 	watcherCount int
 	watcher      *watcher
+
+	ignorePaths []string
 }
 
 // Config implements drivers.Connection.
