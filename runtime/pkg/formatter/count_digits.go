@@ -2,14 +2,17 @@ package formatter
 
 import "regexp"
 
+var (
+	digits        = regexp.MustCompile(`\D`)
+	nonZeroDigits = regexp.MustCompile(`[^1-9]`)
+)
+
 // countDigits counts all numeric digits in a string.
 func countDigits(numStr string) int {
-	re := regexp.MustCompile(`\D`)
-	return len(re.ReplaceAllString(numStr, ""))
+	return len(digits.ReplaceAllString(numStr, ""))
 }
 
 // countNonZeroDigits counts all non-zero numeric digits in a string.
 func countNonZeroDigits(numStr string) int {
-	re := regexp.MustCompile(`[^1-9]`)
-	return len(re.ReplaceAllString(numStr, ""))
+	return len(nonZeroDigits.ReplaceAllString(numStr, ""))
 }

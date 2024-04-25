@@ -39,7 +39,7 @@ func newPerRangeFormatter(options formatterRangeSpecsStrategy) (*perRangeFormatt
 	return &perRangeFormatter{options: options}, nil
 }
 
-func (f *perRangeFormatter) stringFormat(x any) (string, error) {
+func (f *perRangeFormatter) StringFormat(x any) (string, error) {
 	var numberParts *numberParts
 	if v, ok := asUnsigned(x); ok {
 		numberParts = partsFormat(v, f.options)
@@ -85,9 +85,9 @@ func partsFormat[T number](x T, ops formatterRangeSpecsStrategy) *numberParts {
 	// If no valid format was found, apply default formatting
 	if numParts == nil {
 		magE := orderOfMagnitudeEng(x)
-		np := formatNumWithOrderOfMag(x, magE, defaultMaxDigitsRight, true, false, false)
+		np := formatNumWithOrderOfMag(x, formatNumWithOrderOfMagOps{magE, defaultMaxDigitsRight, true, false, false})
 		if countDigits(np.integer) > 3 {
-			np = formatNumWithOrderOfMag(x, magE+3, defaultMaxDigitsRight, true, false, false)
+			np = formatNumWithOrderOfMag(x, formatNumWithOrderOfMagOps{magE + 3, defaultMaxDigitsRight, true, false, false})
 		}
 		numParts = &np
 	}
@@ -111,7 +111,8 @@ func formatWithRangeSpec[T number](x T, spec rangeFormatSpec) numberParts {
 	padWithInsignificantZeros := spec.padWithInsignificantZeros
 	useTrailingDot := spec.useTrailingDot
 
-	return formatNumWithOrderOfMag(x, spec.baseMagnitude, spec.maxDigitsRight, padWithInsignificantZeros, useTrailingDot, false)
+	ops := formatNumWithOrderOfMagOps{spec.baseMagnitude, spec.maxDigitsRight, padWithInsignificantZeros, useTrailingDot, false}
+	return formatNumWithOrderOfMag(x, ops)
 }
 
 // numberPartsValidForRangeSpec checks if the given number parts are valid according to the specified range spec.

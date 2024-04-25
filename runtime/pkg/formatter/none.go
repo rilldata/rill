@@ -10,6 +10,6 @@ func newNonFormatter() *nonFormatter {
 	return &nonFormatter{}
 }
 
-func (f *nonFormatter) stringFormat(x any) (string, error) {
+func (f *nonFormatter) StringFormat(x any) (string, error) {
 	return fmt.Sprintf("%v", x), nil
 }

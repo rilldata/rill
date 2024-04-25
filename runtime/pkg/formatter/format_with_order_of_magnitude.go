@@ -38,20 +38,22 @@ func orderOfMagnitude(x float64) int {
 	return int(mag)
 }
 
-// formatNumWithOrderOfMag formats a number according to the given order of magnitude and formatting rules.
-func formatNumWithOrderOfMag[T number](x T,
-	newOrder int,
-	fractionDigits int,
+type formatNumWithOrderOfMagOps struct {
+	newOrder       int
+	fractionDigits int
 	// Set to true to pad with insignificant zeros.
 	// Integers will be padded with zeros if this is set.
-	padInsignificantZeros bool,
+	padInsignificantZeros bool
 	// Set to `true` to leave a trailing "." in the case
 	// of non-integers formatted to e0 with 0 fraction digits.
 	// Even if this is `true` integers WILL NOT be formatted with a trailing "."
-	trailingDot bool,
+	trailingDot bool
 	// strip commas from output?
-	stripCommas bool,
-) numberParts {
+	stripCommas bool
+}
+
+// formatNumWithOrderOfMag formats a number according to the given order of magnitude and formatting rules.
+func formatNumWithOrderOfMag[T number](x T, ops formatNumWithOrderOfMagOps) numberParts {
 	if isFloat(x) {
 		if math.IsInf(float64(x), 1) {
 			return numberParts{integer: "∞"}
@@ -64,38 +66,38 @@ func formatNumWithOrderOfMag[T number](x T,
 		}
 	}
 
-	suffix := fmt.Sprintf("E%d", newOrder)
+	suffix := fmt.Sprintf("E%d", ops.newOrder)
 	if x == 0 {
 		frac := ""
-		if padInsignificantZeros {
-			frac = strings.Repeat("0", fractionDigits)
+		if ops.padInsignificantZeros {
+			frac = strings.Repeat("0", ops.fractionDigits)
 		}
 		return numberParts{integer: "0", dot: ".", frac: frac, suffix: suffix}
 	}
 
-	if !padInsignificantZeros {
+	if !ops.padInsignificantZeros {
 		spm := smallestPrecisionMagnitude(x)
-		newSpm := spm - newOrder
+		newSpm := spm - ops.newOrder
 		if newSpm < 0 {
-			fractionDigits = min(-newSpm, fractionDigits)
+			ops.fractionDigits = min(-newSpm, ops.fractionDigits)
 		} else {
-			fractionDigits = 0
+			ops.fractionDigits = 0
 		}
 	}
 
 	// Adjust number by its new order of magnitude
-	adjustedNumber := float64(x) / math.Pow(10, float64(newOrder))
+	adjustedNumber := float64(x) / math.Pow(10, float64(ops.newOrder))
 
 	// Format number with potential trailing dot
 	p := message.NewPrinter(language.English)
 	nf := xnumber.Decimal(
 		adjustedNumber,
-		xnumber.Scale(fractionDigits),
+		xnumber.Scale(ops.fractionDigits),
 	)
 	formatted := p.Sprint(nf)
 	intPart, fracPart := splitFormattedNumber(formatted)
 
-	if stripCommas {
+	if ops.stripCommas {
 		intPart = strings.ReplaceAll(intPart, ",", "")
 	}
 
@@ -108,7 +110,7 @@ func formatNumWithOrderOfMag[T number](x T,
 
 	var dot string
 	// Decide on dot presence
-	if fracPart != "" || (fractionDigits == 0 && trailingDot && !noFraction(float64(x))) {
+	if fracPart != "" || (ops.fractionDigits == 0 && ops.trailingDot && !noFraction(float64(x))) {
 		dot = "."
 	}
 

@@ -33,24 +33,23 @@ const (
 
 type intervalFormatter struct{}
 
-func (f *intervalFormatter) stringFormat(x any) (string, error) {
+func newIntervalFormatter() *intervalFormatter {
+	return &intervalFormatter{}
+}
+
+func (f *intervalFormatter) StringFormat(x any) (string, error) {
 	if v, ok := asNumber[float64](x); ok {
 		return formatMsInterval(v), nil
 	}
 	return "", fmt.Errorf("not a number: %v", x)
 }
 
-/**
- * Formats a millisecond value into a compact human-readable time interval.
- *
- * The strategy is to:
- * - show two digits of precision
- * - prefer to show two integer digits in a smaller unit
- * - if that is not possible, show a floating point number in a larger unit with one digit of precision (e.g. 1.2 days)
- *
- * see https://www.notion.so/rilldata/Support-display-of-intervals-and-formatting-of-intervals-e-g-25-days-in-dashboardsal-data-t-8720522eded648f58f35421ebc28ee2f
- */
-
+// formatMsInterval formats a millisecond value into a compact human-readable time interval.
+// The strategy is to:
+// - show two digits of precision
+// - prefer to show two integer digits in a smaller unit
+// - if that is not possible, show a floating point number in a larger unit with one digit of precision (e.g. 1.2 days)
+// see https://www.notion.so/rilldata/Support-display-of-intervals-and-formatting-of-intervals-e-g-25-days-in-dashboardsal-data-t-8720522eded648f58f35421ebc28ee2f
 func formatMsInterval(ms float64) string {
 	var neg string
 	if ms < 0 {
@@ -115,20 +114,21 @@ func formatMsInterval(ms float64) string {
 
 type intervalExpFormatter struct{}
 
-func (f *intervalExpFormatter) stringFormat(x any) (string, error) {
+func newIntervalExpFormatter() *intervalExpFormatter {
+	return &intervalExpFormatter{}
+}
+
+func (f *intervalExpFormatter) StringFormat(x any) (string, error) {
 	if v, ok := asNumber[float64](x); ok {
 		return formatMsToDuckDbIntervalString(v, "short"), nil
 	}
 	return "", fmt.Errorf("not a number: %v", x)
 }
 
-/**
- * Formats a millisecond value into an expanded interval string
- * that will be parsable by a duckdb INTERVAL constructor.
- * The hour+min+sec portion will use whichever is shorter between the `HH:MM:SS.xxx`
- * format and a sparse format like `2h 4s` for the HMS part of the interval.
- *
- */
+// formatMsToDuckDbIntervalString formats a millisecond value into an expanded interval string
+// that will be parsable by a duckdb INTERVAL constructor.
+// The hour+min+sec portion will use whichever is shorter between the `HH:MM:SS.xxx`
+// format and a sparse format like `2h 4s` for the HMS part of the interval.
 func formatMsToDuckDbIntervalString(ms float64, style string) string {
 	neg := ""
 	if ms < 0 {

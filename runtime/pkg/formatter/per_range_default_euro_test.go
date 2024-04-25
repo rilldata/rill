@@ -99,8 +99,8 @@ func TestPerRangeFormatterDefaultEuro(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed: %v", err)
 			}
-			if got, _ := formatter.stringFormat(tt.input); got != tt.expected {
-				t.Errorf("perRangeFormatter.stringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
+			if got, _ := formatter.StringFormat(tt.input); got != tt.expected {
+				t.Errorf("perRangeFormatter.StringFormat(%v) = %v, want %v", tt.input, got, tt.expected)
 			}
 		})
 	}

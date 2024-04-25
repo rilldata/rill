@@ -167,7 +167,7 @@ func TestFormatNumWithOrderOfMag(t *testing.T) {
 			trailingDot := tt.input[4].(bool)
 			stripCommas := tt.input[5].(bool)
 
-			got := formatNumWithOrderOfMag(x, newOrder, fractionDigits, padInsignificantZeros, trailingDot, stripCommas)
+			got := formatNumWithOrderOfMag(x, formatNumWithOrderOfMagOps{newOrder, fractionDigits, padInsignificantZeros, trailingDot, stripCommas})
 			if got != tt.expected {
 				t.Errorf("formatNumWithOrderOfMag(%+v) = %+v, want %+v", tt.input, got, tt.expected)
 			}
@@ -230,7 +230,7 @@ func TestFormatNumWithOrderOfMag(t *testing.T) {
 			trailingDot := tt.input[4].(bool)
 			stripCommas := tt.input[5].(bool)
 
-			got := formatNumWithOrderOfMag(x, newOrder, fractionDigits, padInsignificantZeros, trailingDot, stripCommas)
+			got := formatNumWithOrderOfMag(x, formatNumWithOrderOfMagOps{newOrder, fractionDigits, padInsignificantZeros, trailingDot, stripCommas})
 			if got != tt.expected {
 				t.Errorf("formatNumWithOrderOfMag(%+v) = %+v, want %+v", tt.input, got, tt.expected)
 			}
