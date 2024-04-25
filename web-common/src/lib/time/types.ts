@@ -120,7 +120,6 @@ export enum TimeRangePreset {
   LAST_7_DAYS = "P7D",
   LAST_14_DAYS = "P14D",
   LAST_4_WEEKS = "P4W",
-  LAST_3_MONTHS = "P3M",
   LAST_12_MONTHS = "P12M",
   TODAY = "rill-TD",
   WEEK_TO_DATE = "rill-WTD",
