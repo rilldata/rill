@@ -1,5 +1,7 @@
 import { goto } from "$app/navigation";
+import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { get } from "svelte/store";
 import { notifications } from "../../../components/notifications";
 import { overlay } from "../../../layout/overlay-store";
@@ -16,7 +18,6 @@ import {
   runtimeServiceGetFile,
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
-import { useDashboardFileNames } from "../../dashboards/selectors";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
@@ -59,7 +60,7 @@ export function useCreateDashboardFromTableUIAction(
 
   // Get the list of existing dashboards to generate a unique name
   // We call here to avoid: `Error: Function called outside component initialization`
-  const dashboardNames = useDashboardFileNames(instanceId);
+  const allNames = useAllFileNames(queryClient, instanceId);
 
   // Return a function that can be called to create a dashboard from a table
   return async () => {
@@ -82,7 +83,7 @@ export function useCreateDashboardFromTableUIAction(
     // Get a unique name
     const newDashboardName = getName(
       `${tableName}_dashboard`,
-      get(dashboardNames).data ?? [],
+      get(allNames).data ?? [],
     );
     const newFilePath = `/${folder}/${newDashboardName}.yaml`;
 

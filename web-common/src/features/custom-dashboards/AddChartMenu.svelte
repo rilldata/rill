@@ -1,23 +1,24 @@
 <script lang="ts">
+  import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { ChevronDown, Plus } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
-  import { useChartFileNames } from "../charts/selectors";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
 
   const dispatch = createEventDispatcher();
   let open = false;
   let value = "";
 
-  $: chartFileNamesQuery = useChartFileNames($runtime.instanceId);
-  $: chartFileNames = $chartFileNamesQuery.data ?? [];
+  $: allNamesQuery = useAllFileNames(queryClient, $runtime.instanceId);
+  $: chartFileNames = $allNamesQuery.data ?? [];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger asChild let:builder>
-    <button {...builder} use:builder.action class:open>
-      <Plus size="16px" class="flex items-center justify-center" />
+    <button {...builder} class:open use:builder.action>
+      <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
         Add Chart
         <ChevronDown size="14px" />

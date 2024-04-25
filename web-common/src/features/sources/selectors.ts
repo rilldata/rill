@@ -1,9 +1,6 @@
-import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResourceNames,
   useFilteredResources,
-  useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ProfileColumn,
@@ -13,8 +10,6 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import { getRouteFromName } from "../entity-management/entity-mappers";
-import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
   type: string;
@@ -26,24 +21,6 @@ export function useSources(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Source, (data) =>
     data.resources?.filter((r) => !!r.source?.state?.table),
   );
-}
-
-export function useSourceNames(instanceId: string) {
-  return useFilteredResourceNames(instanceId, ResourceKind.Source);
-}
-
-export function useSourceFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "sources");
-}
-
-export function useSourceRoutes(instanceId: string) {
-  return useMainEntityFiles(instanceId, "sources", (name) =>
-    getRouteFromName(name, EntityType.Table),
-  );
-}
-
-export function useSource(instanceId: string, name: string) {
-  return useResource(instanceId, name, ResourceKind.Source);
 }
 
 export function useSourceFromYaml(instanceId: string, filePath: string) {
