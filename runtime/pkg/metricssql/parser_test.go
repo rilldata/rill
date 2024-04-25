@@ -49,7 +49,7 @@ func TestCompiler_Compile(t *testing.T) {
 		"select pub, dom, date_trunc('hour', timestamp) as day, measure_0 from ad_bids_metrics order by  date_trunc('hour', timestamp) desc limit 10": "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\", date_trunc('hour', timestamp) AS \"day\", count(*) AS \"measure_0\" FROM \"ad_bids\" GROUP BY \"domain\", \"publisher\", date_trunc('hour', timestamp) ORDER BY date_trunc('hour', timestamp) DESC LIMIT 10",
 	}
 	for inSQL, outSQL := range passTests {
-		got, _, _, _, err := compiler.Compile(context.Background(), inSQL)
+		got, _, _, err := compiler.Compile(context.Background(), inSQL)
 		require.NoError(t, err, "input = %v", inSQL)
 		if got != outSQL {
 			t.Errorf("Compiler.Compile() input = %v, got = %v, want = %v", inSQL, got, outSQL)
@@ -71,8 +71,8 @@ func TestCompiler_CompileError(t *testing.T) {
 		"select max(pub), dom from ad_bids_metrics":                         "metrics sql: can only select plain dimension/measures",
 		"select pub, dom from ad_bids_metrics where toUpper(pub) = 'Yahoo'": "metrics sql: unsupported expression \"TOUPPER(`pub`)\"",
 	}
-	for inSQL, _ := range sqlToErrMsg {
-		_, _, _, _, err := compiler.Compile(context.Background(), inSQL)
+	for inSQL := range sqlToErrMsg {
+		_, _, _, err := compiler.Compile(context.Background(), inSQL)
 		require.Error(t, err)
 		// require.ErrorContains(t, err, errMsg)
 	}

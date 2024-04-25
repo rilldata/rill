@@ -232,7 +232,7 @@ func (d StandardDuration) EndTime(t time.Time) time.Time {
 	case "PW":
 		return d.Sub(t).AddDate(0, 0, 7)
 	case "PM":
-		return d.Sub(t).AddDate(0, 0, 30)
+		return d.Sub(t).AddDate(0, 1, 0)
 	case "PQ":
 		return d.Sub(t).AddDate(0, 3, 0)
 	case "PY":

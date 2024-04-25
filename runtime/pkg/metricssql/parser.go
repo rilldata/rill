@@ -53,19 +53,19 @@ func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]
 // We use MySQL's ANSI sql Mode to conform more closely to standard SQL.
 //
 // Whenever adding transform method over new node type also look at its `Restore` method to get an idea how it can be parsed into a SQL query.
-func (c *Compiler) Compile(ctx context.Context, sql string) (string, []any, string, []*runtimev1.ResourceName, error) {
+func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*runtimev1.ResourceName, error) {
 	stmtNodes, _, err := c.p.ParseSQL(sql)
 	if err != nil {
-		return "", nil, "", nil, err
+		return "", "", nil, err
 	}
 
 	if len(stmtNodes) != 1 {
-		return "", nil, "", nil, errors.New("metrics sql: expected exactly one SQL statement")
+		return "", "", nil, errors.New("metrics sql: expected exactly one SQL statement")
 	}
 
 	stmt, ok := stmtNodes[0].(*ast.SelectStmt)
 	if !ok {
-		return "", nil, "", nil, errors.New("metrics sql: expected a SELECT statement")
+		return "", "", nil, errors.New("metrics sql: expected a SELECT statement")
 	}
 
 	t := &transformer{
@@ -74,12 +74,12 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, []any, stri
 		userAttributes: c.userAttributes,
 		priority:       c.priority,
 	}
-	compiledSQL, args, err := t.transformSelectStmt(ctx, stmt)
+	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
 	if err != nil {
-		return "", nil, "", nil, err
+		return "", "", nil, err
 	}
 
-	return compiledSQL, args, t.connector, t.refs, nil
+	return compiledSQL, t.connector, t.refs, nil
 }
 
 type transformer struct {
@@ -95,50 +95,48 @@ type transformer struct {
 	priority      int
 }
 
-func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectStmt) (string, []any, error) {
+func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectStmt) (string, error) {
 	if node.WithBeforeBraces {
-		return "", nil, fmt.Errorf("metrics sql: WITH clause is not supported")
+		return "", fmt.Errorf("metrics sql: WITH clause is not supported")
 	}
 	if node.IsInBraces {
-		return "", nil, fmt.Errorf("metrics sql: sub select is not supported")
+		return "", fmt.Errorf("metrics sql: sub select is not supported")
 	}
 	if node.With != nil {
-		return "", nil, fmt.Errorf("metrics sql: WITH clause is not supported")
+		return "", fmt.Errorf("metrics sql: WITH clause is not supported")
 	}
 
 	// parse from clause
 	if node.From == nil || node.From.TableRefs == nil {
-		return "", nil, fmt.Errorf("metrics sql: need from clause")
+		return "", fmt.Errorf("metrics sql: need from clause")
 	}
 
 	var sb strings.Builder
 	sb.WriteString("SELECT ")
 	fromClause, err := t.transformFromClause(ctx, node.From)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
 	selectList, groupByClause, err := t.transformSelectStmtColumns(ctx, node)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
 	sb.WriteString(selectList)
 	sb.WriteString(" FROM ")
 	sb.WriteString(fromClause)
 
-	var sqlArgs []any
 	if node.Where != nil {
 		where, err := t.transformExprNode(ctx, node.Where)
 		if err != nil {
-			return "", nil, err
+			return "", err
 		}
 		sb.WriteString(" WHERE ")
 		sb.WriteString(where.expr)
-		sqlArgs = append(sqlArgs, where.sqlArgs...)
 	}
 	if node.GroupBy != nil {
-		return "", nil, fmt.Errorf("metrics sql: Explicit group by clause is not supported. Group by clause is implicitly added when both measure and dimensions are selected. The implicit group by includes all selected dimensions")
+		return "", fmt.Errorf("metrics sql: Explicit group by clause is not supported. Group by clause is implicitly added when both measure and dimensions are selected. The implicit group by includes all selected dimensions")
 	}
 	if groupByClause != "" {
 		sb.WriteString(" GROUP BY ")
@@ -148,7 +146,7 @@ func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectS
 	if node.Having != nil {
 		having, err := t.transformHavingClause(ctx, node.Having)
 		if err != nil {
-			return "", nil, err
+			return "", err
 		}
 		sb.WriteString(" HAVING ")
 		sb.WriteString(having)
@@ -157,7 +155,7 @@ func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectS
 	if node.OrderBy != nil {
 		orderBy, err := t.transformOrderByClause(ctx, node.OrderBy)
 		if err != nil {
-			return "", nil, err
+			return "", err
 		}
 		sb.WriteString(" ORDER BY ")
 		sb.WriteString(orderBy)
@@ -166,12 +164,12 @@ func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectS
 	if node.Limit != nil {
 		limit, err := t.transformLimitClause(ctx, node.Limit)
 		if err != nil {
-			return "", nil, err
+			return "", err
 		}
 		sb.WriteString(" LIMIT ")
 		sb.WriteString(limit)
 	}
-	return sb.String(), sqlArgs, nil
+	return sb.String(), nil
 }
 
 func (t *transformer) transformSelectStmtColumns(ctx context.Context, node *ast.SelectStmt) (string, string, error) {
@@ -375,30 +373,20 @@ func (t *transformer) transformBinaryOperationExpr(ctx context.Context, node *as
 	var types []string
 	types = append(types, left.types...)
 	types = append(types, right.types...)
-
-	var sqlArgs []any
-	sqlArgs = append(sqlArgs, left.sqlArgs...)
-	sqlArgs = append(sqlArgs, right.sqlArgs...)
-
-	return exprResult{
-		expr:    fmt.Sprintf("%s %s %s", left.expr, opToString(node.Op), right.expr),
-		sqlArgs: sqlArgs,
-		columns: cols,
-		types:   types,
-	}, nil
+	return exprResult{expr: fmt.Sprintf("%s %s %s", left.expr, opToString(node.Op), right.expr), columns: cols, types: types}, nil
 }
 
 func (t *transformer) transformFuncCallExpr(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
 	fncName := node.FnName
-
 	switch fncName.L {
 	case "time_range_start":
 		return t.transformTimeRangeStart(ctx, node)
 	case "time_range_end":
 		return t.transformTimeRangeEnd(ctx, node)
 	case "time_range":
-		// todo add support
+		return t.transformTimeRange(ctx, node)
 	}
+
 	// generic functions that do not require translation
 	if _, ok := supportedFuncs[fncName.L]; !ok {
 		return exprResult{}, fmt.Errorf("metrics sql: unsupported function %v", fncName.O)
@@ -438,12 +426,7 @@ func (t *transformer) transformIsNullOperationExpr(ctx context.Context, node *as
 	} else {
 		sb.WriteString(" IS NULL")
 	}
-	return exprResult{
-		expr:    sb.String(),
-		sqlArgs: expr.sqlArgs,
-		columns: expr.columns,
-		types:   expr.types,
-	}, nil
+	return exprResult{expr: sb.String(), columns: expr.columns, types: expr.types}, nil
 }
 
 func (t *transformer) transformIsTruthOperationExpr(ctx context.Context, n *ast.IsTruthExpr) (exprResult, error) {
@@ -464,12 +447,7 @@ func (t *transformer) transformIsTruthOperationExpr(ctx context.Context, n *ast.
 	} else {
 		sb.WriteString(" FALSE")
 	}
-	return exprResult{
-		expr:    sb.String(),
-		sqlArgs: expr.sqlArgs,
-		columns: expr.columns,
-		types:   expr.types,
-	}, nil
+	return exprResult{expr: sb.String(), columns: expr.columns, types: expr.types}, nil
 }
 
 func (t *transformer) transformParenthesesExpr(ctx context.Context, node *ast.ParenthesesExpr) (exprResult, error) {
@@ -477,12 +455,7 @@ func (t *transformer) transformParenthesesExpr(ctx context.Context, node *ast.Pa
 	if err != nil {
 		return exprResult{}, err
 	}
-	return exprResult{
-		expr:    fmt.Sprintf("(%s)", expr),
-		columns: expr.columns,
-		types:   expr.types,
-		sqlArgs: expr.sqlArgs,
-	}, nil
+	return exprResult{expr: fmt.Sprintf("(%s)", expr), columns: expr.columns, types: expr.types}, nil
 }
 
 func (t *transformer) transformPatternInExpr(ctx context.Context, node *ast.PatternInExpr) (exprResult, error) {
@@ -518,12 +491,7 @@ func (t *transformer) transformPatternInExpr(ctx context.Context, node *ast.Patt
 		types = append(types, expr.types...)
 	}
 	sb.WriteRune(')')
-	return exprResult{
-		expr:    sb.String(),
-		sqlArgs: expr.sqlArgs,
-		columns: cols,
-		types:   types,
-	}, nil
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
 }
 
 func (t *transformer) transformPatternLikeOrIlikeExpr(ctx context.Context, n *ast.PatternLikeOrIlikeExpr) (exprResult, error) {
@@ -563,12 +531,7 @@ func (t *transformer) transformPatternLikeOrIlikeExpr(ctx context.Context, n *as
 	cols = append(cols, patternExpr.columns...)
 	types = append(types, expr.types...)
 	types = append(types, patternExpr.types...)
-	return exprResult{
-		expr:    sb.String(),
-		sqlArgs: patternExpr.sqlArgs,
-		columns: cols,
-		types:   types,
-	}, nil
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
 }
 
 func (t *transformer) transformUnaryOperationExpr(ctx context.Context, node *ast.UnaryOperationExpr) (exprResult, error) {
@@ -577,12 +540,7 @@ func (t *transformer) transformUnaryOperationExpr(ctx context.Context, node *ast
 		return exprResult{}, err
 	}
 
-	return exprResult{
-		expr:    fmt.Sprintf("%s%s", opToString(node.Op), expr.expr),
-		sqlArgs: expr.sqlArgs,
-		columns: expr.columns,
-		types:   expr.types,
-	}, nil
+	return exprResult{expr: fmt.Sprintf("%s%s", opToString(node.Op), expr.expr), columns: expr.columns, types: expr.types}, nil
 }
 
 func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) (exprResult, error) {
@@ -678,8 +636,7 @@ func restore(node ast.Node) string {
 }
 
 type exprResult struct {
-	expr    string
-	sqlArgs []any
+	expr string
 	// underlying dimension/measure name
 	// can be empty for constants
 	columns []string

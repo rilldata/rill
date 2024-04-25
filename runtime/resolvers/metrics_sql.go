@@ -53,7 +53,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes, sqlArgs.Priority)
-	sql, args, connector, refs, err := compiler.Compile(ctx, props.SQL)
+	sql, connector, refs, err := compiler.Compile(ctx, props.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,6 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		Args:           opts.Args,
 		UserAttributes: opts.UserAttributes,
 		ForExport:      opts.ForExport,
-		SQLArgs:        args,
 	}
 	return newSQLSimple(ctx, sqlResolverOpts, finalRefs)
 }

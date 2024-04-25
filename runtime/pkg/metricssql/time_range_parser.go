@@ -70,8 +70,7 @@ func (t *transformer) transformTimeRangeStart(ctx context.Context, node *ast.Fun
 		watermark = d.Sub(watermark)
 	}
 	return exprResult{
-		expr:    "?",
-		sqlArgs: []any{watermark},
+		expr:    fmt.Sprintf("'%s'", watermark.Format(time.RFC3339)),
 		columns: []string{col},
 		types:   []string{"DIMENSION"},
 	}, nil
@@ -81,13 +80,13 @@ func (t *transformer) transformTimeRangeEnd(ctx context.Context, node *ast.FuncC
 	if len(node.Args) == 0 {
 		return exprResult{}, fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
 	}
-	if len(node.Args) > 3 {
-		return exprResult{}, fmt.Errorf("metrics sql: time_range_end() function expects at most 3 arguments")
+	if len(node.Args) > 2 {
+		return exprResult{}, fmt.Errorf("metrics sql: time_range_end() function expects at most 2 arguments")
 	}
 	// identify optional colName arg
 	var colName string
-	if len(node.Args) == 3 {
-		expr, err := t.transformExprNode(ctx, node.Args[2])
+	if len(node.Args) == 2 {
+		expr, err := t.transformExprNode(ctx, node.Args[1])
 		if err != nil {
 			return exprResult{}, err
 		}
@@ -121,8 +120,79 @@ func (t *transformer) transformTimeRangeEnd(ctx context.Context, node *ast.FuncC
 	}
 
 	return exprResult{
-		expr:    "?",
-		sqlArgs: []any{end},
+		expr:    fmt.Sprintf("'%s'", end.Format(time.RFC3339)),
+		columns: []string{col},
+		types:   []string{"DIMENSION"},
+	}, nil
+}
+
+func (t *transformer) transformTimeRange(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
+	if len(node.Args) == 0 {
+		return exprResult{}, fmt.Errorf("metrics sql: mandatory arg duration missing for time_range() function")
+	}
+	if len(node.Args) > 3 {
+		return exprResult{}, fmt.Errorf("metrics sql: time_range_end() function expects at most 3 arguments")
+	}
+	// identify optional unit and colName args
+	var unit int
+	var colName string
+
+	// identify column name
+	if len(node.Args) == 3 {
+		expr, err := t.transformExprNode(ctx, node.Args[2])
+		if err != nil {
+			return exprResult{}, err
+		}
+		var ok bool
+		colName, ok = t.dimsToExpr[expr.expr]
+		if !ok {
+			return exprResult{}, fmt.Errorf("referenced columns %q is not a valid column", expr.expr)
+		}
+	}
+
+	// identify unit
+	if len(node.Args) == 1 {
+		unit = 1
+	} else {
+		expr, err := t.transformExprNode(ctx, node.Args[1])
+		if err != nil {
+			return exprResult{}, err
+		}
+		i, err := strconv.ParseInt(expr.expr, 10, 64)
+		if err != nil {
+			return exprResult{}, err
+		}
+		unit = int(i)
+	}
+
+	expr, err := t.transformExprNode(ctx, node.Args[0])
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	d, err := duration.ParseISO8601(strings.TrimSuffix(strings.TrimPrefix(expr.expr, "'"), "'"))
+	if err != nil {
+		return exprResult{}, fmt.Errorf("metrics sql: invalid ISO8601 duration %s", expr.expr)
+	}
+
+	watermark, col, err := t.getWatermark(ctx, colName)
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	var end time.Time
+	if std, ok := d.(duration.StandardDuration); ok {
+		end = std.EndTime(watermark)
+	} else {
+		end = watermark
+	}
+
+	for i := 1; i <= unit; i++ {
+		watermark = d.Sub(watermark)
+	}
+
+	return exprResult{
+		expr:    fmt.Sprintf("'%s/%s'", watermark.Format(time.RFC3339), end.Format(time.RFC3339)),
 		columns: []string{col},
 		types:   []string{"DIMENSION"},
 	}, nil
