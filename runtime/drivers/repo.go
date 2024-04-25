@@ -22,7 +22,7 @@ type RepoStore interface {
 	Put(ctx context.Context, path string, reader io.Reader) error
 	MakeDir(ctx context.Context, path string) error
 	Rename(ctx context.Context, fromPath string, toPath string) error
-	Delete(ctx context.Context, path string) error
+	Delete(ctx context.Context, path string, force bool) error
 	Sync(ctx context.Context) error
 	Watch(ctx context.Context, cb WatchCallback) error
 }
