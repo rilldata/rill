@@ -973,17 +973,6 @@ func Ignore_TestMetricsViewsAggregation_Druid(t *testing.T) {
 	}
 	rows := resp.Data
 
-	for _, s := range resp.Schema.Fields {
-		fmt.Printf("%v ", s.Name)
-	}
-	fmt.Println()
-	for i, row := range resp.Data {
-		for _, s := range resp.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[s.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-
-	}
 	i := 0
 	require.Equal(t, ",2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
 	i++
@@ -1396,6 +1385,91 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_1"))
 	i++
 	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+				Alias:     "time_year",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+				Desc: true,
+			},
+			{
+				Name: "timestamp",
+			},
+			{
+				Name: "time_year",
+			},
+		},
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	i := 0
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,232", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	i++
+	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,208", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+
+	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
+		{
+			Name:           "measure_1",
+			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			Filter: &runtimev1.Expression{
+				Expression: &runtimev1.Expression_Cond{
+					Cond: &runtimev1.Condition{
+						Op: runtimev1.Operation_OPERATION_EQ,
+						Exprs: []*runtimev1.Expression{
+							{
+								Expression: &runtimev1.Expression_Ident{
+									Ident: "dom",
+								},
+							},
+							{
+								Expression: &runtimev1.Expression_Val{
+									Val: structpb.NewStringValue("news.yahoo.com"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	i = 0
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,52", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	i++
+	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,54", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
 }
 
 func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
@@ -1963,4 +2037,17 @@ func fieldsToString(row *structpb.Struct, args ...string) string {
 		}
 	}
 	return strings.Join(s, ",")
+}
+
+func outputResult(schema *runtimev1.StructType, data []*structpb.Struct) {
+	for _, s := range schema.Fields {
+		fmt.Printf("%v,", s.Name)
+	}
+	fmt.Println()
+	for i, row := range data {
+		for _, s := range schema.Fields {
+			fmt.Printf("%v,", row.Fields[s.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+	}
 }
