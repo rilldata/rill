@@ -119,11 +119,6 @@ export class Expression extends Message<Expression> {
     case: "cond";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
-  /**
-   * @generated from field: bool having = 4;
-   */
-  having = false;
-
   constructor(data?: PartialMessage<Expression>) {
     super();
     proto3.util.initPartial(data, this);
@@ -135,7 +130,6 @@ export class Expression extends Message<Expression> {
     { no: 1, name: "ident", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "expression" },
     { no: 2, name: "val", kind: "message", T: Value, oneof: "expression" },
     { no: 3, name: "cond", kind: "message", T: Condition, oneof: "expression" },
-    { no: 4, name: "having", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Expression {

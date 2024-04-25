@@ -57,8 +57,6 @@ func (m *Expression) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Having
-
 	switch v := m.Expression.(type) {
 	case *Expression_Ident:
 		if v == nil {

@@ -3618,8 +3618,6 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
-      having:
-        type: boolean
   v1FileEvent:
     type: string
     enum:
