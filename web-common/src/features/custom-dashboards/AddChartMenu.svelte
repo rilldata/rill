@@ -13,12 +13,13 @@
   let open = false;
   let value = "";
 
-  $: allNamesQuery = useFilteredResources(
+  // We want to get only valid charts here. Hence using ListResources API
+  $: chartFileNamesQuery = useFilteredResources(
     $runtime.instanceId,
     ResourceKind.Chart,
     (data) => data.resources?.map((r) => r.meta?.name?.name ?? "") ?? [],
   );
-  $: chartFileNames = $allNamesQuery.data ?? [];
+  $: chartFileNames = $chartFileNamesQuery.data ?? [];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
