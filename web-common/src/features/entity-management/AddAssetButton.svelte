@@ -31,6 +31,8 @@
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
 
+  let active = false;
+
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
   const { customDashboards } = featureFlags;
@@ -199,19 +201,21 @@
 </script>
 
 <div class="p-2">
-  <DropdownMenu.Root>
+  <DropdownMenu.Root bind:open={active}>
     <DropdownMenu.Trigger asChild let:builder>
       <button
         {...builder}
         aria-label="Add Asset"
-        class="p-2 bg-primary-50 hover:bg-primary-100 text-primary-700 hover:text-primary-800 w-full flex gap-x-2 items-center font-medium h-7 rounded-sm justify-center"
-        class:open
+        class="add-asset-button"
+        class:open={active}
         use:builder.action
       >
         <PlusCircleIcon size="14px" />
         <div class="flex gap-x-1 items-center">
           Add
-          <CaretDownIcon size="10px" />
+          <span class="transition-transform" class:-rotate-180={active}>
+            <CaretDownIcon size="10px" />
+          </span>
         </div>
       </button>
     </DropdownMenu.Trigger>
@@ -325,3 +329,19 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 </div>
+
+<style lang="postcss">
+  .add-asset-button {
+    @apply w-full h-7 p-2 rounded-sm;
+    @apply flex gap-x-2 items-center justify-center;
+    @apply text-primary-700 font-medium bg-primary-50;
+  }
+
+  .add-asset-button:hover {
+    @apply text-primary-800 bg-primary-100;
+  }
+
+  .add-asset-button.open {
+    @apply text-primary-900 bg-primary-200;
+  }
+</style>
