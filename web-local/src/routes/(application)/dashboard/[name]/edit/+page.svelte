@@ -10,7 +10,10 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    resourceIsLoading,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -76,8 +79,10 @@
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: isResourceLoading = resourceIsLoading($resourceQuery.data);
 
-  $: previewDisbaled = !yaml.length || !!allErrors?.length;
+  $: previewDisabled = !yaml.length || !!allErrors?.length || isResourceLoading;
 
   $: if (!yaml?.length) {
     previewStatus = [
@@ -137,7 +142,7 @@
         <PreviewButton
           dashboardName={metricViewName}
           status={previewStatus}
-          disabled={previewDisbaled}
+          disabled={previewDisabled}
         />
       </div>
     </WorkspaceHeader>

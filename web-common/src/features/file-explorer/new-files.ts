@@ -133,8 +133,8 @@ gap: 2`,
 kind: theme
 
 colors:
-  primary: crimson 
-  secondary: lime 
+  primary: plum
+  secondary: violet 
 `,
   },
   [ResourceKind.Report]: {

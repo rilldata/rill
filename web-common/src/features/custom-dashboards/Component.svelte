@@ -60,8 +60,9 @@
 >
   <div class="size-full relative">
     {#if ResizeHandleComponent && !embed}
-      {#each allSides as side}
-        <ResizeHandleComponent
+      {#each allSides as side, i (i)}
+        <svelte:component
+          this={ResizeHandleComponent}
           {scale}
           {i}
           {side}

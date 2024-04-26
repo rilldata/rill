@@ -44,6 +44,10 @@
   const { adminServer } = featureFlags;
 
   const {
+    selectors: {
+      measures: { measureLabel },
+      dimensions: { getDimensionDisplayName },
+    },
     actions: {
       dimensionsFilter: { toggleDimensionFilterMode },
     },
@@ -132,7 +136,7 @@
       ? [
           {
             id: dimensionName,
-            title: dimensionName,
+            title: $getDimensionDisplayName(dimensionName),
             type: PivotChipType.Dimension,
           },
         ]
@@ -151,7 +155,7 @@
         measure: [
           {
             id: expandedMeasureName,
-            title: expandedMeasureName,
+            title: $measureLabel(expandedMeasureName),
             type: PivotChipType.Measure,
           },
         ],
