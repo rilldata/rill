@@ -69,9 +69,12 @@ import type {
   V1UnsubscribeReportResponse,
   V1SearchProjectUsersResponse,
   AdminServiceSearchProjectUsersParams,
+  V1ListProjectWhitelistedDomainsResponse,
+  V1CreateProjectWhitelistedDomainResponse,
+  AdminServiceCreateProjectWhitelistedDomainBodyBody,
+  V1RemoveProjectWhitelistedDomainResponse,
   V1ListWhitelistedDomainsResponse,
   V1CreateWhitelistedDomainResponse,
-  AdminServiceCreateWhitelistedDomainBody,
   V1RemoveWhitelistedDomainResponse,
   V1ListProjectsForOrganizationResponse,
   AdminServiceListProjectsForOrganizationParams,
@@ -2362,6 +2365,195 @@ export const createAdminServiceSearchProjectUsers = <
 };
 
 /**
+ * @summary ListWhitelistedDomains lists all the whitelisted domains of the project
+ */
+export const adminServiceListProjectWhitelistedDomains = (
+  organization: string,
+  project: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListProjectWhitelistedDomainsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/whitelisted`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectWhitelistedDomainsQueryKey = (
+  organization: string,
+  project: string,
+) => [`/v1/organizations/${organization}/projects/${project}/whitelisted`];
+
+export type AdminServiceListProjectWhitelistedDomainsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>
+>;
+export type AdminServiceListProjectWhitelistedDomainsQueryError = RpcStatus;
+
+export const createAdminServiceListProjectWhitelistedDomains = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectWhitelistedDomainsQueryKey(organization, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>
+  > = ({ signal }) =>
+    adminServiceListProjectWhitelistedDomains(organization, project, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListProjectWhitelistedDomains>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+ */
+export const adminServiceCreateProjectWhitelistedDomain = (
+  organization: string,
+  project: string,
+  adminServiceCreateProjectWhitelistedDomainBodyBody: AdminServiceCreateProjectWhitelistedDomainBodyBody,
+) => {
+  return httpClient<V1CreateProjectWhitelistedDomainResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/whitelisted`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateProjectWhitelistedDomainBodyBody,
+  });
+};
+
+export type AdminServiceCreateProjectWhitelistedDomainMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>
+  >;
+export type AdminServiceCreateProjectWhitelistedDomainMutationBody =
+  AdminServiceCreateProjectWhitelistedDomainBodyBody;
+export type AdminServiceCreateProjectWhitelistedDomainMutationError = RpcStatus;
+
+export const createAdminServiceCreateProjectWhitelistedDomain = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceCreateProjectWhitelistedDomain(
+      organization,
+      project,
+      data,
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateProjectWhitelistedDomain>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+ */
+export const adminServiceRemoveProjectWhitelistedDomain = (
+  organization: string,
+  project: string,
+  domain: string,
+) => {
+  return httpClient<V1RemoveProjectWhitelistedDomainResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/whitelisted/${domain}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRemoveProjectWhitelistedDomainMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>
+  >;
+
+export type AdminServiceRemoveProjectWhitelistedDomainMutationError = RpcStatus;
+
+export const createAdminServiceRemoveProjectWhitelistedDomain = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>,
+    TError,
+    { organization: string; project: string; domain: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>,
+    { organization: string; project: string; domain: string }
+  > = (props) => {
+    const { organization, project, domain } = props ?? {};
+
+    return adminServiceRemoveProjectWhitelistedDomain(
+      organization,
+      project,
+      domain,
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectWhitelistedDomain>>,
+    TError,
+    { organization: string; project: string; domain: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary ListWhitelistedDomains lists all the whitelisted domains for the organization
  */
 export const adminServiceListWhitelistedDomains = (
@@ -2428,13 +2620,13 @@ export const createAdminServiceListWhitelistedDomains = <
  */
 export const adminServiceCreateWhitelistedDomain = (
   organization: string,
-  adminServiceCreateWhitelistedDomainBody: AdminServiceCreateWhitelistedDomainBody,
+  adminServiceCreateProjectWhitelistedDomainBodyBody: AdminServiceCreateProjectWhitelistedDomainBodyBody,
 ) => {
   return httpClient<V1CreateWhitelistedDomainResponse>({
     url: `/v1/organizations/${organization}/whitelisted`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceCreateWhitelistedDomainBody,
+    data: adminServiceCreateProjectWhitelistedDomainBodyBody,
   });
 };
 
@@ -2442,7 +2634,7 @@ export type AdminServiceCreateWhitelistedDomainMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>
 >;
 export type AdminServiceCreateWhitelistedDomainMutationBody =
-  AdminServiceCreateWhitelistedDomainBody;
+  AdminServiceCreateProjectWhitelistedDomainBodyBody;
 export type AdminServiceCreateWhitelistedDomainMutationError = RpcStatus;
 
 export const createAdminServiceCreateWhitelistedDomain = <
@@ -2452,7 +2644,10 @@ export const createAdminServiceCreateWhitelistedDomain = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
     TError,
-    { organization: string; data: AdminServiceCreateWhitelistedDomainBody },
+    {
+      organization: string;
+      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+    },
     TContext
   >;
 }) => {
@@ -2460,7 +2655,10 @@ export const createAdminServiceCreateWhitelistedDomain = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
-    { organization: string; data: AdminServiceCreateWhitelistedDomainBody }
+    {
+      organization: string;
+      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+    }
   > = (props) => {
     const { organization, data } = props ?? {};
 
@@ -2470,7 +2668,10 @@ export const createAdminServiceCreateWhitelistedDomain = <
   return createMutation<
     Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
     TError,
-    { organization: string; data: AdminServiceCreateWhitelistedDomainBody },
+    {
+      organization: string;
+      data: AdminServiceCreateProjectWhitelistedDomainBodyBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
