@@ -2,7 +2,6 @@
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
-  import { yaml } from "@rilldata/web-common/components/editor/presets/yaml";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFiles } from "@rilldata/web-common/features/editor/getExtensionsForFile";
