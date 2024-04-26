@@ -58,6 +58,7 @@
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import { get, type Writable } from "svelte/store";
   import { fade, slide } from "svelte/transition";
@@ -141,9 +142,11 @@
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
-  $: isLocalFileConnector =
-    type === "source" && !!$isLocalFileConnectorQuery.data;
+  let isLocalFileConnectorQuery: CreateQueryResult<boolean>;
+  $: if (type === "source") {
+    isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  }
+  $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
 
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
