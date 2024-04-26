@@ -10,7 +10,6 @@
   } from "@rilldata/web-common/layout/overlay-store";
   import PreparingImport from "@rilldata/web-common/features/sources/modal/PreparingImport.svelte";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
 
   let showDropOverlay = false;
 
