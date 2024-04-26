@@ -11,7 +11,7 @@ When you create sources, models, and dashboards, these objects are represented a
 
 :::info Working with resources outside their native folders
 
-It is possible to define [sources](sources.md), [models](models.md), and [dashboards](dashboards.md) within <u>any</u> nested folder within your Rill project directory. However, it is imperative that the `kind` property is then appropriately defined in the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+It is possible to define resources (such as [sources](sources.md), [models](models.md), [dashboards](dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `kind` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
 :::
 

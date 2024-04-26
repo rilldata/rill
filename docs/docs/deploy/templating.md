@@ -42,7 +42,6 @@ When you use templating in a SQL model, Rill loses the ability to analyze the SQ
 To avoid this scenario, whenever you use templating in a model's SQL, it is <u>strongly recommended</u> to incorporate `ref` tags whenever you need to reference another resource in your project in SQL. For those familiar with [dbt's ref() function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref), the concept is very similar in nature. As an example:
 
 ```sql
--- @kind: model
 # models/my_model.sql
 SELECT *
 FROM {{ ref "my_source" }}
@@ -111,8 +110,6 @@ Following a similar vein to our previous example, let's say that we wanted to ap
 In our `model.sql` file, we could leverage templating logic to check the environment is `dev` and apply a `LIMIT 1000` to the query:
 
 ```sql
--- @kind: model
-
 -- A bunch of CTEs, complex joins, etc.
 
 SELECT * FROM final
@@ -138,7 +135,6 @@ vars:
 Furthermore, our `model.sql` file contains the following SQL:
 
 ```sql
--- @kind: model
 SELECT * FROM {{ ref "data_source" }}
 WHERE original_language = '{{ .vars.language }}'
 {{if dev}} LIMIT {{ .vars.local_limit }} {{end}}

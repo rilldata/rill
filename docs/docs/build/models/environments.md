@@ -111,8 +111,6 @@ sql: SELECT * FROM read_parquet('s3://path/to/bucket/*.parquet') {{ if dev }} wh
 On the other hand, let's say we had some kind of intermediate model where we wanted to apply a limit of 10000 _(but only for local development)_, our `model.sql` file may look something like the following instead:
 
 ```sql
--- @kind: model
-
 SELECT * FROM {{ ref "<source_name>" }}
 {{ if dev }} LIMIT 10000 {{ end }}
 ```

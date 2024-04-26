@@ -73,7 +73,6 @@ PIVOT table_name ON column_name IN (value_a, value_b, value_c) USING SUM(measure
 If you <u>need</u> to use the `PIVOT` statement specifically but don't want to specify an `IN` filter, then you will need to inform Rill to materialize this model as a table **and** to leverage the `ref` function as well (for proper DAG resolution). Using the same example, this would instead look something like:
 
 ```sql
--- @kind: model
 -- @materialize: true
 
 PIVOT {{ ref "table_name" }} ON column_name USING SUM(measure)

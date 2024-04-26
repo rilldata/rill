@@ -70,7 +70,6 @@ sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where
 Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by appling a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
 
 ```sql
--- @kind: model
 -- @materialize
 
 SELECT * FROM {{ ref "source_name" }}
@@ -80,7 +79,6 @@ SELECT * FROM {{ ref "source_name" }}
 Similarly, if we were less concerned about skewing our sample data, we could apply a simple `LIMIT` to our source data:
 
 ```sql
--- @kind: model
 -- @materialize
 
 SELECT * FROM {{ ref "source_name" }}
