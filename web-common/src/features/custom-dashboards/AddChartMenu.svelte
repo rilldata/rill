@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -11,7 +13,11 @@
   let open = false;
   let value = "";
 
-  $: allNamesQuery = useAllFileNames(queryClient, $runtime.instanceId);
+  $: allNamesQuery = useFilteredResources(
+    $runtime.instanceId,
+    ResourceKind.Chart,
+    (data) => data.resources?.map((r) => r.meta?.name?.name ?? "") ?? [],
+  );
   $: chartFileNames = $allNamesQuery.data ?? [];
 </script>
 

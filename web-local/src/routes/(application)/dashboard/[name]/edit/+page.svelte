@@ -10,6 +10,7 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -104,6 +105,7 @@
       e.currentTarget,
       filePath,
       metricViewName,
+      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     if (newRoute) await goto(newRoute);
   }

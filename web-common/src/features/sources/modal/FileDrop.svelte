@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
@@ -19,7 +18,6 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: allNames = useAllFileNames(queryClient, runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -34,7 +32,6 @@
 
     const uploadedFiles = uploadTableFiles(
       Array.from(files),
-      $allNames.data ?? [],
       $runtime.instanceId,
     );
     for await (const { tableName, filePath } of uploadedFiles) {

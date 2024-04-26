@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
-import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { get } from "svelte/store";
 import { notifications } from "../../../components/notifications";
 import { overlay } from "../../../layout/overlay-store";
@@ -58,10 +58,6 @@ export function useCreateDashboardFromTableUIAction(
 ) {
   const isAiEnabled = get(featureFlags.ai);
 
-  // Get the list of existing dashboards to generate a unique name
-  // We call here to avoid: `Error: Function called outside component initialization`
-  const allNames = useAllFileNames(queryClient, instanceId);
-
   // Return a function that can be called to create a dashboard from a table
   return async () => {
     let isAICancelled = false;
@@ -83,7 +79,7 @@ export function useCreateDashboardFromTableUIAction(
     // Get a unique name
     const newDashboardName = getName(
       `${tableName}_dashboard`,
-      get(allNames).data ?? [],
+      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     const newFilePath = `/${folder}/${newDashboardName}.yaml`;
 

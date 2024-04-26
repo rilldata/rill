@@ -1,5 +1,4 @@
 import {
-  createConnectorServiceOLAPGetTable,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   getRuntimeServiceListResourcesQueryKey,
@@ -9,7 +8,6 @@ import {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -96,42 +94,6 @@ export function useFilteredResources<T = Array<V1Resource>>(
       },
     },
   );
-}
-
-export function useFilteredResourceNames(
-  instanceId: string,
-  kind: ResourceKind,
-) {
-  return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
-    data.resources.map((res) => res.meta.name.name),
-  );
-}
-
-export function createSchemaForTable(
-  instanceId: string,
-  resourceName: string,
-  resourceKind: ResourceKind,
-  queryClient?: QueryClient,
-) {
-  return derived(
-    useResource(instanceId, resourceName, resourceKind, undefined, queryClient),
-    (res, set) => {
-      const tableSpec = res.data?.source ?? res.data?.model;
-      return createConnectorServiceOLAPGetTable(
-        {
-          instanceId,
-          table: tableSpec?.state?.table,
-          connector: tableSpec?.state?.connector,
-        },
-        {
-          query: {
-            enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
-            queryClient,
-          },
-        },
-      ).subscribe(set);
-    },
-  ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 
 export function resourceIsLoading(resource?: V1Resource) {

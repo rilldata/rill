@@ -1,10 +1,9 @@
-import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
   ResourceKind,
   UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
@@ -12,7 +11,14 @@ import { get } from "svelte/store";
 export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
   const instanceId = get(runtime).instanceId;
-  const allNames = await fetchAllFileNames(queryClient, instanceId, false);
+  const allNames =
+    kind === ResourceKind.Source || kind === ResourceKind.Model
+      ? // sources and models share the name
+        [
+          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+        ]
+      : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
   const newPath = `${name + "s"}/${newName}${extension}`;

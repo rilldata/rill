@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { useAllEntityNames } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     openFileUploadDialog,
@@ -24,7 +23,6 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: allNames = useAllEntityNames(queryClient, runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -34,12 +32,7 @@
   }
 
   async function handleUpload(files: Array<File>) {
-    const uploadedFiles = uploadTableFiles(
-      files,
-      $allNames.data ?? [],
-      $runtime.instanceId,
-      false,
-    );
+    const uploadedFiles = uploadTableFiles(files, $runtime.instanceId, false);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project

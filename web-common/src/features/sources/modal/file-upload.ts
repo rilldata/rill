@@ -1,6 +1,8 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   PossibleFileExtensions,
   PossibleZipExtensions,
@@ -23,7 +25,6 @@ import {
  */
 export async function* uploadTableFiles(
   files: Array<File>,
-  allNames: Array<string>,
   instanceId: string,
   goToIfSuccessful = true,
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
@@ -31,6 +32,10 @@ export async function* uploadTableFiles(
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
   let lastTableName: string | undefined = undefined;
+  const allNames = [
+    ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+    ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+  ];
 
   for (const validFile of validFiles) {
     // check if the file is already present. get the file and

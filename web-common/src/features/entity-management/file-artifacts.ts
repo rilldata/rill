@@ -44,7 +44,13 @@ export class FileArtifact {
    */
   public lastStateUpdatedOn: string | undefined;
 
-  public constructor(filePath: string) {
+  public constructor(
+    filePath: string,
+    private readonly nameChangeHandler: (
+      prevName: V1ResourceName | undefined,
+      name: V1ResourceName | undefined,
+    ) => void,
+  ) {
     this.path = filePath;
   }
 
@@ -192,6 +198,7 @@ export class FileArtifact {
       curName?.name !== resource.meta?.name?.name ||
       curName?.kind !== resource.meta?.name?.kind
     ) {
+      this.nameChangeHandler(curName, resource.meta?.name);
       this.name.set({
         kind: resource.meta?.name?.kind,
         name: resource.meta?.name?.name,
@@ -205,6 +212,13 @@ export class FileArtifacts {
    * Map of all files and its individual store
    */
   private readonly artifacts: Record<string, FileArtifact> = {};
+  /**
+   * A cache of {@Link FileArtifact}s by {@link ResourceKind}
+   * This avoids going through every file artifact to filter the by kind
+   */
+  private readonly artifactsByKind: Partial<
+    Record<ResourceKind, FileArtifact[]>
+  > = {};
 
   // Actions
 
@@ -234,7 +248,7 @@ export class FileArtifacts {
           removeLeadingSlash(filePath),
         ).then((fileContents) => {
           const artifact =
-            this.artifacts[filePath] ?? new FileArtifact(filePath);
+            this.artifacts[filePath] ?? this.newFileArtifact(filePath);
           const newName = parseKindAndNameFromFile(filePath, fileContents);
           if (newName) artifact.name.set(newName);
           this.artifacts[filePath] ??= artifact;
@@ -246,7 +260,7 @@ export class FileArtifacts {
   public async fileUpdated(filePath: string) {
     if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
-    this.artifacts[filePath] ??= new FileArtifact(filePath);
+    this.artifacts[filePath] ??= this.newFileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -265,21 +279,21 @@ export class FileArtifacts {
 
   public updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath] ??= this.newFileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
   public updateReconciling(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath] ??= this.newFileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
   public updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath] ??= this.newFileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
   }
@@ -305,7 +319,7 @@ export class FileArtifacts {
   // Selectors
 
   public getFileArtifact(filePath: string) {
-    this.artifacts[filePath] ??= new FileArtifact(filePath);
+    this.artifacts[filePath] ??= this.newFileArtifact(filePath);
     return this.artifacts[filePath];
   }
 
@@ -336,6 +350,35 @@ export class FileArtifacts {
         return currentlyReconciling;
       },
     );
+  }
+
+  public getNamesForKind(kind: ResourceKind): string[] {
+    return (
+      this.artifactsByKind[kind]?.map((a) => get(a.name)?.name ?? "") ?? []
+    );
+  }
+
+  private newFileArtifact(filePath: string) {
+    const artifact = new FileArtifact(filePath, (prevName, name) =>
+      this.handleArtifactNameChange(artifact, prevName, name),
+    );
+    return artifact;
+  }
+
+  private handleArtifactNameChange(
+    fileArtifact: FileArtifact,
+    prevName: V1ResourceName | undefined,
+    name: V1ResourceName | undefined,
+  ) {
+    if (prevName?.kind && this.artifactsByKind[prevName.kind]) {
+      const index = this.artifactsByKind[prevName.kind].find(
+        (a: FileArtifact) => a.path === fileArtifact.path,
+      );
+      if (index >= 0) this.artifactsByKind[prevName.kind].splice(index, 1);
+    }
+    if (!name?.kind) return;
+    this.artifactsByKind[name.kind] ??= [];
+    this.artifactsByKind[name.kind].push(fileArtifact);
   }
 }
 

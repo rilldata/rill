@@ -3,6 +3,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import GenerateVegaSpecPrompt from "@rilldata/web-common/features/charts/prompt/GenerateVegaSpecPrompt.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import {
     extractFileName,
@@ -28,6 +30,7 @@
       e.currentTarget,
       filePath,
       chartName,
+      fileArtifacts.getNamesForKind(ResourceKind.Chart),
     );
 
     if (newRoute) await goto(newRoute);
