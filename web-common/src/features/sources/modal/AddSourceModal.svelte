@@ -34,6 +34,8 @@
   import { duplicateSourceName } from "../sources-store";
   import DuplicateSource from "./DuplicateSource.svelte";
 
+  export let isProjectInitialized: boolean;
+
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
@@ -201,11 +203,16 @@
       {:else if step === 2}
         {#if selectedConnector}
           {#if selectedConnector.name === "local_file"}
-            <LocalSourceUpload on:close={resetModal} on:back={back} />
+            <LocalSourceUpload
+              on:close={resetModal}
+              on:back={back}
+              {isProjectInitialized}
+            />
           {:else if selectedConnector.name === "clickhouse"}
             <ClickHouseInstructions on:back={back} />
           {:else}
             <RemoteSourceForm
+              {isProjectInitialized}
               connector={selectedConnector}
               on:close={resetModal}
               on:back={back}

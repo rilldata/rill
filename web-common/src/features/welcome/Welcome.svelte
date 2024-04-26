@@ -7,7 +7,7 @@
 
 <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
   <div class="wrapper column p-10 2xl:py-16">
-    <TitleContent />
+    <!-- <TitleContent /> -->
     <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
       <ProjectCards />
       <UserTestCta />

@@ -9,6 +9,8 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+import { invalidate } from "$app/navigation";
 
 export function createWatchFilesClient() {
   const client = new WatchRequestClient<V1WatchFilesResponse>();
@@ -51,7 +53,10 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
   void queryClient.refetchQueries(
     getRuntimeServiceListFilesQueryKey(instanceId),
   );
+  debouncedInvalidateInit();
 }
+
+const debouncedInvalidateInit = debounce(() => invalidate("init"), 500);
 
 async function invalidateAllFiles() {
   // TODO: reset project parser errors

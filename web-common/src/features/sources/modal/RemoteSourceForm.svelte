@@ -19,6 +19,7 @@
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
   export let connector: V1ConnectorDriver;
+  export let isProjectInitialized: boolean;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -37,7 +38,12 @@
           // the following error provides type narrowing for `connector.name`
           if (connector.name === undefined)
             throw new Error("connector name is undefined");
-          await submitRemoteSourceForm(queryClient, connector.name, values);
+          await submitRemoteSourceForm(
+            queryClient,
+            connector.name,
+            values,
+            isProjectInitialized,
+          );
           await goto(`/files/sources/${values.sourceName}.yaml`);
           dispatch("close");
         } catch (e) {

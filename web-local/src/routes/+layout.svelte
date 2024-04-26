@@ -10,7 +10,6 @@
   import type { AxiosError } from "axios";
   import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import WelcomePageRedirect from "@rilldata/web-common/features/welcome/WelcomePageRedirect.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
@@ -52,13 +51,11 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <WelcomePageRedirect>
-      <ResourceWatcher host={data.host} instanceId={data.instanceId}>
-        <div class="body h-screen w-screen overflow-hidden absolute">
-          <slot />
-        </div>
-      </ResourceWatcher>
-    </WelcomePageRedirect>
+    <ResourceWatcher host={data.host} instanceId={data.instanceId}>
+      <div class="body h-screen w-screen overflow-hidden absolute">
+        <slot />
+      </div>
+    </ResourceWatcher>
   </QueryClientProvider>
 </RillTheme>
 

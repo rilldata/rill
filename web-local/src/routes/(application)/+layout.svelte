@@ -12,6 +12,8 @@
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
 
+  export let data;
+
   let showDropOverlay = false;
 
   function isEventWithFiles(event: DragEvent) {
@@ -40,7 +42,10 @@
 {#if $importOverlayVisible}
   <PreparingImport />
 {:else if showDropOverlay}
-  <FileDrop bind:showDropOverlay />
+  <FileDrop
+    bind:showDropOverlay
+    isProjectInitialized={data.isProjectInitialized}
+  />
 {:else if $overlay !== null}
   <BlockingOverlayContainer
     bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
@@ -59,6 +64,6 @@
   </BlockingOverlayContainer>
 {/if}
 
-<AddSourceModal />
+<AddSourceModal isProjectInitialized={data.isProjectInitialized} />
 <SourceImportedModal sourcePath={$sourceImportedPath} />
 <NotificationCenter />

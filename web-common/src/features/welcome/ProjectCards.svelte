@@ -66,7 +66,7 @@
   <Subheading>Or jump right into a project.</Subheading>
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
     <EmptyProject />
-    {#each EXAMPLES as example}
+    {#each EXAMPLES as example (example.name)}
       <Card
         bgClasses={example.image}
         on:click={async () => {

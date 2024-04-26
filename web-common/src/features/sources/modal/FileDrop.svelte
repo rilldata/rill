@@ -10,19 +10,18 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
 
   export let showDropOverlay: boolean;
+  export let isProjectInitialized: boolean;
 
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceFileNames(runtimeInstanceId);
   $: modelNames = useModelFileNames(runtimeInstanceId);
-  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
@@ -42,7 +41,7 @@
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
-        if (!$isProjectInitialized.data) {
+        if (!isProjectInitialized) {
           $unpackEmptyProject.mutate({
             instanceId: $runtime.instanceId,
             data: {

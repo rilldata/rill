@@ -16,9 +16,10 @@
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
+
+  export let isProjectInitialized: boolean;
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
@@ -27,7 +28,6 @@
 
   $: sourceNames = useSourceFileNames(runtimeInstanceId);
   $: modelNames = useModelFileNames(runtimeInstanceId);
-  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
@@ -45,7 +45,7 @@
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
-        if (!$isProjectInitialized.data) {
+        if (!isProjectInitialized) {
           $unpackEmptyProject.mutate({
             instanceId: $runtime.instanceId,
             data: {
