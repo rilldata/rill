@@ -893,19 +893,28 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 		if q.Result != nil && len(q.Result.Data) > 0 {
 			row := q.Result.Data[0]
 			m := row.AsMap()
+			res := make(map[string]any)
 			for k, v := range m {
+				var measureLabel string
+				var f formatter.Formatter
 				for _, measure := range measures {
 					if k == measure.Name {
+						measureLabel = measure.Label
+						var err error
 						// D3 formatting isn't implemented yet so using the format preset for now
-						f, err := formatter.NewPresetFormatter(measure.FormatPreset, false)
+						f, err = formatter.NewPresetFormatter(measure.FormatPreset, false)
 						if err != nil {
 							return nil, false, err
 						}
-						m[k] = formatValue(f, v, logger)
+						break
 					}
 				}
+				if measureLabel == "" {
+					measureLabel = k
+				}
+				res[measureLabel] = formatValue(f, v, logger)
 			}
-			return m, true, nil
+			return res, true, nil
 		}
 		return nil, false, nil
 	case *queries.MetricsViewComparison:
@@ -914,42 +923,35 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 			res := make(map[string]any)
 			res[q.DimensionName] = row.DimensionValue
 			for _, v := range row.MeasureValues {
+				var measureLabel string
 				var f formatter.Formatter
 				for _, measure := range measures {
 					if v.MeasureName == measure.Name {
+						measureLabel = measure.Label
 						var err error
 						f, err = formatter.NewPresetFormatter(measure.FormatPreset, false)
 						if err != nil {
 							return nil, false, err
 						}
+						break
 					}
 				}
-				if f != nil {
-					res[v.MeasureName] = formatValue(f, v.BaseValue.AsInterface(), logger)
-					if v.ComparisonValue != nil {
-						res[v.MeasureName+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
+				if measureLabel == "" {
+					measureLabel = v.MeasureName
+				}
+				res[measureLabel] = formatValue(f, v.BaseValue.AsInterface(), logger)
+				if v.ComparisonValue != nil {
+					res[measureLabel+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
+				}
+				if v.DeltaAbs != nil {
+					res[measureLabel+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
+				}
+				if v.DeltaRel != nil {
+					fp, err := formatter.NewPresetFormatter("percent", false)
+					if err != nil {
+						return nil, false, err
 					}
-					if v.DeltaAbs != nil {
-						res[v.MeasureName+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
-					}
-					if v.DeltaRel != nil {
-						fp, err := formatter.NewPresetFormatter("percent", false)
-						if err != nil {
-							return nil, false, err
-						}
-						res[v.MeasureName+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
-					}
-				} else {
-					res[v.MeasureName] = v.BaseValue.AsInterface()
-					if v.ComparisonValue != nil {
-						res[v.MeasureName+" (prev)"] = v.ComparisonValue.AsInterface()
-					}
-					if v.DeltaAbs != nil {
-						res[v.MeasureName+" (Δ)"] = v.DeltaAbs.AsInterface()
-					}
-					if v.DeltaRel != nil {
-						res[v.MeasureName+" (Δ%)"] = v.DeltaRel.AsInterface()
-					}
+					res[measureLabel+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
 				}
 			}
 			return res, true, nil
@@ -960,7 +962,12 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 	}
 }
 
-func formatValue(f formatter.Formatter, v any, logger *zap.Logger) string {
+// formatValue formats a measure value using the provided formatter.
+// If the formatter is nil, or value is nil, or an error occurred, it will return the value as is.
+func formatValue(f formatter.Formatter, v any, logger *zap.Logger) any {
+	if f == nil || v == nil {
+		return v
+	}
 	if s, err := f.StringFormat(v); err != nil {
 		return s
 	}
