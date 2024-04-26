@@ -9,7 +9,7 @@ sidebar_position: 4
 
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](build/olap/olap.md#external-olap-tables).
+Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../build/olap/olap.md#external-olap-tables).
 
 ## Connection string (DSN)
 
@@ -74,7 +74,26 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 :::
 
+## Support for Multi-Valued dimensions
+
+Multi-Valued dimensions needed to be defined in the dashboard yaml as expressions using `arrayToMv` function. For example if `RandomAirports` is a multi-valued column in a Pinot table then the dimension definition will look like:
+
+```yaml
+- label: RandomAirports
+  expression: arrayToMv(RandomAirports)
+  name: RandomAirports
+  description: "Random Airports"
+  ignore: false
+```
+Refer to the [Dashboard YAML](../project-files/dashboards) reference page for all dimension properties detail. 
+
+:::note
+
+Pinot does not support unnest function so don't set `unnest` property to true in the dimension definition of dashboard yaml.
+
+:::
+
 ## Additional Notes
 
 - At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](../../contact.md).
-- For dashboards powered by Pinot, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
+- For dashboards powered by Pinot, [measure definitions](../../build/dashboards/dashboards.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
