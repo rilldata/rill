@@ -4,9 +4,8 @@ import type { QueryFunction } from "@tanstack/svelte-query";
 import { error } from "@sveltejs/kit";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ parent, params, depends }) => {
+export const load = async ({ parent, params, depends }) => {
   const { instanceId } = await parent();
 
   const dashboardName = params.name;

@@ -6,9 +6,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction } from "@tanstack/svelte-query";
-import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ parent, params, depends }) => {
+export const load = async ({ parent, params, depends }) => {
   const { instanceId } = await parent();
 
   const dashboardName = params.name;
