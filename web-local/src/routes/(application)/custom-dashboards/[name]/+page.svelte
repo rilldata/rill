@@ -1,9 +1,8 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
@@ -40,6 +39,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
+  import Button from "web-common/src/components/button/Button.svelte";
   import { parse, stringify } from "yaml";
 
   const DEFAULT_EDITOR_HEIGHT = 300;
@@ -117,27 +117,19 @@
 
   $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
 
-  const onChangeCallback = async (
+  async function onChangeCallback(
     e: Event & {
       currentTarget: EventTarget & HTMLInputElement;
     },
-  ) => {
-    if (!e.currentTarget) return;
-    if (!e.currentTarget.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      notifications.send({
-        message:
-          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      });
-      e.currentTarget.value = customDashboardName; // resets the input
-      return;
-    }
-    await handleEntityRename(
-      instanceId,
+  ) {
+    const newRoute = await handleEntityRename(
+      $runtime.instanceId,
       e.currentTarget,
       filePath,
-      customDashboardName,
+      fileName,
     );
-  };
+    if (newRoute) await goto(newRoute);
+  }
 
   async function updateChartFile(e: CustomEvent<string>) {
     const content = e.detail;
@@ -238,8 +230,8 @@
       <AddChartMenu on:add-chart={addChart} />
 
       <PreviewButton
-        disabled={Boolean($errors.length)}
         dashboardName={customDashboardName}
+        disabled={Boolean($errors.length)}
         type="custom"
       />
     </div>

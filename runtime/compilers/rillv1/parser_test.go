@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -14,8 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	"reflect"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 )
@@ -1498,7 +1497,7 @@ func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 
 func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
-		err := repo.Delete(context.Background(), path)
+		err := repo.Delete(context.Background(), path, false)
 		require.NoError(t, err)
 	}
 }

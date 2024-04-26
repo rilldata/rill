@@ -2794,6 +2794,8 @@ definitions:
         type: string
       public:
         type: boolean
+      createdByUserId:
+        type: string
       provisioner:
         type: string
       githubUrl:

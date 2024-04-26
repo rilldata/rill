@@ -4,15 +4,15 @@
   import type { Vector } from "./types";
   import { vector } from "./util";
   import { createEventDispatcher } from "svelte";
-  import { DEFAULT_WIDTH, DEFAULT_RADIUS } from "./constants";
+  import * as defaults from "./constants";
   import Wrapper from "./Wrapper.svelte";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
-  export let columns = 20;
+  export let columns: number | undefined;
   export let components: V1DashboardComponent[];
-  export let gap = 4;
+  export let gap: number | undefined;
   export let showGrid = false;
   export let snap = false;
   export let selectedChartName: string | null;
@@ -32,11 +32,11 @@
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
 
   $: gridWidth = contentRect.width;
-  $: scale = gridWidth / DEFAULT_WIDTH;
+  $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
 
-  $: gapSize = DEFAULT_WIDTH * (gap / 1000);
-  $: gridCell = DEFAULT_WIDTH / columns;
-  $: radius = gridCell * DEFAULT_RADIUS;
+  $: gapSize = defaults.DASHBOARD_WIDTH * ((gap ?? defaults.GAP_SIZE) / 1000);
+  $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
+  $: radius = gridCell * defaults.COMPONENT_RADIUS;
   $: gridVector = [gridCell, gridCell] as Vector;
 
   $: mouseDelta = vector.divide(vector.subtract(mousePosition, startMouse), [
@@ -69,8 +69,8 @@
     components[selectedIndex].y =
       dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
 
-    components[selectedIndex].width = Math.abs(Math.max(1, dimensions[0]));
-    components[selectedIndex].height = Math.abs(Math.max(1, dimensions[1]));
+    components[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
+    components[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
     dispatch("update", {
       index: selectedIndex,
@@ -167,7 +167,7 @@
 <svelte:window on:mouseup={handleMouseUp} on:mousemove={handleMouseMove} />
 
 <Wrapper
-  width={DEFAULT_WIDTH}
+  width={defaults.DASHBOARD_WIDTH}
   height={maxBottom * gridCell}
   {scale}
   {showGrid}
@@ -182,25 +182,23 @@
   {#each components as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
-    {#if component.chart && component.width && component.height}
-      <Element
-        {scale}
-        {i}
-        chart={component}
-        {radius}
-        {selected}
-        {interacting}
-        {gapSize}
-        width={interacting
-          ? finalResize[0]
-          : Number(component.width) * gridCell}
-        height={interacting
-          ? finalResize[1]
-          : Number(component.height) * gridCell}
-        top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
-        left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
-        on:change={handleChange}
-      />
-    {/if}
+    <Element
+      {scale}
+      {i}
+      {component}
+      {radius}
+      {selected}
+      {interacting}
+      {gapSize}
+      width={interacting
+        ? finalResize[0]
+        : Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
+      height={interacting
+        ? finalResize[1]
+        : Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
+      top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
+      left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
+      on:change={handleChange}
+    />
   {/each}
 </Wrapper>

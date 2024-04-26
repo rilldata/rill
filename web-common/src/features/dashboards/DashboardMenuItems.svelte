@@ -6,8 +6,8 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -49,26 +49,25 @@
       referenceModelName,
     );
     if (!artifact) return;
-    const previousActiveEntity = $appScreen?.type;
-    await goto(`/files/${artifact.path}`);
+    const previousScreenName = getScreenNameFromPage();
+    await goto(`/files${artifact.path}`);
     await behaviourEvent.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
+      previousScreenName,
       MetricsEventScreenName.Model,
     );
   };
 
   const editMetrics = async () => {
-    await goto(`/files/${filePath}`);
-
-    const previousActiveEntity = $appScreen?.type;
+    const previousScreenName = getScreenNameFromPage();
+    await goto(`/files${filePath}`);
     await behaviourEvent.fireNavigationEvent(
       ($dashboardQuery.data?.meta?.name as string) ?? "",
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
+      previousScreenName,
       MetricsEventScreenName.MetricsDefinition,
     );
   };

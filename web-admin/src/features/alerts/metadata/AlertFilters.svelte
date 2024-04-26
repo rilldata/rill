@@ -4,15 +4,23 @@
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getDimensionFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1Expression,
+    V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
+  export let timeRange: V1TimeRange | undefined;
 
-  $: filtersLength = filters?.cond?.exprs?.length ?? 0;
+  // time range could be an empty object sometimes
+  $: hasTimeRange = timeRange && Object.keys(timeRange).length > 0;
+  $: filtersLength =
+    (filters?.cond?.exprs?.length ?? 0) + (hasTimeRange ? 1 : 0);
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
   $: dimensions =
@@ -27,7 +35,8 @@
 <div class="flex flex-col gap-y-3">
   <MetadataLabel>Filters ({filtersLength})</MetadataLabel>
   <div class="flex flex-wrap gap-2">
-    {#if filtersLength && currentDimensionFilters.length}
+    {#if filtersLength}
+      {#if hasTimeRange}<TimeRangeReadOnly {timeRange} />{/if}
       {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
         {@const dimension = dimensions.find((d) => d.name === name)}
         <div animate:flip={{ duration: 200 }}>

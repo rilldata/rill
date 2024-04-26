@@ -4,7 +4,6 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
 
@@ -197,70 +196,6 @@ service RuntimeService {
   // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
   rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
-  }
-
-  // DEPRECATE:
-
-  // Catalog
-
-  // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
-  rpc ListCatalogEntries(ListCatalogEntriesRequest) returns (ListCatalogEntriesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/catalog"};
-  }
-
-  // GetCatalogEntry returns information about a specific entry in the catalog
-  rpc GetCatalogEntry(GetCatalogEntryRequest) returns (GetCatalogEntryResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/catalog/{name}"};
-  }
-
-  // TriggerRefresh triggers a refresh of a refreshable catalog object.
-  // It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
-  // It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
-  rpc TriggerRefresh(TriggerRefreshRequest) returns (TriggerRefreshResponse) {
-    option (google.api.http) = {post: "/v1/instances/{instance_id}/catalog/{name}/refresh"};
-  }
-
-  // Reconcile applies a full set of artifacts from a repo to the catalog and infra.
-  // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-  // the desired state expressed in the artifacts. Any existing objects not described in the submitted
-  // artifacts will be deleted.
-  rpc Reconcile(ReconcileRequest) returns (ReconcileResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/reconcile",
-      body: "*"
-    };
-  }
-
-  // PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
-  // It is equivalent to calling the two RPCs sequentially.
-  rpc PutFileAndReconcile(PutFileAndReconcileRequest) returns (PutFileAndReconcileResponse) {
-    option (google.api.http) = {
-      post: "/v1/put-and-reconcile",
-      body: "*"
-    };
-  }
-
-  // DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-  rpc DeleteFileAndReconcile(DeleteFileAndReconcileRequest) returns (DeleteFileAndReconcileResponse) {
-    option (google.api.http) = {
-      post: "/v1/delete-and-reconcile",
-      body: "*"
-    };
-  }
-
-  // RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-  rpc RenameFileAndReconcile(RenameFileAndReconcileRequest) returns (RenameFileAndReconcileResponse) {
-    option (google.api.http) = {
-      post: "/v1/rename-and-reconcile",
-      body: "*"
-    };
-  }
-
-  rpc RefreshAndReconcile(RefreshAndReconcileRequest) returns (RefreshAndReconcileResponse) {
-    option (google.api.http) = {
-      post: "/v1/refresh-and-reconcile",
-      body: "*"
-    };
   }
 
   rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
@@ -474,6 +409,7 @@ message CreateDirectoryResponse {}
 message DeleteFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string path = 2 [(validate.rules).string.min_len = 1];
+  bool force = 3;
 }
 
 // Response message for RuntimeService.DeleteFile
@@ -615,8 +551,12 @@ message WatchLogsResponse {
 }
 
 message ListResourcesRequest {
+  // Instance to list resources from.
   string instance_id = 1;
+  // Filter by resource kind (optional).
   string kind = 2;
+  // Filter by resource path (optional).
+  string path = 3;
 }
 
 message ListResourcesResponse {
@@ -763,253 +703,6 @@ message ListNotifierConnectorsRequest {
 message ListNotifierConnectorsResponse {
   // Note: In this list, the Connector.config property will always be empty.
   repeated Connector connectors = 1;
-}
-
-// **********
-// Catalog
-// **********
-
-// CatalogEntry contains information about an object in the catalog
-message CatalogEntry {
-  string name = 1;
-  oneof object {
-    Table table = 2;
-    Source source = 3;
-    Model model = 4;
-    MetricsView metrics_view = 5;
-  }
-  string path = 6;
-  // Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
-  bool embedded = 7;
-  // Immediate parent entries in the DAG
-  repeated string parents = 8;
-  // Immediate child entries in the DAG
-  repeated string children = 9;
-  google.protobuf.Timestamp created_on = 10;
-  google.protobuf.Timestamp updated_on = 11;
-  google.protobuf.Timestamp refreshed_on = 12;
-}
-
-// Request message for RuntimeService.ListCatalogEntries
-message ListCatalogEntriesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  ObjectType type = 2 [(validate.rules).enum.defined_only = true];
-}
-
-// Response message for RuntimeService.ListCatalogEntries
-message ListCatalogEntriesResponse {
-  repeated CatalogEntry entries = 1;
-}
-
-// Request message for RuntimeService.GetCatalogEntry
-message GetCatalogEntryRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string name = 2;
-}
-
-// Response message for RuntimeService.GetCatalogEntry
-message GetCatalogEntryResponse {
-  CatalogEntry entry = 1;
-}
-
-// Request message for RuntimeService.TriggerRefresh
-message TriggerRefreshRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string name = 2;
-}
-
-// Response message for RuntimeService.TriggerRefresh
-message TriggerRefreshResponse {}
-
-// Request message for RuntimeService.TriggerSync
-message TriggerSyncRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-}
-
-// Response message for RuntimeService.TriggerSync
-message TriggerSyncResponse {
-  uint32 objects_count = 1;
-  uint32 objects_added_count = 2;
-  uint32 objects_updated_count = 3;
-  uint32 objects_removed_count = 4;
-}
-
-// **********
-// Migrations
-// **********
-
-// Request message for RuntimeService.Reconcile
-message ReconcileRequest {
-  // Instance to reconcile
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Changed paths provides a way to "hint" what files have changed in the repo, enabling
-  // reconciliation to execute faster by not scanning all code artifacts for changes.
-  repeated string changed_paths = 2;
-  // Forced paths is used to force run reconcile on certain files.
-  // This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
-  repeated string forced_paths = 3;
-  // If true, will validate the file artifacts, but not actually execute any migrations
-  bool dry = 4;
-  // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-  // artifacts that fail to validate.)
-  bool strict = 5;
-}
-
-// Response message for RuntimeService.Reconcile
-message ReconcileResponse {
-  // Errors encountered during reconciliation. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been reconciled succesfully.
-  repeated ReconcileError errors = 1;
-  // affected_paths lists all the file artifact paths that were considered while
-  // executing the reconciliation. If changed_paths was empty, this will include all
-  // code artifacts in the repo.
-  repeated string affected_paths = 2;
-}
-
-// ReconcileError represents an error encountered while running Reconcile.
-message ReconcileError {
-  // Code represents different categories of reconciliation errors
-  enum Code {
-    // Unspecified error
-    CODE_UNSPECIFIED = 0;
-    // Code artifact failed to parse
-    CODE_SYNTAX = 1;
-    // Code artifact has internal validation errors
-    CODE_VALIDATION = 2;
-    // Code artifact is valid, but has invalid dependencies
-    CODE_DEPENDENCY = 3;
-    // Error returned from the OLAP database
-    CODE_OLAP = 4;
-    // Error encountered during source inspection or ingestion
-    CODE_SOURCE = 5;
-    // Error returned when unauthorised to access remote sources
-    CODE_SOURCE_PERMISSION_DENIED = 6;
-  }
-  // CharLocation is a line and column in a code artifact
-  message CharLocation {
-    uint32 line = 1;
-    uint32 column = 2;
-  }
-  // Code denotes the category of error
-  Code code = 1 [(validate.rules).enum.defined_only = true];
-  // Message is a developer-friendly error message
-  string message = 2;
-  // File path of the code artifact that this error relates to (if any)
-  string file_path = 3;
-  // Property path of the error in the code artifact (if any).
-  // It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-  // It only applies to structured code artifacts (i.e. YAML).
-  // Only applicable if file_path is set.
-  repeated string property_path = 4;
-  // Start location of the error in the code artifact (if any).
-  // Only applicable if file_path is set.
-  CharLocation start_location = 5;
-  // End location of the error in the code artifact (if any).
-  // Only applicable if file_path and start_location is set.
-  CharLocation end_location = 6;
-}
-
-message PutFileAndReconcileRequest {
-  // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Path to store the file at
-  string path = 2;
-  // Contents to save to the file
-  string blob = 3;
-  // Create indicates whether to create the file if it doesn't already exist
-  bool create = 4;
-  // create_only will cause the operation to fail if a file already exists at path.
-  // It should only be set when create = true.
-  bool create_only = 5;
-
-  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-  bool dry = 6;
-  // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-  // artifacts that fail to validate.)
-  bool strict = 7;
-}
-
-message PutFileAndReconcileResponse {
-  // Errors encountered during reconciliation. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been reconciled succesfully.
-  repeated ReconcileError errors = 1;
-  // affected_paths lists all the file artifact paths that were considered while
-  // executing the reconciliation. If changed_paths was empty, this will include all
-  // code artifacts in the repo.
-  repeated string affected_paths = 2;
-}
-
-message DeleteFileAndReconcileRequest {
-  // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Path to store the file at
-  string path = 2;
-  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-  bool dry = 3;
-  // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-  // artifacts that fail to validate.)
-  bool strict = 4;
-}
-
-message DeleteFileAndReconcileResponse {
-  // Errors encountered during reconciliation. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been reconciled succesfully.
-  repeated ReconcileError errors = 1;
-  // affected_paths lists all the file artifact paths that were considered while
-  // executing the reconciliation. If changed_paths was empty, this will include all
-  // code artifacts in the repo.
-  repeated string affected_paths = 2;
-}
-
-message RenameFileAndReconcileRequest {
-  // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Current path of the file
-  string from_path = 2;
-  // New path of the file
-  string to_path = 3;
-  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-  bool dry = 4;
-  // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-  // artifacts that fail to validate.)
-  bool strict = 5;
-}
-
-message RenameFileAndReconcileResponse {
-  // Errors encountered during reconciliation. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been reconciled succesfully.
-  repeated ReconcileError errors = 1;
-  // affected_paths lists all the file artifact paths that were considered while
-  // executing the reconciliation. If changed_paths was empty, this will include all
-  // code artifacts in the repo.
-  repeated string affected_paths = 2;
-}
-
-message RefreshAndReconcileRequest {
-  // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Current path of the file
-  string path = 2;
-  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-  bool dry = 3;
-  // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-  // artifacts that fail to validate.)
-  bool strict = 5;
-}
-
-message RefreshAndReconcileResponse {
-  // Errors encountered during reconciliation. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been reconciled succesfully.
-  repeated ReconcileError errors = 1;
-  // affected_paths lists all the file artifact paths that were considered while
-  // executing the reconciliation. If changed_paths was empty, this will include all
-  // code artifacts in the repo.
-  repeated string affected_paths = 2;
 }
 
 // Request message for RuntimeService.IssueDevJWT

@@ -2,7 +2,7 @@
   export const navigationOpen = (() => {
     const store = writable(true);
     return {
-      ...store,
+      subscribe: store.subscribe,
       toggle: () => store.update((open) => !open),
     };
   })();
@@ -13,7 +13,7 @@
   import { writable } from "svelte/store";
   import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
-  import TableAssets from "../../features/tables/TableAssets.svelte";
+  import TableExplorer from "../../features/tables/TableExplorer.svelte";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
@@ -23,6 +23,7 @@
   let previousWidth: number;
   let container: HTMLElement;
   let resizing = false;
+  let navWrapperHeight: number;
 
   function handleResize(
     e: UIEvent & {
@@ -61,9 +62,12 @@
 
     <AddAssetButton />
     <div class="scroll-container">
-      <div class="nav-wrapper">
+      <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
         <FileExplorer />
-        <TableAssets />
+        <div class="grow" />
+        {#if navWrapperHeight}
+          <TableExplorer startingHeight={navWrapperHeight / 2} />
+        {/if}
       </div>
     </div>
     <Footer />
@@ -91,12 +95,12 @@
   }
 
   .nav-wrapper {
-    @apply flex flex-col h-fit w-full gap-y-2;
+    @apply flex flex-col h-full w-full gap-y-2;
   }
 
   .scroll-container {
     @apply overflow-y-auto overflow-x-hidden;
-    @apply transition-colors h-full bg-white pb-8;
+    @apply transition-colors h-full bg-white;
   }
 
   .sidebar:not(.resizing) {

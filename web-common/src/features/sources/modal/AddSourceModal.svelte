@@ -3,6 +3,7 @@
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import {
     createRuntimeServiceListConnectorDrivers,
     V1ConnectorDriver,
@@ -20,7 +21,6 @@
   import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
   import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
   import SQLite from "../../../components/icons/connectors/SQLite.svelte";
-  import { appScreen } from "../../../layout/app-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -142,7 +142,7 @@
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
-      $appScreen.type,
+      getScreenNameFromPage(),
       MetricsEventSpace.Modal,
     );
 

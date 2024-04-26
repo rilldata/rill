@@ -18,6 +18,7 @@
   export let dark = false;
   export let value = undefined;
   export let customStyle = "";
+  export let truncate = false;
 
   let dataType;
   $: {
@@ -53,5 +54,6 @@ about unknown props.
     {dark}
     {type}
     {value}
+    {truncate}
   />
 {/if}

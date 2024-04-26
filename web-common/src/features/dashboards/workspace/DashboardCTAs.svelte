@@ -60,7 +60,7 @@
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
-        href={`/files/${filePath}`}
+        href={`/files${filePath}`}
         disabled={!dashboardIsIdle}
         on:click={fireTelemetry}
         type="secondary"
