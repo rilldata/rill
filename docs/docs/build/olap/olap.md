@@ -65,8 +65,7 @@ When ClickHouse has been configured as the [default OLAP engine](../../reference
 
 ## Pinot
 
-When Pinot has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, 
-any existing external tables that Rill can read and query should be shown through the Rill Developer UI under `Tables` section in left pane. You can then create dashboards using these external Pinot tables.
+When Pinot has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI under `Tables` section in left pane. You can then create dashboards using these external Pinot tables.
 
 <div className="center-content">
 ![External Pinot tables](/img/build/connect/external-tables/external-pinot-table.png)

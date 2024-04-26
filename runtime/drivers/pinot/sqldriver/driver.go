@@ -28,7 +28,8 @@ func (d *pinotDriver) Open(dsn string) (sqlDriver.Conn, error) {
 	pinotConn, err := pinot.NewWithConfig(&pinot.ClientConfig{
 		ExtraHTTPHeader: headers,
 		ControllerConfig: &pinot.ControllerConfig{
-			ControllerAddress: address,
+			ExtraControllerAPIHeaders: headers,
+			ControllerAddress:         address,
 		},
 	})
 	if err != nil {
@@ -273,15 +274,19 @@ func completeQuery(query string, args []sqlDriver.NamedValue) (string, error) {
 
 func formatArg(value sqlDriver.Value) (string, error) {
 	switch v := value.(type) {
-	case string, *big.Int, *big.Float:
-		// For pinot types - STRING, BIG_INT and BIG_DECIMAL - enclose in single quotes
+	case string:
+		// Escape any single quotes in the string
+		escaped := strings.ReplaceAll(v, "'", "''")
+		return fmt.Sprintf("'%s'", escaped), nil
+	case *big.Int, *big.Float:
+		// For pinot types - BIG_INT and BIG_DECIMAL - enclose in single quotes
 		return fmt.Sprintf("'%v'", v), nil
 	case []byte:
 		// For pinot type - BYTES - convert to Hex string and enclose in single quotes
 		hexString := fmt.Sprintf("%x", v)
 		return fmt.Sprintf("'%s'", hexString), nil
 	case time.Time:
-		// For pinot type - TIMESTAMP - convert to ISO8601 format and enclose in single quotes
+		// For pinot type - TIMESTAMP - convert to below ISO8601 format that it expects and enclose in single quotes
 		return fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05.000Z")), nil
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
 		// For types - INT, LONG, FLOAT, DOUBLE and BOOLEAN use as-is
