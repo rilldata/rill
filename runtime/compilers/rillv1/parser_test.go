@@ -1325,7 +1325,7 @@ vega_lite: |%s
 kind: dashboard
 columns: 4
 gap: 3
-components:
+items:
 - component: c1
 - component: c2
   width: 1
@@ -1377,7 +1377,7 @@ components:
 			DashboardSpec: &runtimev1.DashboardSpec{
 				Columns: 4,
 				Gap:     3,
-				Components: []*runtimev1.DashboardComponent{
+				Items: []*runtimev1.DashboardItem{
 					{Component: "c1"},
 					{Component: "c2", Width: 1, Height: 2},
 					{Component: "d1--component2"},

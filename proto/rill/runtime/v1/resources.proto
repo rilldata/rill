@@ -426,12 +426,12 @@ message DashboardSpec {
   string title = 1;
   uint32 columns = 2;
   uint32 gap = 3;
-  repeated DashboardComponent components = 4;
+  repeated DashboardItem items = 4;
 }
 
 message DashboardState {}
 
-message DashboardComponent {
+message DashboardItem {
   string component = 1;
   uint32 x = 2;
   uint32 y = 3;

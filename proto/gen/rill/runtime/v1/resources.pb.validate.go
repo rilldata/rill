@@ -7543,7 +7543,7 @@ func (m *DashboardSpec) validate(all bool) error {
 
 	// no validation rules for Gap
 
-	for idx, item := range m.GetComponents() {
+	for idx, item := range m.GetItems() {
 		_, _ = idx, item
 
 		if all {
@@ -7551,7 +7551,7 @@ func (m *DashboardSpec) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, DashboardSpecValidationError{
-						field:  fmt.Sprintf("Components[%v]", idx),
+						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -7559,7 +7559,7 @@ func (m *DashboardSpec) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, DashboardSpecValidationError{
-						field:  fmt.Sprintf("Components[%v]", idx),
+						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -7568,7 +7568,7 @@ func (m *DashboardSpec) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return DashboardSpecValidationError{
-					field:  fmt.Sprintf("Components[%v]", idx),
+					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -7755,22 +7755,22 @@ var _ interface {
 	ErrorName() string
 } = DashboardStateValidationError{}
 
-// Validate checks the field values on DashboardComponent with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DashboardComponent) Validate() error {
+// Validate checks the field values on DashboardItem with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DashboardItem) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on DashboardComponent with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DashboardComponentMultiError, or nil if none found.
-func (m *DashboardComponent) ValidateAll() error {
+// ValidateAll checks the field values on DashboardItem with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DashboardItemMultiError, or
+// nil if none found.
+func (m *DashboardItem) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *DashboardComponent) validate(all bool) error {
+func (m *DashboardItem) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7790,19 +7790,19 @@ func (m *DashboardComponent) validate(all bool) error {
 	// no validation rules for FontSize
 
 	if len(errors) > 0 {
-		return DashboardComponentMultiError(errors)
+		return DashboardItemMultiError(errors)
 	}
 
 	return nil
 }
 
-// DashboardComponentMultiError is an error wrapping multiple validation errors
-// returned by DashboardComponent.ValidateAll() if the designated constraints
+// DashboardItemMultiError is an error wrapping multiple validation errors
+// returned by DashboardItem.ValidateAll() if the designated constraints
 // aren't met.
-type DashboardComponentMultiError []error
+type DashboardItemMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m DashboardComponentMultiError) Error() string {
+func (m DashboardItemMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7811,11 +7811,11 @@ func (m DashboardComponentMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m DashboardComponentMultiError) AllErrors() []error { return m }
+func (m DashboardItemMultiError) AllErrors() []error { return m }
 
-// DashboardComponentValidationError is the validation error returned by
-// DashboardComponent.Validate if the designated constraints aren't met.
-type DashboardComponentValidationError struct {
+// DashboardItemValidationError is the validation error returned by
+// DashboardItem.Validate if the designated constraints aren't met.
+type DashboardItemValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7823,24 +7823,22 @@ type DashboardComponentValidationError struct {
 }
 
 // Field function returns field value.
-func (e DashboardComponentValidationError) Field() string { return e.field }
+func (e DashboardItemValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e DashboardComponentValidationError) Reason() string { return e.reason }
+func (e DashboardItemValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e DashboardComponentValidationError) Cause() error { return e.cause }
+func (e DashboardItemValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e DashboardComponentValidationError) Key() bool { return e.key }
+func (e DashboardItemValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e DashboardComponentValidationError) ErrorName() string {
-	return "DashboardComponentValidationError"
-}
+func (e DashboardItemValidationError) ErrorName() string { return "DashboardItemValidationError" }
 
 // Error satisfies the builtin error interface
-func (e DashboardComponentValidationError) Error() string {
+func (e DashboardItemValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7852,14 +7850,14 @@ func (e DashboardComponentValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sDashboardComponent.%s: %s%s",
+		"invalid %sDashboardItem.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = DashboardComponentValidationError{}
+var _ error = DashboardItemValidationError{}
 
 var _ interface {
 	Field() string
@@ -7867,7 +7865,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = DashboardComponentValidationError{}
+} = DashboardItemValidationError{}
 
 // Validate checks the field values on API with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error

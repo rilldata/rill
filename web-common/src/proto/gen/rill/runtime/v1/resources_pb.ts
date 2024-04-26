@@ -3082,9 +3082,9 @@ export class DashboardSpec extends Message<DashboardSpec> {
   gap = 0;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.DashboardComponent components = 4;
+   * @generated from field: repeated rill.runtime.v1.DashboardItem items = 4;
    */
-  components: DashboardComponent[] = [];
+  items: DashboardItem[] = [];
 
   constructor(data?: PartialMessage<DashboardSpec>) {
     super();
@@ -3097,7 +3097,7 @@ export class DashboardSpec extends Message<DashboardSpec> {
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "components", kind: "message", T: DashboardComponent, repeated: true },
+    { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardSpec {
@@ -3149,9 +3149,9 @@ export class DashboardState extends Message<DashboardState> {
 }
 
 /**
- * @generated from message rill.runtime.v1.DashboardComponent
+ * @generated from message rill.runtime.v1.DashboardItem
  */
-export class DashboardComponent extends Message<DashboardComponent> {
+export class DashboardItem extends Message<DashboardItem> {
   /**
    * @generated from field: string component = 1;
    */
@@ -3182,13 +3182,13 @@ export class DashboardComponent extends Message<DashboardComponent> {
    */
   fontSize = 0;
 
-  constructor(data?: PartialMessage<DashboardComponent>) {
+  constructor(data?: PartialMessage<DashboardItem>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.DashboardComponent";
+  static readonly typeName = "rill.runtime.v1.DashboardItem";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
@@ -3198,20 +3198,20 @@ export class DashboardComponent extends Message<DashboardComponent> {
     { no: 7, name: "font_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardComponent {
-    return new DashboardComponent().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardItem {
+    return new DashboardItem().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardComponent {
-    return new DashboardComponent().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardItem {
+    return new DashboardItem().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardComponent {
-    return new DashboardComponent().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardItem {
+    return new DashboardItem().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DashboardComponent | PlainMessage<DashboardComponent> | undefined, b: DashboardComponent | PlainMessage<DashboardComponent> | undefined): boolean {
-    return proto3.util.equals(DashboardComponent, a, b);
+  static equals(a: DashboardItem | PlainMessage<DashboardItem> | undefined, b: DashboardItem | PlainMessage<DashboardItem> | undefined): boolean {
+    return proto3.util.equals(DashboardItem, a, b);
   }
 }
 

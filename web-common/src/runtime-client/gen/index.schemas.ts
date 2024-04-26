@@ -1502,7 +1502,7 @@ export interface V1DashboardState {
   [key: string]: any;
 }
 
-export interface V1DashboardComponent {
+export interface V1DashboardItem {
   component?: string;
   x?: number;
   y?: number;
@@ -1515,7 +1515,7 @@ export interface V1DashboardSpec {
   title?: string;
   columns?: number;
   gap?: number;
-  components?: V1DashboardComponent[];
+  items?: V1DashboardItem[];
 }
 
 export interface V1Dashboard {

@@ -13,14 +13,14 @@ type DashboardYAML struct {
 	Title      string           `yaml:"title"`
 	Columns    uint32           `yaml:"columns"`
 	Gap        uint32           `yaml:"gap"`
-	Components []*struct {
+	Items      []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
 		X         uint32    `yaml:"x"`
 		Y         uint32    `yaml:"y"`
 		Width     uint32    `yaml:"width"`
 		Height    uint32    `yaml:"height"`
 		FontSize  uint32    `yaml:"font_size"`
-	} `yaml:"components"`
+	} `yaml:"items"`
 }
 
 func (p *Parser) parseDashboard(node *Node) error {
@@ -39,36 +39,36 @@ func (p *Parser) parseDashboard(node *Node) error {
 		return fmt.Errorf("dashboards cannot have a connector")
 	}
 
-	// Ensure there's at least one component
-	if len(tmp.Components) == 0 {
-		return errors.New(`at least one component must be provided`)
+	// Ensure there's at least one item
+	if len(tmp.Items) == 0 {
+		return errors.New(`at least one item must be configured`)
 	}
 
-	// Parse components.
-	// Components may either reference an externally defined component by name or be defined inline.
-	var inlineDefs []*componentDef
-	dashboardComponents := make([]*runtimev1.DashboardComponent, len(tmp.Components))
-	for i, c := range tmp.Components {
-		name, inlineDef, err := p.parseDashboardComponent(node.Name, i, c.Component)
+	// Parse items.
+	// Each item can either reference an externally defined component by name or define a component inline.
+	items := make([]*runtimev1.DashboardItem, len(tmp.Items))
+	var inlineComponentDefs []*componentDef
+	for i, item := range tmp.Items {
+		component, inlineComponentDef, err := p.parseDashboardItemComponent(node.Name, i, item.Component)
 		if err != nil {
 			return fmt.Errorf("invalid component at index %d: %w", i, err)
 		}
 
 		// Track inline component definitions so we can insert them after we have validated all components
-		if inlineDef != nil {
-			inlineDefs = append(inlineDefs, inlineDef)
+		if inlineComponentDef != nil {
+			inlineComponentDefs = append(inlineComponentDefs, inlineComponentDef)
 		}
 
-		dashboardComponents[i] = &runtimev1.DashboardComponent{
-			Component: name,
-			X:         c.X,
-			Y:         c.Y,
-			Width:     c.Width,
-			Height:    c.Height,
-			FontSize:  c.FontSize,
+		items[i] = &runtimev1.DashboardItem{
+			Component: component,
+			X:         item.X,
+			Y:         item.Y,
+			Width:     item.Width,
+			Height:    item.Height,
+			FontSize:  item.FontSize,
 		}
 
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: name})
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
 
 	// Track dashboard
@@ -81,14 +81,14 @@ func (p *Parser) parseDashboard(node *Node) error {
 	r.DashboardSpec.Title = tmp.Title
 	r.DashboardSpec.Columns = tmp.Columns
 	r.DashboardSpec.Gap = tmp.Gap
-	r.DashboardSpec.Components = dashboardComponents
+	r.DashboardSpec.Items = items
 
 	// Track inline components
-	for _, def := range inlineDefs {
+	for _, def := range inlineComponentDefs {
 		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, def.refs...)
 		if err != nil {
 			// Normally we could return the error, but we can't do that here because we've already inserted the dashboard.
-			// Since the component has been validated with insertDryRun in parseDashboardComponent, this error should never happen in practice.
+			// Since the component has been validated with insertDryRun in parseDashboardItemComponent, this error should never happen in practice.
 			// So let's panic.
 			panic(err)
 		}
@@ -98,9 +98,9 @@ func (p *Parser) parseDashboard(node *Node) error {
 	return nil
 }
 
-// parseDashboardComponent parses a dashboard component's "component" property.
+// parseDashboardItemComponent parses a dashboard item's "component" property.
 // It may be a string (name of an externally defined component) or an inline component definition.
-func (p *Parser) parseDashboardComponent(dashboardName string, idx int, n yaml.Node) (string, *componentDef, error) {
+func (p *Parser) parseDashboardItemComponent(dashboardName string, idx int, n yaml.Node) (string, *componentDef, error) {
 	if n.Kind == yaml.ScalarNode {
 		var name string
 		err := n.Decode(&name)
