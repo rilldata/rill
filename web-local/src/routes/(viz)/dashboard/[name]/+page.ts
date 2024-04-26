@@ -6,8 +6,9 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction } from "@tanstack/svelte-query";
+import type { PageLoad } from "./$types";
 
-export async function load({ parent, params, depends }) {
+export const load: PageLoad = async ({ parent, params, depends }) => {
   const { instanceId } = await parent();
 
   const dashboardName = params.name;
@@ -48,4 +49,4 @@ export async function load({ parent, params, depends }) {
     console.error(e);
     throw error(404, "Dashboard not found");
   }
-}
+};

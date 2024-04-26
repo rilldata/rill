@@ -6,17 +6,21 @@
   import { page } from "$app/stores";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
+  import type { LayoutData } from "../$types";
 
-  export let data;
+  export let data: LayoutData;
 
   $: ({ instanceId } = data);
 
-  $: dashboardName = $page.params.name;
+  $: ({
+    params: { name: dashboardName },
+    route,
+  } = $page);
 
   $: projectTitleQuery = useProjectTitle(instanceId);
   $: dashboardsQuery = useValidDashboards(instanceId);
 
-  $: projectName = ($projectTitleQuery.data as string | undefined) ?? null;
+  $: projectName = $projectTitleQuery.data ?? null;
   $: dashboards = $dashboardsQuery.data ?? [];
 
   $: dashboardOptions = dashboards.reduce((map, dimension) => {
@@ -47,7 +51,7 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
-    {#if $page.route.id?.includes("dashboard")}
+    {#if route.id?.includes("dashboard")}
       <DashboardCtAs metricViewName={dashboardName} />
     {/if}
   </header>
