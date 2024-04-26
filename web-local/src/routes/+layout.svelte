@@ -16,6 +16,7 @@
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
+  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
 
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
@@ -56,6 +57,7 @@
       <ResourceWatcher host={data.host} instanceId={data.instanceId}>
         <div class="body h-screen w-screen overflow-hidden absolute">
           <slot />
+          <AddSourceModal />
         </div>
       </ResourceWatcher>
     </WelcomePageRedirect>

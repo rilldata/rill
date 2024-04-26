@@ -59,6 +59,5 @@
   </BlockingOverlayContainer>
 {/if}
 
-<AddSourceModal />
 <SourceImportedModal sourcePath={$sourceImportedPath} />
 <NotificationCenter />
