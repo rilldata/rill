@@ -44,8 +44,6 @@ const ResourceKindMap: Record<
     baseContent: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- @kind: model
-
 SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
