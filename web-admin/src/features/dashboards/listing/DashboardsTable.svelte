@@ -2,7 +2,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Row, flexRender } from "@tanstack/svelte-table";
+  import { flexRender, type Row } from "@tanstack/svelte-table";
   import { createEventDispatcher } from "svelte";
   import Table from "../../../components/table/Table.svelte";
   import DashboardsError from "./DashboardsError.svelte";
@@ -10,7 +10,7 @@
   import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
-  import { DashboardResource, useDashboardsV2 } from "./selectors";
+  import { useDashboardsV2, type DashboardResource } from "./selectors";
 
   export let isEmbedded = false;
 
@@ -30,13 +30,27 @@
     {
       id: "composite",
       cell: ({ row }) => {
-        const dashboard = row.original as DashboardResource;
+        const dashboardResource = row.original as DashboardResource;
+        const resource = dashboardResource.resource;
+        const refreshedOn = dashboardResource.refreshedOn;
+        const name = resource.meta.name.name;
+
+        // If not a Metrics Explorer, it's a Custom Dashboard.
+        const isMetricsExplorer = !!resource?.metricsView;
+        const title = isMetricsExplorer
+          ? resource.metricsView.spec.title
+          : resource.dashboard.spec.title;
+        const description = isMetricsExplorer
+          ? resource.metricsView.spec.description
+          : "";
+
         return flexRender(DashboardsTableCompositeCell, {
-          name: dashboard.resource.meta.name.name,
-          title: dashboard.resource.metricsView.spec.title,
-          lastRefreshed: dashboard.refreshedOn,
-          description: dashboard.resource.metricsView.spec.description,
-          error: dashboard.resource.meta.reconcileError,
+          name,
+          title,
+          lastRefreshed: refreshedOn,
+          description,
+          error: resource.meta.reconcileError,
+          isMetricsExplorer,
           isEmbedded,
         });
       },

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"strings"
 )
 
 func TestQuery(t *testing.T) {
@@ -212,7 +212,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write", "pool_size": 4}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -248,11 +248,11 @@ func Test_safeSQLString(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	conn, err = Driver{}.Open(map[string]any{}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err = Driver{}.Open("default", map[string]any{}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

@@ -179,6 +179,10 @@ message MetricsViewSpec {
   }
   // Connector containing the table
   string connector = 1;
+  // Name of the database where table is located (optional)
+  string database = 21;
+  // Name of the database schema where table is located (optional)
+  string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
   // User friendly label for the dashboard
@@ -256,7 +260,7 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
-  repeated string email_recipients = 9;
+  repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
 }
 
@@ -296,13 +300,18 @@ message AlertSpec {
     string query_for_user_email = 12;
     google.protobuf.Struct query_for_attributes = 13;
   }
-  repeated string email_recipients = 14;
-  bool email_on_recover = 15;
-  bool email_on_fail = 16;
-  bool email_on_error = 17;
-  bool email_renotify = 18;
-  uint32 email_renotify_after_seconds = 19;
+  bool notify_on_recover = 15;
+  bool notify_on_fail = 16;
+  bool notify_on_error = 17;
+  bool renotify = 18;
+  uint32 renotify_after_seconds = 19;
+  repeated Notifier notifiers = 21;
   map<string, string> annotations = 20;
+}
+
+message Notifier {
+  string connector = 1;
+  google.protobuf.Struct properties = 2;
 }
 
 message AlertState {
@@ -317,7 +326,7 @@ message AlertState {
 message AlertExecution {
   bool adhoc = 1;
   AssertionResult result = 2;
-  bool sent_emails = 3;
+  bool sent_notifications = 3;
   google.protobuf.Timestamp execution_time = 4;
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;
@@ -414,8 +423,8 @@ message Dashboard {
 
 message DashboardSpec {
   string title = 1;
-  int64 grid_columns = 2;
-  int64 grid_rows = 3;
+  uint32 columns = 2;
+  uint32 gap = 3;
   repeated DashboardComponent components = 4;
 }
 
@@ -423,8 +432,12 @@ message DashboardState {}
 
 message DashboardComponent {
   string chart = 1;
-  int64 columns = 2;
-  int64 rows = 3;
+  uint32 x = 2;
+  uint32 y = 3;
+  uint32 width = 4;
+  uint32 height = 5;
+  string markdown = 6;
+  uint32 font_size = 7;
 }
 
 // API defines a custom operation for querying data stored in Rill.

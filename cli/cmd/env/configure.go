@@ -3,7 +3,9 @@ package env
 import (
 	"context"
 	"fmt"
+	"os"
 	"slices"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -11,7 +13,9 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +67,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 					projectName = names[0]
 				} else {
 					// prompt for name from user
-					projectName = cmdutil.SelectPrompt("Select project", names, "")
+					projectName, err = cmdutil.SelectPrompt("Select project", names, "")
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -101,7 +108,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("Updated project variables\n")
 
 			if !cmd.Flags().Changed("redeploy") {
-				redeploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
+				redeploy, err = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
+				if err != nil {
+					return err
+				}
 			}
 
 			if redeploy {
@@ -187,11 +197,8 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 		}
 
 		fmt.Printf("\nConfiguring connector %q:\n", c.Name)
-		if c.Spec.ServiceAccountDocs != "" {
-			fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
-		}
-		if c.Spec.Help != "" {
-			fmt.Println(c.Spec.Help)
+		if c.Spec.DocsURL != "" {
+			fmt.Printf("For instructions on how to configure, see: %s\n", c.Spec.DocsURL)
 		}
 
 		for i := range c.Spec.ConfigProperties {
@@ -210,12 +217,9 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 				question.Prompt = &survey.Input{Message: msg, Default: prop.Default}
 			}
 
-			if prop.TransformFunc != nil {
-				question.Transform = prop.TransformFunc
-			}
-
-			if prop.ValidateFunc != nil {
-				question.Validate = prop.ValidateFunc
+			if prop.Type == drivers.FilePropertyType {
+				question.Transform = fileTransformFunc
+				question.Validate = fileValidateFunc
 			}
 
 			answer := ""
@@ -236,4 +240,35 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	fmt.Println("")
 
 	return variables, nil
+}
+
+func fileValidateFunc(any interface{}) error {
+	val := any.(string)
+	if val == "" {
+		// user can chhose to leave empty for public sources
+		return nil
+	}
+
+	path, err := fileutil.ExpandHome(strings.TrimSpace(val))
+	if err != nil {
+		return err
+	}
+
+	_, err = os.Stat(path)
+	return err
+}
+
+func fileTransformFunc(any interface{}) interface{} {
+	val := any.(string)
+	if val == "" {
+		return ""
+	}
+
+	path, err := fileutil.ExpandHome(strings.TrimSpace(val))
+	if err != nil {
+		return err
+	}
+	// ignoring error since PathError is already validated
+	content, _ := os.ReadFile(path)
+	return string(content)
 }

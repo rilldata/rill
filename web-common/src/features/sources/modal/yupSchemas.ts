@@ -1,11 +1,11 @@
-import type { V1ConnectorSpec } from "@rilldata/web-common/runtime-client";
+import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 import {
   INVALID_NAME_MESSAGE,
   VALID_NAME_PATTERN,
 } from "../../entity-management/name-utils";
 
-export function getYupSchema(connector: V1ConnectorSpec) {
+export function getYupSchema(connector: V1ConnectorDriver) {
   switch (connector.name) {
     case "s3":
       return yup.object().shape({

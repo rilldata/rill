@@ -32,7 +32,7 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, error) {
+func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	// Check that folder hasn't been moved
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -41,21 +41,23 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, 
 	fsRoot := os.DirFS(c.root)
 	glob = filepath.Clean(filepath.Join("./", glob))
 
-	var paths []string
+	var entries []drivers.DirEntry
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
-		// Don't track directories
-		if d.IsDir() {
+		if skipDirs && d.IsDir() {
 			return nil
 		}
 
 		// Exit if we reached the limit
-		if len(paths) == limit {
+		if len(entries) == limit {
 			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
 		}
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
-		paths = append(paths, p)
+		entries = append(entries, drivers.DirEntry{
+			Path:  p,
+			IsDir: d.IsDir(),
+		})
 
 		return nil
 	})
@@ -63,7 +65,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, 
 		return nil, err
 	}
 
-	return paths, nil
+	return entries, nil
 }
 
 // Get implements drivers.RepoStore.
@@ -89,6 +91,7 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 
 	return &drivers.RepoObjectStat{
 		LastUpdated: info.ModTime(),
+		IsDir:       info.IsDir(),
 	}, nil
 }
 
@@ -115,6 +118,17 @@ func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader)
 	return nil
 }
 
+func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
+	dirPath = filepath.Join(c.root, dirPath)
+
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error {
 	toPath = filepath.Join(c.root, toPath)
@@ -131,8 +145,11 @@ func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error 
 }
 
 // Delete implements drivers.RepoStore.
-func (c *connection) Delete(ctx context.Context, filePath string) error {
+func (c *connection) Delete(ctx context.Context, filePath string, force bool) error {
 	filePath = filepath.Join(c.root, filePath)
+	if force {
+		return os.RemoveAll(filePath)
+	}
 	return os.Remove(filePath)
 }
 

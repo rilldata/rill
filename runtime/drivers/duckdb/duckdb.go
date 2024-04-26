@@ -39,8 +39,15 @@ func init() {
 
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
-	Description: "Create a DuckDB SQL source.",
-	SourceProperties: []drivers.PropertySchema{
+	Description: "DuckDB SQL connector.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:  "path",
+			Type: drivers.StringPropertyType,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -58,30 +65,31 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:  "path",
-			Type: drivers.StringPropertyType,
-		},
-	},
+	ImplementsCatalog: true,
+	ImplementsOLAP:    true,
 }
 
 var motherduckSpec = drivers.Spec{
-	ConfigProperties: []drivers.PropertySchema{
+	DisplayName: "MotherDuck",
+	Description: "MotherDuck SQL connector.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "token",
+			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
 	name string
 }
 
-func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("duckdb driver can't be shared")
+func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("duckdb driver can't be shared")
 	}
 
 	cfg, err := newConfig(cfgMap)
@@ -108,8 +116,8 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 		}
 	}
 
-	if cfg.ExtTableStorage {
-		if err := os.Mkdir(cfg.ExtStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+	if cfg.DBStoragePath != "" {
+		if err := os.MkdirAll(cfg.DBStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
 			return nil, err
 		}
 	}
@@ -122,6 +130,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
+		instanceID:     instanceID,
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
@@ -131,7 +140,6 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac *activity.Client, lo
 		dbCond:         sync.NewCond(&sync.Mutex{}),
 		driverConfig:   cfgMap,
 		driverName:     d.name,
-		shared:         shared,
 		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
@@ -188,8 +196,8 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-	if cfg.ExtStoragePath != "" {
-		return os.RemoveAll(cfg.ExtStoragePath)
+	if cfg.DBStoragePath != "" {
+		return os.RemoveAll(cfg.DBStoragePath)
 	}
 	if cfg.DBFilePath != "" {
 		err = os.Remove(cfg.DBFilePath)
@@ -258,7 +266,8 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db *sqlx.DB
+	instanceID string
+	db         *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -288,7 +297,6 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
-	shared      bool
 	// State for maintaining connection acquire times, which enables periodically checking for hanging DuckDB queries (we have previously seen deadlocks in DuckDB).
 	connTimesMu sync.Mutex
 	nextConnID  int
@@ -326,10 +334,6 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 
 // AsCatalogStore Catalog implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	if c.shared {
-		// duckdb catalog is instance specific
-		return nil, false
-	}
 	return c, true
 }
 
@@ -350,10 +354,6 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	if c.shared {
-		// duckdb olap is instance specific
-		return nil, false
-	}
 	return c, true
 }
 
@@ -395,6 +395,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first
@@ -428,6 +433,7 @@ func (c *connection) reopenDB() error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
+		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)
 
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
@@ -508,7 +514,7 @@ func (c *connection) reopenDB() error {
 	// Load the version.txt from each sub-directory
 	// If version.txt is found, attach only the .db file matching the version.txt.
 	// If attach fails, log the error and delete the version.txt and .db file (e.g. might be DuckDB version change)
-	entries, err := os.ReadDir(c.config.ExtStoragePath)
+	entries, err := os.ReadDir(c.config.DBStoragePath)
 	if err != nil {
 		return err
 	}
@@ -516,7 +522,7 @@ func (c *connection) reopenDB() error {
 		if !entry.IsDir() {
 			continue
 		}
-		path := filepath.Join(c.config.ExtStoragePath, entry.Name())
+		path := filepath.Join(c.config.DBStoragePath, entry.Name())
 		version, exist, err := c.tableVersion(entry.Name())
 		if err != nil {
 			c.logger.Error("error in fetching db version", zap.String("table", entry.Name()), zap.Error(err))

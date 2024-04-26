@@ -13,6 +13,10 @@
   export let min = 200;
   export let basis = 200;
   export let resizing = false;
+  export let absolute = true;
+  export let onMouseDown: ((e: MouseEvent) => void) | null = null;
+  export let onUpdate: ((dimension: number) => void) | null = null;
+  export let disabled = false;
 
   let start = 0;
   let startingDimension = dimension;
@@ -27,6 +31,7 @@
       start = e.clientY;
     }
 
+    if (onMouseDown) onMouseDown(e);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
   }
@@ -48,7 +53,10 @@
         delta = e.clientY - start;
       }
     }
-    dimension = Math.min(max, Math.max(min, startingDimension + delta));
+    requestAnimationFrame(() => {
+      dimension = Math.min(max, Math.max(min, startingDimension + delta));
+      if (onUpdate) onUpdate(dimension);
+    });
   }
 
   function onMouseUp() {
@@ -59,10 +67,13 @@
 
   function handleDoubleClick() {
     dimension = basis;
+    if (onUpdate) onUpdate(dimension);
   }
 </script>
 
 <button
+  {disabled}
+  class:absolute
   class="{direction} {side}"
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick={handleDoubleClick}
@@ -72,8 +83,12 @@
 
 <style lang="postcss">
   button {
-    @apply absolute z-10;
+    @apply z-10 flex-none;
     /* @apply bg-red-400; */
+  }
+
+  button:disabled {
+    @apply cursor-default;
   }
 
   .NS {

@@ -18,8 +18,15 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "add",
 		Short: "Add",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
-			cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
+			if err != nil {
+				return err
+			}
+
+			err = cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			if err != nil {
+				return err
+			}
 
 			client, err := ch.Client()
 			if err != nil {

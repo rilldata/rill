@@ -17,13 +17,18 @@
   export let collapse = false;
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: connector = $modelQuery.data?.model?.spec?.connector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   $: createDashboardFromModel = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
+    connector as string,
+    "",
+    "",
     modelName,
+    "dashboards",
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
@@ -33,7 +38,7 @@
   <Button
     disabled={!modelIsIdle || hasError}
     on:click={createDashboardFromModel}
-    type="primary"
+    type="brand"
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />

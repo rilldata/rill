@@ -259,6 +259,7 @@ type Project struct {
 	Name                 string
 	Description          string
 	Public               bool
+	CreatedByUserID      *string `db:"created_by_user_id"`
 	Provisioner          string
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
@@ -282,6 +283,7 @@ type InsertProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	CreatedByUserID      *string
 	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
@@ -371,6 +373,7 @@ type User struct {
 	DisplayName         string    `db:"display_name"`
 	PhotoURL            string    `db:"photo_url"`
 	GithubUsername      string    `db:"github_username"`
+	GithubRefreshToken  string    `db:"github_refresh_token"`
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	ActiveOn            time.Time `db:"active_on"`
@@ -393,6 +396,7 @@ type UpdateUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	GithubUsername      string
+	GithubRefreshToken  string
 	QuotaSingleuserOrgs int
 	PreferenceTimeZone  string
 }

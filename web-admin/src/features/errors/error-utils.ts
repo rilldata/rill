@@ -2,7 +2,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
-  isDashboardPage,
+  isMetricsExplorerPage,
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
@@ -15,10 +15,10 @@ import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
-  getAdminServiceGetProjectQueryKey,
 } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
-import { ErrorStoreState, errorStore } from "./error-store";
+import { getProjectRuntimeQueryKey } from "../projects/selectors";
+import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
@@ -59,20 +59,19 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       ) {
         return;
       }
+
       // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
       if ((error.response.data as RpcStatus).message === "driver: not found") {
         const [, org, proj] = get(page).url.pathname.split("/");
-        void queryClient.resetQueries(
-          getAdminServiceGetProjectQueryKey(org, proj),
-        );
+        void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
         return;
       }
     }
 
-    // Special handling for some errors on the Dashboard page
-    const onDashboardPage = isDashboardPage(get(page));
-    if (onDashboardPage) {
-      // Let the Dashboard page handle errors for runtime queries.
+    // Special handling for some errors on the Metrics Explorer page
+    const onMetricsExplorerPage = isMetricsExplorerPage(get(page));
+    if (onMetricsExplorerPage) {
+      // Let the Metrics Explorer page handle errors for runtime queries.
       // Individual components (e.g. a specific line chart or leaderboard) should display a localised error message.
       // NOTE: let's start with 400 errors, but we may want to include 500-level errors too.
       if (

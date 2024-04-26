@@ -12,6 +12,7 @@
   export let content: string;
   export let extensions: Extension[] = [];
   export let view: EditorView | undefined = undefined;
+  export let whenFocused = false;
 
   let container: HTMLElement;
 
@@ -28,7 +29,7 @@
           // syntax highlighting
           yaml(),
           // this will catch certain events and dispatch them to the parent
-          bindEditorEventsToDispatcher(dispatch),
+          bindEditorEventsToDispatcher(dispatch, whenFocused),
         ],
       }),
       parent: container,
@@ -54,4 +55,4 @@
   $: updateEditorContents(content);
 </script>
 
-<div class="contents" bind:this={container} />
+<div bind:this={container} class="contents" />

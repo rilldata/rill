@@ -21,7 +21,7 @@
 >
   <!-- the pl-[.875rem] is a fix to move this new element over a pinch.-->
   <h1
-    class="grid grid-flow-col justify-start gap-x-3 py-4 pl-[.75rem] items-center content-center"
+    class="grid grid-flow-col justify-start gap-x-3 pt-4 pb-2 pl-[.75rem] items-center content-center"
   >
     {#if mounted && $projectTitle.isSuccess}
       <a href="/">

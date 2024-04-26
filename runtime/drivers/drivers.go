@@ -12,14 +12,14 @@ import (
 // ErrNotFound indicates the resource wasn't found.
 var ErrNotFound = errors.New("driver: not found")
 
-// ErrDropNotSupported indicates the driver doesn't support dropping its state.
-var ErrDropNotSupported = errors.New("driver: drop not supported")
-
 // ErrNotImplemented indicates the driver doesn't support the requested operation.
 var ErrNotImplemented = errors.New("driver: not implemented")
 
 // ErrStorageLimitExceeded indicates the driver's storage limit was exceeded.
 var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
+
+// ErrNotNotifier indicates the driver cannot be used as a Notifier.
+var ErrNotNotifier = errors.New("driver: not a notifier")
 
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
@@ -32,29 +32,21 @@ func Register(name string, driver Driver) {
 	Drivers[name] = driver
 }
 
-// Open opens a new connection
-func Open(driver string, config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (Handle, error) {
+// Open opens a new connection.
+// If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
+// If instanceID is not empty, the connection is considered instance-specific and its As...() functions will only be invoked with the same instance ID.
+func Open(driver, instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(config, shared, client, logger)
+	conn, err := d.Open(instanceID, config, client, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return conn, nil
-}
-
-// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
-func Drop(driver string, config map[string]any, logger *zap.Logger) error {
-	d, ok := Drivers[driver]
-	if !ok {
-		return fmt.Errorf("unknown driver: %s", driver)
-	}
-
-	return d.Drop(config, logger)
 }
 
 // Driver represents an external service that Rill can connect to.
@@ -63,10 +55,8 @@ type Driver interface {
 	Spec() Spec
 
 	// Open opens a new handle.
-	Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (Handle, error)
-
-	// Drop removes all state in a handle. Drivers that do not support it should return ErrDropNotSupported.
-	Drop(config map[string]any, logger *zap.Logger) error
+	// If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
+	Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (Handle, error)
 
 	// HasAnonymousSourceAccess returns true if the driver can access the data identified by srcProps without any additional configuration.
 	HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error)
@@ -134,6 +124,10 @@ type Handle interface {
 	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.
 	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).
 	AsTransporter(from Handle, to Handle) (Transporter, bool)
+
+	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
+	// Examples: email notifier, slack notifier.
+	AsNotifier(properties map[string]any) (Notifier, error)
 }
 
 // PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.

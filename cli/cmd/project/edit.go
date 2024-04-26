@@ -37,7 +37,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// prompt for name from user
-				name = cmdutil.SelectPrompt("Select project", names, "")
+				name, err = cmdutil.SelectPrompt("Select project", names, "")
+				if err != nil {
+					return err
+				}
 			}
 			if name == "" {
 				return fmt.Errorf("pass project name as argument or with --project flag")
@@ -98,7 +101,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				req.ProdBranch = &prodBranch
 
-				public = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
+				public, err = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
+				if err != nil {
+					return err
+				}
 				req.Public = &public
 			}
 

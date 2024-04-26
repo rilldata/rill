@@ -1,24 +1,17 @@
 <script lang="ts">
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import { goto } from "$app/navigation";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import {
     useIsLocalFileConnector,
-    useSource,
     useSourceFromYaml,
-    useSourceRoutes,
   } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -32,20 +25,15 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
-  import { EntityType } from "../../entity-management/types";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../createModel";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
 
-  export let sourceName: string;
+  export let filePath: string;
 
-  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -56,48 +44,42 @@
 
   const { customDashboards } = featureFlags;
 
-  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
-  $: embedded = false; // TODO: remove embedded support
-  $: path = source?.spec?.properties?.path;
+  $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
   $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
+  $: tableName = source?.state?.table ?? "";
+  $: sourceName = $sourceQuery.data?.meta?.name?.name ?? "";
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceRoutes = useSourceRoutes($runtime.instanceId);
-  $: modelNames = useModelFileNames($runtime.instanceId);
-
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
-    sourceName,
+    sinkConnector as string,
+    "",
+    "",
+    tableName,
+    "dashboards",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
 
-  const handleDeleteSource = async (tableName: string) => {
-    await deleteFileArtifact(
-      runtimeInstanceId,
-      getFileAPIPathFromNameAndType(tableName, EntityType.Table),
-      EntityType.Table,
-      $sourceRoutes.data ?? [],
-    );
-  };
-
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appScreen?.type;
-      const newModelName = await createModelFromSource(
-        runtimeInstanceId,
-        $modelNames.data ?? [],
+      const previousActiveEntity = getScreenNameFromPage();
+      const [newModelPath, newModelName] = await createModelFromSource(
+        queryClient,
         sourceName,
-        embedded ? `"${path}"` : sourceName,
+        tableName,
+        "models",
+        true,
       );
-
+      await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
@@ -110,7 +92,7 @@
     }
   };
 
-  const onRefreshSource = async (tableName: string) => {
+  const onRefreshSource = async () => {
     const connector: string | undefined =
       source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
@@ -119,7 +101,12 @@
       return;
     }
     try {
-      await refreshSource(connector, tableName, runtimeInstanceId);
+      await refreshSource(
+        connector,
+        filePath,
+        $sourceQuery.data?.meta?.name?.name ?? "",
+        runtimeInstanceId,
+      );
     } catch (err) {
       // no-op
     }
@@ -128,17 +115,17 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName,
+    filePath,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
-  async function onReplaceSource(sourceName: string) {
-    await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
+  async function onReplaceSource() {
+    await replaceSourceWithUploadedFile(runtimeInstanceId, filePath);
     overlay.set(null);
   }
 </script>
 
-<NavigationMenuItem on:click={() => handleCreateModel()}>
+<NavigationMenuItem on:click={handleCreateModel}>
   <Model slot="icon" />
   Create new model
 </NavigationMenuItem>
@@ -185,31 +172,14 @@
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={() => onRefreshSource(sourceName)}>
+<NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
 </NavigationMenuItem>
 
 {#if isLocalFileConnector}
-  <NavigationMenuItem on:click={() => onReplaceSource(sourceName)}>
+  <NavigationMenuItem on:click={onReplaceSource}>
     <Import slot="icon" />
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
-
-<NavigationMenuSeparator />
-
-<NavigationMenuItem
-  on:click={() => {
-    dispatch("rename-asset");
-  }}
->
-  <EditIcon slot="icon" />
-  Rename...
-</NavigationMenuItem>
-
-<!-- FIXME: this should pop up an "are you sure?" modal -->
-<NavigationMenuItem on:click={() => handleDeleteSource(sourceName)}>
-  <Cancel slot="icon" />
-  Delete
-</NavigationMenuItem>

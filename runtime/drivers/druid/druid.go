@@ -2,48 +2,76 @@ package druid
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 
-	// Load calcite avatica driver for druid
-	_ "github.com/apache/calcite-avatica-go/v5"
+	// Load Druid database/sql driver
+	_ "github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 )
 
+func init() {
+	drivers.Register("druid", &driver{})
+	drivers.RegisterAsConnector("druid", &driver{})
+}
+
 var spec = drivers.Spec{
-	ConfigProperties: []drivers.PropertySchema{
+	DisplayName: "Druid",
+	Description: "Connect to Apache Druid.",
+	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/druid",
+	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			Description: "Druid connection string (using the Avatica protobuf endpoint)",
+			DisplayName: "Connection string",
+			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
 		},
 	},
-}
-
-func init() {
-	drivers.Register("druid", driver{})
-	drivers.RegisterAsConnector("druid", driver{})
+	ImplementsOLAP: true,
 }
 
 type driver struct{}
 
-// Open connects to Druid using Avatica.
-// Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("druid driver can't be shared")
-	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open druid connection")
+var _ drivers.Driver = &driver{}
+
+type configProperties struct {
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
+	LogQueries bool `mapstructure:"log_queries"`
+}
+
+// Opens a connection to Apache Druid using HTTP API.
+// Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("druid driver can't be shared")
 	}
 
-	db, err := sqlx.Open("avatica", dsn)
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("no DSN provided to open the connection")
+	}
+	dsn, err := correctURL(conf.DSN)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sqlx.Open("druid", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -58,30 +86,28 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 
 	conn := &connection{
 		db:     db,
-		config: config,
+		config: conf,
+		logger: logger,
 	}
 	return conn, nil
 }
 
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
-}
-
-func (d driver) Spec() drivers.Spec {
+func (d *driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+func (d *driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 type connection struct {
 	db     *sqlx.DB
-	config map[string]any
+	config *configProperties
+	logger *zap.Logger
 }
 
 // Driver implements drivers.Connection.
@@ -91,7 +117,9 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.config, m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -160,10 +188,34 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 func (c *connection) EstimateSize() (int64, bool) {
 	return 0, false
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
+}
+
+func correctURL(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(u.Path, "avatica-protobuf") {
+		avaticaUser := url.QueryEscape(u.Query().Get("avaticaUser"))
+		avaticaPassword := url.QueryEscape(u.Query().Get("avaticaPassword"))
+
+		if avaticaUser != "" {
+			dsn = u.Scheme + "://" + avaticaUser + ":" + avaticaPassword + "@" + u.Host + "/druid/v2/sql"
+		} else {
+			dsn = u.Scheme + "://" + u.Host + "/druid/v2/sql"
+		}
+	}
+	return dsn, nil
 }

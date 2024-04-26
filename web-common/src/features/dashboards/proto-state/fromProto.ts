@@ -16,6 +16,7 @@ import {
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
   BOOLEANS,
@@ -44,7 +45,6 @@ import type {
   MetricsViewSpecDimensionV2,
   StructTypeField,
   V1Expression,
-  V1MetricsView,
   V1MetricsViewSpec,
   V1StructType,
 } from "@rilldata/web-common/runtime-client";
@@ -66,9 +66,16 @@ const LeaderboardContextColumnReverseMap: Record<
     LeaderboardContextColumn.HIDDEN,
 };
 
+const TDDChartTypeReverseMap: Record<string, TDDChart> = {
+  default: TDDChart.DEFAULT,
+  stacked_bar: TDDChart.STACKED_BAR,
+  grouped_bar: TDDChart.GROUPED_BAR,
+  stacked_area: TDDChart.STACKED_AREA,
+};
+
 export function getDashboardStateFromUrl(
   urlState: string,
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
@@ -132,6 +139,9 @@ export function getDashboardStateFromProto(
     entity.lastDefinedScrubRange = fromTimeRangeProto(
       dashboard.scrubRange,
     ) as ScrubRange;
+  } else {
+    entity.selectedScrubRange = undefined;
+    entity.lastDefinedScrubRange = undefined;
   }
 
   if (dashboard.leaderboardMeasure) {
@@ -142,8 +152,12 @@ export function getDashboardStateFromProto(
   } else {
     entity.selectedComparisonDimension = undefined;
   }
-  if (dashboard.pinIndex !== undefined) {
-    entity.pinIndex = dashboard.pinIndex;
+  if (dashboard.expandedMeasure) {
+    entity.tdd = {
+      pinIndex: dashboard.pinIndex ?? -1,
+      chartType: chartTypeMap(dashboard.chartType),
+      expandedMeasureName: dashboard.expandedMeasure,
+    };
   }
 
   entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
@@ -375,6 +389,13 @@ function correctComparisonTimeRange(
   }
 }
 
+function chartTypeMap(chartType: string | undefined): TDDChart {
+  if (!chartType || !TDDChartTypeReverseMap[chartType]) {
+    return TDDChart.DEFAULT;
+  }
+  return TDDChartTypeReverseMap[chartType];
+}
+
 function fromTimeProto(timestamp: Timestamp) {
   return new Date(Number(timestamp.seconds));
 }
@@ -382,10 +403,7 @@ function fromTimeProto(timestamp: Timestamp) {
 function fromActivePageProto(
   dashboard: DashboardState,
 ): Partial<
-  Pick<
-    MetricsExplorerEntity,
-    "activePage" | "selectedDimensionName" | "expandedMeasureName"
-  >
+  Pick<MetricsExplorerEntity, "activePage" | "selectedDimensionName">
 > {
   switch (dashboard.activePage) {
     case DashboardState_ActivePage.UNSPECIFIED:
@@ -393,13 +411,11 @@ function fromActivePageProto(
       if (dashboard.selectedDimension) {
         return {
           activePage: DashboardState_ActivePage.DIMENSION_TABLE,
-          expandedMeasureName: undefined,
           selectedDimensionName: dashboard.selectedDimension,
         };
       } else if (dashboard.expandedMeasure) {
         return {
           activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
-          expandedMeasureName: dashboard.expandedMeasure,
           selectedDimensionName: undefined,
         };
       }
@@ -409,24 +425,16 @@ function fromActivePageProto(
 
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.PIVOT:
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
         activePage: dashboard.activePage,
-        expandedMeasureName: undefined,
         selectedDimensionName: undefined,
       };
 
     case DashboardState_ActivePage.DIMENSION_TABLE:
       return {
         activePage: dashboard.activePage,
-        expandedMeasureName: undefined,
         selectedDimensionName: dashboard.selectedDimension,
-      };
-
-    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
-      return {
-        activePage: dashboard.activePage,
-        expandedMeasureName: dashboard.expandedMeasure,
-        selectedDimensionName: undefined,
       };
   }
 }

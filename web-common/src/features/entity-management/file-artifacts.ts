@@ -11,12 +11,15 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
+import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type V1ParseError,
   V1ReconcileStatus,
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, type Readable, writable } from "svelte/store";
 
@@ -26,6 +29,14 @@ export class FileArtifact {
   public readonly name = writable<V1ResourceName | undefined>(undefined);
 
   public readonly reconciling = writable<boolean>(false);
+
+  /**
+   * Used to check if a file has finished renaming.
+   *
+   * Reconciler uses meta.renamedFrom internally to track it.
+   * It is unset once rename is complete.
+   */
+  public renaming = false;
 
   /**
    * Last time the state of the resource `kind/name` was updated.
@@ -46,6 +57,7 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
+    this.renaming = !!resource.meta?.renamedFrom;
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -62,7 +74,6 @@ export class FileArtifact {
   }
 
   public deleteResource() {
-    this.name.set(undefined);
     this.reconciling.set(false);
   }
 
@@ -101,9 +112,7 @@ export class FileArtifact {
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []
-          ).filter(
-            (e) => e.filePath && removeLeadingSlash(e.filePath) === this.path,
-          ),
+          ).filter((e) => e.filePath === this.path),
           ...(resource.data?.meta?.reconcileError
             ? [
                 {
@@ -173,6 +182,10 @@ export class FileArtifact {
     );
   }
 
+  public getEntityName() {
+    return get(this.name)?.name ?? extractFileName(this.path);
+  }
+
   private updateNameIfChanged(resource: V1Resource) {
     const curName = get(this.name);
     if (
@@ -210,23 +223,37 @@ export class FileArtifacts {
     }
 
     const files = await fetchMainEntityFiles(queryClient, instanceId);
-    const missingFiles = files.filter((f) => !this.artifacts[f]);
+    const missingFiles = files.filter(
+      (f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind,
+    );
     await Promise.all(
       missingFiles.map((filePath) =>
-        fetchFileContent(queryClient, instanceId, filePath).then(
-          (fileContents) => {
-            const artifact = new FileArtifact(filePath);
-            artifact.name.set(parseKindAndNameFromFile(filePath, fileContents));
-          },
-        ),
+        fetchFileContent(
+          queryClient,
+          instanceId,
+          removeLeadingSlash(filePath),
+        ).then((fileContents) => {
+          const artifact =
+            this.artifacts[filePath] ?? new FileArtifact(filePath);
+          const newName = parseKindAndNameFromFile(filePath, fileContents);
+          if (newName) artifact.name.set(newName);
+          this.artifacts[filePath] ??= artifact;
+        }),
       ),
     );
   }
 
-  public fileUpdated(filePath: string) {
-    // Handle new file added or exited edited without a valid resource
-    // TODO: fetch file and estimate name & kind once we have a structure on asset explorer
+  public async fileUpdated(filePath: string) {
+    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
+      return;
     this.artifacts[filePath] ??= new FileArtifact(filePath);
+    const fileContents = await fetchFileContent(
+      queryClient,
+      get(runtime).instanceId,
+      removeLeadingSlash(filePath),
+    );
+    const newName = parseKindAndNameFromFile(filePath, fileContents);
+    if (newName) this.artifacts[filePath].name.set(newName);
   }
 
   /**
@@ -237,31 +264,40 @@ export class FileArtifacts {
   }
 
   public updateArtifacts(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
   public updateReconciling(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
   public updateLastUpdated(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
+  }
+
+  public wasRenaming(resource: V1Resource) {
+    const finishedRename = !resource.meta?.renamedFrom;
+    return (
+      resource.meta?.filePaths?.some((filePath) => {
+        return this.artifacts[filePath].renaming && finishedRename;
+      }) ?? false
+    );
   }
 
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
   public deleteResource(resource: V1Resource) {
-    resource.meta?.filePaths?.map(removeLeadingSlash).forEach((filePath) => {
+    resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath]?.deleteResource();
     });
   }
@@ -269,9 +305,18 @@ export class FileArtifacts {
   // Selectors
 
   public getFileArtifact(filePath: string) {
-    filePath = removeLeadingSlash(filePath);
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     return this.artifacts[filePath];
+  }
+
+  public findFileArtifact(resKind: ResourceKind, resName: string) {
+    for (const filePath in this.artifacts) {
+      const name = get(this.artifacts[filePath].name);
+      if (name?.kind === resKind && name?.name === resName) {
+        return this.artifacts[filePath];
+      }
+    }
+    return undefined;
   }
 
   /**

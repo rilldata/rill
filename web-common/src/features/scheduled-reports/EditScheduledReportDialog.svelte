@@ -56,9 +56,11 @@
         reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
       recipients:
-        reportSpec.emailRecipients?.map((email) => ({
-          email: email,
-        })) ?? [],
+        reportSpec.notifiers
+          ?.find((n) => n.connector === "email")
+          ?.properties?.recipients?.map((email) => ({
+            email: email,
+          })) ?? [],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
@@ -96,7 +98,9 @@
               openProjectSubpath: (
                 reportSpec.annotations as V1ReportSpecAnnotations
               )["web_open_project_subpath"],
-              recipients: values.recipients.map((r) => r.email).filter(Boolean),
+              emailRecipients: values.recipients
+                .map((r) => r.email)
+                .filter(Boolean),
             },
           },
         });

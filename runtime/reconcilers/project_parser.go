@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -87,7 +88,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		r.C.Lock(ctx)
 		defer r.C.Unlock(ctx)
 
-		resources, err := r.C.List(ctx, "", false)
+		resources, err := r.C.List(ctx, "", "", false)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -173,6 +174,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
+		hasDuplicates := false
 		for _, e := range events {
 			if e.Dir {
 				continue
@@ -180,7 +182,32 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if parser.IsIgnored(e.Path) {
 				continue
 			}
+			if parser.IsSkippable(e.Path) {
+				// We do not get events for files in deleted/renamed directories.
+				// So we need to manually find paths we're tracking in the directory and add them to changedPaths.
+				//
+				// Note that e.Dir is always false for deletes, so we don't actually know if the path was a directory.
+				// Calling TrackedPathsInDir is safe even if the given path isn't a directory.
+				//
+				// NOTE: This is nested under IsSkippable as an optimization because IsSkippable is true for directories.
+				// This is pretty hacky and should be refactored (probably more fundamentally in the watcher itself).
+				if e.Type == runtimev1.FileEvent_FILE_EVENT_DELETE {
+					ps := parser.TrackedPathsInDir(e.Path)
+					if len(ps) > 0 {
+						changedPaths = append(changedPaths, ps...)
+						hasDuplicates = true
+					}
+					continue
+				}
+
+				continue
+			}
 			changedPaths = append(changedPaths, e.Path)
+		}
+
+		// Small optimization to avoid deduplicating if we know we didn't append to it.
+		if hasDuplicates {
+			changedPaths = arrayutil.Dedupe(changedPaths)
 		}
 
 		if len(changedPaths) == 0 {
@@ -348,7 +375,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 	var deleteResources []*runtimev1.Resource
 
 	// Pass over all existing resources in the catalog.
-	resources, err := r.C.List(ctx, "", false)
+	resources, err := r.C.List(ctx, "", "", false)
 	if err != nil {
 		return err
 	}
@@ -501,7 +528,10 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 // If existing is not nil, it compares values and only updates meta/spec values if they have changed (ensuring stable resource version numbers).
 func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
 	// Apply defaults
-	def = applySpecDefaults(inst, def)
+	def, err := applySpecDefaults(inst, def)
+	if err != nil {
+		return err
+	}
 
 	// Make resource spec to insert/update.
 	// res should be nil if no spec changes are needed.
@@ -614,7 +644,10 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 	}
 
 	// Apply defaults before comparing specs
-	def = applySpecDefaults(inst, def)
+	def, err := applySpecDefaults(inst, def)
+	if err != nil {
+		return false, err
+	}
 
 	// Check spec is the same
 	switch def.Name.Kind {
@@ -643,7 +676,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 	// NOTE: Not comparing owner and paths since changing those are allowed when renaming.
 
 	// Run rename
-	err := r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths)
+	err = r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths)
 	if err != nil {
 		return false, err
 	}
@@ -652,20 +685,26 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 }
 
 // applySpecDefaults applies instance-level default properties to a resource spec.
-func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) *compilerv1.Resource {
+func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) (*compilerv1.Resource, error) {
+	cfg, err := inst.Config()
+	if err != nil {
+		return nil, err
+	}
+
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
-		def.SourceSpec.StageChanges = inst.StageChanges
+		def.SourceSpec.StageChanges = cfg.StageChanges
 	case compilerv1.ResourceKindModel:
-		def.ModelSpec.StageChanges = inst.StageChanges
+		def.ModelSpec.StageChanges = cfg.StageChanges
 		if def.ModelSpec.Materialize == nil {
-			def.ModelSpec.Materialize = &inst.ModelDefaultMaterialize
+			def.ModelSpec.Materialize = &cfg.ModelDefaultMaterialize
 		}
-		def.ModelSpec.MaterializeDelaySeconds = inst.ModelMaterializeDelaySeconds
+		def.ModelSpec.MaterializeDelaySeconds = cfg.ModelMaterializeDelaySeconds
 	default:
 		// Nothing to do
 	}
-	return def
+
+	return def, nil
 }
 
 func equalResourceName(a, b *runtimev1.ResourceName) bool {

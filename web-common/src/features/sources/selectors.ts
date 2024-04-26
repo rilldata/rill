@@ -13,10 +13,7 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import {
-  getFilePathFromNameAndType,
-  getRouteFromName,
-} from "../entity-management/entity-mappers";
+import { getRouteFromName } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
@@ -57,46 +54,25 @@ export function useSourceFromYaml(instanceId: string, filePath: string) {
   }) as CreateQueryResult<SourceFromYaml>;
 }
 
-export function useIsSourceUnsaved(
-  instanceId: string,
-  sourceName: string,
-  // Include clientYAML in the function call to force the selector to recompute when it changes
-  clientYAML: string,
-) {
-  return createRuntimeServiceGetFile(
-    instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-    {
-      query: {
-        select: (data) => {
-          const serverYAML = data.blob;
-          return clientYAML !== serverYAML;
-        },
-      },
-    },
-  );
-}
 /**
  * This client-side YAML parsing is a rudimentary hack to check if the source is a local file.
  */
-export function useIsLocalFileConnector(
-  instanceId: string,
-  sourceName: string,
-) {
-  return createRuntimeServiceGetFile(
-    instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-    {
-      query: {
-        select: (data) => {
-          const serverYAML = data.blob;
-          const yaml = parse(serverYAML);
-          // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
-          return yaml?.type === "duckdb" && yaml?.sql?.includes("'data/");
-        },
+export function useIsLocalFileConnector(instanceId: string, filePath: string) {
+  return createRuntimeServiceGetFile(instanceId, filePath, {
+    query: {
+      select: (data) => {
+        const serverYAML = data.blob;
+        if (!serverYAML) return false;
+        const yaml = parse(serverYAML);
+        // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
+        return Boolean(
+          yaml?.type === "duckdb" && yaml?.sql?.includes("'data/"),
+        );
       },
+      enabled:
+        !!filePath && (filePath.endsWith(".yaml") || filePath.endsWith(".yml")),
     },
-  );
+  });
 }
 
 export type TableColumnsWithName = {

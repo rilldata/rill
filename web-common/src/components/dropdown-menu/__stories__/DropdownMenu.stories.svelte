@@ -2,9 +2,9 @@
   import { Meta, Story } from "@storybook/addon-svelte-csf";
   import * as DropdownMenu from "..";
 
-  import CopyIcon from "../../icons/CopyIcon.svelte";
-  import DashboardIcon from "../../icons/DashboardIcon.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import CopyIcon from "../../icons/CopyIcon.svelte";
+  import MetricsExplorerIcon from "../../icons/MetricsExplorerIcon.svelte";
 
   let subMenuOpen = false;
 </script>
@@ -34,7 +34,7 @@
         Option 1
       </DropdownMenu.Item>
       <DropdownMenu.Item>
-        <DashboardIcon className="w-4 h-4 mr-2" />
+        <MetricsExplorerIcon className="w-4 h-4 mr-2" />
         Option 2
       </DropdownMenu.Item>
     </DropdownMenu.Content>

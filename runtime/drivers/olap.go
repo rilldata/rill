@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -86,17 +87,19 @@ func (r *Result) Close() error {
 // Table lookups should be case insensitive.
 type InformationSchema interface {
 	All(ctx context.Context) ([]*Table, error)
-	Lookup(ctx context.Context, name string) (*Table, error)
+	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 
 // Table represents a table in an information schema.
 type Table struct {
-	Database        string
-	DatabaseSchema  string
-	Name            string
-	View            bool
-	Schema          *runtimev1.StructType
-	UnsupportedCols map[string]string
+	Database                string
+	DatabaseSchema          string
+	IsDefaultDatabase       bool
+	IsDefaultDatabaseSchema bool
+	Name                    string
+	View                    bool
+	Schema                  *runtimev1.StructType
+	UnsupportedCols         map[string]string
 }
 
 // IngestionSummary is details about ingestion
@@ -135,4 +138,81 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 		return ident
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
+}
+
+func (d Dialect) ConvertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
+	var str string
+	switch specifier {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		str = "MILLISECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		str = "SECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		str = "MINUTE"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		str = "HOUR"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		str = "DAY"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		str = "WEEK"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		str = "MONTH"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		str = "QUARTER"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		str = "YEAR"
+	}
+
+	if d == DialectClickHouse {
+		return strings.ToLower(str)
+	}
+	return str
+}
+
+// EscapeTable returns an esacped fully qualified table name
+func (d Dialect) EscapeTable(db, schema, table string) string {
+	var sb strings.Builder
+	if db != "" {
+		sb.WriteString(d.EscapeIdentifier(db))
+		sb.WriteString(".")
+	}
+	if schema != "" {
+		sb.WriteString(d.EscapeIdentifier(schema))
+		sb.WriteString(".")
+	}
+	sb.WriteString(d.EscapeIdentifier(table))
+	return sb.String()
+}
+
+func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (dimSelect, unnestClause string) {
+	colName := d.EscapeIdentifier(dim.Name)
+	if !dim.Unnest || d == DialectDruid {
+		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+	}
+
+	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := tempName("tbl")
+	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
+	if dim.Expression == "" {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+	}
+
+	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+}
+
+func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if dimension.Expression != "" {
+		return dimension.Expression
+	}
+	if dimension.Column != "" {
+		return d.EscapeIdentifier(dimension.Column)
+	}
+	// backwards compatibility for older projects that have not run reconcile on this dashboard
+	// in that case `column` will not be present
+	return d.EscapeIdentifier(dimension.Name)
+}
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
 }

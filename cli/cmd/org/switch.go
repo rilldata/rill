@@ -71,5 +71,5 @@ func SwitchSelectFlow(orgs []*adminv1.Organization) (string, error) {
 		return "", err
 	}
 
-	return cmdutil.SelectPrompt("Select default org.", orgNames, org), nil
+	return cmdutil.SelectPrompt("Select default org.", orgNames, org)
 }

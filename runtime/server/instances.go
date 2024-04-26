@@ -77,20 +77,17 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	inst := &drivers.Instance{
-		ID:                           req.InstanceId,
-		Environment:                  req.Environment,
-		OLAPConnector:                req.OlapConnector,
-		RepoConnector:                req.RepoConnector,
-		AdminConnector:               req.AdminConnector,
-		AIConnector:                  req.AiConnector,
-		Connectors:                   req.Connectors,
-		Variables:                    req.Variables,
-		Annotations:                  req.Annotations,
-		EmbedCatalog:                 req.EmbedCatalog,
-		WatchRepo:                    req.WatchRepo,
-		StageChanges:                 req.StageChanges,
-		ModelDefaultMaterialize:      req.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: req.ModelMaterializeDelaySeconds,
+		ID:             req.InstanceId,
+		Environment:    req.Environment,
+		OLAPConnector:  req.OlapConnector,
+		RepoConnector:  req.RepoConnector,
+		AdminConnector: req.AdminConnector,
+		AIConnector:    req.AiConnector,
+		Connectors:     req.Connectors,
+		Variables:      req.Variables,
+		Annotations:    req.Annotations,
+		EmbedCatalog:   req.EmbedCatalog,
+		WatchRepo:      req.WatchRepo,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -148,23 +145,20 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	inst := &drivers.Instance{
-		ID:                           req.InstanceId,
-		Environment:                  valOrDefault(req.Environment, oldInst.Environment),
-		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
-		ProjectOLAPConnector:         oldInst.ProjectOLAPConnector,
-		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
-		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
-		AIConnector:                  valOrDefault(req.AiConnector, oldInst.AIConnector),
-		Connectors:                   connectors,
-		ProjectConnectors:            oldInst.ProjectConnectors,
-		Variables:                    variables,
-		ProjectVariables:             oldInst.ProjectVariables,
-		Annotations:                  annotations,
-		EmbedCatalog:                 valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
-		WatchRepo:                    valOrDefault(req.WatchRepo, oldInst.WatchRepo),
-		StageChanges:                 valOrDefault(req.StageChanges, oldInst.StageChanges),
-		ModelDefaultMaterialize:      valOrDefault(req.ModelDefaultMaterialize, oldInst.ModelDefaultMaterialize),
-		ModelMaterializeDelaySeconds: valOrDefault(req.ModelMaterializeDelaySeconds, oldInst.ModelMaterializeDelaySeconds),
+		ID:                   req.InstanceId,
+		Environment:          valOrDefault(req.Environment, oldInst.Environment),
+		OLAPConnector:        valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
+		ProjectOLAPConnector: oldInst.ProjectOLAPConnector,
+		RepoConnector:        valOrDefault(req.RepoConnector, oldInst.RepoConnector),
+		AdminConnector:       valOrDefault(req.AdminConnector, oldInst.AdminConnector),
+		AIConnector:          valOrDefault(req.AiConnector, oldInst.AIConnector),
+		Connectors:           connectors,
+		ProjectConnectors:    oldInst.ProjectConnectors,
+		Variables:            variables,
+		ProjectVariables:     oldInst.ProjectVariables,
+		Annotations:          annotations,
+		EmbedCatalog:         valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
+		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -181,7 +175,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.drop_olap", boolPtrStr(req.DropOlap)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -190,7 +183,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropOlap)
+	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -272,23 +265,20 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	}
 
 	return &runtimev1.Instance{
-		InstanceId:                   inst.ID,
-		OlapConnector:                olapConnector,
-		RepoConnector:                inst.RepoConnector,
-		AdminConnector:               inst.AdminConnector,
-		AiConnector:                  inst.AIConnector,
-		CreatedOn:                    timestamppb.New(inst.CreatedOn),
-		UpdatedOn:                    timestamppb.New(inst.UpdatedOn),
-		Connectors:                   inst.Connectors,
-		ProjectConnectors:            inst.ProjectConnectors,
-		Variables:                    inst.Variables,
-		ProjectVariables:             inst.ProjectVariables,
-		Annotations:                  inst.Annotations,
-		EmbedCatalog:                 inst.EmbedCatalog,
-		WatchRepo:                    inst.WatchRepo,
-		StageChanges:                 inst.StageChanges,
-		ModelDefaultMaterialize:      inst.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: inst.ModelMaterializeDelaySeconds,
+		InstanceId:        inst.ID,
+		OlapConnector:     olapConnector,
+		RepoConnector:     inst.RepoConnector,
+		AdminConnector:    inst.AdminConnector,
+		AiConnector:       inst.AIConnector,
+		CreatedOn:         timestamppb.New(inst.CreatedOn),
+		UpdatedOn:         timestamppb.New(inst.UpdatedOn),
+		Connectors:        inst.Connectors,
+		ProjectConnectors: inst.ProjectConnectors,
+		Variables:         inst.Variables,
+		ProjectVariables:  inst.ProjectVariables,
+		Annotations:       inst.Annotations,
+		EmbedCatalog:      inst.EmbedCatalog,
+		WatchRepo:         inst.WatchRepo,
 	}
 }
 
@@ -305,11 +295,4 @@ func connectorsStrings(connectors []*runtimev1.Connector) []string {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
-}
-
-func boolPtrStr(b *bool) string {
-	if b == nil {
-		return "nil"
-	}
-	return fmt.Sprintf("%v", *b)
 }

@@ -1,9 +1,3 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-
-  export const hasUnsavedChanges = writable(false);
-</script>
-
 <script lang="ts">
   import {
     acceptCompletion,
@@ -53,37 +47,34 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
-
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-  export let content: string;
+  const dispatch = createEventDispatcher();
+  const schema: { [table: string]: string[] } = {};
+
+  export let blob: string;
+  export let latest: string;
   export let selections: SelectionRange[] = [];
   export let focusOnMount = false;
   export let autoSave = true;
-
-  const queryClient = useQueryClient();
-  const dispatch = createEventDispatcher();
-
-  const schema: { [table: string]: string[] } = {};
-
-  let lastSavedContent = content;
+  export let hasUnsavedChanges: boolean;
 
   let editor: EditorView;
   let editorContainerComponent: HTMLDivElement;
   let autocompleteCompartment = new Compartment();
 
-  $: hasUnsavedChanges.set(content !== lastSavedContent);
+  $: latest = blob;
 
   // Autocomplete: source tables
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
@@ -110,8 +101,8 @@
   }
 
   // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(content);
-  $: defaultTable = getTableNameFromFromClause(content, schema);
+  $: updateEditorContents(latest);
+  $: defaultTable = getTableNameFromFromClause(blob, schema);
   $: updateAutocompleteSources(schema, defaultTable);
   $: underlineSelection(selections || []);
 
@@ -178,7 +169,7 @@
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        doc: content,
+        doc: blob,
         extensions: [
           editorTheme(),
           lineNumbers(),
@@ -230,7 +221,7 @@
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              content = v.state.doc.toString();
+              latest = v.state.doc.toString();
 
               if (autoSave) saveContent();
             }
@@ -288,8 +279,7 @@
   }
 
   function saveContent() {
-    lastSavedContent = content;
-    dispatch("update", { content });
+    dispatch("save");
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -300,8 +290,7 @@
   }
 
   function revertContent() {
-    updateEditorContents(lastSavedContent);
-    $hasUnsavedChanges = false;
+    dispatch("revert");
   }
 </script>
 
@@ -310,10 +299,8 @@
 <section>
   <div class="editor-container">
     <div
-      class="size-full"
-      role="textbox"
-      tabindex="0"
       bind:this={editorContainerComponent}
+      class="size-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();
@@ -321,20 +308,22 @@
       on:keydown={() => {
         /** no op for now */
       }}
+      role="textbox"
+      tabindex="0"
     />
   </div>
 
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave}
-        <Button disabled={!$hasUnsavedChanges} on:click={saveContent}>
+        <Button disabled={!hasUnsavedChanges} on:click={saveContent}>
           <Check size="14px" />
           Save
         </Button>
 
         <Button
           type="text"
-          disabled={!$hasUnsavedChanges}
+          disabled={!hasUnsavedChanges}
           on:click={revertContent}
         >
           <UndoIcon size="14px" />
@@ -343,8 +332,8 @@
       {/if}
     </div>
     <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
-      <Switch small id="auto-save" bind:checked={autoSave} />
-      <Label for="auto-save" class="font-normal text-xs">Auto-save</Label>
+      <Switch bind:checked={autoSave} id="auto-save" small />
+      <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
     </div>
   </footer>
 </section>

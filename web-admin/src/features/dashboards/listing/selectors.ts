@@ -241,10 +241,13 @@ export function useDashboardsV2(
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
-        const dashboards = data.resources.filter((res) => res.metricsView);
-        return dashboards.map((db) => {
-          const refreshedOn = getDashboardRefreshedOn(db, data.resources);
-          return { resource: db, refreshedOn };
+        // Filter for Metrics Explorers and Custom Dashboards
+        const resources = data.resources.filter(
+          (res) => res.metricsView || res.dashboard,
+        );
+        return resources.map((resource) => {
+          const refreshedOn = getDashboardRefreshedOn(resource, data.resources);
+          return { resource, refreshedOn };
         });
       },
     },

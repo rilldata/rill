@@ -22,7 +22,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open sqlite connection")
@@ -47,19 +47,14 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	return &connection{
 		db:     dbx,
 		config: config,
-		shared: shared,
 	}, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
-		SourceProperties: []drivers.PropertySchema{
+		SourceProperties: []*drivers.PropertySpec{
 			{
 				Key:         "db",
 				Type:        drivers.StringPropertyType,
@@ -77,6 +72,8 @@ func (d driver) Spec() drivers.Spec {
 				Placeholder: "table",
 			},
 		},
+		ImplementsRegistry: true,
+		ImplementsCatalog:  true,
 	}
 }
 
@@ -91,7 +88,6 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type connection struct {
 	db     *sqlx.DB
 	config map[string]any
-	shared bool
 }
 
 var _ drivers.Handle = &connection{}
@@ -159,4 +155,9 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }

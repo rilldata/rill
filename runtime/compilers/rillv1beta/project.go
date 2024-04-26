@@ -67,7 +67,7 @@ func (c *Codec) InitEmpty(ctx context.Context, title string) error {
 
 func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
 	p := path.Join("sources", name+".yaml")
-	err := c.Repo.Delete(ctx, p)
+	err := c.Repo.Delete(ctx, p, false)
 	if err != nil {
 		return "", err
 	}

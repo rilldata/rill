@@ -19,7 +19,7 @@ func TestOpenDrop(t *testing.T) {
 	walpath := path + ".wal"
 	dsn := path
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -32,7 +32,7 @@ func TestOpenDrop(t *testing.T) {
 	require.NoError(t, err)
 	require.FileExists(t, path)
 
-	err = Driver{}.Drop(map[string]any{"dsn": dsn}, zap.NewNop())
+	err = Driver{}.Drop(map[string]any{"path": dsn}, zap.NewNop())
 	require.NoError(t, err)
 	require.NoFileExists(t, path)
 	require.NoFileExists(t, walpath)
@@ -43,7 +43,7 @@ func TestNoFatalErr(t *testing.T) {
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -105,7 +105,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 3}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 3}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")

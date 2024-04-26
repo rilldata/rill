@@ -50,6 +50,7 @@ export function dimensionTableSortedQueryBody(
       sortingSelectors.sortedAscending(dashData),
       filters,
       resolvedMeasureFilter.filter,
+      250,
     );
   };
 }
@@ -102,6 +103,7 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortedAscending(dashData),
       getFiltersForOtherDimensions(dashData)(dimensionName),
       resolvedMeasureFilter.filter,
+      8,
     );
 }
 
@@ -110,17 +112,19 @@ export function leaderboardSortedQueryOptions(
 ): (
   dimensionName: string,
   resolvedMeasureFilter: ResolvedMeasureFilter,
+  enabled: boolean,
 ) => { query: { enabled: boolean } } {
   return (
     dimensionName: string,
     resolvedMeasureFilter: ResolvedMeasureFilter,
+    enabled: boolean,
   ) => {
     const sortedQueryEnabled =
       timeControlsState(dashData).ready === true &&
       !!getFiltersForOtherDimensions(dashData)(dimensionName);
     return {
       query: {
-        enabled: sortedQueryEnabled && resolvedMeasureFilter.ready,
+        enabled: enabled && sortedQueryEnabled && resolvedMeasureFilter.ready,
       },
     };
   };

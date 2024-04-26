@@ -19,8 +19,10 @@ type Options struct {
 	DefaultProvisioner string
 	ExternalURL        string
 	VersionNumber      string
+	VersionCommit      string
 	MetricsProjectOrg  string
 	MetricsProjectName string
+	AutoscalerCron     string
 }
 
 type Service struct {
@@ -34,7 +36,9 @@ type Service struct {
 	opts             *Options
 	issuer           *auth.Issuer
 	VersionNumber    string
+	VersionCommit    string
 	metricsProjectID string
+	AutoscalerCron   string
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
@@ -96,7 +100,9 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		opts:             opts,
 		issuer:           issuer,
 		VersionNumber:    opts.VersionNumber,
+		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
+		AutoscalerCron:   opts.AutoscalerCron,
 	}, nil
 }
 

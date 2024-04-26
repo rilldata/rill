@@ -11,10 +11,11 @@ import (
 	"go.uber.org/zap"
 
 	"fmt"
+	"time"
+
 	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"time"
 )
 
 var mysqlInitStmt = `
@@ -101,12 +102,12 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 	_, err := db.ExecContext(ctx, mysqlInitStmt)
 	require.NoError(t, err)
 
-	handle, err := drivers.Open("mysql", map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, handle)
 
 	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 

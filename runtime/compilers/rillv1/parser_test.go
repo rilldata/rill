@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -1041,6 +1042,37 @@ email:
 annotations:
   foo: bar
 `,
+		`reports/r2.yaml`: `
+kind: report
+title: My Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+
+export:
+  format: csv
+  limit: 10000
+
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+  slack:
+    channels:
+      - reports
+    users:
+      - user_2@example.com
+
+annotations:
+  foo: bar
+`,
 	})
 
 	resources := []*Resource{
@@ -1054,12 +1086,36 @@ annotations:
 					Cron:      "0 * * * *",
 					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:       "MetricsViewToplist",
-				QueryArgsJson:   `{"metrics_view":"mv1"}`,
-				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:     10000,
-				EmailRecipients: []string{"jane@example.com"},
-				Annotations:     map[string]string{"foo": "bar"},
+				QueryName:     "MetricsViewToplist",
+				QueryArgsJson: `{"metrics_view":"mv1"}`,
+				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:   10000,
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}})),
+				}},
+				Annotations: map[string]string{"foo": "bar"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				Title: "My Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					RefUpdate: true,
+					Cron:      "0 * * * *",
+					TimeZone:  "America/Los_Angeles",
+				},
+				QueryName:     "MetricsViewToplist",
+				QueryArgsJson: `{"metrics_view":"mv1"}`,
+				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:   10000,
+				Notifiers: []*runtimev1.Notifier{
+					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
+					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},
+				},
+				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
 	}
@@ -1099,12 +1155,14 @@ query:
   for:
     user_email: benjamin@example.com
 
-email:
-  on_recover: true
-  renotify: true
-  renotify_after: 24h
-  recipients:
-    - benjamin@example.com
+on_recover: true
+renotify: true
+renotify_after: 24h
+
+notify:
+  email:
+    recipients:
+      - benjamin@example.com
 
 annotations:
   foo: bar
@@ -1128,22 +1186,21 @@ annotations:
 			AlertSpec: &runtimev1.AlertSpec{
 				Title: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
-					RefUpdate:     false,
-					TickerSeconds: 86400,
+					Cron:      "0 * * * *",
+					RefUpdate: false,
 				},
-				WatermarkInherit:          true,
-				IntervalsIsoDuration:      "PT1H",
-				IntervalsLimit:            10,
-				QueryName:                 "MetricsViewToplist",
-				QueryArgsJson:             `{"metrics_view":"mv1"}`,
-				QueryFor:                  &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
-				EmailRecipients:           []string{"jane@example.com"},
-				EmailOnRecover:            true,
-				EmailOnFail:               true,
-				EmailOnError:              false,
-				EmailRenotify:             true,
-				EmailRenotifyAfterSeconds: 24 * 60 * 60,
-				Annotations:               map[string]string{"foo": "bar"},
+				WatermarkInherit:     true,
+				IntervalsIsoDuration: "PT1H",
+				IntervalsLimit:       10,
+				QueryName:            "MetricsViewToplist",
+				QueryArgsJson:        `{"metrics_view":"mv1"}`,
+				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
+				NotifyOnRecover:      true,
+				NotifyOnFail:         true,
+				Renotify:             true,
+				RenotifyAfterSeconds: 24 * 60 * 60,
+				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
+				Annotations:          map[string]string{"foo": "bar"},
 			},
 		},
 	}
@@ -1266,14 +1323,13 @@ vega_lite: |%s
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
 kind: dashboard
-grid:
-  rows: 3
-  columns: 4
+columns: 4
+gap: 3
 components:
-  - chart: c1
-  - chart: c2
-    rows: 1
-    columns: 2
+- chart: c1
+- chart: c2
+  width: 1
+  height: 2
 `,
 	})
 
@@ -1306,11 +1362,11 @@ components:
 				{Kind: ResourceKindChart, Name: "c2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
-				GridColumns: 3,
-				GridRows:    4,
+				Columns: 4,
+				Gap:     3,
 				Components: []*runtimev1.DashboardComponent{
 					{Chart: "c1"},
-					{Chart: "c2", Rows: 1, Columns: 2},
+					{Chart: "c2", Width: 1, Height: 2},
 				},
 			},
 		},
@@ -1387,6 +1443,8 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true
@@ -1419,7 +1477,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")
@@ -1439,7 +1497,7 @@ func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 
 func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
-		err := repo.Delete(context.Background(), path)
+		err := repo.Delete(context.Background(), path, false)
 		require.NoError(t, err)
 	}
 }

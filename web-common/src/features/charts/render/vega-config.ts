@@ -1,3 +1,4 @@
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import {
   MainAreaColorGradientDark,
   MainAreaColorGradientLight,
@@ -6,27 +7,10 @@ import {
 import type { Config } from "vega-lite";
 
 const BarFill = "var(--color-primary-400)";
-const CategoryColors = [
-  "#75DAFF",
-  "#5FA9B9",
-  "#306B59",
-  "#3125AE",
-  "#757EFF",
-  "#875FB9",
-  "#F0A76A",
-  "#948476",
-  "#594159",
-  "#5774A1",
-  "#B7DAF0",
-  "#E29FE3",
-  "#FFCBDF",
-  "#BFF7E3",
-  "#FFFACB",
-];
 
 const defaultMarkColor = MainLineColor;
 const gridColor = "#d1d5db"; // gray-300
-const axisLabelColor = "#374151"; // gray-700
+const axisLabelColor = "#4b5563"; // gray-600
 
 export const getRillTheme: () => Config = () => ({
   mark: {
@@ -63,15 +47,17 @@ export const getRillTheme: () => Config = () => ({
   symbol: { fill: defaultMarkColor },
 
   axisY: {
+    orient: "right",
     gridColor: gridColor,
     gridDash: [2],
     tickColor: gridColor,
     domain: false,
+    tickSize: 0,
     labelFont: "Inter, sans-serif",
-    labelFontSize: 10,
-    labelFontWeight: 500,
+    labelFontSize: 11,
+    labelFontWeight: 400,
     labelColor: axisLabelColor,
-    labelPadding: 5,
+    labelPadding: 10,
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
     titleFontSize: 12,
@@ -86,9 +72,11 @@ export const getRillTheme: () => Config = () => ({
     tickSize: 0,
     domain: false,
     labelFont: "Inter, sans-serif",
-    labelFontSize: 10,
-    labelFontWeight: 500,
-    labelPadding: 5,
+    labelFontSize: 11,
+    labelFontWeight: 400,
+    labelPadding: 12,
+    labelOverlap: "parity",
+    labelSeparation: 5,
     labelColor: axisLabelColor,
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
@@ -100,6 +88,10 @@ export const getRillTheme: () => Config = () => ({
     strokeWidth: 0,
   },
   range: {
-    category: CategoryColors,
+    category: COMPARIONS_COLORS,
+  },
+  numberFormat: "s",
+  tooltipFormat: {
+    numberFormat: "d",
   },
 });

@@ -77,6 +77,7 @@ type Config struct {
 	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
 	MetricsProject           string                 `default:"" split_words:"true"`
+	AutoscalerCron           string                 `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -119,18 +120,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
-				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
-				os.Exit(1)
+				logger.Fatal("invalid frontend URL", zap.Error(err))
 			}
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
-				fmt.Printf("error: invalid external URL: %s\n", err.Error())
-				os.Exit(1)
+				logger.Fatal("invalid external URL", zap.Error(err))
 			}
 			_, err = url.Parse(conf.ExternalGRPCURL)
 			if err != nil {
-				fmt.Printf("error: invalid external grpc URL: %s\n", err.Error())
-				os.Exit(1)
+				logger.Fatal("invalid external grpc URL", zap.Error(err))
 			}
 
 			// Init observability
@@ -244,8 +242,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				DefaultProvisioner: conf.DefaultProvisioner,
 				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
 				VersionNumber:      ch.Version.Number,
+				VersionCommit:      ch.Version.Commit,
 				MetricsProjectOrg:  metricsProjectOrg,
 				MetricsProjectName: metricsProjectName,
+				AutoscalerCron:     conf.AutoscalerCron,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {

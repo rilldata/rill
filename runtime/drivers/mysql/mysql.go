@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -16,7 +17,15 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	SourceProperties: []drivers.PropertySchema{
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Placeholder: "username:password@tcp(example.com:3306)/my-db",
+			Secret:      true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -27,33 +36,27 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "dsn",
-			DisplayName: "MySQL Connection String",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "MySQL Connection String",
 			Required:    false,
-			Href:        "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
+			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
 			Hint:        "Either set this or pass --var connector.mysql.dsn=... to rill start",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "dsn",
-			Secret: true,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("mysql driver can't be shared")
+	}
 	// actual db connection is opened during query
 	return &connection{
 		config: config,
 	}, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -145,4 +148,9 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }

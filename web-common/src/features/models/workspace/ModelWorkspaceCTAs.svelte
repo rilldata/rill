@@ -8,17 +8,15 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
+  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
-  export let availableDashboards: Array<V1Resource>;
   export let modelName: string;
   export let suppressTooltips = false;
   export let modelHasError = false;
@@ -26,6 +24,10 @@
   export let collapse = false;
 
   const exportModelMutation = createExportTableMutation();
+
+  $: dashboardsQuery = useGetDashboardsForModel($runtime.instanceId, modelName);
+
+  $: availableDashboards = $dashboardsQuery.data ?? [];
 
   const onExport = async (format: V1ExportFormat) => {
     return $exportModelMutation.mutateAsync({
@@ -65,10 +67,10 @@
     </Button>
     <Menu
       dark
+      let:toggleFloatingElement
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       slot="floating-element"
-      let:toggleFloatingElement
     >
       <MenuItem
         on:select={() => {
@@ -109,16 +111,17 @@
 {:else if availableDashboards?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button
-      on:click={() => {
-        if (availableDashboards[0]?.meta?.name?.name) {
-          goto(`/dashboard/${availableDashboards[0].meta.name.name}`);
+      type="brand"
+      on:click={async () => {
+        if (availableDashboards[0]?.meta?.filePaths?.[0]) {
+          await goto(`/files/${availableDashboards[0].meta.filePaths[0]}`);
         }
       }}
     >
       <IconSpaceFixer pullLeft pullRight={collapse}>
         <Forward />
       </IconSpaceFixer>
-      <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
+      <ResponsiveButtonText {collapse}>Go to dashboard</ResponsiveButtonText>
     </Button>
     <TooltipContent slot="tooltip-content">
       Go to the dashboard associated with this model
@@ -131,11 +134,11 @@
       distance={8}
       alignment="end"
     >
-      <Button on:click={toggleFloatingElement}>
+      <Button on:click={toggleFloatingElement} type="brand">
         <IconSpaceFixer pullLeft pullRight={collapse}>
-          <Forward /></IconSpaceFixer
-        >
-        <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
+          <Forward />
+        </IconSpaceFixer>
+        <ResponsiveButtonText {collapse}>Go to dashboard</ResponsiveButtonText>
       </Button>
       <Menu
         dark
@@ -146,9 +149,9 @@
       >
         {#each availableDashboards as resource}
           <MenuItem
-            on:select={() => {
-              if (resource?.meta?.name?.name) {
-                goto(`/dashboard/${resource.meta.name.name}`);
+            on:select={async () => {
+              if (resource?.meta?.filePaths?.[0]) {
+                await goto(`/files/${resource.meta.filePaths[0]}`);
                 toggleFloatingElement();
               }
             }}

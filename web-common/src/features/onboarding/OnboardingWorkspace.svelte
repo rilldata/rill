@@ -70,7 +70,9 @@
   ];
 </script>
 
-<div class="pt-20 px-8 flex flex-col gap-y-6 items-center bg-gray-100 w-full">
+<div
+  class="pt-20 px-8 flex flex-col gap-y-6 items-center bg-gray-100 size-full"
+>
   <div class="text-center">
     <div class="font-bold">Getting started</div>
     <p>Building data intuition at every step of analysis</p>

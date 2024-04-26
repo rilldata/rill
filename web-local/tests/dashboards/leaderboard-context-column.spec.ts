@@ -1,14 +1,13 @@
 import { expect } from "@playwright/test";
-import { updateCodeEditor } from "../utils/commonHelpers";
+import { clickMenuButton } from "../utils/commonHelpers";
 import {
   createDashboardFromModel,
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  waitForDashboard,
+  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test } from "../utils/test";
-import { clickMenuButton } from "../utils/commonHelpers";
 
 test.describe("leaderboard context column", () => {
   test.beforeEach(async ({ page }) => {
@@ -24,10 +23,7 @@ test.describe("leaderboard context column", () => {
       `,
     });
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
-
-    // Open Edit Metrics
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    await createDashboardFromModel(page, "/models/AdBids_model.sql");
 
     // Close the navigation sidebar to give the code editor more space
     await page.getByRole("button", { name: "Close sidebar" }).click();
@@ -41,6 +37,7 @@ test.describe("leaderboard context column", () => {
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+  kind: metrics_view
   title: "AdBids_model_dashboard"
   model: "AdBids_model"
   default_time_range: ""
@@ -66,8 +63,7 @@ test.describe("leaderboard context column", () => {
       column: domain
       description: ""
       `;
-    await updateCodeEditor(page, metricsWithValidPercentOfTotal);
-    await waitForDashboard(page);
+    await updateAndWaitForDashboard(page, metricsWithValidPercentOfTotal);
 
     async function clickMenuItem(itemName: string, wait = true) {
       await clickMenuButton(page, itemName);
@@ -91,8 +87,8 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menu").waitFor({ state: "hidden" });
     }
 
-    // Go to dashboard
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
+    // Preview
+    await page.getByRole("button", { name: "Preview" }).click();
 
     // make sure "All time" is selected to clear any time comparison
     await interactWithTimeRangeMenu(page, async () => {

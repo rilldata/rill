@@ -15,7 +15,7 @@ export function clearAllFilters({ dashboard }: DashboardMutables) {
   dashboard.dimensionThresholdFilters = [];
   dashboard.temporaryFilterName = null;
   dashboard.dimensionFilterExcludeMode.clear();
-  dashboard.pinIndex = -1;
+  dashboard.tdd.pinIndex = -1;
 }
 
 export function setTemporaryFilterName(

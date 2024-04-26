@@ -3,7 +3,7 @@ package admin
 import (
 	"context"
 	"fmt"
-	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +25,7 @@ type createDeploymentOptions struct {
 	Provisioner    string
 	Annotations    DeploymentAnnotations
 	VersionNumber  string
+	VersionCommit  string
 	ProdBranch     string
 	ProdVariables  map[string]string
 	ProdOLAPDriver string
@@ -50,19 +51,21 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, fmt.Errorf("provisioner: %q is not in the provisioner set", opts.Provisioner)
 	}
 
-	// Resolve runtime version
 	runtimeVersion := opts.ProdVersion
-	if runtimeVersion == "latest" && opts.VersionNumber != "" {
-		// Resolve latest version from config
-		runtimeVersion = opts.VersionNumber
+
+	// Try to resolve 'latest' version
+	if runtimeVersion == "latest" {
+		if opts.VersionNumber != "" {
+			runtimeVersion = opts.VersionNumber
+		} else if opts.VersionCommit != "" {
+			runtimeVersion = opts.VersionCommit
+		}
 	}
 
-	// Verify version is a valid SemVer or 'latest'
-	if runtimeVersion != "latest" {
-		_, err := version.NewVersion(runtimeVersion)
-		if err != nil {
-			return nil, err
-		}
+	// Verify version is valid
+	err := s.ValidateRuntimeVersion(runtimeVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create instance ID and use the same ID for the provision ID
@@ -83,17 +86,13 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Prepare instance config
 	var connectors []*runtimev1.Connector
-	modelDefaultMaterialize, err := defaultModelMaterialize(opts.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
 
 	// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
 	connectors = append(connectors, &runtimev1.Connector{
 		Name: "duckdb",
 		Type: "duckdb",
+		// duckdb DSN will automatically be computed based on these parameters
 		Config: map[string]string{
-			"dsn":                    fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main")),
 			"cpu":                    strconv.Itoa(alloc.CPU),
 			"memory_limit_gb":        strconv.Itoa(alloc.MemoryGB),
 			"storage_limit_bytes":    strconv.FormatInt(alloc.StorageBytes, 10),
@@ -180,18 +179,16 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:              instanceID,
-		Environment:             "prod",
-		OlapConnector:           olapConnector,
-		RepoConnector:           "admin",
-		AdminConnector:          "admin",
-		AiConnector:             "admin",
-		Connectors:              connectors,
-		Variables:               opts.ProdVariables,
-		Annotations:             opts.Annotations.toMap(),
-		EmbedCatalog:            false,
-		StageChanges:            true,
-		ModelDefaultMaterialize: modelDefaultMaterialize,
+		InstanceId:     instanceID,
+		Environment:    "prod",
+		OlapConnector:  olapConnector,
+		RepoConnector:  "admin",
+		AdminConnector: "admin",
+		AiConnector:    "admin",
+		Connectors:     connectors,
+		Variables:      opts.ProdVariables,
+		Annotations:    opts.Annotations.toMap(),
+		EmbedCatalog:   false,
 	})
 	if err != nil {
 		err2 := p.Deprovision(ctx, provisionID)
@@ -220,15 +217,6 @@ type UpdateDeploymentOptions struct {
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
 	if opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without specifying a valid branch")
-	}
-
-	var modelDefaultMaterialize *bool
-	if opts.Variables != nil { // if variables are nil, it means they were not changed
-		val, err := defaultModelMaterialize(opts.Variables)
-		if err != nil {
-			return err
-		}
-		modelDefaultMaterialize = &val
 	}
 
 	// Update the provisioned runtime if the version has changed
@@ -293,11 +281,10 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:              depl.RuntimeInstanceID,
-		Connectors:              connectors,
-		Annotations:             opts.Annotations.toMap(),
-		Variables:               opts.Variables,
-		ModelDefaultMaterialize: modelDefaultMaterialize,
+		InstanceId:  depl.RuntimeInstanceID,
+		Connectors:  connectors,
+		Annotations: opts.Annotations.toMap(),
+		Variables:   opts.Variables,
 	})
 	if err != nil {
 		return err
@@ -333,7 +320,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	for _, depl := range depls {
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.Logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("hibernate: find project error", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
@@ -447,6 +434,25 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 	}
 }
 
+func (s *Service) ValidateRuntimeVersion(ver string) error {
+	// Verify version is a valid SemVer, a full Git commit hash or 'latest'
+	if ver != "latest" {
+		_, err := version.NewVersion(ver)
+		if err != nil {
+			// Not a valid SemVer, try as a full commit hash
+			matched, err := regexp.MatchString(`\b([a-f0-9]{40})\b`, ver)
+			if err != nil {
+				return err
+			}
+			if !matched {
+				return fmt.Errorf("not a valid version %q", ver)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (da *DeploymentAnnotations) toMap() map[string]string {
 	res := make(map[string]string, len(da.projAnnotations)+4)
 	for k, v := range da.projAnnotations {
@@ -457,29 +463,4 @@ func (da *DeploymentAnnotations) toMap() map[string]string {
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	return res
-}
-
-// defaultModelMaterialize determines whether to materialize models by default for deployed projects.
-// It defaults to true, but can be overridden with the __materialize_default variable.
-func defaultModelMaterialize(vars map[string]string) (bool, error) {
-	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
-	// Remove when we have a way to conditionally configure it using code files.
-
-	systemDefault := false
-
-	if vars == nil {
-		return systemDefault, nil
-	}
-
-	s, ok := vars["__materialize_default"]
-	if !ok {
-		return systemDefault, nil
-	}
-
-	val, err := strconv.ParseBool(s)
-	if err != nil {
-		return false, fmt.Errorf("invalid __materialize_default value %q: %w", s, err)
-	}
-
-	return val, nil
 }

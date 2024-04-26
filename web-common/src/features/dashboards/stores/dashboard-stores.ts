@@ -12,6 +12,7 @@ import {
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
@@ -21,7 +22,6 @@ import type {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
-  V1MetricsView,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -75,7 +75,7 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
 }
 
 function syncMeasures(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   const measuresMap = getMapFromArray(
@@ -133,7 +133,7 @@ function syncMeasures(
 }
 
 function syncDimensions(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
@@ -197,7 +197,7 @@ const metricViewReducers = {
   syncFromUrl(
     name: string,
     urlState: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
@@ -220,7 +220,7 @@ const metricViewReducers = {
     });
   },
 
-  sync(name: string, metricsView: V1MetricsView) {
+  sync(name: string, metricsView: V1MetricsViewSpec) {
     if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures
@@ -238,7 +238,7 @@ const metricViewReducers = {
         metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       } else if (metricsExplorer.selectedDimensionName) {
         metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-      } else if (metricsExplorer.expandedMeasureName) {
+      } else if (metricsExplorer.tdd.expandedMeasureName) {
         metricsExplorer.activePage =
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
       } else {
@@ -365,7 +365,7 @@ const metricViewReducers = {
 
   setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.expandedMeasureName = measureName;
+      metricsExplorer.tdd.expandedMeasureName = measureName;
       if (measureName) {
         metricsExplorer.activePage =
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
@@ -376,7 +376,7 @@ const metricViewReducers = {
       // If going into TDD view and already having a comparison dimension,
       // then set the pinIndex
       if (metricsExplorer.selectedComparisonDimension) {
-        metricsExplorer.pinIndex = getPinIndexForDimension(
+        metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
           metricsExplorer,
           metricsExplorer.selectedComparisonDimension,
         );
@@ -386,7 +386,13 @@ const metricViewReducers = {
 
   setPinIndex(name: string, index: number) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pinIndex = index;
+      metricsExplorer.tdd.pinIndex = index;
+    });
+  },
+
+  setTDDChartType(name: string, type: TDDChart) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.tdd.chartType = type;
     });
   },
 
@@ -422,7 +428,7 @@ const metricViewReducers = {
         setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
-      metricsExplorer.pinIndex = getPinIndexForDimension(
+      metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
         metricsExplorer,
         dimensionName,
       );

@@ -11,15 +11,19 @@ sidebar_position: 2
 
 Rill supports connecting to an existing Druid cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](build/olap/olap.md#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
+## Supported versions
+
+Rill supports connecting to Druid v26.0 or newer versions.
+
 ## Connection string (DSN)
 
-Rill connects to Druid using the [Avatica protobuf endpoint](https://druid.apache.org/docs/latest/api-reference/sql-jdbc/) and requires using a connection string of the following format: `http://<host>/druid/v2/sql/avatica-protobuf/`. This should be set in the `connector.druid.dsn` property in Rill.
+Rill connects to Druid using the [HTTP API](https://druid.apache.org/docs/latest/api-reference/sql-api) and requires using a connection string of the following format: `http://<user>:<password>@<host>:<port>/druid/v2/sql`. If `user` or `password` contain special characters they should be URL encoded (ie `p@ssword` -> `p%40ssword`). This should be set in the `connector.druid.dsn` property in Rill.
 
 As an example, this typically looks something like:
 
 ```bash
 
-connector.druid.dsn="https://<hostname>:<port>/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=<username>&avaticaPassword=<password>"
+connector.druid.dsn="https://user:password@localhost:8888/druid/v2/sql"
 
 ```
 

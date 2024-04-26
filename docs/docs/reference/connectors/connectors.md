@@ -24,6 +24,7 @@ We are always adding new connectors as part of our release cycle. If there's a s
 - [BigQuery](bigquery.md)
 - [Amazon Athena](athena.md)
 - [Amazon Redshift](redshift.md)
+- [Kafka](kafka.md)
 - [DuckDB / MotherDuck](motherduck.md)
 - [PostgreSQL](postgres.md)
 - [MySQL](mysql.md)

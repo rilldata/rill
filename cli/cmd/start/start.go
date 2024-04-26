@@ -79,7 +79,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
-				confirm := cmdutil.ConfirmPrompt(msg, "", defval)
+				confirm, err := cmdutil.ConfirmPrompt(msg, "", defval)
+				if err != nil {
+					return err
+				}
 				if !confirm {
 					ch.PrintfWarn("Aborted\n")
 					return nil

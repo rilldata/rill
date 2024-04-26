@@ -8,7 +8,7 @@ export interface Point {
   valueStyleClass?: string;
   labelColorClass?: string;
   labelStyleClass?: string;
-  pointColorClass?: string;
+  pointColor?: string;
   yOverride?: boolean;
   yOverrideLabel?: string;
   yOverrideStyleClass?: string;

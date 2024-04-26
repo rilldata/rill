@@ -35,6 +35,8 @@ type ColumnTimeseriesResult struct {
 
 type ColumnTimeseries struct {
 	Connector           string                                            `json:"connector"`
+	Database            string                                            `json:"database"`
+	DatabaseSchema      string                                            `json:"database_schema"`
 	TableName           string                                            `json:"table_name"`
 	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                            `json:"timestamp_column_name"`
@@ -233,7 +235,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 }
 
 func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
-	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	dateTruncSpecifier := dialect.ConvertToDateTruncSpecifier(timeRange.Interval)
 	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter := ""
 
@@ -242,12 +244,12 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 	var offset uint32
 	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
 		offset = 8 - q.FirstDayOfWeek
-		unit = "DAY"
+		unit = "day"
 	} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
 		offset = 13 - q.FirstMonthOfYear
-		unit = "MONTH"
+		unit = "month"
 	} else {
-		unit = "DAY" // never mind since offset is zero
+		unit = "day" // never mind since offset is zero
 	}
 	timeSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(?::DATETIME64, ?))))`
 	// start and end are not null else we would have an empty time range but column can still have null values
@@ -268,7 +270,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			),
 			number_range AS (
 				SELECT 
-					arrayJoin(range(interval)) AS number 
+					arrayJoin(range(interval::UInt64)) AS number 
 				FROM time_range
 			),
 			-- generate a time series column that has the intended range
@@ -281,7 +283,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			series AS (
 				SELECT
 					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-				FROM ` + safeName(q.TableName) + ` ` + filter + `
+				FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
@@ -299,7 +301,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 }
 
 func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTimeseries, temporaryTableName, tsAlias, timezone string, dialect drivers.Dialect) (string, []any) {
-	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	dateTruncSpecifier := drivers.DialectDuckDB.ConvertToDateTruncSpecifier(timeRange.Interval)
 	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter := ""
 
@@ -334,7 +336,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			series AS (
 			SELECT
 				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-			FROM ` + safeName(q.TableName) + ` ` + filter + `
+			FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
@@ -451,7 +453,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 ) ([]*runtimev1.TimeSeriesValue, error) {
 	safeTimestampColumnName := safeName(timestampColumnName)
 
-	rowCount, err := q.resolveRowCount(ctx, tableName, olap, priority)
+	rowCount, err := q.resolveRowCount(ctx, olap, priority)
 	if err != nil {
 		return nil, err
 	}
@@ -588,9 +590,9 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	return results, nil
 }
 
-func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, tableName string, olap drivers.OLAPStore, priority int) (int64, error) {
+func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLAPStore, priority int) (int64, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", safeName(tableName)),
+		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 		Priority: priority,
 	})
 	if err != nil {

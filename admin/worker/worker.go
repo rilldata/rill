@@ -57,7 +57,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
 	})
 	group.Go(func() error {
-		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, "CRON_TZ=America/Los_Angeles 0 0 * * 1") // Run the scaling job at 00:00 on every Monday.
+		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
 	})
 
 	// NOTE: Add new scheduled jobs here
@@ -85,7 +85,7 @@ func (w *Worker) schedule(ctx context.Context, name string, fn func(context.Cont
 	for {
 		err := w.runJob(ctx, name, fn)
 		if err != nil {
-			return err
+			w.logger.Error("Failed to run the job", zap.String("job_name", name), zap.Error(err))
 		}
 		select {
 		case <-ctx.Done():
@@ -111,7 +111,7 @@ func (w *Worker) scheduleCron(ctx context.Context, name string, fn func(context.
 		case <-time.After(waitDuration):
 			err := w.runJob(ctx, name, fn)
 			if err != nil {
-				return err
+				w.logger.Error("Failed to run the cronjob", zap.String("cronjob_name", name), zap.Error(err))
 			}
 		}
 	}

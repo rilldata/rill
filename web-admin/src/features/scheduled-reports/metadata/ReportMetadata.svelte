@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
+  import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
+  import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -47,6 +48,10 @@
         verbose: true,
       },
     );
+
+  $: emailNotifier =
+    $reportQuery.data &&
+    extractNotifier($reportQuery.data.resource.report.spec.notifiers, "email");
 
   // Actions
   const queryClient = useQueryClient();
@@ -161,9 +166,9 @@
     </div>
 
     <!-- Recipients -->
-    <EmailRecipients
-      emailRecipients={$reportQuery.data.resource.report.spec.emailRecipients}
-    />
+    {#if emailNotifier}
+      <MetadataList data={emailNotifier.recipients} label="Recipients" />
+    {/if}
   </div>
 {/if}
 

@@ -11,14 +11,27 @@
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
+  import { makeFullyQualifiedTableName } from "./olap-config";
 
-  export let fullyQualifiedTableName: string;
+  export let connector: string;
+  export let database: string = "";
+  export let databaseSchema: string;
+  export let table: string;
 
-  $: tableName = fullyQualifiedTableName.split(".")[1];
+  $: fullyQualifiedTableName = makeFullyQualifiedTableName(
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
-    tableName,
+    connector,
+    database,
+    databaseSchema,
+    table,
+    "dashboards",
     BehaviourEventMedium.Button,
     MetricsEventSpace.RightPanel,
   );
@@ -32,12 +45,12 @@
   <WorkspaceHeader
     editable={false}
     showInspectorToggle={false}
-    {...{ titleInput: fullyQualifiedTableName }}
+    titleInput={fullyQualifiedTableName}
   >
-    <svelte:fragment slot="cta" let:width={headerWidth}>
+    <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={createDashboardFromTable}>
+        <Button on:click={createDashboardFromTable} type="brand">
           <IconSpaceFixer pullLeft pullRight={collapse}>
             <Add />
           </IconSpaceFixer>

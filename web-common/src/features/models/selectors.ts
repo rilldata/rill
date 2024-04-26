@@ -9,7 +9,6 @@ import {
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1ListFilesResponse,
-  createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
@@ -57,7 +56,11 @@ export function useAllModelColumns(
 
     derived(
       allModels.data.map((r) =>
-        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
+        createTableColumnsWithName(
+          queryClient,
+          instanceId,
+          r.meta?.name?.name ?? "",
+        ),
       ),
       (modelColumnResponses) =>
         modelColumnResponses.filter((res) => !!res.data).map((res) => res.data),
@@ -79,20 +82,10 @@ export async function getModelNames(
       });
     },
   });
-  const modelNames = files.paths
-    ?.filter((path) => path.includes("models/"))
-    .map((path) => path.replace("/models/", "").replace(".sql", ""))
+  const modelNames = files.files
+    ?.filter((f) => !f.isDir && f.path?.includes("models/"))
+    .map((f) => f.path?.replace("/models/", "").replace(".sql", "") ?? "")
     // sort alphabetically case-insensitive
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-  return modelNames;
-}
-
-export function useModelFileIsEmpty(instanceId, modelName) {
-  return createRuntimeServiceGetFile(instanceId, `models/${modelName}.sql`, {
-    query: {
-      select(data) {
-        return data?.blob?.length === 0;
-      },
-    },
-  });
+  return modelNames ?? [];
 }

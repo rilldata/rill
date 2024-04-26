@@ -6,6 +6,7 @@ export enum EntityType {
   MetricsExplorer = "MetricsExplorer",
   Chart = "Chart",
   Dashboard = "Dashboard",
+  Unknown = "Unknown",
 }
 
 export enum StateType {

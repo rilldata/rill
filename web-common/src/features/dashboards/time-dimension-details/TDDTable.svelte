@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
+  import {
+    COMPARIONS_COLORS,
+    SELECTED_NOT_COMPARED_COLOR,
+  } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
   import type {
     PivotPos,
@@ -140,8 +143,8 @@
 
     if (comparing === "time") {
       let icon = "";
-      if (y == 1) icon = SelectedCheckmark("fill-primary-500");
-      else if (y == 2) icon = SelectedCheckmark("fill-gray-300");
+      if (y == 1) icon = SelectedCheckmark("var(--color-primary-500)");
+      else if (y == 2) icon = SelectedCheckmark(SELECTED_NOT_COMPARED_COLOR);
       return { icon, muted: false };
     }
 
@@ -151,8 +154,9 @@
       else
         return {
           icon: SelectedCheckmark(
-            "fill-" +
-              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300"),
+            visibleIdx < 11
+              ? COMPARIONS_COLORS[visibleIdx]
+              : SELECTED_NOT_COMPARED_COLOR,
           ),
           muted: false,
         };
@@ -173,7 +177,7 @@
     } else {
       element.classList.remove("border-b", "border-gray-200");
     }
-
+    const total = value.value !== undefined ? value.value : "...";
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
@@ -199,14 +203,13 @@
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${fontWeight}">${value.value}</div></div>`;
+        <div class="truncate text-xs ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >
-        ${value.value}
+        ${total}
         ${value.spark}
         </div>`;
-    else
-      return `<div class="text-xs font-normal text-right" >${value.value}</div>`;
+    else return `<div class="text-xs font-normal text-right" >${total}</div>`;
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {

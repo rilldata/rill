@@ -32,45 +32,50 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Azure Blob Storage",
-	Description:        "Connect to Azure Blob Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/azure",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Azure Blob Storage",
+	Description: "Connect to Azure Blob Storage.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/azure",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "azure_storage_account",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_sas_token",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_connection_string",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Blob URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "azure://container-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "account",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Account name",
 			Description: "Azure storage account name.",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "azure_storage_account",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_key",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_sas_token",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_connection_string",
-			Secret: true,
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 type driver struct{}
@@ -83,12 +88,13 @@ type configProperties struct {
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("azure driver does not support shared connections")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("azure driver can't be shared")
 	}
+
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -98,10 +104,6 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 		logger: logger,
 	}
 	return conn, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -114,12 +116,11 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
-	if err != nil {
-		return false, err
+	conn := &Connection{
+		config: &configProperties{},
+		logger: logger,
 	}
 
-	conn := c.(*Connection)
 	bucketObj, err := conn.openBucketWithNoCredentials(ctx, conf)
 	if err != nil {
 		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
@@ -214,6 +215,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.

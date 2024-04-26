@@ -6,10 +6,14 @@
 
   export let instanceId: string;
   export let connector: string;
-  export let tableName: string;
+  export let database: string = "";
+  export let databaseSchema: string = "";
+  export let table: string;
 
-  $: tableColumns = createQueryServiceTableColumns(instanceId, tableName, {
-    connector: connector,
+  $: tableColumns = createQueryServiceTableColumns(instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
   });
 
   $: unsupportedColumnsMap = $tableColumns.data?.unsupportedColumns;
@@ -22,7 +26,7 @@
 </script>
 
 <Tooltip distance={8} alignment="start">
-  <WarningIcon />
+  <WarningIcon className="text-gray-500" />
   <TooltipContent slot="tooltip-content">
     This table contains columns with unsupported data types:
 

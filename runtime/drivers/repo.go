@@ -16,12 +16,13 @@ type RepoStore interface {
 	// Root returns directory where artifacts are stored.
 	Root() string
 	CommitHash(ctx context.Context) (string, error)
-	ListRecursive(ctx context.Context, glob string) ([]string, error)
+	ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]DirEntry, error)
 	Get(ctx context.Context, path string) (string, error)
 	Stat(ctx context.Context, path string) (*RepoObjectStat, error)
 	Put(ctx context.Context, path string, reader io.Reader) error
+	MakeDir(ctx context.Context, path string) error
 	Rename(ctx context.Context, fromPath string, toPath string) error
-	Delete(ctx context.Context, path string) error
+	Delete(ctx context.Context, path string, force bool) error
 	Sync(ctx context.Context) error
 	Watch(ctx context.Context, cb WatchCallback) error
 }
@@ -36,6 +37,12 @@ type WatchEvent struct {
 
 type RepoObjectStat struct {
 	LastUpdated time.Time
+	IsDir       bool
 }
 
 var ErrFileAlreadyExists = errors.New("file already exists")
+
+type DirEntry struct {
+	Path  string
+	IsDir bool
+}

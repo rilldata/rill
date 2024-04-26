@@ -28,11 +28,12 @@
     {
       label: "Explore",
       Icon: Chart,
+      beta: false,
     },
     {
       label: "Pivot",
       Icon: Pivot,
-      beta: true,
+      beta: false,
     },
   ];
 
@@ -47,7 +48,8 @@
       selectedTab.label === "Pivot",
     );
 
-    behaviourEvent.fireNavigationEvent(
+    // We do not have behaviour events in cloud
+    behaviourEvent?.fireNavigationEvent(
       $metricsViewName,
       BehaviourEventMedium.Tab,
       MetricsEventSpace.Workspace,

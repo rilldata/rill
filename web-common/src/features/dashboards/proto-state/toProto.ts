@@ -16,6 +16,7 @@ import {
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -52,6 +53,13 @@ const LeaderboardContextColumnMap: Record<
     DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE,
   [LeaderboardContextColumn.HIDDEN]:
     DashboardState_LeaderboardContextColumn.HIDDEN,
+};
+
+const TDDChartTypeMap: Record<TDDChart, string> = {
+  [TDDChart.DEFAULT]: "default",
+  [TDDChart.STACKED_BAR]: "stacked_bar",
+  [TDDChart.GROUPED_BAR]: "grouped_bar",
+  [TDDChart.STACKED_AREA]: "stacked_area",
 };
 
 export function getProtoFromDashboardState(
@@ -98,8 +106,12 @@ export function getProtoFromDashboardState(
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
-  if (metrics.pinIndex !== undefined) {
-    state.pinIndex = metrics.pinIndex;
+
+  if (metrics.tdd.pinIndex !== undefined) {
+    state.pinIndex = metrics.tdd.pinIndex;
+  }
+  if (metrics.tdd.chartType !== undefined) {
+    state.chartType = TDDChartTypeMap[metrics.tdd.chartType];
   }
 
   if (metrics.allMeasuresVisible) {
@@ -300,7 +312,7 @@ function toActivePageProto(
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
         activePage: metrics.activePage,
-        expandedMeasure: metrics.expandedMeasureName,
+        expandedMeasure: metrics.tdd.expandedMeasureName,
       };
   }
 

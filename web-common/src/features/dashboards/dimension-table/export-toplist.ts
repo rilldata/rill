@@ -1,3 +1,4 @@
+import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -26,6 +27,8 @@ export default async function exportToplist({
     ctx.selectors.timeRangeSelectors.timeControlsState,
   );
   const measureFilters = await getResolvedMeasureFilters(ctx);
+  // CAST SAFETY: by definition, a dimension is selected when in the Dimension Table
+  const dimensionName = dashboard.selectedDimensionName as string;
 
   // api now expects measure names for which comparison are calculated
   let comparisonMeasures: string[] = [];
@@ -36,6 +39,15 @@ export default async function exportToplist({
     comparisonMeasures = [dashboard.leaderboardMeasureName];
   }
 
+  const where = sanitiseExpression(
+    getDimensionFilterWithSearch(
+      dashboard?.whereFilter,
+      dashboard?.dimensionSearchText ?? "",
+      dimensionName,
+    ),
+    measureFilters,
+  );
+
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
     data: {
@@ -45,7 +57,7 @@ export default async function exportToplist({
           instanceId: get(runtime).instanceId,
           metricsViewName,
           dimension: {
-            name: dashboard.selectedDimensionName,
+            name: dimensionName,
           },
           measures: [...dashboard.visibleMeasureKeys].map(
             (name) =>
@@ -69,7 +81,7 @@ export default async function exportToplist({
               sortType: getQuerySortType(dashboard.dashboardSortType),
             },
           ],
-          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
+          where,
           limit: undefined, // the backend handles export limits
           offset: "0",
         },

@@ -44,6 +44,10 @@
   const { adminServer } = featureFlags;
 
   const {
+    selectors: {
+      measures: { measureLabel },
+      dimensions: { getDimensionDisplayName },
+    },
     actions: {
       dimensionsFilter: { toggleDimensionFilterMode },
     },
@@ -52,7 +56,7 @@
   $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
+  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
   $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures
@@ -132,7 +136,7 @@
       ? [
           {
             id: dimensionName,
-            title: dimensionName,
+            title: $getDimensionDisplayName(dimensionName),
             type: PivotChipType.Dimension,
           },
         ]
@@ -151,7 +155,7 @@
         measure: [
           {
             id: expandedMeasureName,
-            title: expandedMeasureName,
+            title: $measureLabel(expandedMeasureName),
             type: PivotChipType.Measure,
           },
         ],
@@ -160,9 +164,7 @@
   }
 </script>
 
-<div
-  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11 w-full"
->
+<div class="tdd-header">
   <div class="flex gap-x-3 items-center font-normal text-gray-500">
     <div class="flex items-center gap-x-2">
       <div class="flex items-center gap-x-1">
@@ -267,3 +269,11 @@
   }}
   on:replace={() => createPivot()}
 />
+
+<style lang="postcss">
+  .tdd-header {
+    @apply grid justify-between grid-flow-col items-center mr-4;
+    @apply bg-slate-50 py-2 px-4 h-11;
+    @apply border border-slate-100 rounded-sm;
+  }
+</style>

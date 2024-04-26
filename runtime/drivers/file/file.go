@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Local file",
 	Description: "Import Locally Stored File.",
-	SourceProperties: []drivers.PropertySchema{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,
@@ -41,22 +42,30 @@ var spec = drivers.Spec{
 			Placeholder: "csv",
 		},
 	},
+	ImplementsFileStore: true,
 }
 
 type driver struct {
 	name string
 }
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("file driver can't be shared")
-	}
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open file connection")
+type configProperties struct {
+	DSN             string `mapstructure:"dsn"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("file driver can't be shared")
 	}
 
-	path, err := fileutil.ExpandHome(dsn)
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	path, err := fileutil.ExpandHome(conf.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -69,18 +78,13 @@ func (d driver) Open(config map[string]any, shared bool, client *activity.Client
 	c := &connection{
 		logger:       logger,
 		root:         absPath,
-		driverConfig: config,
+		driverConfig: conf,
 		driverName:   d.name,
-		shared:       shared,
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
 	}
 	return c, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -114,9 +118,8 @@ type connection struct {
 	logger *zap.Logger
 	// root should be absolute path
 	root         string
-	driverConfig map[string]any
+	driverConfig *configProperties
 	driverName   string
-	shared       bool
 
 	watcherMu    sync.Mutex
 	watcherCount int
@@ -125,7 +128,9 @@ type connection struct {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.driverConfig, m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -145,9 +150,6 @@ func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bo
 
 // AsRepoStore implements drivers.Connection.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
-	if c.shared {
-		return nil, false
-	}
 	return c, true
 }
 
@@ -194,6 +196,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // checkPath checks that the connection's root is a valid directory.

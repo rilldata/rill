@@ -9,6 +9,9 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers/slack"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
@@ -29,6 +32,16 @@ type ReportYAML struct {
 	Email struct {
 		Recipients []string `yaml:"recipients"`
 	} `yaml:"email"`
+	Notify struct {
+		Email struct {
+			Recipients []string `yaml:"recipients"`
+		} `yaml:"email"`
+		Slack struct {
+			Users    []string `yaml:"users"`
+			Channels []string `yaml:"channels"`
+			Webhooks []string `yaml:"webhooks"`
+		} `yaml:"slack"`
+	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
 }
 
@@ -96,14 +109,37 @@ func (p *Parser) parseReport(node *Node) error {
 		return fmt.Errorf(`missing required property "export.format"`)
 	}
 
-	// Validate recipients
-	if len(tmp.Email.Recipients) == 0 {
-		return fmt.Errorf(`missing required property "recipients"`)
+	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
-	for _, email := range tmp.Email.Recipients {
-		_, err := mail.ParseAddress(email)
-		if err != nil {
-			return fmt.Errorf("invalid recipient email address %q", email)
+
+	isLegacySyntax := len(tmp.Email.Recipients) > 0
+
+	// Validate recipients
+	if isLegacySyntax {
+		// Backward compatibility
+		for _, email := range tmp.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+	} else {
+		if len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 &&
+			len(tmp.Notify.Slack.Users) == 0 && len(tmp.Notify.Slack.Webhooks) == 0 {
+			return fmt.Errorf(`missing notification recipients`)
+		}
+		for _, email := range tmp.Notify.Email.Recipients {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
+		}
+		for _, email := range tmp.Notify.Slack.Users {
+			_, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("invalid recipient email address %q", email)
+			}
 		}
 	}
 
@@ -125,7 +161,49 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
-	r.ReportSpec.EmailRecipients = tmp.Email.Recipients
+
+	if isLegacySyntax {
+		// Backwards compatibility
+		// Email settings
+		notifier, err := structpb.NewStruct(map[string]any{
+			"recipients": pbutil.ToSliceAny(tmp.Email.Recipients),
+		})
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
+		r.ReportSpec.Notifiers = []*runtimev1.Notifier{
+			{
+				Connector:  "email",
+				Properties: notifier,
+			},
+		}
+	} else {
+		// Email settings
+		if len(tmp.Notify.Email.Recipients) > 0 {
+			props, err := structpb.NewStruct(map[string]any{
+				"recipients": pbutil.ToSliceAny(tmp.Notify.Email.Recipients),
+			})
+			if err != nil {
+				return fmt.Errorf("encountered invalid property type: %w", err)
+			}
+			r.ReportSpec.Notifiers = append(r.ReportSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  "email",
+				Properties: props,
+			})
+		}
+		// Slack settings
+		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
+			props, err := structpb.NewStruct(slack.EncodeProps(tmp.Notify.Slack.Users, tmp.Notify.Slack.Channels, tmp.Notify.Slack.Webhooks))
+			if err != nil {
+				return err
+			}
+			r.ReportSpec.Notifiers = append(r.ReportSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  "slack",
+				Properties: props,
+			})
+		}
+	}
+
 	r.ReportSpec.Annotations = tmp.Annotations
 
 	return nil

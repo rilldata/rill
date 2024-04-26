@@ -393,7 +393,7 @@ func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clon
 // List returns a list of resources of the specified kind.
 // If kind is empty, all resources are returned.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
-func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runtimev1.Resource, error) {
+func (c *Controller) List(ctx context.Context, kind, path string, clone bool) ([]*runtimev1.Resource, error) {
 	ctx, span := tracer.Start(ctx, "Controller.List", trace.WithAttributes(attribute.String("instance_id", c.InstanceID), attribute.String("kind", kind)))
 	defer span.End()
 	if err := c.checkRunning(); err != nil {
@@ -404,7 +404,7 @@ func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runt
 	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
-	return c.catalog.list(kind, false, clone)
+	return c.catalog.list(kind, path, false, clone)
 }
 
 // SubscribeCallback is the callback type passed to Subscribe.

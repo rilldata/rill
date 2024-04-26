@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -16,7 +17,14 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	SourceProperties: []drivers.PropertySchema{
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "dsn",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -27,34 +35,28 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "dsn",
-			DisplayName: "Snowflake Connection String",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			Href:        "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
+			DocsURL:     "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
 			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "dsn",
-			Secret: true,
-		},
-	},
+	ImplementsSQLStore: true,
 }
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("snowflake driver can't be shared")
+	}
 	// actual db connection is opened during query
 	return &connection{
 		config: config,
 		logger: logger,
 	}, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -147,4 +149,9 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }

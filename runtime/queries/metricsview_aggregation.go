@@ -40,8 +40,6 @@ type MetricsViewAggregation struct {
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
 
-var maxPivotCells = 1_000_000
-
 var _ runtime.Query = &MetricsViewAggregation{}
 
 func (q *MetricsViewAggregation) Key() string {
@@ -81,6 +79,11 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
+	cfg, err := rt.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return err
@@ -104,7 +107,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Build query
-	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security)
+	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security, cfg.PivotCellLimit)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -151,9 +154,9 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 					return err
 				}
 
-				if count > maxPivotCells/q.cols() {
+				if count > int(cfg.PivotCellLimit)/q.cols() {
 					res.Close()
-					return fmt.Errorf("PIVOT cells count exceeded %d", maxPivotCells)
+					return fmt.Errorf("PIVOT cells count exceeded %d", cfg.PivotCellLimit)
 				}
 			}
 			res.Close()
@@ -167,6 +170,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 			schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createPivotSQL(temporaryTableName, mv), nil)
 			if err != nil {
 				return err
+			}
+
+			if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
+				return fmt.Errorf("Limit exceeded %d", *q.Limit)
 			}
 
 			q.Result = &runtimev1.MetricsViewAggregationResponse{
@@ -189,10 +196,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer rows.Close()
 
-	return q.pivotDruid(ctx, rows, mv)
+	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit)
 }
 
-func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec, pivotCellLimit int64) error {
 	pivotDB, err := sqlx.Connect("duckdb", "")
 	if err != nil {
 		return err
@@ -243,7 +250,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				scanValues[i] = new(interface{})
 			}
 			count := 0
-			maxCount := maxPivotCells / q.cols()
+			maxCount := int(pivotCellLimit) / q.cols()
 
 			for rows.Next() {
 				err = rows.Scan(scanValues...)
@@ -255,11 +262,11 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				}
 				err = appender.AppendRow(appendValues...)
 				if err != nil {
-					return err
+					return fmt.Errorf("duckdb append failed: %w", err)
 				}
 				count++
 				if count > maxCount {
-					return fmt.Errorf("PIVOT cells count limit exceeded %d", maxPivotCells)
+					return fmt.Errorf("PIVOT cells count limit exceeded %d", pivotCellLimit)
 				}
 
 				if count >= batchSize {
@@ -296,6 +303,10 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 			return err
 		}
 
+		if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
+			return fmt.Errorf("Limit exceeded %d", *q.Limit)
+		}
+
 		q.Result = &runtimev1.MetricsViewAggregationResponse{
 			Schema: schema,
 			Data:   data,
@@ -308,6 +319,10 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
 	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
 	aliasesMap := make(map[string]string)
+	pivotMap := make(map[string]bool)
+	for _, p := range q.PivotOn {
+		pivotMap[p] = true
+	}
 	if q.Exporting {
 		for _, e := range mv.Measures {
 			aliasesMap[e.Name] = e.Name
@@ -322,10 +337,22 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 				aliasesMap[e.Name] = e.Label
 			}
 		}
+		for _, e := range q.Dimensions {
+			if e.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				aliasesMap[e.Name] = e.Name
+				if e.Alias != "" {
+					aliasesMap[e.Alias] = e.Alias
+				}
+			}
+		}
 
 		for _, d := range q.Dimensions {
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", safeName(d.Name), safeName(aliasesMap[d.Name])))
+				expr := safeName(d.Name)
+				if pivotMap[d.Name] {
+					expr = fmt.Sprintf("lower(%s)", safeName(d.Name))
+				}
+				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", expr, safeName(aliasesMap[d.Name])))
 			} else {
 				alias := d.Name
 				if d.Alias != "" {
@@ -351,7 +378,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	for i, p := range q.PivotOn {
 		pivots[i] = p
 		if q.Exporting {
-			pivots[i] = aliasesMap[p]
+			pivots[i] = safeName(aliasesMap[p])
 		}
 	}
 
@@ -376,20 +403,26 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
+		limit := *q.Limit
+		if limit == 0 {
+			limit = 100
 		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+		if q.Exporting && *q.Limit > 0 {
+			limit = *q.Limit + 1
+		}
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
 	}
 
-	//	PIVOT t ON year USING LAST(ap) ap;
+	// PIVOT (SELECT m1 as M1, d1 as D1, d2 as D2)
+	// ON D1 USING LAST(M1) as M1
+	// ORDER BY D2 LIMIT 10 OFFSET 0
 	selectList := "*"
 	if q.Exporting {
 		selectList = strings.Join(selectCols, ",")
 	}
 	return fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
 		temporaryTableName,              // 1
-		strings.Join(q.PivotOn, ", "),   // 2
+		strings.Join(pivots, ", "),      // 2
 		strings.Join(measureCols, ", "), // 3
 		orderClause,                     // 4
 		limitClause,                     // 5
@@ -427,6 +460,9 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	q.Exporting = true
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timeout exceeded")
+		}
 		return err
 	}
 
@@ -462,7 +498,7 @@ func (q *MetricsViewAggregation) cols() int {
 	return len(q.Dimensions) + len(q.Measures)
 }
 
-func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, pivotCellLimit int64) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
@@ -492,7 +528,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
+			dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
@@ -554,6 +590,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
+		if dialect == drivers.DialectDuckDB {
+			timeCol = fmt.Sprintf("%s::TIMESTAMP", timeCol)
+		}
 		clause, err := timeRangeClause(q.TimeRange, mv, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
@@ -611,10 +650,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
+		limit := *q.Limit
+		if limit == 0 {
+			limit = 100
 		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
 	}
 
 	var args []any
@@ -624,7 +664,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	var sql string
 	if len(q.PivotOn) > 0 {
-		l := maxPivotCells / q.cols()
+		l := int(pivotCellLimit) / q.cols()
 		limitClause = fmt.Sprintf("LIMIT %d", l+1)
 
 		if q.Offset != 0 {
@@ -633,14 +673,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 		// SELECT m1, m2, d1, d2 FROM t, LATERAL UNNEST(t.d1) tbl(unnested_d1_) WHERE d1 = 'a' GROUP BY d1, d2
 		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
-			strings.Join(selectCols, ", "),  // 1
-			safeName(mv.Table),              // 2
-			strings.Join(unnestClauses, ""), // 3
-			whereClause,                     // 4
-			groupClause,                     // 5
-			havingClause,                    // 6
-			orderClause,                     // 7
-			limitClause,                     // 8
+			strings.Join(selectCols, ", "),      // 1
+			escapeMetricsViewTable(dialect, mv), // 2
+			strings.Join(unnestClauses, ""),     // 3
+			whereClause,                         // 4
+			groupClause,                         // 5
+			havingClause,                        // 6
+			orderClause,                         // 7
+			limitClause,                         // 8
 		)
 	} else {
 		/*
@@ -669,7 +709,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
-			safeName(mv.Table),
+			escapeMetricsViewTable(dialect, mv),
 			strings.Join(unnestClauses, ""),
 			whereClause,
 			groupClause,
@@ -691,9 +731,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	selfJoinTableAlias := tempName("self_join")
 	nonNullValue := tempName("non_null")
 	for _, d := range q.Dimensions {
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", safeName(mv.Table), safeName(d.Name), selfJoinTableAlias, nonNullValue))
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
-		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(d.Name)))
+		name := d.Name
+		if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && d.Alias != "" {
+			name = d.Alias
+		}
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", escapeMetricsViewTable(dialect, mv), safeName(name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", escapeMetricsViewTable(dialect, mv), safeName(name)))
+		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(name)))
 	}
 	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
 		finalProjection = append(finalProjection, fmt.Sprintf("ANY_VALUE(%[1]s) as %[1]s", safeName(q.Measures[0].Name)))
@@ -743,7 +787,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 					OFFSET %[12]d
 				`,
 		strings.Join(selfJoinCols, ", "),      // 1
-		safeName(mv.Table),                    // 2
+		escapeMetricsViewTable(dialect, mv),   // 2
 		strings.Join(unnestClauses, ""),       // 3
 		whereClause,                           // 4
 		groupClause,                           // 5
@@ -776,6 +820,9 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 	var col string
 	if dim.Name == mv.TimeDimension {
 		col = safeName(dim.Name)
+		if dialect == drivers.DialectDuckDB {
+			col = fmt.Sprintf("%s::TIMESTAMP", col)
+		}
 	} else {
 		d, err := metricsViewDimension(mv, dim.Name)
 		if err != nil {
@@ -785,25 +832,25 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 			// TODO: we should add support for this in a future PR
 			return "", nil, fmt.Errorf("expression dimension not supported as time column")
 		}
-		col = metricsViewDimensionExpression(d)
+		col = dialect.MetricsViewDimensionExpression(d)
 	}
 
 	switch dialect {
 	case drivers.DialectDuckDB:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)::TIMESTAMP", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
+		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))::TIMESTAMP", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectDruid:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
 		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", col, convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
 	case drivers.DialectClickHouse:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}
