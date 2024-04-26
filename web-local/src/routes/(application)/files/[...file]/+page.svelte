@@ -112,8 +112,8 @@
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
     <div class="editor-pane size-full" slot="body">
-      <div class="editor flex flex-col border border-gray-200 rounded h-full">
-        <div class="grow flex bg-white overflow-y-auto rounded">
+      <div class="editor flex flex-col h-full">
+        <div class="grow flex bg-white overflow-y-auto">
           <Editor
             {blob}
             bind:latest
