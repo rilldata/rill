@@ -135,10 +135,10 @@ service RuntimeService {
     };
   }
 
-  // GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
-  rpc GenerateChartSpec(GenerateChartSpecRequest) returns (GenerateChartSpecResponse) {
+  // GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
+  rpc GenerateRenderer(GenerateRendererRequest) returns (GenerateRendererResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/chart",
+      post: "/v1/instances/{instance_id}/generate/renderer",
       body: "*"
     };
   }
@@ -491,15 +491,16 @@ message GenerateResolverResponse {
   google.protobuf.Struct resolver_properties = 2;
 }
 
-message GenerateChartSpecRequest {
+message GenerateRendererRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string prompt = 2;
   string resolver = 3;
   google.protobuf.Struct resolver_properties = 4;
 }
 
-message GenerateChartSpecResponse {
-  string vega_lite_spec = 2;
+message GenerateRendererResponse {
+  string renderer = 1;
+  google.protobuf.Struct renderer_properties = 2;
 }
 
 // **********

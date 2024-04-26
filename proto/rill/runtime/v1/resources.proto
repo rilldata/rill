@@ -29,7 +29,7 @@ message Resource {
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
     Theme theme = 11;
-    Chart chart = 13;
+    Component component = 13;
     Dashboard dashboard = 14;
     API api = 15;
   }
@@ -402,19 +402,20 @@ message ThemeSpec {
 
 message ThemeState {}
 
-message Chart {
-  ChartSpec spec = 1;
-  ChartState state = 2;
+message Component {
+  ComponentSpec spec = 1;
+  ComponentState state = 2;
 }
 
-message ChartSpec {
+message ComponentSpec {
   string title = 1;
   string resolver = 2;
   google.protobuf.Struct resolver_properties = 3;
-  string vega_lite_spec = 4;
+  string renderer = 4;
+  google.protobuf.Struct renderer_properties = 5;
 }
 
-message ChartState {}
+message ComponentState {}
 
 message Dashboard {
   DashboardSpec spec = 1;
@@ -431,12 +432,11 @@ message DashboardSpec {
 message DashboardState {}
 
 message DashboardComponent {
-  string chart = 1;
+  string component = 1;
   uint32 x = 2;
   uint32 y = 3;
   uint32 width = 4;
   uint32 height = 5;
-  string markdown = 6;
   uint32 font_size = 7;
 }
 

@@ -1288,7 +1288,7 @@ colors:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
-func TestChartsAndDashboard(t *testing.T) {
+func TestComponentsAndDashboard(t *testing.T) {
 	vegaLiteSpec := `
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
@@ -1305,16 +1305,16 @@ func TestChartsAndDashboard(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
-		`charts/c1.yaml`: fmt.Sprintf(`
-kind: chart
+		`components/c1.yaml`: fmt.Sprintf(`
+kind: component
 data:
   api: MetricsViewAggregation
   args:
     metrics_view: foo
 vega_lite: |%s
 `, vegaLiteSpec),
-		`charts/c2.yaml`: fmt.Sprintf(`
-kind: chart
+		`components/c2.yaml`: fmt.Sprintf(`
+kind: component
 data:
   api: MetricsViewAggregation
   args:
@@ -1326,47 +1326,61 @@ kind: dashboard
 columns: 4
 gap: 3
 components:
-- chart: c1
-- chart: c2
+- component: c1
+- component: c2
   width: 1
   height: 2
+- component:
+    markdown: Hello world!
 `,
 	})
 
 	resources := []*Resource{
 		{
-			Name:  ResourceName{Kind: ResourceKindChart, Name: "c1"},
-			Paths: []string{"/charts/c1.yaml"},
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
-			ChartSpec: &runtimev1.ChartSpec{
+			ComponentSpec: &runtimev1.ComponentSpec{
 				Resolver:           "api",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
-				VegaLiteSpec:       vegaLiteSpec,
+				Renderer:           "vega_lite",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindChart, Name: "c2"},
-			Paths: []string{"/charts/c2.yaml"},
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
+			Paths: []string{"/components/c2.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
-			ChartSpec: &runtimev1.ChartSpec{
+			ComponentSpec: &runtimev1.ComponentSpec{
 				Resolver:           "api",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
-				VegaLiteSpec:       vegaLiteSpec,
+				Renderer:           "vega_lite",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component2"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"contents": "Hello world!"})),
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindDashboard, Name: "d1"},
 			Paths: []string{"/dashboards/d1.yaml"},
 			Refs: []ResourceName{
-				{Kind: ResourceKindChart, Name: "c1"},
-				{Kind: ResourceKindChart, Name: "c2"},
+				{Kind: ResourceKindComponent, Name: "c1"},
+				{Kind: ResourceKindComponent, Name: "c2"},
+				{Kind: ResourceKindComponent, Name: "d1--component2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
 				Columns: 4,
 				Gap:     3,
 				Components: []*runtimev1.DashboardComponent{
-					{Chart: "c1"},
-					{Chart: "c2", Width: 1, Height: 2},
+					{Component: "c1"},
+					{Component: "c2", Width: 1, Height: 2},
+					{Component: "d1--component2"},
 				},
 			},
 		},
@@ -1500,11 +1514,4 @@ func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 		err := repo.Delete(context.Background(), path, false)
 		require.NoError(t, err)
 	}
-}
-
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
 }

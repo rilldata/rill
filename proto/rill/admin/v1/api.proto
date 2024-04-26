@@ -659,7 +659,7 @@ message GetIFrameRequest {
   }
   // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
   string kind = 4;
-  // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+  // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
   // Theme to use for the embedded resource.
   string theme = 12;

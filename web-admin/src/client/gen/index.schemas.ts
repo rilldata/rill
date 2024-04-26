@@ -159,7 +159,7 @@ export type AdminServiceGetIFrameBody = {
   attributes?: AdminServiceGetIFrameBodyAttributes;
   /** Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView". */
   kind?: string;
-  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart. */
+  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
