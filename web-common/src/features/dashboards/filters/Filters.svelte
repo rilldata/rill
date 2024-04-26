@@ -10,6 +10,8 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
+  import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let readOnly = false;
 
@@ -31,6 +33,9 @@
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
     },
   } = StateManagers;
+
+  const timeControlsStore = useTimeControlStore(StateManagers);
+  $: ({ selectedTimeRange, allTimeRange, showComparison } = $timeControlsStore);
 
   const metricsView = useMetricsView(StateManagers);
 
@@ -86,47 +91,41 @@
   {/if}
 
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
-    {#if !allDimensionFilters.length && !allMeasureFilters.length}
-      <div
-        in:fly|local={{ duration: 200, x: 8 }}
-        class="ui-copy-disabled grid items-center"
-        style:min-height={ROW_HEIGHT}
-      >
-        No filters selected
-      </div>
-    {:else}
-      {#each allDimensionFilters as { name, label, selectedValues } (name)}
-        {@const dimension = dimensions.find(
-          (d) => d.name === name || d.column === name,
-        )}
-        {@const dimensionName = dimension?.name || dimension?.column}
-        <div animate:flip={{ duration: 200 }}>
-          {#if dimensionName}
-            <DimensionFilter
-              {name}
-              {label}
-              {selectedValues}
-              on:remove={() => removeDimensionFilter(name)}
-              on:apply={(event) =>
-                toggleDimensionValueSelection(name, event.detail, true)}
-            />
-          {/if}
-        </div>
-      {/each}
-      {#each allMeasureFilters as { name, label, dimensionName, expr } (name)}
-        <div animate:flip={{ duration: 200 }}>
-          <MeasureFilter
+    {#if allTimeRange?.start && allTimeRange?.end}
+      <SuperPill {allTimeRange} {selectedTimeRange} {showComparison} />
+    {/if}
+    {#each allDimensionFilters as { name, label, selectedValues } (name)}
+      {@const dimension = dimensions.find(
+        (d) => d.name === name || d.column === name,
+      )}
+      {@const dimensionName = dimension?.name || dimension?.column}
+      <div animate:flip={{ duration: 200 }}>
+        {#if dimensionName}
+          <DimensionFilter
             {name}
             {label}
-            {dimensionName}
-            {expr}
-            on:remove={() => removeMeasureFilter(dimensionName, name)}
-            on:apply={({ detail: { dimension, oldDimension, expr } }) =>
-              handleMeasureFilterApply(dimension, name, oldDimension, expr)}
+            {selectedValues}
+            on:remove={() => removeDimensionFilter(name)}
+            on:apply={(event) =>
+              toggleDimensionValueSelection(name, event.detail, true)}
           />
-        </div>
-      {/each}
-    {/if}
+        {/if}
+      </div>
+    {/each}
+    {#each allMeasureFilters as { name, label, dimensionName, expr } (name)}
+      <div animate:flip={{ duration: 200 }}>
+        <MeasureFilter
+          {name}
+          {label}
+          {dimensionName}
+          {expr}
+          on:remove={() => removeMeasureFilter(dimensionName, name)}
+          on:apply={({ detail: { dimension, oldDimension, expr } }) =>
+            handleMeasureFilterApply(dimension, name, oldDimension, expr)}
+        />
+      </div>
+    {/each}
+
     {#if !readOnly}
       <FilterButton />
       <!-- if filters are present, place a chip at the end of the flex container 

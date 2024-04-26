@@ -48,7 +48,7 @@ export default [
       "@typescript-eslint/unbound-method": "warn",
       "@typescript-eslint/require-await": "warn",
       "@typescript-eslint/restrict-template-expressions": "warn",
-      "@typescript-eslint/no-redundant-type-constituents": "warn",
+      "@typescript-eslint/no-redundant-type-constituents": "off",
       "@typescript-eslint/no-unsafe-enum-comparison": "warn",
       "@typescript-eslint/no-misused-promises": "warn",
       "@typescript-eslint/no-duplicate-enum-values": "warn",

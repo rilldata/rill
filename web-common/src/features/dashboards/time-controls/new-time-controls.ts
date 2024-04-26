@@ -84,8 +84,8 @@ export type RillPreviousPeriod = RillPreviousPeriodTuple[number];
 type RillLatestTuple = typeof RILL_LATEST;
 export type RillLatest = RillLatestTuple[number];
 
-const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
-const ALL_TIME_RANGE_ALIAS = "inf" as const;
+export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
+export const ALL_TIME_RANGE_ALIAS = "inf" as const;
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
@@ -192,6 +192,8 @@ class MetricsTimeControls {
       this.applyISODuration(string);
     } else if (string === CUSTOM_TIME_RANGE_ALIAS) {
       throw new Error("Custom time range requires start and end dates");
+    } else {
+      throw new Error("Invalid time range");
     }
   };
 
@@ -272,9 +274,13 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 }
 
 export function deriveInterval(
-  name: NamedRange | ISODurationString,
+  name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
   anchor: DateTime,
 ) {
+  if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
+    throw new Error("Cannot derive interval for all time or custom range");
+  }
+
   if (isRillPeriodToDate(name)) {
     const period = RILL_TO_UNIT[name];
     return getPeriodToDate(anchor, period);
@@ -356,18 +362,43 @@ export function getDurationLabel(isoDuration: string): string {
   return `Last ${humaniseISODuration(isoDuration)}`;
 }
 
+export function getRangeLabel(range: NamedRange | ISODurationString): string {
+  if (isRillPeriodToDate(range) || isRillPreviousPeriod(range)) {
+    return RILL_TO_LABEL[range];
+  }
+
+  if (range === ALL_TIME_RANGE_ALIAS || range === CUSTOM_TIME_RANGE_ALIAS) {
+    return RILL_TO_LABEL[range];
+  }
+
+  if (isValidISODuration(range)) {
+    return getDurationLabel(range);
+  }
+
+  return range;
+}
+
 // BUCKETS FOR DISPLAYING IN DROPDOWN (yaml spec may make this unnecessary)
 
-type RangeBuckets = {
-  latest: string[];
-  previous: RillPreviousPeriod[];
-  periodToDate: RillPeriodToDate[];
+export type RangeBuckets = {
+  latest: { label: string; range: ISODurationString }[];
+  previous: { range: RillPreviousPeriod; label: string }[];
+  periodToDate: { range: RillPeriodToDate; label: string }[];
 };
 
 const defaultBuckets = {
-  previous: [...RILL_PREVIOUS_PERIOD],
-  latest: [...RILL_LATEST],
-  periodToDate: [...RILL_PERIOD_TO_DATE],
+  previous: RILL_PREVIOUS_PERIOD.map((range) => ({
+    range,
+    label: RILL_TO_LABEL[range],
+  })),
+  latest: RILL_LATEST.map((range) => ({
+    range,
+    label: getDurationLabel(range),
+  })),
+  periodToDate: RILL_PERIOD_TO_DATE.map((range) => ({
+    range,
+    label: RILL_TO_LABEL[range],
+  })),
 };
 
 export function bucketYamlRanges(
@@ -384,11 +415,11 @@ export function bucketYamlRanges(
       if (!range) return record;
 
       if (isRillPeriodToDate(range)) {
-        record.periodToDate.push(range);
+        record.periodToDate.push({ range, label: RILL_TO_LABEL[range] });
       } else if (isRillPreviousPeriod(range)) {
-        record.previous.push(range);
+        record.previous.push({ range, label: RILL_TO_LABEL[range] });
       } else {
-        record.latest.push(range);
+        record.latest.push({ range, label: getDurationLabel(range) });
       }
 
       return record;
