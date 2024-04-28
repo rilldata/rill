@@ -104,7 +104,12 @@ async function invalidateResource(
   )
     return;
 
-  if (fileArtifacts.wasRenaming(resource)) {
+  if (
+    fileArtifacts.wasRenaming(resource) ||
+    (fileArtifacts.isNew(resource) &&
+      (resource.meta.name?.kind === ResourceKind.Source ||
+        resource.meta.name?.kind === ResourceKind.Model))
+  ) {
     void queryClient.invalidateQueries(
       getConnectorServiceOLAPListTablesQueryKey(),
     );

@@ -41,7 +41,7 @@ func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) 
 	defer release()
 
 	for _, path := range files {
-		err := repo.Delete(ctx, path)
+		err := repo.Delete(ctx, path, false)
 		require.NoError(t, err)
 	}
 }

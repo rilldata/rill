@@ -44,8 +44,6 @@ const ResourceKindMap: Record<
     baseContent: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- @kind: model
-
 SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
@@ -127,8 +125,8 @@ gap: 2`,
 kind: theme
 
 colors:
-  primary: crimson 
-  secondary: lime 
+  primary: plum
+  secondary: violet 
 `,
   },
   [ResourceKind.Report]: {
