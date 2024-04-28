@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -182,9 +184,12 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		"rill.download_row_limit": "0", // 0 means unlimited
 		"rill.stage_changes":      "false",
 	}
-	for k, v := range opts.Variables {
-		vars[k] = v
+	maps.Copy(vars, opts.Variables)
+	envMap, err := godotenv.Read(filepath.Join(projectPath, ".env"))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
 	}
+	maps.Copy(vars, envMap)
 
 	// Prepare connectors for the instance
 	var connectors []*runtimev1.Connector

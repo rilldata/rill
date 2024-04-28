@@ -524,6 +524,12 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		if pathIsRillYAML(b) {
 			return 1
 		}
+		if pathIsDotEnv(a) {
+			return -1
+		}
+		if pathIsDotEnv(b) {
+			return 1
+		}
 		return strings.Compare(a, b)
 	})
 
