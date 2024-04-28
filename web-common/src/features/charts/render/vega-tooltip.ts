@@ -14,7 +14,7 @@ export class VegaLiteTooltipHandler {
   pad = 8;
   public valueFormatter: VLTooltipFormatter;
 
-  constructor(valueFormatter) {
+  constructor(valueFormatter: VLTooltipFormatter) {
     this.valueFormatter = valueFormatter;
   }
 
