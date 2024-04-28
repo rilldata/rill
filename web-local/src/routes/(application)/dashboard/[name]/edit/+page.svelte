@@ -77,9 +77,11 @@
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: isResourceLoading = resourceIsLoading($resourceQuery.data);
+  $: ({ data: resourceData, isFetching } = $resourceQuery);
+  $: isResourceLoading = resourceIsLoading(resourceData);
 
-  $: previewDisabled = !yaml.length || !!allErrors?.length || isResourceLoading;
+  $: previewDisabled =
+    !yaml.length || !!allErrors?.length || isResourceLoading || isFetching;
 
   $: if (!yaml?.length) {
     previewStatus = [
