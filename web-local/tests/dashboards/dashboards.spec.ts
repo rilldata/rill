@@ -89,17 +89,6 @@ test.describe("dashboard", () => {
     //   );
     // });
 
-    test.setTimeout(60000);
-
-    // disable animations
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          transition-duration: 0s !important;
-        }
-      `,
-    });
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "/models/AdBids_model.sql");
     await page.getByRole("button", { name: "Preview" }).click();
@@ -537,7 +526,7 @@ dimensions:
 
     await expect(page.getByText("~0%")).toBeVisible();
 
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    // await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // go back to the dashboard
 
