@@ -2,6 +2,7 @@ import {
   mouseLocationToBoundingRect,
   placeElement,
 } from "@rilldata/web-common/lib/place-element";
+import { View } from "svelte-vega";
 import { VLTooltipFormatter } from "../types";
 
 const TOOLTIP_ID = "rill-vg-tooltip";
@@ -15,10 +16,14 @@ export class VegaLiteTooltipHandler {
 
   constructor(valueFormatter) {
     this.valueFormatter = valueFormatter;
-    this.handleTooltip = this.handleTooltip.bind(this);
   }
 
-  handleTooltip(_view, event, _item, value) {
+  handleTooltip = (
+    _view: View,
+    event: MouseEvent,
+    _item: unknown,
+    value: unknown,
+  ) => {
     const existingEl = document.getElementById(TOOLTIP_ID);
     if (existingEl) {
       existingEl.remove();
@@ -50,5 +55,5 @@ export class VegaLiteTooltipHandler {
     });
 
     el.setAttribute("style", `top: ${topPos}px; left: ${leftPos}px`);
-  }
+  };
 }
