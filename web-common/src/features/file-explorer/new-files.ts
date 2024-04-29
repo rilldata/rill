@@ -50,8 +50,6 @@ const ResourceKindMap: Record<
     baseContent: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- @kind: model
-
 SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
@@ -98,22 +96,43 @@ sql:
 kind: chart
 
 data:
-  metrics_sql: |
-    SELECT advertiser_name, AGGREGATE(measure_2)
-    FROM Bids_Sample_Dash
-    GROUP BY advertiser_name
-    ORDER BY measure_2 DESC
-    LIMIT 20
+  sql: |
+    SELECT * FROM (VALUES 
+      ('Monday', 300),
+      ('Tuesday', 150),
+      ('Wednesday', 200),
+      ('Thursday', 400),
+      ('Friday', 650),
+      ('Saturday', 575),
+      ('Sunday', 500)
+    ) AS t(day_of_week, revenue)
 
 vega_lite: |
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "data": {"name": "table"},
-    "mark": "bar",
+    "data": { "name": "table" },
+    "mark": "line",
     "width": "container",
     "encoding": {
-      "x": {"field": "advertiser_name", "type": "nominal"},
-      "y": {"field": "measure_2", "type": "quantitative"}
+      "x": {
+        "field": "day_of_week",
+        "type": "ordinal",
+        "axis": { "title": "Day of the Week" },
+        "sort": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ]
+      },
+      "y": {
+        "field": "revenue",
+        "type": "quantitative",
+        "axis": { "title": "Revenue" }
+      }
     }
   }`,
   },

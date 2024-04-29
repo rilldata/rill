@@ -30,8 +30,6 @@ export async function createModelFromSource(
     blob: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- @kind: model
-
 select * from ${tableName}`,
     createOnly: true,
   });

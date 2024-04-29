@@ -10,14 +10,8 @@ import (
 )
 
 func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
-	latestVersion := "latest"
-
-	// Try to resolve 'latest' version
-	if w.admin.VersionNumber != "" {
-		latestVersion = w.admin.VersionNumber
-	} else if w.admin.VersionCommit != "" {
-		latestVersion = w.admin.VersionCommit
-	}
+	// Resolve 'latest' version
+	latestVersion := w.admin.ResolveLatestRuntimeVersion()
 
 	// Verify version is valid
 	err := w.admin.ValidateRuntimeVersion(latestVersion)
