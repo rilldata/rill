@@ -293,7 +293,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	restartController := diff != nil && diff.ModifiedDotEnv
+	// not setting restartController=true when diff is actually nil prevents infinite restarts
+	restartController := diff != nil && (diff.ModifiedDotEnv || diff.Reloaded)
 	// Treat reloads the same as a fresh parse (where there's no diff)
 	if diff != nil && diff.Reloaded {
 		diff = nil
@@ -359,9 +360,6 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 	}
 	inst.ProjectVariables = vars
 
-	// TODO: Passing "false" guards against infinite cancellations and restarts of the controller,
-	// but it also ignores potential consistency issues where we update connector config without evicting cached connctions,
-	// or where we update variables and don't re-evaluate all resources.
 	err = r.C.Runtime.EditInstance(ctx, inst, restartController)
 	if err != nil {
 		return err
