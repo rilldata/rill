@@ -7,10 +7,12 @@ import (
 )
 
 func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
+	var project string
+
 	removeCmd := &cobra.Command{
 		Use:   "remove <email-domain>",
 		Args:  cobra.ExactArgs(1),
-		Short: "Remove whitelisted email domain for the org",
+		Short: "Remove whitelisted email domain for the org or project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -21,6 +23,20 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			domain := args[0]
 
+			if project != "" {
+				_, err = client.RemoveProjectWhitelistedDomain(ctx, &adminv1.RemoveProjectWhitelistedDomainRequest{
+					Organization: ch.Org,
+					Project:      project,
+					Domain:       domain,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfWarn("New users with email addresses ending in %q will no longer automatically be added to project %q of %q. Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)\n", domain, project, ch.Org)
+				return nil
+			}
+
 			_, err = client.RemoveWhitelistedDomain(ctx, &adminv1.RemoveWhitelistedDomainRequest{
 				Organization: ch.Org,
 				Domain:       domain,
@@ -29,12 +45,13 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfWarn("New users with email addresses ending in %q will no longer automatically be added to %q. Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)\n", domain, ch.Org)
+			ch.PrintfWarn("New users with email addresses ending in %q will no longer automatically be added to organization %q. Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)\n", domain, ch.Org)
 			return nil
 		},
 	}
 
 	removeCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	removeCmd.Flags().StringVar(&project, "project", "", "Project")
 
 	return removeCmd
 }
