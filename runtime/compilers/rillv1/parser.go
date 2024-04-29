@@ -15,10 +15,17 @@ import (
 )
 
 // Built-in parser limits
-var (
+const (
 	maxFiles    = 10000
 	maxFileSize = 1 << 17 // 128kb
 )
+
+// IgnoredPaths is a list of paths that are ignored by the parser.
+var IgnoredPaths = []string{
+	"/tmp",
+	"/.git",
+	"/node_modules",
+}
 
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
@@ -240,10 +247,39 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return p.reparseExceptRillYAML(ctx, paths)
 }
 
-// IsIgnored returns true if the path will be ignored by Reparse.
-// It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
+// IsIgnored returns true if the path (and any files in nested directories) should be ignored.
 func (p *Parser) IsIgnored(path string) bool {
+	for _, dir := range IgnoredPaths {
+		if path == dir {
+			return true
+		}
+		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
+			return true
+		}
+	}
+	return false
+}
+
+// IsSkippable returns true if the path will be skipped by Reparse.
+// It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
+func (p *Parser) IsSkippable(path string) bool {
 	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+}
+
+// TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
+func (p *Parser) TrackedPathsInDir(dir string) []string {
+	// Ensure dir has a trailing path separator
+	if dir != "" && dir[len(dir)-1] != '/' {
+		dir += "/"
+	}
+	// Find paths
+	var paths []string
+	for path := range p.resourcesForPath {
+		if strings.HasPrefix(path, dir) {
+			paths = append(paths, path)
+		}
+	}
+	return paths
 }
 
 // reload resets the parser's state and then parses the entire project.
@@ -265,9 +301,16 @@ func (p *Parser) reload(ctx context.Context) error {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
 
-	paths := make([]string, len(files))
-	for i, file := range files {
-		paths[i] = file.Path
+	// Build paths slice
+	paths := make([]string, 0, len(files))
+	for _, file := range files {
+		// Filter out ignored files
+		// TODO: Incorporate the ignore list directly into the ListRecursive call.
+		if p.IsIgnored(file.Path) {
+			continue
+		}
+
+		paths = append(paths, file.Path)
 	}
 
 	// Parse all files
@@ -326,7 +369,10 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 		seenPaths[path] = true
 
-		// Skip files that aren't SQL or YAML or .env file
+		// Skip ignores files and files that aren't SQL or YAML or .env file
+		if p.IsIgnored(path) {
+			continue
+		}
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
@@ -335,12 +381,16 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 
 		// If a file exists at path, add it to the parse list
-		_, err := p.Repo.Stat(ctx, path)
+		info, err := p.Repo.Stat(ctx, path)
 		if err == nil {
+			if info.IsDir {
+				continue
+			}
 			parsePaths = append(parsePaths, path)
 		} else if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
+		// NOTE: Continue even if the file has been deleted because it may have associated state we need to clear.
 
 		// Check if path is .env and clear it (so we can re-parse it)
 		if isDotEnv {

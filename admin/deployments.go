@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,6 @@ type createDeploymentOptions struct {
 	ProjectID      string
 	Provisioner    string
 	Annotations    DeploymentAnnotations
-	VersionNumber  string
 	ProdBranch     string
 	ProdVariables  map[string]string
 	ProdOLAPDriver string
@@ -49,19 +49,17 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, fmt.Errorf("provisioner: %q is not in the provisioner set", opts.Provisioner)
 	}
 
-	// Resolve runtime version
 	runtimeVersion := opts.ProdVersion
-	if runtimeVersion == "latest" && opts.VersionNumber != "" {
-		// Resolve latest version from config
-		runtimeVersion = opts.VersionNumber
+
+	// Resolve 'latest' version
+	if runtimeVersion == "latest" {
+		runtimeVersion = s.ResolveLatestRuntimeVersion()
 	}
 
-	// Verify version is a valid SemVer or 'latest'
-	if runtimeVersion != "latest" {
-		_, err := version.NewVersion(runtimeVersion)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse version %q: %w", runtimeVersion, err)
-		}
+	// Verify version is valid
+	err := s.ValidateRuntimeVersion(runtimeVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create instance ID and use the same ID for the provision ID
@@ -316,7 +314,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	for _, depl := range depls {
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.Logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("hibernate: find project error", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
@@ -428,6 +426,35 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projName:        proj.Name,
 		projAnnotations: proj.Annotations,
 	}
+}
+
+func (s *Service) ResolveLatestRuntimeVersion() string {
+	if s.VersionNumber != "" {
+		return s.VersionNumber
+	}
+	if s.VersionCommit != "" {
+		return s.VersionCommit
+	}
+	return "latest"
+}
+
+func (s *Service) ValidateRuntimeVersion(ver string) error {
+	// Verify version is a valid SemVer, a full Git commit hash or 'latest'
+	if ver != "latest" {
+		_, err := version.NewVersion(ver)
+		if err != nil {
+			// Not a valid SemVer, try as a full commit hash
+			matched, err := regexp.MatchString(`\b([a-f0-9]{40})\b`, ver)
+			if err != nil {
+				return err
+			}
+			if !matched {
+				return fmt.Errorf("not a valid version %q", ver)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (da *DeploymentAnnotations) toMap() map[string]string {

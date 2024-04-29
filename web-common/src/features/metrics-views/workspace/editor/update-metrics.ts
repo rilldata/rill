@@ -18,6 +18,10 @@ export function createUpdateMetricsCallback(
 
   async function reconcileNewMetricsContent(blob: string) {
     const instanceId = get(runtime).instanceId;
+    // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
+    metricsExplorerStore.remove(metricsDefName);
+    // Reset local persisted dashboard state for the metrics view
+    createPersistentDashboardStore(metricsDefName).reset();
     await get(fileSaver).mutateAsync({
       instanceId,
       path: removeLeadingSlash(filePath),
@@ -26,10 +30,6 @@ export function createUpdateMetricsCallback(
         create: false,
       },
     });
-    // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
-    metricsExplorerStore.remove(metricsDefName);
-    // Reset local persisted dashboard state for the metrics view
-    createPersistentDashboardStore(metricsDefName).reset();
   }
 
   return function updateMetrics(event) {

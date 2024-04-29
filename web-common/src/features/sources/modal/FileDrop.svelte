@@ -64,7 +64,7 @@
           EntityType.Table,
         );
         await checkSourceImported(queryClient, newFilePath);
-        await goto(`/files/${newFilePath}`);
+        await goto(`/files${newFilePath}`);
       } catch (err) {
         console.error(err);
       }

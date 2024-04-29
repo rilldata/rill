@@ -21,3 +21,23 @@ export function makeFullyQualifiedTableName(
       throw new Error(`Unsupported OLAP connector: ${connector}`);
   }
 }
+
+export function makeTablePreviewHref(
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  table: string,
+): string {
+  switch (connector) {
+    case "clickhouse":
+      return `/connector/clickhouse/${databaseSchema}/${table}`;
+    case "druid":
+      return `/connector/druid/${databaseSchema}/${table}`;
+    case "duckdb":
+      return `/connector/duckdb/${database}/${databaseSchema}/${table}`;
+    case "pinot":
+      return `/connector/pinot/${table}`;
+    default:
+      throw new Error(`Unsupported connector: ${connector}`);
+  }
+}

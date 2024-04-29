@@ -1,4 +1,8 @@
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import type {
+  V1GetResourceResponse,
+  V1ListResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
 import type { Page } from "playwright";
 
 export enum TestEntityType {
@@ -7,10 +11,13 @@ export enum TestEntityType {
   Dashboard = "dashboard",
 }
 
-export async function openEntityMenu(page: Page, fileName: string) {
-  const entityLocator = getEntityLink(page, fileName);
+export async function openFileNavEntryContextMenu(
+  page: Page,
+  filePath: string,
+) {
+  const entityLocator = getFileNavEntry(page, filePath);
   await entityLocator.hover();
-  await entityLocator.getByLabel(`${fileName} actions menu trigger`).click();
+  await entityLocator.getByLabel(`${filePath} actions menu trigger`).click();
 }
 
 export async function clickModalButton(page: Page, text: string) {
@@ -42,8 +49,8 @@ export async function waitForProfiling(
   );
 }
 
-export function getEntityLink(page: Page, name: string) {
-  return page.getByLabel(`${name} Nav Entry`);
+export function getFileNavEntry(page: Page, filePath: string) {
+  return page.getByLabel(`${filePath} Nav Entry`);
 }
 
 /**
@@ -74,17 +81,18 @@ export async function wrapRetryAssertion(
   if (lastError) throw lastError;
 }
 
-export async function gotoEntity(page: Page, name: string) {
-  await getEntityLink(page, name).click();
+export async function goToFile(page: Page, filePath: string) {
+  const link = page.locator(`a[id="${filePath}-nav-link"]`);
+  await link.click();
 }
 
-export async function renameEntityUsingMenu(
+export async function renameFileUsingMenu(
   page: Page,
-  fileName: string,
+  filePath: string,
   toFileName: string,
 ) {
   // open context menu and click rename
-  await openEntityMenu(page, fileName);
+  await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Rename...");
 
   // wait for rename modal to open
@@ -102,18 +110,18 @@ export async function renameEntityUsingMenu(
   ]);
 }
 
-export async function renameEntityUsingTitle(page: Page, toName: string) {
+export async function renameFileUsingTitle(page: Page, toName: string) {
   await page.locator("#model-title-input").fill(toName);
   await page.keyboard.press("Enter");
 }
 
-export async function deleteEntity(page: Page, name: string) {
+export async function deleteFile(page: Page, filePath: string) {
   // open context menu and click rename
-  await openEntityMenu(page, name);
+  await openFileNavEntryContextMenu(page, filePath);
   await Promise.all([
     page.waitForResponse(
       (response) =>
-        response.url().includes(name) &&
+        response.url().includes(filePath) &&
         response.request().method() === "DELETE",
     ),
     clickMenuButton(page, "Delete"),
@@ -136,30 +144,27 @@ export async function waitForValidResource(
   kind: string,
 ) {
   await page.waitForResponse(async (response) => {
-    if (
-      response
-        .url()
-        .includes(
-          `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
-        )
-    ) {
-      // try and check get a single resource response
+    const responseUrl = response.url();
+    const getResourceRequest = responseUrl.includes(
+      `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
+    );
+
+    const listResourceRequest = responseUrl.includes(
+      `/v1/instances/default/resource?name.kind=${kind}`,
+    );
+
+    if (getResourceRequest) {
       try {
-        const resp = JSON.parse((await response.body()).toString());
+        const resp = (await response.json()) as V1GetResourceResponse;
         return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
       } catch (err) {
         return false;
       }
-    } else if (
-      response
-        .url()
-        .includes(`/v1/instances/default/resource?name.kind=${kind}`)
-    ) {
-      // try and check get all resources response
+    } else if (listResourceRequest) {
       try {
-        const resp = JSON.parse((await response.body()).toString());
+        const resp = (await response.json()) as V1ListResourcesResponse;
         return (
-          resp.resources.find((r) => r.meta?.name === name)?.meta
+          resp.resources?.find((r) => r.meta?.name === name)?.meta
             ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
         );
       } catch (err) {

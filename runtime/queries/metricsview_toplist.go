@@ -196,7 +196,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	}
 
 	var selectCols []string
-	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
+	dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 	selectCols = append(selectCols, dimSel)
 
 	for _, m := range ms {
@@ -223,7 +223,11 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		clause, clauseArgs, err := builder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}
@@ -240,7 +244,12 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+			having:  true,
+		}
+		havingClause, havingClauseArgs, err = builder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}

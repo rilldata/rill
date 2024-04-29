@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 
-	"github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -11,18 +10,13 @@ import (
 )
 
 func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
-	// Resolve latest version
-	latestVersion := "latest"
-	if w.admin.VersionNumber != "" {
-		latestVersion = w.admin.VersionNumber
-	}
+	// Resolve 'latest' version
+	latestVersion := w.admin.ResolveLatestRuntimeVersion()
 
-	// Verify latest version is a valid SemVer or 'latest'
-	if latestVersion != "latest" {
-		_, err := version.NewVersion(latestVersion)
-		if err != nil {
-			return err
-		}
+	// Verify version is valid
+	err := w.admin.ValidateRuntimeVersion(latestVersion)
+	if err != nil {
+		return err
 	}
 
 	// Iterate over batches of projects with 'latest' version

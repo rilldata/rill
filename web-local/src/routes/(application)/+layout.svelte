@@ -11,8 +11,13 @@
   import PreparingImport from "@rilldata/web-common/features/sources/modal/PreparingImport.svelte";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
+  import { page } from "$app/stores";
 
   let showDropOverlay = false;
+
+  $: ({
+    url: { pathname },
+  } = $page);
 
   function isEventWithFiles(event: DragEvent) {
     let types = event?.dataTransfer?.types;
@@ -31,7 +36,9 @@
     if (isEventWithFiles(e)) showDropOverlay = true;
   }}
 >
-  <Navigation />
+  {#if pathname !== "/welcome"}
+    <Navigation />
+  {/if}
   <section class="size-full overflow-hidden">
     <slot />
   </section>

@@ -104,7 +104,12 @@ async function invalidateResource(
   )
     return;
 
-  if (fileArtifacts.wasRenaming(resource)) {
+  if (
+    fileArtifacts.wasRenaming(resource) ||
+    (fileArtifacts.isNew(resource) &&
+      (resource.meta.name?.kind === ResourceKind.Source ||
+        resource.meta.name?.kind === ResourceKind.Model))
+  ) {
     void queryClient.invalidateQueries(
       getConnectorServiceOLAPListTablesQueryKey(),
     );
@@ -113,15 +118,12 @@ async function invalidateResource(
   const failed = !!resource.meta.reconcileError;
 
   const name = resource.meta?.name?.name ?? "";
+  let table: string | undefined;
   switch (resource.meta.name?.kind) {
     case ResourceKind.Source:
-      if (resource.source?.state?.table)
-        // make sure table is populated
-        return invalidateProfilingQueries(queryClient, name, failed);
-      break;
-
     case ResourceKind.Model:
-      if (resource.model?.state?.table)
+      table = resource.source?.state?.table ?? resource.model?.state?.table;
+      if (table && resource.meta.name?.name === table)
         // make sure table is populated
         return invalidateProfilingQueries(queryClient, name, failed);
       break;

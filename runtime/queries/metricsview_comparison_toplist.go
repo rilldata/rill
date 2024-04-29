@@ -335,7 +335,6 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
-
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
@@ -437,7 +436,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
+	dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -484,7 +483,11 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	baseWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		clause, clauseArgs, err := builder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}
@@ -502,7 +505,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+			having:  true,
+			aliases: q.Aliases,
+		}
+		havingClause, havingClauseArgs, err = builder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}
@@ -595,7 +604,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	var selectCols []string
 	var comparisonSelectCols []string
-	dimSel, unnestClause := dimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim, dialect)
+	dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
 	selectCols = append(selectCols, dimSel)
 	comparisonSelectCols = append(comparisonSelectCols, dimSel)
 
@@ -708,7 +717,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		td = fmt.Sprintf("%s::TIMESTAMP", td)
 	}
 
-	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+	builder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
+	whereClause, whereClauseArgs, err := builder.buildExpression(q.Where)
 	if err != nil {
 		return "", nil, err
 	}
@@ -738,16 +751,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	if policy != nil && policy.RowFilter != "" {
 		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 		comparisonWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
-	}
-
-	havingClause := "1=1"
-	if q.Having != nil {
-		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		args = append(args, havingClauseArgs...)
 	}
 
 	var orderClauses []string
@@ -873,10 +876,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		} else {
 			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
 		}
-		if havingClause != "" {
+		if q.Having != nil {
 			// measure filter could include the base measure name.
 			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
 			// to keep the clause builder consistent we add an outer query here.
+
+			var whereClauseArgs []any
+			builder := &ExpressionBuilder{
+				mv:      mv,
+				dialect: dialect,
+				aliases: q.Aliases,
+			}
+			whereClause, whereClauseArgs, err := builder.buildExpression(q.Having)
+			if err != nil {
+				return "", nil, err
+			}
+			args = append(args, whereClauseArgs...)
+
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
@@ -888,7 +904,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 							SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 						) comparison
 					ON
-							%[17]s
+						%[17]s
 					%[6]s
 					%[7]s
 					OFFSET
@@ -909,7 +925,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				baseLimitClause,                     // 12
 				comparisonLimitClause,               // 13
 				unnestClause,                        // 14
-				havingClause,                        // 15
+				whereClause,                         // 15
 				subComparisonSelectClause,           // 16
 				joinOnClause,                        // 17
 			)
@@ -924,7 +940,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				SELECT %[15]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				%[16]s)
+			%[16]s
 		%[6]s
 		%[7]s
 		OFFSET
@@ -1005,6 +1021,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			}
 		}
 
+		havingClause := ""
+		if q.Having != nil {
+			var havingClauseArgs []any
+			builder := &ExpressionBuilder{
+				mv:      mv,
+				dialect: dialect,
+				aliases: q.Aliases,
+				having:  true,
+			}
+			havingClause, havingClauseArgs, err = builder.buildExpression(q.Having)
+			if err != nil {
+				return "", nil, err
+			}
+			havingClause = "HAVING " + havingClause
+			args = append(args, havingClauseArgs...)
+		}
+
 		sql = fmt.Sprintf(`
 				WITH %[11]s AS (
 					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY 1 %[13]s %[10]s OFFSET %[8]d
@@ -1013,7 +1046,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
-				HAVING %[15]s
+				%[15]s
 				%[6]s
 				%[7]s
 				OFFSET %[8]d
@@ -1033,11 +1066,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			subQueryOrderByClause,               // 13
 			finalDimName,                        // 14
 			havingClause,                        // 15
-			metricsViewDimensionExpression(dim), // 16
-			subComparisonSelectClause,           // 17
+			dialect.MetricsViewDimensionExpression(dim), // 16
+			subComparisonSelectClause,                   // 17
 		)
 	}
 
+	fmt.Println(sql, args)
 	return sql, args, nil
 }
 

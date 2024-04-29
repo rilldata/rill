@@ -2,7 +2,7 @@
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import type { SelectionRange } from "@codemirror/state";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -52,13 +52,13 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
-    createRuntimeServiceRefreshAndReconcile,
     type V1ModelV2,
     type V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import { get, type Writable } from "svelte/store";
   import { fade, slide } from "svelte/transition";
@@ -90,7 +90,6 @@
 
   const QUERY_DEBOUNCE_TIME = 400;
 
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const updateFile = createRuntimeServicePutFile();
 
   const queryHighlight = getContext<Writable<QueryHighlightState>>(
@@ -143,9 +142,11 @@
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
-  $: isLocalFileConnector =
-    type === "source" && !!$isLocalFileConnectorQuery.data;
+  let isLocalFileConnectorQuery: CreateQueryResult<boolean>;
+  $: if (type === "source") {
+    isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  }
+  $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
 
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
@@ -221,7 +222,7 @@
       tableName ?? "",
       "models",
     );
-    await goto(`/files/${newModelPath}`);
+    await goto(`/files${newModelPath}`);
     await behaviourEvent.fireNavigationEvent(
       newModelName,
       BehaviourEventMedium.Button,
@@ -270,14 +271,7 @@
 </svelte:head>
 
 {#if fileNotFound}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>
-        Unable to find file {assetName}
-      </h1>
-    </div>
-  </div>
+  <WorkspaceError message="File not found." />
 {:else}
   <WorkspaceContainer>
     <WorkspaceHeader
@@ -292,9 +286,7 @@
           class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
           transition:fade={{ duration: 200 }}
         >
-          {#if $refreshSourceMutation.isLoading}
-            Refreshing...
-          {:else if refreshedOn}
+          {#if refreshedOn}
             {verb} on {formatRefreshedOn(refreshedOn)}
           {/if}
         </p>
@@ -361,7 +353,11 @@
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
           {:else if tableName}
-            <ConnectedPreviewTable {connector} table={tableName} />
+            <ConnectedPreviewTable
+              {connector}
+              table={tableName}
+              loading={resourceIsReconciling}
+            />
           {/if}
           <svelte:fragment slot="error">
             {#if type === "model"}

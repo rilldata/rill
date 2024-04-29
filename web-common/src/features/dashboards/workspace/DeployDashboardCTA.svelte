@@ -23,7 +23,7 @@
       Run this command from your project directory. <a
         href="https://docs.rilldata.com/deploy/existing-project"
         target="_blank"
-        rel="noreferrer">See docs</a
+        rel="noreferrer noopener">See docs</a
       >
     </div>
     <div class="pt-4 pb-2">

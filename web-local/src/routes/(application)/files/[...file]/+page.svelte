@@ -1,10 +1,10 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { yaml } from "@rilldata/web-common/components/editor/presets/yaml";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
+  import { getExtensionsForFiles } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import {
     addLeadingSlash,
     removeLeadingSlash,
@@ -23,7 +23,7 @@
   import { onMount } from "svelte";
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
   import ChartPage from "../../chart/[name]/+page.svelte";
-  import CustomDashboardPage from "../custom-dashboards/[name]/+page.svelte";
+  import CustomDashboardPage from "../../custom-dashboards/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
@@ -51,8 +51,6 @@
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
-
-  $: isYaml = filePath.endsWith(".yaml") || filePath.endsWith(".yml");
 
   // TODO: optimistically update the get file cache
   const putFile = createRuntimeServicePutFile();
@@ -95,21 +93,9 @@
 </script>
 
 {#if fileTypeUnsupported}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>Unsupported file type.</h1>
-    </div>
-  </div>
+  <WorkspaceError message="Unsupported file type." />
 {:else if fileError}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>
-        Error loading file: {fileErrorMessage}
-      </h1>
-    </div>
-  </div>
+  <WorkspaceError message={`Error loading file: ${fileErrorMessage}`} />
 {:else if isSource || isModel}
   <SourceModelPage data={{ fileArtifact }} />
 {:else if isDashboard}
@@ -124,12 +110,12 @@
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
     <div class="editor-pane size-full" slot="body">
-      <div class="editor flex flex-col border border-gray-200 rounded h-full">
-        <div class="grow flex bg-white overflow-y-auto rounded">
+      <div class="editor flex flex-col h-full">
+        <div class="grow flex bg-white overflow-y-auto">
           <Editor
             {blob}
             bind:latest
-            extensions={isYaml ? [yaml()] : []}
+            extensions={getExtensionsForFiles(filePath)}
             on:update={({ detail: { content } }) => debounceSave(content)}
           />
         </div>

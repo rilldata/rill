@@ -8,12 +8,12 @@
     deleteFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
-  import {
-    NavDragData,
-    navEntryDragDropStore,
-  } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
+  import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import {
     getTopLevelFolder,
     splitFolderAndName,
@@ -21,7 +21,7 @@
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import NavDirectory from "./NavDirectory.svelte";
-  import { transformFileList } from "./transform-file-list";
+  import { findDirectory, transformFileList } from "./transform-file-list";
 
   $: instanceId = $runtime.instanceId;
   $: getFileTree = createRuntimeServiceListFiles("default", undefined, {
@@ -64,9 +64,30 @@
     renameIsDir = isDir;
   }
 
-  async function onDelete(filePath: string) {
+  let forceDeletePath: string;
+  let showForceDelete = false;
+
+  async function onDelete(filePath: string, isDir: boolean) {
+    if (!$getFileTree.data) return;
+
+    if (isDir) {
+      const dir = findDirectory($getFileTree.data, filePath);
+      if (dir?.directories?.length || dir?.files?.length) {
+        forceDeletePath = filePath;
+        showForceDelete = true;
+        return;
+      }
+    }
     await deleteFileArtifact(instanceId, filePath);
-    if ($page.params.file === filePath) {
+    if (isCurrentActivePage(filePath, isDir)) {
+      await goto("/");
+    }
+  }
+
+  async function onForceDelete() {
+    await deleteFileArtifact(instanceId, forceDeletePath, true);
+    // onForceDelete is only called on folders, so isDir is always true
+    if (isCurrentActivePage(forceDeletePath, true)) {
       await goto("/");
     }
   }
@@ -93,18 +114,14 @@
 
   const { dragData, position } = navEntryDragDropStore;
 
-  async function handleDropSuccess(
-    fromDragData: NavDragData,
-    toDragData: NavDragData,
-  ) {
-    const isCurrentFile = fromDragData.filePath === $page.params.file;
-    const tarDir = toDragData.isDir
-      ? toDragData.filePath
-      : splitFolderAndName(toDragData.filePath)[0];
-    const [, srcFile] = splitFolderAndName(fromDragData.filePath);
-    const newFilePath = `${tarDir}/${srcFile}`;
+  async function handleDropSuccess(fromPath: string, toDir: string) {
+    const isCurrentFile =
+      $page.params.file && // handle case when user is on home page
+      removeLeadingSlash(fromPath) === removeLeadingSlash($page.params.file);
+    const [, srcFile] = splitFolderAndName(fromPath);
+    const newFilePath = `${toDir === "/" ? toDir : toDir + "/"}${srcFile}`;
 
-    if (fromDragData.filePath !== newFilePath) {
+    if (fromPath !== newFilePath) {
       const newTopLevelPath = getTopLevelFolder(newFilePath);
       if (PROTECTED_DIRECTORIES.includes(newTopLevelPath)) {
         notifications.send({
@@ -112,10 +129,10 @@
         });
         return;
       }
-      await renameFileArtifact(instanceId, fromDragData.filePath, newFilePath);
+      await renameFileArtifact(instanceId, fromPath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files/${newFilePath}`);
+        await goto(`/files${newFilePath}`);
       }
     }
   }
@@ -123,13 +140,12 @@
 
 <svelte:window
   on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
-  on:mouseup={(e) =>
-    navEntryDragDropStore.onMouseUp(e, null, handleDropSuccess)}
+  on:mouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
 />
 
 <div class="flex flex-col items-start gap-y-2">
   <!-- File tree -->
-  <div class="flex flex-col w-full items-start justify-start overflow-auto">
+  <ul class="flex flex-col w-full items-start justify-start overflow-auto">
     {#if $getFileTree.data}
       <NavDirectory
         directory={$getFileTree.data}
@@ -138,11 +154,9 @@
         {onGenerateChart}
         onMouseDown={(e, dragData) =>
           navEntryDragDropStore.onMouseDown(e, dragData)}
-        onMouseUp={(e, dragData) =>
-          navEntryDragDropStore.onMouseUp(e, dragData, handleDropSuccess)}
       />
     {/if}
-  </div>
+  </ul>
 </div>
 
 {#if showRenameModelModal}
@@ -163,3 +177,5 @@
 {#if $dragData}
   <NavEntryPortal position={$position} dragData={$dragData} />
 {/if}
+
+<ForceDeleteConfirmation bind:open={showForceDelete} onDelete={onForceDelete} />

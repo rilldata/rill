@@ -1,8 +1,8 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -10,6 +10,7 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -75,8 +76,12 @@
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: ({ data: resourceData, isFetching } = $resourceQuery);
+  $: isResourceLoading = resourceIsLoading(resourceData);
 
-  $: previewDisbaled = !yaml.length || !!allErrors?.length;
+  $: previewDisabled =
+    !yaml.length || !!allErrors?.length || isResourceLoading || isFetching;
 
   $: if (!yaml?.length) {
     previewStatus = [
@@ -114,12 +119,7 @@
 </svelte:head>
 
 {#if fileNotFound}
-  <div class="size-full grid place-content-center">
-    <div class="flex flex-col items-center gap-y-2">
-      <AlertCircleOutline size="40px" />
-      <h1>Page not found</h1>
-    </div>
-  </div>
+  <WorkspaceError message="File not found." />
 {:else}
   <WorkspaceContainer inspector={isModelingSupported}>
     <WorkspaceHeader
@@ -140,7 +140,7 @@
         <PreviewButton
           dashboardName={metricViewName}
           status={previewStatus}
-          disabled={previewDisbaled}
+          disabled={previewDisabled}
         />
       </div>
     </WorkspaceHeader>
