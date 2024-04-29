@@ -8,7 +8,7 @@ export function getChartYaml(
 ) {
   const doc = new Document();
   doc.commentBefore = ` Chart YAML\n Reference documentation: https://docs.rilldata.com/reference/project-files/charts`;
-  doc.set("kind", "chart");
+  doc.set("kind", "component");
 
   // TODO: more fields from resolverProperties
   if (resolver === "sql") {
