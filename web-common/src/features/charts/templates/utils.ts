@@ -22,3 +22,20 @@ export function multiLayerBaseSpec() {
 
   return baseSpec;
 }
+
+export function repeatedLayerBaseSpec(
+  measures: string[],
+  mark: "bar" | "line" = "bar",
+) {
+  const baseSpec: VisualizationSpec = {
+    $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+    data: { name: "table" },
+    repeat: { layer: measures },
+    spec: {
+      width: "container",
+      mark,
+    },
+  };
+
+  return baseSpec;
+}

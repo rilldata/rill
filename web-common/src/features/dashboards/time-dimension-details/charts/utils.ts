@@ -22,12 +22,17 @@ export function getVegaSpecForTDD(
   chartType: TDDAlternateCharts,
   expandedMeasureName: string,
   measureLabel: string,
+  isTimeComparison: boolean,
   isDimensional: boolean,
   dimensionName: string | undefined,
   comparedValues: (string | null)[] | undefined,
 ): VisualizationSpec {
   const temporalFields = [{ name: "ts", label: "Time" }];
   const measureFields = [{ name: expandedMeasureName, label: measureLabel }];
+
+  if (isTimeComparison) {
+    measureFields.push({ name: "comparison.ts", label: "Compared Time" });
+  }
   const nominalFields = [
     {
       name: "dimension",

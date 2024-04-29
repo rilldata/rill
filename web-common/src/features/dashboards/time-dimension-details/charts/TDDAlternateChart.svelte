@@ -17,6 +17,7 @@
   export let xMin: Date;
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
+  export let isTimeComparison: boolean;
 
   const {
     selectors: {
@@ -35,6 +36,7 @@
     chartType,
     expandedMeasureName,
     expandedMeasureLabel,
+    isTimeComparison,
     hasDimensionData,
     comparedDimensionLabel,
     selectedValues,

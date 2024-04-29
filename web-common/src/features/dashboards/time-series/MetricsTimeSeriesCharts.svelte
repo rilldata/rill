@@ -74,7 +74,9 @@
   $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
-  $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
+  $: showComparison = Boolean(
+    !comparisonDimension && $timeControlsStore.showComparison,
+  );
   $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
@@ -317,6 +319,7 @@
               {dimensionData}
               xMin={startValue}
               xMax={endValue}
+              isTimeComparison={showComparison}
             />
           {:else if formattedData && interval}
             <MeasureChart
