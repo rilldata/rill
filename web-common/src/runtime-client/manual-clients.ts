@@ -44,7 +44,7 @@ export function runtimeServiceGetChartData(
   signal?: AbortSignal,
 ) {
   return httpClient({
-    url: `/v1/instances/${instanceId}/charts/${chartName}/data`,
+    url: `/v1/instances/${instanceId}/components/${chartName}/data`,
     method: "GET",
     headers: {},
     signal,
@@ -59,7 +59,7 @@ export function createRuntimeServiceGetChartData(
   props: V1ChartSpecResolverProperties | undefined,
 ) {
   return createQuery(
-    [`/v1/instances/${instanceId}/charts/${chartName}/data`, props],
+    [`/v1/instances/${instanceId}/components/${chartName}/data`, props],
     {
       queryFn: ({ signal }) =>
         runtimeServiceGetChartData(instanceId, chartName, signal),

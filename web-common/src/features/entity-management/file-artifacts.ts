@@ -215,7 +215,7 @@ export class FileArtifacts {
         case ResourceKind.Source:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
-        case ResourceKind.Chart:
+        case ResourceKind.Component:
         case ResourceKind.Dashboard:
           this.updateArtifacts(resource);
           break;

@@ -47,7 +47,7 @@
   $: isSource = resourceKind === ResourceKind.Source;
   $: isModel = resourceKind === ResourceKind.Model;
   $: isDashboard = resourceKind === ResourceKind.MetricsView;
-  $: isChart = resourceKind === ResourceKind.Chart;
+  $: isChart = resourceKind === ResourceKind.Component;
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;

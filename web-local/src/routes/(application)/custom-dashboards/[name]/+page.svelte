@@ -102,7 +102,7 @@
       const potentialDb = parse(yaml) as V1DashboardSpec;
       dashboard = {
         ...potentialDb,
-        components: potentialDb.components?.filter(isComponent) ?? [],
+        items: potentialDb.items?.filter(isComponent) ?? [],
       };
     } catch {
       // Unable to parse YAML, no-op
@@ -110,12 +110,12 @@
   }
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
-    ResourceKind.Chart,
+    ResourceKind.Component,
     selectedChartName ?? "",
   );
   $: selectedChartFilePath = selectedChartFileArtifact?.path;
 
-  $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
+  $: ({ columns, gap, items = [] } = dashboard ?? ({} as V1DashboardSpec));
 
   async function onChangeCallback(
     e: Event & {
@@ -154,26 +154,26 @@
       dimensions: Vector;
     }>,
   ) {
-    const newComponents = [...components];
+    const newItems = [...items];
 
-    newComponents[e.detail.index].width = e.detail.dimensions[0];
-    newComponents[e.detail.index].height = e.detail.dimensions[1];
+    newItems[e.detail.index].width = e.detail.dimensions[0];
+    newItems[e.detail.index].height = e.detail.dimensions[1];
 
-    newComponents[e.detail.index].x = e.detail.position[0];
-    newComponents[e.detail.index].y = e.detail.position[1];
+    newItems[e.detail.index].x = e.detail.position[0];
+    newItems[e.detail.index].y = e.detail.position[1];
 
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components: newComponents,
+      items: newItems,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const newComponents = [...components];
-    newComponents.push({
+    const newItems = [...items];
+    newItems.push({
       chart: e.detail.chartName,
       height: 4,
       width: 4,
@@ -184,7 +184,7 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components: newComponents,
+      items: newItems,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
@@ -305,7 +305,7 @@
       <CustomDashboardPreview
         {snap}
         {gap}
-        {components}
+        {items}
         {columns}
         {showGrid}
         bind:selectedChartName

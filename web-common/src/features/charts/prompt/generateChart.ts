@@ -14,7 +14,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
-  createRuntimeServiceGenerateChartSpec,
+  createRuntimeServiceGenerateRenderer,
   createRuntimeServiceGenerateResolver,
   createRuntimeServiceGetFile,
   runtimeServicePutFile,
@@ -27,9 +27,10 @@ export function createChartGenerator(
   chart: string,
   filePath: string,
 ) {
-  const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
+  const generateVegaConfig = createRuntimeServiceGenerateRenderer();
   const chartQuery = useChart(instanceId, chart);
   const chartContent = createRuntimeServiceGetFile(instanceId, filePath);
+  // TODO: update for new API
 
   return async (prompt: string) => {
     try {
@@ -61,7 +62,7 @@ export function createChartGenerator(
 
 export function createFullChartGenerator(instanceId: string) {
   const generateResolver = createRuntimeServiceGenerateResolver();
-  const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
+  const generateVegaConfig = createRuntimeServiceGenerateRenderer();
 
   return async (
     prompt: string,

@@ -1,8 +1,8 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
   import { goto } from "$app/navigation";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
-  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
+  import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
   import Component from "./Component.svelte";
@@ -17,7 +17,7 @@
 
   export let i: number;
   export let gapSize: number;
-  export let component: V1DashboardComponent;
+  export let component: V1DashboardItem;
   export let selected: boolean;
   export let interacting: boolean;
   export let width: number;
@@ -29,7 +29,7 @@
 
   let localZIndex = 0;
 
-  $: chartName = component.chart;
+  $: chartName = component.component;
 
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
@@ -60,28 +60,29 @@
   <ContextMenu.Trigger asChild let:builder>
     <Component
       builders={[builder]}
-      left={finalLeft}
-      top={finalTop}
-      {padding}
-      {scale}
-      {radius}
-      {selected}
-      {interacting}
-      width={finalWidth}
       height={finalHeight}
       {i}
-      on:mousedown={handleMouseDown}
-      on:contextmenu
+      {interacting}
+      left={finalLeft}
       on:change
+      on:contextmenu
+      on:mousedown={handleMouseDown}
+      {padding}
+      {radius}
+      {scale}
+      {selected}
+      top={finalTop}
+      width={finalWidth}
     >
-      {#if component.markdown}
-        <Markdown
-          markdown={component.markdown}
-          fontSize={component.fontSize ?? 40}
-        />
-      {:else if chartName}
-        <Chart {chartName} />
-      {/if}
+      <!-- TODO -->
+      <!--{#if component.markdown}-->
+      <!--  <Markdown-->
+      <!--    markdown={component.markdown}-->
+      <!--    fontSize={component.fontSize ?? 40}-->
+      <!--  />-->
+      <!--{:else if chartName}-->
+      <Chart {chartName} />
+      <!--{/if}-->
     </Component>
   </ContextMenu.Trigger>
 

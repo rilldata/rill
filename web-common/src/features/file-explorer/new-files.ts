@@ -83,7 +83,7 @@ sql:
   select ...
 `,
   },
-  [ResourceKind.Chart]: {
+  [ResourceKind.Component]: {
     name: "chart",
     extension: ".yaml",
     baseContent: `# Chart YAML
