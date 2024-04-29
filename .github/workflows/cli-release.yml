@@ -28,24 +28,24 @@ jobs:
     runs-on: large-hosted
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Fetch tags required by goreleaser
         run: git fetch --prune --unshallow
 
       - name: Checkout sysroot for cross compilation
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: goreleaser/goreleaser-cross-example-sysroot
           path: sysroot
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
       - name: Set up NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
@@ -89,7 +89,7 @@ jobs:
 
 
       - name: Release - Upload install script to CDN bucket
-        uses: google-github-actions/upload-cloud-storage@v1
+        uses: google-github-actions/upload-cloud-storage@v2
         if: env.PUBLISH_RELEASE == 'true'
         with:
           path: scripts/install.sh
@@ -99,7 +99,7 @@ jobs:
 
       - name: Release - Upload latest version file to CDN bucket
         if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v1
+        uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: latest.txt
           destination: prod-cdn.rilldata.com/rill/
@@ -122,7 +122,7 @@ jobs:
 
       - name: Nightly - Upload nightly to CDN bucket
         if: env.PUBLISH_NIGHTLY == 'true'
-        uses: google-github-actions/upload-cloud-storage@v1
+        uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: nightly/
           destination: prod-cdn.rilldata.com/rill/
@@ -130,7 +130,7 @@ jobs:
             cache-control: no-store
 
       - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v1'
+        uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: CDN - Explicitly invalidate the old artifacts from CDN cache
         run: |-
