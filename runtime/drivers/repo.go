@@ -53,6 +53,9 @@ var ignoredPaths = []string{
 	"/tmp",
 	"/.git",
 	"/node_modules",
+	"/.DS_Store",
+	"/.vscode",
+	"/.idea",
 }
 
 // IsIgnored returns true if the path (and any files in nested directories) should be ignored.
