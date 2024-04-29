@@ -214,7 +214,7 @@
       comparing={comparisonCopy}
       {timeFormatter}
       tableData={formattedData}
-      highlightedCol={$chartInteractionColumn?.hover}
+      highlightedCol={$chartInteractionColumn?.xHover}
       {pinIndex}
       scrubPos={{
         start: $chartInteractionColumn?.scrubStart,

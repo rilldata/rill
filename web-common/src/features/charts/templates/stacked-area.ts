@@ -85,7 +85,7 @@ export function buildStackedArea(
       encoding: {
         color: {
           condition: {
-            param: "x-hover",
+            param: "hover",
             empty: false,
             value: "var(--color-primary-300)",
           },
@@ -99,7 +99,7 @@ export function buildStackedArea(
       },
       params: [
         {
-          name: "x_hover",
+          name: "hover",
           select: {
             type: "point",
             encodings: ["x"],
@@ -111,7 +111,7 @@ export function buildStackedArea(
       ],
     },
     {
-      transform: [{ filter: { param: "x-hover", empty: false } }],
+      transform: [{ filter: { param: "hover", empty: false } }],
       mark: {
         type: "point",
         filled: true,
