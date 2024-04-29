@@ -941,7 +941,7 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 func getMeasureLabelAndFormatter(measureName string, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
 	var measure *runtimev1.MetricsViewSpec_MeasureV2
 	for _, m := range measures {
-		if measureName == measure.Name {
+		if measureName == m.Name {
 			measure = m
 			break
 		}
