@@ -2211,16 +2211,3 @@ func fieldsToString(row *structpb.Struct, args ...string) string {
 	}
 	return strings.Join(s, ",")
 }
-
-func outputResult(schema *runtimev1.StructType, data []*structpb.Struct) {
-	for _, s := range schema.Fields {
-		fmt.Printf("%v,", s.Name)
-	}
-	fmt.Println()
-	for i, row := range data {
-		for _, s := range schema.Fields {
-			fmt.Printf("%v,", row.Fields[s.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-	}
-}
