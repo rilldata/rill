@@ -73,13 +73,9 @@ export async function getModelNames(
   instanceId: string,
 ) {
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    }),
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
     queryFn: () => {
-      return runtimeServiceListFiles(instanceId, {
-        glob: "{sources,models,dashboards}/*.{yaml,sql}",
-      });
+      return runtimeServiceListFiles(instanceId, undefined);
     },
   });
   const modelNames = files.files

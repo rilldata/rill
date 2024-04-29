@@ -43,44 +43,37 @@ export function useMainEntityFiles(
       extension = ".sql";
   }
 
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      // We still use opinionated folder names. So we still need this filter
-      glob: "{apis,themes,alerts,reports,sources,models,dashboards,charts,custom-dashboards}/*.{yaml,sql}",
-    },
-    {
-      query: {
-        select: (data) => {
-          // Filter the list of file paths to include only those that match the given prefix and extension
-          const filteredPaths = data.files
-            ?.filter((file) => {
-              if (file.isDir) return false;
-              // Match the filePath against a pattern to extract the directory name
-              const regexMatch = file.path?.match(/\/([^/]+)\/[^/]+$/);
-              // Check if the directory name exactly matches the prefix
-              return regexMatch && regexMatch[1] === prefix;
-            })
-            .map((file) => {
-              // Remove the directory and extension from the filePath to get the file name
-              return transform(
-                file.path?.replace(`/${prefix}/`, "").replace(extension, "") ??
-                  "",
-              );
-            })
-            // Sort the file names alphabetically in a case-insensitive manner
-            .sort((fileNameA, fileNameB) =>
-              fileNameA.localeCompare(fileNameB, undefined, {
-                sensitivity: "base",
-              }),
+  return createRuntimeServiceListFiles(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        // Filter the list of file paths to include only those that match the given prefix and extension
+        const filteredPaths = data.files
+          ?.filter((file) => {
+            if (file.isDir) return false;
+            // Match the filePath against a pattern to extract the directory name
+            const regexMatch = file.path?.match(/\/([^/]+)\/[^/]+$/);
+            // Check if the directory name exactly matches the prefix
+            return regexMatch && regexMatch[1] === prefix;
+          })
+          .map((file) => {
+            // Remove the directory and extension from the filePath to get the file name
+            return transform(
+              file.path?.replace(`/${prefix}/`, "").replace(extension, "") ??
+                "",
             );
+          })
+          // Sort the file names alphabetically in a case-insensitive manner
+          .sort((fileNameA, fileNameB) =>
+            fileNameA.localeCompare(fileNameB, undefined, {
+              sensitivity: "base",
+            }),
+          );
 
-          // Return the sorted list of file names or an empty array if there were no paths
-          return filteredPaths ?? [];
-        },
+        // Return the sorted list of file names or an empty array if there were no paths
+        return filteredPaths ?? [];
       },
     },
-  );
+  });
 }
 
 export async function fetchAllFiles(

@@ -24,7 +24,7 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
 
   $: instanceId = $runtime.instanceId;
-  $: getFileTree = createRuntimeServiceListFiles("default", undefined, {
+  $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
         if (!data || !data.files?.length) return;

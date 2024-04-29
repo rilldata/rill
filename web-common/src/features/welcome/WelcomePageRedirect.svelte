@@ -20,11 +20,15 @@
     isProjectInitialized,
     useIsProjectInitialized,
   } from "./is-project-initialized";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   // Initial check onMount
   let ready = false;
   onMount(async () => {
-    const initialized = await isProjectInitialized($runtime.instanceId);
+    const initialized = await isProjectInitialized(
+      queryClient,
+      $runtime.instanceId,
+    );
 
     if (initialized) {
       ready = true;

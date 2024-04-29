@@ -8,10 +8,11 @@
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import type { PageData } from "./$types";
 
   const queryClient = useQueryClient();
 
-  export let data;
+  export let data: PageData;
 
   resetSelectedMockUserAfterNavigate(queryClient);
 
