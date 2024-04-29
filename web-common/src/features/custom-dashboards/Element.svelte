@@ -11,8 +11,6 @@
 </script>
 
 <script lang="ts">
-  import Markdown from "./Markdown.svelte";
-
   const dispatch = createEventDispatcher();
 
   export let i: number;

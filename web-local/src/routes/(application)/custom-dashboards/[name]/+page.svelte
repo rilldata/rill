@@ -174,7 +174,7 @@
   async function addChart(e: CustomEvent<{ chartName: string }>) {
     const newItems = [...items];
     newItems.push({
-      chart: e.detail.chartName,
+      component: e.detail.chartName,
       height: 4,
       width: 4,
       x: 0,
