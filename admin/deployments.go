@@ -24,8 +24,6 @@ type createDeploymentOptions struct {
 	ProjectID      string
 	Provisioner    string
 	Annotations    DeploymentAnnotations
-	VersionNumber  string
-	VersionCommit  string
 	ProdBranch     string
 	ProdVariables  map[string]string
 	ProdOLAPDriver string
@@ -53,13 +51,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	runtimeVersion := opts.ProdVersion
 
-	// Try to resolve 'latest' version
+	// Resolve 'latest' version
 	if runtimeVersion == "latest" {
-		if opts.VersionNumber != "" {
-			runtimeVersion = opts.VersionNumber
-		} else if opts.VersionCommit != "" {
-			runtimeVersion = opts.VersionCommit
-		}
+		runtimeVersion = s.ResolveLatestRuntimeVersion()
 	}
 
 	// Verify version is valid
@@ -432,6 +426,16 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projName:        proj.Name,
 		projAnnotations: proj.Annotations,
 	}
+}
+
+func (s *Service) ResolveLatestRuntimeVersion() string {
+	if s.VersionNumber != "" {
+		return s.VersionNumber
+	}
+	if s.VersionCommit != "" {
+		return s.VersionCommit
+	}
+	return "latest"
 }
 
 func (s *Service) ValidateRuntimeVersion(ver string) error {

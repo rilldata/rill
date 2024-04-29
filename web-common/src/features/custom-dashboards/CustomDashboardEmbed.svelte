@@ -51,7 +51,7 @@
           fontSize={component.fontSize ?? defaults.FONT_SIZE}
         />
       {:else if component.chart}
-        <Chart chartName={component.chart} />
+        <Chart {chartView} chartName={component.chart} />
       {/if}
     </Component>
   {/each}
