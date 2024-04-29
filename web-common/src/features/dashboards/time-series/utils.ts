@@ -59,31 +59,34 @@ export function updateChartInteractionStore(
   xHoverValue: undefined | number | Date,
   yHoverValue: undefined | string | null,
   isAllTime: boolean,
-  formattedData,
+  formattedData: TimeSeriesDatum[],
 ) {
-  if (!xHoverValue || !(xHoverValue instanceof Date)) {
-    chartInteractionColumn.update((state) => ({
-      ...state,
-      yHoverValue: yHoverValue,
-      xHover: undefined,
-    }));
-  } else {
-    const slicedData = isAllTime
-      ? formattedData?.slice(1)
-      : formattedData?.slice(1, -1);
-    const { position: columnNum } = bisectData(
+  let xHoverColNum: number | undefined = undefined;
+
+  const slicedData = isAllTime
+    ? formattedData?.slice(1)
+    : formattedData?.slice(1, -1);
+  if (xHoverValue && xHoverValue instanceof Date) {
+    const { position } = bisectData(
       xHoverValue,
       "center",
       "ts_position",
       slicedData,
     );
+    xHoverColNum = position;
+  }
 
-    if (get(chartInteractionColumn)?.xHover !== columnNum)
-      chartInteractionColumn.update((state) => ({
-        ...state,
-        yHoverValue: yHoverValue,
-        xHover: columnNum,
-      }));
+  const currentCol = get(chartInteractionColumn);
+
+  if (
+    currentCol?.xHover !== xHoverColNum ||
+    currentCol?.yHover !== yHoverValue
+  ) {
+    chartInteractionColumn.update((state) => ({
+      ...state,
+      yHover: yHoverValue,
+      xHover: xHoverColNum,
+    }));
   }
 }
 

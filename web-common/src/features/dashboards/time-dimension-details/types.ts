@@ -47,7 +47,7 @@ export interface HighlightedCell {
 
 export interface ChartInteractionColumns {
   xHover: number | undefined;
-  yHover: string | null | undefined;
+  yHover: string | undefined | null;
   scrubStart: number | undefined;
   scrubEnd: number | undefined;
 }
