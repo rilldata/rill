@@ -46,13 +46,7 @@ export class FileArtifact {
 
   public isNew = true;
 
-  public constructor(
-    filePath: string,
-    private readonly nameChangeHandler: (
-      prevName: V1ResourceName | undefined,
-      name: V1ResourceName | undefined,
-    ) => void,
-  ) {
+  public constructor(filePath: string) {
     this.path = filePath;
   }
 
@@ -201,7 +195,6 @@ export class FileArtifact {
       curName?.name !== resource.meta?.name?.name ||
       curName?.kind !== resource.meta?.name?.kind
     ) {
-      this.nameChangeHandler(curName, resource.meta?.name);
       this.name.set({
         kind: resource.meta?.name?.kind,
         name: resource.meta?.name?.name,
@@ -251,7 +244,7 @@ export class FileArtifacts {
           removeLeadingSlash(filePath),
         ).then((fileContents) => {
           const artifact =
-            this.artifacts[filePath] ?? this.newFileArtifact(filePath);
+            this.artifacts[filePath] ?? new FileArtifact(filePath);
           const newName = parseKindAndNameFromFile(filePath, fileContents);
           if (newName) artifact.name.set(newName);
           this.artifacts[filePath] ??= artifact;
@@ -263,7 +256,7 @@ export class FileArtifacts {
   public async fileUpdated(filePath: string) {
     if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
-    this.artifacts[filePath] ??= this.newFileArtifact(filePath);
+    this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -282,21 +275,21 @@ export class FileArtifacts {
 
   public updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= this.newFileArtifact(filePath);
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
   public updateReconciling(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= this.newFileArtifact(filePath);
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
   public updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= this.newFileArtifact(filePath);
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
   }
@@ -330,7 +323,7 @@ export class FileArtifacts {
   // Selectors
 
   public getFileArtifact(filePath: string) {
-    this.artifacts[filePath] ??= this.newFileArtifact(filePath);
+    this.artifacts[filePath] ??= new FileArtifact(filePath);
     return this.artifacts[filePath];
   }
 
@@ -363,33 +356,15 @@ export class FileArtifacts {
     );
   }
 
+  /**
+   * Filters all fileArtifacts based on kind param and returns the file paths.
+   * This can be expensive if the project gets large.
+   * If we ever need this reactively then we should look into caching this list.
+   */
   public getNamesForKind(kind: ResourceKind): string[] {
-    return (
-      this.artifactsByKind[kind]?.map((a) => get(a.name)?.name ?? "") ?? []
-    );
-  }
-
-  private newFileArtifact(filePath: string) {
-    const artifact = new FileArtifact(filePath, (prevName, name) =>
-      this.handleArtifactNameChange(artifact, prevName, name),
-    );
-    return artifact;
-  }
-
-  private handleArtifactNameChange(
-    fileArtifact: FileArtifact,
-    prevName: V1ResourceName | undefined,
-    name: V1ResourceName | undefined,
-  ) {
-    if (prevName?.kind && this.artifactsByKind[prevName.kind]) {
-      const index = this.artifactsByKind[prevName.kind].find(
-        (a: FileArtifact) => a.path === fileArtifact.path,
-      );
-      if (index >= 0) this.artifactsByKind[prevName.kind].splice(index, 1);
-    }
-    if (!name?.kind) return;
-    this.artifactsByKind[name.kind] ??= [];
-    this.artifactsByKind[name.kind].push(fileArtifact);
+    return Object.values(this.artifacts)
+      .filter((artifact) => get(artifact.name)?.kind === kind)
+      .map((artifact) => get(artifact.name)?.name ?? "");
   }
 }
 

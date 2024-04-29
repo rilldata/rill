@@ -33,21 +33,6 @@ export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
   });
 }
 
-export function useAllEntityNames(
-  queryClient: QueryClient,
-  instanceId: string,
-) {
-  return createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      queryClient,
-      select: (data) =>
-        data.files
-          ?.filter((f) => !f.isDir && fileIsMainEntity(f.path ?? ""))
-          .map((f) => f.path?.split("/").pop() ?? "") ?? [],
-    },
-  });
-}
-
 export async function fetchMainEntityFiles(
   queryClient: QueryClient,
   instanceId: string,
