@@ -19,10 +19,10 @@
   $: dashboard = $dashboardQuery.data?.dashboard.spec;
 
   $: ({
-    components = [],
+    items = [],
     columns,
     gap,
-  } = dashboard || { components: [], columns: 10, gap: 2 });
+  } = dashboard || { items: [], columns: 10, gap: 2 });
 </script>
 
-<CustomDashboardEmbed {components} {columns} {gap} />
+<CustomDashboardEmbed {columns} components={items} {gap} />
