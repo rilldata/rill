@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { V1DashboardComponent } from "@rilldata/web-common/runtime-client";
+  import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
   import Element from "./Element.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
@@ -11,7 +11,7 @@
   const zeroVector = [0, 0] as [0, 0];
 
   export let columns: number | undefined;
-  export let components: V1DashboardComponent[];
+  export let items: V1DashboardItem[];
   export let gap: number | undefined;
   export let showGrid = false;
   export let snap = false;
@@ -64,21 +64,18 @@
     const cellPosition = getCell(dragPosition, true);
     const dimensions = getCell(resizeDimenions, true);
 
-    components[selectedIndex].x =
+    items[selectedIndex].x =
       dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0];
-    components[selectedIndex].y =
+    items[selectedIndex].y =
       dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1];
 
-    components[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
-    components[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
+    items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
+    items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
     dispatch("update", {
       index: selectedIndex,
-      position: [components[selectedIndex].x, components[selectedIndex].y],
-      dimensions: [
-        components[selectedIndex].width,
-        components[selectedIndex].height,
-      ],
+      position: [items[selectedIndex].x, items[selectedIndex].y],
+      dimensions: [items[selectedIndex].width, items[selectedIndex].height],
     });
 
     reset();
@@ -124,7 +121,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    selectedChartName = components[index].chart ?? null;
+    selectedChartName = items[index].component ?? null;
     changing = true;
   }
 
@@ -158,28 +155,28 @@
     selectedChartName = null;
   }
 
-  $: maxBottom = components.reduce((max, el) => {
+  $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
 </script>
 
-<svelte:window on:mouseup={handleMouseUp} on:mousemove={handleMouseMove} />
+<svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
 
 <Wrapper
-  width={defaults.DASHBOARD_WIDTH}
-  height={maxBottom * gridCell}
-  {scale}
-  {showGrid}
+  bind:contentRect
+  {changing}
   {gapSize}
   {gridCell}
-  {radius}
-  {changing}
-  bind:contentRect
-  on:scroll={handleScroll}
+  height={maxBottom * gridCell}
   on:click={deselect}
+  on:scroll={handleScroll}
+  {radius}
+  {scale}
+  {showGrid}
+  width={defaults.DASHBOARD_WIDTH}
 >
-  {#each components as component, i (i)}
+  {#each items as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
     <Element

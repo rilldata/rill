@@ -26,7 +26,7 @@ export const MainResourceKinds: {
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
-  [ResourceKind.Chart]: true,
+  [ResourceKind.Component]: true,
   [ResourceKind.Dashboard]: true,
 };
 const UsedResourceKinds: {
@@ -131,7 +131,7 @@ async function invalidateResource(
     case ResourceKind.MetricsView:
       return invalidateMetricsViewData(queryClient, name, failed);
 
-    case ResourceKind.Chart:
+    case ResourceKind.Component:
       return invalidateChartData(queryClient, name, failed);
 
     case ResourceKind.Dashboard:

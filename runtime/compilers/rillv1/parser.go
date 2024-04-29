@@ -37,7 +37,7 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
-	ChartSpec       *runtimev1.ChartSpec
+	ComponentSpec   *runtimev1.ComponentSpec
 	DashboardSpec   *runtimev1.DashboardSpec
 	APISpec         *runtimev1.APISpec
 }
@@ -71,7 +71,7 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
-	ResourceKindChart
+	ResourceKindComponent
 	ResourceKindDashboard
 	ResourceKindAPI
 )
@@ -96,8 +96,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
-	case "chart":
-		return ResourceKindChart, nil
+	case "component":
+		return ResourceKindComponent, nil
 	case "dashboard":
 		return ResourceKindDashboard, nil
 	case "api":
@@ -125,8 +125,8 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
-	case ResourceKindChart:
-		return "Chart"
+	case ResourceKindComponent:
+		return "Component"
 	case ResourceKindDashboard:
 		return "Dashboard"
 	case ResourceKindAPI:
@@ -715,6 +715,16 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	r.Refs = refs
 }
 
+// insertDryRun returns an error if calling insertResource with the given resource name would fail.
+func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
+	rn := ResourceName{Kind: kind, Name: name}
+	_, ok := p.Resources[rn.Normalized()]
+	if ok {
+		return externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+	}
+	return nil
+}
+
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
 func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
@@ -763,8 +773,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
-	case ResourceKindChart:
-		r.ChartSpec = &runtimev1.ChartSpec{}
+	case ResourceKindComponent:
+		r.ComponentSpec = &runtimev1.ComponentSpec{}
 	case ResourceKindDashboard:
 		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	case ResourceKindAPI:

@@ -81,13 +81,13 @@ sql:
   select ...
 `,
   },
-  [ResourceKind.Chart]: {
+  [ResourceKind.Component]: {
     name: "chart",
     extension: ".yaml",
     baseContent: `# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
     
-kind: chart
+kind: component
 
 data:
   sql: |

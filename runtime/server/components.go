@@ -17,22 +17,22 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) error {
+func (s *Server) componentDataHandler(w http.ResponseWriter, req *http.Request) error {
 	// Parse path parameters
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
-	chart := req.PathValue("name")
+	component := req.PathValue("name")
 
 	// Add observability attributes
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
-		attribute.String("args.name", chart),
+		attribute.String("args.name", component),
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
-	// Check if user has access to query for chart data (we use the ReadAPI permission for this for now)
+	// Check if user has access to query for component data (we use the ReadAPI permission for this for now)
 	if !auth.GetClaims(req.Context()).CanInstance(instanceID, auth.ReadAPI) {
-		return httputil.Errorf(http.StatusForbidden, "does not have access to chart data")
+		return httputil.Errorf(http.StatusForbidden, "does not have access to component data")
 	}
 
 	// Parse args from the request body and URL query
@@ -51,20 +51,20 @@ func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) erro
 		args[k] = v[0]
 	}
 
-	// Find the chart resource
-	chartSpec, err := s.getChart(ctx, instanceID, chart)
+	// Find the component resource
+	componentSpec, err := s.getComponent(ctx, instanceID, component)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return httputil.Errorf(http.StatusNotFound, "chart with name %q not found", chart)
+			return httputil.Errorf(http.StatusNotFound, "component with name %q not found", component)
 		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// Call the chart's data resolver
+	// Call the component's data resolver
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
-		Resolver:           chartSpec.Resolver,
-		ResolverProperties: chartSpec.ResolverProperties.AsMap(),
+		Resolver:           componentSpec.Resolver,
+		ResolverProperties: componentSpec.ResolverProperties.AsMap(),
 		Args:               args,
 		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
@@ -82,21 +82,21 @@ func (s *Server) chartDataHandler(w http.ResponseWriter, req *http.Request) erro
 	return nil
 }
 
-func (s *Server) getChart(ctx context.Context, instanceID, name string) (*runtimev1.ChartSpec, error) {
+func (s *Server) getComponent(ctx context.Context, instanceID, name string) (*runtimev1.ComponentSpec, error) {
 	ctrl, err := s.runtime.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindChart, Name: name}, false)
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
 	if err != nil {
 		return nil, err
 	}
 
-	ch := res.GetChart()
+	ch := res.GetComponent()
 	spec := ch.Spec
 	if spec == nil {
-		return nil, fmt.Errorf("chart %q is invalid", name)
+		return nil, fmt.Errorf("component %q is invalid", name)
 	}
 
 	return spec, nil

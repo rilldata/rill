@@ -1515,7 +1515,7 @@ type GetIFrameRequest struct {
 	For isGetIFrameRequest_For `protobuf_oneof:"for"`
 	// Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
 	Kind string `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	// Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+	// Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
 	Resource string `protobuf:"bytes,5,opt,name=resource,proto3" json:"resource,omitempty"`
 	// Theme to use for the embedded resource.
 	Theme string `protobuf:"bytes,12,opt,name=theme,proto3" json:"theme,omitempty"`
