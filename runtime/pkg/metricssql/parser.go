@@ -323,6 +323,8 @@ func (t *transformer) transformExprNode(ctx context.Context, node ast.ExprNode) 
 		return t.transformPatternLikeOrIlikeExpr(ctx, node)
 	case *ast.UnaryOperationExpr:
 		return t.transformUnaryOperationExpr(ctx, node)
+	case *ast.BetweenExpr:
+		return t.transformBetweenExpr(ctx, node)
 	case ast.ValueExpr:
 		return t.transformValueExpr(ctx, node)
 	case *ast.FuncCallExpr:
@@ -539,6 +541,44 @@ func (t *transformer) transformUnaryOperationExpr(ctx context.Context, node *ast
 	}
 
 	return exprResult{expr: fmt.Sprintf("%s%s", opToString(node.Op), expr.expr), columns: expr.columns, types: expr.types}, nil
+}
+
+func (t *transformer) transformBetweenExpr(ctx context.Context, n *ast.BetweenExpr) (exprResult, error) {
+	expr, err := t.transformExprNode(ctx, n.Expr)
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	var sb strings.Builder
+	sb.WriteString(expr.expr)
+	if n.Not {
+		sb.WriteString(" NOT BETWEEN ")
+	} else {
+		sb.WriteString(" BETWEEN ")
+	}
+
+	left, err := t.transformExprNode(ctx, n.Left)
+	if err != nil {
+		return exprResult{}, err
+	}
+	sb.WriteString(left.expr)
+
+	sb.WriteString(" AND ")
+
+	right, err := t.transformExprNode(ctx, n.Right)
+	if err != nil {
+		return exprResult{}, err
+	}
+	sb.WriteString(right.expr)
+	
+	var cols []string
+	cols = append(cols, left.columns...)
+	cols = append(cols, right.columns...)
+
+	var types []string
+	types = append(types, left.types...)
+	types = append(types, right.types...)
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
 }
 
 func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) (exprResult, error) {
