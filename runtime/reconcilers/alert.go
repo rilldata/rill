@@ -895,44 +895,52 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 	switch q := q.(type) {
 	case *queries.MetricsViewAggregation:
 		if q.Result != nil && len(q.Result.Data) > 0 {
-			row := q.Result.Data[0]
-			res := make(map[string]any)
-			for k, v := range row.AsMap() {
-				measureLabel, f := getMeasureLabelAndFormatter(k, measures, logger)
-				res[measureLabel] = formatValue(f, v, logger)
-			}
-			return res, true, nil
+			return formatMetricsViewAggregationResult(q, measures, logger), true, nil
 		}
 		return nil, false, nil
 	case *queries.MetricsViewComparison:
 		if q.Result != nil && len(q.Result.Rows) > 0 {
-			row := q.Result.Rows[0]
-			res := make(map[string]any)
-			res[q.DimensionName] = row.DimensionValue
-			for _, v := range row.MeasureValues {
-				measureLabel, f := getMeasureLabelAndFormatter(v.MeasureName, measures, logger)
-				res[measureLabel] = formatValue(f, v.BaseValue.AsInterface(), logger)
-				if v.ComparisonValue != nil {
-					res[measureLabel+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
-				}
-				if v.DeltaAbs != nil {
-					res[measureLabel+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
-				}
-				if v.DeltaRel != nil {
-					fp, err := formatter.NewPresetFormatter("percent", false)
-					if err != nil {
-						logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
-						fp = nil
-					}
-					res[measureLabel+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
-				}
-			}
-			return res, true, nil
+			return formatMetricsViewComparisonResult(q, measures, logger), true, nil
 		}
 		return nil, false, nil
 	default:
 		return nil, false, fmt.Errorf("query type %T not supported for alerts", q)
 	}
+}
+
+func formatMetricsViewAggregationResult(q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) map[string]any {
+	row := q.Result.Data[0]
+	res := make(map[string]any)
+	for k, v := range row.AsMap() {
+		measureLabel, f := getMeasureLabelAndFormatter(k, measures, logger)
+		res[measureLabel] = formatValue(f, v, logger)
+	}
+	return res
+}
+
+func formatMetricsViewComparisonResult(q *queries.MetricsViewComparison, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) map[string]any {
+	row := q.Result.Rows[0]
+	res := make(map[string]any)
+	res[q.DimensionName] = row.DimensionValue
+	for _, v := range row.MeasureValues {
+		measureLabel, f := getMeasureLabelAndFormatter(v.MeasureName, measures, logger)
+		res[measureLabel] = formatValue(f, v.BaseValue.AsInterface(), logger)
+		if v.ComparisonValue != nil {
+			res[measureLabel+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
+		}
+		if v.DeltaAbs != nil {
+			res[measureLabel+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
+		}
+		if v.DeltaRel != nil {
+			fp, err := formatter.NewPresetFormatter("percent", false)
+			if err != nil {
+				logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+				fp = nil
+			}
+			res[measureLabel+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
+		}
+	}
+	return res
 }
 
 // getMeasureLabelAndFormatter gets the measure label and formatter by a measure name.
