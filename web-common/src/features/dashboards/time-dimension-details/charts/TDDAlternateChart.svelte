@@ -1,8 +1,8 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import {
-      resolveSignalField,
-      resolveSignalTimeField,
+    resolveSignalField,
+    resolveSignalTimeField,
   } from "@rilldata/web-common/features/charts/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
@@ -11,9 +11,9 @@
   import { TDDAlternateCharts } from "../types";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
-      getVegaSpecForTDD,
-      reduceDimensionData,
-      sanitizeSpecForTDD,
+    getVegaSpecForTDD,
+    reduceDimensionData,
+    sanitizeSpecForTDD,
   } from "./utils";
 
   export let totalsData;
@@ -41,7 +41,7 @@
     },
   };
 
-  $: hasDimensionData = !!dimensi\ onData?.length;
+  $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
   $: selectedValues = hasDimensionData ? dimensionData.map((d) => d.value) : [];
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
