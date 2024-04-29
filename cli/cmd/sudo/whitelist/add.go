@@ -9,7 +9,7 @@ import (
 func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <org> [<project>] <domain> <role>",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.RangeArgs(3, 4),
 		Short: "Whitelist users from a domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -46,6 +46,8 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				ch.PrintfSuccess("Success\n")
+
+				return nil
 			}
 
 			// project is provided, this is a project whitelist

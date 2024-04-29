@@ -9,7 +9,7 @@ import (
 func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <org> [project] <domain>",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.RangeArgs(2, 3),
 		Short: "Remove whitelist for an org and domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
