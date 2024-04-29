@@ -78,9 +78,9 @@
       <!--    markdown={component.markdown}-->
       <!--    fontSize={component.fontSize ?? 40}-->
       <!--  />-->
-      <!--{:else if chartName}-->
-      <Chart {chartName} />
-      <!--{/if}-->
+      {#if chartName && typeof chartName === "string"}
+        <Chart {chartName} />
+      {/if}
     </Component>
   </ContextMenu.Trigger>
 

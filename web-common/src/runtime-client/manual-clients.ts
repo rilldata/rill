@@ -1,6 +1,6 @@
 // This files contains clients that are not written through GRPC
 
-import { V1ChartSpecResolverProperties } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { QueryClient } from "@tanstack/query-core";
 import { createQuery } from "@tanstack/svelte-query";
@@ -56,7 +56,7 @@ export function createRuntimeServiceGetChartData(
   instanceId: string,
   chartName: string,
   // we need this till we figure out why last updated is not changing on charts
-  props: V1ChartSpecResolverProperties | undefined,
+  props: V1ComponentSpecResolverProperties | undefined,
 ) {
   return createQuery(
     [`/v1/instances/${instanceId}/components/${chartName}/data`, props],

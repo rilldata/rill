@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DashboardItem } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
+  import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
   import Element from "./Element.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
@@ -11,7 +11,7 @@
   const zeroVector = [0, 0] as [0, 0];
 
   export let columns: number | undefined;
-  export let items: DashboardItem[];
+  export let items: V1DashboardItem[];
   export let gap: number | undefined;
   export let showGrid = false;
   export let snap = false;

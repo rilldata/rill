@@ -29,7 +29,7 @@
   } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type {
-    V1DashboardComponent,
+    V1DashboardItem,
     V1DashboardSpec,
   } from "@rilldata/web-common/runtime-client";
   import {
@@ -71,7 +71,7 @@
   let dashboard: V1DashboardSpec = {
     columns: 10,
     gap: 1,
-    components: [],
+    items: [],
   };
 
   $: if (data.fileArtifact) {
@@ -191,8 +191,8 @@
   }
 
   function isComponent(
-    component: V1DashboardComponent | null | undefined,
-  ): component is V1DashboardComponent {
+    component: V1DashboardItem | null | undefined,
+  ): component is V1DashboardItem {
     return !!component;
   }
 </script>
