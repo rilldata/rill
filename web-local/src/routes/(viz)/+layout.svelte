@@ -1,7 +1,6 @@
 <script lang="ts">
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
   import { page } from "$app/stores";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -17,10 +16,8 @@
     route,
   } = $page);
 
-  $: projectTitleQuery = useProjectTitle(instanceId);
   $: dashboardsQuery = useValidDashboards(instanceId);
 
-  $: projectName = $projectTitleQuery.data ?? null;
   $: dashboards = $dashboardsQuery.data ?? [];
 
   $: dashboardOptions = dashboards.reduce((map, dimension) => {
@@ -32,20 +29,18 @@
     return map;
   }, new Map<string, PathOption>());
 
-  $: projectOptions = new Map<string, PathOption>([
-    [projectName ?? "", { label: projectName ?? "", href: "/" }],
-  ]);
+  $: pathParts = [dashboardOptions];
 
-  $: pathParts = [projectOptions, dashboardOptions];
-
-  $: currentPath = [projectName ?? "", dashboardName];
+  $: currentPath = [dashboardName];
 </script>
 
 <div class="flex flex-col size-full">
   <header class="py-3 w-full bg-white flex gap-x-2 items-center px-4 border-b">
     {#if $dashboardsQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>
-        <Rill slot="icon" />
+        <a href="/" slot="icon">
+          <Rill />
+        </a>
       </Breadcrumbs>
     {/if}
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">

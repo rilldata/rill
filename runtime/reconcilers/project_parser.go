@@ -179,9 +179,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if e.Dir {
 				continue
 			}
-			if parser.IsIgnored(e.Path) {
-				continue
-			}
 			if parser.IsSkippable(e.Path) {
 				// We do not get events for files in deleted/renamed directories.
 				// So we need to manually find paths we're tracking in the directory and add them to changedPaths.

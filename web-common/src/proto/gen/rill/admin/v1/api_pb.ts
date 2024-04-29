@@ -5506,6 +5506,252 @@ export class ListWhitelistedDomainsResponse extends Message<ListWhitelistedDomai
 }
 
 /**
+ * @generated from message rill.admin.v1.CreateProjectWhitelistedDomainRequest
+ */
+export class CreateProjectWhitelistedDomainRequest extends Message<CreateProjectWhitelistedDomainRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string domain = 3;
+   */
+  domain = "";
+
+  /**
+   * @generated from field: string role = 4;
+   */
+  role = "";
+
+  constructor(data?: PartialMessage<CreateProjectWhitelistedDomainRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateProjectWhitelistedDomainRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectWhitelistedDomainRequest {
+    return new CreateProjectWhitelistedDomainRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateProjectWhitelistedDomainRequest {
+    return new CreateProjectWhitelistedDomainRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateProjectWhitelistedDomainRequest {
+    return new CreateProjectWhitelistedDomainRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateProjectWhitelistedDomainRequest | PlainMessage<CreateProjectWhitelistedDomainRequest> | undefined, b: CreateProjectWhitelistedDomainRequest | PlainMessage<CreateProjectWhitelistedDomainRequest> | undefined): boolean {
+    return proto3.util.equals(CreateProjectWhitelistedDomainRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateProjectWhitelistedDomainResponse
+ */
+export class CreateProjectWhitelistedDomainResponse extends Message<CreateProjectWhitelistedDomainResponse> {
+  constructor(data?: PartialMessage<CreateProjectWhitelistedDomainResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateProjectWhitelistedDomainResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectWhitelistedDomainResponse {
+    return new CreateProjectWhitelistedDomainResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateProjectWhitelistedDomainResponse {
+    return new CreateProjectWhitelistedDomainResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateProjectWhitelistedDomainResponse {
+    return new CreateProjectWhitelistedDomainResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateProjectWhitelistedDomainResponse | PlainMessage<CreateProjectWhitelistedDomainResponse> | undefined, b: CreateProjectWhitelistedDomainResponse | PlainMessage<CreateProjectWhitelistedDomainResponse> | undefined): boolean {
+    return proto3.util.equals(CreateProjectWhitelistedDomainResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveProjectWhitelistedDomainRequest
+ */
+export class RemoveProjectWhitelistedDomainRequest extends Message<RemoveProjectWhitelistedDomainRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string domain = 3;
+   */
+  domain = "";
+
+  constructor(data?: PartialMessage<RemoveProjectWhitelistedDomainRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveProjectWhitelistedDomainRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveProjectWhitelistedDomainRequest {
+    return new RemoveProjectWhitelistedDomainRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveProjectWhitelistedDomainRequest {
+    return new RemoveProjectWhitelistedDomainRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveProjectWhitelistedDomainRequest {
+    return new RemoveProjectWhitelistedDomainRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveProjectWhitelistedDomainRequest | PlainMessage<RemoveProjectWhitelistedDomainRequest> | undefined, b: RemoveProjectWhitelistedDomainRequest | PlainMessage<RemoveProjectWhitelistedDomainRequest> | undefined): boolean {
+    return proto3.util.equals(RemoveProjectWhitelistedDomainRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveProjectWhitelistedDomainResponse
+ */
+export class RemoveProjectWhitelistedDomainResponse extends Message<RemoveProjectWhitelistedDomainResponse> {
+  constructor(data?: PartialMessage<RemoveProjectWhitelistedDomainResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveProjectWhitelistedDomainResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveProjectWhitelistedDomainResponse {
+    return new RemoveProjectWhitelistedDomainResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveProjectWhitelistedDomainResponse {
+    return new RemoveProjectWhitelistedDomainResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveProjectWhitelistedDomainResponse {
+    return new RemoveProjectWhitelistedDomainResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveProjectWhitelistedDomainResponse | PlainMessage<RemoveProjectWhitelistedDomainResponse> | undefined, b: RemoveProjectWhitelistedDomainResponse | PlainMessage<RemoveProjectWhitelistedDomainResponse> | undefined): boolean {
+    return proto3.util.equals(RemoveProjectWhitelistedDomainResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListProjectWhitelistedDomainsRequest
+ */
+export class ListProjectWhitelistedDomainsRequest extends Message<ListProjectWhitelistedDomainsRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<ListProjectWhitelistedDomainsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectWhitelistedDomainsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectWhitelistedDomainsRequest {
+    return new ListProjectWhitelistedDomainsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectWhitelistedDomainsRequest {
+    return new ListProjectWhitelistedDomainsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectWhitelistedDomainsRequest {
+    return new ListProjectWhitelistedDomainsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectWhitelistedDomainsRequest | PlainMessage<ListProjectWhitelistedDomainsRequest> | undefined, b: ListProjectWhitelistedDomainsRequest | PlainMessage<ListProjectWhitelistedDomainsRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectWhitelistedDomainsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListProjectWhitelistedDomainsResponse
+ */
+export class ListProjectWhitelistedDomainsResponse extends Message<ListProjectWhitelistedDomainsResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.WhitelistedDomain domains = 1;
+   */
+  domains: WhitelistedDomain[] = [];
+
+  constructor(data?: PartialMessage<ListProjectWhitelistedDomainsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectWhitelistedDomainsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "domains", kind: "message", T: WhitelistedDomain, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectWhitelistedDomainsResponse {
+    return new ListProjectWhitelistedDomainsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectWhitelistedDomainsResponse {
+    return new ListProjectWhitelistedDomainsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectWhitelistedDomainsResponse {
+    return new ListProjectWhitelistedDomainsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectWhitelistedDomainsResponse | PlainMessage<ListProjectWhitelistedDomainsResponse> | undefined, b: ListProjectWhitelistedDomainsResponse | PlainMessage<ListProjectWhitelistedDomainsResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectWhitelistedDomainsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetRepoMetaRequest
  */
 export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {

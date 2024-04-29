@@ -22,7 +22,7 @@ import {
 
 export function useModels(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Model, (data) =>
-    data.resources?.filter((r) => !!r.model?.state?.table),
+    data.resources?.filter((r) => r.meta?.name?.name === r.model?.state?.table),
   );
 }
 
