@@ -47,7 +47,7 @@ export function buildStackedBar(
       select: {
         type: "point",
         on: "pointerover",
-        encodings: ["color"],
+        encodings: ["x", "color"],
       },
     },
   ];

@@ -7,7 +7,7 @@ import {
 import { error } from "@sveltejs/kit";
 import type { QueryFunction } from "@tanstack/svelte-query";
 
-export async function load({ parent, params, depends }) {
+export const load = async ({ parent, params, depends }) => {
   const { instanceId } = await parent();
 
   const dashboardName = params.name;
@@ -48,4 +48,4 @@ export async function load({ parent, params, depends }) {
     console.error(e);
     throw error(404, "Dashboard not found");
   }
-}
+};

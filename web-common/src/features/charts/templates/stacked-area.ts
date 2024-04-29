@@ -60,6 +60,20 @@ export function buildStackedArea(
     },
     color: { field: nominalField?.name, type: "nominal", legend: null },
   };
+
+  if (nominalField?.values?.length) {
+    baseSpec.transform = [
+      {
+        calculate: `indexof([${nominalField.values
+          ?.map((v) => `'${v}'`)
+          .reverse()
+          .join(",")}], datum.${nominalField?.name})`,
+        as: "order",
+      },
+    ];
+    baseSpec.encoding.order = { field: "order", type: "ordinal" };
+  }
+
   baseSpec.layer = [
     {
       mark: { type: "area", clip: true, opacity: 0.7 },

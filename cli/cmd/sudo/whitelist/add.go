@@ -8,8 +8,8 @@ import (
 
 func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd := &cobra.Command{
-		Use:   "add <org> <domain> <role>",
-		Args:  cobra.ExactArgs(3),
+		Use:   "add <org> [<project>] <domain> <role>",
+		Args:  cobra.RangeArgs(3, 4),
 		Short: "Whitelist users from a domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -19,11 +19,44 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			org := args[0]
-			domain := args[1]
-			role := args[2]
+			// check the number of args to determine if the project is provided
+			if len(args) == 3 {
+				// project is not provided, this is an organization whitelist
+				org := args[0]
+				domain := args[1]
+				role := args[2]
 
-			ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s\n", domain, org, role)
+				ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s\n", domain, org, role)
+				ok, err := cmdutil.ConfirmPrompt("Do you want to continue", "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
+
+				_, err = client.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+					Organization: org,
+					Domain:       domain,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfSuccess("Success\n")
+
+				return nil
+			}
+
+			// project is provided, this is a project whitelist
+			org := args[0]
+			project := args[1]
+			domain := args[2]
+			role := args[3]
+
+			ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the project %q of %q as %s\n", domain, project, org, role)
 			ok, err := cmdutil.ConfirmPrompt("Do you want to continue", "", false)
 			if err != nil {
 				return err
@@ -33,8 +66,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			_, err = client.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
+			_, err = client.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
 				Organization: org,
+				Project:      project,
 				Domain:       domain,
 				Role:         role,
 			})

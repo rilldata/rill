@@ -20,13 +20,6 @@ const (
 	maxFileSize = 1 << 17 // 128kb
 )
 
-// IgnoredPaths is a list of paths that are ignored by the parser.
-var IgnoredPaths = []string{
-	"/tmp",
-	"/.git",
-	"/node_modules",
-}
-
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
@@ -247,19 +240,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return p.reparseExceptRillYAML(ctx, paths)
 }
 
-// IsIgnored returns true if the path (and any files in nested directories) should be ignored.
-func (p *Parser) IsIgnored(path string) bool {
-	for _, dir := range IgnoredPaths {
-		if path == dir {
-			return true
-		}
-		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
-			return true
-		}
-	}
-	return false
-}
-
 // IsSkippable returns true if the path will be skipped by Reparse.
 // It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
 func (p *Parser) IsSkippable(path string) bool {
@@ -304,12 +284,6 @@ func (p *Parser) reload(ctx context.Context) error {
 	// Build paths slice
 	paths := make([]string, 0, len(files))
 	for _, file := range files {
-		// Filter out ignored files
-		// TODO: Incorporate the ignore list directly into the ListRecursive call.
-		if p.IsIgnored(file.Path) {
-			continue
-		}
-
 		paths = append(paths, file.Path)
 	}
 
@@ -369,10 +343,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 		seenPaths[path] = true
 
-		// Skip ignores files and files that aren't SQL or YAML or .env file
-		if p.IsIgnored(path) {
-			continue
-		}
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)

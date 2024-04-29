@@ -1,18 +1,19 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/charts/render/VegaLiteRenderer.svelte";
   import {
-    resolveSignalField,
-    resolveSignalTimeField,
+      resolveSignalField,
+      resolveSignalTimeField,
   } from "@rilldata/web-common/features/charts/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { TDDAlternateCharts } from "../types";
+  import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
-    getVegaSpecForTDD,
-    reduceDimensionData,
-    sanitizeSpecForTDD,
+      getVegaSpecForTDD,
+      reduceDimensionData,
+      sanitizeSpecForTDD,
   } from "./utils";
 
   export let totalsData;
@@ -40,7 +41,7 @@
     },
   };
 
-  $: hasDimensionData = !!dimensionData?.length;
+  $: hasDimensionData = !!dimensi\ onData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
   $: selectedValues = hasDimensionData ? dimensionData.map((d) => d.value) : [];
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
@@ -63,6 +64,14 @@
     xMax,
     selectedValues,
   );
+
+  $: tooltipFormatter = tddTooltipFormatter(
+    chartType,
+    expandedMeasureLabel,
+    comparedDimensionLabel,
+    selectedValues,
+    timeGrain,
+  );
 </script>
 
 {#if sanitizedVegaSpec && data}
@@ -70,5 +79,6 @@
     data={{ table: data }}
     spec={sanitizedVegaSpec}
     {signalListeners}
+    {tooltipFormatter}
   />
 {/if}

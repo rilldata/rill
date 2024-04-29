@@ -94,13 +94,13 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
-	// check if users email domain is whitelisted
+	// check if users email domain is whitelisted for some organizations
 	domain := email[strings.LastIndex(email, "@")+1:]
-	whitelists, err := s.DB.FindOrganizationWhitelistedDomainsForDomain(ctx, domain)
+	organizationWhitelistedDomains, err := s.DB.FindOrganizationWhitelistedDomainsForDomain(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
-	for _, whitelist := range whitelists {
+	for _, whitelist := range organizationWhitelistedDomains {
 		// if user is already a member of the org then skip, prefer explicit invite to whitelist
 		if _, ok := addedToOrgIDs[whitelist.OrgID]; ok {
 			continue
@@ -122,7 +122,13 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 
 	// handle project invites
+	addedToProjectIDs := make(map[string]bool)
+	addedToProjectNames := make([]string, 0)
 	for _, invite := range projectInvites {
+		project, err := s.DB.FindProject(ctx, invite.ProjectID)
+		if err != nil {
+			return nil, err
+		}
 		err = s.DB.InsertProjectMemberUser(ctx, invite.ProjectID, user.ID, invite.ProjectRoleID)
 		if err != nil {
 			return nil, err
@@ -131,6 +137,30 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
+		addedToProjectIDs[project.ID] = true
+		addedToProjectNames = append(addedToProjectNames, project.Name)
+	}
+
+	// check if users email domain is whitelisted for some projects
+	projectWhitelistedDomains, err := s.DB.FindProjectWhitelistedDomainsForDomain(ctx, domain)
+	if err != nil {
+		return nil, err
+	}
+	for _, whitelist := range projectWhitelistedDomains {
+		// if user is already a member of the project then skip, prefer explicit invite to whitelist
+		if _, ok := addedToProjectIDs[whitelist.ProjectID]; ok {
+			continue
+		}
+		project, err := s.DB.FindProject(ctx, whitelist.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.InsertProjectMemberUser(ctx, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID)
+		if err != nil {
+			return nil, err
+		}
+		addedToProjectIDs[project.ID] = true
+		addedToProjectNames = append(addedToProjectNames, project.Name)
 	}
 
 	err = tx.Commit()
@@ -143,6 +173,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		zap.String("email", user.Email),
 		zap.String("name", user.DisplayName),
 		zap.String("org", strings.Join(addedToOrgNames, ",")),
+		zap.String("project", strings.Join(addedToProjectNames, ",")),
 	)
 
 	return user, nil
