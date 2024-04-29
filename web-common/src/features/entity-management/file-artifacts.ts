@@ -208,13 +208,6 @@ export class FileArtifacts {
    * Map of all files and its individual store
    */
   private readonly artifacts: Record<string, FileArtifact> = {};
-  /**
-   * A cache of {@Link FileArtifact}s by {@link ResourceKind}
-   * This avoids going through every file artifact to filter the by kind
-   */
-  private readonly artifactsByKind: Partial<
-    Record<ResourceKind, FileArtifact[]>
-  > = {};
 
   // Actions
 
