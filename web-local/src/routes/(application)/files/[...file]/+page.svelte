@@ -2,9 +2,9 @@
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
-  import { yaml } from "@rilldata/web-common/components/editor/presets/yaml";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
+  import { getExtensionsForFiles } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import {
     addLeadingSlash,
     removeLeadingSlash,
@@ -51,8 +51,6 @@
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
-
-  $: isYaml = filePath.endsWith(".yaml") || filePath.endsWith(".yml");
 
   // TODO: optimistically update the get file cache
   const putFile = createRuntimeServicePutFile();
@@ -112,12 +110,12 @@
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
     <div class="editor-pane size-full" slot="body">
-      <div class="editor flex flex-col border border-gray-200 rounded h-full">
-        <div class="grow flex bg-white overflow-y-auto rounded">
+      <div class="editor flex flex-col h-full">
+        <div class="grow flex bg-white overflow-y-auto">
           <Editor
             {blob}
             bind:latest
-            extensions={isYaml ? [yaml()] : []}
+            extensions={getExtensionsForFiles(filePath)}
             on:update={({ detail: { content } }) => debounceSave(content)}
           />
         </div>

@@ -21,7 +21,7 @@
   $: currentPage = currentPath.findLastIndex(Boolean);
 </script>
 
-<nav class="flex gap-x-0 pl-1.5 items-center">
+<nav class="flex gap-x-2 pl-1.5 items-center">
   <slot name="icon" />
   <ol class="flex flex-row items-center">
     {#each pathParts as options, depth (depth)}

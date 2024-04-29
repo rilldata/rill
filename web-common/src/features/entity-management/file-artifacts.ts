@@ -44,6 +44,8 @@ export class FileArtifact {
    */
   public lastStateUpdatedOn: string | undefined;
 
+  public isNew = true;
+
   public constructor(filePath: string) {
     this.path = filePath;
   }
@@ -58,6 +60,7 @@ export class FileArtifact {
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
     this.renaming = !!resource.meta?.renamedFrom;
+    this.isNew = false;
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -282,6 +285,14 @@ export class FileArtifacts {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
+  }
+
+  public isNew(resource: V1Resource) {
+    return (
+      resource.meta?.filePaths?.some((filePath) => {
+        return this.artifacts[filePath].isNew;
+      }) ?? false
+    );
   }
 
   public wasRenaming(resource: V1Resource) {
