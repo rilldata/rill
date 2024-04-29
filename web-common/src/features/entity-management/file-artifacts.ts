@@ -10,7 +10,6 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -134,54 +133,6 @@ export class FileArtifact {
     );
   }
 
-  public getResourceStatusStore(
-    queryClient: QueryClient,
-    instanceId: string,
-    validator?: (res: V1Resource) => boolean,
-  ) {
-    return derived(
-      [
-        this.getResource(queryClient, instanceId),
-        this.getAllErrors(queryClient, instanceId),
-        useProjectParser(queryClient, instanceId),
-      ],
-      ([resourceResp, errors, projectParserResp]) => {
-        if (projectParserResp.isError) {
-          return {
-            status: ResourceStatus.Errored,
-            error: projectParserResp.error,
-          };
-        }
-
-        if (
-          errors.length ||
-          (resourceResp.isError && !resourceResp.isFetching) ||
-          projectParserResp.isError
-        ) {
-          return {
-            status: ResourceStatus.Errored,
-            error: resourceResp.error ?? projectParserResp.error,
-          };
-        }
-
-        let isBusy: boolean;
-        if (validator && resourceResp.data) {
-          isBusy = !validator(resourceResp.data);
-        } else {
-          isBusy =
-            resourceResp.isFetching ||
-            resourceResp.data?.meta?.reconcileStatus !==
-              V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-        }
-
-        return {
-          status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
-          resource: resourceResp.data,
-        };
-      },
-    );
-  }
-
   public getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
   }
@@ -215,7 +166,7 @@ export class FileArtifacts {
         case ResourceKind.Source:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
-        case ResourceKind.Chart:
+        case ResourceKind.Component:
         case ResourceKind.Dashboard:
           this.updateArtifacts(resource);
           break;

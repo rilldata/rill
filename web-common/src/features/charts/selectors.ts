@@ -17,5 +17,5 @@ export function useChartRoutes(instanceId: string) {
 }
 
 export const useChart = (instanceId: string, chartName: string) => {
-  return useResource(instanceId, chartName, ResourceKind.Chart);
+  return useResource(instanceId, chartName, ResourceKind.Component);
 };

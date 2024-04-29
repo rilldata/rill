@@ -21,7 +21,7 @@ where publisher is not null`,
     ).toEqual(`# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
 
-kind: chart
+kind: component
 data:
   sql: |-
     select * from AdBids
@@ -40,7 +40,7 @@ where publisher is not null`,
     ).toEqual(`# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
 
-kind: chart
+kind: component
 data:
   metrics_sql: |-
     select * from AdBids

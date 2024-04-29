@@ -161,7 +161,7 @@
    * Put an example Chart file in the `charts` directory
    */
   async function handleAddChart() {
-    const newRoute = await handleEntityCreate(ResourceKind.Chart);
+    const newRoute = await handleEntityCreate(ResourceKind.Component);
     await wrapNavigation(newRoute);
   }
 
@@ -277,7 +277,7 @@
           {#if $customDashboards}
             <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
               <svelte:component
-                this={resourceIconMapping[ResourceKind.Chart]}
+                this={resourceIconMapping[ResourceKind.Component]}
                 className="text-gray-900"
                 size="16px"
               />

@@ -14,11 +14,11 @@ import {
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
-  createRuntimeServiceGenerateChartSpec,
+  createRuntimeServiceGenerateRenderer,
   createRuntimeServiceGenerateResolver,
   createRuntimeServiceGetFile,
   runtimeServicePutFile,
-  type V1ChartSpec,
+  V1ComponentSpec,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -27,14 +27,15 @@ export function createChartGenerator(
   chart: string,
   filePath: string,
 ) {
-  const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
+  const generateVegaConfig = createRuntimeServiceGenerateRenderer();
   const chartQuery = useChart(instanceId, chart);
   const chartContent = createRuntimeServiceGetFile(instanceId, filePath);
+  // TODO: update for new API
 
   return async (prompt: string) => {
     try {
       const [resolver, resolverProperties] = tryParseChart(
-        get(chartQuery).data?.chart?.spec,
+        get(chartQuery).data?.component?.spec,
         get(chartContent).data?.blob,
       );
       chartPromptsStore.startPrompt(chart, chart, prompt);
@@ -48,7 +49,11 @@ export function createChartGenerator(
       });
       chartPromptsStore.updatePromptStatus(chart, ChartPromptStatus.Idle);
       await runtimeServicePutFile(instanceId, removeLeadingSlash(filePath), {
-        blob: getChartYaml(resp.vegaLiteSpec, resolver, resolverProperties),
+        blob: getChartYaml(
+          resp.rendererProperties?.spec,
+          resolver,
+          resolverProperties,
+        ),
       });
     } catch (e) {
       chartPromptsStore.setPromptError(
@@ -61,7 +66,7 @@ export function createChartGenerator(
 
 export function createFullChartGenerator(instanceId: string) {
   const generateResolver = createRuntimeServiceGenerateResolver();
-  const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
+  const generateVegaConfig = createRuntimeServiceGenerateRenderer();
 
   return async (
     prompt: string,
@@ -124,7 +129,7 @@ export function createFullChartGenerator(instanceId: string) {
       );
       await runtimeServicePutFile(instanceId, filePath, {
         blob: getChartYaml(
-          resp.vegaLiteSpec,
+          resp.rendererProperties?.spec,
           resolverResp.resolver,
           resolverResp.resolverProperties,
         ),
@@ -139,7 +144,7 @@ export function createFullChartGenerator(instanceId: string) {
 }
 
 function tryParseChart(
-  chartSpec: V1ChartSpec | undefined,
+  chartSpec: V1ComponentSpec | undefined,
   chartContent: string | undefined,
 ): [resolver: string, resolverProperties: Record<string, string>] {
   if (!chartSpec?.resolver && chartContent) {
