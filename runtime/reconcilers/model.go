@@ -132,10 +132,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		materialize = true
 	}
 
+	// Resolve variables before computing the execution hash to ensure we re-trigger when a variable is updated
 	sql, err := r.resolveTemplateSQL(ctx, self)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
+
 	// Use a hash of execution-related fields from the spec to determine if something has changed
 	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize, sql)
 	if err != nil {
