@@ -92,7 +92,6 @@
 
   let highlitedRowIndex: number | undefined;
   $: if (formattedData?.rowCount) {
-    let foundValue = false;
     highlitedRowIndex = undefined;
     formattedData.rowHeaderData.forEach((row, index) => {
       if (row[0]?.value === $chartInteractionColumn?.yHover) {
