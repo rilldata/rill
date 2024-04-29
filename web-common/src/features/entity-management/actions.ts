@@ -69,10 +69,16 @@ export async function renameFileArtifact(
   }
 }
 
-export async function deleteFileArtifact(instanceId: string, filePath: string) {
+export async function deleteFileArtifact(
+  instanceId: string,
+  filePath: string,
+  force = false,
+) {
   const name = extractFileName(filePath);
   try {
-    await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
+    await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath), {
+      force,
+    });
 
     httpRequestQueue.removeByName(name);
   } catch (err) {

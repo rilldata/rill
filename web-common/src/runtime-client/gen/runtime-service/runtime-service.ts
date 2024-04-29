@@ -34,6 +34,7 @@ import type {
   RuntimeServiceListFilesParams,
   V1GetFileResponse,
   V1DeleteFileResponse,
+  RuntimeServiceDeleteFileParams,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
   V1CreateDirectoryResponse,
@@ -768,10 +769,15 @@ export const createRuntimeServiceGetFile = <
 /**
  * @summary DeleteFile deletes a file from a repo
  */
-export const runtimeServiceDeleteFile = (instanceId: string, path: string) => {
+export const runtimeServiceDeleteFile = (
+  instanceId: string,
+  path: string,
+  params?: RuntimeServiceDeleteFileParams,
+) => {
   return httpClient<V1DeleteFileResponse>({
     url: `/v1/instances/${instanceId}/files/-/${path}`,
     method: "delete",
+    params,
   });
 };
 
@@ -788,7 +794,11 @@ export const createRuntimeServiceDeleteFile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
     TError,
-    { instanceId: string; path: string },
+    {
+      instanceId: string;
+      path: string;
+      params?: RuntimeServiceDeleteFileParams;
+    },
     TContext
   >;
 }) => {
@@ -796,17 +806,25 @@ export const createRuntimeServiceDeleteFile = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    { instanceId: string; path: string }
+    {
+      instanceId: string;
+      path: string;
+      params?: RuntimeServiceDeleteFileParams;
+    }
   > = (props) => {
-    const { instanceId, path } = props ?? {};
+    const { instanceId, path, params } = props ?? {};
 
-    return runtimeServiceDeleteFile(instanceId, path);
+    return runtimeServiceDeleteFile(instanceId, path, params);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
     TError,
-    { instanceId: string; path: string },
+    {
+      instanceId: string;
+      path: string;
+      params?: RuntimeServiceDeleteFileParams;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };

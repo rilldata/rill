@@ -253,6 +253,9 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			res.Kind = ResourceKindMetricsView
 		} else if strings.HasPrefix(paths[0], "/init.sql") {
 			res.Kind = ResourceKindMigration
+		} else if sqlPath != "" {
+			// SQL files without an explicit kind are assumed to be models
+			res.Kind = ResourceKindModel
 		} else {
 			path := ymlPath
 			if path == "" {

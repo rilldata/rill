@@ -36,15 +36,15 @@ const ResourceKindMap: Record<
   [ResourceKind.Source]: {
     name: "source",
     extension: ".yaml",
-    baseContent: "",
+    baseContent: "", // This is constructed in the `features/sources/modal` directory
   },
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
-    baseContent: `SELECT 'Hello, World!' AS Greeting
+    baseContent: `-- Model SQL
+-- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- The \`@kind: model\` decorator registers your Model if this file is moved out of the \`/models\` directory.
---@kind: model`,
+SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
     name: "dashboard",
@@ -52,32 +52,30 @@ const ResourceKindMap: Record<
     baseContent: `# Dashboard YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
-table: example_table # Choose a table to underpin your dashboard
+kind: metrics_view
 
 title: "Dashboard Title"
+table: example_table # Choose a table to underpin your dashboard
+timeseries: timestamp_column # Select an actual timestamp column (if any) from your table
 
-timeseries: timestamp # Replace with an actual timestamp column (if any) from your table
-
-# Configure the dashboard's dimensions...
 dimensions:
   - column: category
     label: "Category"
     description: "Description of the dimension"
 
-# Configure the dashboard's measures...
 measures:
   - expression: "SUM(revenue)"
     label: "Total Revenue"
     description: "Total revenue generated"
-
-# \`kind: metrics_view\` registers your Dashboard if this file is moved out of the \`/dashboards\` directory.
-kind: metrics_view
 `,
   },
   [ResourceKind.API]: {
     name: "api",
     extension: ".yaml",
-    baseContent: `kind: api
+    baseContent: `# API YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+
+kind: api
 
 sql:
   select ...
@@ -86,24 +84,49 @@ sql:
   [ResourceKind.Chart]: {
     name: "chart",
     extension: ".yaml",
-    baseContent: `kind: chart
+    baseContent: `# Chart YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/charts
+    
+kind: chart
+
 data:
-  metrics_sql: |
-    SELECT advertiser_name, AGGREGATE(measure_2)
-    FROM Bids_Sample_Dash
-    GROUP BY advertiser_name
-    ORDER BY measure_2 DESC
-    LIMIT 20
+  sql: |
+    SELECT * FROM (VALUES 
+      ('Monday', 300),
+      ('Tuesday', 150),
+      ('Wednesday', 200),
+      ('Thursday', 400),
+      ('Friday', 650),
+      ('Saturday', 575),
+      ('Sunday', 500)
+    ) AS t(day_of_week, revenue)
 
 vega_lite: |
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "data": {"name": "table"},
-    "mark": "bar",
+    "data": { "name": "table" },
+    "mark": "line",
     "width": "container",
     "encoding": {
-      "x": {"field": "advertiser_name", "type": "nominal"},
-      "y": {"field": "measure_2", "type": "quantitative"}
+      "x": {
+        "field": "day_of_week",
+        "type": "ordinal",
+        "axis": { "title": "Day of the Week" },
+        "sort": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ]
+      },
+      "y": {
+        "field": "revenue",
+        "type": "quantitative",
+        "axis": { "title": "Revenue" }
+      }
     }
   }`,
   },
@@ -117,16 +140,23 @@ gap: 2`,
   [ResourceKind.Theme]: {
     name: "theme",
     extension: ".yaml",
-    baseContent: `kind: theme
+    baseContent: `# Theme YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/themes
+
+kind: theme
+
 colors:
-  primary: crimson 
-  secondary: lime 
+  primary: plum
+  secondary: violet 
 `,
   },
   [ResourceKind.Report]: {
     name: "report",
     extension: ".yaml",
-    baseContent: `kind: report
+    baseContent: `# Report YAML
+# Reference documentation: TODO
+
+kind: report
 
 ...
 `,
@@ -134,7 +164,10 @@ colors:
   [ResourceKind.Alert]: {
     name: "alert",
     extension: ".yaml",
-    baseContent: `kind: alert
+    baseContent: `# Alert YAML
+# Reference documentation: TODO
+
+kind: alert
 
 ...
 `,
