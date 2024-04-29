@@ -570,12 +570,14 @@ func (t *transformer) transformBetweenExpr(ctx context.Context, n *ast.BetweenEx
 		return exprResult{}, err
 	}
 	sb.WriteString(right.expr)
-	
+
 	var cols []string
+	cols = append(cols, expr.columns...)
 	cols = append(cols, left.columns...)
 	cols = append(cols, right.columns...)
 
 	var types []string
+	types = append(types, expr.types...)
 	types = append(types, left.types...)
 	types = append(types, right.types...)
 	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
