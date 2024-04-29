@@ -538,9 +538,13 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Build query proto
-	qpb, metricsViewName, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
+	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query: %w", err)
+	}
+	metricsViewName, err := queries.MetricsViewFromQuery(a.Spec.QueryName, a.Spec.QueryArgsJson)
+	if err != nil {
+		return nil, fmt.Errorf("failed extract metrics view name from query: %w", err)
 	}
 	metricsView, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}, false)
 	if err != nil {
@@ -892,26 +896,9 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 	case *queries.MetricsViewAggregation:
 		if q.Result != nil && len(q.Result.Data) > 0 {
 			row := q.Result.Data[0]
-			m := row.AsMap()
 			res := make(map[string]any)
-			for k, v := range m {
-				var measureLabel string
-				var f formatter.Formatter
-				for _, measure := range measures {
-					if k == measure.Name {
-						measureLabel = measure.Label
-						var err error
-						// D3 formatting isn't implemented yet so using the format preset for now
-						f, err = formatter.NewPresetFormatter(measure.FormatPreset, false)
-						if err != nil {
-							return nil, false, err
-						}
-						break
-					}
-				}
-				if measureLabel == "" {
-					measureLabel = k
-				}
+			for k, v := range row.AsMap() {
+				measureLabel, f := getMeasureLabelAndFormatter(k, measures, logger)
 				res[measureLabel] = formatValue(f, v, logger)
 			}
 			return res, true, nil
@@ -923,22 +910,7 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 			res := make(map[string]any)
 			res[q.DimensionName] = row.DimensionValue
 			for _, v := range row.MeasureValues {
-				var measureLabel string
-				var f formatter.Formatter
-				for _, measure := range measures {
-					if v.MeasureName == measure.Name {
-						measureLabel = measure.Label
-						var err error
-						f, err = formatter.NewPresetFormatter(measure.FormatPreset, false)
-						if err != nil {
-							return nil, false, err
-						}
-						break
-					}
-				}
-				if measureLabel == "" {
-					measureLabel = v.MeasureName
-				}
+				measureLabel, f := getMeasureLabelAndFormatter(v.MeasureName, measures, logger)
 				res[measureLabel] = formatValue(f, v.BaseValue.AsInterface(), logger)
 				if v.ComparisonValue != nil {
 					res[measureLabel+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
@@ -949,7 +921,8 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 				if v.DeltaRel != nil {
 					fp, err := formatter.NewPresetFormatter("percent", false)
 					if err != nil {
-						return nil, false, err
+						logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+						fp = nil
 					}
 					res[measureLabel+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
 				}
@@ -962,8 +935,39 @@ func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsVi
 	}
 }
 
+// getMeasureLabelAndFormatter gets the measure label and formatter by a measure name.
+// if the measure is not found, it returns the measure name as the label and no formatter.
+// if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
+func getMeasureLabelAndFormatter(measureName string, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
+	var measure *runtimev1.MetricsViewSpec_MeasureV2
+	for _, m := range measures {
+		if measureName == measure.Name {
+			measure = m
+			break
+		}
+	}
+
+	if measure == nil {
+		return measureName, nil
+	}
+
+	measureLabel := measure.Label
+	if measureLabel == "" {
+		measureLabel = measureName
+	}
+
+	// D3 formatting isn't implemented yet so using the format preset only for now
+	f, err := formatter.NewPresetFormatter(measure.FormatPreset, false)
+	if err != nil {
+		logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+		return measureLabel, nil
+	}
+
+	return measureLabel, f
+}
+
 // formatValue formats a measure value using the provided formatter.
-// If the formatter is nil, or value is nil, or an error occurred, it will return the value as is.
+// If the formatter is nil, or value is nil, or an error occurred, it will log a warning and return the value as is.
 func formatValue(f formatter.Formatter, v any, logger *zap.Logger) any {
 	if f == nil || v == nil {
 		return v
