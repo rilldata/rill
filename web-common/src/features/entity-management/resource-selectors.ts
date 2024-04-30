@@ -17,7 +17,7 @@ export enum ResourceKind {
   Report = "rill.runtime.v1.Report",
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
-  Chart = "rill.runtime.v1.Chart",
+  Component = "rill.runtime.v1.Component",
   Dashboard = "rill.runtime.v1.Dashboard",
   API = "rill.runtime.v1.API",
 }
@@ -31,7 +31,7 @@ export const ResourceShortNameToKind: Record<string, ResourceKind> = {
   model: ResourceKind.Model,
   metricsview: ResourceKind.MetricsView,
   metrics_view: ResourceKind.MetricsView,
-  chart: ResourceKind.Chart,
+  component: ResourceKind.Component,
   dashboard: ResourceKind.Dashboard,
   report: ResourceKind.Report,
   alert: ResourceKind.Alert,

@@ -2070,9 +2070,9 @@ export class GenerateResolverResponse extends Message<GenerateResolverResponse> 
 }
 
 /**
- * @generated from message rill.runtime.v1.GenerateChartSpecRequest
+ * @generated from message rill.runtime.v1.GenerateRendererRequest
  */
-export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> {
+export class GenerateRendererRequest extends Message<GenerateRendererRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2093,13 +2093,13 @@ export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> 
    */
   resolverProperties?: Struct;
 
-  constructor(data?: PartialMessage<GenerateChartSpecRequest>) {
+  constructor(data?: PartialMessage<GenerateRendererRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GenerateChartSpecRequest";
+  static readonly typeName = "rill.runtime.v1.GenerateRendererRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2107,57 +2107,63 @@ export class GenerateChartSpecRequest extends Message<GenerateChartSpecRequest> 
     { no: 4, name: "resolver_properties", kind: "message", T: Struct },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartSpecRequest {
-    return new GenerateChartSpecRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateRendererRequest {
+    return new GenerateRendererRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateChartSpecRequest {
-    return new GenerateChartSpecRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateRendererRequest {
+    return new GenerateRendererRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateChartSpecRequest {
-    return new GenerateChartSpecRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateRendererRequest {
+    return new GenerateRendererRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GenerateChartSpecRequest | PlainMessage<GenerateChartSpecRequest> | undefined, b: GenerateChartSpecRequest | PlainMessage<GenerateChartSpecRequest> | undefined): boolean {
-    return proto3.util.equals(GenerateChartSpecRequest, a, b);
+  static equals(a: GenerateRendererRequest | PlainMessage<GenerateRendererRequest> | undefined, b: GenerateRendererRequest | PlainMessage<GenerateRendererRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateRendererRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.GenerateChartSpecResponse
+ * @generated from message rill.runtime.v1.GenerateRendererResponse
  */
-export class GenerateChartSpecResponse extends Message<GenerateChartSpecResponse> {
+export class GenerateRendererResponse extends Message<GenerateRendererResponse> {
   /**
-   * @generated from field: string vega_lite_spec = 2;
+   * @generated from field: string renderer = 1;
    */
-  vegaLiteSpec = "";
+  renderer = "";
 
-  constructor(data?: PartialMessage<GenerateChartSpecResponse>) {
+  /**
+   * @generated from field: google.protobuf.Struct renderer_properties = 2;
+   */
+  rendererProperties?: Struct;
+
+  constructor(data?: PartialMessage<GenerateRendererResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GenerateChartSpecResponse";
+  static readonly typeName = "rill.runtime.v1.GenerateRendererResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "vega_lite_spec", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "renderer_properties", kind: "message", T: Struct },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateChartSpecResponse {
-    return new GenerateChartSpecResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateRendererResponse {
+    return new GenerateRendererResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateChartSpecResponse {
-    return new GenerateChartSpecResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateRendererResponse {
+    return new GenerateRendererResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateChartSpecResponse {
-    return new GenerateChartSpecResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateRendererResponse {
+    return new GenerateRendererResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GenerateChartSpecResponse | PlainMessage<GenerateChartSpecResponse> | undefined, b: GenerateChartSpecResponse | PlainMessage<GenerateChartSpecResponse> | undefined): boolean {
-    return proto3.util.equals(GenerateChartSpecResponse, a, b);
+  static equals(a: GenerateRendererResponse | PlainMessage<GenerateRendererResponse> | undefined, b: GenerateRendererResponse | PlainMessage<GenerateRendererResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateRendererResponse, a, b);
   }
 }
 

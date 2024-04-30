@@ -19,83 +19,86 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AdminService_Ping_FullMethodName                         = "/rill.admin.v1.AdminService/Ping"
-	AdminService_ListOrganizations_FullMethodName            = "/rill.admin.v1.AdminService/ListOrganizations"
-	AdminService_GetOrganization_FullMethodName              = "/rill.admin.v1.AdminService/GetOrganization"
-	AdminService_CreateOrganization_FullMethodName           = "/rill.admin.v1.AdminService/CreateOrganization"
-	AdminService_DeleteOrganization_FullMethodName           = "/rill.admin.v1.AdminService/DeleteOrganization"
-	AdminService_UpdateOrganization_FullMethodName           = "/rill.admin.v1.AdminService/UpdateOrganization"
-	AdminService_ListProjectsForOrganization_FullMethodName  = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
-	AdminService_GetProject_FullMethodName                   = "/rill.admin.v1.AdminService/GetProject"
-	AdminService_SearchProjectNames_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectNames"
-	AdminService_GetProjectVariables_FullMethodName          = "/rill.admin.v1.AdminService/GetProjectVariables"
-	AdminService_CreateProject_FullMethodName                = "/rill.admin.v1.AdminService/CreateProject"
-	AdminService_DeleteProject_FullMethodName                = "/rill.admin.v1.AdminService/DeleteProject"
-	AdminService_UpdateProject_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProject"
-	AdminService_UpdateProjectVariables_FullMethodName       = "/rill.admin.v1.AdminService/UpdateProjectVariables"
-	AdminService_TriggerReconcile_FullMethodName             = "/rill.admin.v1.AdminService/TriggerReconcile"
-	AdminService_TriggerRefreshSources_FullMethodName        = "/rill.admin.v1.AdminService/TriggerRefreshSources"
-	AdminService_TriggerRedeploy_FullMethodName              = "/rill.admin.v1.AdminService/TriggerRedeploy"
-	AdminService_ListOrganizationMembers_FullMethodName      = "/rill.admin.v1.AdminService/ListOrganizationMembers"
-	AdminService_ListOrganizationInvites_FullMethodName      = "/rill.admin.v1.AdminService/ListOrganizationInvites"
-	AdminService_AddOrganizationMember_FullMethodName        = "/rill.admin.v1.AdminService/AddOrganizationMember"
-	AdminService_RemoveOrganizationMember_FullMethodName     = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
-	AdminService_LeaveOrganization_FullMethodName            = "/rill.admin.v1.AdminService/LeaveOrganization"
-	AdminService_SetOrganizationMemberRole_FullMethodName    = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
-	AdminService_ListProjectMembers_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectMembers"
-	AdminService_ListProjectInvites_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectInvites"
-	AdminService_AddProjectMember_FullMethodName             = "/rill.admin.v1.AdminService/AddProjectMember"
-	AdminService_RemoveProjectMember_FullMethodName          = "/rill.admin.v1.AdminService/RemoveProjectMember"
-	AdminService_SetProjectMemberRole_FullMethodName         = "/rill.admin.v1.AdminService/SetProjectMemberRole"
-	AdminService_GetCurrentUser_FullMethodName               = "/rill.admin.v1.AdminService/GetCurrentUser"
-	AdminService_IssueRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
-	AdminService_RevokeCurrentAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
-	AdminService_GetGithubRepoStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
-	AdminService_GetGithubUserStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubUserStatus"
-	AdminService_GetGitCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetGitCredentials"
-	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
-	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
-	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
-	AdminService_GetUser_FullMethodName                      = "/rill.admin.v1.AdminService/GetUser"
-	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
-	AdminService_SearchProjectUsers_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectUsers"
-	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
-	AdminService_GetDeploymentCredentials_FullMethodName     = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
-	AdminService_GetIFrame_FullMethodName                    = "/rill.admin.v1.AdminService/GetIFrame"
-	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
-	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
-	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
-	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
-	AdminService_SudoUpdateAnnotations_FullMethodName        = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
-	AdminService_ListServices_FullMethodName                 = "/rill.admin.v1.AdminService/ListServices"
-	AdminService_CreateService_FullMethodName                = "/rill.admin.v1.AdminService/CreateService"
-	AdminService_UpdateService_FullMethodName                = "/rill.admin.v1.AdminService/UpdateService"
-	AdminService_DeleteService_FullMethodName                = "/rill.admin.v1.AdminService/DeleteService"
-	AdminService_ListServiceAuthTokens_FullMethodName        = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
-	AdminService_IssueServiceAuthToken_FullMethodName        = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
-	AdminService_RevokeServiceAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
-	AdminService_UpdateUserPreferences_FullMethodName        = "/rill.admin.v1.AdminService/UpdateUserPreferences"
-	AdminService_ListBookmarks_FullMethodName                = "/rill.admin.v1.AdminService/ListBookmarks"
-	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
-	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
-	AdminService_UpdateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/UpdateBookmark"
-	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
-	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
-	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
-	AdminService_GetReportMeta_FullMethodName                = "/rill.admin.v1.AdminService/GetReportMeta"
-	AdminService_GetAlertMeta_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertMeta"
-	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
-	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
-	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
-	AdminService_DeleteReport_FullMethodName                 = "/rill.admin.v1.AdminService/DeleteReport"
-	AdminService_TriggerReport_FullMethodName                = "/rill.admin.v1.AdminService/TriggerReport"
-	AdminService_GenerateReportYAML_FullMethodName           = "/rill.admin.v1.AdminService/GenerateReportYAML"
-	AdminService_CreateAlert_FullMethodName                  = "/rill.admin.v1.AdminService/CreateAlert"
-	AdminService_EditAlert_FullMethodName                    = "/rill.admin.v1.AdminService/EditAlert"
-	AdminService_UnsubscribeAlert_FullMethodName             = "/rill.admin.v1.AdminService/UnsubscribeAlert"
-	AdminService_DeleteAlert_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteAlert"
-	AdminService_GenerateAlertYAML_FullMethodName            = "/rill.admin.v1.AdminService/GenerateAlertYAML"
-	AdminService_GetAlertYAML_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertYAML"
+	AdminService_Ping_FullMethodName                           = "/rill.admin.v1.AdminService/Ping"
+	AdminService_ListOrganizations_FullMethodName              = "/rill.admin.v1.AdminService/ListOrganizations"
+	AdminService_GetOrganization_FullMethodName                = "/rill.admin.v1.AdminService/GetOrganization"
+	AdminService_CreateOrganization_FullMethodName             = "/rill.admin.v1.AdminService/CreateOrganization"
+	AdminService_DeleteOrganization_FullMethodName             = "/rill.admin.v1.AdminService/DeleteOrganization"
+	AdminService_UpdateOrganization_FullMethodName             = "/rill.admin.v1.AdminService/UpdateOrganization"
+	AdminService_ListProjectsForOrganization_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
+	AdminService_GetProject_FullMethodName                     = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_SearchProjectNames_FullMethodName             = "/rill.admin.v1.AdminService/SearchProjectNames"
+	AdminService_GetProjectVariables_FullMethodName            = "/rill.admin.v1.AdminService/GetProjectVariables"
+	AdminService_CreateProject_FullMethodName                  = "/rill.admin.v1.AdminService/CreateProject"
+	AdminService_DeleteProject_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteProject"
+	AdminService_UpdateProject_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProject"
+	AdminService_UpdateProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/UpdateProjectVariables"
+	AdminService_TriggerReconcile_FullMethodName               = "/rill.admin.v1.AdminService/TriggerReconcile"
+	AdminService_TriggerRefreshSources_FullMethodName          = "/rill.admin.v1.AdminService/TriggerRefreshSources"
+	AdminService_TriggerRedeploy_FullMethodName                = "/rill.admin.v1.AdminService/TriggerRedeploy"
+	AdminService_ListOrganizationMembers_FullMethodName        = "/rill.admin.v1.AdminService/ListOrganizationMembers"
+	AdminService_ListOrganizationInvites_FullMethodName        = "/rill.admin.v1.AdminService/ListOrganizationInvites"
+	AdminService_AddOrganizationMember_FullMethodName          = "/rill.admin.v1.AdminService/AddOrganizationMember"
+	AdminService_RemoveOrganizationMember_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
+	AdminService_LeaveOrganization_FullMethodName              = "/rill.admin.v1.AdminService/LeaveOrganization"
+	AdminService_SetOrganizationMemberRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
+	AdminService_ListProjectMembers_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMembers"
+	AdminService_ListProjectInvites_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectInvites"
+	AdminService_AddProjectMember_FullMethodName               = "/rill.admin.v1.AdminService/AddProjectMember"
+	AdminService_RemoveProjectMember_FullMethodName            = "/rill.admin.v1.AdminService/RemoveProjectMember"
+	AdminService_SetProjectMemberRole_FullMethodName           = "/rill.admin.v1.AdminService/SetProjectMemberRole"
+	AdminService_GetCurrentUser_FullMethodName                 = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_IssueRepresentativeAuthToken_FullMethodName   = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
+	AdminService_RevokeCurrentAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
+	AdminService_GetGithubRepoStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_GetGithubUserStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubUserStatus"
+	AdminService_GetGitCredentials_FullMethodName              = "/rill.admin.v1.AdminService/GetGitCredentials"
+	AdminService_CreateWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
+	AdminService_RemoveWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
+	AdminService_ListWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
+	AdminService_GetUser_FullMethodName                        = "/rill.admin.v1.AdminService/GetUser"
+	AdminService_SearchUsers_FullMethodName                    = "/rill.admin.v1.AdminService/SearchUsers"
+	AdminService_SearchProjectUsers_FullMethodName             = "/rill.admin.v1.AdminService/SearchProjectUsers"
+	AdminService_ListSuperusers_FullMethodName                 = "/rill.admin.v1.AdminService/ListSuperusers"
+	AdminService_GetDeploymentCredentials_FullMethodName       = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
+	AdminService_GetIFrame_FullMethodName                      = "/rill.admin.v1.AdminService/GetIFrame"
+	AdminService_SetSuperuser_FullMethodName                   = "/rill.admin.v1.AdminService/SetSuperuser"
+	AdminService_SudoGetResource_FullMethodName                = "/rill.admin.v1.AdminService/SudoGetResource"
+	AdminService_SudoUpdateUserQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
+	AdminService_SudoUpdateOrganizationQuotas_FullMethodName   = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	AdminService_SudoUpdateAnnotations_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
+	AdminService_CreateProjectWhitelistedDomain_FullMethodName = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
+	AdminService_RemoveProjectWhitelistedDomain_FullMethodName = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
+	AdminService_ListProjectWhitelistedDomains_FullMethodName  = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
+	AdminService_ListServices_FullMethodName                   = "/rill.admin.v1.AdminService/ListServices"
+	AdminService_CreateService_FullMethodName                  = "/rill.admin.v1.AdminService/CreateService"
+	AdminService_UpdateService_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateService"
+	AdminService_DeleteService_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteService"
+	AdminService_ListServiceAuthTokens_FullMethodName          = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
+	AdminService_IssueServiceAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
+	AdminService_RevokeServiceAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
+	AdminService_UpdateUserPreferences_FullMethodName          = "/rill.admin.v1.AdminService/UpdateUserPreferences"
+	AdminService_ListBookmarks_FullMethodName                  = "/rill.admin.v1.AdminService/ListBookmarks"
+	AdminService_GetBookmark_FullMethodName                    = "/rill.admin.v1.AdminService/GetBookmark"
+	AdminService_CreateBookmark_FullMethodName                 = "/rill.admin.v1.AdminService/CreateBookmark"
+	AdminService_UpdateBookmark_FullMethodName                 = "/rill.admin.v1.AdminService/UpdateBookmark"
+	AdminService_RemoveBookmark_FullMethodName                 = "/rill.admin.v1.AdminService/RemoveBookmark"
+	AdminService_GetRepoMeta_FullMethodName                    = "/rill.admin.v1.AdminService/GetRepoMeta"
+	AdminService_PullVirtualRepo_FullMethodName                = "/rill.admin.v1.AdminService/PullVirtualRepo"
+	AdminService_GetReportMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetReportMeta"
+	AdminService_GetAlertMeta_FullMethodName                   = "/rill.admin.v1.AdminService/GetAlertMeta"
+	AdminService_CreateReport_FullMethodName                   = "/rill.admin.v1.AdminService/CreateReport"
+	AdminService_EditReport_FullMethodName                     = "/rill.admin.v1.AdminService/EditReport"
+	AdminService_UnsubscribeReport_FullMethodName              = "/rill.admin.v1.AdminService/UnsubscribeReport"
+	AdminService_DeleteReport_FullMethodName                   = "/rill.admin.v1.AdminService/DeleteReport"
+	AdminService_TriggerReport_FullMethodName                  = "/rill.admin.v1.AdminService/TriggerReport"
+	AdminService_GenerateReportYAML_FullMethodName             = "/rill.admin.v1.AdminService/GenerateReportYAML"
+	AdminService_CreateAlert_FullMethodName                    = "/rill.admin.v1.AdminService/CreateAlert"
+	AdminService_EditAlert_FullMethodName                      = "/rill.admin.v1.AdminService/EditAlert"
+	AdminService_UnsubscribeAlert_FullMethodName               = "/rill.admin.v1.AdminService/UnsubscribeAlert"
+	AdminService_DeleteAlert_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteAlert"
+	AdminService_GenerateAlertYAML_FullMethodName              = "/rill.admin.v1.AdminService/GenerateAlertYAML"
+	AdminService_GetAlertYAML_FullMethodName                   = "/rill.admin.v1.AdminService/GetAlertYAML"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -200,6 +203,12 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
+	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
+	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+	RemoveProjectWhitelistedDomain(ctx context.Context, in *RemoveProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveProjectWhitelistedDomainResponse, error)
+	// ListWhitelistedDomains lists all the whitelisted domains of the project
+	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -700,6 +709,33 @@ func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *Sudo
 	return out, nil
 }
 
+func (c *adminServiceClient) CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error) {
+	out := new(CreateProjectWhitelistedDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateProjectWhitelistedDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveProjectWhitelistedDomain(ctx context.Context, in *RemoveProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveProjectWhitelistedDomainResponse, error) {
+	out := new(RemoveProjectWhitelistedDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveProjectWhitelistedDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error) {
+	out := new(ListProjectWhitelistedDomainsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectWhitelistedDomains_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
 	out := new(ListServicesResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListServices_FullMethodName, in, out, opts...)
@@ -1063,6 +1099,12 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
+	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
+	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+	RemoveProjectWhitelistedDomain(context.Context, *RemoveProjectWhitelistedDomainRequest) (*RemoveProjectWhitelistedDomainResponse, error)
+	// ListWhitelistedDomains lists all the whitelisted domains of the project
+	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -1271,6 +1313,15 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectWhitelistedDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveProjectWhitelistedDomain(context.Context, *RemoveProjectWhitelistedDomainRequest) (*RemoveProjectWhitelistedDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveProjectWhitelistedDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectWhitelistedDomains not implemented")
 }
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
@@ -2236,6 +2287,60 @@ func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreateProjectWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProjectWhitelistedDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateProjectWhitelistedDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateProjectWhitelistedDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateProjectWhitelistedDomain(ctx, req.(*CreateProjectWhitelistedDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveProjectWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveProjectWhitelistedDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveProjectWhitelistedDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveProjectWhitelistedDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveProjectWhitelistedDomain(ctx, req.(*RemoveProjectWhitelistedDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectWhitelistedDomains_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectWhitelistedDomainsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectWhitelistedDomains(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectWhitelistedDomains_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectWhitelistedDomains(ctx, req.(*ListProjectWhitelistedDomainsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListServicesRequest)
 	if err := dec(in); err != nil {
@@ -2956,6 +3061,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateAnnotations",
 			Handler:    _AdminService_SudoUpdateAnnotations_Handler,
+		},
+		{
+			MethodName: "CreateProjectWhitelistedDomain",
+			Handler:    _AdminService_CreateProjectWhitelistedDomain_Handler,
+		},
+		{
+			MethodName: "RemoveProjectWhitelistedDomain",
+			Handler:    _AdminService_RemoveProjectWhitelistedDomain_Handler,
+		},
+		{
+			MethodName: "ListProjectWhitelistedDomains",
+			Handler:    _AdminService_ListProjectWhitelistedDomains_Handler,
 		},
 		{
 			MethodName: "ListServices",

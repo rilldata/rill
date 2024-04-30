@@ -32,11 +32,11 @@ var (
 	}
 	daxOffsetNotations = map[string]StandardDuration{
 		"PP": {},
-		"PD": {Day: 1},
-		"PW": {Week: 1},
-		"PM": {Month: 1},
-		"PQ": {Month: 3},
-		"PY": {Year: 1},
+		"PD": {Day: 1, rillExtension: "PD"},
+		"PW": {Week: 1, rillExtension: "PW"},
+		"PM": {Month: 1, rillExtension: "PM"},
+		"PQ": {Month: 3, rillExtension: "PQ"},
+		"PY": {Year: 1, rillExtension: "PY"},
 	}
 	daxOffsetRangeNotations = map[string]TruncToDateDuration{
 		// TODO: add mapping with offset to support these in places where only backend is involved like reports/alerts
@@ -124,6 +124,8 @@ type StandardDuration struct {
 	Hour   int
 	Minute int
 	Second int
+
+	rillExtension string
 }
 
 // Add adds the duration to a timestamp
@@ -220,6 +222,26 @@ func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear
 	return t
 }
 
+func (d StandardDuration) EndTime(t time.Time) time.Time {
+	if d.rillExtension == "" {
+		return t
+	}
+	switch d.rillExtension {
+	case "PD":
+		return d.Sub(t).AddDate(0, 0, 1)
+	case "PW":
+		return d.Sub(t).AddDate(0, 0, 7)
+	case "PM":
+		return d.Sub(t).AddDate(0, 1, 0)
+	case "PQ":
+		return d.Sub(t).AddDate(0, 3, 0)
+	case "PY":
+		return d.Sub(t).AddDate(1, 0, 0)
+	default:
+		return t
+	}
+}
+
 type InfDuration struct{}
 
 func (d InfDuration) Add(t time.Time) time.Time {
@@ -244,6 +266,19 @@ func (d TruncToDateDuration) Add(t time.Time) time.Time {
 
 func (d TruncToDateDuration) Sub(t time.Time) time.Time {
 	return timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
+}
+
+func (d TruncToDateDuration) SubWithUnit(t time.Time, unit int) time.Time {
+	if unit <= 0 {
+		return t
+	}
+	for i := 1; i <= unit; i++ {
+		t = timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
+		if i != unit {
+			t = t.AddDate(0, 0, -1)
+		}
+	}
+	return t
 }
 
 func (d TruncToDateDuration) EstimateNative() (time.Duration, bool) {

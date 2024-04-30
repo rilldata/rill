@@ -21,3 +21,5 @@ export const TDDChartMap = {
   [TDDChart.STACKED_BAR]: ChartType.STACKED_BAR,
   [TDDChart.STACKED_AREA]: ChartType.STACKED_AREA,
 };
+
+export type VLTooltipFormatter = (value: any) => string;

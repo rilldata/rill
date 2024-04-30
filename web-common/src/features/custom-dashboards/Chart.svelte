@@ -14,7 +14,7 @@
 
   $: chart = useChart($runtime.instanceId, chartName);
 
-  $: vegaSpec = $chart?.data?.chart?.spec?.vegaLiteSpec;
+  $: vegaSpec = $chart?.data?.component?.spec?.rendererProperties?.spec;
 
   $: try {
     parsedVegaSpec = vegaSpec
@@ -25,7 +25,7 @@
     error = JSON.stringify(e);
   }
 
-  $: metricsQuery = $chart?.data?.chart?.spec?.resolverProperties;
+  $: metricsQuery = $chart?.data?.component?.spec?.resolverProperties;
 
   $: chartDataQuery = createRuntimeServiceGetChartData(
     queryClient,

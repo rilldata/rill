@@ -20,7 +20,7 @@
 
   export let connector: string;
   export let database: string = "";
-  export let databaseSchema: string;
+  export let databaseSchema: string = "";
   export let table: string;
 
   $: isModelingSupportedForCurrentOlapDriver =

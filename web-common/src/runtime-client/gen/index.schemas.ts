@@ -350,14 +350,14 @@ export type RuntimeServiceGenerateResolverBody = {
   metricsView?: string;
 };
 
-export type RuntimeServiceGenerateChartSpecBodyResolverProperties = {
+export type RuntimeServiceGenerateRendererBodyResolverProperties = {
   [key: string]: any;
 };
 
-export type RuntimeServiceGenerateChartSpecBody = {
+export type RuntimeServiceGenerateRendererBody = {
   prompt?: string;
   resolver?: string;
-  resolverProperties?: RuntimeServiceGenerateChartSpecBodyResolverProperties;
+  resolverProperties?: RuntimeServiceGenerateRendererBodyResolverProperties;
 };
 
 export type RuntimeServiceWatchFiles200 = {
@@ -747,9 +747,16 @@ export interface V1Resource {
   refreshTrigger?: V1RefreshTrigger;
   bucketPlanner?: V1BucketPlanner;
   theme?: V1Theme;
-  chart?: V1Chart;
+  component?: V1Component;
   dashboard?: V1Dashboard;
   api?: V1API;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -773,13 +780,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1056,28 +1056,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1137,6 +1115,23 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -1259,6 +1254,11 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1349,6 +1349,10 @@ export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
 
+export interface V1ListConnectorDriversResponse {
+  connectors?: V1ConnectorDriver[];
+}
+
 export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
@@ -1358,32 +1362,6 @@ export type V1InstanceAnnotations = { [key: string]: string };
 export type V1InstanceProjectVariables = { [key: string]: string };
 
 export type V1InstanceVariables = { [key: string]: string };
-
-/**
- * Instance represents a single data project, meaning one set of code artifacts,
-one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as reconciliation state). Instances are the unit of isolation within
-the runtime. They enable one runtime deployment to serve not only multiple data
-projects, but also multiple tenants. On local, the runtime will usually have
-just a single instance.
- */
-export interface V1Instance {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  createdOn?: string;
-  updatedOn?: string;
-  connectors?: V1Connector[];
-  projectConnectors?: V1Connector[];
-  variables?: V1InstanceVariables;
-  projectVariables?: V1InstanceProjectVariables;
-  annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
-  watchRepo?: boolean;
-}
 
 export interface V1InlineMeasure {
   name?: string;
@@ -1426,12 +1404,17 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
-export interface V1GenerateMetricsViewFileResponse {
-  aiSucceeded?: boolean;
+export type V1GenerateRendererResponseRendererProperties = {
+  [key: string]: any;
+};
+
+export interface V1GenerateRendererResponse {
+  renderer?: string;
+  rendererProperties?: V1GenerateRendererResponseRendererProperties;
 }
 
-export interface V1GenerateChartSpecResponse {
-  vegaLiteSpec?: string;
+export interface V1GenerateMetricsViewFileResponse {
+  aiSucceeded?: boolean;
 }
 
 export interface V1GCSObject {
@@ -1519,13 +1502,12 @@ export interface V1DashboardState {
   [key: string]: any;
 }
 
-export interface V1DashboardComponent {
-  chart?: string;
+export interface V1DashboardItem {
+  component?: string;
   x?: number;
   y?: number;
   width?: number;
   height?: number;
-  markdown?: string;
   fontSize?: number;
 }
 
@@ -1533,7 +1515,7 @@ export interface V1DashboardSpec {
   title?: string;
   columns?: number;
   gap?: number;
-  components?: V1DashboardComponent[];
+  items?: V1DashboardItem[];
 }
 
 export interface V1Dashboard {
@@ -1596,12 +1578,6 @@ export interface V1ConnectorDriver {
   implementsNotifier?: boolean;
 }
 
-export interface V1ListConnectorDriversResponse {
-  connectors?: V1ConnectorDriver[];
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
-
 export interface V1Connector {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
@@ -1609,9 +1585,58 @@ export interface V1Connector {
   config?: V1ConnectorConfig;
 }
 
+/**
+ * Instance represents a single data project, meaning one set of code artifacts,
+one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+metadata (such as reconciliation state). Instances are the unit of isolation within
+the runtime. They enable one runtime deployment to serve not only multiple data
+projects, but also multiple tenants. On local, the runtime will usually have
+just a single instance.
+ */
+export interface V1Instance {
+  instanceId?: string;
+  environment?: string;
+  olapConnector?: string;
+  repoConnector?: string;
+  adminConnector?: string;
+  aiConnector?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  connectors?: V1Connector[];
+  projectConnectors?: V1Connector[];
+  variables?: V1InstanceVariables;
+  projectVariables?: V1InstanceProjectVariables;
+  annotations?: V1InstanceAnnotations;
+  embedCatalog?: boolean;
+  watchRepo?: boolean;
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
 export interface V1Condition {
   op?: V1Operation;
   exprs?: V1Expression[];
+}
+
+export interface V1ComponentState {
+  [key: string]: any;
+}
+
+export type V1ComponentSpecRendererProperties = { [key: string]: any };
+
+export type V1ComponentSpecResolverProperties = { [key: string]: any };
+
+export interface V1ComponentSpec {
+  title?: string;
+  resolver?: string;
+  resolverProperties?: V1ComponentSpecResolverProperties;
+  renderer?: string;
+  rendererProperties?: V1ComponentSpecRendererProperties;
+}
+
+export interface V1Component {
+  spec?: V1ComponentSpec;
+  state?: V1ComponentState;
 }
 
 export interface V1ColumnTopKResponse {
@@ -1769,24 +1794,6 @@ export interface V1Color {
   green?: number;
   blue?: number;
   alpha?: number;
-}
-
-export interface V1ChartState {
-  [key: string]: any;
-}
-
-export type V1ChartSpecResolverProperties = { [key: string]: any };
-
-export interface V1ChartSpec {
-  title?: string;
-  resolver?: string;
-  resolverProperties?: V1ChartSpecResolverProperties;
-  vegaLiteSpec?: string;
-}
-
-export interface V1Chart {
-  spec?: V1ChartSpec;
-  state?: V1ChartState;
 }
 
 export interface V1CharLocation {
@@ -1965,7 +1972,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

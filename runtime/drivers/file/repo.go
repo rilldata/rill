@@ -54,6 +54,10 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
+		// Do not send files for ignored paths
+		if drivers.IsIgnored(p, c.ignorePaths) {
+			return nil
+		}
 		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),
@@ -162,7 +166,7 @@ func (c *connection) Sync(ctx context.Context) error {
 func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	c.watcherMu.Lock()
 	if c.watcher == nil {
-		w, err := newWatcher(c.root, c.logger)
+		w, err := newWatcher(c.root, c.ignorePaths, c.logger)
 		if err != nil {
 			c.watcherMu.Unlock()
 			return err
