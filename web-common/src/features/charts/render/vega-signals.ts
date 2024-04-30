@@ -4,7 +4,7 @@
 
 export function resolveSignalField(value: unknown, field: string) {
   if (typeof value === "object" && value !== null) {
-    return value[field]?.[0];
+    return Array.isArray(value[field]) ? value[field][0] : undefined;
   }
   return undefined;
 }
