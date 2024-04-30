@@ -295,17 +295,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 
 	// not setting restartController=true when diff is actually nil prevents infinite restarts
 	restartController := diff != nil && (diff.ModifiedDotEnv || diff.Reloaded)
-	// Treat reloads the same as a fresh parse (where there's no diff)
-	if diff != nil && diff.Reloaded {
-		diff = nil
-	}
-
-	// Update state from rill.yaml and .env
-	if diff == nil || diff.ModifiedDotEnv {
-		err := r.reconcileProjectConfig(ctx, parser, restartController)
-		if err != nil {
-			return err
-		}
+	if restartController {
+		return r.reconcileProjectConfig(ctx, parser, true)
 	}
 
 	// Reconcile resources.

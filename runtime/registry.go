@@ -419,8 +419,8 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			}
 
 			// Start controller
-			if err := r.updateEnvVaribales(iwc); err != nil {
-				iwc.logger.Warn("failed to update env", zap.Error(err))
+			if err := r.updateVaribales(iwc); err != nil {
+				iwc.logger.Warn("failed to update variables", zap.Error(err))
 			}
 			iwc.logger.Debug("controller starting")
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
@@ -545,7 +545,7 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	)
 }
 
-func (r *registryCache) updateEnvVaribales(iwc *instanceWithController) error {
+func (r *registryCache) updateVaribales(iwc *instanceWithController) error {
 	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
 	if err != nil {
 		return err
@@ -555,6 +555,16 @@ func (r *registryCache) updateEnvVaribales(iwc *instanceWithController) error {
 	inst, err := r.rt.Instance(iwc.ctx, iwc.instanceID)
 	if err != nil {
 		return err
+	}
+
+	rillYaml, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+
+	inst.ProjectVariables = make(map[string]string)
+	for _, v := range rillYaml.Variables {
+		inst.ProjectVariables[v.Name] = v.Default
 	}
 
 	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
