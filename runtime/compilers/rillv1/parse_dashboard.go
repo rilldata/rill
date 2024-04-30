@@ -16,10 +16,10 @@ type DashboardYAML struct {
 	Gap        uint32           `yaml:"gap"`
 	Items      []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
-		X         uint32    `yaml:"x"`
-		Y         uint32    `yaml:"y"`
-		Width     uint32    `yaml:"width"`
-		Height    uint32    `yaml:"height"`
+		X         *uint32   `yaml:"x"`
+		Y         *uint32   `yaml:"y"`
+		Width     *uint32   `yaml:"width"`
+		Height    *uint32   `yaml:"height"`
 		FontSize  uint32    `yaml:"font_size"`
 	} `yaml:"items"`
 }

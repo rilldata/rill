@@ -1380,7 +1380,7 @@ items:
 				Gap:     3,
 				Items: []*runtimev1.DashboardItem{
 					{Component: "c1"},
-					{Component: "c2", Width: 1, Height: 2},
+					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
 					{Component: "d1--component-2"},
 				},
 			},
@@ -1515,4 +1515,8 @@ func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 		err := repo.Delete(context.Background(), path, false)
 		require.NoError(t, err)
 	}
+}
+
+func asPtr[T any](val T) *T {
+	return &val
 }
