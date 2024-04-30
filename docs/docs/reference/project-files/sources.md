@@ -9,13 +9,13 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 :::tip Did you know?
 
-Files that are *nested at any level* under your native `sources` directory will be assumed to be sources (unless **otherwise** specified by the `kind` property).
+Files that are *nested at any level* under your native `sources` directory will be assumed to be sources (unless **otherwise** specified by the `type` property).
 
 :::
 
 ## Properties
 
-**`kind`** - Refers to the resource type and must be `source` _(required)_.
+**`type`** - Refers to the resource type and must be `source` _(required)_.
 
 **`connector`**
  —  Refers to the connector type for the source _(required)_.
@@ -34,7 +34,7 @@ Files that are *nested at any level* under your native `sources` directory will 
   - _`duckdb`_ - use the [embedded DuckDB](../olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
 
 **`type`**
- —  Deprecated but preserves a legacy alias to `connector`.
+ — _Deprecated_ but preserves a legacy alias to `connector`. Can be used instead to specify the source connector, instead of the resource type (see above), **only** if the source YAML file belongs in the `<RILL_HOME>/sources/` directory (preserved primarily for backwards compatibility).
 
 **`uri`**
  —  Refers to the URI of the remote connector you are using for the source. Rill also supports glob patterns as part of the URI for S3 and GCS _(required for type: http, s3, gcs)_.

@@ -9,7 +9,7 @@ See comprehensive documentation on how to define and use [custom APIs](/integrat
 
 ## Properties
 
-_**`kind`**_ — Refers to the resource type and must be `api` _(required)_.
+_**`type`**_ — Refers to the resource type and must be `api` _(required)_.
 
 Either one of the following:
 

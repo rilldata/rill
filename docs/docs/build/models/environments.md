@@ -63,7 +63,7 @@ rill start --env <name_of_environment>
 Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/reference/connectors/s3.md) source defined but you only wanted to read from a particular month partition during local development and make sure that [source refreshes](/build/connect/source-refresh.md) are only applied _in production_ (i.e. when a project is deployed on Rill Cloud). Then, in your `source.yaml` file, you can define it as:
 
 ```yaml
-kind: source
+type: source
 connector: s3
 path: s3://path/to/bucket/*.parquet
 env:
@@ -103,7 +103,7 @@ Similar to the example in the previous section, let's say we had a S3 source def
 Now, for your `source.yaml` file (and combined with templating), you could do something like:
 
 ```yaml
-kind: source
+type: source
 connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://path/to/bucket/*.parquet') {{ if dev }} where updated_at >= '2024-01-01' AND updated_at < '2024-02-01' {{ end }}
 ```

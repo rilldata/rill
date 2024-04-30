@@ -9,13 +9,13 @@ In your Rill project directory, create a `<dashboard_name>.yaml` file in the `da
 
 :::tip Did you know?
 
-Files that are *nested at any level* under your native `dashboards` directory will be assumed to be metric definitions, i.e. dashboards (unless **otherwise** specified by the `kind` property).
+Files that are *nested at any level* under your native `dashboards` directory will be assumed to be metric definitions, i.e. dashboards (unless **otherwise** specified by the `type` property).
 
 :::
 
 ## Properties
 
-**`kind`** - Refers to the resource type and must be `metrics_view` _(required)_. 
+**`type`** - Refers to the resource type and must be `metrics_view` _(required)_. 
 
 **`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
 

@@ -72,7 +72,7 @@ In your Rill project directory, create a `<theme_name>.yaml` file in any directo
 First, create the YAML file as below. In this example, the charts and hover in Rill will change to Crimson while spinners will change to Lime.
 
 ```yaml
-kind: theme
+type: theme
 colors:
   primary: crimson 
   secondary: lime 
@@ -97,7 +97,7 @@ Formatting for individual measures on a dashboard can be controlled through the 
 Instead of displaying a numeric measure in USD currency, the euro currency can be used instead through `format_preset`. In the following example `dashboard.yaml`, the `Total Revenue` measure will be displayed using euros in the resulting dashboard.
 
 ```yaml
-kind: metrics_view
+type: metrics_view
 title: example_dashboard
 model: example_model
 measures:

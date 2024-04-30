@@ -50,7 +50,7 @@ When you add a source using the UI, a code definition will automatically be crea
 In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following content:
 
 ```yaml
-kind: source
+type: source
 connector: local_file
 path: /path/to/local/data.csv
 ```
@@ -82,7 +82,7 @@ When you add a source using the UI or CLI, a code definition will automatically 
 For example, to create a remote http(s) source, create a `source_name.yaml` file in the `sources` directory with the following contents:
 
 ```yaml
-kind: source
+type: source
 connector: https
 uri: https://data.example.org/path/to/file.parquet
 ```

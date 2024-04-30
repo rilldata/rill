@@ -17,11 +17,11 @@ Within Rill Developer, from the left-hand side (file explorer), you should be ab
 
 ![Adding objects](/img/build/structure/adding-objects.png)
 
-:::warning Make sure to include the `kind` property
+:::warning Make sure to include the `type` property
 
 For backward-compatibility purposes, any resource that belongs in the `sources`, `models`, and `dashboards` native folders are assumed to be a source, model, or dashboard respectively (including nested folders that belong within a native folder). 
 
-However, if you'd like to create a resource outside one of these native folders, make sure to include the `kind` property in the resource definition or Rill will not be able to properly resolve the resource type! For more details, see our [reference documentation](/reference/project-files/index.md).
+However, if you'd like to create a resource outside one of these native folders, make sure to include the `type` property in the resource definition or Rill will not be able to properly resolve the resource type! For more details, see our [reference documentation](/reference/project-files/index.md).
 
 :::
 
@@ -31,7 +31,7 @@ From the UI, within the file explorer, you should be able to drag resources / ob
 
 :::info Using the CLI
 
-For developers who prefer to use the CLI, the project structure can still be controlled or adjusted directly via the CLI and/or using your preferred IDE of choice (e.g. VSCode). 
+For developers who prefer to use the CLI, the project structure can still be controlled or adjusted directly via the CLI and/or using your preferred IDE of choice (e.g. VSCode).
 
 :::
 
