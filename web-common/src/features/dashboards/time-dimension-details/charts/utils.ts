@@ -106,7 +106,7 @@ export function sanitizeSpecForTDD(
     formatType: "time",
     format: timeLabelFormat,
   };
-  yEncoding.axis = { title: "" };
+  yEncoding.axis = { title: "", formatType: "measureFormatter" };
 
   // Set timeUnit for x-axis using timeGrain
   const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];

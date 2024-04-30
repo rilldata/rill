@@ -6,7 +6,11 @@
   } from "@rilldata/web-common/features/charts/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import {
+    MetricsViewSpecMeasureV2,
+    V1TimeGrain,
+  } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { TDDAlternateCharts } from "../types";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
@@ -27,24 +31,16 @@
   const dispatch = createEventDispatcher();
   const {
     selectors: {
-      measures: { measureLabel },
+      measures: { measureLabel, getMeasureByName },
       dimensions: { comparisonDimension },
     },
   } = getStateManagers();
-
-  const signalListeners = {
-    hover: (_name: string, value) => {
-      const dimension = resolveSignalField(value, "dimension");
-      const ts = resolveSignalTimeField(value);
-
-      dispatch("chart-hover", { dimension, ts });
-    },
-  };
 
   $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
   $: selectedValues = hasDimensionData ? dimensionData.map((d) => d.value) : [];
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
+  $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =
     $comparisonDimension?.label || $comparisonDimension?.name;
 
@@ -72,6 +68,27 @@
     selectedValues,
     timeGrain,
   );
+
+  const signalListeners = {
+    hover: (_name: string, value) => {
+      const dimension = resolveSignalField(value, "dimension");
+      const ts = resolveSignalTimeField(value);
+
+      dispatch("chart-hover", { dimension, ts });
+    },
+  };
+
+  $: measureFormatter = createMeasureValueFormatter<null | undefined>(
+    measure as MetricsViewSpecMeasureV2,
+  );
+
+  function vegaCustomFormatter(val) {
+    return measureFormatter(val);
+  }
+
+  const expressionFunctions = {
+    measureFormatter: { fn: vegaCustomFormatter },
+  };
 </script>
 
 {#if sanitizedVegaSpec && data}
@@ -79,6 +96,7 @@
     data={{ table: data }}
     spec={sanitizedVegaSpec}
     {signalListeners}
+    {expressionFunctions}
     {tooltipFormatter}
   />
 {/if}
