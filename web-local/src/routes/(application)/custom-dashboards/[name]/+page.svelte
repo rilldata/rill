@@ -39,9 +39,6 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
 
-  const DEFAULT_EDITOR_HEIGHT = 300;
-  const DEFAULT_EDITOR_WIDTH = 400;
-
   const updateFile = createRuntimeServicePutFile({
     mutation: {
       onMutate({ instanceId, path, data }) {
@@ -61,8 +58,9 @@
   let snap = false;
   let showChartEditor = false;
   let containerWidth: number;
-  let editorWidth = DEFAULT_EDITOR_WIDTH;
-  let chartEditorHeight = DEFAULT_EDITOR_HEIGHT;
+  let containerHeight: number;
+  let editorPercentage = 0.5;
+  let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
   let spec: V1DashboardSpec = {
     columns: 20,
@@ -106,6 +104,9 @@
   $: spec = $resourceQuery.data?.dashboard?.spec ?? spec;
 
   $: ({ items = [], columns = 20, gap = 4 } = spec);
+
+  $: editorWidth = editorPercentage * containerWidth;
+  $: chartEditorHeight = chartEditorPercentage * containerHeight;
 
   async function onChangeCallback(
     e: Event & {
@@ -179,7 +180,11 @@
   <title>Rill Developer | {customDashboardName}</title>
 </svelte:head>
 
-<WorkspaceContainer bind:width={containerWidth} inspector={false}>
+<WorkspaceContainer
+  bind:width={containerWidth}
+  bind:height={containerHeight}
+  inspector={false}
+>
   <WorkspaceHeader
     on:change={onChangeCallback}
     showInspectorToggle={false}
@@ -221,14 +226,15 @@
         transition:slide={{ duration: 400, axis: "x" }}
         class="relative h-full flex-shrink-0 w-full"
         class:!w-full={selectedView === "code"}
-        style:width="{editorWidth}px"
+        style:width="{editorPercentage * 100}%"
       >
         <Resizer
           direction="EW"
           side="right"
-          bind:dimension={editorWidth}
+          dimension={editorWidth}
           min={300}
-          max={0.6 * containerWidth}
+          max={0.65 * containerWidth}
+          onUpdate={(width) => (editorPercentage = width / containerWidth)}
         />
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
@@ -240,15 +246,20 @@
           </section>
 
           <section
-            class="size-full flex flex-col bg-white flex-shrink-0 relative h-fit"
+            style:height="{chartEditorPercentage * 100}%"
+            class:!h-12={!showChartEditor}
+            class="size-full flex flex-col flex-none bg-white flex-shrink-0 relative border-t !min-h-12"
           >
             <Resizer
-              max={500}
               direction="NS"
-              bind:dimension={chartEditorHeight}
+              dimension={chartEditorHeight}
+              min={80}
+              max={0.85 * containerHeight}
+              onUpdate={(height) =>
+                (chartEditorPercentage = height / containerHeight)}
             />
             <header
-              class="flex justify-between items-center bg-gray-100 px-4 h-12"
+              class="flex justify-between items-center bg-gray-100 px-4 h-12 flex-none"
             >
               <h1 class="font-semibold text-[16px] truncate">
                 {#if selectedChartName}
@@ -268,8 +279,8 @@
             </header>
 
             {#if showChartEditor}
-              <div style:height="{chartEditorHeight}px">
-                {#if selectedChartFilePath && showChartEditor}
+              <div class="size-full overflow-hidden">
+                {#if selectedChartFilePath}
                   <ChartsEditor filePath={selectedChartFilePath} />
                 {/if}
               </div>
