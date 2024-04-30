@@ -15,24 +15,24 @@
   }
   const chartTypeTabs = [
     {
-      label: "Line chart",
+      label: "Line",
       id: TDDChart.DEFAULT,
       Icon: LineChart,
     },
     {
-      label: "Bar  chart",
+      label: "Bar",
       id: TDDChart.GROUPED_BAR,
       Icon: BarChart,
     },
     {
-      label: "Stacked Bar chart",
-      id: TDDChart.STACKED_BAR,
-      Icon: StackedBar,
-    },
-    {
-      label: "Stacked Area chart",
+      label: "Stacked area",
       id: TDDChart.STACKED_AREA,
       Icon: StackedArea,
+    },
+    {
+      label: "Stacked bar",
+      id: TDDChart.STACKED_BAR,
+      Icon: StackedBar,
     },
   ];
 </script>
