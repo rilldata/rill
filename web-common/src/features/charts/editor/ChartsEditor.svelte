@@ -53,6 +53,7 @@
 
 <ChartsEditorContainer error={yaml?.length ? mainError : undefined}>
   <YAMLEditor
+    key={filePath}
     bind:this={editor}
     bind:view
     content={yaml}

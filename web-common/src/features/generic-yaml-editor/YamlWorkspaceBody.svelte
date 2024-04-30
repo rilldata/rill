@@ -72,6 +72,7 @@
       <YAMLEditor
         bind:this={editor}
         bind:view
+        key={filePath}
         {content}
         whenFocused
         on:update={debouncedUpdate}
