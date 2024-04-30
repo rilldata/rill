@@ -13,6 +13,13 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   export let data: { fileArtifact?: FileArtifact } = {};
 
   const DEFAULT_EDITOR_WIDTH = 400;
@@ -45,6 +52,21 @@
   });
 
   $: yaml = $fileQuery.data?.blob || "";
+
+  $: resourceQuery = useResource("default", chartName, ResourceKind.Component);
+
+  $: ({ data: componentResource } = $resourceQuery);
+
+  $: ({ resolverProperties } = componentResource?.component?.spec ?? {});
+
+  $: chartDataQuery = createRuntimeServiceGetChartData(
+    queryClient,
+    $runtime.instanceId,
+    chartName,
+    resolverProperties,
+  );
+
+  $: chartData = $chartDataQuery?.data as Record<string, unknown>[];
 </script>
 
 <svelte:head>
@@ -65,14 +87,31 @@
         />
         <ChartsEditor {filePath} />
       </div>
-      <ChartPromptStatusDisplay {chartName}>
-        <CustomDashboardEmbed
-          chartView
-          gap={8}
-          columns={10}
-          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
-        />
-      </ChartPromptStatusDisplay>
+      <div class="size-full flex-col flex">
+        <ChartPromptStatusDisplay {chartName}>
+          <CustomDashboardEmbed
+            chartView
+            gap={8}
+            columns={10}
+            items={[
+              { width: 10, height: 10, x: 0, y: 0, component: chartName },
+            ]}
+          />
+        </ChartPromptStatusDisplay>
+
+        <div class="w-full h-48 bg-white border-t">
+          {#if chartData}
+            <PreviewTable
+              rows={chartData}
+              name={chartName}
+              columnNames={Object.keys(chartData[0]).map((key) => ({
+                type: "VARCHAR",
+                name: key,
+              }))}
+            />
+          {/if}
+        </div>
+      </div>
     </div>
   </WorkspaceContainer>
 {/if}
