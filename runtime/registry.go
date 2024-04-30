@@ -419,7 +419,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			}
 
 			// Start controller
-			if err := r.updateVaribales(iwc); err != nil {
+			if err := r.updateProjectConfig(iwc); err != nil {
 				iwc.logger.Warn("failed to update variables", zap.Error(err))
 			}
 			iwc.logger.Debug("controller starting")
@@ -545,7 +545,10 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	)
 }
 
-func (r *registryCache) updateVaribales(iwc *instanceWithController) error {
+// updateProjectConfig updates the project config for the given instance.
+// This is essentially a copy of ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller 
+// to ensure that when controller first starts, it doesn’t immediately restart due to changed variables
+func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
 	if err != nil {
 		return err
@@ -557,13 +560,22 @@ func (r *registryCache) updateVaribales(iwc *instanceWithController) error {
 		return err
 	}
 
-	rillYaml, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
+	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
 	if err != nil {
 		return err
 	}
-
+	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
+	conns := make([]*runtimev1.Connector, 0, len(rillYAML.Connectors))
+	for _, c := range rillYAML.Connectors {
+		conns = append(conns, &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
+		})
+	}
+	inst.ProjectConnectors = conns
 	inst.ProjectVariables = make(map[string]string)
-	for _, v := range rillYaml.Variables {
+	for _, v := range rillYAML.Variables {
 		inst.ProjectVariables[v.Name] = v.Default
 	}
 
@@ -571,9 +583,7 @@ func (r *registryCache) updateVaribales(iwc *instanceWithController) error {
 	if err != nil {
 		return err
 	}
-	// todo how to handle removal of dotenv variables?
-	// update in a separate dotenvvariable field ?
-	maps.Copy(inst.Variables, dotEnv)
+	maps.Copy(inst.ProjectVariables, dotEnv)
 	return r.rt.EditInstance(iwc.ctx, inst, false)
 }
 
