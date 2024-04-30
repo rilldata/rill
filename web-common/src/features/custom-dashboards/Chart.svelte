@@ -1,20 +1,18 @@
 <script lang="ts">
-  import { useChart } from "@rilldata/web-common/features/charts/selectors";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { VisualizationSpec } from "svelte-vega";
   import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
+  import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client";
 
   export let chartName: string;
   export let chartView = false;
+  export let vegaSpec: string;
+  export let resolverProperties: V1ComponentSpecResolverProperties;
 
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
-
-  $: chart = useChart($runtime.instanceId, chartName);
-
-  $: vegaSpec = $chart?.data?.component?.spec?.rendererProperties?.spec;
 
   $: try {
     parsedVegaSpec = vegaSpec
@@ -25,13 +23,11 @@
     error = JSON.stringify(e);
   }
 
-  $: metricsQuery = $chart?.data?.component?.spec?.resolverProperties;
-
   $: chartDataQuery = createRuntimeServiceGetChartData(
     queryClient,
     $runtime.instanceId,
     chartName,
-    metricsQuery,
+    resolverProperties,
   );
 
   $: data = $chartDataQuery?.data;
@@ -39,10 +35,10 @@
 
 {#if parsedVegaSpec}
   <VegaLiteRenderer
-    {chartView}
     customDashboard
+    {error}
+    {chartView}
     data={{ table: data }}
     spec={parsedVegaSpec}
-    {error}
   />
 {/if}

@@ -1,11 +1,12 @@
 <script lang="ts">
   import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
-  import Element from "./Element.svelte";
+  import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
   import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
-  import Wrapper from "./Wrapper.svelte";
+  import DashboardWrapper from "./DashboardWrapper.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
@@ -19,17 +20,16 @@
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
-
   let selectedIndex: number | null = null;
   let changing = false;
-
   let startMouse: Vector = [0, 0];
   let mousePosition: Vector = [0, 0];
   let initialElementDimensions: Vector = [0, 0];
   let initialElementPosition: Vector = [0, 0];
-
   let dimensionChange: [0 | 1 | -1, 0 | 1 | -1] = [0, 0];
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
+
+  $: instanceId = $runtime.instanceId;
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
@@ -163,25 +163,27 @@
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
 
-<Wrapper
+<DashboardWrapper
   bind:contentRect
   {changing}
   {gapSize}
   {gridCell}
-  height={maxBottom * gridCell}
-  on:click={deselect}
-  on:scroll={handleScroll}
+  {scrollOffset}
   {radius}
   {scale}
   {showGrid}
+  height={maxBottom * gridCell}
   width={defaults.DASHBOARD_WIDTH}
+  on:click={deselect}
+  on:scroll={handleScroll}
 >
   {#each items as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
-    <Element
-      {scale}
+    <PreviewElement
+      {instanceId}
       {i}
+      {scale}
       {component}
       {radius}
       {selected}
@@ -198,4 +200,4 @@
       on:change={handleChange}
     />
   {/each}
-</Wrapper>
+</DashboardWrapper>
