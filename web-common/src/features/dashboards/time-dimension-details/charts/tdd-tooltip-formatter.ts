@@ -58,15 +58,28 @@ export function tddTooltipFormatter(
           const val = rest[key];
           if (val === null || val === "NaN") continue;
 
+          let label = key;
+          let keyColor = colorMap[String(key)] || "#000";
+
+          if (isTimeComparison) {
+            if (key.startsWith("comparison.")) {
+              keyColor = colorMap["comparison_period"];
+              label = "Previous Period";
+            } else {
+              keyColor = colorMap["current_period"];
+              label = "Current Period";
+            }
+          }
+
           content += `
             <tr>
               <td class="color">
                 <svg width="16" height="16">
-                  <circle cx="8" cy="8" r="6" style="fill:${colorMap[String(key)] || "#000"};">
+                  <circle cx="8" cy="8" r="6" style="fill:${keyColor};">
                   </reccit>
                 </svg>
               </td>
-              <td class="key">${escapeHTML(key)}</td>
+              <td class="key">${escapeHTML(label)}</td>
               <td class="value">${escapeHTML(String(val))}</td>
             </tr>`;
         }

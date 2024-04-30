@@ -78,8 +78,6 @@
     selectedValues,
     timeGrain,
   );
-
-  $: console.log(data, sanitizedVegaSpec);
 </script>
 
 {#if sanitizedVegaSpec && data}
