@@ -30,7 +30,7 @@
       e.currentTarget,
       filePath,
       chartName,
-      fileArtifacts.getNamesForKind(ResourceKind.Chart),
+      fileArtifacts.getNamesForKind(ResourceKind.Component),
     );
 
     if (newRoute) await goto(newRoute);

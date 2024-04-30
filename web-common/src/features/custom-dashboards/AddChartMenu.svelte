@@ -16,7 +16,7 @@
   // We want to get only valid charts here. Hence using ListResources API
   $: chartFileNamesQuery = useFilteredResources(
     $runtime.instanceId,
-    ResourceKind.Chart,
+    ResourceKind.Component,
     (data) => data.resources?.map((r) => r.meta?.name?.name ?? "") ?? [],
   );
   $: chartFileNames = $chartFileNamesQuery.data ?? [];
