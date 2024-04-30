@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
@@ -417,6 +419,9 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			}
 
 			// Start controller
+			if err := r.updateEnvVaribales(iwc); err != nil {
+				iwc.logger.Warn("failed to update env", zap.Error(err))
+			}
 			iwc.logger.Debug("controller starting")
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
 			if err == nil {
@@ -538,6 +543,28 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
 		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
 	)
+}
+
+func (r *registryCache) updateEnvVaribales(iwc *instanceWithController) error {
+	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	inst, err := r.rt.Instance(iwc.ctx, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+
+	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	// todo how to handle removal of dotenv variables?
+	// update in a separate dotenvvariable field ?
+	maps.Copy(inst.Variables, dotEnv)
+	return r.rt.EditInstance(iwc.ctx, inst, false)
 }
 
 func sizeOfDir(path string) int64 {
