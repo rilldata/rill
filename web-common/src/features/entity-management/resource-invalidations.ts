@@ -105,13 +105,18 @@ async function invalidateResource(
     return;
 
   if (
-    fileArtifacts.wasRenaming(resource) ||
-    (fileArtifacts.isNew(resource) &&
-      (resource.meta.name?.kind === ResourceKind.Source ||
-        resource.meta.name?.kind === ResourceKind.Model))
+    (resource.meta.name?.kind === ResourceKind.Source ||
+      resource.meta.name?.kind === ResourceKind.Model) &&
+    (fileArtifacts.wasRenaming(resource) || !fileArtifacts.hadTable(resource))
   ) {
     void queryClient.invalidateQueries(
-      getConnectorServiceOLAPListTablesQueryKey(),
+      getConnectorServiceOLAPListTablesQueryKey({
+        instanceId: get(runtime).instanceId,
+        connector:
+          resource.source?.state?.connector ??
+          resource.model?.state?.connector ??
+          "",
+      }),
     );
   }
   fileArtifacts.updateArtifacts(resource);

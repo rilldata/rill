@@ -73,7 +73,6 @@
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
-    customDashboardName = fileArtifact.getEntityName();
   } else {
     customDashboardName = $page.params.name;
     filePath = getFileAPIPathFromNameAndType(
@@ -82,6 +81,8 @@
     );
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
+  $: name = fileArtifact?.name;
+  $: customDashboardName = $name?.name ?? "";
 
   $: instanceId = $runtime.instanceId;
 
