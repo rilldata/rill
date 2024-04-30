@@ -419,7 +419,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 
 			// Start controller
 			if err := r.updateProjectConfig(iwc); err != nil {
-				iwc.logger.Warn("failed to update variables", zap.Error(err))
+				iwc.logger.Warn("failed to parse and update the project config before starting the controller", zap.Error(err))
 			}
 			iwc.logger.Debug("controller starting")
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
