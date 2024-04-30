@@ -12,6 +12,7 @@
   export let latest: string;
   export let hasUnsavedChanges: boolean;
   export let allErrors: V1ParseError[];
+  export let filePath: string;
 
   let view: EditorView;
 
@@ -42,6 +43,11 @@
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
-    <YAMLEditor content={latest} bind:view on:update={handleUpdate} />
+    <YAMLEditor
+      content={latest}
+      bind:view
+      on:update={handleUpdate}
+      key={filePath}
+    />
   </div>
 </div>

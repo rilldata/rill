@@ -234,6 +234,7 @@
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <CustomDashboardEditor
+              {filePath}
               {errors}
               {yaml}
               on:update={updateChartFile}

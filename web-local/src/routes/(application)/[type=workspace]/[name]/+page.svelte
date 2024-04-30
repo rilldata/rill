@@ -330,6 +330,7 @@
         {#key assetName}
           {#if type === "source"}
             <SourceEditor
+              {filePath}
               {blob}
               {hasUnsavedChanges}
               allErrors={$allErrors}
