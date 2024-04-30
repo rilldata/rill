@@ -83,7 +83,7 @@
 
 <style lang="postcss">
   button {
-    @apply z-[100] flex-none;
+    @apply z-50 flex-none;
     /* @apply bg-red-400; */
   }
 
@@ -99,6 +99,22 @@
   .EW {
     @apply w-3 h-full;
     @apply cursor-col-resize;
+  }
+
+  .NS.maxed {
+    @apply cursor-s-resize;
+  }
+
+  .NS.minned {
+    @apply cursor-n-resize;
+  }
+
+  .EW.minned {
+    @apply cursor-e-resize;
+  }
+
+  .EW.maxed {
+    @apply cursor-w-resize;
   }
 
   .left {
