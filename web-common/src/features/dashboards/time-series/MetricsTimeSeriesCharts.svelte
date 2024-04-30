@@ -23,7 +23,6 @@
     TimeSeriesDatum,
     useTimeSeriesDataStore,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
-  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
@@ -36,6 +35,7 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
+  import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -152,7 +152,8 @@
       );
 
       return {
-        hover: isScrubbing ? undefined : state.hover,
+        yHover: isScrubbing ? undefined : state.yHover,
+        xHover: isScrubbing ? undefined : state.xHover,
         scrubStart: startPos,
         scrubEnd: endPos,
       };
@@ -182,25 +183,12 @@
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
   ) {
-    if (!mouseoverValue?.x || !(mouseoverValue.x instanceof Date)) {
-      chartInteractionColumn.update((state) => ({
-        ...state,
-        hover: undefined,
-      }));
-    } else {
-      const { position: columnNum } = bisectData(
-        mouseoverValue.x,
-        "center",
-        "ts_position",
-        isAllTime ? formattedData?.slice(1) : formattedData?.slice(1, -1),
-      );
-
-      if ($chartInteractionColumn?.hover !== columnNum)
-        chartInteractionColumn.update((state) => ({
-          ...state,
-          hover: columnNum,
-        }));
-    }
+    updateChartInteractionStore(
+      mouseoverValue?.x,
+      undefined,
+      isAllTime,
+      formattedData,
+    );
   }
 
   const toggleMeasureVisibility = (e) => {
@@ -317,6 +305,15 @@
               {dimensionData}
               xMin={startValue}
               xMax={endValue}
+              on:chart-hover={(e) => {
+                const { dimension, ts } = e.detail;
+                updateChartInteractionStore(
+                  ts,
+                  dimension,
+                  isAllTime,
+                  formattedData,
+                );
+              }}
             />
           {:else if formattedData && interval}
             <MeasureChart

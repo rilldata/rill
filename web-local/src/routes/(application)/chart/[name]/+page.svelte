@@ -70,7 +70,9 @@
           chartView
           gap={8}
           columns={10}
-          components={[{ width: 10, height: 10, x: 0, y: 0, chart: chartName }]}
+          components={[
+            { width: 10, height: 10, x: 0, y: 0, component: chartName },
+          ]}
         />
       </ChartPromptStatusDisplay>
     </div>

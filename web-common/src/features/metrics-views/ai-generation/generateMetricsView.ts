@@ -1,4 +1,6 @@
 import { goto } from "$app/navigation";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { get } from "svelte/store";
 import { notifications } from "../../../components/notifications";
@@ -16,7 +18,6 @@ import {
   runtimeServiceGetFile,
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
-import { useDashboardFileNames } from "../../dashboards/selectors";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
@@ -57,10 +58,6 @@ export function useCreateDashboardFromTableUIAction(
 ) {
   const isAiEnabled = get(featureFlags.ai);
 
-  // Get the list of existing dashboards to generate a unique name
-  // We call here to avoid: `Error: Function called outside component initialization`
-  const dashboardNames = useDashboardFileNames(instanceId);
-
   // Return a function that can be called to create a dashboard from a table
   return async () => {
     let isAICancelled = false;
@@ -82,7 +79,7 @@ export function useCreateDashboardFromTableUIAction(
     // Get a unique name
     const newDashboardName = getName(
       `${tableName}_dashboard`,
-      get(dashboardNames).data ?? [],
+      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     const newFilePath = `/${folder}/${newDashboardName}.yaml`;
 

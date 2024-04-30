@@ -90,6 +90,16 @@
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
+  let highlitedRowIndex: number | undefined;
+  $: if (formattedData?.rowCount) {
+    highlitedRowIndex = undefined;
+    formattedData.rowHeaderData.forEach((row, index) => {
+      if (row[0]?.value === $chartInteractionColumn?.yHover) {
+        highlitedRowIndex = index;
+      }
+    });
+  }
+
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
     timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
@@ -214,7 +224,8 @@
       comparing={comparisonCopy}
       {timeFormatter}
       tableData={formattedData}
-      highlightedCol={$chartInteractionColumn?.hover}
+      highlightedRow={highlitedRowIndex}
+      highlightedCol={$chartInteractionColumn?.xHover}
       {pinIndex}
       scrubPos={{
         start: $chartInteractionColumn?.scrubStart,

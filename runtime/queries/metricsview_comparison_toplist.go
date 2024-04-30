@@ -92,7 +92,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectPinot {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -649,14 +649,14 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		if dialect != drivers.DialectDruid {
 			if q.measuresMeta[m.Name].expand {
 				columnsTuple = fmt.Sprintf(
-					"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+					"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, CAST((base.%[1]s - comparison.%[1]s) AS DOUBLE)/comparison.%[1]s AS %[4]s",
 					safeName(m.Name),
 					safeName(m.Name+"__previous"),
 					safeName(m.Name+"__delta_abs"),
 					safeName(m.Name+"__delta_rel"),
 				)
 				labelTuple = fmt.Sprintf(
-					"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+					"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, CAST((base.%[1]s - comparison.%[1]s) AS DOUBLE)/comparison.%[1]s AS %[4]s",
 					safeName(m.Name),
 					safeName(labelMap[m.Name]+" (prev)"),
 					safeName(labelMap[m.Name]+" (Δ)"),
@@ -1071,7 +1071,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		)
 	}
 
-	fmt.Println(sql, args)
 	return sql, args, nil
 }
 
@@ -1126,11 +1125,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 				return err
 			}
 		}
-	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
-			return err
-		}
-	case drivers.DialectClickHouse:
+	case drivers.DialectDruid, drivers.DialectClickHouse, drivers.DialectPinot:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
 			return err
 		}

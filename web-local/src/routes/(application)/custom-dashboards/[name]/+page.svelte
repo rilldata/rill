@@ -29,7 +29,7 @@
   } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type {
-    V1DashboardComponent,
+    V1DashboardItem,
     V1DashboardSpec,
   } from "@rilldata/web-common/runtime-client";
   import {
@@ -71,7 +71,7 @@
   let dashboard: V1DashboardSpec = {
     columns: 10,
     gap: 1,
-    components: [],
+    items: [],
   };
 
   $: if (data.fileArtifact) {
@@ -102,7 +102,7 @@
       const potentialDb = parse(yaml) as V1DashboardSpec;
       dashboard = {
         ...potentialDb,
-        components: potentialDb.components?.filter(isComponent) ?? [],
+        items: potentialDb.items?.filter(isComponent) ?? [],
       };
     } catch {
       // Unable to parse YAML, no-op
@@ -110,12 +110,12 @@
   }
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
-    ResourceKind.Chart,
+    ResourceKind.Component,
     selectedChartName ?? "",
   );
   $: selectedChartFilePath = selectedChartFileArtifact?.path;
 
-  $: ({ columns, gap, components = [] } = dashboard ?? ({} as V1DashboardSpec));
+  $: ({ columns, gap, items = [] } = dashboard ?? ({} as V1DashboardSpec));
 
   async function onChangeCallback(
     e: Event & {
@@ -127,6 +127,7 @@
       e.currentTarget,
       filePath,
       fileName,
+      fileArtifacts.getNamesForKind(ResourceKind.Dashboard),
     );
     if (newRoute) await goto(newRoute);
   }
@@ -154,27 +155,27 @@
       dimensions: Vector;
     }>,
   ) {
-    const newComponents = [...components];
+    const newItems = [...items];
 
-    newComponents[e.detail.index].width = e.detail.dimensions[0];
-    newComponents[e.detail.index].height = e.detail.dimensions[1];
+    newItems[e.detail.index].width = e.detail.dimensions[0];
+    newItems[e.detail.index].height = e.detail.dimensions[1];
 
-    newComponents[e.detail.index].x = e.detail.position[0];
-    newComponents[e.detail.index].y = e.detail.position[1];
+    newItems[e.detail.index].x = e.detail.position[0];
+    newItems[e.detail.index].y = e.detail.position[1];
 
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components: newComponents,
+      items: newItems,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const newComponents = [...components];
-    newComponents.push({
-      chart: e.detail.chartName,
+    const newItems = [...items];
+    newItems.push({
+      component: e.detail.chartName,
       height: 4,
       width: 4,
       x: 0,
@@ -184,15 +185,15 @@
     yaml = stringify(<V1DashboardSpec>{
       kind: "dashboard",
       ...dashboard,
-      components: newComponents,
+      items: newItems,
     });
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   function isComponent(
-    component: V1DashboardComponent | null | undefined,
-  ): component is V1DashboardComponent {
+    component: V1DashboardItem | null | undefined,
+  ): component is V1DashboardItem {
     return !!component;
   }
 </script>
@@ -305,7 +306,7 @@
       <CustomDashboardPreview
         {snap}
         {gap}
-        {components}
+        {items}
         {columns}
         {showGrid}
         bind:selectedChartName

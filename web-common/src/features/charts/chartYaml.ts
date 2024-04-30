@@ -1,4 +1,4 @@
-import type { V1ChartSpec } from "@rilldata/web-common/runtime-client";
+import { V1ComponentSpec } from "@rilldata/web-common/runtime-client";
 import { Document, parse } from "yaml";
 
 export function getChartYaml(
@@ -8,7 +8,7 @@ export function getChartYaml(
 ) {
   const doc = new Document();
   doc.commentBefore = ` Chart YAML\n Reference documentation: https://docs.rilldata.com/reference/project-files/charts`;
-  doc.set("kind", "chart");
+  doc.set("kind", "component");
 
   // TODO: more fields from resolverProperties
   if (resolver === "sql") {
@@ -24,7 +24,7 @@ export function getChartYaml(
   return doc.toString();
 }
 
-export function parseChartYaml(chartContent: string): V1ChartSpec {
+export function parseChartYaml(chartContent: string): V1ComponentSpec {
   const chartYaml = parse(chartContent);
 
   let resolver = "";
@@ -43,7 +43,10 @@ export function parseChartYaml(chartContent: string): V1ChartSpec {
 
   return {
     title: chartYaml.title,
-    vegaLiteSpec: chartYaml.vegaLiteSpec,
+    renderer: "chart",
+    rendererProperties: {
+      spec: chartYaml.vegaLiteSpec,
+    },
     resolver,
     resolverProperties,
   };

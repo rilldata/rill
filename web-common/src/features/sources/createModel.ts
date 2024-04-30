@@ -1,14 +1,13 @@
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
-import type { QueryClient } from "@tanstack/svelte-query";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { get } from "svelte/store";
 import { notifications } from "../../components/notifications";
 import { runtimeServicePutFile } from "../../runtime-client";
 import { runtime } from "../../runtime-client/runtime-store";
-import { getModelNames } from "../models/selectors";
 
 export async function createModelFromSource(
-  queryClient: QueryClient,
   sourceName: string,
   tableName: string,
   folder: string,
@@ -19,8 +18,11 @@ export async function createModelFromSource(
   folder = removeLeadingSlash(folder);
 
   // Get new model name
-  const modelNames = await getModelNames(queryClient, instanceId);
-  const newModelName = getName(`${sourceName}_model`, modelNames);
+  const allNames = [
+    ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+    ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+  ];
+  const newModelName = getName(`${sourceName}_model`, allNames);
   const newModelPath = `${folder}/${newModelName}.sql`;
 
   // Create model

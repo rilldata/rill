@@ -49,8 +49,8 @@ import type {
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
   RuntimeServiceWatchFilesParams,
-  V1GenerateChartSpecResponse,
-  RuntimeServiceGenerateChartSpecBody,
+  V1GenerateRendererResponse,
+  RuntimeServiceGenerateRendererBody,
   V1GenerateResolverResponse,
   RuntimeServiceGenerateResolverBody,
   V1GetLogsResponse,
@@ -1214,53 +1214,53 @@ export const createRuntimeServiceWatchFiles = <
 };
 
 /**
- * @summary GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
+ * @summary GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
  */
-export const runtimeServiceGenerateChartSpec = (
+export const runtimeServiceGenerateRenderer = (
   instanceId: string,
-  runtimeServiceGenerateChartSpecBody: RuntimeServiceGenerateChartSpecBody,
+  runtimeServiceGenerateRendererBody: RuntimeServiceGenerateRendererBody,
 ) => {
-  return httpClient<V1GenerateChartSpecResponse>({
-    url: `/v1/instances/${instanceId}/generate/chart`,
+  return httpClient<V1GenerateRendererResponse>({
+    url: `/v1/instances/${instanceId}/generate/renderer`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServiceGenerateChartSpecBody,
+    data: runtimeServiceGenerateRendererBody,
   });
 };
 
-export type RuntimeServiceGenerateChartSpecMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>
+export type RuntimeServiceGenerateRendererMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>
 >;
-export type RuntimeServiceGenerateChartSpecMutationBody =
-  RuntimeServiceGenerateChartSpecBody;
-export type RuntimeServiceGenerateChartSpecMutationError = ErrorType<RpcStatus>;
+export type RuntimeServiceGenerateRendererMutationBody =
+  RuntimeServiceGenerateRendererBody;
+export type RuntimeServiceGenerateRendererMutationError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceGenerateChartSpec = <
+export const createRuntimeServiceGenerateRenderer = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
+    Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody },
+    { instanceId: string; data: RuntimeServiceGenerateRendererBody },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
-    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody }
+    Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
+    { instanceId: string; data: RuntimeServiceGenerateRendererBody }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
-    return runtimeServiceGenerateChartSpec(instanceId, data);
+    return runtimeServiceGenerateRenderer(instanceId, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof runtimeServiceGenerateChartSpec>>,
+    Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateChartSpecBody },
+    { instanceId: string; data: RuntimeServiceGenerateRendererBody },
     TContext
   >(mutationFn, mutationOptions);
 };
