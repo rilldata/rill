@@ -262,18 +262,18 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 			return nil, err
 		}
 
-		// Read rill.yaml and fill in `ignore_paths`
-		rawYaml, err := h.Get(context.Background(), "/rill.yaml")
-		if err == nil {
-			yml := &rillYAML{}
-			err = yaml.Unmarshal([]byte(rawYaml), yml)
-			if err == nil {
-				h.ignorePaths = yml.IgnorePaths
-			}
-		}
-
 		return nil, nil
 	})
+
+	// Read rill.yaml and fill in `ignore_paths`
+	rawYaml, err := h.Get(context.Background(), "/rill.yaml")
+	if err == nil {
+		yml := &rillYAML{}
+		err = yaml.Unmarshal([]byte(rawYaml), yml)
+		if err == nil {
+			h.ignorePaths = yml.IgnorePaths
+		}
+	}
 
 	select {
 	case <-ctx.Done():
