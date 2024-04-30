@@ -365,6 +365,7 @@ func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deploym
 	if err != nil {
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
+		defer rt.Close()
 		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: depl.RuntimeInstanceID,
 		})
@@ -372,7 +373,6 @@ func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deploym
 			s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
-	defer rt.Close()
 
 	// Get provisioner and deprovision, skip if the provisioner is no longer defined in the provisioner set
 	p, ok := s.ProvisionerSet[depl.Provisioner]
