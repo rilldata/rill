@@ -141,6 +141,8 @@ export class FileArtifact {
   }
 
   private updateNameIfChanged(resource: V1Resource) {
+    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    if (isSubResource) return;
     const curName = get(this.name);
     if (
       curName?.name !== resource.meta?.name?.name ||
