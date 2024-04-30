@@ -156,6 +156,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectConnectors:    oldInst.ProjectConnectors,
 		Variables:            variables,
 		ProjectVariables:     oldInst.ProjectVariables,
+		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
 		EmbedCatalog:         valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
