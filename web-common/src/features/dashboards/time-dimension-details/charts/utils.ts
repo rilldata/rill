@@ -12,7 +12,7 @@ import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { VisualizationSpec } from "svelte-vega";
-import { TDDAlternateCharts } from "../types";
+import { TDDAlternateCharts, TDDChart } from "../types";
 
 export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
   return dimensionData
@@ -52,8 +52,8 @@ export function getVegaSpecForTDD(
     nominalFields = [
       {
         name: "key",
-        label: "Comparison",
-        values: ["ts", "comparison_ts"],
+        label: "Comparing",
+        values: [expandedMeasureName, `comparison\\.${expandedMeasureName}`],
       },
     ];
 
@@ -76,6 +76,7 @@ export function getVegaSpecForTDD(
 
 export function patchSpecForTDD(
   spec,
+  chartType: TDDAlternateCharts,
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
@@ -161,6 +162,20 @@ export function patchSpecForTDD(
       domain: ["ts", "comparison_ts"],
       range: [MainLineColor, MainAreaColorGradientDark],
     };
+
+    if (chartType === TDDChart.STACKED_AREA) {
+      /**
+       * For stacked area charts, we don't need to pivot transform as the
+       * comparison values are already in the right format.
+       */
+
+      const stackedAreaPivotLayer = sanitizedSpec.layer[2];
+
+      if (stackedAreaPivotLayer) {
+        delete stackedAreaPivotLayer.transform;
+        const pivotEncoding = stackedAreaPivotLayer.encoding;
+      }
+    }
   }
 
   return sanitizedSpec;

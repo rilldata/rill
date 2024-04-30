@@ -1,5 +1,8 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  MainAreaColorGradientDark,
+  MainLineColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { TDDAlternateCharts, TDDChart } from "../types";
@@ -12,6 +15,7 @@ export function tddTooltipFormatter(
   chartType: TDDAlternateCharts,
   measureLabel: string,
   dimensionLabel: string | undefined,
+  isTimeComparison: boolean,
   selectedDimensionValues: (string | null)[],
   interval: V1TimeGrain | undefined,
 ) {
@@ -20,6 +24,11 @@ export function tddTooltipFormatter(
     colorMap[String(dimValue)] = COMPARIONS_COLORS[i];
   });
   colorMap[measureLabel] = MainLineColor;
+
+  if (isTimeComparison) {
+    colorMap["current_period"] = MainLineColor;
+    colorMap["comparison_period"] = MainAreaColorGradientDark;
+  }
 
   return (value: Record<string, any>) => {
     let content = "";
@@ -41,10 +50,12 @@ export function tddTooltipFormatter(
       content += "<table>";
 
       const selectedValuesLength = selectedDimensionValues.length;
-      if (chartType === TDDChart.STACKED_AREA && selectedValuesLength) {
+      if (
+        chartType === TDDChart.STACKED_AREA &&
+        (selectedValuesLength || isTimeComparison)
+      ) {
         for (const key of keys) {
           const val = rest[key];
-
           if (val === null || val === "NaN") continue;
 
           content += `
@@ -64,13 +75,26 @@ export function tddTooltipFormatter(
           selectedValuesLength && dimensionLabel
             ? rest[dimensionLabel]
             : measureLabel;
+
+        let keyColor = colorMap[measureLabel];
+
+        if (selectedValuesLength && dimensionLabel) {
+          keyColor = colorMap[String(key)];
+        } else if (isTimeComparison) {
+          if (rest["Comparing"] === "ts") {
+            keyColor = colorMap["current_period"];
+          } else {
+            keyColor = colorMap["comparison_period"];
+          }
+        }
+
         const val = rest[measureLabel];
 
         content += `
           <tr>
           <td class="color">
             <svg width="16" height="16">
-              <circle cx="8" cy="8" r="6" style="fill:${colorMap[String(key)] || "#000"};">
+              <circle cx="8" cy="8" r="6" style="fill:${keyColor};">
               </reccit>
             </svg>
           </td>

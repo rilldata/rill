@@ -61,6 +61,7 @@
 
   $: sanitizedVegaSpec = patchSpecForTDD(
     vegaSpec,
+    chartType,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
     xMax,
@@ -73,11 +74,12 @@
     chartType,
     expandedMeasureLabel,
     comparedDimensionLabel,
+    isTimeComparison,
     selectedValues,
     timeGrain,
   );
 
-  $: console.log(sanitizedVegaSpec);
+  $: console.log(data, sanitizedVegaSpec);
 </script>
 
 {#if sanitizedVegaSpec && data}
