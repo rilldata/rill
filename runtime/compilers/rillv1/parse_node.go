@@ -59,7 +59,9 @@ func (p *Parser) parseNode(node *Node) error {
 
 // commonYAML parses YAML fields common to all YAML files.
 type commonYAML struct {
-	// Kind can be inferred from the directory name in certain cases, but otherwise must be specified manually.
+	// Type can be inferred from the directory name in certain cases, but otherwise must be specified manually.
+	Type *string `yaml:"type"`
+	// Deprecated: Changed to Type. "Kind" is still used internally to refer to resource types.
 	Kind *string `yaml:"kind"`
 	// Name is usually inferred from the filename, but can be specified manually.
 	Name string `yaml:"name"`
@@ -145,13 +147,27 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			return nil, pathError{path: ymlPath, err: newYAMLError(err)}
 		}
 
-		// Parse resource kind if set in YAML
+		// Parse resource kind if set in YAML. If not set, we try to infer it from path later.
+		// NOTE: We use "kind" internally, but "type:" is the preferred user-facing field.
+		// However, we still need to support "kind:" for backwards compatibility.
 		if cfg.Kind != nil {
 			res.Kind, err = ParseResourceKind(*cfg.Kind)
 			if err != nil {
 				return nil, pathError{path: ymlPath, err: err}
 			}
 		}
+		if cfg.Type != nil {
+			kind, err := ParseResourceKind(*cfg.Type)
+			if err == nil {
+				res.Kind = kind
+			} else if !strings.HasPrefix(paths[0], "/sources") {
+				// Backwards compatibility: "type:" was previously used in sources instead of "connector:". This was when sources were always created in the "sources" directory.
+				// So for backwards compatibility, we ignore parse errors for the "type:" field when the file is in the "sources" directory.
+				// (The source parser handles the backwards compatibility around mapping "type:" to "connector:".)
+				return nil, pathError{path: ymlPath, err: err}
+			}
+		}
+
 	}
 
 	// Set SQL
@@ -201,7 +217,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 	var err error
 	for k, v := range res.SQLAnnotations {
 		switch strings.ToLower(k) {
-		case "kind":
+		case "type", "kind": // "kind" is for backwards compatibility
 			v, ok := v.(string)
 			if !ok {
 				err = fmt.Errorf("invalid type %T for property 'kind'", v)
