@@ -255,8 +255,9 @@ export type QueryServiceMetricsViewComparisonBody = {
 export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
+  sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   pivotOn?: string[];
@@ -752,6 +753,13 @@ export interface V1Resource {
   api?: V1API;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -773,13 +781,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1259,11 +1260,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewAggregationSort {
-  name?: string;
-  desc?: boolean;
-}
-
 export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewAggregationResponse {
@@ -1290,8 +1286,9 @@ export interface V1MetricsViewAggregationRequest {
   metricsView?: string;
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
+  sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   pivotOn?: string[];

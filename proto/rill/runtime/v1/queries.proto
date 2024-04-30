@@ -323,9 +323,11 @@ message MetricsViewAggregationRequest {
   // Required
   repeated MetricsViewAggregationMeasure measures = 4;
   // Optional. Defaults to unsorted
-  repeated MetricsViewAggregationSort sort = 5;
+  repeated MetricsViewComparisonSort sort = 5;
   // Optional. Defaults to unbounded
   TimeRange time_range = 12;
+  // Optional, if omitted than the request prepares an aggregation without a comparison
+  TimeRange comparison_time_range = 16;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
   // Optional. List of dimensions/measures. No pivot is done if ommitted

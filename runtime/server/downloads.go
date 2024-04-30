@@ -133,18 +133,19 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.MetricsViewAggregation{
-			MetricsViewName:    r.MetricsView,
-			Dimensions:         r.Dimensions,
-			Measures:           r.Measures,
-			Sort:               r.Sort,
-			TimeRange:          tr,
-			Where:              r.Where,
-			Having:             r.Having,
-			Filter:             r.Filter,
-			Limit:              limitPtr,
-			Offset:             r.Offset,
-			PivotOn:            r.PivotOn,
-			SecurityAttributes: attrs,
+			MetricsViewName:     r.MetricsView,
+			Dimensions:          r.Dimensions,
+			Measures:            r.Measures,
+			Sort:                r.Sort,
+			TimeRange:           tr,
+			ComparisonTimeRange: r.ComparisonTimeRange,
+			Where:               r.Where,
+			Having:              r.Having,
+			Filter:              r.Filter,
+			Limit:               limitPtr,
+			Offset:              r.Offset,
+			PivotOn:             r.PivotOn,
+			SecurityAttributes:  attrs,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest

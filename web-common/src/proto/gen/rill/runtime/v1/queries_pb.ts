@@ -817,9 +817,9 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   /**
    * Optional. Defaults to unsorted
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationSort sort = 5;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonSort sort = 5;
    */
-  sort: MetricsViewAggregationSort[] = [];
+  sort: MetricsViewComparisonSort[] = [];
 
   /**
    * Optional. Defaults to unbounded
@@ -827,6 +827,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    * @generated from field: rill.runtime.v1.TimeRange time_range = 12;
    */
   timeRange?: TimeRange;
+
+  /**
+   * Optional, if omitted than the request prepares an aggregation without a comparison
+   *
+   * @generated from field: rill.runtime.v1.TimeRange comparison_time_range = 16;
+   */
+  comparisonTimeRange?: TimeRange;
 
   /**
    * Deprecated in favor of time_range
@@ -905,8 +912,9 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 2, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "dimensions", kind: "message", T: MetricsViewAggregationDimension, repeated: true },
     { no: 4, name: "measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
-    { no: 5, name: "sort", kind: "message", T: MetricsViewAggregationSort, repeated: true },
+    { no: 5, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
     { no: 12, name: "time_range", kind: "message", T: TimeRange },
+    { no: 16, name: "comparison_time_range", kind: "message", T: TimeRange },
     { no: 6, name: "time_start", kind: "message", T: Timestamp },
     { no: 7, name: "time_end", kind: "message", T: Timestamp },
     { no: 15, name: "pivot_on", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

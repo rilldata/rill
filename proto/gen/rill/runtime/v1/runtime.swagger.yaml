@@ -1168,11 +1168,14 @@ paths:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1MetricsViewAggregationSort'
+                  $ref: '#/definitions/v1MetricsViewComparisonSort'
                 title: Optional. Defaults to unsorted
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Optional. Defaults to unbounded
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional, if omitted than the request prepares an aggregation without a comparison
               timeStart:
                 type: string
                 format: date-time
@@ -3930,11 +3933,14 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewAggregationSort'
+          $ref: '#/definitions/v1MetricsViewComparisonSort'
         title: Optional. Defaults to unsorted
       timeRange:
         $ref: '#/definitions/v1TimeRange'
         title: Optional. Defaults to unbounded
+      comparisonTimeRange:
+        $ref: '#/definitions/v1TimeRange'
+        title: Optional, if omitted than the request prepares an aggregation without a comparison
       timeStart:
         type: string
         format: date-time
@@ -3981,15 +3987,6 @@ definitions:
         items:
           type: object
         title: Not optional, not null
-  v1MetricsViewAggregationSort:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Required. Dimension or measure name
-      desc:
-        type: boolean
-        title: Optional
   v1MetricsViewColumn:
     type: object
     properties:

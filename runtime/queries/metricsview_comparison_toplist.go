@@ -42,9 +42,10 @@ type MetricsViewComparison struct {
 }
 
 type metricsViewMeasureMeta struct {
-	innerIndex int  // relative position of the measure in the inner query, 1 based
-	outerIndex int  // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
-	expand     bool // whether the measure has derived measures like comparison, delta etc
+	innerIndex           int // relative position of the measure in the inner query, 1 based
+	outerIndex           int // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
+	comparisonInnerIndex int
+	expand               bool // whether the measure has derived measures like comparison, delta etc
 }
 
 var _ runtime.Query = &MetricsViewComparison{}
