@@ -1454,6 +1454,11 @@ type: s3
 		// api a1
 		`/apis/a1.yaml`: `
 kind: api
+refs:
+- kind: source
+  name: s1
+- type: source
+  name: s2
 sql: select 1
 `,
 		// migration m1
@@ -1484,6 +1489,7 @@ select 3
 		{
 			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
 			Paths: []string{"/apis/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "s1"}, {Kind: ResourceKindSource, Name: "s2"}},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select 1"})),

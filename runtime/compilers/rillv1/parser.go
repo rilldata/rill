@@ -132,7 +132,7 @@ func (k ResourceKind) String() string {
 	case ResourceKindAPI:
 		return "API"
 	default:
-		panic(fmt.Sprintf("unexpected resource kind: %d", k))
+		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
 }
 
@@ -780,7 +780,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
 
 	// Track it

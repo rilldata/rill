@@ -53,7 +53,7 @@ func (p *Parser) parseNode(node *Node) error {
 	case ResourceKindAPI:
 		return p.parseAPI(node)
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", node.Kind.String()))
 	}
 }
 
@@ -167,7 +167,6 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 				return nil, pathError{path: ymlPath, err: err}
 			}
 		}
-
 	}
 
 	// Set SQL
@@ -377,7 +376,7 @@ func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 			continue
 		}
 
-		// We support map refs of the form { kind: "kind", name: "my-resource" }
+		// We support map refs of the form { type: "kind", name: "my-resource" }
 		if ref.Kind == yaml.MappingNode {
 			m := make(map[string]string)
 			err := ref.Decode(m)
@@ -385,12 +384,21 @@ func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 				return nil, fmt.Errorf("invalid refs: %w", err)
 			}
 			if m["name"] == "" {
-				return nil, errors.New(`an object ref must provide the properties "kind" and "name" properties`)
+				return nil, errors.New(`an object ref must provide the properties "type" and "name" properties`)
 			}
 
 			var name ResourceName
 			name.Name = m["name"]
 
+			if m["type"] != "" {
+				kind, err := ParseResourceKind(m["type"])
+				if err != nil {
+					return nil, fmt.Errorf("invalid refs: %w", err)
+				}
+				name.Kind = kind
+			}
+
+			// Backwards compatibility for "kind:" changed to "type:"
 			if m["kind"] != "" {
 				kind, err := ParseResourceKind(m["kind"])
 				if err != nil {
