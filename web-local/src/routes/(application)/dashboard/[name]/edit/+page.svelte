@@ -50,7 +50,6 @@
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
-    metricViewName = fileArtifact.getEntityName();
   } else {
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
     metricViewName = $page.params.name;
@@ -60,6 +59,9 @@
     );
   }
   $: [, fileName] = splitFolderAndName(filePath);
+
+  $: name = fileArtifact?.name;
+  $: metricViewName = $name?.name ?? "";
 
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
