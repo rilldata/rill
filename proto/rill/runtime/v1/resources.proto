@@ -3,9 +3,10 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/export_format.proto";
-import "rill/runtime/v1/time_grain.proto";
 import "rill/runtime/v1/colors.proto";
+import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/schema.proto";
+import "rill/runtime/v1/time_grain.proto";
 
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
@@ -102,23 +103,29 @@ message ModelV2 {
 }
 
 message ModelSpec {
-  string connector = 1;
-  string sql = 2;
-  optional bool materialize = 3;
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 5;
-  bool uses_templating = 6;
-  // Fields not derived from code files
+  bool incremental = 12;
+  string state_resolver = 14;
+  google.protobuf.Struct state_resolver_properties = 15;
+  string source_connector = 2;
+  google.protobuf.Struct source_properties = 10;
+  string output_connector = 1;
+  google.protobuf.Struct output_properties = 11;
+  bool ephemeral = 13;
   bool stage_changes = 7;
-  uint32 materialize_delay_seconds = 8;
   bool trigger = 9;
+  // Reserved numbers: 2, 3, 6, 8
 }
 
 message ModelState {
-  string connector = 1;
-  string table = 2;
+  string output_connector = 1;
+  google.protobuf.Struct output_properties = 5;
   string spec_hash = 3;
   google.protobuf.Timestamp refreshed_on = 4;
+  google.protobuf.Struct state = 6;
+  StructType state_schema = 7;
+  // Reserved numbers: 2
 }
 
 message MetricsViewV2 {
