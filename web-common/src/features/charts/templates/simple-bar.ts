@@ -30,6 +30,7 @@ export function buildSimpleBar(
         title: quantitativeField.label,
         field: quantitativeField.name,
         type: "quantitative",
+        formatType: "measureFormatter",
       },
     ],
   };
