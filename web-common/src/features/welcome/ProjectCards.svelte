@@ -58,6 +58,7 @@
         force: true,
       },
     });
+    console.log("Done unpack");
     await goto(firstPage);
   }
 </script>

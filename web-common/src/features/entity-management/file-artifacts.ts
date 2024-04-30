@@ -43,7 +43,7 @@ export class FileArtifact {
    */
   public lastStateUpdatedOn: string | undefined;
 
-  public isNew = true;
+  public hasTable = false;
 
   public constructor(filePath: string) {
     this.path = filePath;
@@ -59,7 +59,9 @@ export class FileArtifact {
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
     this.renaming = !!resource.meta?.renamedFrom;
-    this.isNew = false;
+    this.hasTable =
+      (!!resource.model && !!resource.model.state?.table) ||
+      (!!resource.source && !!resource.source.state?.table);
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -238,10 +240,10 @@ export class FileArtifacts {
     });
   }
 
-  public isNew(resource: V1Resource) {
+  public hadTable(resource: V1Resource) {
     return (
       resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].isNew;
+        return this.artifacts[filePath].hasTable;
       }) ?? false
     );
   }
