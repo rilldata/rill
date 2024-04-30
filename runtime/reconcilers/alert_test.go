@@ -31,10 +31,10 @@ measures:
 - expression: count(*)
 `,
 		"/alerts/a1.yaml": `
-kind: alert
+type: alert
 title: Test Alert
 refs:
-- kind: MetricsView
+- type: MetricsView
   name: mv1
 watermark: inherit
 intervals:
@@ -187,10 +187,10 @@ measures:
 - expression: count(*)
 `,
 		"/alerts/a1.yaml": `
-kind: alert
+type: alert
 title: Test Alert
 refs:
-- kind: MetricsView
+- type: MetricsView
   name: mv1
 watermark: inherit
 intervals:

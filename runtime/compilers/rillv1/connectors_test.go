@@ -38,10 +38,10 @@ connector: duckdb
 sql: SELECT * FROM read_csv('s3://bucket/path.csv')
 `,
 		"/alerts/a1.yaml": `
-kind: alert
+type: alert
 title: Test Alert
 refs:
-- kind: MetricsView
+- type: MetricsView
   name: mv1
 watermark: inherit
 intervals:
@@ -127,10 +127,10 @@ func TestAnonSlackConnector(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		"/alerts/a1.yaml": `
-kind: alert
+type: alert
 title: Test Alert
 refs:
-- kind: MetricsView
+- type: MetricsView
   name: mv1
 watermark: inherit
 intervals:

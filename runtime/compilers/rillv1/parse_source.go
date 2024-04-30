@@ -18,7 +18,6 @@ import (
 // SourceYAML is the raw structure of a Source resource defined in YAML (does not include common fields)
 type SourceYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
-	Type       string                                  `yaml:"type"` // Backwards compatibility
 	Timeout    string                                  `yaml:"timeout"`
 	Refresh    *ScheduleYAML                           `yaml:"refresh"`
 	Properties map[string]any                          `yaml:",inline" mapstructure:",remain"`
@@ -33,10 +32,13 @@ func (p *Parser) parseSource(node *Node) error {
 		return err
 	}
 
-	// Backward compatibility: "type:" is an alias for "connector:"
-	if tmp.Type != "" {
-		node.Connector = tmp.Type
-		node.ConnectorInferred = false
+	// Backwards compatibility: "type:" was previously used instead of "connector:".
+	// So if "type:" is not a valid resource kind, we treat it as a connector.
+	if tmp.Type != nil {
+		if _, err := ParseResourceKind(*tmp.Type); err != nil {
+			node.Connector = *tmp.Type
+			node.ConnectorInferred = false
+		}
 	}
 
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
