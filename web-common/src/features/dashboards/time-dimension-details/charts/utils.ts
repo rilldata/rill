@@ -56,9 +56,7 @@ export function getVegaSpecForTDD(
         values: [expandedMeasureName, `comparison\\.${expandedMeasureName}`],
       },
     ];
-
     temporalFields[0].tooltipName = "time";
-
     measureFields[0].name = "measure";
   }
 
@@ -169,11 +167,12 @@ export function patchSpecForTDD(
        * comparison values are already in the right format.
        */
 
+      // TODO: This is error prone, find a better way to do this without
+      // mutating the template
       const stackedAreaPivotLayer = sanitizedSpec.layer[2];
 
       if (stackedAreaPivotLayer) {
         delete stackedAreaPivotLayer.transform;
-        const pivotEncoding = stackedAreaPivotLayer.encoding;
       }
     }
   }
