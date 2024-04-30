@@ -185,6 +185,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			project_connectors,
 			variables,
 			project_variables,
+			feature_flags,
 			annotations,
 			embed_catalog,
 			watch_repo

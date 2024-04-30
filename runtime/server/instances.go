@@ -29,7 +29,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
-		pbs[i] = instanceToPB(inst)
+		pbs[i] = instanceToPB(inst, true)
 	}
 
 	return &runtimev1.ListInstancesResponse{Instances: pbs}, nil
@@ -43,8 +43,14 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
-		return nil, ErrForbidden
+	sensitiveAccess := auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance)
+	if !sensitiveAccess {
+		// Regular project viewers can access non-sensitive instance information.
+		// NOTE: ReadObjects is not the right permission to use, but it's the closest permission that regular project viewers have.
+		// TODO: We should split ReadInstance into an admin-level and viewer-level permission instead.
+		if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+			return nil, ErrForbidden
+		}
 	}
 
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
@@ -56,7 +62,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	}
 
 	return &runtimev1.GetInstanceResponse{
-		Instance: instanceToPB(inst),
+		Instance: instanceToPB(inst, sensitiveAccess),
 	}, nil
 }
 
@@ -96,7 +102,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	return &runtimev1.CreateInstanceResponse{
-		Instance: instanceToPB(inst),
+		Instance: instanceToPB(inst, true),
 	}, nil
 }
 
@@ -168,7 +174,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	return &runtimev1.EditInstanceResponse{
-		Instance: instanceToPB(inst),
+		Instance: instanceToPB(inst, true),
 	}, nil
 }
 
@@ -259,28 +265,34 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	}, lvl)
 }
 
-func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
-	olapConnector := inst.OLAPConnector
-	if inst.ProjectOLAPConnector != "" {
-		olapConnector = inst.ProjectOLAPConnector
+func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
+	pb := &runtimev1.Instance{
+		InstanceId:   inst.ID,
+		CreatedOn:    timestamppb.New(inst.CreatedOn),
+		UpdatedOn:    timestamppb.New(inst.UpdatedOn),
+		FeatureFlags: inst.FeatureFlags,
 	}
 
-	return &runtimev1.Instance{
-		InstanceId:        inst.ID,
-		OlapConnector:     olapConnector,
-		RepoConnector:     inst.RepoConnector,
-		AdminConnector:    inst.AdminConnector,
-		AiConnector:       inst.AIConnector,
-		CreatedOn:         timestamppb.New(inst.CreatedOn),
-		UpdatedOn:         timestamppb.New(inst.UpdatedOn),
-		Connectors:        inst.Connectors,
-		ProjectConnectors: inst.ProjectConnectors,
-		Variables:         inst.Variables,
-		ProjectVariables:  inst.ProjectVariables,
-		Annotations:       inst.Annotations,
-		EmbedCatalog:      inst.EmbedCatalog,
-		WatchRepo:         inst.WatchRepo,
+	if sensitive {
+		olapConnector := inst.OLAPConnector
+		if inst.ProjectOLAPConnector != "" {
+			olapConnector = inst.ProjectOLAPConnector
+		}
+
+		pb.OlapConnector = olapConnector
+		pb.RepoConnector = inst.RepoConnector
+		pb.AdminConnector = inst.AdminConnector
+		pb.AiConnector = inst.AIConnector
+		pb.Connectors = inst.Connectors
+		pb.ProjectConnectors = inst.ProjectConnectors
+		pb.Variables = inst.Variables
+		pb.ProjectVariables = inst.ProjectVariables
+		pb.Annotations = inst.Annotations
+		pb.EmbedCatalog = inst.EmbedCatalog
+		pb.WatchRepo = inst.WatchRepo
 	}
+
+	return pb
 }
 
 func valOrDefault[T any](ptr *T, def T) T {

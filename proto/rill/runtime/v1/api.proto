@@ -238,6 +238,7 @@ message Instance {
   repeated Connector project_connectors = 13;
   map<string, string> variables = 7;
   map<string, string> project_variables = 8;
+  map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   bool embed_catalog = 6;
   bool watch_repo = 15;
