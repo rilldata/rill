@@ -12,8 +12,8 @@
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
     getVegaSpecForTDD,
+    patchSpecForTDD,
     reduceDimensionData,
-    sanitizeSpecForTDD,
   } from "./utils";
 
   export let totalsData;
@@ -59,11 +59,13 @@
     selectedValues,
   );
 
-  $: sanitizedVegaSpec = sanitizeSpecForTDD(
+  $: sanitizedVegaSpec = patchSpecForTDD(
     vegaSpec,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
     xMax,
+    isTimeComparison,
+    expandedMeasureName,
     selectedValues,
   );
 
@@ -74,6 +76,8 @@
     selectedValues,
     timeGrain,
   );
+
+  $: console.log(sanitizedVegaSpec);
 </script>
 
 {#if sanitizedVegaSpec && data}

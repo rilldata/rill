@@ -21,7 +21,7 @@ export function buildSimpleBar(
     },
     tooltip: [
       {
-        field: timeField.name,
+        field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
         type: "temporal",
         title: "Time",
         format: "%b %d, %Y %H:%M",

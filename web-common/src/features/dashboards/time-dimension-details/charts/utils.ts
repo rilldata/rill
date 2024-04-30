@@ -1,6 +1,13 @@
-import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
+import {
+  ChartField,
+  buildVegaLiteSpec,
+} from "@rilldata/web-common/features/charts/templates/build-template";
 import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import {
+  MainAreaColorGradientDark,
+  MainLineColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -27,19 +34,33 @@ export function getVegaSpecForTDD(
   dimensionName: string | undefined,
   comparedValues: (string | null)[] | undefined,
 ): VisualizationSpec {
-  const temporalFields = [{ name: "ts", label: "Time" }];
-  const measureFields = [{ name: expandedMeasureName, label: measureLabel }];
-
-  if (isTimeComparison) {
-    measureFields.push({ name: "comparison.ts", label: "Compared Time" });
-  }
-  const nominalFields = [
-    {
-      name: "dimension",
-      label: dimensionName || "dimension",
-      values: comparedValues,
-    },
+  const temporalFields: ChartField[] = [{ name: "ts", label: "Time" }];
+  const measureFields: ChartField[] = [
+    { name: expandedMeasureName, label: measureLabel },
   ];
+
+  let nominalFields: ChartField[] = [];
+  if (isDimensional) {
+    nominalFields = [
+      {
+        name: "dimension",
+        label: dimensionName || "dimension",
+        values: comparedValues,
+      },
+    ];
+  } else if (isTimeComparison) {
+    nominalFields = [
+      {
+        name: "key",
+        label: "Comparison",
+        values: ["ts", "comparison_ts"],
+      },
+    ];
+
+    temporalFields[0].tooltipName = "time";
+
+    measureFields[0].name = "measure";
+  }
 
   const builderChartType = TDDChartMap[chartType];
 
@@ -47,17 +68,19 @@ export function getVegaSpecForTDD(
     builderChartType,
     temporalFields,
     measureFields,
-    isDimensional ? nominalFields : [],
+    nominalFields,
   );
 
   return spec;
 }
 
-export function sanitizeSpecForTDD(
+export function patchSpecForTDD(
   spec,
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
+  isTimeComparison: boolean,
+  measureName: string,
   selectedDimensionValues: (string | null)[] = [],
 ): VisualizationSpec {
   if (!spec) return spec;
@@ -116,6 +139,29 @@ export function sanitizeSpecForTDD(
   // Set timeUnit for x-axis using timeGrain
   const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
   xEncoding.timeUnit = timeUnit;
+
+  if (isTimeComparison) {
+    yEncoding.field = "measure";
+
+    sanitizedSpec.transform = [
+      { timeUnit: timeUnit, field: "comparison\\.ts", as: "comparison_ts" },
+      { fold: ["ts", "comparison_ts"] },
+      {
+        calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
+        as: "measure",
+      },
+      {
+        calculate:
+          "(datum['key'] === 'comparison_ts' ? datum['comparison_ts'] : datum['ts'])",
+        as: "time",
+      },
+    ];
+
+    colorEncoding.scale = {
+      domain: ["ts", "comparison_ts"],
+      range: [MainLineColor, MainAreaColorGradientDark],
+    };
+  }
 
   return sanitizedSpec;
 }

@@ -3,7 +3,6 @@ import { ChartType } from "../types";
 import { buildArea } from "./area";
 import { buildGroupedBar } from "./grouped-bar";
 import { buildLine } from "./line";
-import { buildMultiMeasureGroupedBar } from "./multi-measure-grouped-bar";
 import { buildSimpleBar } from "./simple-bar";
 import { buildStackedArea } from "./stacked-area";
 import { buildStackedBar } from "./stacked-bar";
@@ -22,6 +21,9 @@ const LINE_LIKE_CHARTS = [
 export interface ChartField {
   name: string;
   label: string;
+  // for custom tooltip field names
+  tooltipName?: string;
+  // for mapping nominal values to colors
   values?: (string | null)[];
 }
 
@@ -36,9 +38,6 @@ export function buildVegaLiteSpec(
 
   if (BAR_LIKE_CHARTS.includes(chartType)) {
     if (!hasNominalFields) {
-      if (quantitativeFields.length >= 2) {
-        return buildMultiMeasureGroupedBar(timeFields[0], quantitativeFields);
-      }
       return buildSimpleBar(timeFields[0], quantitativeFields[0]);
     } else if (chartType === ChartType.GROUPED_BAR) {
       return buildGroupedBar(
