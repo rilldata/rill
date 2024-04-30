@@ -355,6 +355,8 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 	}
 	inst.ProjectVariables = vars
 
+	inst.FeatureFlags = parser.RillYAML.FeatureFlags
+
 	// TODO: Passing "false" guards against infinite cancellations and restarts of the controller,
 	// but it also ignores potential consistency issues where we update connector config without evicting cached connctions,
 	// or where we update variables and don't re-evaluate all resources.

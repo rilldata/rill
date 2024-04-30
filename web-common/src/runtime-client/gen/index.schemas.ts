@@ -734,24 +734,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -787,6 +769,29 @@ export interface V1Report {
   state?: V1ReportState;
 }
 
+export interface V1RefreshTrigger {
+  spec?: V1RefreshTriggerSpec;
+  state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  dashboard?: V1Dashboard;
+  api?: V1API;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: any;
 }
@@ -797,11 +802,6 @@ export interface V1RefreshTriggerState {
 
 export interface V1RefreshTriggerSpec {
   onlyNames?: V1ResourceName[];
-}
-
-export interface V1RefreshTrigger {
-  spec?: V1RefreshTriggerSpec;
-  state?: V1RefreshTriggerState;
 }
 
 export type V1ReconcileStatus =
@@ -1190,6 +1190,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1215,13 +1222,6 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
-
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1358,6 +1358,8 @@ export interface V1IssueDevJWTResponse {
 }
 
 export type V1InstanceAnnotations = { [key: string]: string };
+
+export type V1InstanceFeatureFlags = { [key: string]: boolean };
 
 export type V1InstanceProjectVariables = { [key: string]: string };
 
@@ -1606,6 +1608,7 @@ export interface V1Instance {
   projectConnectors?: V1Connector[];
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
+  featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   embedCatalog?: boolean;
   watchRepo?: boolean;

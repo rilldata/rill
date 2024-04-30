@@ -3774,6 +3774,10 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      featureFlags:
+        type: object
+        additionalProperties:
+          type: boolean
       annotations:
         type: object
         additionalProperties:
