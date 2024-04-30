@@ -135,9 +135,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	err = p.AwaitReady(ctx, provisionID)
 	if err != nil {
 		s.Logger.Error("provisioner: failed awaiting runtime to be ready", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		err2 := p.Deprovision(ctx, provisionID)
 		// Mark deployment error
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-		return nil, multierr.Combine(err, err2)
+		_, err3 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return nil, multierr.Combine(err, err2, err3)
 	}
 
 	// Open a runtime client
@@ -353,36 +354,35 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Connect to the deployment's runtime
+	// Delete the deployment
+	err := s.DB.DeleteDeployment(ctx, depl.ID)
+	if err != nil {
+		return err
+	}
+
+	// Connect to the deployment's runtime and delete the instance
 	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
-		return err
+		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+	} else {
+		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
+			InstanceId: depl.RuntimeInstanceID,
+		})
+		if err != nil {
+			s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 	defer rt.Close()
-
-	// Delete the instance
-	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-	})
-	if err != nil {
-		return err
-	}
 
 	// Get provisioner and deprovision, skip if the provisioner is no longer defined in the provisioner set
 	p, ok := s.ProvisionerSet[depl.Provisioner]
 	if ok {
 		err = p.Deprovision(ctx, depl.ProvisionID)
 		if err != nil {
-			return err
+			s.Logger.Error("provisioner: failed to deprovision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	} else {
 		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-	}
-
-	// Delete the deployment
-	err = s.DB.DeleteDeployment(ctx, depl.ID)
-	if err != nil {
-		return err
 	}
 
 	return nil
