@@ -169,6 +169,11 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			if v != nil {
 				t = *v
 			}
+		case int64:
+			if olap.Dialect() != drivers.DialectPinot {
+				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+			}
+			t = time.UnixMilli(v)
 		default:
 			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 		}
@@ -347,6 +352,9 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	case drivers.DialectDruid:
 		args = append([]any{timezone}, args...)
 		sql = q.buildDruidSQL(mv, tsAlias, selectCols, whereClause, havingClause)
+	case drivers.DialectPinot:
+		args = append([]any{timezone}, args...)
+		sql = q.buildPinotSQL(mv, tsAlias, selectCols, whereClause, havingClause)
 	case drivers.DialectClickHouse:
 		sql = q.buildClickHouseSQL(mv, tsAlias, selectCols, whereClause, havingClause, timezone)
 	default:
@@ -354,6 +362,25 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	}
 
 	return sql, tsAlias, args, nil
+}
+
+func (q *MetricsViewTimeSeries) buildPinotSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause string) string {
+	dateTruncSpecifier := drivers.DialectPinot.ConvertToDateTruncSpecifier(q.TimeGranularity)
+
+	// TODO: handle shift, currently we add validation error for this, see runtime/validate.go
+
+	timeClause := fmt.Sprintf("DATETRUNC('%s', %s,'MILLISECONDS', ?)", dateTruncSpecifier, safeName(mv.TimeDimension))
+	sql := fmt.Sprintf(
+		`SELECT %s AS %s, %s FROM %s WHERE %s GROUP BY 1 %s ORDER BY 1`,
+		timeClause,
+		tsAlias,
+		strings.Join(selectCols, ", "),
+		safeName(mv.Table),
+		whereClause,
+		havingClause,
+	)
+
+	return sql
 }
 
 func (q *MetricsViewTimeSeries) buildDruidSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause string) string {

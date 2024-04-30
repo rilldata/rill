@@ -199,6 +199,10 @@
       e.currentTarget,
       filePath,
       assetName,
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ],
     );
 
     if (newRoute) await goto(newRoute);
@@ -217,7 +221,6 @@
 
   async function handleCreateModelFromSource() {
     const [newModelPath, newModelName] = await createModelFromSource(
-      queryClient,
       assetName,
       tableName ?? "",
       "models",

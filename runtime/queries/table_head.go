@@ -64,7 +64,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectPinot {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 

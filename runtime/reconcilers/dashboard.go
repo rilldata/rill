@@ -57,7 +57,7 @@ func (r *DashboardReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 	t := self.GetDashboard()
 	if t == nil {
-		return runtime.ReconcileResult{Err: errors.New("not a chart")}
+		return runtime.ReconcileResult{Err: errors.New("not a dashboard")}
 	}
 
 	// Exit early for deletion

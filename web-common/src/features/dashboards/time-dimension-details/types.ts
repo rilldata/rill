@@ -46,7 +46,8 @@ export interface HighlightedCell {
 }
 
 export interface ChartInteractionColumns {
-  hover: number | undefined;
+  xHover: number | undefined;
+  yHover: string | undefined | null;
   scrubStart: number | undefined;
   scrubEnd: number | undefined;
 }

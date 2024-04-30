@@ -121,6 +121,6 @@ export const FolderToResourceKind: Record<string, ResourceKind> = {
   sources: ResourceKind.Source,
   models: ResourceKind.Model,
   dashboards: ResourceKind.MetricsView,
-  charts: ResourceKind.Chart,
+  charts: ResourceKind.Component,
   "custom-dashboards": ResourceKind.Dashboard,
 };

@@ -80,6 +80,11 @@ type DB interface {
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
+	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
+	FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*ProjectWhitelistedDomain, error)
+	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
+	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
@@ -107,6 +112,7 @@ type DB interface {
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
+	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
@@ -636,6 +642,26 @@ type InsertOrganizationWhitelistedDomainOptions struct {
 
 // OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
 type OrganizationWhitelistedDomainWithJoinedRoleNames struct {
+	Domain   string
+	RoleName string `db:"name"`
+}
+
+type ProjectWhitelistedDomain struct {
+	ID            string
+	ProjectID     string `db:"project_id"`
+	ProjectRoleID string `db:"project_role_id"`
+	Domain        string
+	CreatedOn     time.Time `db:"created_on"`
+	UpdatedOn     time.Time `db:"updated_on"`
+}
+
+type InsertProjectWhitelistedDomainOptions struct {
+	ProjectID     string `validate:"required"`
+	ProjectRoleID string `validate:"required"`
+	Domain        string `validate:"domain"`
+}
+
+type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 	Domain   string
 	RoleName string `db:"name"`
 }

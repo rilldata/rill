@@ -29,6 +29,7 @@
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
+  export let highlightedRow: number | undefined;
   export let highlightedCol: number | undefined;
   export let scrubPos: { start?: number; end?: number };
   export let pinIndex: number;
@@ -99,7 +100,7 @@
     classesToAdd.push(
       getClassForCell(
         palette,
-        rowIdxHover,
+        rowIdxHover ?? highlightedRow,
         colIdxHover ?? highlightedCol,
         data.y,
         data.x,
@@ -120,6 +121,7 @@
   $: {
     scrubPos;
     highlightedCol;
+    highlightedRow;
     tableData?.selectedValues;
     pivot?.draw();
   }

@@ -26,6 +26,7 @@ const maxBufferSize = 1000
 type watcher struct {
 	logger           *zap.Logger
 	root             string
+	ignorePaths      []string
 	watcher          *fsnotify.Watcher
 	closed           atomic.Bool
 	done             chan struct{}
@@ -38,7 +39,7 @@ type watcher struct {
 
 // newWatcher creates a new watcher for the given root directory.
 // The root directory must be an absolute path.
-func newWatcher(root string, logger *zap.Logger) (*watcher, error) {
+func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -47,6 +48,7 @@ func newWatcher(root string, logger *zap.Logger) (*watcher, error) {
 	w := &watcher{
 		logger:      logger,
 		root:        root,
+		ignorePaths: ignorePaths,
 		watcher:     fsw,
 		done:        make(chan struct{}),
 		subscribers: make(map[int]drivers.WatchCallback),
@@ -173,6 +175,11 @@ func (w *watcher) runInner() error {
 
 			path = filepath.Join("/", path)
 			we.Path = path
+
+			// Do not send files for ignored paths
+			if drivers.IsIgnored(path, w.ignorePaths) {
+				continue
+			}
 
 			if e.Has(fsnotify.Create) {
 				info, err := os.Stat(e.Name)

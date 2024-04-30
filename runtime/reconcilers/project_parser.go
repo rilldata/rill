@@ -179,9 +179,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if e.Dir {
 				continue
 			}
-			if parser.IsIgnored(e.Path) {
-				continue
-			}
 			if parser.IsSkippable(e.Path) {
 				// We do not get events for files in deleted/renamed directories.
 				// So we need to manually find paths we're tracking in the directory and add them to changedPaths.
@@ -565,9 +562,9 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalThemeSpec(existing.GetTheme().Spec, def.ThemeSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
 		}
-	case compilerv1.ResourceKindChart:
-		if existing == nil || !equalChartSpec(existing.GetChart().Spec, def.ChartSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Chart{Chart: &runtimev1.Chart{Spec: def.ChartSpec}}}
+	case compilerv1.ResourceKindComponent:
+		if existing == nil || !equalComponentSpec(existing.GetComponent().Spec, def.ComponentSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
 		}
 	case compilerv1.ResourceKindDashboard:
 		if existing == nil || !equalDashboardSpec(existing.GetDashboard().Spec, def.DashboardSpec) {
@@ -751,7 +748,7 @@ func equalThemeSpec(a, b *runtimev1.ThemeSpec) bool {
 	return proto.Equal(a, b)
 }
 
-func equalChartSpec(a, b *runtimev1.ChartSpec) bool {
+func equalComponentSpec(a, b *runtimev1.ComponentSpec) bool {
 	return proto.Equal(a, b)
 }
 

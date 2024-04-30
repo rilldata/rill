@@ -60,6 +60,20 @@ export function buildStackedArea(
     },
     color: { field: nominalField?.name, type: "nominal", legend: null },
   };
+
+  if (nominalField?.values?.length) {
+    baseSpec.transform = [
+      {
+        calculate: `indexof([${nominalField.values
+          ?.map((v) => `'${v}'`)
+          .reverse()
+          .join(",")}], datum.${nominalField?.name})`,
+        as: "order",
+      },
+    ];
+    baseSpec.encoding.order = { field: "order", type: "ordinal" };
+  }
+
   baseSpec.layer = [
     {
       mark: { type: "area", clip: true, opacity: 0.7 },
@@ -85,7 +99,7 @@ export function buildStackedArea(
       encoding: {
         color: {
           condition: {
-            param: "x-hover",
+            param: "hover",
             empty: false,
             value: "var(--color-primary-300)",
           },
@@ -99,7 +113,7 @@ export function buildStackedArea(
       },
       params: [
         {
-          name: "x_hover",
+          name: "hover",
           select: {
             type: "point",
             encodings: ["x"],
@@ -111,7 +125,7 @@ export function buildStackedArea(
       ],
     },
     {
-      transform: [{ filter: { param: "x-hover", empty: false } }],
+      transform: [{ filter: { param: "hover", empty: false } }],
       mark: {
         type: "point",
         filled: true,
