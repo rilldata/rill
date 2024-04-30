@@ -7,6 +7,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
@@ -107,6 +108,39 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	}
 
 	return instanceAnnotationsToAttribs(instance)
+}
+
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, rillYAML *rillv1.RillYAML, dotEnv map[string]string, restartController bool) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// Shallow clone for editing
+	tmp := *inst
+	inst = &tmp
+
+	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
+
+	conns := make([]*runtimev1.Connector, 0, len(rillYAML.Connectors))
+	for _, c := range rillYAML.Connectors {
+		conns = append(conns, &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
+		})
+	}
+	inst.ProjectConnectors = conns
+	vars := make(map[string]string)
+	for _, v := range rillYAML.Variables {
+		vars[v.Name] = v.Default
+	}
+	for k, v := range dotEnv {
+		vars[k] = v
+	}
+	inst.ProjectVariables = vars
+	inst.FeatureFlags = rillYAML.FeatureFlags
+	return r.EditInstance(ctx, inst, restartController)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
