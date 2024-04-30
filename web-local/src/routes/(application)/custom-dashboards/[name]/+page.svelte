@@ -219,7 +219,7 @@
     {#if selectedView == "code" || selectedView == "split"}
       <div
         transition:slide={{ duration: 400, axis: "x" }}
-        class="relative h-full flex-shrink-0 w-full"
+        class="relative h-full flex-shrink-0 w-full border-r"
         class:!w-full={selectedView === "code"}
         style:width="{editorWidth}px"
       >
