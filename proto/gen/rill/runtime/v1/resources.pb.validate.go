@@ -7180,6 +7180,8 @@ func (m *ComponentSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for DefinedInDashboard
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}

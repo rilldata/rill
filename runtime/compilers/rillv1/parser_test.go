@@ -1359,11 +1359,12 @@ items:
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component2"},
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			Paths: []string{"/dashboards/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"contents": "Hello world!"})),
+				DefinedInDashboard: true,
 			},
 		},
 		{
@@ -1372,7 +1373,7 @@ items:
 			Refs: []ResourceName{
 				{Kind: ResourceKindComponent, Name: "c1"},
 				{Kind: ResourceKindComponent, Name: "c2"},
-				{Kind: ResourceKindComponent, Name: "d1--component2"},
+				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
 			DashboardSpec: &runtimev1.DashboardSpec{
 				Columns: 4,
@@ -1380,7 +1381,7 @@ items:
 				Items: []*runtimev1.DashboardItem{
 					{Component: "c1"},
 					{Component: "c2", Width: 1, Height: 2},
-					{Component: "d1--component2"},
+					{Component: "d1--component-2"},
 				},
 			},
 		},

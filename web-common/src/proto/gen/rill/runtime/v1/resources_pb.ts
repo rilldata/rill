@@ -2956,6 +2956,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   rendererProperties?: Struct;
 
+  /**
+   * @generated from field: bool defined_in_dashboard = 6;
+   */
+  definedInDashboard = false;
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2969,6 +2974,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
