@@ -1,7 +1,6 @@
 <script context="module" lang="ts">
   import { goto } from "$app/navigation";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
-  import Chart from "@rilldata/web-common/features/custom-dashboards/Chart.svelte";
   import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
@@ -24,10 +23,11 @@
   export let left: number;
   export let radius: number;
   export let scale: number;
+  export let instanceId: string;
 
   let localZIndex = 0;
 
-  $: chartName = component.component;
+  $: componentName = component?.component;
 
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
@@ -54,46 +54,41 @@
   }
 </script>
 
-<ContextMenu.Root>
-  <ContextMenu.Trigger asChild let:builder>
-    <Component
-      builders={[builder]}
-      height={finalHeight}
-      {i}
-      {interacting}
-      left={finalLeft}
-      on:change
-      on:contextmenu
-      on:mousedown={handleMouseDown}
-      {padding}
-      {radius}
-      {scale}
-      {selected}
-      top={finalTop}
-      width={finalWidth}
-    >
-      <!-- TODO -->
-      <!--{#if component.markdown}-->
-      <!--  <Markdown-->
-      <!--    markdown={component.markdown}-->
-      <!--    fontSize={component.fontSize ?? 40}-->
-      <!--  />-->
-      {#if chartName && typeof chartName === "string"}
-        <Chart {chartName} />
-      {/if}
-    </Component>
-  </ContextMenu.Trigger>
+{#if componentName}
+  <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder>
+      <Component
+        {instanceId}
+        {i}
+        {localZIndex}
+        {interacting}
+        {componentName}
+        {padding}
+        {radius}
+        {scale}
+        {selected}
+        builders={[builder]}
+        height={finalHeight}
+        left={finalLeft}
+        top={finalTop}
+        width={finalWidth}
+        on:change
+        on:contextmenu
+        on:mousedown={handleMouseDown}
+      />
+    </ContextMenu.Trigger>
 
-  <ContextMenu.Content class="z-[100]">
-    <ContextMenu.Item>Copy</ContextMenu.Item>
-    <ContextMenu.Item>Delete</ContextMenu.Item>
-    <ContextMenu.Item
-      on:click={async () => {
-        await goto(`/files/charts/${chartName}`);
-      }}
-    >
-      Go to {chartName}.yaml
-    </ContextMenu.Item>
-    <ContextMenu.Item>Show details</ContextMenu.Item>
-  </ContextMenu.Content>
-</ContextMenu.Root>
+    <ContextMenu.Content class="z-[100]">
+      <ContextMenu.Item>Copy</ContextMenu.Item>
+      <ContextMenu.Item>Delete</ContextMenu.Item>
+      <ContextMenu.Item
+        on:click={async () => {
+          await goto(`/files/charts/${componentName}`);
+        }}
+      >
+        Go to {componentName}.yaml
+      </ContextMenu.Item>
+      <ContextMenu.Item>Show details</ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu.Root>
+{/if}
