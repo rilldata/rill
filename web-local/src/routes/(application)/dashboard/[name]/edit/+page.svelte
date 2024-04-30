@@ -61,8 +61,6 @@
   }
   $: [, fileName] = splitFolderAndName(filePath);
 
-  $: console.log({ filePath });
-
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
   $: isModelingSupportedQuery = canModel(instanceId);
@@ -118,8 +116,6 @@
     );
     if (newRoute) await goto(newRoute);
   }
-
-  $: console.log("PAGE", { yaml });
 </script>
 
 <svelte:head>
