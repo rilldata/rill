@@ -14,6 +14,7 @@
   import * as yup from "yup";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
+  import { removeLeadingSlash } from "./entity-mappers";
   import {
     INVALID_NAME_MESSAGE,
     VALID_NAME_PATTERN,
@@ -81,7 +82,7 @@
             );
           }
         } else {
-          await goto(`/files${newPath}`, {
+          await goto(`/files/${removeLeadingSlash(newPath)}`, {
             replaceState: true,
           });
         }
