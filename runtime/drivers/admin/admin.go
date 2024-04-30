@@ -263,10 +263,10 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		}
 
 		// Read rill.yaml and fill in `ignore_paths`
-		rawYaml, err := h.Get(context.Background(), "/rill.yaml")
+		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "/rill.yaml"))
 		if err == nil {
 			yml := &rillYAML{}
-			err = yaml.Unmarshal([]byte(rawYaml), yml)
+			err = yaml.Unmarshal(rawYaml, yml)
 			if err == nil {
 				h.ignorePaths = yml.IgnorePaths
 			}
