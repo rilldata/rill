@@ -1071,7 +1071,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		)
 	}
 
-	fmt.Println(sql, args)
 	return sql, args, nil
 }
 
