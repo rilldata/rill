@@ -127,6 +127,7 @@
       e.currentTarget,
       filePath,
       fileName,
+      fileArtifacts.getNamesForKind(ResourceKind.Dashboard),
     );
     if (newRoute) await goto(newRoute);
   }

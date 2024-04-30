@@ -299,6 +299,17 @@ export class FileArtifacts {
       },
     );
   }
+
+  /**
+   * Filters all fileArtifacts based on kind param and returns the file paths.
+   * This can be expensive if the project gets large.
+   * If we ever need this reactively then we should look into caching this list.
+   */
+  public getNamesForKind(kind: ResourceKind): string[] {
+    return Object.values(this.artifacts)
+      .filter((artifact) => get(artifact.name)?.kind === kind)
+      .map((artifact) => get(artifact.name)?.name ?? "");
+  }
 }
 
 export const fileArtifacts = new FileArtifacts();
