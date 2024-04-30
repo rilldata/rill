@@ -7,7 +7,7 @@
   import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client";
 
   export let chartName: string;
-  export let chartView = false;
+  export let chartView: boolean;
   export let vegaSpec: string;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 

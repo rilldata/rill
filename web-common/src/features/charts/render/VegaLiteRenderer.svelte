@@ -14,9 +14,9 @@
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
   export let signalListeners: SignalListeners = {};
+  export let chartView: boolean;
   export let error: string | null = null;
   export let customDashboard = false;
-  export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
