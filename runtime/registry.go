@@ -546,7 +546,7 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 }
 
 // updateProjectConfig updates the project config for the given instance.
-// This is essentially a copy of ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller 
+// This is essentially a copy of ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller
 // to ensure that when controller first starts, it doesn’t immediately restart due to changed variables
 func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
