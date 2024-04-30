@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -546,7 +545,7 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 }
 
 // updateProjectConfig updates the project config for the given instance.
-// This is essentially a copy of ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller
+// This does the same operation as ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller
 // to ensure that when controller first starts, it doesn’t immediately restart due to changed variables
 func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
@@ -555,36 +554,15 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	}
 	defer release()
 
-	inst, err := r.rt.Instance(iwc.ctx, iwc.instanceID)
-	if err != nil {
-		return err
-	}
-
 	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
 	if err != nil {
 		return err
 	}
-	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
-	conns := make([]*runtimev1.Connector, 0, len(rillYAML.Connectors))
-	for _, c := range rillYAML.Connectors {
-		conns = append(conns, &runtimev1.Connector{
-			Type:   c.Type,
-			Name:   c.Name,
-			Config: c.Defaults,
-		})
-	}
-	inst.ProjectConnectors = conns
-	inst.ProjectVariables = make(map[string]string)
-	for _, v := range rillYAML.Variables {
-		inst.ProjectVariables[v.Name] = v.Default
-	}
-
 	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
 	if err != nil {
 		return err
 	}
-	maps.Copy(inst.ProjectVariables, dotEnv)
-	return r.rt.EditInstance(iwc.ctx, inst, false)
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, false)
 }
 
 func sizeOfDir(path string) int64 {
