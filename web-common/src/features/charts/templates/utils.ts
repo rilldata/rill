@@ -22,3 +22,12 @@ export function multiLayerBaseSpec() {
 
   return baseSpec;
 }
+
+export function sanitzeValueForVega(value: string | null) {
+  return value
+    ? value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`)
+    : String(value);
+}
+export function sanitizeValuesForSpec(values: (string | null)[]) {
+  return values.map((value) => sanitzeValueForVega(value));
+}
