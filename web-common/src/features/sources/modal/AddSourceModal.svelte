@@ -10,6 +10,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
   import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
@@ -27,12 +28,12 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import ClickHouseInstructions from "./ClickHouseInstructions.svelte";
-  import LocalSourceUpload from "./LocalSourceUpload.svelte";
-  import RemoteSourceForm from "./RemoteSourceForm.svelte";
-  import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import { duplicateSourceName } from "../sources-store";
   import DuplicateSource from "./DuplicateSource.svelte";
+  import LocalSourceUpload from "./LocalSourceUpload.svelte";
+  import OLAPDriverInstructions from "./OLAPDriverInstructions.svelte";
+  import RemoteSourceForm from "./RemoteSourceForm.svelte";
+  import RequestConnectorForm from "./RequestConnectorForm.svelte";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -55,6 +56,7 @@
     "local_file",
     "https",
     "clickhouse",
+    "pinot",
   ];
 
   const ICONS = {
@@ -74,6 +76,7 @@
     local_file: LocalFile,
     https: Https,
     clickhouse: ClickHouse,
+    pinot: ApachePinot,
   };
 
   const connectors = createRuntimeServiceListConnectorDrivers({
@@ -202,8 +205,11 @@
         {#if selectedConnector}
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector.name === "clickhouse"}
-            <ClickHouseInstructions on:back={back} />
+          {:else if selectedConnector.name === "clickhouse" || "pinot"}
+            <OLAPDriverInstructions
+              connector={selectedConnector}
+              on:back={back}
+            />
           {:else}
             <RemoteSourceForm
               connector={selectedConnector}
