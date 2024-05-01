@@ -29,7 +29,7 @@
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
 
-  $: filePath = addLeadingSlash($page.params.file);
+  $: filePath = decodeURIComponent(addLeadingSlash($page.params.file));
   $: fileExtension = extractFileExtension(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 

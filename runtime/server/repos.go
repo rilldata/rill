@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -113,7 +114,11 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 		return nil, ErrForbidden
 	}
 
-	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.InstanceId, req.Path)
+	unescapedPath, err := url.PathUnescape(req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.InstanceId, unescapedPath)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -136,7 +141,11 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
+	unescapedPath, err := url.PathUnescape(req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	err = s.runtime.PutFile(ctx, req.InstanceId, unescapedPath, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -157,7 +166,11 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path)
+	unescapedPath, err := url.PathUnescape(req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	err = s.runtime.MakeDir(ctx, req.InstanceId, unescapedPath)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -178,7 +191,11 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path, req.Force)
+	unescapedPath, err := url.PathUnescape(req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	err = s.runtime.DeleteFile(ctx, req.InstanceId, unescapedPath, req.Force)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
