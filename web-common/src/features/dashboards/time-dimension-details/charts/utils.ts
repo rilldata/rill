@@ -56,7 +56,11 @@ export function getVegaSpecForTDD(
         values: [expandedMeasureName, `comparison\\.${expandedMeasureName}`],
       },
     ];
+
+    // For time comparison, time field contains `ts` or `comparison.ts` based on data
     temporalFields[0].tooltipName = "time";
+    // For time comparison, measure field contains `<measureName>` or
+    // `comparison.<measureName>` based on data
     measureFields[0].name = "measure";
   }
 
@@ -70,6 +74,55 @@ export function getVegaSpecForTDD(
   );
 
   return spec;
+}
+
+function patchSpecForTimeComparison(
+  sanitizedSpec,
+  chartType: TDDAlternateCharts,
+  timeUnit: string,
+  measureName: string,
+  yEncoding,
+  colorEncoding,
+) {
+  yEncoding.field = "measure";
+
+  sanitizedSpec.transform = [
+    // Sanitize and transform comparison data in the right time format
+    { timeUnit: timeUnit, field: "comparison\\.ts", as: "comparison_ts" },
+    // Expand datum to have a key field to differentiate between current and comparison data
+    { fold: ["ts", "comparison_ts"] },
+    // Add a measure field to hold the right measure value
+    {
+      calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
+      as: "measure",
+    },
+    // Add a time field to hold the right time value
+    {
+      calculate:
+        "(datum['key'] === 'comparison_ts' ? datum['comparison_ts'] : datum['ts'])",
+      as: "time",
+    },
+  ];
+
+  colorEncoding.scale = {
+    domain: ["ts", "comparison_ts"],
+    range: [MainLineColor, MainAreaColorGradientDark],
+  };
+
+  if (chartType === TDDChart.STACKED_AREA) {
+    /**
+     * For stacked area charts, we don't need to pivot transform as the
+     * comparison values are already in the right format.
+     */
+
+    // TODO: This is error prone, find a better way to do this without
+    // mutating the template
+    const stackedAreaPivotLayer = sanitizedSpec.layer[2];
+
+    if (stackedAreaPivotLayer) {
+      delete stackedAreaPivotLayer.transform;
+    }
+  }
 }
 
 export function patchSpecForTDD(
@@ -140,41 +193,14 @@ export function patchSpecForTDD(
   xEncoding.timeUnit = timeUnit;
 
   if (isTimeComparison) {
-    yEncoding.field = "measure";
-
-    sanitizedSpec.transform = [
-      { timeUnit: timeUnit, field: "comparison\\.ts", as: "comparison_ts" },
-      { fold: ["ts", "comparison_ts"] },
-      {
-        calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
-        as: "measure",
-      },
-      {
-        calculate:
-          "(datum['key'] === 'comparison_ts' ? datum['comparison_ts'] : datum['ts'])",
-        as: "time",
-      },
-    ];
-
-    colorEncoding.scale = {
-      domain: ["ts", "comparison_ts"],
-      range: [MainLineColor, MainAreaColorGradientDark],
-    };
-
-    if (chartType === TDDChart.STACKED_AREA) {
-      /**
-       * For stacked area charts, we don't need to pivot transform as the
-       * comparison values are already in the right format.
-       */
-
-      // TODO: This is error prone, find a better way to do this without
-      // mutating the template
-      const stackedAreaPivotLayer = sanitizedSpec.layer[2];
-
-      if (stackedAreaPivotLayer) {
-        delete stackedAreaPivotLayer.transform;
-      }
-    }
+    patchSpecForTimeComparison(
+      sanitizedSpec,
+      chartType,
+      timeUnit,
+      measureName,
+      yEncoding,
+      colorEncoding,
+    );
   }
 
   return sanitizedSpec;
