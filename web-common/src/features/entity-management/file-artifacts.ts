@@ -62,6 +62,7 @@ export class FileArtifact {
     );
     this.renaming = !!resource.meta?.renamedFrom;
     this.hasTable = resourceHasTable(resource);
+    this.deleted = false;
   }
 
   public updateReconciling(resource: V1Resource) {
