@@ -59,9 +59,7 @@ export class FileArtifact {
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
     this.renaming = !!resource.meta?.renamedFrom;
-    this.hasTable =
-      (!!resource.model && !!resource.model.state?.table) ||
-      (!!resource.source && !!resource.source.state?.table);
+    this.hasTable = resourceHasTable(resource);
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -242,12 +240,13 @@ export class FileArtifacts {
     });
   }
 
-  public hadTable(resource: V1Resource) {
-    return (
+  public tableStatusChanged(resource: V1Resource) {
+    const hadTable =
       resource.meta?.filePaths?.some((filePath) => {
         return this.artifacts[filePath].hasTable;
-      }) ?? false
-    );
+      }) ?? false;
+    const hasTable = resourceHasTable(resource);
+    return hadTable !== hasTable;
   }
 
   public wasRenaming(resource: V1Resource) {
@@ -314,6 +313,13 @@ export class FileArtifacts {
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
   }
+}
+
+function resourceHasTable(resource: V1Resource) {
+  return (
+    (!!resource.model && !!resource.model.state?.table) ||
+    (!!resource.source && !!resource.source.state?.table)
+  );
 }
 
 export const fileArtifacts = new FileArtifacts();

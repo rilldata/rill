@@ -45,6 +45,9 @@ export function invalidateResourceResponse(
   if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind])
     return;
 
+  console.log(
+    `[${res.resource.meta?.reconcileStatus}] ${res.resource.meta?.name?.kind}/${res.resource.meta?.name?.name} delete=${!!res.resource?.meta?.deletedOn}`,
+  );
   const instanceId = get(runtime).instanceId;
   if (
     MainResourceKinds[res.name.kind] &&
@@ -104,17 +107,19 @@ async function invalidateResource(
   )
     return;
 
+  console.log(fileArtifacts.tableStatusChanged(resource));
   if (
     (resource.meta.name?.kind === ResourceKind.Source ||
       resource.meta.name?.kind === ResourceKind.Model) &&
-    (fileArtifacts.wasRenaming(resource) || !fileArtifacts.hadTable(resource))
+    (fileArtifacts.wasRenaming(resource) ||
+      fileArtifacts.tableStatusChanged(resource))
   ) {
     void queryClient.invalidateQueries(
       getConnectorServiceOLAPListTablesQueryKey({
         instanceId: get(runtime).instanceId,
         connector:
-          resource.source?.state?.connector ??
-          resource.model?.state?.connector ??
+          resource.source?.spec?.sinkConnector ??
+          resource.model?.spec?.connector ??
           "",
       }),
     );
