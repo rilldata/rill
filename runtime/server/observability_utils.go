@@ -64,7 +64,7 @@ func marshalMetricsViewAggregationMeasures(ms []*runtimev1.MetricsViewAggregatio
 	return nil
 }
 
-func marshalMetricsViewAggregationSort(ms []*runtimev1.MetricsViewAggregationSort) []string {
+func marshalMetricsViewAggregationSort(ms []*runtimev1.MetricsViewComparisonSort) []string {
 	if len(ms) == 0 {
 		return make([]string, 0)
 	}

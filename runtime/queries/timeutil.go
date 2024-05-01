@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func convTimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {
@@ -56,6 +57,19 @@ func timeGrainToDuration(tg runtimev1.TimeGrain) duration.Duration {
 	}
 
 	return duration.InfDuration{}
+}
+
+func ResolveToTime(t *timestamppb.Timestamp, timeZone string) (time.Time, error) {
+	if timeZone != "" {
+		var err error
+		tz, err := time.LoadLocation(timeZone)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("invalid time_range.time_zone %q: %w", timeZone, err)
+		}
+		return t.AsTime().In(tz), nil
+	} else {
+		return t.AsTime(), nil
+	}
 }
 
 func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {

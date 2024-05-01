@@ -42,10 +42,10 @@ type MetricsViewComparison struct {
 }
 
 type metricsViewMeasureMeta struct {
-	innerIndex           int // relative position of the measure in the inner query, 1 based
-	outerIndex           int // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
-	comparisonInnerIndex int
-	expand               bool // whether the measure has derived measures like comparison, delta etc
+	baseSubqueryIndex       int // relative position of the measure in the inner query, 1 based
+	outerIndex              int // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
+	comparisonSubqueryIndex int
+	expand                  bool // whether the measure has derived measures like comparison, delta etc
 }
 
 var _ runtime.Query = &MetricsViewComparison{}
@@ -245,9 +245,9 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 			}
 		}
 		q.measuresMeta[m.Name] = metricsViewMeasureMeta{
-			innerIndex: inner,
-			outerIndex: outer,
-			expand:     expand,
+			baseSubqueryIndex: inner,
+			outerIndex:        outer,
+			expand:            expand,
 		}
 		if expand {
 			outer += 4
@@ -789,7 +789,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
 		orderClause := fmt.Sprint(pos)
-		subQueryOrderClause := fmt.Sprint(measureMeta.innerIndex + 1) // 1-based + skip the first dim column
+		subQueryOrderClause := fmt.Sprint(measureMeta.baseSubqueryIndex + 1) // 1-based + skip the first dim column
 		ending := ""
 		if s.Desc {
 			ending += " DESC"
