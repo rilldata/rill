@@ -646,12 +646,6 @@ func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) (*compi
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
 		def.SourceSpec.StageChanges = cfg.StageChanges
-	case compilerv1.ResourceKindModel:
-		def.ModelSpec.StageChanges = cfg.StageChanges
-		if def.ModelSpec.Materialize == nil {
-			def.ModelSpec.Materialize = &cfg.ModelDefaultMaterialize
-		}
-		def.ModelSpec.MaterializeDelaySeconds = cfg.ModelMaterializeDelaySeconds
 	default:
 		// Nothing to do
 	}

@@ -2501,6 +2501,8 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for OutputConnector
 
+	// no validation rules for OutputTable
+
 	if all {
 		switch v := interface{}(m.GetOutputProperties()).(type) {
 		case interface{ ValidateAll() error }:

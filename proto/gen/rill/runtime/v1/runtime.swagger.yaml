@@ -4565,6 +4565,8 @@ definitions:
     properties:
       outputConnector:
         type: string
+      outputTable:
+        type: string
       outputProperties:
         type: object
       specHash:

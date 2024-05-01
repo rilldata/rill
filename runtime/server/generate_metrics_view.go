@@ -83,7 +83,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	}
 	if model != nil {
 		modelState := model.GetModel().State
-		if modelState.Connector != req.Connector || modelState.Table != tbl.Name {
+		if modelState.OutputConnector != req.Connector || modelState.OutputTable != tbl.Name {
 			// The model is not for this table. Ignore it.
 			model = nil
 		}

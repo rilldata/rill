@@ -832,6 +832,11 @@ export class ModelState extends Message<ModelState> {
   outputConnector = "";
 
   /**
+   * @generated from field: string output_table = 2;
+   */
+  outputTable = "";
+
+  /**
    * @generated from field: google.protobuf.Struct output_properties = 5;
    */
   outputProperties?: Struct;
@@ -865,6 +870,7 @@ export class ModelState extends Message<ModelState> {
   static readonly typeName = "rill.runtime.v1.ModelState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "output_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "output_properties", kind: "message", T: Struct },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },

@@ -992,6 +992,7 @@ export type V1ModelStateOutputProperties = { [key: string]: any };
 
 export interface V1ModelState {
   outputConnector?: string;
+  outputTable?: string;
   outputProperties?: V1ModelStateOutputProperties;
   specHash?: string;
   refreshedOn?: string;
