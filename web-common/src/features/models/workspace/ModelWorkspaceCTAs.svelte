@@ -114,7 +114,7 @@
       type="brand"
       on:click={async () => {
         if (availableDashboards[0]?.meta?.filePaths?.[0]) {
-          await goto(`/files/${availableDashboards[0].meta.filePaths[0]}`);
+          await goto(`/files${availableDashboards[0].meta.filePaths[0]}`);
         }
       }}
     >
@@ -151,7 +151,7 @@
           <MenuItem
             on:select={async () => {
               if (resource?.meta?.filePaths?.[0]) {
-                await goto(`/files/${resource.meta.filePaths[0]}`);
+                await goto(`/files${resource.meta.filePaths[0]}`);
                 toggleFloatingElement();
               }
             }}
