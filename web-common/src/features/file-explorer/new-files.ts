@@ -58,7 +58,7 @@ SELECT 'Hello, World!' AS Greeting`,
     baseContent: `# Dashboard YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
-kind: metrics_view
+type: metrics_view
 
 title: "Dashboard Title"
 table: example_table # Choose a table to underpin your dashboard
@@ -81,7 +81,7 @@ measures:
     baseContent: `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
 
-kind: api
+type: api
 
 sql:
   select ...
@@ -93,7 +93,7 @@ sql:
     baseContent: `# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
     
-kind: component
+type: component
 
 data:
   sql: |
@@ -139,7 +139,7 @@ vega_lite: |
   [ResourceKind.Dashboard]: {
     name: "custom-dashboard",
     extension: ".yaml",
-    baseContent: `kind: dashboard
+    baseContent: `type: dashboard
 columns: 10
 gap: 2`,
   },
@@ -149,7 +149,7 @@ gap: 2`,
     baseContent: `# Theme YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/themes
 
-kind: theme
+type: theme
 
 colors:
   primary: plum
@@ -162,7 +162,7 @@ colors:
     baseContent: `# Report YAML
 # Reference documentation: TODO
 
-kind: report
+type: report
 
 ...
 `,
@@ -173,7 +173,7 @@ kind: report
     baseContent: `# Alert YAML
 # Reference documentation: TODO
 
-kind: alert
+type: alert
 
 ...
 `,

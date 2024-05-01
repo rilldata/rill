@@ -36,14 +36,14 @@ function tryParseYaml(
 
   try {
     const yaml = parse(fileContents);
-    if (yaml.kind) {
+    if (yaml.type) {
       kind = ResourceShortNameToKind[yaml.kind as string];
     }
     if (yaml.name) {
       name = yaml.name as string;
     }
   } catch (err) {
-    const kindMatches = /^kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+    const kindMatches = /^type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
     if (kindMatches?.[1]) {
       kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
     }
@@ -68,7 +68,7 @@ function tryParseSql(
   let kind = kindFromFolder;
   let name = nameFromFolder;
 
-  const kindMatches = /^--\s*@kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+  const kindMatches = /^--\s*@type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
   if (kindMatches?.[1]) {
     kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
   }
