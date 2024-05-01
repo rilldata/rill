@@ -132,14 +132,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		materialize = true
 	}
 
-	// Resolve variables before computing the execution hash to ensure we re-trigger when a variable is updated
-	sql, err := r.resolveTemplateSQL(ctx, self)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
 	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize, sql)
+	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -229,7 +223,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Create the model
-	createErr := r.createModel(ctx, self, sql, stagingTableName, !materialize)
+	createErr := r.createModel(ctx, self, stagingTableName, !materialize)
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
@@ -331,7 +325,7 @@ func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, sinc
 }
 
 // executionSpecHash computes a hash of only those model properties that impact execution.
-func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec, materialize bool, sql string) (string, error) {
+func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec, materialize bool) (string, error) {
 	hash := md5.New()
 
 	for _, ref := range refs { // Refs are always sorted
@@ -373,7 +367,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(sql))
+	_, err = hash.Write([]byte(spec.Sql))
 	if err != nil {
 		return "", err
 	}
@@ -416,10 +410,11 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-func (r *ModelReconciler) resolveTemplateSQL(ctx context.Context, self *runtimev1.Resource) (string, error) {
+// createModel creates or updates the model in the OLAP connector.
+func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, tableName string, view bool) error {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
@@ -427,7 +422,7 @@ func (r *ModelReconciler) resolveTemplateSQL(ctx context.Context, self *runtimev
 
 	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer release()
 
@@ -461,24 +456,11 @@ func (r *ModelReconciler) resolveTemplateSQL(ctx context.Context, self *runtimev
 			},
 		})
 		if err != nil {
-			return "", fmt.Errorf("failed to resolve template: %w", err)
+			return fmt.Errorf("failed to resolve template: %w", err)
 		}
 	} else {
 		sql = spec.Sql
 	}
-
-	return sql, nil
-}
-
-// createModel creates or updates the model in the OLAP connector.
-func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, sql, tableName string, view bool) error {
-	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
-
-	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
 
 	// If materializing, set timeout on ctx
 	if !view {
