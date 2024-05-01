@@ -17,7 +17,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Build ${{ matrix.name }}
         run: npm install -w ${{ matrix.name }} && npm run build -w ${{ matrix.name }}

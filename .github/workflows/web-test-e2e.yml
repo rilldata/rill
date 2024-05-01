@@ -45,7 +45,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Set up go for E2E
         uses: actions/setup-go@v5
