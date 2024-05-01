@@ -16,8 +16,8 @@
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
     getVegaSpecForTDD,
+    patchSpecForTDD,
     reduceDimensionData,
-    sanitizeSpecForTDD,
   } from "./utils";
 
   export let totalsData;
@@ -27,6 +27,7 @@
   export let xMin: Date;
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
+  export let isTimeComparison: boolean;
 
   const dispatch = createEventDispatcher();
   const {
@@ -48,16 +49,20 @@
     chartType,
     expandedMeasureName,
     expandedMeasureLabel,
+    isTimeComparison,
     hasDimensionData,
     comparedDimensionLabel,
     selectedValues,
   );
 
-  $: sanitizedVegaSpec = sanitizeSpecForTDD(
+  $: sanitizedVegaSpec = patchSpecForTDD(
     vegaSpec,
+    chartType,
     timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
     xMin,
     xMax,
+    isTimeComparison,
+    expandedMeasureName,
     selectedValues,
   );
 
@@ -65,6 +70,7 @@
     chartType,
     expandedMeasureLabel,
     comparedDimensionLabel,
+    isTimeComparison,
     selectedValues,
     timeGrain,
   );
