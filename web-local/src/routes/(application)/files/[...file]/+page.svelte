@@ -5,10 +5,7 @@
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFiles } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import {
-    addLeadingSlash,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
@@ -33,11 +30,15 @@
   $: fileExtension = extractFileExtension(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: {
-      enabled: !fileTypeUnsupported,
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    { path: filePath },
+    {
+      query: {
+        enabled: !fileTypeUnsupported,
+      },
     },
-  });
+  );
   $: fileError = !!$fileQuery.error;
   $: fileErrorMessage = $fileQuery.error?.response.data.message;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
@@ -78,9 +79,9 @@
     return $putFile.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
+        path: filePath,
         blob: content,
       },
-      path: removeLeadingSlash(filePath),
     });
   }
 

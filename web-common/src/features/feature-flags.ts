@@ -12,19 +12,20 @@ export type DerivedReadables<T> = {
 };
 
 class FeatureFlag {
-  private _system = false;
   private state = writable(false);
+  subscribe = this.state.subscribe;
 
   constructor(scope: "user" | "system" = "user", initial = false) {
     this._system = scope === "system";
     this.set(initial);
   }
 
+  private _system = false;
+
   get system() {
     return this._system;
   }
 
-  subscribe = this.state.subscribe;
   toggle = () => this.state.update((n) => !n);
   set = (n: boolean) => this.state.set(n);
 }
@@ -59,23 +60,27 @@ class FeatureFlags {
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetFile(runtime.instanceId, "rill.yaml", {
-        query: {
-          select: (data) => {
-            let features: string[] = [];
-            try {
-              const projectData = parse(data?.blob ?? "") as {
-                features?: string[];
-              };
-              features = projectData?.features ?? [];
-            } catch (e) {
-              console.error(e);
-            }
-            return features;
+      createRuntimeServiceGetFile(
+        runtime.instanceId,
+        { path: "rill.yaml" },
+        {
+          query: {
+            select: (data) => {
+              let features: string[] = [];
+              try {
+                const projectData = parse(data?.blob ?? "") as {
+                  features?: string[];
+                };
+                features = projectData?.features ?? [];
+              } catch (e) {
+                console.error(e);
+              }
+              return features;
+            },
+            queryClient,
           },
-          queryClient,
         },
-      }).subscribe((features) => {
+      ).subscribe((features) => {
         if (!Array.isArray(features?.data)) return;
         const yamlFlags = features.data;
         updateFlags(new Set([...staticFlags, ...yamlFlags]));

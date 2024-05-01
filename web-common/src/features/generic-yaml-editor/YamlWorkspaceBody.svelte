@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { parse } from "yaml";
   import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
   import {
@@ -19,7 +18,7 @@
 
   $: file = createRuntimeServiceGetFile(
     $runtime.instanceId,
-    removeLeadingSlash(filePath),
+    { path: filePath },
     {
       query: {
         // this will ensure that any changes done outside our app is pulled in.
@@ -35,13 +34,10 @@
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
     const blob = e.detail.content;
-    await runtimeServicePutFile(
-      $runtime.instanceId,
-      removeLeadingSlash(filePath),
-      {
-        blob: blob,
-      },
-    );
+    await runtimeServicePutFile($runtime.instanceId, {
+      path: filePath,
+      blob: blob,
+    });
     error = validateYAMLAndReturnError(blob);
   }
 
@@ -72,10 +68,10 @@
       <YAMLEditor
         bind:this={editor}
         bind:view
-        key={filePath}
         {content}
-        whenFocused
+        key={filePath}
         on:update={debouncedUpdate}
+        whenFocused
       />
     </div>
   </div>
