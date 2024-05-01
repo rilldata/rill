@@ -68,7 +68,7 @@ function tryParseSql(
   let kind = kindFromFolder;
   let name = nameFromFolder;
 
-  const kindMatches = /^--\s*@kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+  const kindMatches = /^--\s*@type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
   if (kindMatches?.[1]) {
     kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
   }

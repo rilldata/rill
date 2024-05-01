@@ -31,9 +31,21 @@ describe("parseKindAndNameFromFile", () => {
       { kind: ResourceKind.MetricsView, name: "AdBids_dashboard_name" },
     ],
     [
+      "explicit kind and name for sql",
+      "sources/AdBids_model.sql",
+      `\n\n-- @type : model\n--@name:AdBids_model_name\nselect * from AdBids`,
+      { kind: ResourceKind.Model, name: "AdBids_model_name" },
+    ],
+    [
       "explicit invalid kind for yaml",
       "sources/AdBids_dashboard.yaml",
       `\n\ntype : invalid\nmodel: AdBids_model\nmeasures: []\ndimensions: []`,
+      undefined,
+    ],
+    [
+      "explicit invalid kind for sql",
+      "sources/AdBids_model.sql",
+      `\n\n-- @type : invalid\nselect * from AdBids`,
       undefined,
     ],
   ];
