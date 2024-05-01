@@ -8,12 +8,13 @@
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
-  import { VLTooltipFormatter } from "../types";
+  import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
   export let signalListeners: SignalListeners = {};
+  export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let customDashboard = false;
   export let chartView = false;
@@ -37,6 +38,7 @@
     actions: false,
     logLevel: 0, // only show errors
     width: customDashboard ? width : undefined,
+    expressionFunctions,
     height: chartView || !customDashboard ? undefined : height,
   };
 

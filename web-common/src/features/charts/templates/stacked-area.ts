@@ -6,6 +6,7 @@ interface TooltipValue {
   title?: string;
   field: string;
   format?: string;
+  formatType?: string;
   type: "quantitative" | "temporal" | "nominal" | "ordinal";
 }
 export function buildStackedArea(
@@ -19,6 +20,7 @@ export function buildStackedArea(
     {
       title: quantitativeField.label,
       field: quantitativeField.name,
+      formatType: "measureFormatter",
       type: "quantitative",
     },
     {
@@ -39,6 +41,7 @@ export function buildStackedArea(
       return {
         field: value === null ? "null" : value,
         type: "quantitative",
+        formatType: "measureFormatter",
       };
     });
 
