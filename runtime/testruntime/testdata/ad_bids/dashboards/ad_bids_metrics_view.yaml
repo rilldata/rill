@@ -1,7 +1,7 @@
 # Dashboard YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
-kind: metrics_view
+type: metrics_view
 title: Ad Bids
 model: ad_bids
 timeseries: timestamp

@@ -32,7 +32,7 @@
 
 {#if connectorInstanceId && olapConnector}
   <section
-    class="flex flex-col border-t border-t-gray-200"
+    class="flex flex-col border-t border-t-gray-200 relative"
     style:min-height="{MIN_HEIGHT}px"
     style:height="{sectionHeight}px"
   >
@@ -43,7 +43,6 @@
       min={10}
       basis={showTables ? startingHeight : MIN_HEIGHT}
       max={2000}
-      absolute={false}
     />
     <button
       class="flex justify-between items-center w-full pl-2 pr-3.5 pt-2 pb-2 text-gray-500"

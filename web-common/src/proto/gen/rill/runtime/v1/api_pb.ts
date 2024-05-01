@@ -259,6 +259,11 @@ export class Instance extends Message<Instance> {
   projectVariables: { [key: string]: string } = {};
 
   /**
+   * @generated from field: map<string, bool> feature_flags = 22;
+   */
+  featureFlags: { [key: string]: boolean } = {};
+
+  /**
    * @generated from field: map<string, string> annotations = 14;
    */
   annotations: { [key: string]: string } = {};
@@ -293,6 +298,7 @@ export class Instance extends Message<Instance> {
     { no: 13, name: "project_connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

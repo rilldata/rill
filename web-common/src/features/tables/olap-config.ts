@@ -1,4 +1,4 @@
-export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid"];
+export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
 
 export function makeFullyQualifiedTableName(
   connector: string,

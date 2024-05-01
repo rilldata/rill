@@ -17,7 +17,7 @@ type RillYAML struct {
 	Connectors    []*ConnectorDef
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
-	Features      []string
+	FeatureFlags  map[string]bool
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -135,6 +135,11 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
+	featureFlags := map[string]bool{}
+	for _, f := range tmp.Features {
+		featureFlags[f] = true
+	}
+
 	res := &RillYAML{
 		Title:         tmp.Title,
 		Description:   tmp.Description,
@@ -147,7 +152,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			ResourceKindMetricsView: tmp.Dashboards,
 			ResourceKindMigration:   tmp.Migrations,
 		},
-		Features: tmp.Features,
+		FeatureFlags: featureFlags,
 	}
 
 	for i, c := range tmp.Connectors {

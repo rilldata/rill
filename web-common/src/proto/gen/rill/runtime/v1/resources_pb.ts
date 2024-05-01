@@ -2956,6 +2956,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   rendererProperties?: Struct;
 
+  /**
+   * @generated from field: bool defined_in_dashboard = 6;
+   */
+  definedInDashboard = false;
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2969,6 +2974,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -3158,24 +3164,24 @@ export class DashboardItem extends Message<DashboardItem> {
   component = "";
 
   /**
-   * @generated from field: uint32 x = 2;
+   * @generated from field: optional uint32 x = 2;
    */
-  x = 0;
+  x?: number;
 
   /**
-   * @generated from field: uint32 y = 3;
+   * @generated from field: optional uint32 y = 3;
    */
-  y = 0;
+  y?: number;
 
   /**
-   * @generated from field: uint32 width = 4;
+   * @generated from field: optional uint32 width = 4;
    */
-  width = 0;
+  width?: number;
 
   /**
-   * @generated from field: uint32 height = 5;
+   * @generated from field: optional uint32 height = 5;
    */
-  height = 0;
+  height?: number;
 
   /**
    * @generated from field: uint32 font_size = 7;
@@ -3191,10 +3197,10 @@ export class DashboardItem extends Message<DashboardItem> {
   static readonly typeName = "rill.runtime.v1.DashboardItem";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 7, name: "font_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 

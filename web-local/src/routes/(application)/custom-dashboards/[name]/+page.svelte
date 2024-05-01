@@ -28,10 +28,7 @@
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import type {
-    V1DashboardItem,
-    V1DashboardSpec,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -40,7 +37,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
-  import { parse, stringify } from "yaml";
+  import { parseDocument } from "yaml";
 
   const DEFAULT_EDITOR_HEIGHT = 300;
   const DEFAULT_EDITOR_WIDTH = 400;
@@ -59,7 +56,6 @@
   let fileArtifact: FileArtifact;
   let filePath: string;
   let customDashboardName: string;
-
   let selectedView = "split";
   let showGrid = true;
   let snap = false;
@@ -68,16 +64,15 @@
   let editorWidth = DEFAULT_EDITOR_WIDTH;
   let chartEditorHeight = DEFAULT_EDITOR_HEIGHT;
   let selectedChartName: string | null = null;
-  let dashboard: V1DashboardSpec = {
-    columns: 10,
-    gap: 1,
+  let spec: V1DashboardSpec = {
+    columns: 20,
+    gap: 4,
     items: [],
   };
 
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
-    customDashboardName = fileArtifact.getEntityName();
   } else {
     customDashboardName = $page.params.name;
     filePath = getFileAPIPathFromNameAndType(
@@ -86,10 +81,13 @@
     );
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
+  $: name = fileArtifact?.name;
+  $: customDashboardName = $name?.name ?? "";
 
   $: instanceId = $runtime.instanceId;
 
-  $: errors = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: errors = $errorsQuery;
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
     query: { keepPreviousData: true },
   });
@@ -97,25 +95,18 @@
 
   $: yaml = $fileQuery.data?.blob ?? "";
 
-  $: if (yaml) {
-    try {
-      const potentialDb = parse(yaml) as V1DashboardSpec;
-      dashboard = {
-        ...potentialDb,
-        items: potentialDb.items?.filter(isComponent) ?? [],
-      };
-    } catch {
-      // Unable to parse YAML, no-op
-    }
-  }
+  $: parsedDocument = parseDocument(yaml);
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
     ResourceKind.Component,
     selectedChartName ?? "",
   );
   $: selectedChartFilePath = selectedChartFileArtifact?.path;
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
 
-  $: ({ columns, gap, items = [] } = dashboard ?? ({} as V1DashboardSpec));
+  $: spec = $resourceQuery.data?.dashboard?.spec ?? spec;
+
+  $: ({ items = [], columns = 20, gap = 4 } = spec);
 
   async function onChangeCallback(
     e: Event & {
@@ -127,6 +118,7 @@
       e.currentTarget,
       filePath,
       fileName,
+      fileArtifacts.getNamesForKind(ResourceKind.Dashboard),
     );
     if (newRoute) await goto(newRoute);
   }
@@ -154,26 +146,23 @@
       dimensions: Vector;
     }>,
   ) {
-    const newItems = [...items];
+    const sequence = parsedDocument.get("items");
 
-    newItems[e.detail.index].width = e.detail.dimensions[0];
-    newItems[e.detail.index].height = e.detail.dimensions[1];
+    const node = sequence.get(e.detail.index);
 
-    newItems[e.detail.index].x = e.detail.position[0];
-    newItems[e.detail.index].y = e.detail.position[1];
+    node.set("width", e.detail.dimensions[0]);
+    node.set("height", e.detail.dimensions[1]);
+    node.set("x", e.detail.position[0]);
+    node.set("y", e.detail.position[1]);
 
-    yaml = stringify(<V1DashboardSpec>{
-      kind: "dashboard",
-      ...dashboard,
-      items: newItems,
-    });
+    yaml = parsedDocument.toString();
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const newItems = [...items];
-    newItems.push({
+    const sequence = parsedDocument.get("items");
+    sequence.add({
       component: e.detail.chartName,
       height: 4,
       width: 4,
@@ -181,19 +170,9 @@
       y: 0,
     });
 
-    yaml = stringify(<V1DashboardSpec>{
-      kind: "dashboard",
-      ...dashboard,
-      items: newItems,
-    });
+    yaml = parsedDocument.toString();
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
-  }
-
-  function isComponent(
-    component: V1DashboardItem | null | undefined,
-  ): component is V1DashboardItem {
-    return !!component;
   }
 </script>
 
@@ -231,7 +210,7 @@
 
       <PreviewButton
         dashboardName={customDashboardName}
-        disabled={Boolean($errors.length)}
+        disabled={Boolean(errors.length)}
         type="custom"
       />
     </div>
@@ -241,7 +220,7 @@
     {#if selectedView == "code" || selectedView == "split"}
       <div
         transition:slide={{ duration: 400, axis: "x" }}
-        class="relative h-full flex-shrink-0 w-full"
+        class="relative h-full flex-shrink-0 w-full border-r"
         class:!w-full={selectedView === "code"}
         style:width="{editorWidth}px"
       >
@@ -255,7 +234,8 @@
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <CustomDashboardEditor
-              errors={$errors}
+              {filePath}
+              {errors}
               {yaml}
               on:update={updateChartFile}
             />

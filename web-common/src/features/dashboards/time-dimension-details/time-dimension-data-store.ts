@@ -490,7 +490,8 @@ export const tableInteractionStore = writable<HighlightedCell>({
 });
 
 export const chartInteractionColumn = writable<ChartInteractionColumns>({
-  hover: undefined,
+  yHover: undefined,
+  xHover: undefined,
   scrubStart: undefined,
   scrubEnd: undefined,
 });

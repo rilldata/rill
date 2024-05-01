@@ -17,7 +17,7 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
 	statusCmd := &cobra.Command{
-		Use:   "describe [<project-name>] <kind> <name>",
+		Use:   "describe [<project-name>] <type> <name>",
 		Args:  cobra.MatchAll(cobra.MinimumNArgs(2), cobra.MaximumNArgs(3)),
 		Short: "Retrieve detailed state for a resource",
 		Long:  "Retrieve detailed state for a specific resource (source, model, dashboard, ...)",
@@ -97,7 +97,7 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindSource
 	case "model":
 		return runtime.ResourceKindModel
-	case "metricsview", "metrics_view", "dashboard":
+	case "metricsview", "metrics_view":
 		return runtime.ResourceKindMetricsView
 	case "migration":
 		return runtime.ResourceKindMigration
@@ -105,6 +105,14 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindReport
 	case "alert":
 		return runtime.ResourceKindAlert
+	case "theme":
+		return runtime.ResourceKindTheme
+	case "component":
+		return runtime.ResourceKindComponent
+	case "dashboard":
+		return runtime.ResourceKindDashboard
+	case "api":
+		return runtime.ResourceKindAPI
 	default:
 		return k
 	}

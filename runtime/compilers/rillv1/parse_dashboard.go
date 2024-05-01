@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gopkg.in/yaml.v3"
 )
@@ -15,10 +16,10 @@ type DashboardYAML struct {
 	Gap        uint32           `yaml:"gap"`
 	Items      []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
-		X         uint32    `yaml:"x"`
-		Y         uint32    `yaml:"y"`
-		Width     uint32    `yaml:"width"`
-		Height    uint32    `yaml:"height"`
+		X         *uint32   `yaml:"x"`
+		Y         *uint32   `yaml:"y"`
+		Width     *uint32   `yaml:"width"`
+		Height    *uint32   `yaml:"height"`
 		FontSize  uint32    `yaml:"font_size"`
 	} `yaml:"items"`
 }
@@ -49,6 +50,10 @@ func (p *Parser) parseDashboard(node *Node) error {
 	items := make([]*runtimev1.DashboardItem, len(tmp.Items))
 	var inlineComponentDefs []*componentDef
 	for i, item := range tmp.Items {
+		if item == nil {
+			return fmt.Errorf("item at index %d is nil", i)
+		}
+
 		component, inlineComponentDef, err := p.parseDashboardItemComponent(node.Name, i, item.Component)
 		if err != nil {
 			return fmt.Errorf("invalid component at index %d: %w", i, err)
@@ -125,11 +130,17 @@ func (p *Parser) parseDashboardItemComponent(dashboardName string, idx int, n ya
 		return "", nil, err
 	}
 
-	name := fmt.Sprintf("%s--component%d", dashboardName, idx)
+	spec.DefinedInDashboard = true
+
+	name := fmt.Sprintf("%s--component-%d", dashboardName, idx)
 
 	err = p.insertDryRun(ResourceKindComponent, name)
 	if err != nil {
-		return "", nil, err
+		name = fmt.Sprintf("%s--component-%d-%s", dashboardName, idx, uuid.New())
+		err = p.insertDryRun(ResourceKindComponent, name)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	def := &componentDef{

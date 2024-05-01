@@ -7180,6 +7180,8 @@ func (m *ComponentSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for DefinedInDashboard
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}
@@ -7779,15 +7781,23 @@ func (m *DashboardItem) validate(all bool) error {
 
 	// no validation rules for Component
 
-	// no validation rules for X
-
-	// no validation rules for Y
-
-	// no validation rules for Width
-
-	// no validation rules for Height
-
 	// no validation rules for FontSize
+
+	if m.X != nil {
+		// no validation rules for X
+	}
+
+	if m.Y != nil {
+		// no validation rules for Y
+	}
+
+	if m.Width != nil {
+		// no validation rules for Width
+	}
+
+	if m.Height != nil {
+		// no validation rules for Height
+	}
 
 	if len(errors) > 0 {
 		return DashboardItemMultiError(errors)

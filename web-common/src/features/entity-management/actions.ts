@@ -56,7 +56,8 @@ export async function renameFileArtifact(
       fromResName?.kind &&
       topLevelFromFolder !== topLevelToFolder &&
       FolderToResourceKind[removeLeadingSlash(topLevelFromFolder)] ===
-        fromResName?.kind
+        fromResName?.kind &&
+      !toPath.endsWith(".sql")
     ) {
       notifications.send({
         message: `Moving ${fromName} out of native folder. Please make sure to add "kind" key to denote the type.`,

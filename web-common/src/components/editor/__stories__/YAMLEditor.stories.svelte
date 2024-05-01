@@ -49,6 +49,7 @@ values:
       >
     </div>
     <YAMLEditor
+      key="key"
       {content}
       bind:view
       on:update={(event) => {

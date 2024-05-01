@@ -199,6 +199,10 @@
       e.currentTarget,
       filePath,
       assetName,
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ],
     );
 
     if (newRoute) await goto(newRoute);
@@ -217,7 +221,6 @@
 
   async function handleCreateModelFromSource() {
     const [newModelPath, newModelName] = await createModelFromSource(
-      queryClient,
       assetName,
       tableName ?? "",
       "models",
@@ -327,6 +330,7 @@
         {#key assetName}
           {#if type === "source"}
             <SourceEditor
+              {filePath}
               {blob}
               {hasUnsavedChanges}
               allErrors={$allErrors}
@@ -352,10 +356,10 @@
         <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
-          {:else if tableName}
+          {:else}
             <ConnectedPreviewTable
               {connector}
-              table={tableName}
+              table={tableName ?? ""}
               loading={resourceIsReconciling}
             />
           {/if}

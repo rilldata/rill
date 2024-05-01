@@ -1,23 +1,31 @@
 <script lang="ts">
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
-  import { useChartFileNames } from "../charts/selectors";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
 
   const dispatch = createEventDispatcher();
   let open = false;
   let value = "";
 
-  $: chartFileNamesQuery = useChartFileNames($runtime.instanceId);
+  // We want to get only valid charts here. Hence using ListResources API
+  $: chartFileNamesQuery = useFilteredResources(
+    $runtime.instanceId,
+    ResourceKind.Component,
+    (data) => data.resources?.map((r) => r.meta?.name?.name ?? "") ?? [],
+  );
   $: chartFileNames = $chartFileNamesQuery.data ?? [];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger asChild let:builder>
-    <button {...builder} use:builder.action class:open>
-      <Plus size="16px" class="flex items-center justify-center" />
+    <button {...builder} class:open use:builder.action>
+      <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
         Add Chart
         <ChevronDown size="14px" />

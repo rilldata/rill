@@ -290,17 +290,10 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	// Treat reloads the same as a fresh parse (where there's no diff)
-	if diff != nil && diff.Reloaded {
-		diff = nil
-	}
-
-	// Update state from rill.yaml and .env
-	if diff == nil || diff.ModifiedDotEnv {
-		err := r.reconcileProjectConfig(ctx, parser)
-		if err != nil {
-			return err
-		}
+	// not setting restartController=true when diff is actually nil prevents infinite restarts
+	restartController := diff != nil && (diff.ModifiedDotEnv || diff.Reloaded)
+	if restartController {
+		return r.reconcileProjectConfig(ctx, parser, true)
 	}
 
 	// Reconcile resources.
@@ -324,46 +317,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 }
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
-func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser) error {
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return err
-	}
-
-	// Shallow clone for editing
-	tmp := *inst
-	inst = &tmp
-
-	inst.ProjectOLAPConnector = parser.RillYAML.OLAPConnector
-
-	conns := make([]*runtimev1.Connector, 0, len(parser.RillYAML.Connectors))
-	for _, c := range parser.RillYAML.Connectors {
-		conns = append(conns, &runtimev1.Connector{
-			Type:   c.Type,
-			Name:   c.Name,
-			Config: c.Defaults,
-		})
-	}
-	inst.ProjectConnectors = conns
-
-	vars := make(map[string]string)
-	for _, v := range parser.RillYAML.Variables {
-		vars[v.Name] = v.Default
-	}
-	for k, v := range parser.DotEnv {
-		vars[k] = v
-	}
-	inst.ProjectVariables = vars
-
-	// TODO: Passing "false" guards against infinite cancellations and restarts of the controller,
-	// but it also ignores potential consistency issues where we update connector config without evicting cached connctions,
-	// or where we update variables and don't re-evaluate all resources.
-	err = r.C.Runtime.EditInstance(ctx, inst, false)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser, restartController bool) error {
+	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser.RillYAML, parser.DotEnv, restartController)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.

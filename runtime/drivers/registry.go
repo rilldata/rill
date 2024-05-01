@@ -51,6 +51,8 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// FeatureFlags contains feature flags configured in rill.yaml
+	FeatureFlags map[string]bool `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
 	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead

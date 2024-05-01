@@ -15,24 +15,24 @@
   }
   const chartTypeTabs = [
     {
-      label: "Line chart",
+      label: "Line",
       id: TDDChart.DEFAULT,
       Icon: LineChart,
     },
     {
-      label: "Bar  chart",
+      label: "Bar",
       id: TDDChart.GROUPED_BAR,
       Icon: BarChart,
     },
     {
-      label: "Stacked Bar chart",
-      id: TDDChart.STACKED_BAR,
-      Icon: StackedBar,
-    },
-    {
-      label: "Stacked Area chart",
+      label: "Stacked area",
       id: TDDChart.STACKED_AREA,
       Icon: StackedArea,
+    },
+    {
+      label: "Stacked bar",
+      id: TDDChart.STACKED_BAR,
+      Icon: StackedBar,
     },
   ];
 </script>
@@ -61,7 +61,7 @@
 
 <style lang="postcss">
   .chart-type-selector {
-    @apply flex ml-auto overflow-hidden;
+    @apply flex ml-auto overflow-hidden mr-2;
     @apply border border-primary-300 divide-x divide-primary-300 rounded-sm;
   }
   .chart-icon-wrapper {

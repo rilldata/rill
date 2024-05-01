@@ -43,7 +43,7 @@ export class FileArtifact {
    */
   public lastStateUpdatedOn: string | undefined;
 
-  public isNew = true;
+  public hasTable = false;
 
   public constructor(filePath: string) {
     this.path = filePath;
@@ -59,7 +59,9 @@ export class FileArtifact {
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
     this.renaming = !!resource.meta?.renamedFrom;
-    this.isNew = false;
+    this.hasTable =
+      (!!resource.model && !!resource.model.state?.table) ||
+      (!!resource.source && !!resource.source.state?.table);
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -141,6 +143,8 @@ export class FileArtifact {
   }
 
   private updateNameIfChanged(resource: V1Resource) {
+    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    if (isSubResource) return;
     const curName = get(this.name);
     if (
       curName?.name !== resource.meta?.name?.name ||
@@ -238,10 +242,10 @@ export class FileArtifacts {
     });
   }
 
-  public isNew(resource: V1Resource) {
+  public hadTable(resource: V1Resource) {
     return (
       resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].isNew;
+        return this.artifacts[filePath].hasTable;
       }) ?? false
     );
   }
@@ -298,6 +302,17 @@ export class FileArtifacts {
         return currentlyReconciling;
       },
     );
+  }
+
+  /**
+   * Filters all fileArtifacts based on kind param and returns the file paths.
+   * This can be expensive if the project gets large.
+   * If we ever need this reactively then we should look into caching this list.
+   */
+  public getNamesForKind(kind: ResourceKind): string[] {
+    return Object.values(this.artifacts)
+      .filter((artifact) => get(artifact.name)?.kind === kind)
+      .map((artifact) => get(artifact.name)?.name ?? "");
   }
 }
 

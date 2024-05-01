@@ -10,7 +10,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import TableIcon from "../../components/icons/TableIcon.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -23,8 +22,6 @@
   export let database: string = "";
   export let databaseSchema: string = "";
   export let table: string;
-
-  const queryClient = useQueryClient();
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
@@ -44,7 +41,6 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createModelFromSource(
-        queryClient,
         table,
         table,
         "models",
