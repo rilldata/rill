@@ -10,12 +10,12 @@ import {
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+import { get } from "svelte/store";
 import {
-  addLeadingSlash,
   FolderToResourceKind,
+  addLeadingSlash,
   removeLeadingSlash,
 } from "./entity-mappers";
-import { get } from "svelte/store";
 
 export async function renameFileArtifact(
   instanceId: string,
@@ -60,7 +60,7 @@ export async function renameFileArtifact(
       !toPath.endsWith(".sql")
     ) {
       notifications.send({
-        message: `Moving ${fromName} out of native folder. Please make sure to add "kind" key to denote the type.`,
+        message: `Moving ${fromName} out of its native folder. Make sure to specify the resource type with the "type" key.`,
       });
     }
   } catch (err) {
