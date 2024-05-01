@@ -105,17 +105,15 @@ message ModelV2 {
 message ModelSpec {
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 5;
-  bool incremental = 12;
+  bool incremental = 13;
   string state_resolver = 14;
   google.protobuf.Struct state_resolver_properties = 15;
-  string source_connector = 2;
-  google.protobuf.Struct source_properties = 10;
+  string input_connector = 10;
+  google.protobuf.Struct input_properties = 11;
   string output_connector = 1;
-  google.protobuf.Struct output_properties = 11;
-  bool ephemeral = 13;
-  bool stage_changes = 7;
+  google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
-  // Reserved numbers: 2, 3, 6, 8
+  reserved 2, 3, 6, 7, 8;
 }
 
 message ModelState {
@@ -125,7 +123,7 @@ message ModelState {
   google.protobuf.Timestamp refreshed_on = 4;
   google.protobuf.Struct state = 6;
   StructType state_schema = 7;
-  // Reserved numbers: 2
+  reserved 2;
 }
 
 message MetricsViewV2 {

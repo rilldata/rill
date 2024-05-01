@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: rill/runtime/v1/export_format.proto
+  title: rill/runtime/v1/colors.proto
   version: version not set
 tags:
   - name: RuntimeService
@@ -4539,39 +4539,43 @@ definitions:
   v1ModelSpec:
     type: object
     properties:
-      connector:
-        type: string
-      sql:
-        type: string
-      materialize:
-        type: boolean
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
         type: integer
         format: int64
-      usesTemplating:
+      incremental:
         type: boolean
-      stageChanges:
-        type: boolean
-        title: Fields not derived from code files
-      materializeDelaySeconds:
-        type: integer
-        format: int64
+      stateResolver:
+        type: string
+      stateResolverProperties:
+        type: object
+      inputConnector:
+        type: string
+      inputProperties:
+        type: object
+      outputConnector:
+        type: string
+      outputProperties:
+        type: object
       trigger:
         type: boolean
   v1ModelState:
     type: object
     properties:
-      connector:
+      outputConnector:
         type: string
-      table:
-        type: string
+      outputProperties:
+        type: object
       specHash:
         type: string
       refreshedOn:
         type: string
         format: date-time
+      state:
+        type: object
+      stateSchema:
+        $ref: '#/definitions/v1StructType'
   v1ModelV2:
     type: object
     properties:
