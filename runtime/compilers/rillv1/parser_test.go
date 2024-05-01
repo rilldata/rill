@@ -120,7 +120,6 @@ SELECT * FROM {{ ref "m2" }}
 `,
 	}
 
-	truth := true
 	resources := []*Resource{
 		// init.sql
 		{
@@ -159,9 +158,10 @@ SELECT * FROM {{ ref "m2" }}
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["models/m1.sql"]),
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
 			},
 		},
 		// model m2
@@ -170,10 +170,11 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.yaml", "/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["models/m2.sql"]),
-				Materialize:     &truth,
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:   "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
+				OutputConnector:  "duckdb",
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			},
 		},
 		// dashboard d1
@@ -221,11 +222,14 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["custom/c2.sql"]),
-				Materialize:     &truth,
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-				UsesTemplating:  true,
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{
+					"sql":             strings.TrimSpace(files["custom/c2.sql"]),
+					"uses_templating": true,
+				})),
+				OutputConnector:  "duckdb",
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			},
 		},
 	}
@@ -319,7 +323,6 @@ SELECT 1
 
 func TestReparse(t *testing.T) {
 	// Prepare
-	truth := true
 	ctx := context.Background()
 
 	// Create empty project
@@ -362,9 +365,10 @@ SELECT * FROM foo
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT * FROM foo",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	diff, err = p.Reparse(ctx, m1.Paths)
@@ -381,7 +385,7 @@ materialize: true
 `,
 	})
 	m1.Paths = []string{"/models/m1.sql", "/models/m1.yaml"}
-	m1.ModelSpec.Materialize = &truth
+	m1.ModelSpec.OutputProperties = must(structpb.NewStruct(map[string]any{"materialize": true}))
 	diff, err = p.Reparse(ctx, []string{"/models/m1.yaml"})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1, m1}, nil)
@@ -395,7 +399,7 @@ materialize: true
 SELECT * FROM bar
 `,
 	})
-	m1.ModelSpec.Sql = "SELECT * FROM bar"
+	m1.ModelSpec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM bar"}))
 	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1, m1}, nil)
@@ -470,9 +474,10 @@ SELECT 10
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT 10",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -539,18 +544,20 @@ SELECT * FROM m1
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT 10",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	m1Nested := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/nested/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT 20",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 20"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	m2 := &Resource{
@@ -558,9 +565,10 @@ SELECT * FROM m1
 		Paths: []string{"/models/m2.sql"},
 		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT * FROM m1",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM m1"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -608,9 +616,10 @@ path: hello
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT 10",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector: "duckdb",
 		},
 	}
 
@@ -654,9 +663,10 @@ func TestReparseRillYAML(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT 10",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	perr := &runtimev1.ParseError{
@@ -698,7 +708,7 @@ func TestReparseRillYAML(t *testing.T) {
 	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
 
 	// Fix rill.yaml. Expect reloaded.
-	mdl.ModelSpec.Sql = "SELECT 20"
+	mdl.ModelSpec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": "SELECT 20"}))
 	putRepo(t, repo, map[string]string{"/rill.yaml": ""})
 	diff, err = p.Reparse(ctx, []string{"/rill.yaml"})
 	require.NoError(t, err)
@@ -713,9 +723,10 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "foo"},
 		Paths: []string{"/models/foo.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT * FROM bar",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM bar"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	ctx := context.Background()
@@ -735,9 +746,10 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "bar"},
 		Paths: []string{"/models/bar.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             "SELECT * FROM baz",
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM baz"})),
+			OutputConnector: "duckdb",
 		},
 	}
 	putRepo(t, repo, map[string]string{
@@ -765,7 +777,6 @@ func TestRefInferrence(t *testing.T) {
 
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
-	truth := true
 	files := map[string]string{
 		// rill.yaml
 		`rill.yaml`: ``,
@@ -787,9 +798,10 @@ materialize: true
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["models/m1.sql"]),
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
 			},
 		},
 		// m2
@@ -798,10 +810,11 @@ materialize: true
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.sql", "/models/m2.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["models/m2.sql"]),
-				Materialize:     &truth,
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:   "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
+				OutputConnector:  "duckdb",
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			},
 		},
 	}
@@ -821,8 +834,6 @@ materialize: true
 
 func TestProjectModelDefaults(t *testing.T) {
 	ctx := context.Background()
-	truth := true
-	falsity := false
 
 	files := map[string]string{
 		// Provide dashboard defaults in rill.yaml
@@ -847,10 +858,11 @@ SELECT * FROM t2
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["models/m1.sql"]),
-				Materialize:     &truth,
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:   "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector:  "duckdb",
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			},
 		},
 		// m2
@@ -858,10 +870,11 @@ SELECT * FROM t2
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
 			Paths: []string{"/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             strings.TrimSpace(files["models/m2.sql"]),
-				Materialize:     &falsity,
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:   "duckdb",
+				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
+				OutputConnector:  "duckdb",
+				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": false})),
 			},
 		},
 	}
@@ -1174,9 +1187,10 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             `SELECT 1`,
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
 			},
 		},
 		{
@@ -1415,9 +1429,10 @@ metrics_sql: select * from m1
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Connector:       "duckdb",
-				Sql:             `SELECT 1`,
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
 			},
 		},
 		{
