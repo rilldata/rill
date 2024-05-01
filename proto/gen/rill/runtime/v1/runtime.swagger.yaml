@@ -509,7 +509,36 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/files/-/{path}:
+  /v1/instances/{instanceId}/files/dir:
+    post:
+      summary: CreateDirectory create a directory for the given path
+      operationId: RuntimeService_CreateDirectory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDirectoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              path:
+                type: string
+            title: Request message for RuntimeService.CreateDirectory
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/entry:
     get:
       summary: GetFile returns the contents of a specific file in a repo.
       operationId: RuntimeService_GetFile
@@ -528,10 +557,9 @@ paths:
           required: true
           type: string
         - name: path
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
-          pattern: .+
       tags:
         - RuntimeService
     delete:
@@ -552,10 +580,9 @@ paths:
           required: true
           type: string
         - name: path
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
-          pattern: .+
         - name: force
           in: query
           required: false
@@ -579,17 +606,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
         - name: body
           in: body
           required: true
           schema:
             type: object
             properties:
+              path:
+                type: string
               blob:
                 type: string
               create:
@@ -601,37 +625,6 @@ paths:
                   Will cause the operation to fail if the file already exists.
                   It should only be set when create = true.
             title: Request message for RuntimeService.PutFile
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/files/create-dir/-/{path}:
-    post:
-      summary: CreateDirectory create a directory for the given path
-      operationId: RuntimeService_CreateDirectory
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateDirectoryResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            title: Request message for RuntimeService.CreateDirectory
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:

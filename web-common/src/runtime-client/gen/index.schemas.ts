@@ -298,11 +298,6 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
-export type RuntimeServiceWatchLogs200 = {
-  result?: V1WatchLogsResponse;
-  error?: RpcStatus;
-};
-
 export type RuntimeServiceWatchLogsLevel =
   (typeof RuntimeServiceWatchLogsLevel)[keyof typeof RuntimeServiceWatchLogsLevel];
 
@@ -391,9 +386,8 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   useAi?: boolean;
 };
 
-export type RuntimeServiceCreateDirectoryBody = { [key: string]: any };
-
 export type RuntimeServicePutFileBody = {
+  path?: string;
   blob?: string;
   create?: boolean;
   /** Will cause the operation to fail if the file already exists.
@@ -401,7 +395,13 @@ It should only be set when create = true. */
   createOnly?: boolean;
 };
 
-export type RuntimeServiceDeleteFileParams = { force?: boolean };
+export type RuntimeServiceDeleteFileParams = { path?: string; force?: boolean };
+
+export type RuntimeServiceGetFileParams = { path?: string };
+
+export type RuntimeServiceCreateDirectoryBody = {
+  path?: string;
+};
 
 export type RuntimeServiceListFilesParams = { glob?: string };
 
@@ -498,6 +498,11 @@ export interface V1WatchLogsResponse {
   log?: V1Log;
 }
 
+export type RuntimeServiceWatchLogs200 = {
+  result?: V1WatchLogsResponse;
+  error?: RpcStatus;
+};
+
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
@@ -522,6 +527,12 @@ export interface V1TimeSeriesValue {
   ts?: string;
   bin?: number;
   records?: V1TimeSeriesValueRecords;
+}
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
 }
 
 export interface V1TimeSeriesResponse {
@@ -551,12 +562,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;

@@ -68,14 +68,18 @@
   $: isModelingSupportedQuery = canModel(instanceId);
   $: isModelingSupported = $isModelingSupportedQuery.data;
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
-      // this will ensure that any changes done outside our app is pulled in.
-      refetchOnWindowFocus: true,
-      keepPreviousData: true,
+  $: fileQuery = createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        onError: () => (fileNotFound = true),
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
+        keepPreviousData: true,
+      },
     },
-  });
+  );
   let yaml = "";
   $: yaml = $fileQuery.data?.blob ?? yaml;
 

@@ -112,10 +112,8 @@
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: path,
       data: {
-        create: true,
-        createOnly: true,
+        path: path,
       },
     });
 
@@ -140,8 +138,8 @@
 
     await $createFile.mutateAsync({
       instanceId: instanceId,
-      path: path,
       data: {
+        path,
         blob: undefined,
         create: true,
         createOnly: true,

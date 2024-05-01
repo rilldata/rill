@@ -77,7 +77,8 @@ export async function deleteFileArtifact(
 ) {
   const name = extractFileName(filePath);
   try {
-    await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath), {
+    await runtimeServiceDeleteFile(instanceId, {
+      path: filePath,
       force,
     });
 
