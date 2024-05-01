@@ -407,7 +407,7 @@ func (c *connection) FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(c
 
 func (c *connection) FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*database.ProjectWhitelistedDomain, error) {
 	var res []*database.ProjectWhitelistedDomain
-	err := c.getDB(ctx).SelectContext(ctx, "SELECT * FROM projects_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM projects_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
 	if err != nil {
 		return nil, parseErr("project whitelist domains", err)
 	}

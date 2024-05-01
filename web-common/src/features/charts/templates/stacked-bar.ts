@@ -35,6 +35,7 @@ export function buildStackedBar(
       {
         title: quantitativeField.label,
         field: quantitativeField.name,
+        formatType: "measureFormatter",
         type: "quantitative",
       },
       { title: nominalField.label, field: nominalField.name, type: "nominal" },

@@ -132,7 +132,7 @@ func (k ResourceKind) String() string {
 	case ResourceKindAPI:
 		return "API"
 	default:
-		panic(fmt.Sprintf("unexpected resource kind: %d", k))
+		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
 }
 
@@ -193,6 +193,31 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 	}
 
 	return p.RillYAML, nil
+}
+
+// ParseDotEnv parses only the .env file present in project's root.
+func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string) (map[string]string, error) {
+	files, err := repo.ListRecursive(ctx, ".env", true)
+	if err != nil {
+		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
+	}
+
+	p := Parser{Repo: repo, InstanceID: instanceID}
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.DotEnv, nil
 }
 
 // Parse creates a new parser and parses the entire project.
@@ -780,7 +805,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
 
 	// Track it

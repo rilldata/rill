@@ -25,4 +25,4 @@
   } = dashboard || { items: [], columns: 10, gap: 2 });
 </script>
 
-<CustomDashboardEmbed {columns} components={items} {gap} />
+<CustomDashboardEmbed {columns} {items} {gap} />

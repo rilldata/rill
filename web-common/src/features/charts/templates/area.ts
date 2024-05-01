@@ -40,6 +40,7 @@ export function buildArea(
             title: quantitativeField.label,
             field: quantitativeField.name,
             type: "quantitative",
+            formatType: "measureFormatter",
           },
         ],
       },

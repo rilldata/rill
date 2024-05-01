@@ -4,7 +4,7 @@
 
   export let data: PageData;
 
-  $: ({ components = [], columns, gap } = data.dashboard);
+  $: ({ items = [], columns, gap } = data.dashboard);
 </script>
 
-<CustomDashboardEmbed {components} {columns} {gap} />
+<CustomDashboardEmbed {items} {columns} {gap} />

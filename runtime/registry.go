@@ -11,6 +11,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
@@ -417,6 +418,9 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			}
 
 			// Start controller
+			if err := r.updateProjectConfig(iwc); err != nil {
+				iwc.logger.Warn("failed to parse and update the project config before starting the controller", zap.Error(err))
+			}
 			iwc.logger.Debug("controller starting")
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
 			if err == nil {
@@ -538,6 +542,27 @@ func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
 		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
 	)
+}
+
+// updateProjectConfig updates the project config for the given instance.
+// This does the same operation as ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller
+// to ensure that when controller first starts, it doesn’t immediately restart due to changed variables
+func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
+	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, false)
 }
 
 func sizeOfDir(path string) int64 {

@@ -4,8 +4,8 @@ import {
   parseChartYaml,
 } from "@rilldata/web-common/features/charts/chartYaml";
 import {
-  chartPromptsStore,
   ChartPromptStatus,
+  chartPromptsStore,
 } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
 import { useChart } from "@rilldata/web-common/features/charts/selectors";
 import {
@@ -14,11 +14,11 @@ import {
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
+  V1ComponentSpec,
   createRuntimeServiceGenerateRenderer,
   createRuntimeServiceGenerateResolver,
   createRuntimeServiceGetFile,
   runtimeServicePutFile,
-  V1ComponentSpec,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -84,14 +84,14 @@ export function createFullChartGenerator(instanceId: string) {
     try {
       // add an empty chart
       await runtimeServicePutFile(instanceId, filePath, {
-        blob: `kind: chart`,
+        blob: `type: component`,
       });
       chartPromptsStore.startPrompt(
         (table || metricsView) ?? "",
         newChartName,
         prompt,
       );
-      await goto(`/files//${filePath}`);
+      await goto(`/files/${filePath}`);
       const resolverResp = await get(generateResolver).mutateAsync({
         instanceId,
         data: {

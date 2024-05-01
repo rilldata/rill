@@ -276,7 +276,7 @@ test.describe("dashboard", () => {
 
     const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -320,7 +320,7 @@ test.describe("dashboard", () => {
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -356,7 +356,7 @@ test.describe("dashboard", () => {
 
     const deleteOnlyMeasureDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -385,7 +385,7 @@ test.describe("dashboard", () => {
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -410,7 +410,7 @@ test.describe("dashboard", () => {
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-kind: metrics_view
+type: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
 default_time_range: ""

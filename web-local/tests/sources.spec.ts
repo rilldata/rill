@@ -68,7 +68,7 @@ test.describe("sources", () => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // Edit source path to a non-existent file
-    const nonExistentSource = `type: local_file
+    const nonExistentSource = `connector: local_file
 path: ${TestDataPath}/non_existent_file.csv`;
     await updateCodeEditor(page, nonExistentSource);
     await page.getByRole("button", { name: "Save and refresh" }).click();
@@ -77,7 +77,7 @@ path: ${TestDataPath}/non_existent_file.csv`;
     await expect(page.getByText("file does not exist")).toBeVisible();
 
     // Edit source path to an existent file
-    const adImpressionsSource = `type: local_file
+    const adImpressionsSource = `connector: local_file
 path: ${TestDataPath}/AdImpressions.tsv`;
     await updateCodeEditor(page, adImpressionsSource);
     await page.getByRole("button", { name: "Save and refresh" }).click();

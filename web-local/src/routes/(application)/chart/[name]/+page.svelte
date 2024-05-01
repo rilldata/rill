@@ -55,7 +55,7 @@
   <WorkspaceContainer inspector={false} bind:width={containerWidth}>
     <ChartsHeader slot="header" {filePath} />
     <div slot="body" class="flex size-full">
-      <div style:width="{editorWidth}px" class="relative flex-none">
+      <div style:width="{editorWidth}px" class="relative flex-none border-r">
         <Resizer
           direction="EW"
           side="right"
@@ -70,9 +70,7 @@
           chartView
           gap={8}
           columns={10}
-          components={[
-            { width: 10, height: 10, x: 0, y: 0, component: chartName },
-          ]}
+          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
         />
       </ChartPromptStatusDisplay>
     </div>
