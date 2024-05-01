@@ -45,6 +45,8 @@ export class FileArtifact {
 
   public hasTable = false;
 
+  public deleted = false;
+
   public constructor(filePath: string) {
     this.path = filePath;
   }
@@ -75,7 +77,7 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  public deleteResource() {
+  public softDeleteResource() {
     this.reconciling.set(false);
   }
 
@@ -216,7 +218,31 @@ export class FileArtifacts {
    * This is called when an artifact is deleted.
    */
   public fileDeleted(filePath: string) {
-    delete this.artifacts[filePath];
+    // 2-way delete to handle race condition with delete from file and resource watchers
+    // TODO: avoid this if `name` is undefined - event from resource will not be present
+    if (this.artifacts[filePath]?.deleted) {
+      // already marked for delete in resourceDeleted, delete from cache
+      delete this.artifacts[filePath];
+    } else if (this.artifacts[filePath]) {
+      // seeing delete for the 1st time, mark for delete
+      this.artifacts[filePath].deleted = true;
+    }
+  }
+
+  public resourceDeleted(name: V1ResourceName) {
+    const artifact = this.findFileArtifact(
+      (name.kind ?? "") as ResourceKind,
+      name.name ?? "",
+    );
+    if (!artifact) return;
+    // 2-way delete to handle race condition with delete from file and resource watchers
+    if (artifact.deleted) {
+      // already marked for delete in fileDeleted, delete from cache
+      delete this.artifacts[artifact.path];
+    } else {
+      // seeing delete for the 1st time, mark for delete
+      artifact.deleted = true;
+    }
   }
 
   public updateArtifacts(resource: V1Resource) {
@@ -261,9 +287,9 @@ export class FileArtifacts {
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
-  public deleteResource(resource: V1Resource) {
+  public softDeleteResource(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath]?.deleteResource();
+      this.artifacts[filePath]?.softDeleteResource();
     });
   }
 

@@ -36,6 +36,7 @@ export async function* uploadTableFiles(
     ...fileArtifacts.getNamesForKind(ResourceKind.Source),
     ...fileArtifacts.getNamesForKind(ResourceKind.Model),
   ];
+  console.log(allNames);
 
   for (const validFile of validFiles) {
     // check if the file is already present. get the file and
