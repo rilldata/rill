@@ -267,6 +267,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   offset?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 };
 
 export type QueryServiceExportBody = {
@@ -1298,6 +1299,7 @@ export interface V1MetricsViewAggregationRequest {
   offset?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {

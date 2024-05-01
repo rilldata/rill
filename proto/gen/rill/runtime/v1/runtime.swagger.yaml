@@ -1211,6 +1211,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
                 title: Optional
+              exact:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -3976,6 +3978,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
+      exact:
+        type: boolean
   v1MetricsViewAggregationResponse:
     type: object
     properties:

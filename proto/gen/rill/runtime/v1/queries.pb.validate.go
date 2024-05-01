@@ -3004,6 +3004,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Exact
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}

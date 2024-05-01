@@ -344,6 +344,7 @@ message MetricsViewAggregationRequest {
   int32 priority = 11;
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
+  bool exact = 17;
 }
 
 message MetricsViewAggregationResponse {
