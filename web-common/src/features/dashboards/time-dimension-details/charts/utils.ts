@@ -53,7 +53,7 @@ export function getVegaSpecForTDD(
       {
         name: "key",
         label: "Comparing",
-        values: [expandedMeasureName, `comparison\\.${expandedMeasureName}`],
+        values: [expandedMeasureName, `comparison.${expandedMeasureName}`],
       },
     ];
 
