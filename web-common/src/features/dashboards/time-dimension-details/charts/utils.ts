@@ -98,7 +98,8 @@ function hasChartDimensionParam(
 export function updateVegaOnTableHover(
   viewVL: View | undefined,
   chartType: TDDAlternateCharts,
-  hasComparison: boolean,
+  isTimeComparison: boolean,
+  isDimensionComparison: boolean,
   time: Date | null | undefined,
   dimensionValue: string | null | undefined,
 ) {
@@ -106,8 +107,14 @@ export function updateVegaOnTableHover(
     return;
   }
 
+  const hasComparison = isTimeComparison || isDimensionComparison;
   const epochTime = time ? time.getTime() : null;
   const hasDimensionParam = hasChartDimensionParam(chartType, hasComparison);
+
+  if (hasDimensionParam && isTimeComparison && dimensionValue) {
+    if (dimensionValue.startsWith("Previous")) dimensionValue = "comparison_ts";
+    else dimensionValue = "ts";
+  }
   const values = epochTime
     ? hasDimensionParam
       ? [epochTime, dimensionValue]

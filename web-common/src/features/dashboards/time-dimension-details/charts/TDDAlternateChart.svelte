@@ -58,7 +58,8 @@
     updateVegaOnTableHover(
       viewVL,
       chartType,
-      isTimeComparison || hasDimensionData,
+      isTimeComparison,
+      hasDimensionData,
       hoveredTime,
       hoveredDimensionValue,
     );
