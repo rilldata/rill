@@ -1,11 +1,18 @@
-import { buildVegaLiteSpec } from "@rilldata/web-common/features/charts/templates/build-template";
+import {
+  ChartField,
+  buildVegaLiteSpec,
+} from "@rilldata/web-common/features/charts/templates/build-template";
 import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import {
+  MainAreaColorGradientDark,
+  MainLineColor,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { VisualizationSpec } from "svelte-vega";
-import { TDDAlternateCharts } from "../types";
+import { TDDAlternateCharts, TDDChart } from "../types";
 
 export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
   return dimensionData
@@ -22,19 +29,40 @@ export function getVegaSpecForTDD(
   chartType: TDDAlternateCharts,
   expandedMeasureName: string,
   measureLabel: string,
+  isTimeComparison: boolean,
   isDimensional: boolean,
   dimensionName: string | undefined,
   comparedValues: (string | null)[] | undefined,
 ): VisualizationSpec {
-  const temporalFields = [{ name: "ts", label: "Time" }];
-  const measureFields = [{ name: expandedMeasureName, label: measureLabel }];
-  const nominalFields = [
-    {
-      name: "dimension",
-      label: dimensionName || "dimension",
-      values: comparedValues,
-    },
+  const temporalFields: ChartField[] = [{ name: "ts", label: "Time" }];
+  const measureFields: ChartField[] = [
+    { name: expandedMeasureName, label: measureLabel },
   ];
+
+  let nominalFields: ChartField[] = [];
+  if (isDimensional) {
+    nominalFields = [
+      {
+        name: "dimension",
+        label: dimensionName || "dimension",
+        values: comparedValues,
+      },
+    ];
+  } else if (isTimeComparison) {
+    nominalFields = [
+      {
+        name: "key",
+        label: "Comparing",
+        values: [expandedMeasureName, `comparison\\.${expandedMeasureName}`],
+      },
+    ];
+
+    // For time comparison, time field contains `ts` or `comparison.ts` based on data
+    temporalFields[0].tooltipName = "time";
+    // For time comparison, measure field contains `<measureName>` or
+    // `comparison.<measureName>` based on data
+    measureFields[0].name = "measure";
+  }
 
   const builderChartType = TDDChartMap[chartType];
 
@@ -42,17 +70,69 @@ export function getVegaSpecForTDD(
     builderChartType,
     temporalFields,
     measureFields,
-    isDimensional ? nominalFields : [],
+    nominalFields,
   );
 
   return spec;
 }
 
-export function sanitizeSpecForTDD(
+function patchSpecForTimeComparison(
+  sanitizedSpec,
+  chartType: TDDAlternateCharts,
+  timeUnit: string,
+  measureName: string,
+  yEncoding,
+  colorEncoding,
+) {
+  yEncoding.field = "measure";
+
+  sanitizedSpec.transform = [
+    // Sanitize and transform comparison data in the right time format
+    { timeUnit: timeUnit, field: "comparison\\.ts", as: "comparison_ts" },
+    // Expand datum to have a key field to differentiate between current and comparison data
+    { fold: ["ts", "comparison_ts"] },
+    // Add a measure field to hold the right measure value
+    {
+      calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
+      as: "measure",
+    },
+    // Add a time field to hold the right time value
+    {
+      calculate:
+        "(datum['key'] === 'comparison_ts' ? datum['comparison_ts'] : datum['ts'])",
+      as: "time",
+    },
+  ];
+
+  colorEncoding.scale = {
+    domain: ["ts", "comparison_ts"],
+    range: [MainLineColor, MainAreaColorGradientDark],
+  };
+
+  if (chartType === TDDChart.STACKED_AREA) {
+    /**
+     * For stacked area charts, we don't need to pivot transform as the
+     * comparison values are already in the right format.
+     */
+
+    // TODO: This is error prone, find a better way to do this without
+    // mutating the template
+    const stackedAreaPivotLayer = sanitizedSpec.layer[2];
+
+    if (stackedAreaPivotLayer) {
+      delete stackedAreaPivotLayer.transform;
+    }
+  }
+}
+
+export function patchSpecForTDD(
   spec,
+  chartType: TDDAlternateCharts,
   timeGrain: V1TimeGrain,
   xMin: Date,
   xMax: Date,
+  isTimeComparison: boolean,
+  measureName: string,
   selectedDimensionValues: (string | null)[] = [],
 ): VisualizationSpec {
   if (!spec) return spec;
@@ -106,11 +186,22 @@ export function sanitizeSpecForTDD(
     formatType: "time",
     format: timeLabelFormat,
   };
-  yEncoding.axis = { title: "" };
+  yEncoding.axis = { title: "", formatType: "measureFormatter" };
 
   // Set timeUnit for x-axis using timeGrain
   const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
   xEncoding.timeUnit = timeUnit;
+
+  if (isTimeComparison) {
+    patchSpecForTimeComparison(
+      sanitizedSpec,
+      chartType,
+      timeUnit,
+      measureName,
+      yEncoding,
+      colorEncoding,
+    );
+  }
 
   return sanitizedSpec;
 }

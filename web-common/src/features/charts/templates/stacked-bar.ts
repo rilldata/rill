@@ -27,7 +27,7 @@ export function buildStackedBar(
     },
     tooltip: [
       {
-        field: timeField.name,
+        field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
         type: "temporal",
         title: "Time",
         format: "%b %d, %Y %H:%M",
@@ -35,6 +35,7 @@ export function buildStackedBar(
       {
         title: quantitativeField.label,
         field: quantitativeField.name,
+        formatType: "measureFormatter",
         type: "quantitative",
       },
       { title: nominalField.label, field: nominalField.name, type: "nominal" },

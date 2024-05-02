@@ -9,10 +9,7 @@
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import {
-    getFileAPIPathFromNameAndType,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
@@ -44,8 +41,8 @@
 
   const updateFile = createRuntimeServicePutFile({
     mutation: {
-      onMutate({ instanceId, path, data }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, path);
+      onMutate({ instanceId, data }) {
+        const key = getRuntimeServiceGetFileQueryKey(instanceId, data);
         queryClient.setQueryData(key, data);
       },
     },
@@ -88,9 +85,13 @@
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: { keepPreviousData: true },
-  });
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    { path: filePath },
+    {
+      query: { keepPreviousData: true },
+    },
+  );
   $: [, fileName] = splitFolderAndName(filePath);
 
   $: yaml = $fileQuery.data?.blob ?? "";
@@ -129,8 +130,8 @@
     try {
       await $updateFile.mutateAsync({
         instanceId,
-        path: removeLeadingSlash(filePath),
         data: {
+          path: filePath,
           blob: content,
         },
       });

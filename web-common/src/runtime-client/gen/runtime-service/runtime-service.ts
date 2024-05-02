@@ -32,13 +32,14 @@ import type {
   V1ListNotifierConnectorsResponse,
   V1ListFilesResponse,
   RuntimeServiceListFilesParams,
+  V1CreateDirectoryResponse,
+  RuntimeServiceCreateDirectoryBody,
   V1GetFileResponse,
+  RuntimeServiceGetFileParams,
   V1DeleteFileResponse,
   RuntimeServiceDeleteFileParams,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
-  V1CreateDirectoryResponse,
-  RuntimeServiceCreateDirectoryBody,
   V1GenerateMetricsViewFileResponse,
   RuntimeServiceGenerateMetricsViewFileBody,
   V1RenameFileResponse,
@@ -702,193 +703,14 @@ export const createRuntimeServiceListFiles = <
 };
 
 /**
- * @summary GetFile returns the contents of a specific file in a repo.
- */
-export const runtimeServiceGetFile = (
-  instanceId: string,
-  path: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetFileResponse>({
-    url: `/v1/instances/${instanceId}/files/-/${path}`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getRuntimeServiceGetFileQueryKey = (
-  instanceId: string,
-  path: string,
-) => [`/v1/instances/${instanceId}/files/-/${path}`];
-
-export type RuntimeServiceGetFileQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetFile>>
->;
-export type RuntimeServiceGetFileQueryError = ErrorType<RpcStatus>;
-
-export const createRuntimeServiceGetFile = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = ErrorType<RpcStatus>,
->(
-  instanceId: string,
-  path: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceGetFileQueryKey(instanceId, path);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetFile>>
-  > = ({ signal }) => runtimeServiceGetFile(instanceId, path, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!(instanceId && path),
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary DeleteFile deletes a file from a repo
- */
-export const runtimeServiceDeleteFile = (
-  instanceId: string,
-  path: string,
-  params?: RuntimeServiceDeleteFileParams,
-) => {
-  return httpClient<V1DeleteFileResponse>({
-    url: `/v1/instances/${instanceId}/files/-/${path}`,
-    method: "delete",
-    params,
-  });
-};
-
-export type RuntimeServiceDeleteFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
->;
-
-export type RuntimeServiceDeleteFileMutationError = ErrorType<RpcStatus>;
-
-export const createRuntimeServiceDeleteFile = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    TError,
-    {
-      instanceId: string;
-      path: string;
-      params?: RuntimeServiceDeleteFileParams;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    {
-      instanceId: string;
-      path: string;
-      params?: RuntimeServiceDeleteFileParams;
-    }
-  > = (props) => {
-    const { instanceId, path, params } = props ?? {};
-
-    return runtimeServiceDeleteFile(instanceId, path, params);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    TError,
-    {
-      instanceId: string;
-      path: string;
-      params?: RuntimeServiceDeleteFileParams;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary PutFile creates or updates a file in a repo
- */
-export const runtimeServicePutFile = (
-  instanceId: string,
-  path: string,
-  runtimeServicePutFileBody: RuntimeServicePutFileBody,
-) => {
-  return httpClient<V1PutFileResponse>({
-    url: `/v1/instances/${instanceId}/files/-/${path}`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServicePutFileBody,
-  });
-};
-
-export type RuntimeServicePutFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServicePutFile>>
->;
-export type RuntimeServicePutFileMutationBody = RuntimeServicePutFileBody;
-export type RuntimeServicePutFileMutationError = ErrorType<RpcStatus>;
-
-export const createRuntimeServicePutFile = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    TError,
-    { instanceId: string; path: string; data: RuntimeServicePutFileBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    { instanceId: string; path: string; data: RuntimeServicePutFileBody }
-  > = (props) => {
-    const { instanceId, path, data } = props ?? {};
-
-    return runtimeServicePutFile(instanceId, path, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    TError,
-    { instanceId: string; path: string; data: RuntimeServicePutFileBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary CreateDirectory create a directory for the given path
  */
 export const runtimeServiceCreateDirectory = (
   instanceId: string,
-  path: string,
   runtimeServiceCreateDirectoryBody: RuntimeServiceCreateDirectoryBody,
 ) => {
   return httpClient<V1CreateDirectoryResponse>({
-    url: `/v1/instances/${instanceId}/files/create-dir/-/${path}`,
+    url: `/v1/instances/${instanceId}/files/dir`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceCreateDirectoryBody,
@@ -909,11 +731,7 @@ export const createRuntimeServiceCreateDirectory = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
     TError,
-    {
-      instanceId: string;
-      path: string;
-      data: RuntimeServiceCreateDirectoryBody;
-    },
+    { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
     TContext
   >;
 }) => {
@@ -921,25 +739,182 @@ export const createRuntimeServiceCreateDirectory = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
-    {
-      instanceId: string;
-      path: string;
-      data: RuntimeServiceCreateDirectoryBody;
-    }
+    { instanceId: string; data: RuntimeServiceCreateDirectoryBody }
   > = (props) => {
-    const { instanceId, path, data } = props ?? {};
+    const { instanceId, data } = props ?? {};
 
-    return runtimeServiceCreateDirectory(instanceId, path, data);
+    return runtimeServiceCreateDirectory(instanceId, data);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
     TError,
-    {
-      instanceId: string;
-      path: string;
-      data: RuntimeServiceCreateDirectoryBody;
-    },
+    { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary GetFile returns the contents of a specific file in a repo.
+ */
+export const runtimeServiceGetFile = (
+  instanceId: string,
+  params?: RuntimeServiceGetFileParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetFileResponse>({
+    url: `/v1/instances/${instanceId}/files/entry`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetFileQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceGetFileParams,
+) => [`/v1/instances/${instanceId}/files/entry`, ...(params ? [params] : [])];
+
+export type RuntimeServiceGetFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetFile>>
+>;
+export type RuntimeServiceGetFileQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGetFile = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceGetFileParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetFileQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetFile>>
+  > = ({ signal }) => runtimeServiceGetFile(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary DeleteFile deletes a file from a repo
+ */
+export const runtimeServiceDeleteFile = (
+  instanceId: string,
+  params?: RuntimeServiceDeleteFileParams,
+) => {
+  return httpClient<V1DeleteFileResponse>({
+    url: `/v1/instances/${instanceId}/files/entry`,
+    method: "delete",
+    params,
+  });
+};
+
+export type RuntimeServiceDeleteFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
+>;
+
+export type RuntimeServiceDeleteFileMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceDeleteFile = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { instanceId: string; params?: RuntimeServiceDeleteFileParams },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    { instanceId: string; params?: RuntimeServiceDeleteFileParams }
+  > = (props) => {
+    const { instanceId, params } = props ?? {};
+
+    return runtimeServiceDeleteFile(instanceId, params);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { instanceId: string; params?: RuntimeServiceDeleteFileParams },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary PutFile creates or updates a file in a repo
+ */
+export const runtimeServicePutFile = (
+  instanceId: string,
+  runtimeServicePutFileBody: RuntimeServicePutFileBody,
+) => {
+  return httpClient<V1PutFileResponse>({
+    url: `/v1/instances/${instanceId}/files/entry`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServicePutFileBody,
+  });
+};
+
+export type RuntimeServicePutFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServicePutFile>>
+>;
+export type RuntimeServicePutFileMutationBody = RuntimeServicePutFileBody;
+export type RuntimeServicePutFileMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServicePutFile = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServicePutFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServicePutFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServicePutFile>>,
+    { instanceId: string; data: RuntimeServicePutFileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServicePutFile(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServicePutFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServicePutFileBody },
     TContext
   >(mutationFn, mutationOptions);
 };

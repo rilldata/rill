@@ -88,9 +88,16 @@
       message: `copied dimension value "${number}" to clipboard`,
     });
   }
+
+  let suppressTooltip = false;
 </script>
 
-<Tooltip distance={8} location="right" alignment="start">
+<Tooltip
+  suppress={suppressTooltip}
+  distance={8}
+  location="right"
+  alignment="start"
+>
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
@@ -106,7 +113,11 @@
     class:cursor-pointer={!isMeasureExpanded}
     on:click={(e) => {
       if (e.shiftKey) return;
+      suppressTooltip = true;
       dispatch("expand-measure");
+      setTimeout(() => {
+        suppressTooltip = false;
+      }, 1000);
     }}
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     use:shiftClickAction
