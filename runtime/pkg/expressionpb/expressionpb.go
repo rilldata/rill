@@ -63,12 +63,12 @@ func Eq(col, value string) *runtimev1.Expression {
 	}
 }
 
-func Gt(col string, n int) *runtimev1.Expression {
+func Gt(col string, n float64) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
 				Op:    runtimev1.Operation_OPERATION_GT,
-				Exprs: []*runtimev1.Expression{Identifier(col), structpb.NewNumberValue(n)},
+				Exprs: []*runtimev1.Expression{Identifier(col), Number(n)},
 			},
 		},
 	}

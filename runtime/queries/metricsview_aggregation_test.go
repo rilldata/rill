@@ -2034,8 +2034,12 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 				Name: "pub",
 			},
 			{
+				Name: "domain",
+			},
+
+			{
 				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			},
 			{
 				Name:      "timestamp",
@@ -2058,7 +2062,7 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
-		Having: expressionpb.Gt("measure_1", 10000),
+		Having: expressionpb.Gt("measure_1", 10000.0),
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "pub",
@@ -2069,8 +2073,12 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 			{
 				Name: "timestamp_year",
 			},
+			{
+				Name: "measure_1",
+			},
 		},
-		Limit: &limit,
+		TimeRange: &runtimev1.TimeRange{},
+		Limit:     &limit,
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)

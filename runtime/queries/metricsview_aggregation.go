@@ -764,7 +764,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	q.calculateMeasuresMeta()
 
 	// SELECT t_offset, d1, d2, t1, t2, m1, m2
-	// find smallest time grain
+	// todo find smallest time grain
 
 	smallestTimeGrain := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
 	for _, d := range q.Dimensions {
@@ -774,24 +774,30 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 		}
 	}
-	var timeOffsetColumn string
-	if dialect != drivers.DialectDruid {
-		timeOffsetColumn = fmt.Sprintf("epoch_ms(%s)-epoch_ms(?) as t_offset", safeName(mv.TimeDimension))
-	} else {
-		timeOffsetColumn = fmt.Sprintf("timestamp_to_millis(%s)-timestamp_to_millis(?) as t_offset", safeName(mv.TimeDimension))
-	}
 
-	timeStart, err := resolveToTime(t)
+	// if dialect != drivers.DialectDruid {
+	// 	timeOffsetColumn = fmt.Sprintf("epoch_ms(%s)-epoch_ms(?) as t_offset", safeName(mv.TimeDimension))
+	// } else {
+	// 	timeOffsetColumn = fmt.Sprintf("timestamp_to_millis(%s)-timestamp_to_millis(?) as t_offset", safeName(mv.TimeDimension))
+	// }
+
+	// timeStart, err := resolveToTime(t.AsTime())
+	// if err != nil {
+	// 	return err
+	// }
+
+	// it's required for joining the base and comparison tables
+	timeOffsetExpression, err := q.buildOffsetExpression(mv.TimeDimension, smallestTimeGrain, dialect)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
 	colMap := make(map[string]int, q.cols())
 	nonTimeDims := make([]string, len(q.Dimensions))
-	selectCols = append(selectCols, timeOffsetColumn)
-	comparisonSelectCols = append(comparisonSelectCols, timeOffsetColumn)
+	selectCols = append(selectCols, timeOffsetExpression)
+	comparisonSelectCols = append(comparisonSelectCols, timeOffsetExpression)
 
-	selectArgs = append(selectArgs, timeStart)
+	// selectArgs = append(selectArgs, q.TimeRange.Start.AsTime())
 	joinConditions = append(joinConditions, "base.t_offset = comparison.t_offset")
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
@@ -966,7 +972,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	baseWhereClause := "1=1"
 	comparisonWhereClause := "1=1"
 
-	var args []any
+	// var args []any
 	if mv.TimeDimension == "" {
 		return "", nil, fmt.Errorf("metrics view '%s' doesn't have time dimension", q.MetricsViewName)
 	}
@@ -981,18 +987,23 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		return "", nil, err
 	}
 
-	trc, err := timeRangeClause(q.TimeRange, mv, td, &args)
+	var baseTimeRangeArgs []any
+	trc, err := timeRangeClause(q.TimeRange, mv, td, &baseTimeRangeArgs)
 	if err != nil {
 		return "", nil, err
 	}
 	baseWhereClause += trc
 
+	var baseWhereArgs []any
+	var comparisonWhereArgs []any
+
 	if whereClause != "" {
 		baseWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
-		args = append(args, whereClauseArgs...)
+		baseWhereArgs = append(baseWhereArgs, whereClauseArgs...)
 	}
 
-	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, td, &args)
+	var comparisonTimeRangeArgs []any
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, td, &comparisonTimeRangeArgs)
 	if err != nil {
 		return "", nil, err
 	}
@@ -1000,7 +1011,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 
 	if whereClause != "" {
 		comparisonWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
-		args = append(args, whereClauseArgs...)
+		comparisonWhereArgs = append(comparisonWhereArgs, whereClauseArgs...)
 	}
 
 	if policy != nil && policy.RowFilter != "" {
@@ -1009,13 +1020,13 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	}
 
 	havingClause := "1=1"
+	var havingClauseArgs []any
 	if q.Having != nil {
-		var havingClauseArgs []any
 		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		args = append(args, havingClauseArgs...)
+		// args = append(args, havingClauseArgs...)
 	}
 
 	var orderClauses []string
@@ -1083,7 +1094,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
 		baseSubQueryOrderByClause = "ORDER BY " + strings.Join(baseOrderClauses, ", ")
 		comparisonSubQueryOrderByClause = "ORDER BY " + strings.Join(comparisonOrderClauses, ", ")
-
 	}
 
 	limitClause := ""
@@ -1142,8 +1152,22 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		OFFSET 0
 	*/
 
+	var args []any
 	var sql string
 	if dialect != drivers.DialectDruid {
+		// base subquery
+		args = append(args, q.TimeRange.Start)
+		args = append(args, selectArgs...)
+		args = append(args, baseTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+		// comparison subquery
+		args = append(args, q.ComparisonTimeRange.Start)
+		args = append(args, selectArgs...)
+		args = append(args, comparisonTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+		// outer query
+		args = append(args, havingClauseArgs...)
+
 		// if dialect == drivers.DialectClickHouse {
 		// 	joinOnClause = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", colName)
 		// } else {
@@ -1218,9 +1242,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				strings.Join(nonTimeGroupCols, ","), // 5
 				baseLimitClause,                     // 6
 			)
+			// tood druid args for t_offset subquery
 
 			var druidArgs []any
-			druidArgs = append(druidArgs, selectArgs...)
+			// druidArgs = append(druidArgs, selectArgs...)
+			druidArgs = append(druidArgs, baseTimeRangeArgs...)
 			druidArgs = append(druidArgs, whereClauseArgs...)
 
 			_, result, err := olapQuery(ctx, olap, priority, sql, druidArgs)
@@ -1245,6 +1271,18 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
 			}
+			// base subquery
+			args = append(args, q.TimeRange.Start)
+			args = append(args, selectArgs...)
+			args = append(args, baseTimeRangeArgs...)
+			args = append(args, whereClauseArgs...)
+			// comparison subquery
+			args = append(args, q.ComparisonTimeRange.Start)
+			args = append(args, selectArgs...)
+			args = append(args, comparisonTimeRangeArgs...)
+			args = append(args, whereClauseArgs...)
+			// outer query
+			args = append(args, havingClauseArgs...)
 			// todo join should be on t_offset and avoid time dims (+)
 			sql = fmt.Sprintf(`
 				SELECT * from (
@@ -1312,7 +1350,8 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			)
 
 			var druidArgs []any
-			druidArgs = append(druidArgs, selectArgs...)
+			// druidArgs = append(druidArgs, selectArgs...)
+			druidArgs = append(druidArgs, comparisonTimeRangeArgs...)
 			druidArgs = append(druidArgs, whereClauseArgs...)
 
 			_, result, err := olapQuery(ctx, olap, priority, sql, druidArgs)
@@ -1337,6 +1376,18 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
 			}
 
+			// base subquery
+			args = append(args, q.TimeRange.Start)
+			args = append(args, selectArgs...)
+			args = append(args, baseTimeRangeArgs...)
+			args = append(args, whereClauseArgs...)
+			// comparison subquery
+			args = append(args, q.ComparisonTimeRange.Start)
+			args = append(args, selectArgs...)
+			args = append(args, comparisonTimeRangeArgs...)
+			args = append(args, whereClauseArgs...)
+			// outer query
+			args = append(args, havingClauseArgs...)
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					SELECT %[2]s, %[9]s FROM 
@@ -1607,5 +1658,39 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
+	}
+}
+
+func (q *MetricsViewAggregation) buildOffsetExpression(col string, timeGrain runtimev1.TimeGrain, dialect drivers.Dialect) (string, error) {
+	timeCol, err := q.truncateExpression(safeName(col), timeGrain, dialect)
+	if err != nil {
+		return "", err
+	}
+	start, _ := q.truncateExpression("?", timeGrain, dialect)
+
+	var timeOffsetColumn string
+	if dialect == drivers.DialectDuckDB {
+		timeOffsetColumn = fmt.Sprintf("epoch_ms(%s)-epoch_ms(%s) as t_offset", timeCol, start)
+	} else if dialect == drivers.DialectDruid {
+		timeOffsetColumn = fmt.Sprintf("timestamp_to_millis(%s)-timestamp_to_millis(%s) as t_offset", timeCol, start)
+	} else if dialect == drivers.DialectClickHouse {
+		timeOffsetColumn = fmt.Sprintf("toUnixTimestamp(%s)-toUnixTimestamp(%s) as t_offset", timeCol, start)
+	} else {
+		return "", fmt.Errorf("unsupported dialect %q", dialect)
+	}
+	return timeOffsetColumn, nil
+
+}
+
+func (q *MetricsViewAggregation) truncateExpression(s string, timeGrain runtimev1.TimeGrain, dialect drivers.Dialect) (string, error) {
+	switch dialect {
+	case drivers.DialectDuckDB:
+		return fmt.Sprintf("date_trunc('%s', %s)::TIMESTAMP", dialect.ConvertToDateTruncSpecifier(timeGrain), s), nil
+	case drivers.DialectDruid:
+		return fmt.Sprintf("date_trunc('%s', %s)", dialect.ConvertToDateTruncSpecifier(timeGrain), s), nil
+	case drivers.DialectClickHouse:
+		return fmt.Sprintf("date_trunc('%s', %s)", dialect.ConvertToDateTruncSpecifier(timeGrain), s), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", dialect)
 	}
 }

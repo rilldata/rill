@@ -59,18 +59,18 @@ func timeGrainToDuration(tg runtimev1.TimeGrain) duration.Duration {
 	return duration.InfDuration{}
 }
 
-func ResolveToTime(t *timestamppb.Timestamp, timeZone string) (time.Time, error) {
-	if timeZone != "" {
-		var err error
-		tz, err := time.LoadLocation(timeZone)
-		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid time_range.time_zone %q: %w", timeZone, err)
-		}
-		return t.AsTime().In(tz), nil
-	} else {
-		return t.AsTime(), nil
-	}
-}
+// func ResolveToTime(t *timestamppb.Timestamp, timeZone string) (time.Time, error) {
+// 	if timeZone != "" {
+// 		var err error
+// 		tz, err := time.LoadLocation(timeZone)
+// 		if err != nil {
+// 			return time.Time{}, fmt.Errorf("invalid time_range.time_zone %q: %w", timeZone, err)
+// 		}
+// 		return t.AsTime().In(tz), nil
+// 	} else {
+// 		return t.AsTime(), nil
+// 	}
+// }
 
 func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
 	tz := time.UTC
