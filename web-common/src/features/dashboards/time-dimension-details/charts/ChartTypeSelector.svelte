@@ -13,10 +13,6 @@
 
   const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
 
-  function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
-    if (isDisabled) return;
-    metricsExplorerStore.setTDDChartType(metricViewName, type);
-  }
   const chartTypeTabs = [
     {
       label: "Line",
@@ -39,6 +35,16 @@
       Icon: StackedBar,
     },
   ];
+
+  function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
+    if (isDisabled) return;
+    metricsExplorerStore.setTDDChartType(metricViewName, type);
+  }
+
+  // switch to default if current selected chart is not available
+  $: if (!hasComparison && comparisonCharts.includes(chartType)) {
+    metricsExplorerStore.setTDDChartType(metricViewName, TDDChart.DEFAULT);
+  }
 </script>
 
 <div class="chart-type-selector">
