@@ -41,13 +41,11 @@ export function buildStackedArea(
   ];
 
   const multiValueTooltipChannel: TooltipValue[] | undefined =
-    nominalField?.values?.map((value) => {
-      return {
-        field: value === null ? "null" : sanitizeValueForVega(value),
-        type: "quantitative",
-        formatType: "measureFormatter",
-      };
-    });
+    nominalField?.values?.map((value) => ({
+      field: sanitizeValueForVega(value),
+      type: "quantitative",
+      formatType: "measureFormatter",
+    }));
 
   if (multiValueTooltipChannel?.length) {
     multiValueTooltipChannel.unshift({
