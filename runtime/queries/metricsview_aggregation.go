@@ -229,6 +229,7 @@ func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Contex
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
+	fmt.Println(sqlString, args)
 
 	schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
 	if err != nil {
@@ -764,7 +765,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	q.calculateMeasuresMeta()
 
 	// SELECT t_offset, d1, d2, t1, t2, m1, m2
-	// todo find smallest time grain
 
 	smallestTimeGrain := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
 	for _, d := range q.Dimensions {
@@ -815,8 +815,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
 			// groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)+1))
-			// todo join for t_offset (+)
-			// todo sort with t_offset (+)
 			colMap[dimSel] = len(selectCols)
 			var joinCondition string
 			if dialect == drivers.DialectClickHouse {
@@ -907,7 +905,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 
 	var finalSelectCols []string
 	var labelCols []string
-	// todo measure index for sorting (+)
 	for _, m := range q.Measures {
 		var columnsTuple string
 		var labelTuple string
@@ -1223,7 +1220,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		)
 	} else {
 		// an additional request for Druid to prevent full scan
-		// todo onlyDims with t_offset (+)
 		nonTimeGroupCols := make([]string, 0, len(q.Dimensions))
 		for i, d := range q.Dimensions {
 			if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -1283,7 +1279,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			args = append(args, whereClauseArgs...)
 			// outer query
 			args = append(args, havingClauseArgs...)
-			// todo join should be on t_offset and avoid time dims (+)
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... 

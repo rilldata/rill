@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func convTimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {

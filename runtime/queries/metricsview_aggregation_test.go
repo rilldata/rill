@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
@@ -2034,7 +2035,7 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 				Name: "pub",
 			},
 			{
-				Name: "domain",
+				Name: "dom",
 			},
 
 			{
@@ -2058,17 +2059,21 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 				Name: "m1",
 			},
 		},
+		ComparisonMeasures: []string{"measure_0", "m1"},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
-		Having: expressionpb.Gt("measure_1", 10000.0),
+		Having: expressionpb.Gt("measure_1", 0.0),
 		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "timestamp",
+			},
 			{
 				Name: "pub",
 			},
 			{
-				Name: "timestamp",
+				Name: "dom",
 			},
 			{
 				Name: "timestamp_year",
@@ -2077,8 +2082,15 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		TimeRange: &runtimev1.TimeRange{},
-		Limit:     &limit,
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit: &limit,
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
