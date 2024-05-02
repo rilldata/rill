@@ -308,7 +308,7 @@ export function getDimensionValueTimeSeries(
       )
         return set([]);
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
-        return set([]);
+        return;
 
       const { batchedTopList, batchedQueries } = batchAggregationQueries(
         ctx,
