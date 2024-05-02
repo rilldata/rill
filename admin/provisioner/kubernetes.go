@@ -254,8 +254,8 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	// As a final step we make sure the runtime can be reached, we retry on failure, to account for potential small delays in network config propagation
 	retryClient := retryablehttp.NewClient()
 	retryClient.RetryMax = 3
-	retryClient.RetryWaitMin = 1 * time.Second
-	retryClient.RetryWaitMax = 3 * time.Second
+	retryClient.RetryWaitMin = 2 * time.Second
+	retryClient.RetryWaitMax = 6 * time.Second
 	retryClient.Logger = nil // Disable inbuilt logger
 	pingURL, err := url.JoinPath(p.getHost(provisionID), "/v1/ping")
 	if err != nil {
