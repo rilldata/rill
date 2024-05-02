@@ -4563,12 +4563,14 @@ definitions:
   v1ModelState:
     type: object
     properties:
-      outputConnector:
+      executorConnector:
         type: string
-      outputTable:
+      resultConnector:
         type: string
-      outputProperties:
+      resultProperties:
         type: object
+      resultTable:
+        type: string
       specHash:
         type: string
       refreshedOn:

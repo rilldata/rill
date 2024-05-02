@@ -988,12 +988,13 @@ export interface V1Notifier {
 
 export type V1ModelStateState = { [key: string]: any };
 
-export type V1ModelStateOutputProperties = { [key: string]: any };
+export type V1ModelStateResultProperties = { [key: string]: any };
 
 export interface V1ModelState {
-  outputConnector?: string;
-  outputTable?: string;
-  outputProperties?: V1ModelStateOutputProperties;
+  executorConnector?: string;
+  resultConnector?: string;
+  resultProperties?: V1ModelStateResultProperties;
+  resultTable?: string;
   specHash?: string;
   refreshedOn?: string;
   state?: V1ModelStateState;

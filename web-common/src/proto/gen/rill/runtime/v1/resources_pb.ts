@@ -827,19 +827,24 @@ export class ModelSpec extends Message<ModelSpec> {
  */
 export class ModelState extends Message<ModelState> {
   /**
-   * @generated from field: string output_connector = 1;
+   * @generated from field: string executor_connector = 6;
    */
-  outputConnector = "";
+  executorConnector = "";
 
   /**
-   * @generated from field: string output_table = 2;
+   * @generated from field: string result_connector = 1;
    */
-  outputTable = "";
+  resultConnector = "";
 
   /**
-   * @generated from field: google.protobuf.Struct output_properties = 5;
+   * @generated from field: google.protobuf.Struct result_properties = 5;
    */
-  outputProperties?: Struct;
+  resultProperties?: Struct;
+
+  /**
+   * @generated from field: string result_table = 2;
+   */
+  resultTable = "";
 
   /**
    * @generated from field: string spec_hash = 3;
@@ -852,12 +857,12 @@ export class ModelState extends Message<ModelState> {
   refreshedOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Struct state = 6;
+   * @generated from field: google.protobuf.Struct state = 7;
    */
   state?: Struct;
 
   /**
-   * @generated from field: rill.runtime.v1.StructType state_schema = 7;
+   * @generated from field: rill.runtime.v1.StructType state_schema = 8;
    */
   stateSchema?: StructType;
 
@@ -869,13 +874,14 @@ export class ModelState extends Message<ModelState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ModelState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "output_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "output_properties", kind: "message", T: Struct },
+    { no: 6, name: "executor_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "result_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "result_properties", kind: "message", T: Struct },
+    { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
-    { no: 6, name: "state", kind: "message", T: Struct },
-    { no: 7, name: "state_schema", kind: "message", T: StructType },
+    { no: 7, name: "state", kind: "message", T: Struct },
+    { no: 8, name: "state_schema", kind: "message", T: StructType },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

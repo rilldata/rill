@@ -117,13 +117,14 @@ message ModelSpec {
 }
 
 message ModelState {
-  string output_connector = 1;
-  string output_table = 2;
-  google.protobuf.Struct output_properties = 5;
+  string executor_connector = 6;
+  string result_connector = 1;
+  google.protobuf.Struct result_properties = 5;
+  string result_table = 2;
   string spec_hash = 3;
   google.protobuf.Timestamp refreshed_on = 4;
-  google.protobuf.Struct state = 6;
-  StructType state_schema = 7;
+  google.protobuf.Struct state = 7;
+  StructType state_schema = 8;
 }
 
 message MetricsViewV2 {

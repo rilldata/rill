@@ -368,6 +368,11 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor() (drivers.ModelExecutor, bool) {
+	return nil, false
+}
+
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	olap, _ := to.(*connection)

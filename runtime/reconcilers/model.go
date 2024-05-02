@@ -7,16 +7,22 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"sort"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultMaterializeTimeout = 15 * time.Minute
+const _defaultModelTimeout = 15 * time.Minute
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -69,36 +75,57 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: errors.New("not a model")}
 	}
 
-	// The view/table name is derived from the resource name.
-	// We only set src.State.Table after it has been created,
-	tableName := self.Meta.Name.Name
+	// If the model's state indicates that the last execution produced valid output, create an executor for the previous output
+	var prevExecutor drivers.ModelExecutor
+	var prevResult *drivers.ModelExecuteResult
+	if model.State.ExecutorConnector != "" {
+		conn, release, err := r.C.AcquireConn(ctx, model.State.ExecutorConnector)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+		defer release()
+
+		executor, ok := conn.AsModelExecutor()
+		if !ok {
+			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q no longer supports model execution", model.State.ExecutorConnector)}
+		}
+		prevExecutor = executor
+
+		prevResult = &drivers.ModelExecuteResult{
+			Connector:  model.State.ResultConnector,
+			Properties: model.State.ResultProperties.AsMap(),
+		}
+	}
+
+	// Fetch contextual config
+	executorEnv, err := r.newExecutorEnv(ctx)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
 
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
-		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
-			olapDropTableIfExists(ctx, r.C, model.State.Connector, model.State.Table, t.View)
-		}
-		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, r.stagingTableName(tableName)); ok {
-			olapDropTableIfExists(ctx, r.C, model.State.Connector, t.Name, t.View)
+		if prevExecutor != nil {
+			err = prevExecutor.Delete(ctx, prevResult)
+			return runtime.ReconcileResult{Err: err}
 		}
 		return runtime.ReconcileResult{}
 	}
 
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
-		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
-			// Rename and update state
-			err = olapForceRenameTable(ctx, r.C, model.State.Connector, model.State.Table, t.View, tableName)
+		if prevExecutor != nil {
+			err = prevExecutor.Rename(ctx, &drivers.ModelRenameOptions{
+				NewName:        self.Meta.Name.Name,
+				PreviousName:   self.Meta.RenamedFrom.Name,
+				PreviousResult: prevResult,
+				Env:            executorEnv,
+			})
 			if err != nil {
-				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename model: %w", err)}
+				r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
 			}
-			model.State.Table = tableName
-			err = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err}
-			}
+			// Note: Not exiting early. We may need to retrigger the model in some cases. We also need to set the correct retrigger time.
 		}
-		// Note: Not exiting early. It might need to be created/materialized., and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
 	// Exit early if disabled
@@ -109,13 +136,17 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		if !model.Spec.StageChanges && model.State.Table != "" {
-			// Remove previously ingested table
-			if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
-				olapDropTableIfExists(ctx, r.C, model.State.Connector, model.State.Table, t.View)
+		// If not staging changes, we need to drop the current output (if any)
+		if !executorEnv.StageChanges && prevExecutor != nil {
+			err = prevExecutor.Delete(ctx, prevResult)
+			if err != nil {
+				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
 			}
-			model.State.Connector = ""
-			model.State.Table = ""
+
+			model.State.ExecutorConnector = ""
+			model.State.ResultConnector = ""
+			model.State.ResultProperties = nil
+			model.State.ResultTable = ""
 			model.State.SpecHash = ""
 			model.State.RefreshedOn = nil
 			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
@@ -123,23 +154,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
 			}
 		}
-		return runtime.ReconcileResult{Err: err}
-	}
 
-	// Determine if we should materialize
-	var materialize bool
-	if model.Spec.Materialize != nil && *model.Spec.Materialize {
-		materialize = true
-	}
-
-	// Resolve variables before computing the execution hash to ensure we re-trigger when a variable is updated
-	sql, err := r.resolveTemplateSQL(ctx, self)
-	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize, sql)
+	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -153,185 +173,133 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Check if the model still exists (might have been corrupted/lost somehow)
-	t, exists := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table)
+	// Check if the output still exists (might have been corrupted/lost somehow)
+	var exists bool
+	if prevExecutor != nil {
+		exists, err = prevExecutor.Exists(ctx, prevResult)
+		if err != nil {
+			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err))
+		}
+	}
 
 	// Decide if we should trigger an update
 	trigger := model.Spec.Trigger
-	trigger = trigger || model.State.Table == ""
-	trigger = trigger || model.State.Table != tableName
+	trigger = trigger || model.State.ResultConnector == "" // If its nil, ExecutorConnector/ResultProperties/ResultTable will also be nil
 	trigger = trigger || model.State.RefreshedOn == nil
 	trigger = trigger || model.State.SpecHash != hash
 	trigger = trigger || !exists
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
 
-	// We support "delayed materialization" for models. It will materialize a model if it stays unchanged for a duration of time.
-	// This is useful to support keystroke-by-keystroke editing.
-	var delayedMaterializeOn time.Time
-	var delayedMaterialize bool
-	if !trigger && materialize && t.View {
-		var refreshedOn time.Time
-		if model.State.RefreshedOn != nil {
-			refreshedOn = model.State.RefreshedOn.AsTime()
-		}
-		delayedMaterializeOn = r.delayedMaterializeTime(model.Spec, refreshedOn)
-		if !delayedMaterializeOn.IsZero() && !delayedMaterializeOn.After(time.Now()) {
-			delayedMaterialize = true
-		}
-	}
-
 	// Reschedule if we're not triggering
-	if !trigger && !delayedMaterialize {
-		// In theory there are some more cases to cover here, but we assume materialize delays are shorter than refresh schedules.
-		if !delayedMaterializeOn.IsZero() {
-			return runtime.ReconcileResult{Retrigger: delayedMaterializeOn}
-		}
+	if !trigger {
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
-	// If the Connector was changed, drop data in the old connector
-	if model.State.Table != "" && model.State.Connector != model.Spec.Connector {
-		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
-			olapDropTableIfExists(ctx, r.C, model.State.Connector, model.State.Table, t.View)
-		}
-		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, r.stagingTableName(model.State.Table)); ok {
-			olapDropTableIfExists(ctx, r.C, model.State.Connector, t.Name, t.View)
-		}
-	}
-
-	// Always stage changes if running a delayed materialization
-	stage := model.Spec.StageChanges || delayedMaterialize
-	stagingTableName := tableName
-	if stage {
-		stagingTableName = r.stagingTableName(tableName)
-	}
-
-	// Determine if we should delay materialization (note difference between "delayedMaterialize" and "delayingMaterialize")
-	delayingMaterialize := false
-	if !delayedMaterialize && materialize && model.State.SpecHash != hash && model.Spec.MaterializeDelaySeconds > 0 {
-		delayingMaterialize = true
-		materialize = false
-	}
-
-	// Log delayed materialization info
-	if delayingMaterialize {
-		delay := time.Duration(model.Spec.MaterializeDelaySeconds) * time.Second
-		r.C.Logger.Info("Delaying model materialization", zap.String("name", n.Name), zap.String("delay", delay.String()))
-	}
-	if delayedMaterialize {
-		r.C.Logger.Info("Materializing model", zap.String("name", n.Name))
-	}
-
-	// Drop the staging table if it exists
-	connector := model.Spec.Connector
-	if t, ok := olapTableInfo(ctx, r.C, connector, stagingTableName); ok {
-		olapDropTableIfExists(ctx, r.C, connector, t.Name, t.View)
-	}
-
-	// Create the model
-	createErr := r.createModel(ctx, self, sql, stagingTableName, !materialize)
-	if createErr != nil {
-		createErr = fmt.Errorf("failed to create model: %w", createErr)
-	}
-
-	if createErr == nil && stage {
-		// Rename the staging table to main view/table
-		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)
+	// If the output connector has changed, drop data in the old output connector (if any).
+	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
+	if prevExecutor != nil && model.State.ResultConnector != model.Spec.OutputConnector {
+		err = prevExecutor.Delete(ctx, prevResult)
 		if err != nil {
-			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staged model: %w", err)}
+			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
 		}
 	}
 
-	// How we handle ingestErr depends on several things:
-	// If ctx was cancelled, we cleanup and exit
-	// If StageChanges is true, we retain the existing table, but still return the error.
-	// If StageChanges is false, we clear the existing table and return the error.
+	// Prepare the new execution options
+	opts := &drivers.ModelExecuteOptions{
+		ModelName:        self.Meta.Name.Name,
+		Env:              executorEnv,
+		PreviousResult:   prevResult,
+		Incremental:      model.Spec.Incremental && prevResult != nil, // TODO: Not if resetting
+		InputConnector:   model.Spec.InputConnector,
+		InputProperties:  model.Spec.InputProperties.AsMap(),
+		OutputConnector:  model.Spec.OutputConnector,
+		OutputProperties: model.Spec.OutputProperties.AsMap(),
+	}
 
-	// ctx will only be cancelled in cases where the Controller guarantees a new call to Reconcile.
-	// We just clean up temp tables and state, then return.
-	cleanupCtx := ctx
-	if ctx.Err() != nil {
-		var cancel context.CancelFunc
-		cleanupCtx, cancel = context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
+	// Open executor for the new output
+	executorConnector, executor, release, err := r.acquireExecutor(ctx, opts)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	defer release()
+
+	// Apply the timeout to the ctx
+	timeout := _defaultModelTimeout
+	if model.Spec.TimeoutSeconds > 0 {
+		timeout = time.Duration(model.Spec.TimeoutSeconds) * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Build the output
+	execRes, execErr := executor.Execute(ctx, opts)
+	if execErr != nil {
+		execErr = fmt.Errorf("failed to build output: %w", execErr)
+	}
+
+	// If the build succeeded, update the model's state
+	var update bool
+	if execErr == nil {
+		resultProps, err := structpb.NewStruct(execRes.Properties)
+		if err != nil {
+			execErr = fmt.Errorf("executor returned non-serializable output properties: %w", err)
+		} else {
+			model.State.ExecutorConnector = executorConnector
+			model.State.ResultConnector = execRes.Connector
+			model.State.ResultProperties = resultProps
+			model.State.ResultTable = execRes.Table
+			model.State.SpecHash = hash
+			model.State.RefreshedOn = timestamppb.Now()
+			update = true
+		}
+	}
+
+	// If the build failed, clear the state only if we're not staging changes
+	if execErr != nil {
+		if !executorEnv.StageChanges {
+			model.State.ExecutorConnector = ""
+			model.State.ResultConnector = ""
+			model.State.ResultProperties = nil
+			model.State.ResultTable = ""
+			model.State.SpecHash = ""
+			model.State.RefreshedOn = nil
+			update = true
+		}
 	}
 
 	// Update state
-	update := false
-	if createErr == nil {
-		// Successful ingestion
-		update = true
-		model.State.Connector = connector
-		model.State.Table = tableName
-		model.State.SpecHash = hash
-		model.State.RefreshedOn = timestamppb.Now()
-	} else if model.Spec.StageChanges {
-		// Failed ingestion to staging table
-		olapDropTableIfExists(cleanupCtx, r.C, connector, stagingTableName, !materialize)
-	} else {
-		// Failed ingestion to main table
-		update = true
-		olapDropTableIfExists(cleanupCtx, r.C, connector, tableName, !materialize)
-		model.State.Connector = ""
-		model.State.Table = ""
-		model.State.SpecHash = ""
-		model.State.RefreshedOn = nil
-	}
 	if update {
-		// We don't UpdateState for delayed materializations to avoid triggering derived models to re-compute materializations redundantly (since ref's state versions are incorporated into the hash).
-		// The only downside to this is that delayed materializations do not update RefreshedOn, which is an acceptable limitation.
-		if !delayedMaterialize {
-			err = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err}
-			}
+		err = r.C.UpdateState(ctx, self.Meta.Name, self)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
 		}
 	}
 
-	// See earlier note – essential cleanup is done, we can return now.
+	// If the context was cancelled, we return now since we don't want to clear the trigger or set a next refresh time.
 	if ctx.Err() != nil {
-		return runtime.ReconcileResult{Err: createErr}
+		return runtime.ReconcileResult{Err: errors.Join(ctx.Err(), execErr)}
 	}
 
 	// Reset spec.Trigger
 	if model.Spec.Trigger {
 		err := r.setTriggerFalse(ctx, n)
 		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+			return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
 		}
-	}
-
-	// If we're delaying materialization, we need to retrigger after the delay
-	if createErr == nil && delayingMaterialize {
-		t := r.delayedMaterializeTime(model.Spec, time.Now())
-		return runtime.ReconcileResult{Retrigger: t}
 	}
 
 	// Compute next refresh time
 	refreshOn, err = nextRefreshTime(time.Now(), model.Spec.RefreshSchedule)
 	if err != nil {
-		return runtime.ReconcileResult{Err: err}
+		return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
 	}
 
-	return runtime.ReconcileResult{Err: createErr, Retrigger: refreshOn}
-}
-
-// stagingTableName returns a stable temporary table name for a destination table.
-// By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
-func (r *ModelReconciler) stagingTableName(table string) string {
-	return "__rill_tmp_model_" + table
-}
-
-// delayedMaterializeTime derives the timestamp (if any) to materialize a model with delayed materialization configured.
-func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, since time.Time) time.Time {
-	if spec.MaterializeDelaySeconds == 0 {
-		return time.Time{}
-	}
-	return since.Add(time.Duration(spec.MaterializeDelaySeconds) * time.Second)
+	// Note: If the build failed, this is where we return the error.
+	return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 }
 
 // executionSpecHash computes a hash of only those model properties that impact execution.
-func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec, materialize bool, sql string) (string, error) {
+func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec) (string, error) {
 	hash := md5.New()
 
 	for _, ref := range refs { // Refs are always sorted
@@ -368,27 +336,69 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		}
 	}
 
-	_, err := hash.Write([]byte(spec.Connector))
+	err := binary.Write(hash, binary.BigEndian, spec.TimeoutSeconds)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(sql))
+	err = binary.Write(hash, binary.BigEndian, spec.Incremental)
 	if err != nil {
 		return "", err
 	}
 
-	err = binary.Write(hash, binary.BigEndian, spec.TimeoutSeconds)
+	_, err = hash.Write([]byte(spec.StateResolver))
 	if err != nil {
 		return "", err
 	}
 
-	err = binary.Write(hash, binary.BigEndian, materialize)
+	err = pbutil.WriteHash(structpb.NewStructValue(spec.StateResolverProperties), hash)
 	if err != nil {
 		return "", err
 	}
 
-	err = binary.Write(hash, binary.BigEndian, spec.UsesTemplating)
+	res, err := r.analyzeTemplatedVariables(ctx, spec.StateResolverProperties.AsMap())
+	if err != nil {
+		return "", err
+	}
+	err = hashWriteMapOrdered(hash, res)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = hash.Write([]byte(spec.InputConnector))
+	if err != nil {
+		return "", err
+	}
+
+	err = pbutil.WriteHash(structpb.NewStructValue(spec.InputProperties), hash)
+	if err != nil {
+		return "", err
+	}
+
+	res, err = r.analyzeTemplatedVariables(ctx, spec.InputProperties.AsMap())
+	if err != nil {
+		return "", err
+	}
+	err = hashWriteMapOrdered(hash, res)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = hash.Write([]byte(spec.OutputConnector))
+	if err != nil {
+		return "", err
+	}
+
+	err = pbutil.WriteHash(structpb.NewStructValue(spec.OutputProperties), hash)
+	if err != nil {
+		return "", err
+	}
+
+	res, err = r.analyzeTemplatedVariables(ctx, spec.OutputProperties.AsMap())
+	if err != nil {
+		return "", err
+	}
+	err = hashWriteMapOrdered(hash, res)
 	if err != nil {
 		return "", err
 	}
@@ -416,80 +426,221 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-func (r *ModelReconciler) resolveTemplateSQL(ctx context.Context, self *runtimev1.Resource) (string, error) {
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+// acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
+func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.ModelExecuteOptions) (string, drivers.ModelExecutor, func(), error) {
+	ic, release, err := r.C.AcquireConn(ctx, opts.InputConnector)
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 
-	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
-	state := self.Resource.(*runtimev1.Resource_Model).Model.State
-
-	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
-	if err != nil {
-		return "", err
-	}
-	defer release()
-
-	var sql string
-	if spec.UsesTemplating {
-		sql, err = compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-			Environment: inst.Environment,
-			User:        map[string]interface{}{},
-			Variables:   inst.ResolveVariables(),
-			Self: compilerv1.TemplateResource{
-				Meta:  self.Meta,
-				Spec:  spec,
-				State: state,
-			},
-			Resolve: func(ref compilerv1.ResourceName) (string, error) {
-				return olap.Dialect().EscapeIdentifier(ref.Name), nil
-			},
-			Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
-				if name.Kind == compilerv1.ResourceKindUnspecified {
-					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
-				}
-				res, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
-				if err != nil {
-					return compilerv1.TemplateResource{}, err
-				}
-				return compilerv1.TemplateResource{
-					Meta:  res.Meta,
-					Spec:  res.Resource.(*runtimev1.Resource_Model).Model.Spec,
-					State: res.Resource.(*runtimev1.Resource_Model).Model.State,
-				}, nil
-			},
-		})
+	if e, ok := ic.AsModelExecutor(); ok {
+		ok, err := e.CanExecute(ctx, opts)
 		if err != nil {
-			return "", fmt.Errorf("failed to resolve template: %w", err)
+			release()
+			return "", nil, nil, err
 		}
-	} else {
-		sql = spec.Sql
+
+		if ok {
+			return opts.InputConnector, e, release, nil
+		}
 	}
 
-	return sql, nil
+	release()
+
+	if opts.InputConnector == opts.OutputConnector {
+		return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+	}
+
+	oc, release, err := r.C.AcquireConn(ctx, opts.OutputConnector)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	if e, ok := oc.AsModelExecutor(); ok {
+		ok, err := e.CanExecute(ctx, opts)
+		if err != nil {
+			release()
+			return "", nil, nil, err
+		}
+
+		if ok {
+			return opts.OutputConnector, e, release, nil
+		}
+	}
+
+	release()
+
+	return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
 }
 
-// createModel creates or updates the model in the OLAP connector.
-func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, sql, tableName string, view bool) error {
-	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
-
-	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
+// newExecutorEnv makes ModelExecutorEnv configured using the current instance.
+func (r *ModelReconciler) newExecutorEnv(ctx context.Context) (*drivers.ModelExecutorEnv, error) {
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to access instance config: %w", err)
+	}
+
+	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access repo: %w", err)
 	}
 	defer release()
 
-	// If materializing, set timeout on ctx
-	if !view {
-		timeout := _defaultMaterializeTimeout
-		if spec.TimeoutSeconds > 0 {
-			timeout = time.Duration(spec.TimeoutSeconds) * time.Second
-		}
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
+	return &drivers.ModelExecutorEnv{
+		AllowHostAccess:  r.C.Runtime.AllowHostAccess(),
+		StageChanges:     cfg.StageChanges,
+		RepoRoot:         repo.Root(),
+		AcquireConnector: r.C.AcquireConn,
+	}, nil
+}
+
+// resolveTemplatedProps resolves template tags in strings nested in the provided props.
+// Passing a connector is optional. If a connector is provided, it will be used to inform how values are escaped.
+func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, connector string, props map[string]any) (map[string]any, error) {
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, err
 	}
 
-	return olap.CreateTableAsSelect(ctx, tableName, view, sql)
+	// If we know the prop's connector AND it's an OLAP, we use its dialect to escape refs
+	var dialect drivers.Dialect
+	if connector != "" {
+		olap, release, err := r.C.AcquireOLAP(ctx, connector)
+		if err == nil {
+			dialect = olap.Dialect()
+			release()
+		}
+	}
+
+	td := compilerv1.TemplateData{
+		Environment: inst.Environment,
+		User:        map[string]any{},
+		Variables:   inst.ResolveVariables(),
+		Self: compilerv1.TemplateResource{
+			Meta:  self.Meta,
+			Spec:  self.GetModel().Spec,
+			State: self.GetModel().State,
+		},
+		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+			if dialect == drivers.DialectUnspecified {
+				return ref.Name, nil
+			}
+			return dialect.EscapeIdentifier(ref.Name), nil
+		},
+	}
+
+	val, err := resolveTemplatedValue(td, props)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve template: %w", err)
+	}
+	return val.(map[string]any), nil
+}
+
+// analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference variables.
+// The keys of the returned map are the variable names, and the values are empty strings (optimization to enable re-using the map in upstream code).
+func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
+	res := make(map[string]string)
+	err := analyzeTemplatedVariables(props, res)
+	if err != nil {
+		return nil, err
+	}
+
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	vars := inst.ResolveVariables()
+
+	for k := range res {
+		k2 := strings.TrimPrefix(k, "vars.")
+		if len(k) == len(k2) {
+			continue
+		}
+
+		res[k] = vars[k2]
+	}
+
+	return res, nil
+}
+
+// resolveTemplatedValue resolves template tags nested in strings in the provided value.
+func resolveTemplatedValue(td compilerv1.TemplateData, val any) (any, error) {
+	switch val := val.(type) {
+	case string:
+		return compilerv1.ResolveTemplate(val, td)
+	case map[string]any:
+		for k, v := range val {
+			v, err := resolveTemplatedValue(td, v)
+			if err != nil {
+				return nil, err
+			}
+			val[k] = v
+		}
+		return val, nil
+	case []any:
+		for i, v := range val {
+			v, err := resolveTemplatedValue(td, v)
+			if err != nil {
+				return nil, err
+			}
+			val[i] = v
+		}
+		return val, nil
+	default:
+		return val, nil
+	}
+}
+
+// analyzeTemplatedVariables analyzes strings nested in the provided value for template tags that reference variables.
+// Variables are added as keys to the provided map, with empty strings as values.
+func analyzeTemplatedVariables(val any, res map[string]string) error {
+	switch val := val.(type) {
+	case string:
+		meta, err := compilerv1.AnalyzeTemplate(val)
+		if err != nil {
+			return err
+		}
+		for _, k := range meta.Variables {
+			res[k] = ""
+		}
+	case map[string]any:
+		for _, v := range val {
+			err := analyzeTemplatedVariables(v, res)
+			if err != nil {
+				return err
+			}
+		}
+	case []any:
+		for _, v := range val {
+			err := analyzeTemplatedVariables(v, res)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		// Nothing to do
+	}
+	return nil
+}
+
+// hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.
+func hashWriteMapOrdered(w io.Writer, m map[string]string) error {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		_, err := w.Write([]byte(k))
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte(m[k]))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

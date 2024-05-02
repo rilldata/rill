@@ -129,6 +129,10 @@ func (h *handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+func (h *handle) AsModelExecutor() (drivers.ModelExecutor, bool) {
+	return nil, false
+}
+
 func (h *handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }

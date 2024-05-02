@@ -142,6 +142,10 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
+func (c *connection) AsModelExecutor() (drivers.ModelExecutor, bool) {
+	return nil, false
+}
+
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
