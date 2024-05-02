@@ -1,10 +1,11 @@
+import { asyncWait } from "../lib/waitUtils";
+
 export class ExponentialBackoffTracker {
   private curRetries = 0;
   private currentDelay: number;
 
   public constructor(
     private readonly maxRetries: number,
-
     private readonly initialDelay: number,
   ) {
     this.currentDelay = initialDelay;
@@ -14,7 +15,7 @@ export class ExponentialBackoffTracker {
     return new ExponentialBackoffTracker(5, 1000);
   }
 
-  public try = async (fn: () => Promise<void> | void) => {
+  public async try(fn: () => Promise<void> | void) {
     try {
       await fn();
 
@@ -26,10 +27,10 @@ export class ExponentialBackoffTracker {
       }
 
       this.currentDelay = this.initialDelay * 2 ** this.curRetries;
-      await new Promise((resolve) => setTimeout(resolve, this.currentDelay));
+      await asyncWait(this.currentDelay);
 
       this.curRetries++;
       return this.try(fn);
     }
-  };
+  }
 }
