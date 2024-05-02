@@ -359,6 +359,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: sensitive
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
     post:
