@@ -2079,7 +2079,8 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 				Name: "timestamp_year",
 			},
 			{
-				Name: "measure_1",
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		TimeRange: &runtimev1.TimeRange{
@@ -2095,6 +2096,11 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
 	for i, row := range q.Result.Data {
 		for _, sf := range q.Result.Schema.Fields {
 			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())

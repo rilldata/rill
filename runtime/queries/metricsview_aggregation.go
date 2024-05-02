@@ -810,17 +810,17 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			selectCols = append(selectCols, dimSel)
 			nonTimeDims = append(nonTimeDims, dimSel)
 			comparisonSelectCols = append(comparisonSelectCols, dimSel)
-			finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", dimSel))
+			finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", safeName(dim.Name)))
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
 			// groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)+1))
-			colMap[dimSel] = len(selectCols)
+			colMap[d.Name] = len(selectCols)
 			var joinCondition string
 			if dialect == drivers.DialectClickHouse {
-				joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", dimSel)
+				joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", safeName(dim.Name))
 			} else {
-				joinCondition = fmt.Sprintf("base.%[1]s IS NOT DISTINCT FROM comparison.%[1]s", dimSel)
+				joinCondition = fmt.Sprintf("base.%[1]s IS NOT DISTINCT FROM comparison.%[1]s", safeName(dim.Name))
 			}
 			joinConditions = append(joinConditions, joinCondition)
 			continue
@@ -831,17 +831,17 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		if err != nil {
 			return "", nil, err
 		}
-		alias := safeName(d.Name)
+		alias := d.Name
 		if d.Alias != "" {
-			alias = safeName(d.Alias)
+			alias = d.Alias
 		}
-		timeDimClause := fmt.Sprintf("%s as %s", expr, alias)
+		timeDimClause := fmt.Sprintf("%s as %s", expr, safeName(alias))
 
 		selectCols = append(selectCols, timeDimClause)
 		// onlyDims = append(onlyDims, timeDimClause)
 		colMap[alias] = len(selectCols)
 		comparisonSelectCols = append(comparisonSelectCols, timeDimClause)
-		finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", alias))
+		finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", safeName(alias)))
 
 		// Using expr was causing issues with query arg expansion in duckdb.
 		// Using column name is not possible either since it will take the original column name instead of the aliased column name
@@ -969,6 +969,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	baseWhereClause := "1=1"
 	comparisonWhereClause := "1=1"
 
+	// todo limit for subquery for non-exact
 	// var args []any
 	if mv.TimeDimension == "" {
 		return "", nil, fmt.Errorf("metrics view '%s' doesn't have time dimension", q.MetricsViewName)
@@ -1131,45 +1132,41 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	}
 
 	/*
-		Example of the SQL:
+		todo: correct example
+			Example of the SQL:
 
-		SELECT COALESCE(base."domain", comparison."domain") AS "dom", base."measure_1", comparison."measure_1" AS "measure_1__previous", base."measure_1" - comparison."measure_1" AS "measure_1__delta_abs", (base."measure_1" - comparison."measure_1")/comparison."measure_1"::DOUBLE AS "measure_1__delta_rel" FROM
-			(
-				SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain" ORDER BY true, 1 NULLS LAST LIMIT 100
-			) base
-		LEFT OUTER JOIN
-			(
-				SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain"
-			) comparison
-		ON
-				base."domain" = comparison."domain" OR (base."domain" is null and comparison."domain" is null)
-		ORDER BY
-			true, 1 NULLS LAST
-		LIMIT 10
-		OFFSET 0
+			SELECT COALESCE(base."domain", comparison."domain") AS "dom", base."measure_1", comparison."measure_1" AS "measure_1__previous", base."measure_1" - comparison."measure_1" AS "measure_1__delta_abs", (base."measure_1" - comparison."measure_1")/comparison."measure_1"::DOUBLE AS "measure_1__delta_rel" FROM
+				(
+					SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain" ORDER BY true, 1 NULLS LAST LIMIT 100
+				) base
+			LEFT OUTER JOIN
+				(
+					SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain"
+				) comparison
+			ON
+					base."domain" = comparison."domain" OR (base."domain" is null and comparison."domain" is null)
+			ORDER BY
+				true, 1 NULLS LAST
+			LIMIT 10
+			OFFSET 0
 	*/
 
 	var args []any
 	var sql string
 	if dialect != drivers.DialectDruid {
 		// base subquery
-		args = append(args, q.TimeRange.Start)
+		args = append(args, q.TimeRange.Start.AsTime())
 		args = append(args, selectArgs...)
 		args = append(args, baseTimeRangeArgs...)
 		args = append(args, whereClauseArgs...)
 		// comparison subquery
-		args = append(args, q.ComparisonTimeRange.Start)
+		args = append(args, q.ComparisonTimeRange.Start.AsTime())
 		args = append(args, selectArgs...)
 		args = append(args, comparisonTimeRangeArgs...)
 		args = append(args, whereClauseArgs...)
 		// outer query
 		args = append(args, havingClauseArgs...)
 
-		// if dialect == drivers.DialectClickHouse {
-		// 	joinOnClause = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", colName)
-		// } else {
-		// 	joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
-		// }
 		// measure filter could include the base measure name.
 		// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
 		// to keep the clause builder consistent we add an outer query here.
@@ -1268,12 +1265,12 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
 			}
 			// base subquery
-			args = append(args, q.TimeRange.Start)
+			args = append(args, q.TimeRange.Start.AsTime())
 			args = append(args, selectArgs...)
 			args = append(args, baseTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
 			// comparison subquery
-			args = append(args, q.ComparisonTimeRange.Start)
+			args = append(args, q.ComparisonTimeRange.Start.AsTime())
 			args = append(args, selectArgs...)
 			args = append(args, comparisonTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
@@ -1372,12 +1369,12 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 
 			// base subquery
-			args = append(args, q.TimeRange.Start)
+			args = append(args, q.TimeRange.Start.AsTime())
 			args = append(args, selectArgs...)
 			args = append(args, baseTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
 			// comparison subquery
-			args = append(args, q.ComparisonTimeRange.Start)
+			args = append(args, q.ComparisonTimeRange.Start.AsTime())
 			args = append(args, selectArgs...)
 			args = append(args, comparisonTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
