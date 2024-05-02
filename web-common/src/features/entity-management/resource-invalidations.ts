@@ -202,7 +202,7 @@ export function refreshResource(
   instanceId: string,
   res: V1Resource,
 ) {
-  return queryClient.resetQueries(
+  return queryClient.refetchQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta?.name?.name,
       "name.kind": res.meta?.name?.kind,
@@ -211,7 +211,7 @@ export function refreshResource(
 }
 
 export async function invalidateAllResources() {
-  return queryClient.resetQueries({
+  return queryClient.refetchQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
   });
