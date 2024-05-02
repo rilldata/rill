@@ -8,11 +8,9 @@ export function useProjectTitle(instanceId: string) {
     {
       query: {
         select: (data) => {
-          if (!data.blob) return "";
-
           let projectData: { title?: string; name?: string } = {};
           try {
-            projectData = parse(data.blob, {
+            projectData = parse(data.blob as string, {
               logLevel: "silent",
             }) as {
               title?: string;
@@ -23,7 +21,7 @@ export function useProjectTitle(instanceId: string) {
           }
 
           return (
-            projectData.title || projectData.name || "Untitled Rill Project"
+            projectData?.title || projectData?.name || "Untitled Rill Project"
           );
         },
       },
