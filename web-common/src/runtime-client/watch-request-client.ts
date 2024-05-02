@@ -41,35 +41,38 @@ export class WatchRequestClient<Res extends WatchResponse> {
     ["reconnect", []],
   ]);
 
-  on<K extends keyof EventMap<Res>>(event: K, listener: Callback<Res, K>) {
+  public on<K extends keyof EventMap<Res>>(
+    event: K,
+    listener: Callback<Res, K>,
+  ) {
     this.listeners.get(event)?.push(listener);
   }
 
-  watch(url: string) {
+  public watch(url: string) {
     this.cancel();
     this.url = url;
     this.init();
     this.listen().catch(console.error);
   }
 
-  cancel() {
+  public cancel() {
     this.controller?.abort();
     this.stream = this.controller = undefined;
   }
 
-  init() {
+  public init() {
     if (!this.url) throw new Error("URL not set");
     this.controller = new AbortController();
     this.stream = this.getFetchStream(this.url, this.controller);
   }
 
-  throttle() {
+  public throttle() {
     this.outOfFocusThrottler.throttle(() => {
       this.cancel();
     });
   }
 
-  reconnect() {
+  public reconnect() {
     if (this.outOfFocusThrottler.isThrottling()) {
       this.outOfFocusThrottler.cancel();
     }
