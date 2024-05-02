@@ -755,7 +755,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	selectCols := make([]string, 0, cols+1)
 	var comparisonSelectCols []string
 
-	// groupCols := make([]string, 0, len(q.Dimensions)+1)
 	finalDims := make([]string, 0, len(q.Dimensions))
 	joinConditions := make([]string, 0, len(q.Dimensions))
 
@@ -764,8 +763,8 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 
 	q.calculateMeasuresMeta()
 
+	// Required for t_offset, ie
 	// SELECT t_offset, d1, d2, t1, t2, m1, m2
-
 	smallestTimeGrain := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
 	for _, d := range q.Dimensions {
 		if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && d.GetName() == mv.TimeDimension {
@@ -774,17 +773,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 		}
 	}
-
-	// if dialect != drivers.DialectDruid {
-	// 	timeOffsetColumn = fmt.Sprintf("epoch_ms(%s)-epoch_ms(?) as t_offset", safeName(mv.TimeDimension))
-	// } else {
-	// 	timeOffsetColumn = fmt.Sprintf("timestamp_to_millis(%s)-timestamp_to_millis(?) as t_offset", safeName(mv.TimeDimension))
-	// }
-
-	// timeStart, err := resolveToTime(t.AsTime())
-	// if err != nil {
-	// 	return err
-	// }
 
 	// it's required for joining the base and comparison tables
 	timeOffsetExpression, err := q.buildOffsetExpression(mv.TimeDimension, smallestTimeGrain, dialect)
@@ -797,7 +785,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	selectCols = append(selectCols, timeOffsetExpression)
 	comparisonSelectCols = append(comparisonSelectCols, timeOffsetExpression)
 
-	// selectArgs = append(selectArgs, q.TimeRange.Start.AsTime())
 	joinConditions = append(joinConditions, "base.t_offset = comparison.t_offset")
 	var finalComparisonTimeDims []string
 	for _, d := range q.Dimensions {
@@ -815,7 +802,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
-			// groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)+1))
 			colMap[d.Name] = len(selectCols)
 			var joinCondition string
 			if dialect == drivers.DialectClickHouse {
@@ -839,30 +825,13 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		timeDimClause := fmt.Sprintf("%s as %s", expr, safeName(alias))
 
 		selectCols = append(selectCols, timeDimClause)
-		// onlyDims = append(onlyDims, timeDimClause)
 		colMap[alias] = len(selectCols)
 		comparisonSelectCols = append(comparisonSelectCols, timeDimClause)
 		finalDims = append(finalDims, fmt.Sprintf("base.%[1]s as %[1]s", safeName(alias)))
 		finalComparisonTimeDims = append(finalComparisonTimeDims, fmt.Sprintf("comparison.%[1]s as %[2]s", safeName(alias), safeName(alias+"__previous")))
 
-		// Using expr was causing issues with query arg expansion in duckdb.
-		// Using column name is not possible either since it will take the original column name instead of the aliased column name
-		// But using numbered group we can exactly target the correct selected column.
-		// Note that the non-timestamp columns also use the numbered group-by for constancy.
-		// groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)+1))
-		// var joinCondition string
-		// if dialect == drivers.DialectClickHouse {
-		// joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", alias)
-		// } else {
-		// joinCondition = fmt.Sprintf("base.%[1]s IS NOT DISTINCT FROM comparison.%[1]s", alias)
-		// }
 		selectArgs = append(selectArgs, exprArgs...)
 	}
-
-	// groupClause := ""
-	// if len(groupCols) > 0 {
-	// 	groupClause = strings.Join(groupCols, ", ")
-	// }
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -971,8 +940,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	baseWhereClause := "1=1"
 	comparisonWhereClause := "1=1"
 
-	// todo limit for subquery for non-exact
-	// var args []any
 	if mv.TimeDimension == "" {
 		return "", nil, fmt.Errorf("metrics view '%s' doesn't have time dimension", q.MetricsViewName)
 	}
@@ -1026,7 +993,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		if err != nil {
 			return "", nil, err
 		}
-		// args = append(args, havingClauseArgs...)
 	}
 
 	var orderClauses []string
@@ -1134,43 +1100,29 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	}
 
 	/*
-		todo: correct example
-			Example of the SQL:
+		Example of the SQL:
 
-			SELECT COALESCE(base."domain", comparison."domain") AS "dom", base."measure_1", comparison."measure_1" AS "measure_1__previous", base."measure_1" - comparison."measure_1" AS "measure_1__delta_abs", (base."measure_1" - comparison."measure_1")/comparison."measure_1"::DOUBLE AS "measure_1__delta_rel" FROM
-				(
-					SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain" ORDER BY true, 1 NULLS LAST LIMIT 100
-				) base
-			LEFT OUTER JOIN
-				(
-					SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain"
-				) comparison
-			ON
-					base."domain" = comparison."domain" OR (base."domain" is null and comparison."domain" is null)
-			ORDER BY
-				true, 1 NULLS LAST
-			LIMIT 10
-			OFFSET 0
+		SELECT * from (
+				-- SELECT d1, d2, d3, td1, td2, m1, m2 ... , td1__previous, td2__previous
+				SELECT COALESCE(base."pub",comparison."pub") as "pub",COALESCE(base."dom",comparison."dom") as "dom",base."timestamp" as "timestamp",base."timestamp_year" as "timestamp_year", base."measure_0" AS "measure_0", comparison."measure_0" AS "measure_0__previous", base."measure_0" - comparison."measure_0" AS "measure_0__delta_abs", (base."measure_0" - comparison."measure_0")/comparison."measure_0"::DOUBLE AS "measure_0__delta_rel", base."measure_1" AS "measure_1", base."m1" AS "m1", comparison."m1" AS "m1__previous", base."m1" - comparison."m1" AS "m1__delta_abs", (base."m1" - comparison."m1")/comparison."m1"::DOUBLE AS "m1__delta_rel" , comparison."timestamp" as "timestamp__previous", comparison."timestamp_year" as "timestamp_year__previous" FROM
+					(
+						-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ...
+						SELECT epoch_ms(date_trunc('DAY', "timestamp")::TIMESTAMP)-epoch_ms(date_trunc('DAY', ?)::TIMESTAMP) as t_offset, ("publisher") as "pub", ("domain") as "dom", date_trunc('DAY', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp", date_trunc('YEAR', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp_year", count(*) as "measure_0", avg(bid_price) as "measure_1", avg(bid_price) as "m1" FROM "ad_bids"  WHERE 1=1 AND "timestamp"::TIMESTAMP >= ? AND "timestamp"::TIMESTAMP < ? AND ((("publisher") = (?)) OR (("publisher") = (?))) GROUP BY 1,2,3,4,5
+					) base
+				FULL JOIN
+					(
+						SELECT epoch_ms(date_trunc('DAY', "timestamp")::TIMESTAMP)-epoch_ms(date_trunc('DAY', ?)::TIMESTAMP) as t_offset, ("publisher") as "pub", ("domain") as "dom", date_trunc('DAY', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp", date_trunc('YEAR', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp_year", count(*) as "measure_0", avg(bid_price) as "m1" FROM "ad_bids"  WHERE 1=1 AND "timestamp"::TIMESTAMP >= ? AND "timestamp"::TIMESTAMP < ? AND ((("publisher") = (?)) OR (("publisher") = (?))) GROUP BY 1,2,3,4,5
+					) comparison
+				ON
+						base.t_offset = comparison.t_offset AND base."pub" IS NOT DISTINCT FROM comparison."pub" AND base."dom" IS NOT DISTINCT FROM comparison."dom"
+				ORDER BY 4 NULLS LAST, 2 NULLS LAST, 3 NULLS LAST, 5 NULLS LAST, 9 NULLS LAST
+					LIMIT 1374419126128
+				OFFSET
+					0
+			) WHERE 1=1 AND ("measure_1") > (?)
 
-			SELECT * from (
-					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... , td1__previous, td2__previous
-					SELECT COALESCE(base."pub",comparison."pub") as "pub",COALESCE(base."dom",comparison."dom") as "dom",base."timestamp" as "timestamp",base."timestamp_year" as "timestamp_year", base."measure_0" AS "measure_0", comparison."measure_0" AS "measure_0__previous", base."measure_0" - comparison."measure_0" AS "measure_0__delta_abs", (base."measure_0" - comparison."measure_0")/comparison."measure_0"::DOUBLE AS "measure_0__delta_rel", base."measure_1" AS "measure_1", base."m1" AS "m1", comparison."m1" AS "m1__previous", base."m1" - comparison."m1" AS "m1__delta_abs", (base."m1" - comparison."m1")/comparison."m1"::DOUBLE AS "m1__delta_rel" , comparison."timestamp" as "timestamp__previous", comparison."timestamp_year" as "timestamp_year__previous" FROM
-						(
-							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ...
-							SELECT epoch_ms(date_trunc('DAY', "timestamp")::TIMESTAMP)-epoch_ms(date_trunc('DAY', ?)::TIMESTAMP) as t_offset, ("publisher") as "pub", ("domain") as "dom", date_trunc('DAY', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp", date_trunc('YEAR', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp_year", count(*) as "measure_0", avg(bid_price) as "measure_1", avg(bid_price) as "m1" FROM "ad_bids"  WHERE 1=1 AND "timestamp"::TIMESTAMP >= ? AND "timestamp"::TIMESTAMP < ? AND ((("publisher") = (?)) OR (("publisher") = (?))) GROUP BY 1,2,3,4,5
-						) base
-					FULL JOIN
-						(
-							SELECT epoch_ms(date_trunc('DAY', "timestamp")::TIMESTAMP)-epoch_ms(date_trunc('DAY', ?)::TIMESTAMP) as t_offset, ("publisher") as "pub", ("domain") as "dom", date_trunc('DAY', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp", date_trunc('YEAR', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp_year", count(*) as "measure_0", avg(bid_price) as "m1" FROM "ad_bids"  WHERE 1=1 AND "timestamp"::TIMESTAMP >= ? AND "timestamp"::TIMESTAMP < ? AND ((("publisher") = (?)) OR (("publisher") = (?))) GROUP BY 1,2,3,4,5
-						) comparison
-					ON
-							base.t_offset = comparison.t_offset AND base."pub" IS NOT DISTINCT FROM comparison."pub" AND base."dom" IS NOT DISTINCT FROM comparison."dom"
-					ORDER BY 4 NULLS LAST, 2 NULLS LAST, 3 NULLS LAST, 5 NULLS LAST, 9 NULLS LAST
-					 LIMIT 1374419126128
-					OFFSET
-						0
-				) WHERE 1=1 AND ("measure_1") > (?)
-			[2022-01-01 00:00:00 +0000 UTC 2022-01-01 00:00:00 +0000 UTC 2022-01-03 00:00:00 +0000 UTC Yahoo Google 2022-01-03 00:00:00 +0000 UTC 2022-01-03 00:00:00 +0000 UTC 2022-01-05 00:00:00 +0000 UTC Yahoo Google 0]
+		Example of arguments:
+		[2022-01-01 00:00:00 +0000 UTC 2022-01-01 00:00:00 +0000 UTC 2022-01-03 00:00:00 +0000 UTC Yahoo Google 2022-01-03 00:00:00 +0000 UTC 2022-01-03 00:00:00 +0000 UTC 2022-01-05 00:00:00 +0000 UTC Yahoo Google 0]
 	*/
 
 	var args []any
@@ -1189,9 +1141,12 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		// outer query
 		args = append(args, havingClauseArgs...)
 
-		// measure filter could include the base measure name.
-		// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
-		// to keep the clause builder consistent we add an outer query here.
+		// Using expr was causing issues with query arg expansion in duckdb.
+		// Using column name is not possible either since it will take the original column name instead of the aliased column name
+		// But using numbered group we can exactly target the correct selected column.
+		// Note that the non-timestamp columns also use the numbered group-by for constancy.
+
+		// Inner grouping should include t_offset
 		// SELECT t_offset, d1, d2, d3 ... GROUP BY 1, 2, 3, 4 ...
 		innerGroupCols := make([]string, 0, len(q.Dimensions)+1)
 		innerGroupCols = append(innerGroupCols, "1")
@@ -1199,10 +1154,15 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 		}
 
+		// these go last to decrease complexity of indexing columns
 		finalTimeDimsClause := ""
 		if len(finalComparisonTimeDims) > 0 {
 			finalTimeDimsClause = fmt.Sprintf(", %s", strings.Join(finalComparisonTimeDims, ", "))
 		}
+
+		// measure filter could include the base measure name.
+		// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
+		// to keep the clause builder consistent we add an outer query here.
 		sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... , td1__previous, td2__previous

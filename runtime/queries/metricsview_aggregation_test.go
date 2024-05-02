@@ -2151,6 +2151,134 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
 }
 
+func TestMetricsViewsAggregation_Druid(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject0(t)
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+				Alias:     "timestamp_year",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "m1",
+			},
+		},
+		ComparisonMeasures: []string{"measure_0", "m1"},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Having: expressionpb.Gt("measure_1", 0.0),
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "timestamp",
+			},
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+			{
+				Name: "timestamp_year",
+			},
+			{
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	i := 0
+	require.Equal(t, "pub", fields[i].Name)
+	i++
+	require.Equal(t, "dom", fields[i].Name)
+	i++
+	require.Equal(t, "timestamp", fields[i].Name)
+	i++
+	require.Equal(t, "timestamp_year", fields[i].Name)
+	i++
+	require.Equal(t, "measure_0", fields[i].Name)
+	i++
+	require.Equal(t, "measure_0__previous", fields[i].Name)
+	i++
+	require.Equal(t, "measure_0__delta_abs", fields[i].Name)
+	i++
+	require.Equal(t, "measure_0__delta_rel", fields[i].Name)
+	i++
+	require.Equal(t, "measure_1", fields[i].Name)
+	i++
+	require.Equal(t, "m1", fields[i].Name)
+	i++
+	require.Equal(t, "m1__previous", fields[i].Name)
+	i++
+	require.Equal(t, "m1__delta_abs", fields[i].Name)
+	i++
+	require.Equal(t, "m1__delta_rel", fields[i].Name)
+	i++
+	require.Equal(t, "timestamp__previous", fields[i].Name)
+	i++
+	require.Equal(t, "timestamp_year__previous", fields[i].Name)
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 8, len(rows))
+
+	i = 0
+	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+	i++
+	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+	i++
+	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+
+}
+
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
 	s := make([]string, 0, len(args))
 	for _, arg := range args {
