@@ -15,7 +15,9 @@
   let showTables = true;
   let sectionHeight = startingHeight;
 
-  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId, {
+    sensitive: true,
+  });
   $: connectorInstanceId = $instance.data?.instance?.instanceId;
   $: olapConnector = $instance.data?.instance?.olapConnector;
 

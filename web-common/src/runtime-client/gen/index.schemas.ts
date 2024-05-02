@@ -298,6 +298,11 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceWatchLogs200 = {
+  result?: V1WatchLogsResponse;
+  error?: RpcStatus;
+};
+
 export type RuntimeServiceWatchLogsLevel =
   (typeof RuntimeServiceWatchLogsLevel)[keyof typeof RuntimeServiceWatchLogsLevel];
 
@@ -430,6 +435,8 @@ export type RuntimeServiceEditInstanceBody = {
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: any };
 
+export type RuntimeServiceGetInstanceParams = { sensitive?: boolean };
+
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -498,11 +505,6 @@ export interface V1WatchLogsResponse {
   log?: V1Log;
 }
 
-export type RuntimeServiceWatchLogs200 = {
-  result?: V1WatchLogsResponse;
-  error?: RpcStatus;
-};
-
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
@@ -527,12 +529,6 @@ export interface V1TimeSeriesValue {
   ts?: string;
   bin?: number;
   records?: V1TimeSeriesValueRecords;
-}
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
 }
 
 export interface V1TimeSeriesResponse {
@@ -562,6 +558,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
