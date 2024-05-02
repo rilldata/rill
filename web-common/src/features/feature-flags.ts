@@ -1,15 +1,12 @@
 import type { BeforeNavigate } from "@sveltejs/kit";
-import type { Readable } from "svelte/store";
 import { writable } from "svelte/store";
-import { parse } from "yaml";
-import { createRuntimeServiceGetFile } from "../runtime-client";
+import {
+  createRuntimeServiceGetInstance,
+  V1InstanceFeatureFlags,
+} from "../runtime-client";
 import { runtime } from "../runtime-client/runtime-store";
 import { debounce } from "../lib/create-debouncer";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
-export type DerivedReadables<T> = {
-  [K in keyof T]: Readable<T[K]>;
-};
 
 class FeatureFlag {
   private state = writable(false);
@@ -46,13 +43,15 @@ class FeatureFlags {
 
     const localFlags = (localStorage.getItem("features") ?? "").split(",");
 
-    const staticFlags = [...urlFlags, ...localFlags];
+    const staticFlags = new Set([...urlFlags, ...localFlags]);
 
-    const updateFlags = debounce((userFlags: Set<string>) => {
+    const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {
       Object.keys(this).forEach((key) => {
         const flag = this[key] as FeatureFlag;
         if (flag.system) return;
-        if (userFlags.has(key)) flag.set(true);
+        if (staticFlags.has(key))
+          flag.set(true); // precedence to flags from url and localStorage
+        else if (key in userFlags) flag.set(userFlags[key]);
       });
     }, 400);
 
@@ -60,30 +59,13 @@ class FeatureFlags {
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetFile(
-        runtime.instanceId,
-        { path: "rill.yaml" },
-        {
-          query: {
-            select: (data) => {
-              let features: string[] = [];
-              try {
-                const projectData = parse(data?.blob ?? "") as {
-                  features?: string[];
-                };
-                features = projectData?.features ?? [];
-              } catch (e) {
-                console.error(e);
-              }
-              return features;
-            },
-            queryClient,
-          },
+      createRuntimeServiceGetInstance(runtime.instanceId, {
+        query: {
+          select: (data) => data?.instance?.featureFlags,
+          queryClient,
         },
-      ).subscribe((features) => {
-        if (!Array.isArray(features?.data)) return;
-        const yamlFlags = features.data;
-        updateFlags(new Set([...staticFlags, ...yamlFlags]));
+      }).subscribe((features) => {
+        if (features.data) updateFlags(features.data);
       });
     });
   }
