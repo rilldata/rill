@@ -41,6 +41,7 @@ export function buildSimpleBar(
       select: {
         type: "point",
         on: "pointerover",
+        clear: "pointerout",
         encodings: ["x"],
         nearest: true,
       },
