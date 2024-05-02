@@ -52,9 +52,6 @@ export function invalidateResourceResponse(
     return;
   }
 
-  console.log(
-    `[${res.resource.meta?.reconcileStatus}] ${res.name?.kind}/${res.name?.name}`,
-  );
   const instanceId = get(runtime).instanceId;
   if (
     MainResourceKinds[res.name.kind] &&
