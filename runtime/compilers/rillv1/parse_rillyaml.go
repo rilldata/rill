@@ -64,7 +64,7 @@ type rillYAML struct {
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags
-	Features []string `yaml:"features"`
+	Features map[string]bool `yaml:"features"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -135,11 +135,6 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
-	featureFlags := map[string]bool{}
-	for _, f := range tmp.Features {
-		featureFlags[f] = true
-	}
-
 	res := &RillYAML{
 		Title:         tmp.Title,
 		Description:   tmp.Description,
@@ -152,7 +147,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			ResourceKindMetricsView: tmp.Dashboards,
 			ResourceKindMigration:   tmp.Migrations,
 		},
-		FeatureFlags: featureFlags,
+		FeatureFlags: tmp.Features,
 	}
 
 	for i, c := range tmp.Connectors {
