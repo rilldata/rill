@@ -63,8 +63,8 @@ type rillYAML struct {
 	Dashboards yaml.Node `yaml:"dashboards"`
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
-	// Feature flags
-	Features map[string]bool `yaml:"features"`
+	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
+	Features yaml.Node `yaml:"features"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -135,6 +135,29 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
+	// For backwards compatibility, we allow "features" to be either a map of bools (preferred) or a sequence of strings.
+	var featureFlags map[string]bool
+	if !tmp.Features.IsZero() {
+		switch tmp.Features.Kind {
+		case yaml.MappingNode:
+			if err := tmp.Features.Decode(&featureFlags); err != nil {
+				return newYAMLError(err)
+			}
+		case yaml.SequenceNode:
+			var fs []string
+			if err := tmp.Features.Decode(&fs); err != nil {
+				return newYAMLError(err)
+			}
+
+			featureFlags = map[string]bool{}
+			for _, f := range fs {
+				featureFlags[f] = true
+			}
+		default:
+			return fmt.Errorf(`invalid property "features": must be a map or a sequence`)
+		}
+	}
+
 	res := &RillYAML{
 		Title:         tmp.Title,
 		Description:   tmp.Description,
@@ -147,7 +170,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			ResourceKindMetricsView: tmp.Dashboards,
 			ResourceKindMigration:   tmp.Migrations,
 		},
-		FeatureFlags: tmp.Features,
+		FeatureFlags: featureFlags,
 	}
 
 	for i, c := range tmp.Connectors {
