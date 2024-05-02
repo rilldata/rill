@@ -41,7 +41,7 @@ func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
 			err := w.upgradeAllDeploymentsForProject(ctx, proj, latestVersion)
 			if err != nil {
 				// We log the error, but continues to the next deployment
-				w.logger.Error("upgrade latest version projects: failed to upgrade project deployments", zap.String("project_id", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+				w.logger.Error("upgrade latest version projects: failed to upgrade project deployments", zap.String("project_id", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx), zap.Error(err))
 			}
 		}
 	}
@@ -75,7 +75,7 @@ func (w *Worker) upgradeAllDeploymentsForProject(ctx context.Context, proj *data
 				EvictCachedRepo: false,
 			})
 			if err != nil {
-				w.logger.Error("upgrade latest version projects: failed to upgrade deployment", zap.String("deployment_id", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+				w.logger.Error("upgrade latest version projects: failed to upgrade deployment", zap.String("deployment_id", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx), zap.Error(err))
 				return err
 			}
 
