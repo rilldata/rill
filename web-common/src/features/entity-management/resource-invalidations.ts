@@ -1,6 +1,9 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
+import {
+  V1ResourceEvent,
+  V1WatchResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
   V1Resource,
@@ -42,8 +45,12 @@ export function invalidateResourceResponse(
   res: V1WatchResourcesResponse,
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
-  if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind])
+  if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind]) {
+    if (res.event === V1ResourceEvent.RESOURCE_EVENT_DELETE && res.name) {
+      fileArtifacts.resourceDeleted(res.name);
+    }
     return;
+  }
 
   const instanceId = get(runtime).instanceId;
   if (
@@ -107,14 +114,15 @@ async function invalidateResource(
   if (
     (resource.meta.name?.kind === ResourceKind.Source ||
       resource.meta.name?.kind === ResourceKind.Model) &&
-    (fileArtifacts.wasRenaming(resource) || !fileArtifacts.hadTable(resource))
+    (fileArtifacts.wasRenaming(resource) ||
+      fileArtifacts.tableStatusChanged(resource))
   ) {
     void queryClient.invalidateQueries(
       getConnectorServiceOLAPListTablesQueryKey({
         instanceId: get(runtime).instanceId,
         connector:
-          resource.source?.state?.connector ??
-          resource.model?.state?.connector ??
+          resource.source?.spec?.sinkConnector ??
+          resource.model?.spec?.connector ??
           "",
       }),
     );
@@ -156,7 +164,7 @@ function invalidateRemovedResource(
       "name.kind": resource.meta?.name?.kind,
     }),
   );
-  fileArtifacts.deleteResource(resource);
+  fileArtifacts.softDeleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
   // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource?.meta?.name?.kind) {
