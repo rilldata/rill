@@ -1,8 +1,8 @@
 import { ChartField } from "./build-template";
 import {
   multiLayerBaseSpec,
+  sanitizeValueForVega,
   sanitizeValuesForSpec,
-  sanitzeValueForVega,
 } from "./utils";
 
 /** Temporary solution for the lack of vega lite type exports */
@@ -41,7 +41,7 @@ export function buildStackedArea(
   const multiValueTooltipChannel: TooltipValue[] | undefined =
     nominalField?.values?.map((value) => {
       return {
-        field: value === null ? "null" : sanitzeValueForVega(value),
+        field: value === null ? "null" : sanitizeValueForVega(value),
         type: "quantitative",
       };
     });
