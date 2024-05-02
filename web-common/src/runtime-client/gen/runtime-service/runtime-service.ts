@@ -24,6 +24,7 @@ import type {
   V1CreateInstanceResponse,
   V1CreateInstanceRequest,
   V1GetInstanceResponse,
+  RuntimeServiceGetInstanceParams,
   V1DeleteInstanceResponse,
   RuntimeServiceDeleteInstanceBody,
   V1EditInstanceResponse,
@@ -351,18 +352,21 @@ export const createRuntimeServiceCreateInstance = <
  */
 export const runtimeServiceGetInstance = (
   instanceId: string,
+  params?: RuntimeServiceGetInstanceParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
     method: "get",
+    params,
     signal,
   });
 };
 
-export const getRuntimeServiceGetInstanceQueryKey = (instanceId: string) => [
-  `/v1/instances/${instanceId}`,
-];
+export const getRuntimeServiceGetInstanceQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceGetInstanceParams,
+) => [`/v1/instances/${instanceId}`, ...(params ? [params] : [])];
 
 export type RuntimeServiceGetInstanceQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetInstance>>
@@ -374,6 +378,7 @@ export const createRuntimeServiceGetInstance = <
   TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
+  params?: RuntimeServiceGetInstanceParams,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetInstance>>,
@@ -385,11 +390,12 @@ export const createRuntimeServiceGetInstance = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceGetInstanceQueryKey(instanceId);
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetInstanceQueryKey(instanceId, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetInstance>>
-  > = ({ signal }) => runtimeServiceGetInstance(instanceId, signal);
+  > = ({ signal }) => runtimeServiceGetInstance(instanceId, params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof runtimeServiceGetInstance>>,

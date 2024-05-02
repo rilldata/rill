@@ -906,6 +906,8 @@ func (m *GetInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Sensitive
+
 	if len(errors) > 0 {
 		return GetInstanceRequestMultiError(errors)
 	}

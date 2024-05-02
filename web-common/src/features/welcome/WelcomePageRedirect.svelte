@@ -48,7 +48,9 @@
 
   async function handleUninitializedProject() {
     // If the project is not initialized, determine what page to route to dependent on the OLAP connector
-    const instance = await runtimeServiceGetInstance($runtime.instanceId);
+    const instance = await runtimeServiceGetInstance($runtime.instanceId, {
+      sensitive: true,
+    });
     const olapConnector = instance.instance?.olapConnector;
     if (!olapConnector) {
       throw new Error("OLAP connector is not defined");

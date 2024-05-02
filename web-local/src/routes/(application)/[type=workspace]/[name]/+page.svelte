@@ -357,7 +357,7 @@
         <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
-          {:else}
+          {:else if !$allErrors.length}
             <ConnectedPreviewTable
               {connector}
               table={tableName ?? ""}

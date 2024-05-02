@@ -477,6 +477,11 @@ export class GetInstanceRequest extends Message<GetInstanceRequest> {
    */
   instanceId = "";
 
+  /**
+   * @generated from field: bool sensitive = 2;
+   */
+  sensitive = false;
+
   constructor(data?: PartialMessage<GetInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -486,6 +491,7 @@ export class GetInstanceRequest extends Message<GetInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.GetInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sensitive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetInstanceRequest {

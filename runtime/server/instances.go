@@ -53,6 +53,10 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		}
 	}
 
+	if req.Sensitive && !sensitiveAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to request sensitive instance information")
+	}
+
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
@@ -62,7 +66,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	}
 
 	return &runtimev1.GetInstanceResponse{
-		Instance: instanceToPB(inst, sensitiveAccess),
+		Instance: instanceToPB(inst, req.Sensitive),
 	}, nil
 }
 

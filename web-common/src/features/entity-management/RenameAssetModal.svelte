@@ -72,12 +72,16 @@
         const newPath = (folder ? `${folder}/` : "") + values.newName;
         await renameFileArtifact(runtimeInstanceId, filePath, newPath);
         if (isDir) {
-          if ($page.url.pathname.startsWith(`/files/${filePath}`)) {
+          if (
+            $page.url.pathname.startsWith(
+              `/files/${removeLeadingSlash(filePath)}`,
+            )
+          ) {
             // if the file focused has the dir then replace the dir path to the new one
             void goto(
               $page.url.pathname.replace(
-                `/files/${filePath}`,
-                `/files/${newPath}`,
+                `/files/${removeLeadingSlash(filePath)}`,
+                `/files/${removeLeadingSlash(newPath)}`,
               ),
             );
           }
