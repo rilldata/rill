@@ -219,7 +219,7 @@ export function refreshResource(
 }
 
 export async function invalidateAllResources() {
-  return queryClient.resetQueries({
+  return queryClient.refetchQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
   });
