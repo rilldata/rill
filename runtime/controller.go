@@ -57,7 +57,7 @@ var ReconcilerInitializers = make(map[string]ReconcilerInitializer)
 // RegisterReconciler registers a reconciler initializer for a specific resource kind
 func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerInitializer) {
 	if ReconcilerInitializers[resourceKind] != nil {
-		panic(fmt.Errorf("reconciler already registered for resource kind %q", resourceKind))
+		panic(fmt.Errorf("reconciler already registered for resource type %q", resourceKind))
 	}
 	ReconcilerInitializers[resourceKind] = initializer
 }
@@ -800,7 +800,7 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 
 	initializer := ReconcilerInitializers[resourceKind]
 	if initializer == nil {
-		panic(fmt.Errorf("no reconciler registered for resource kind %q", resourceKind))
+		panic(fmt.Errorf("no reconciler registered for resource type %q", resourceKind))
 	}
 
 	reconciler = initializer(c)

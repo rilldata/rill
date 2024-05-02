@@ -103,7 +103,7 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 	case "api":
 		return ResourceKindAPI, nil
 	default:
-		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
+		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
 }
 
@@ -745,7 +745,7 @@ func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		return externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+		return externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
 	}
 	return nil
 }
@@ -757,7 +757,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		return nil, externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+		return nil, externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
 	}
 
 	// Dedupe refs (it's not guaranteed by the upstream logic).
