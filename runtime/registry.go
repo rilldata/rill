@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -556,6 +557,9 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 
 	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
 	if err != nil {
+		if strings.Contains(err.Error(), "rill.yaml not found") { // empty project
+			return nil
+		}
 		return err
 	}
 	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)

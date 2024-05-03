@@ -3,6 +3,7 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"gopkg.in/yaml.v3"
 )
@@ -18,6 +19,8 @@ type RillYAML struct {
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
 	FeatureFlags  map[string]bool
+
+	// if adding any new field evaluate if equalRillYAML function needs changes
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -177,4 +180,73 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	p.RillYAML = res
 	return nil
+}
+
+func equalRillYAML(r, other *RillYAML) bool {
+	if r.OLAPConnector != other.OLAPConnector || len(r.Connectors) != len(other.Connectors) || len(r.Variables) != len(other.Variables) || len(r.Defaults) != len(other.Defaults) {
+		return false
+	}
+	for _, connector := range r.Connectors {
+		equal := false
+		for _, otherConnector := range other.Connectors {
+			if connector.Name == otherConnector.Name && connector.Type == otherConnector.Type && maps.Equal(connector.Defaults, otherConnector.Defaults) {
+				equal = true
+				break
+			}
+		}
+		if !equal {
+			return false
+		}
+	}
+
+	for _, variable := range r.Variables {
+		equal := false
+		for _, otherVariable := range other.Variables {
+			if variable.Name == otherVariable.Name && variable.Default == otherVariable.Default {
+				equal = true
+				break
+			}
+		}
+		if !equal {
+			return false
+		}
+	}
+
+	if !maps.Equal(r.FeatureFlags, other.FeatureFlags) {
+		return false
+	}
+	
+	// keeping defaults comparison at last to avoid yaml marshalling
+	for key1, node1 := range r.Defaults {
+		node2, ok := r.Defaults[key1]
+		if !ok {
+			return false
+		}
+		if !compareYAMLNodes(&node1, &node2) {
+			return false
+		}
+	}
+	return true
+}
+
+func compareYAMLNodes(node1, node2 *yaml.Node) bool {
+	yamlStr1, err1 := marshalYAMLNode(node1)
+	if err1 != nil {
+		return false
+	}
+
+	yamlStr2, err2 := marshalYAMLNode(node2)
+	if err2 != nil {
+		return false
+	}
+
+	return yamlStr1 == yamlStr2
+}
+
+func marshalYAMLNode(node *yaml.Node) (string, error) {
+	out, err := yaml.Marshal(node)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }

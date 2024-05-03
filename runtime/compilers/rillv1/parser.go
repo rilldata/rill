@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"slices"
@@ -242,9 +243,16 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment,
 // If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
 func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	var changedRillYAML bool
-	for _, p := range paths {
-		if pathIsRillYAML(p) {
-			changedRillYAML = true
+	for _, path := range paths {
+		if !pathIsRillYAML(path) {
+			continue
+		}
+		rillYAML, err := ParseRillYAML(ctx, p.Repo, p.InstanceID)
+		if err != nil {
+			return nil, err
+		}
+		changedRillYAML = equalRillYAML(p.RillYAML, rillYAML)
+		if changedRillYAML {
 			break
 		}
 	}
@@ -389,8 +397,14 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 		// Check if path is .env and clear it (so we can re-parse it)
 		if isDotEnv {
-			modifiedDotEnv = true
-			p.DotEnv = nil
+			dotEnv, err := ParseDotEnv(ctx, p.Repo, p.InstanceID)
+			if err != nil {
+				return nil, err
+			}
+			modifiedDotEnv = !maps.Equal(p.DotEnv, dotEnv)
+			if modifiedDotEnv {
+				p.DotEnv = nil
+			}
 		}
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
