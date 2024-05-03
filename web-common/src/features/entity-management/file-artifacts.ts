@@ -60,7 +60,7 @@ export class FileArtifact {
     );
     this.renaming = !!resource.meta?.renamedFrom;
     this.hasTable =
-      (!!resource.model && !!resource.model.state?.table) ||
+      (!!resource.model && !!resource.model.state?.resultTable) ||
       (!!resource.source && !!resource.source.state?.table);
   }
 
