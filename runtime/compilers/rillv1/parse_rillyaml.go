@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"gopkg.in/yaml.v3"
 )
@@ -22,10 +21,6 @@ type RillYAML struct {
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
 	FeatureFlags  map[string]bool
-}
-
-func (r *RillYAML) equals(other *RillYAML) bool {
-	return reflect.DeepEqual(r, other)
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -252,7 +253,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		if err == nil {
 			// Watcher sends multiple events for a single edit. We want to only restart the controller when rill.yaml actually changes.
 			// So we check the new rill.yaml contents against the contents stored in parser state.
-			changedRillYAML = !oldRillYAML.equals(p.RillYAML)
+			changedRillYAML = !reflect.DeepEqual(oldRillYAML, p.RillYAML)
 		} else {
 			// any error including parse error means rill.yaml changed
 			changedRillYAML = true
