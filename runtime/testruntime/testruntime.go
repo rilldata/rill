@@ -224,7 +224,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	return rt, inst.ID
 }
 
-func NewInstanceForProject0(t TestingT) (*runtime.Runtime, string) {
+func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	_, currentFile, _, _ := goruntime.Caller(0)

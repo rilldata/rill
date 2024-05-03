@@ -1,0 +1,36 @@
+model: ad_bids
+display_name: Ad bids
+description:
+
+timeseries: __time
+smallest_time_grain: ""
+
+dimensions:
+  - label: Publisher
+    name: pub
+    property: publisher
+    description: ""
+  - label: Domain
+    name: dom
+    property: domain
+    description: ""
+  - name: nolabel_pub
+    property: publisher
+  - label: Space Label
+    name: space_label
+    expression: "publisher"
+
+measures:
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Average bid price"
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: m1 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+

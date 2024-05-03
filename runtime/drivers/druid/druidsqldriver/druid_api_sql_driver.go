@@ -137,12 +137,16 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 				}
 			case "TIMESTAMP":
 				transformers[i] = func(v any) (any, error) {
-					t, err := time.Parse(time.RFC3339, v.(string))
-					if err != nil {
-						return nil, err
+					switch v := v.(type) {
+					case string:
+						t, err := time.Parse(time.RFC3339, v)
+						if err != nil {
+							return nil, err
+						}
+						return t, nil
+					default:
+						return v, nil
 					}
-
-					return t, nil
 				}
 			case "ARRAY":
 				transformers[i] = func(v any) (any, error) {
