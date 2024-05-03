@@ -535,7 +535,7 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Len(t, q.Result.Rows, 3)
-	require.Equal(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "ports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
 	require.Equal(t, "news.google.com", q.Result.Rows[1].DimensionValue.GetStringValue())
 	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
 }

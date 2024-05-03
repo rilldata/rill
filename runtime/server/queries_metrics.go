@@ -59,6 +59,9 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Offset:              req.Offset,
 		PivotOn:             req.PivotOn,
 		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
+		Exact:               req.Exact,
+		Aliases:             req.Aliases,
+		ComparisonMeasures:  req.ComparisonMeasures,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

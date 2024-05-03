@@ -21,28 +21,27 @@ import (
 )
 
 type MetricsViewAggregation struct {
-	MetricsViewName     string                                       `json:"metrics_view,omitempty"`
-	Dimensions          []*runtimev1.MetricsViewAggregationDimension `json:"dimensions,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort       `json:"sort,omitempty"`
-	TimeRange           *runtimev1.TimeRange                         `json:"time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                         `json:"comparison_time_range,omitempty"`
-	Where               *runtimev1.Expression                        `json:"where,omitempty"`
-	Having              *runtimev1.Expression                        `json:"having,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"` // Backwards compatibility
-	Priority            int32                                        `json:"priority,omitempty"`
-	Limit               *int64                                       `json:"limit,omitempty"`
-	Offset              int64                                        `json:"offset,omitempty"`
-	PivotOn             []string                                     `json:"pivot_on,omitempty"`
-	SecurityAttributes  map[string]any                               `json:"security_attributes,omitempty"`
+	MetricsViewName     string                                         `json:"metrics_view,omitempty"`
+	Dimensions          []*runtimev1.MetricsViewAggregationDimension   `json:"dimensions,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
+	TimeRange           *runtimev1.TimeRange                           `json:"time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
+	Where               *runtimev1.Expression                          `json:"where,omitempty"`
+	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	Filter              *runtimev1.MetricsViewFilter                   `json:"filter,omitempty"` // Backwards compatibility
+	Priority            int32                                          `json:"priority,omitempty"`
+	Limit               *int64                                         `json:"limit,omitempty"`
+	Offset              int64                                          `json:"offset,omitempty"`
+	PivotOn             []string                                       `json:"pivot_on,omitempty"`
+	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
+	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
+	ComparisonMeasures  []string                                       `json:"comparison_measures,omitempty"`
+	Exact               bool                                           `json:"exact,omitempty"`
 
-	Exporting bool
-
-	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
-
-	measuresMeta       map[string]metricsViewMeasureMeta `json:"-"`
-	ComparisonMeasures []string
-	Exact              bool
+	Exporting    bool                                      `json:"-"`
+	Result       *runtimev1.MetricsViewAggregationResponse `json:"-"`
+	measuresMeta map[string]metricsViewMeasureMeta         `json:"-"`
 }
 
 var _ runtime.Query = &MetricsViewAggregation{}
@@ -1156,7 +1155,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		td = fmt.Sprintf("%s::TIMESTAMP", td)
 	}
 
-	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, q.Aliases, dialect)
 	if err != nil {
 		return "", nil, err
 	}
@@ -1191,7 +1190,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	havingClause := "1=1"
 	var havingClauseArgs []any
 	if q.Having != nil {
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}

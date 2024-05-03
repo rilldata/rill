@@ -256,11 +256,13 @@ export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  comparisonMeasures?: string[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
   limit?: string;
@@ -1288,11 +1290,13 @@ export interface V1MetricsViewAggregationRequest {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  comparisonMeasures?: string[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
   limit?: string;

@@ -822,6 +822,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   sort: MetricsViewComparisonSort[] = [];
 
   /**
+   * Optional
+   *
+   * @generated from field: repeated string comparison_measures = 19;
+   */
+  comparisonMeasures: string[] = [];
+
+  /**
    * Optional. Defaults to unbounded
    *
    * @generated from field: rill.runtime.v1.TimeRange time_range = 12;
@@ -855,6 +862,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    * @generated from field: repeated string pivot_on = 15;
    */
   pivotOn: string[] = [];
+
+  /**
+   * Optional
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonMeasureAlias aliases = 18;
+   */
+  aliases: MetricsViewComparisonMeasureAlias[] = [];
 
   /**
    * Optional
@@ -918,11 +932,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 3, name: "dimensions", kind: "message", T: MetricsViewAggregationDimension, repeated: true },
     { no: 4, name: "measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
     { no: 5, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
+    { no: 19, name: "comparison_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "time_range", kind: "message", T: TimeRange },
     { no: 16, name: "comparison_time_range", kind: "message", T: TimeRange },
     { no: 6, name: "time_start", kind: "message", T: Timestamp },
     { no: 7, name: "time_end", kind: "message", T: Timestamp },
     { no: 15, name: "pivot_on", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 18, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 8, name: "where", kind: "message", T: Expression },
     { no: 13, name: "having", kind: "message", T: Expression },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

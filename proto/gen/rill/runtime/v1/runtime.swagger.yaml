@@ -1170,6 +1170,11 @@ paths:
                   type: object
                   $ref: '#/definitions/v1MetricsViewComparisonSort'
                 title: Optional. Defaults to unsorted
+              comparisonMeasures:
+                type: array
+                items:
+                  type: string
+                title: Optional
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Optional. Defaults to unbounded
@@ -1189,6 +1194,12 @@ paths:
                 items:
                   type: string
                 title: Optional. List of dimensions/measures. No pivot is done if ommitted
+              aliases:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+                title: Optional
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
@@ -3937,6 +3948,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonSort'
         title: Optional. Defaults to unsorted
+      comparisonMeasures:
+        type: array
+        items:
+          type: string
+        title: Optional
       timeRange:
         $ref: '#/definitions/v1TimeRange'
         title: Optional. Defaults to unbounded
@@ -3956,6 +3972,12 @@ definitions:
         items:
           type: string
         title: Optional. List of dimensions/measures. No pivot is done if ommitted
+      aliases:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+        title: Optional
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
