@@ -5,6 +5,7 @@
     createAdminServiceCreateAlert,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import { CompareWith } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
@@ -12,7 +13,12 @@
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
+  import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import {
+    mapComparisonTimeRange,
+    mapTimeRange,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
   import {
     V1Operation,
     getRuntimeServiceListResourcesQueryKey,
@@ -53,6 +59,14 @@
     dimension = $dashboardStore.selectedDimensionName ?? "";
   }
 
+  // TODO: get metrics view spec
+  const timeRange = mapTimeRange(timeControls, {});
+  const comparisonTimeRange = mapComparisonTimeRange(
+    $dashboardStore,
+    timeControls,
+    mapTimeRange(timeControls, {}),
+  );
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
@@ -65,7 +79,8 @@
       criteria: [
         {
           field: $dashboardStore.leaderboardMeasureName ?? "",
-          operation: V1Operation.OPERATION_GTE,
+          operation: MeasureFilterOperation.GreaterThan,
+          compareWith: CompareWith.Value,
           value: "0",
         },
       ],
@@ -90,11 +105,19 @@
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
-      timeRange: {
-        isoDuration: timeControls.selectedTimeRange?.name,
-        start: timeControls.timeStart,
-        end: timeControls.timeEnd,
-      },
+      // TODO: get metrics view spec
+      timeRange: timeRange
+        ? {
+            ...timeRange,
+            end: timeControls.timeEnd,
+          }
+        : undefined, // TODO: set defaults
+      comparisonTimeRange: comparisonTimeRange
+        ? {
+            ...comparisonTimeRange,
+            end: timeControls.comparisonTimeEnd,
+          }
+        : undefined,
     } as AlertFormValues,
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {

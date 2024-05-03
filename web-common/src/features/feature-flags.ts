@@ -59,14 +59,14 @@ class FeatureFlags {
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
-        query: {
-          select: (data) => data?.instance?.featureFlags,
-          queryClient,
-        },
-      }).subscribe((features) => {
-        if (features.data) updateFlags(features.data);
-      });
+      // createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
+      //   query: {
+      //     select: (data) => data?.instance?.featureFlags,
+      //     queryClient,
+      //   },
+      // }).subscribe((features) => {
+      //   if (features.data) updateFlags(features.data);
+      // });
     });
   }
 

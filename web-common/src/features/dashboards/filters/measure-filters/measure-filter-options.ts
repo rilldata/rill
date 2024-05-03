@@ -41,6 +41,12 @@ export const ProtoToCompareMeasureFilterOperation = {
   [V1Operation.OPERATION_LTE]: MeasureFilterOperation.DecreasesBy,
 };
 
+export const IsCompareMeasureFilterOperation = {
+  [MeasureFilterOperation.IncreasesBy]: true,
+  [MeasureFilterOperation.DecreasesBy]: true,
+  [MeasureFilterOperation.ChangesBy]: true,
+};
+
 export const MeasureFilterOptions: MeasureFilterOption[] = [
   {
     value: MeasureFilterOperation.GreaterThan,

@@ -1,11 +1,11 @@
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
