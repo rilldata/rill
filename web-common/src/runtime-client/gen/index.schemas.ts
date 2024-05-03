@@ -391,9 +391,8 @@ export type RuntimeServiceGenerateMetricsViewFileBody = {
   useAi?: boolean;
 };
 
-export type RuntimeServiceCreateDirectoryBody = { [key: string]: any };
-
 export type RuntimeServicePutFileBody = {
+  path?: string;
   blob?: string;
   create?: boolean;
   /** Will cause the operation to fail if the file already exists.
@@ -401,7 +400,13 @@ It should only be set when create = true. */
   createOnly?: boolean;
 };
 
-export type RuntimeServiceDeleteFileParams = { force?: boolean };
+export type RuntimeServiceDeleteFileParams = { path?: string; force?: boolean };
+
+export type RuntimeServiceGetFileParams = { path?: string };
+
+export type RuntimeServiceCreateDirectoryBody = {
+  path?: string;
+};
 
 export type RuntimeServiceListFilesParams = { glob?: string };
 
@@ -429,6 +434,8 @@ export type RuntimeServiceEditInstanceBody = {
 };
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: any };
+
+export type RuntimeServiceGetInstanceParams = { sensitive?: boolean };
 
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;

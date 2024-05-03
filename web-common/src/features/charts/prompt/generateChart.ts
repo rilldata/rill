@@ -8,10 +8,7 @@ import {
   chartPromptsStore,
 } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
 import { useChart } from "@rilldata/web-common/features/charts/selectors";
-import {
-  getFileAPIPathFromNameAndType,
-  removeLeadingSlash,
-} from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1ComponentSpec,
@@ -29,7 +26,9 @@ export function createChartGenerator(
 ) {
   const generateVegaConfig = createRuntimeServiceGenerateRenderer();
   const chartQuery = useChart(instanceId, chart);
-  const chartContent = createRuntimeServiceGetFile(instanceId, filePath);
+  const chartContent = createRuntimeServiceGetFile(instanceId, {
+    path: filePath,
+  });
   // TODO: update for new API
 
   return async (prompt: string) => {
@@ -48,7 +47,8 @@ export function createChartGenerator(
         },
       });
       chartPromptsStore.updatePromptStatus(chart, ChartPromptStatus.Idle);
-      await runtimeServicePutFile(instanceId, removeLeadingSlash(filePath), {
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
         blob: getChartYaml(
           resp.rendererProperties?.spec,
           resolver,
@@ -83,7 +83,8 @@ export function createFullChartGenerator(instanceId: string) {
     );
     try {
       // add an empty chart
-      await runtimeServicePutFile(instanceId, filePath, {
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
         blob: `type: component`,
       });
       chartPromptsStore.startPrompt(
@@ -103,7 +104,8 @@ export function createFullChartGenerator(instanceId: string) {
       });
 
       // add a chart with just the resolver
-      await runtimeServicePutFile(instanceId, filePath, {
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
         blob: getChartYaml(
           "{}",
           resolverResp.resolver,
@@ -127,7 +129,8 @@ export function createFullChartGenerator(instanceId: string) {
         newChartName,
         ChartPromptStatus.Idle,
       );
-      await runtimeServicePutFile(instanceId, filePath, {
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
         blob: getChartYaml(
           resp.rendererProperties?.spec,
           resolverResp.resolver,

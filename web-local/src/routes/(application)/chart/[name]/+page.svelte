@@ -31,18 +31,24 @@
     filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
   }
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: {
-      onError: (err) => {
-        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-          throw error(404, "Dashboard not found");
-        }
-
-        throw error(err.response?.status || 500, err.message);
-      },
-      refetchOnWindowFocus: false,
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    {
+      path: filePath,
     },
-  });
+    {
+      query: {
+        onError: (err) => {
+          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
+            throw error(404, "Dashboard not found");
+          }
+
+          throw error(err.response?.status || 500, err.message);
+        },
+        refetchOnWindowFocus: false,
+      },
+    },
+  );
 
   $: yaml = $fileQuery.data?.blob || "";
 </script>

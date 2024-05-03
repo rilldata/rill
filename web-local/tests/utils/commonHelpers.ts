@@ -121,7 +121,7 @@ export async function deleteFile(page: Page, filePath: string) {
   await Promise.all([
     page.waitForResponse(
       (response) =>
-        response.url().includes(filePath) &&
+        response.url().includes(encodeURIComponent(filePath)) &&
         response.request().method() === "DELETE",
     ),
     clickMenuButton(page, "Delete"),

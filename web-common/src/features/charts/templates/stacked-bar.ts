@@ -27,7 +27,7 @@ export function buildStackedBar(
     },
     tooltip: [
       {
-        field: timeField.name,
+        field: timeField.tooltipName ? timeField.tooltipName : timeField.name,
         type: "temporal",
         title: "Time",
         format: "%b %d, %Y %H:%M",
@@ -48,6 +48,7 @@ export function buildStackedBar(
       select: {
         type: "point",
         on: "pointerover",
+        clear: "pointerout",
         encodings: ["x", "color"],
       },
     },

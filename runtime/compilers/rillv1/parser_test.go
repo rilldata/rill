@@ -54,6 +54,65 @@ vars:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLFeatures(t *testing.T) {
+	tt := []struct {
+		yaml    string
+		want    map[string]bool
+		wantErr bool
+	}{
+		{
+			yaml: ` `,
+			want: nil,
+		},
+		{
+			yaml:    `features: 10`,
+			wantErr: true,
+		},
+		{
+			yaml: `features: []`,
+			want: map[string]bool{},
+		},
+		{
+			yaml: `features: {}`,
+			want: map[string]bool{},
+		},
+		{
+			yaml: `
+features:
+  foo: true
+  bar: false
+`,
+			want: map[string]bool{"foo": true, "bar": false},
+		},
+		{
+			yaml: `
+features:
+- foo
+- bar
+`,
+			want: map[string]bool{"foo": true, "bar": true},
+		},
+	}
+
+	for i, tc := range tt {
+		t.Run(fmt.Sprintf("case=%d", i), func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: tc.yaml,
+			})
+
+			res, err := ParseRillYAML(ctx, repo, "")
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.want, res.FeatureFlags)
+		})
+	}
+}
+
 func TestComplete(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml

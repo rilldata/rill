@@ -23,7 +23,8 @@ export async function handleEntityCreate(kind: ResourceKind) {
   const newName = getName(name, allNames);
   const newPath = `${name + "s"}/${newName}${extension}`;
 
-  await runtimeServicePutFile(instanceId, newPath, {
+  await runtimeServicePutFile(instanceId, {
+    path: newPath,
     blob: baseContent,
     create: true,
     createOnly: true,

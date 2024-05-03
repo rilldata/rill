@@ -42,7 +42,7 @@ export async function uploadFile(
   const fileUploadPromise = fileChooser.setFiles([
     path.join(TestDataPath, file),
   ]);
-  const fileRespWaitPromise = page.waitForResponse(/files\/-\//);
+  const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
 
   // TODO: infer duplicate
   if (isDuplicate) {

@@ -73,15 +73,12 @@ export async function submitRemoteSourceForm(
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
   // Attempt to create & import the source
-  await runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
-    {
-      blob: yaml,
-      create: true,
-      createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    },
-  );
+  await runtimeServicePutFile(instanceId, {
+    path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+    blob: yaml,
+    create: true,
+    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+  });
   await checkSourceImported(
     queryClient,
     getFilePathFromNameAndType(values.sourceName, EntityType.Table),

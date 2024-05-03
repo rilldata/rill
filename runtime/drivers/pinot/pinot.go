@@ -13,6 +13,7 @@ import (
 
 func init() {
 	drivers.Register("pinot", driver{})
+	drivers.RegisterAsConnector("pinot", driver{})
 }
 
 var spec = drivers.Spec{

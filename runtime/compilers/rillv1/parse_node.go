@@ -219,7 +219,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		case "type", "kind": // "kind" is for backwards compatibility
 			v, ok := v.(string)
 			if !ok {
-				err = fmt.Errorf("invalid type %T for property 'kind'", v)
+				err = fmt.Errorf("invalid type %T for property 'type'", v)
 				break
 			}
 			res.Kind, err = ParseResourceKind(v)
@@ -276,7 +276,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			if path == "" {
 				path = sqlPath
 			}
-			return nil, pathError{path: path, err: errors.New("resource kind not specified and could not be inferred from context")}
+			return nil, pathError{path: path, err: errors.New("resource type not specified and could not be inferred from context")}
 		}
 	}
 
