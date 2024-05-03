@@ -59,8 +59,8 @@
         on:click={() => handleChartTypeChange(id, disabled)}
       >
         <Icon
-          primaryColor={disabled ? "#64748b" : "var(--color-primary-700)"}
-          secondaryColor={disabled ? " #cbd5e1 " : "var(--color-primary-300)"}
+          primaryColor={disabled ? "#9CA3AF" : "var(--color-primary-700)"}
+          secondaryColor={disabled ? "#CBD5E1" : "var(--color-primary-300)"}
           size="20px"
         />
         <svelte:fragment slot="tooltip-content">
