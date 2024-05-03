@@ -5,22 +5,26 @@
     resolveSignalTimeField,
   } from "@rilldata/web-common/features/charts/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import {
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
+  import { View } from "svelte-vega";
   import { TDDAlternateCharts } from "../types";
+  import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
     getVegaSpecForTDD,
-    patchSpecForTDD,
     reduceDimensionData,
+    updateVegaOnTableHover,
   } from "./utils";
 
-  export let totalsData;
+  export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
   export let expandedMeasureName: string;
   export let chartType: TDDAlternateCharts;
@@ -28,6 +32,8 @@
   export let xMax: Date;
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
+
+  let viewVL: View;
 
   const dispatch = createEventDispatcher();
   const {
@@ -44,6 +50,20 @@
   $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =
     $comparisonDimension?.label || $comparisonDimension?.name;
+
+  $: hoveredTime = $tableInteractionStore.time;
+  $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
+
+  $: {
+    updateVegaOnTableHover(
+      viewVL,
+      chartType,
+      isTimeComparison,
+      hasDimensionData,
+      hoveredTime,
+      hoveredDimensionValue,
+    );
+  }
 
   $: vegaSpec = getVegaSpecForTDD(
     chartType,
@@ -99,6 +119,7 @@
 
 {#if sanitizedVegaSpec && data}
   <VegaLiteRenderer
+    bind:viewVL
     data={{ table: data }}
     spec={sanitizedVegaSpec}
     {signalListeners}

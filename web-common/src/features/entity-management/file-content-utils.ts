@@ -36,10 +36,17 @@ function tryParseYaml(
 
   try {
     const yaml = parse(fileContents);
-    if (yaml.type) {
+
+    // Get `type` (or `kind`, for backwards-compatibility) from yaml file
+    // We try `kind` first to avoid picking up old Sources' `type` field
+    if (yaml?.kind) {
       kind = ResourceShortNameToKind[yaml.kind as string];
+    } else if (yaml?.type) {
+      kind = ResourceShortNameToKind[yaml.type as string];
     }
-    if (yaml.name) {
+
+    // Get `name` from yaml file
+    if (yaml?.name) {
       name = yaml.name as string;
     }
   } catch (err) {

@@ -19,9 +19,10 @@
   export let customDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  // Bind view to parent component
+  export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
-  let viewVL: View;
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.9 - 100;
@@ -79,7 +80,7 @@
 
   :global(#rill-vg-tooltip) {
     @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
-    background: rgba(255, 255, 255, 0.8);
+    background: white;
     & h2 {
       @apply text-slate-500 text-sm font-semibold mb-2;
     }
