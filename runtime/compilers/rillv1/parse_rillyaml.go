@@ -215,9 +215,10 @@ func equalRillYAML(r, other *RillYAML) bool {
 	if !maps.Equal(r.FeatureFlags, other.FeatureFlags) {
 		return false
 	}
-	
+
 	// keeping defaults comparison at last to avoid yaml marshalling
-	for key1, node1 := range r.Defaults {
+	for key1 := range r.Defaults {
+		node1 := r.Defaults[key1]
 		node2, ok := r.Defaults[key1]
 		if !ok {
 			return false
