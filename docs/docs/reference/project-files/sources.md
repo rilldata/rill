@@ -94,12 +94,24 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 **`database_url`**
  — Postgres connection string. Refer Postgres [docs](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for format.  
 
-**`duckdb`** – Optionally specify raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally. See the DuckDB [docs](https://duckdb.org/docs/data/overview) for a full list of available parameters. Example usage:
+**`duckdb`** – Optionally specify raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally. 
+
+See the DuckDB [docs](https://duckdb.org/docs/data/overview) for a full list of available parameters. 
+
+Example: Define all column data mappings
 ```yaml
 duckdb:
   header: True
   delim: "'|'"
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
+```
+
+Example: Define a column type
+```yaml
+duckdb:
+  header: True
+  delim: "'|'"
+  columns: "types={'UniqueCarrier': 'VARCHAR'}"
 ```
 
 **`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake connector page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.
