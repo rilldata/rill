@@ -115,7 +115,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		if prevExecutor != nil {
-			err = prevExecutor.Rename(ctx, &drivers.ModelRenameOptions{
+			renameRes, err := prevExecutor.Rename(ctx, &drivers.ModelRenameOptions{
 				NewName:        self.Meta.Name.Name,
 				PreviousName:   self.Meta.RenamedFrom.Name,
 				PreviousResult: prevResult,
@@ -123,7 +123,22 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			})
 			if err != nil {
 				r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+			} else {
+				resultProps, err := structpb.NewStruct(renameRes.Properties)
+				if err != nil {
+					r.C.Logger.Warn("failed to build result properties after rename", zap.String("model", n.Name), zap.Error(err))
+				} else {
+					model.State.ResultConnector = renameRes.Connector
+					model.State.ResultProperties = resultProps
+					model.State.ResultTable = renameRes.Table
+					model.State.RefreshedOn = timestamppb.Now()
+					err = r.C.UpdateState(ctx, self.Meta.Name, self)
+					if err != nil {
+						return runtime.ReconcileResult{Err: err}
+					}
+				}
 			}
+
 			// Note: Not exiting early. We may need to retrigger the model in some cases. We also need to set the correct retrigger time.
 		}
 	}
@@ -232,7 +247,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	defer cancel()
 
 	// Build the output
-	execRes, execErr := executor.Execute(ctx, opts)
+	execRes, execErr := executor.Run(ctx, opts)
 	if execErr != nil {
 		execErr = fmt.Errorf("failed to build output: %w", execErr)
 	}
@@ -434,7 +449,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.Mod
 	}
 
 	if e, ok := ic.AsModelExecutor(); ok {
-		ok, err := e.CanExecute(ctx, opts)
+		ok, err := e.Supports(ctx, opts)
 		if err != nil {
 			release()
 			return "", nil, nil, err
@@ -457,7 +472,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.Mod
 	}
 
 	if e, ok := oc.AsModelExecutor(); ok {
-		ok, err := e.CanExecute(ctx, opts)
+		ok, err := e.Supports(ctx, opts)
 		if err != nil {
 			release()
 			return "", nil, nil, err
@@ -487,10 +502,11 @@ func (r *ModelReconciler) newExecutorEnv(ctx context.Context) (*drivers.ModelExe
 	defer release()
 
 	return &drivers.ModelExecutorEnv{
-		AllowHostAccess:  r.C.Runtime.AllowHostAccess(),
-		StageChanges:     cfg.StageChanges,
-		RepoRoot:         repo.Root(),
-		AcquireConnector: r.C.AcquireConn,
+		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
+		RepoRoot:           repo.Root(),
+		StageChanges:       cfg.StageChanges,
+		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		AcquireConnector:   r.C.AcquireConn,
 	}, nil
 }
 

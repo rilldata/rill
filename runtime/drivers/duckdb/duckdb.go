@@ -370,7 +370,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor() (drivers.ModelExecutor, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.

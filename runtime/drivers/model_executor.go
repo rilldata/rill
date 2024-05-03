@@ -4,9 +4,9 @@ import "context"
 
 // ModelExecutor implements logic for building and managing a model.
 type ModelExecutor interface {
-	CanExecute(ctx context.Context, opts *ModelExecuteOptions) (bool, error)
-	Execute(ctx context.Context, opts *ModelExecuteOptions) (*ModelExecuteResult, error)
-	Rename(ctx context.Context, opts *ModelRenameOptions) error
+	Supports(ctx context.Context, opts *ModelExecuteOptions) (bool, error)
+	Run(ctx context.Context, opts *ModelExecuteOptions) (*ModelExecuteResult, error)
+	Rename(ctx context.Context, opts *ModelRenameOptions) (*ModelExecuteResult, error)
 	Exists(ctx context.Context, res *ModelExecuteResult) (bool, error)
 	Delete(ctx context.Context, res *ModelExecuteResult) error
 }
@@ -36,8 +36,9 @@ type ModelRenameOptions struct {
 }
 
 type ModelExecutorEnv struct {
-	AllowHostAccess  bool
-	StageChanges     bool
-	RepoRoot         string
-	AcquireConnector func(ctx context.Context, name string) (Handle, func(), error)
+	AllowHostAccess    bool
+	RepoRoot           string
+	StageChanges       bool
+	DefaultMaterialize bool
+	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }
