@@ -221,7 +221,9 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer rows.Close()
 
-	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit)
+	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit, func(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
+		return q.createPivotSQL(temporaryTableName, mv)
+	})
 }
 
 func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity, cfg drivers.InstanceConfig) error {
@@ -303,11 +305,24 @@ func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Contex
 			return nil
 		})
 	}
-	return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sqlString,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit, func(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
+		return q.createComparisonPivotSQL(temporaryTableName, mv)
+	})
 }
 
-func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec, pivotCellLimit int64) error {
+func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec, pivotCellLimit int64, pivotSQL func(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string) error {
 	pivotDB, err := sqlx.Connect("duckdb", "")
 	if err != nil {
 		return err
@@ -395,7 +410,7 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 
 		ctx, cancelFunc := context.WithTimeout(ctx, defaultExecutionTimeout)
 		defer cancelFunc()
-		pivotRows, err := pivotDB.QueryxContext(ctx, q.createPivotSQL(temporaryTableName, mv))
+		pivotRows, err := pivotDB.QueryxContext(ctx, pivotSQL(temporaryTableName, mv))
 		if err != nil {
 			return err
 		}
