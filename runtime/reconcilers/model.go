@@ -220,15 +220,25 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Prepare the new execution options
+	incremental := model.Spec.Incremental && prevResult != nil // TODO: Not if resetting
+	state := map[string]any{"incremental": incremental}
+	inputProps, err := r.resolveTemplatedProps(ctx, self, model.Spec.InputConnector, model.Spec.InputProperties.AsMap(), state)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	outputProps, err := r.resolveTemplatedProps(ctx, self, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap(), state)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
 	opts := &drivers.ModelExecuteOptions{
 		ModelName:        self.Meta.Name.Name,
 		Env:              executorEnv,
 		PreviousResult:   prevResult,
-		Incremental:      model.Spec.Incremental && prevResult != nil, // TODO: Not if resetting
+		Incremental:      incremental,
 		InputConnector:   model.Spec.InputConnector,
-		InputProperties:  model.Spec.InputProperties.AsMap(),
+		InputProperties:  inputProps,
 		OutputConnector:  model.Spec.OutputConnector,
-		OutputProperties: model.Spec.OutputProperties.AsMap(),
+		OutputProperties: outputProps,
 	}
 
 	// Open executor for the new output
@@ -512,7 +522,7 @@ func (r *ModelReconciler) newExecutorEnv(ctx context.Context) (*drivers.ModelExe
 
 // resolveTemplatedProps resolves template tags in strings nested in the provided props.
 // Passing a connector is optional. If a connector is provided, it will be used to inform how values are escaped.
-func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, connector string, props map[string]any) (map[string]any, error) {
+func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, connector string, props, state map[string]any) (map[string]any, error) {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, err
@@ -532,6 +542,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		Environment: inst.Environment,
 		User:        map[string]any{},
 		Variables:   inst.ResolveVariables(),
+		State:       state,
 		Self: compilerv1.TemplateResource{
 			Meta:  self.Meta,
 			Spec:  self.GetModel().Spec,

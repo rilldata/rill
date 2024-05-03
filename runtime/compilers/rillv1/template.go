@@ -45,6 +45,7 @@ type TemplateData struct {
 	Environment string
 	User        map[string]any
 	Variables   map[string]string
+	State       map[string]any
 	ExtraProps  map[string]any
 	Self        TemplateResource
 	Resolve     func(ref ResourceName) (string, error)
@@ -74,7 +75,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	refs := map[ResourceName]bool{}
 
 	// Build func map
-	funcMap := newFuncMap("")
+	funcMap := newFuncMap("", nil)
 	funcMap["configure"] = func(parts ...any) (string, error) {
 		if len(parts) == 1 {
 			// Configure from YAML
@@ -133,11 +134,14 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	// Build template data
 	dataMap := map[string]interface{}{
 		"env":   "",
-		"vars":  map[string]any{},
 		"user":  map[string]any{},
-		"meta":  map[string]any{},
-		"spec":  map[string]any{},
+		"vars":  map[string]any{},
 		"state": map[string]any{},
+		"self": map[string]any{
+			"meta":  map[string]any{},
+			"spec":  map[string]any{},
+			"state": map[string]any{},
+		},
 	}
 
 	// Resolve template
@@ -163,7 +167,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 // ResolveTemplate resolves a template to a string using the given data.
 func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	// Base func map
-	funcMap := newFuncMap(data.Environment)
+	funcMap := newFuncMap(data.Environment, data.State)
 
 	// Add no-ops
 	funcMap["configure"] = func(parts ...string) error { return nil }
@@ -224,11 +228,14 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	// Build template data
 	dataMap := map[string]interface{}{
 		"env":   data.Environment,
-		"vars":  data.Variables,
 		"user":  data.User,
-		"meta":  data.Self.Meta,
-		"spec":  data.Self.Spec,
-		"state": data.Self.State,
+		"vars":  data.Variables,
+		"state": data.State,
+		"self": map[string]any{
+			"meta":  data.Self.Meta,
+			"spec":  data.Self.Spec,
+			"state": data.Self.State,
+		},
 	}
 
 	// Add extra props
@@ -246,7 +253,7 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 }
 
 // newFuncMap creates a base func map for templates.
-func newFuncMap(environment string) template.FuncMap {
+func newFuncMap(environment string, state map[string]any) template.FuncMap {
 	// Add Sprig template functions (removing functions that leak host info)
 	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
 	funcMap := sprig.TxtFuncMap()
@@ -256,6 +263,9 @@ func newFuncMap(environment string) template.FuncMap {
 	// Add helpers for checking for common environments
 	funcMap["dev"] = func() bool { return environment == "dev" }
 	funcMap["prod"] = func() bool { return environment == "prod" }
+
+	// Add helper for checking .state.incremental
+	funcMap["incremental"] = func() bool { return state != nil && state["incremental"] == true }
 
 	return funcMap
 }
