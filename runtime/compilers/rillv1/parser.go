@@ -190,7 +190,7 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 	}
 
 	if p.RillYAML == nil {
-		return nil, errors.New("rill.yaml not found")
+		return nil, ErrRillYAMLNotFound
 	}
 
 	return p.RillYAML, nil
@@ -250,7 +250,9 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		oldRillYAML := p.RillYAML
 		err := p.parseRillYAML(ctx, path)
 		if err == nil {
-			changedRillYAML = !equalRillYAML(oldRillYAML, p.RillYAML)
+			// Watcher sends multiple events for a single edit. We want to only restart the controller when rill.yaml actually changes.
+			// So we check the new rill.yaml contents against the contents stored in parser state.
+			changedRillYAML = !oldRillYAML.equals(p.RillYAML)
 		} else {
 			// any error including parse error means rill.yaml changed
 			changedRillYAML = true
@@ -384,6 +386,24 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			continue
 		}
 
+		// Check if path is .env and clear it (so we can re-parse it)
+		// Watcher sends multiple events for a single edit. We want to only restart the controller when .env actually changes.
+		// So we check the new .env contents against the contents stored in parser state.
+		if isDotEnv {
+			oldDotEnv := p.DotEnv
+			err := p.parseDotEnv(ctx, checkPaths[i])
+			if err == nil {
+				modifiedDotEnv = !maps.Equal(p.DotEnv, oldDotEnv)
+			} else {
+				// any error means .env is under change
+				modifiedDotEnv = true
+			}
+			if !modifiedDotEnv {
+				continue
+			}
+			p.DotEnv = nil
+		}
+
 		// If a file exists at path, add it to the parse list
 		info, err := p.Repo.Stat(ctx, path)
 		if err == nil {
@@ -395,21 +415,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 		// NOTE: Continue even if the file has been deleted because it may have associated state we need to clear.
-
-		// Check if path is .env and clear it (so we can re-parse it)
-		if isDotEnv {
-			oldDotEnv := p.DotEnv
-			err := p.parseDotEnv(ctx, checkPaths[i])
-			if err == nil {
-				modifiedDotEnv = !maps.Equal(p.DotEnv, oldDotEnv)
-			} else {
-				// any error means .env is under change
-				modifiedDotEnv = true
-			}
-			if modifiedDotEnv {
-				p.DotEnv = nil
-			}
-		}
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
 		// For cases where a file was modified or deleted, the transitive check through resourcesForPath will already take of that.
