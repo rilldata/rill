@@ -247,14 +247,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		if !pathIsRillYAML(path) {
 			continue
 		}
-		rillYAML, err := ParseRillYAML(ctx, p.Repo, p.InstanceID)
-		if err != nil {
-			return nil, err
+		oldRillYAML := p.RillYAML
+		err := p.parseRillYAML(ctx, path)
+		if err == nil {
+			changedRillYAML = !equalRillYAML(oldRillYAML, p.RillYAML)
 		}
-		changedRillYAML = equalRillYAML(p.RillYAML, rillYAML)
-		if changedRillYAML {
-			break
-		}
+		break
 	}
 
 	if changedRillYAML {
@@ -397,13 +395,13 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 		// Check if path is .env and clear it (so we can re-parse it)
 		if isDotEnv {
-			dotEnv, err := ParseDotEnv(ctx, p.Repo, p.InstanceID)
-			if err != nil {
-				return nil, err
-			}
-			modifiedDotEnv = !maps.Equal(p.DotEnv, dotEnv)
-			if modifiedDotEnv {
-				p.DotEnv = nil
+			oldDotEnv := p.DotEnv
+			err := p.parseDotEnv(ctx, checkPaths[i])
+			if err == nil {
+				modifiedDotEnv = !maps.Equal(p.DotEnv, oldDotEnv)
+				if modifiedDotEnv {
+					p.DotEnv = nil
+				}
 			}
 		}
 

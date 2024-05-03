@@ -183,6 +183,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 }
 
 func equalRillYAML(r, other *RillYAML) bool {
+	if r == nil || other == nil {
+		return r == other
+	}
 	if r.OLAPConnector != other.OLAPConnector || len(r.Connectors) != len(other.Connectors) || len(r.Variables) != len(other.Variables) || len(r.Defaults) != len(other.Defaults) {
 		return false
 	}
