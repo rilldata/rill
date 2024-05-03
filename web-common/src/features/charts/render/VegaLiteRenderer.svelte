@@ -19,9 +19,10 @@
   export let customDashboard = false;
   export let chartView = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  // Bind view to parent component
+  export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
-  let viewVL: View;
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.9 - 100;
