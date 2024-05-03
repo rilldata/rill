@@ -9,7 +9,7 @@ In Rill, your dashboards are defined by _metric definitions_. Metric definitions
 * _**A model**_ - A data model creating a One Big Table that will power the dashboard.
 * _**A timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
 * _**Measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
-* _**Dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
+* _**Dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allows you to look at segments or attributes of your data (and filter / slice accordingly).
 
 :::note Dashboard Properties
 For more details about available configurations and properties, check our [Dashboard YAML](/reference/project-files/dashboards) reference page.
@@ -46,9 +46,9 @@ Dimensions are used for exploring segments and filtering the dashboard. Valid di
 ## Updating dashboards
 
 ### Using the UI / code
-When you add a metrics definition using the UI, a code definition will automatically be created as a .yaml file in your Rill project in the dashboards directory. However, you can also create metrics definitions more directly by creating the artifact.
+When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the dashboards directory by default. However, you can also create metrics definitions more directly by creating the artifact.
 
-In your Rill project directory, a `dashboard_name.yaml` file is created in the `dashboards` directory and its definition its definition can be adapted from the following template:
+In your Rill project directory, after the `dashboard_name.yaml` file is created in the `dashboards` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
 
 ```yaml
 model: model_name
@@ -71,6 +71,14 @@ measures:
     format_preset: "humanize"
   # Add more measures here
 ```
+:::info Check our reference documentation
 
-For details about all available properties, see the syntax [reference](/reference/project-files/dashboards).
+For more information about available dashboard properties, feel free to check our [reference YAML documentation](/reference/project-files/dashboards).
 
+:::
+
+### Multi-editor and external IDE support
+
+Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer has support for the concept of "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor of choice, such as VSCode, side-by-side with the dashboard that you're actively developing!
+
+![hot-reload-0-36](https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif)
