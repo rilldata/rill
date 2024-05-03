@@ -110,7 +110,7 @@ func (c *connection) Run(ctx context.Context, opts *drivers.ModelExecuteOptions)
 		UsedModelName: usedModelName,
 	}
 	resultPropsMap := map[string]interface{}{}
-	err = mapstructure.WeakDecode(resultProps, resultPropsMap)
+	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}
@@ -145,7 +145,7 @@ func (c *connection) Rename(ctx context.Context, opts *drivers.ModelRenameOption
 
 	prevResultProps.Table = opts.NewName
 	resultPropsMap := map[string]interface{}{}
-	err = mapstructure.WeakDecode(prevResultProps, resultPropsMap)
+	err = mapstructure.WeakDecode(prevResultProps, &resultPropsMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}

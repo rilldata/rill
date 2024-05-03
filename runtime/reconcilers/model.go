@@ -376,18 +376,20 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	err = pbutil.WriteHash(structpb.NewStructValue(spec.StateResolverProperties), hash)
-	if err != nil {
-		return "", err
-	}
+	if spec.StateResolverProperties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.StateResolverProperties), hash)
+		if err != nil {
+			return "", err
+		}
 
-	res, err := r.analyzeTemplatedVariables(ctx, spec.StateResolverProperties.AsMap())
-	if err != nil {
-		return "", err
-	}
-	err = hashWriteMapOrdered(hash, res)
-	if err != nil {
-		return "", err
+		res, err := r.analyzeTemplatedVariables(ctx, spec.StateResolverProperties.AsMap())
+		if err != nil {
+			return "", err
+		}
+		err = hashWriteMapOrdered(hash, res)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_, err = hash.Write([]byte(spec.InputConnector))
@@ -395,18 +397,20 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	err = pbutil.WriteHash(structpb.NewStructValue(spec.InputProperties), hash)
-	if err != nil {
-		return "", err
-	}
+	if spec.InputProperties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.InputProperties), hash)
+		if err != nil {
+			return "", err
+		}
 
-	res, err = r.analyzeTemplatedVariables(ctx, spec.InputProperties.AsMap())
-	if err != nil {
-		return "", err
-	}
-	err = hashWriteMapOrdered(hash, res)
-	if err != nil {
-		return "", err
+		res, err := r.analyzeTemplatedVariables(ctx, spec.InputProperties.AsMap())
+		if err != nil {
+			return "", err
+		}
+		err = hashWriteMapOrdered(hash, res)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_, err = hash.Write([]byte(spec.OutputConnector))
@@ -414,18 +418,20 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	err = pbutil.WriteHash(structpb.NewStructValue(spec.OutputProperties), hash)
-	if err != nil {
-		return "", err
-	}
+	if spec.OutputProperties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.OutputProperties), hash)
+		if err != nil {
+			return "", err
+		}
 
-	res, err = r.analyzeTemplatedVariables(ctx, spec.OutputProperties.AsMap())
-	if err != nil {
-		return "", err
-	}
-	err = hashWriteMapOrdered(hash, res)
-	if err != nil {
-		return "", err
+		res, err := r.analyzeTemplatedVariables(ctx, spec.OutputProperties.AsMap())
+		if err != nil {
+			return "", err
+		}
+		err = hashWriteMapOrdered(hash, res)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
