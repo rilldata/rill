@@ -69,7 +69,7 @@ export function getVegaSpecForTDD(
   return spec;
 }
 
-function isSignalEqual(currentValues, newValues) {
+function isSignalEqual(currentValues: unknown[], newValues: unknown[]) {
   if (currentValues.length !== newValues.length) {
     return false;
   }
