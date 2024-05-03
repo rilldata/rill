@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -94,6 +95,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		prevResult = &drivers.ModelExecuteResult{
 			Connector:  model.State.ResultConnector,
 			Properties: model.State.ResultProperties.AsMap(),
+			Table:      model.State.ResultTable,
 		}
 	}
 
@@ -164,6 +166,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.ResultTable = ""
 			model.State.SpecHash = ""
 			model.State.RefreshedOn = nil
+			model.State.State = nil
+			model.State.StateSchema = nil
 			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if subErr != nil {
 				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
@@ -197,12 +201,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Decide if we should trigger an update
-	trigger := model.Spec.Trigger
-	trigger = trigger || model.State.ResultConnector == "" // If its nil, ExecutorConnector/ResultProperties/ResultTable will also be nil
-	trigger = trigger || model.State.RefreshedOn == nil
-	trigger = trigger || model.State.SpecHash != hash
-	trigger = trigger || !exists
+	// Decide if we should trigger a reset
+	triggerReset := model.State.ResultConnector == "" // If its nil, ExecutorConnector/ResultProperties/ResultTable will also be nil
+	triggerReset = triggerReset || model.State.RefreshedOn == nil
+	triggerReset = triggerReset || model.State.SpecHash != hash
+	triggerReset = triggerReset || !exists
+
+	// Decide if we should trigger
+	trigger := triggerReset
+	trigger = trigger || model.Spec.Trigger
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
 
 	// Reschedule if we're not triggering
@@ -219,9 +226,19 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	// Prepare the state to pass to the executor
+	incremental := false
+	state := map[string]any{}
+	if !triggerReset && model.Spec.Incremental && prevResult != nil {
+		// This is an incremental run!
+		incremental = true
+		if model.State.State != nil {
+			state = model.State.State.AsMap()
+		}
+	}
+	state["incremental"] = incremental // The incremental flag is hard-coded in the state by convention
+
 	// Prepare the new execution options
-	incremental := model.Spec.Incremental && prevResult != nil // TODO: Not if resetting
-	state := map[string]any{"incremental": incremental}
 	inputProps, err := r.resolveTemplatedProps(ctx, self, model.Spec.InputConnector, model.Spec.InputProperties.AsMap(), state)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
@@ -262,9 +279,41 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		execErr = fmt.Errorf("failed to build output: %w", execErr)
 	}
 
+	// After the model has executed successfully, we re-evaluate the model state (not to be confused with the resource state)
+	var newState *structpb.Struct
+	var newStateSchema *runtimev1.StructType
+	if execErr == nil && model.Spec.StateResolver != "" {
+		res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID:         r.C.InstanceID,
+			Resolver:           model.Spec.StateResolver,
+			ResolverProperties: model.Spec.StateResolverProperties.AsMap(),
+		})
+		if err != nil {
+			execErr = err
+		} else {
+			var tmp []map[string]any
+			err := json.Unmarshal(res.Data, &tmp)
+			if err != nil {
+				execErr = fmt.Errorf("state resolver produced invalid JSON: %w", err)
+			} else if len(tmp) > 1 {
+				execErr = fmt.Errorf("state resolver produced more than one row")
+			} else if len(tmp) == 1 {
+				tmp, err := structpb.NewStruct(tmp[0])
+				if err != nil {
+					execErr = fmt.Errorf("state resolver produced invalid output: %w", err)
+				} else {
+					newState = tmp
+					newStateSchema = res.Schema
+				}
+			}
+			// Not returning any rows will clear the state
+		}
+	}
+
 	// If the build succeeded, update the model's state
 	var update bool
 	if execErr == nil {
+		// Update state
 		resultProps, err := structpb.NewStruct(execRes.Properties)
 		if err != nil {
 			execErr = fmt.Errorf("executor returned non-serializable output properties: %w", err)
@@ -275,6 +324,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.ResultTable = execRes.Table
 			model.State.SpecHash = hash
 			model.State.RefreshedOn = timestamppb.Now()
+			model.State.State = newState
+			model.State.StateSchema = newStateSchema
 			update = true
 		}
 	}
@@ -288,6 +339,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.ResultTable = ""
 			model.State.SpecHash = ""
 			model.State.RefreshedOn = nil
+			model.State.State = nil
+			model.State.StateSchema = nil
 			update = true
 		}
 	}
