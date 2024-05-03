@@ -1,12 +1,12 @@
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { BeforeNavigate } from "@sveltejs/kit";
 import { writable } from "svelte/store";
+import { debounce } from "../lib/create-debouncer";
 import {
   createRuntimeServiceGetInstance,
   V1InstanceFeatureFlags,
 } from "../runtime-client";
 import { runtime } from "../runtime-client/runtime-store";
-import { debounce } from "../lib/create-debouncer";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 class FeatureFlag {
   private state = writable(false);
@@ -59,7 +59,7 @@ class FeatureFlags {
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetInstance(runtime.instanceId, {
+      createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
         query: {
           select: (data) => data?.instance?.featureFlags,
           queryClient,
