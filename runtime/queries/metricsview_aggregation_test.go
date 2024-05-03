@@ -2218,7 +2218,14 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 	i++
 }
 
-func TestMetricsViewsAggregation_comparison_Druid_one_dim(t *testing.T) {
+// Can be used for local or metrics cluster.
+// Local:
+// 1. Start Druid with `./bin/start-micro-quickstart`.
+// 2. Import AdBids.csv as ad_bids datasource.
+// 3. Run the test.
+//
+// metrics-in cluster requires propoer authentication credentials in the DSN.
+func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2300,7 +2307,7 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim(t *testing.T) {
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,3.23,3.13,0.11,0.03,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
+func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
