@@ -1419,8 +1419,8 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			for i, _ := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 			}
-			nonTimeCols := make([]string, 0, len(comparisonSelectCols)) // avoid group by time cols
-			for i, s := range comparisonSelectCols[1:] {                // skip t_offset
+			nonTimeCols := make([]string, 0, len(selectCols)) // avoid group by time cols
+			for i, s := range selectCols[1:] {                // skip t_offset
 				if i >= len(q.Dimensions) {
 					nonTimeCols = append(nonTimeCols, s)
 				} else {
@@ -1546,7 +1546,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			if q.Limit == nil {
 				limit = 0
 			}
-			approximationLimit := int(limit)
+			approximationLimit := limit
 			if limit != 0 && limit < 100 {
 				approximationLimit = 100
 			}
@@ -1555,16 +1555,33 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			if approximationLimit > 0 {
 				comparisonLimitClause += fmt.Sprintf(" LIMIT %d OFFSET %d", approximationLimit, q.Offset)
 			}
-			sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s %[6]s",
-				strings.Join(nonTimeDims, ","),      // 1
+			innerGroupCols := make([]string, 0, len(q.Dimensions))
+			for i, _ := range q.Dimensions {
+				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
+			}
+			nonTimeCols := make([]string, 0, len(comparisonSelectCols)) // avoid group by time cols
+			for i, s := range comparisonSelectCols[1:] {                // skip t_offset
+				if i >= len(q.Dimensions) {
+					nonTimeCols = append(nonTimeCols, s)
+				} else {
+					if q.Dimensions[i].TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+						nonTimeCols = append(nonTimeCols, "1")
+					} else {
+						nonTimeCols = append(nonTimeCols, s)
+					}
+				}
+			}
+			sql = fmt.Sprintf("SELECT 1, %[1]s FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s %[6]s",
+				strings.Join(nonTimeCols, ","),      // 1
 				escapeMetricsViewTable(dialect, mv), // 2
 				strings.Join(unnestClauses, ""),     // 3
 				comparisonWhereClause,               // 4
-				strings.Join(nonTimeGroupCols, ","), // 5
+				strings.Join(innerGroupCols, ","),   // 5
 				comparisonLimitClause,               // 6
 			)
 
 			var druidArgs []any
+			druidArgs = append(druidArgs, selectArgs...)
 			druidArgs = append(druidArgs, comparisonTimeRangeArgs...)
 			druidArgs = append(druidArgs, whereClauseArgs...)
 
@@ -1573,16 +1590,29 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				return "", nil, err
 			}
 
+			// without this extra where condition, the join will be a full scan
 			var whereDimConditions []string
 			for _, row := range result {
 				var dimConditions []string
-				for k, field := range row.Fields {
-					dimConditions = append(dimConditions, fmt.Sprintf("%[1]s = '%[2]s'", k, field.AsInterface()))
+				for _, dim := range q.Dimensions {
+					if dim.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+						field := row.Fields[dim.Name]
+
+						// Druid doesn't resolve aliases in where clause
+						mvDim := mvDimsByName[dim.Name]
+
+						_, ok := field.GetKind().(*structpb.Value_NullValue)
+						if ok {
+							dimConditions = append(dimConditions, fmt.Sprintf("%[1]s is null", safeName(mvDim.Column)))
+						} else {
+							dimConditions = append(dimConditions, fmt.Sprintf("%[1]s = '%[2]s'", safeName(mvDim.Column), field.AsInterface()))
+						}
+					}
 				}
 				whereDimConditions = append(whereDimConditions, strings.Join(dimConditions, " AND "))
 			}
 
-			innerGroupCols := make([]string, 0, len(q.Dimensions)+1)
+			innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
 			outterGroupCols := make([]string, 0, len(q.Dimensions))
 			innerGroupCols = append(innerGroupCols, "1")
 			for i, _ := range q.Dimensions {
