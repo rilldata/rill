@@ -2151,6 +2151,73 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
 }
 
+func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+				Alias:     "timestamp_year",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		ComparisonMeasures: []string{"measure_0"},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Having: expressionpb.Gt("measure_0", 0.0),
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "pub",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+		},
+		PivotOn: []string{"timestamp_year"},
+		Limit:   &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	fields := q.Result.Schema.Fields
+	i := 0
+	require.Equal(t, "pub", fields[i].Name)
+	i++
+	require.Equal(t, "timestamp_year__previous", fields[i].Name)
+	i++
+	require.Equal(t, "2022-01-01 00:00:00_measure_0", fields[i].Name)
+	i++
+	require.Equal(t, "2022-01-01 00:00:00_measure_0__previous", fields[i].Name)
+	i++
+	require.Equal(t, "2022-01-01 00:00:00_measure_0__delta_abs", fields[i].Name)
+	i++
+	require.Equal(t, "2022-01-01 00:00:00_measure_0__delta_rel", fields[i].Name)
+	i++
+}
+
 func TestMetricsViewsAggregation_Druid(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject0(t)
 

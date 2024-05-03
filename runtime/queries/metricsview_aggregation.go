@@ -112,7 +112,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	if q.ComparisonTimeRange != nil {
-		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security)
+		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
 	}
 
 	if olap.Dialect() == drivers.DialectDuckDB {
@@ -224,23 +224,87 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit)
 }
 
-func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity) error {
+func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity, cfg drivers.InstanceConfig) error {
 	sqlString, args, err := q.buildMetricsComparisonAggregationSQL(ctx, olap, priority, mv, dialect, security, false)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
 	fmt.Println(sqlString, args)
 
-	schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
-	if err != nil {
-		return err
+	if len(q.PivotOn) == 0 {
+		schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
+		if err != nil {
+			return err
+		}
+
+		q.Result = &runtimev1.MetricsViewAggregationResponse{
+			Schema: schema,
+			Data:   data,
+		}
+		return nil
 	}
 
-	q.Result = &runtimev1.MetricsViewAggregationResponse{
-		Schema: schema,
-		Data:   data,
+	if olap.Dialect() == drivers.DialectDuckDB {
+		return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
+			temporaryTableName := tempName("_for_pivot_")
+
+			err := olap.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("CREATE TEMPORARY TABLE %[1]s AS %[2]s", temporaryTableName, sqlString),
+				Args:     args,
+				Priority: priority,
+			})
+			if err != nil {
+				return err
+			}
+
+			res, err := olap.Execute(ctx, &drivers.Statement{ // a separate query instead of the multi-statement query due to a DuckDB bug
+				Query:    fmt.Sprintf("SELECT COUNT(*) FROM %[1]s", temporaryTableName),
+				Priority: priority,
+			})
+			if err != nil {
+				return err
+			}
+
+			count := 0
+			if res.Next() {
+				err := res.Scan(&count)
+				if err != nil {
+					res.Close()
+					return err
+				}
+
+				if count > int(cfg.PivotCellLimit)/q.cols() {
+					res.Close()
+					return fmt.Errorf("PIVOT cells count exceeded %d", cfg.PivotCellLimit)
+				}
+			}
+			res.Close()
+
+			defer func() {
+				_ = olap.Exec(ensuredCtx, &drivers.Statement{
+					Query: `DROP TABLE "` + temporaryTableName + `"`,
+				})
+			}()
+
+			schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createComparisonPivotSQL(temporaryTableName, mv), nil)
+			if err != nil {
+				return err
+			}
+
+			if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
+				return fmt.Errorf("Limit exceeded %d", *q.Limit)
+			}
+
+			q.Result = &runtimev1.MetricsViewAggregationResponse{
+				Schema: schema,
+				Data:   data,
+			}
+
+			return nil
+		})
 	}
-	return nil
+	return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+
 }
 
 func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.Result, mv *runtimev1.MetricsViewSpec, pivotCellLimit int64) error {
@@ -464,7 +528,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 	if q.Exporting {
 		selectList = strings.Join(selectCols, ",")
 	}
-	return fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
+	sql := fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
 		temporaryTableName,              // 1
 		strings.Join(pivots, ", "),      // 2
 		strings.Join(measureCols, ", "), // 3
@@ -473,6 +537,131 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 		q.Offset,                        // 6
 		selectList,                      // 7
 	)
+	fmt.Println(sql)
+	return sql
+}
+
+func (q *MetricsViewAggregation) createComparisonPivotSQL(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
+	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
+	aliasesMap := make(map[string]string)
+	pivotMap := make(map[string]bool)
+	for _, p := range q.PivotOn {
+		pivotMap[p] = true
+	}
+	if q.Exporting {
+		for _, e := range mv.Measures {
+			aliasesMap[e.Name] = e.Name
+			if e.Label != "" {
+				aliasesMap[e.Name] = e.Label
+			}
+		}
+
+		for _, e := range mv.Dimensions {
+			aliasesMap[e.Name] = e.Name
+			if e.Label != "" {
+				aliasesMap[e.Name] = e.Label
+			}
+		}
+		for _, e := range q.Dimensions {
+			if e.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				aliasesMap[e.Name] = e.Name
+				if e.Alias != "" {
+					aliasesMap[e.Alias] = e.Alias
+				}
+			}
+		}
+
+		for _, d := range q.Dimensions {
+			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				expr := safeName(d.Name)
+				if pivotMap[d.Name] {
+					expr = fmt.Sprintf("lower(%s)", safeName(d.Name))
+				}
+				selectCols = append(selectCols, fmt.Sprintf("%s AS %s", expr, safeName(aliasesMap[d.Name])))
+			} else {
+				alias := d.Name
+				if d.Alias != "" {
+					alias = d.Alias
+				}
+				selectCols = append(selectCols, safeName(alias))
+			}
+		}
+		for _, m := range q.Measures {
+			selectCols = append(selectCols, fmt.Sprintf("%s AS %s", safeName(m.Name), safeName(aliasesMap[m.Name])))
+		}
+	}
+	measureCols := make([]string, 0, len(q.Measures))
+	for _, m := range q.Measures {
+		alias := m.Name
+		if q.Exporting {
+			alias = aliasesMap[m.Name]
+		}
+		qalias := safeName(alias)
+		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", qalias, qalias))
+		if q.measuresMeta[m.Name].expand {
+			pqa := safeName(alias + "__previous")
+			daqa := safeName(alias + "__delta_abs")
+			drqa := safeName(alias + "__delta_rel")
+			measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", pqa, pqa))
+			measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", daqa, daqa))
+			measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", drqa, drqa))
+		}
+	}
+
+	pivots := make([]string, len(q.PivotOn))
+	for i, p := range q.PivotOn {
+		pivots[i] = p
+		if q.Exporting {
+			pivots[i] = safeName(aliasesMap[p])
+		}
+	}
+
+	sortingCriteria := make([]string, 0, len(q.Sort))
+	for _, s := range q.Sort {
+		sortCriterion := safeName(s.Name)
+		if q.Exporting {
+			sortCriterion = safeName(aliasesMap[s.Name])
+		}
+
+		if s.Desc {
+			sortCriterion += " DESC"
+		}
+		sortCriterion += " NULLS LAST"
+		sortingCriteria = append(sortingCriteria, sortCriterion)
+	}
+
+	orderClause := ""
+	if len(sortingCriteria) > 0 {
+		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
+	}
+
+	var limitClause string
+	if q.Limit != nil {
+		limit := *q.Limit
+		if limit == 0 {
+			limit = 100
+		}
+		if q.Exporting && *q.Limit > 0 {
+			limit = *q.Limit + 1
+		}
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
+	}
+
+	selectList := "*"
+	if q.Exporting {
+		selectList = strings.Join(selectCols, ",")
+	}
+	sql := fmt.Sprintf("PIVOT (SELECT %[7]s FROM %[1]s) ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
+		temporaryTableName,              // 1
+		strings.Join(pivots, ", "),      // 2
+		strings.Join(measureCols, ", "), // 3
+		orderClause,                     // 4
+		limitClause,                     // 5
+		q.Offset,                        // 6
+		selectList,                      // 7
+	)
+	fmt.Println(sql)
+	return sql
 }
 
 func toData(rows *sqlx.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, error) {
