@@ -96,7 +96,6 @@
   const { readOnly } = featureFlags;
 
   let interceptedUrl: string | null = null;
-  let focusOnMount = false;
   let fileNotFound = false;
 
   onMount(async () => {
@@ -342,7 +341,6 @@
             <Editor
               {blob}
               {selections}
-              {focusOnMount}
               {hasUnsavedChanges}
               bind:latest
               bind:autoSave={$autoSave}
