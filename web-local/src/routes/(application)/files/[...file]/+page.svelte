@@ -4,13 +4,14 @@
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
-  import { getExtensionsForFiles } from "@rilldata/web-common/features/editor/getExtensionsForFile";
+  import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     createRuntimeServiceGetFile,
@@ -73,14 +74,16 @@
   $: blob = $fileQuery.data?.blob ?? blob;
 
   $: latest = blob;
+  $: hasUnsavedChanges = latest !== blob;
 
-  function save(content: string) {
-    if ($fileQuery.data?.blob === content) return;
-    return $putFile.mutateAsync({
+  async function save() {
+    if (!hasUnsavedChanges) return;
+
+    await $putFile.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
         path: filePath,
-        blob: content,
+        blob: latest,
       },
     });
   }
@@ -110,17 +113,19 @@
 {:else if isOther}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
-    <div class="editor-pane size-full" slot="body">
-      <div class="editor flex flex-col h-full">
-        <div class="grow flex bg-white overflow-y-auto">
-          <Editor
-            {blob}
-            bind:latest
-            extensions={getExtensionsForFiles(filePath)}
-            on:save={({ detail: { content } }) => debounceSave(content)}
-          />
-        </div>
-      </div>
+    <div
+      slot="body"
+      class="editor-pane size-full overflow-hidden flex flex-col"
+    >
+      <WorkspaceEditorContainer>
+        <Editor
+          {blob}
+          bind:latest
+          {hasUnsavedChanges}
+          extensions={getExtensionsForFile(filePath)}
+          on:save={debounceSave}
+        />
+      </WorkspaceEditorContainer>
     </div>
   </WorkspaceContainer>
 {/if}
