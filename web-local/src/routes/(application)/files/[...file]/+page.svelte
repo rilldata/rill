@@ -117,7 +117,7 @@
             {blob}
             bind:latest
             extensions={getExtensionsForFiles(filePath)}
-            on:update={({ detail: { content } }) => debounceSave(content)}
+            on:save={({ detail: { content } }) => debounceSave(content)}
           />
         </div>
       </div>
