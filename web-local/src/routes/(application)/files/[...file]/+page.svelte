@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
+  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
@@ -9,6 +9,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
@@ -27,6 +28,10 @@
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
   const FILE_SAVE_DEBOUNCE_TIME = 400;
+
+  let interceptedUrl: string | null = null;
+
+  const putFile = createRuntimeServicePutFile(); // TODO: optimistically update the Get File cache
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
@@ -55,9 +60,6 @@
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
 
-  // TODO: optimistically update the get file cache
-  const putFile = createRuntimeServicePutFile();
-
   onMount(() => {
     expandDirectory(filePath);
 
@@ -68,6 +70,14 @@
     expandDirectory(filePath);
 
     // TODO: Focus on the code editor
+  });
+
+  beforeNavigate((e) => {
+    if (!hasUnsavedChanges || interceptedUrl) return;
+
+    e.cancel();
+
+    if (e.to) interceptedUrl = e.to.url.href;
   });
 
   const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
@@ -98,6 +108,19 @@
   function expandDirectory(filePath: string) {
     const directory = filePath.split("/").slice(0, -1).join("/");
     directoryState.expand(directory);
+  }
+
+  function handleConfirm() {
+    if (!interceptedUrl) return;
+    const url = interceptedUrl;
+    latest = blob;
+    hasUnsavedChanges = false;
+    interceptedUrl = null;
+    goto(url).catch(console.error);
+  }
+
+  function handleCancel() {
+    interceptedUrl = null;
   }
 </script>
 
@@ -134,4 +157,12 @@
       </WorkspaceEditorContainer>
     </div>
   </WorkspaceContainer>
+{/if}
+
+{#if interceptedUrl}
+  <UnsavedSourceDialog
+    context="file"
+    on:confirm={handleConfirm}
+    on:cancel={handleCancel}
+  />
 {/if}
