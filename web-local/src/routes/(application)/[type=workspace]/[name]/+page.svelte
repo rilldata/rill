@@ -17,7 +17,7 @@
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
-  import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
+  import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
   import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
@@ -338,7 +338,7 @@
               on:save={debounceSave}
             />
           {:else}
-            <Editor
+            <ModelEditor
               {blob}
               {selections}
               {hasUnsavedChanges}
