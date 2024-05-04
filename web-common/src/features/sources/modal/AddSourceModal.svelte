@@ -205,7 +205,7 @@
         {#if selectedConnector}
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector.name === "clickhouse" || "pinot"}
+          {:else if selectedConnector.name === "clickhouse" || selectedConnector.name === "pinot"}
             <OLAPDriverInstructions
               connector={selectedConnector}
               on:back={back}
