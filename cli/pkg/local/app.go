@@ -189,6 +189,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Prepare connectors for the instance
 	var connectors []*runtimev1.Connector
 
+	// Reset tmp dir
+	if opts.Reset {
+		_ = os.RemoveAll(dbDirPath)
+		err = os.MkdirAll(dbDirPath, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	defaultOLAP := false
 	olapDSN := opts.OlapDSN
@@ -204,14 +213,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 
 		olapCfg["external_table_storage"] = strconv.FormatBool(val)
-	}
-
-	if opts.Reset {
-		_ = os.RemoveAll(dbDirPath)
-		err = os.MkdirAll(dbDirPath, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Set default DuckDB pool size to 4
