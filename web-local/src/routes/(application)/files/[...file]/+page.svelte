@@ -12,6 +12,7 @@
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     createRuntimeServiceGetFile,
@@ -76,6 +77,10 @@
   $: latest = blob;
   $: hasUnsavedChanges = latest !== blob;
 
+  $: pathname = $page.url.pathname;
+  $: workspace = workspaces.get(pathname);
+  $: autoSave = workspace.editor.autoSave;
+
   async function save() {
     if (!hasUnsavedChanges) return;
 
@@ -120,9 +125,10 @@
       <WorkspaceEditorContainer>
         <Editor
           {blob}
-          bind:latest
           {hasUnsavedChanges}
           extensions={getExtensionsForFile(filePath)}
+          bind:latest
+          bind:autoSave={$autoSave}
           on:save={debounceSave}
         />
       </WorkspaceEditorContainer>
