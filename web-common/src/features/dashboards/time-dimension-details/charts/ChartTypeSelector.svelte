@@ -73,7 +73,7 @@
 
 <style lang="postcss">
   .chart-type-selector {
-    @apply flex ml-auto overflow-hidden mr-2;
+    @apply flex ml-auto overflow-hidden mr-4;
     @apply border border-primary-300 divide-x divide-primary-300 rounded-sm;
   }
   .chart-icon-wrapper {
