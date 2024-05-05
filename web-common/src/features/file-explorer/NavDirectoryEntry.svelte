@@ -81,6 +81,8 @@
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
+  aria-controls={`nav-${dir.path}`}
+  aria-expanded={expanded}
 >
   <CaretDownIcon
     className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
