@@ -18,9 +18,9 @@
   export let blob: string; // the initial content of the editor
   export let latest: string;
   export let extensions: Extension[] = [];
-  export let autoSave = true;
-  export let hasUnsavedChanges: boolean;
+  export let autoSave: boolean;
   export let hideAutoSave: boolean;
+  export let hasUnsavedChanges: boolean;
 
   let editor: EditorView;
   let container: HTMLElement;
