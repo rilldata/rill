@@ -359,6 +359,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: sensitive
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
     post:
@@ -509,7 +513,36 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/files/-/{path}:
+  /v1/instances/{instanceId}/files/dir:
+    post:
+      summary: CreateDirectory create a directory for the given path
+      operationId: RuntimeService_CreateDirectory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDirectoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              path:
+                type: string
+            title: Request message for RuntimeService.CreateDirectory
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/entry:
     get:
       summary: GetFile returns the contents of a specific file in a repo.
       operationId: RuntimeService_GetFile
@@ -528,10 +561,9 @@ paths:
           required: true
           type: string
         - name: path
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
-          pattern: .+
       tags:
         - RuntimeService
     delete:
@@ -552,10 +584,9 @@ paths:
           required: true
           type: string
         - name: path
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
-          pattern: .+
         - name: force
           in: query
           required: false
@@ -579,17 +610,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
         - name: body
           in: body
           required: true
           schema:
             type: object
             properties:
+              path:
+                type: string
               blob:
                 type: string
               create:
@@ -601,37 +629,6 @@ paths:
                   Will cause the operation to fail if the file already exists.
                   It should only be set when create = true.
             title: Request message for RuntimeService.PutFile
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/files/create-dir/-/{path}:
-    post:
-      summary: CreateDirectory create a directory for the given path
-      operationId: RuntimeService_CreateDirectory
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateDirectoryResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            title: Request message for RuntimeService.CreateDirectory
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
@@ -796,15 +793,15 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/generate/chart:
+  /v1/instances/{instanceId}/generate/renderer:
     post:
-      summary: GenerateChartSpec generates a vega lite spec from a resolver and resolver properties
-      operationId: RuntimeService_GenerateChartSpec
+      summary: GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
+      operationId: RuntimeService_GenerateRenderer
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GenerateChartSpecResponse'
+            $ref: '#/definitions/v1GenerateRendererResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3088,26 +3085,6 @@ definitions:
       line:
         type: integer
         format: int64
-  v1Chart:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1ChartSpec'
-      state:
-        $ref: '#/definitions/v1ChartState'
-  v1ChartSpec:
-    type: object
-    properties:
-      title:
-        type: string
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
-      vegaLiteSpec:
-        type: string
-  v1ChartState:
-    type: object
   v1Color:
     type: object
     properties:
@@ -3409,6 +3386,30 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1Component:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ComponentSpec'
+      state:
+        $ref: '#/definitions/v1ComponentState'
+  v1ComponentSpec:
+    type: object
+    properties:
+      title:
+        type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
+      renderer:
+        type: string
+      rendererProperties:
+        type: object
+      definedInDashboard:
+        type: boolean
+  v1ComponentState:
+    type: object
   v1Condition:
     type: object
     properties:
@@ -3532,10 +3533,10 @@ definitions:
         $ref: '#/definitions/v1DashboardSpec'
       state:
         $ref: '#/definitions/v1DashboardState'
-  v1DashboardComponent:
+  v1DashboardItem:
     type: object
     properties:
-      chart:
+      component:
         type: string
       x:
         type: integer
@@ -3549,8 +3550,6 @@ definitions:
       height:
         type: integer
         format: int64
-      markdown:
-        type: string
       fontSize:
         type: integer
         format: int64
@@ -3565,11 +3564,11 @@ definitions:
       gap:
         type: integer
         format: int64
-      components:
+      items:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1DashboardComponent'
+          $ref: '#/definitions/v1DashboardItem'
   v1DashboardState:
     type: object
   v1DeleteFileResponse:
@@ -3669,17 +3668,19 @@ definitions:
         format: int64
       isDir:
         type: boolean
-  v1GenerateChartSpecResponse:
-    type: object
-    properties:
-      vegaLiteSpec:
-        type: string
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
       aiSucceeded:
         type: boolean
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GenerateRendererResponse:
+    type: object
+    properties:
+      renderer:
+        type: string
+      rendererProperties:
+        type: object
   v1GenerateResolverResponse:
     type: object
     properties:
@@ -3770,6 +3771,10 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      featureFlags:
+        type: object
+        additionalProperties:
+          type: boolean
       annotations:
         type: object
         additionalProperties:
@@ -4967,8 +4972,8 @@ definitions:
         $ref: '#/definitions/v1BucketPlanner'
       theme:
         $ref: '#/definitions/v1Theme'
-      chart:
-        $ref: '#/definitions/v1Chart'
+      component:
+        $ref: '#/definitions/v1Component'
       dashboard:
         $ref: '#/definitions/v1Dashboard'
       api:

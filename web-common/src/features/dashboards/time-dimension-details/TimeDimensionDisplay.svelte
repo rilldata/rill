@@ -10,6 +10,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
   import TDDHeader from "./TDDHeader.svelte";
@@ -45,6 +46,7 @@
   $: metricsView = useMetricsView(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
   $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
+  $: comparing = $timeDimensionDataStore?.comparing;
 
   $: pinIndex = $dashboardStore?.tdd.pinIndex;
 
@@ -56,13 +58,13 @@
       ?.label ?? "";
 
   let dimensionLabel = "";
-  $: if ($timeDimensionDataStore?.comparing === "dimension") {
+  $: if (comparing === "dimension") {
     dimensionLabel =
       $metricsView?.data?.dimensions?.find((d) => d.name === dimensionName)
         ?.label ?? "";
-  } else if ($timeDimensionDataStore?.comparing === "time") {
+  } else if (comparing === "time") {
     dimensionLabel = "Time";
-  } else if ($timeDimensionDataStore?.comparing === "none") {
+  } else if (comparing === "none") {
     dimensionLabel = "No Comparison";
   }
 
@@ -73,7 +75,7 @@
     $timeDimensionDataStore?.data &&
     $timeDimensionDataStore?.data?.columnHeaderData
   ) {
-    comparisonCopy = $timeDimensionDataStore?.comparing;
+    comparisonCopy = comparing;
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
@@ -88,6 +90,16 @@
   );
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
+
+  let highlitedRowIndex: number | undefined;
+  $: if (formattedData?.rowCount) {
+    highlitedRowIndex = undefined;
+    formattedData.rowHeaderData.forEach((row, index) => {
+      if (row[0]?.value === $chartInteractionColumn?.yHover) {
+        highlitedRowIndex = index;
+      }
+    });
+  }
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
@@ -110,6 +122,7 @@
       time: time,
     });
   }
+  const debounceHighlightCell = debounce(highlightCell, 50);
 
   function toggleFilter(e) {
     toggleDimensionValueSelection(dimensionName, e.detail);
@@ -173,7 +186,7 @@
 <div class="h-full w-full flex flex-col">
   <TDDHeader
     {areAllTableRowsSelected}
-    comparing={$timeDimensionDataStore?.comparing}
+    {comparing}
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
     isRowsEmpty={!rowHeaderLabels.length}
@@ -213,7 +226,8 @@
       comparing={comparisonCopy}
       {timeFormatter}
       tableData={formattedData}
-      highlightedCol={$chartInteractionColumn?.hover}
+      highlightedRow={highlitedRowIndex}
+      highlightedCol={$chartInteractionColumn?.xHover}
       {pinIndex}
       scrubPos={{
         start: $chartInteractionColumn?.scrubStart,
@@ -226,11 +240,11 @@
           e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
         );
       }}
-      on:highlight={highlightCell}
+      on:highlight={debounceHighlightCell}
     />
   {/if}
 
-  {#if $timeDimensionDataStore?.comparing === "none"}
+  {#if comparing === "none"}
     <!-- Get height by subtracting table and header heights -->
     <div class="w-full" style:height="calc(100% - 200px)">
       <div class="flex flex-col items-center justify-center h-full text-sm">
@@ -241,6 +255,12 @@
         <div class="text-gray-600">
           To see more values, select a comparison dimension above.
         </div>
+      </div>
+    </div>
+  {:else if comparing === "dimension" && formattedData.rowCount === 1}
+    <div class="w-full h-full">
+      <div class="flex flex-col items-center h-full text-sm">
+        <div class="text-gray-600">No search results to show</div>
       </div>
     </div>
   {/if}

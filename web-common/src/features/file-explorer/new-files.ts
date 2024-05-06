@@ -1,10 +1,9 @@
-import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
   ResourceKind,
   UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
@@ -12,12 +11,20 @@ import { get } from "svelte/store";
 export async function handleEntityCreate(kind: ResourceKind) {
   if (!(kind in ResourceKindMap)) return;
   const instanceId = get(runtime).instanceId;
-  const allNames = await fetchAllFileNames(queryClient, instanceId, false);
+  const allNames =
+    kind === ResourceKind.Source || kind === ResourceKind.Model
+      ? // sources and models share the name
+        [
+          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+        ]
+      : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
   const newPath = `${name + "s"}/${newName}${extension}`;
 
-  await runtimeServicePutFile(instanceId, newPath, {
+  await runtimeServicePutFile(instanceId, {
+    path: newPath,
     blob: baseContent,
     create: true,
     createOnly: true,
@@ -44,8 +51,6 @@ const ResourceKindMap: Record<
     baseContent: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
--- @kind: model
-
 SELECT 'Hello, World!' AS Greeting`,
   },
   [ResourceKind.MetricsView]: {
@@ -54,7 +59,7 @@ SELECT 'Hello, World!' AS Greeting`,
     baseContent: `# Dashboard YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
-kind: metrics_view
+type: metrics_view
 
 title: "Dashboard Title"
 table: example_table # Choose a table to underpin your dashboard
@@ -77,44 +82,65 @@ measures:
     baseContent: `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
 
-kind: api
+type: api
 
 sql:
   select ...
 `,
   },
-  [ResourceKind.Chart]: {
+  [ResourceKind.Component]: {
     name: "chart",
     extension: ".yaml",
     baseContent: `# Chart YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/charts
     
-kind: chart
+type: component
 
 data:
-  metrics_sql: |
-    SELECT advertiser_name, AGGREGATE(measure_2)
-    FROM Bids_Sample_Dash
-    GROUP BY advertiser_name
-    ORDER BY measure_2 DESC
-    LIMIT 20
+  sql: |
+    SELECT * FROM (VALUES 
+      ('Monday', 300),
+      ('Tuesday', 150),
+      ('Wednesday', 200),
+      ('Thursday', 400),
+      ('Friday', 650),
+      ('Saturday', 575),
+      ('Sunday', 500)
+    ) AS t(day_of_week, revenue)
 
 vega_lite: |
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "data": {"name": "table"},
-    "mark": "bar",
+    "data": { "name": "table" },
+    "mark": "line",
     "width": "container",
     "encoding": {
-      "x": {"field": "advertiser_name", "type": "nominal"},
-      "y": {"field": "measure_2", "type": "quantitative"}
+      "x": {
+        "field": "day_of_week",
+        "type": "ordinal",
+        "axis": { "title": "Day of the Week" },
+        "sort": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ]
+      },
+      "y": {
+        "field": "revenue",
+        "type": "quantitative",
+        "axis": { "title": "Revenue" }
+      }
     }
   }`,
   },
   [ResourceKind.Dashboard]: {
     name: "custom-dashboard",
     extension: ".yaml",
-    baseContent: `kind: dashboard
+    baseContent: `type: dashboard
 columns: 10
 gap: 2`,
   },
@@ -124,7 +150,7 @@ gap: 2`,
     baseContent: `# Theme YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/themes
 
-kind: theme
+type: theme
 
 colors:
   primary: plum
@@ -137,7 +163,7 @@ colors:
     baseContent: `# Report YAML
 # Reference documentation: TODO
 
-kind: report
+type: report
 
 ...
 `,
@@ -148,7 +174,7 @@ kind: report
     baseContent: `# Alert YAML
 # Reference documentation: TODO
 
-kind: alert
+type: alert
 
 ...
 `,

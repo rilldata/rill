@@ -26,7 +26,14 @@
 
 <div bind:contentRect class="wrapper {color}">
   {#if GridLinesComponent && (showGrid || changing)}
-    <GridLinesComponent {gridCell} {scrollOffset} {gapSize} {radius} {scale} />
+    <svelte:component
+      this={GridLinesComponent}
+      {gridCell}
+      {scrollOffset}
+      {gapSize}
+      {radius}
+      {scale}
+    />
   {/if}
   <div
     role="presentation"

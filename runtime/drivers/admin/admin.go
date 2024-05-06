@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -113,9 +114,15 @@ type Handle struct {
 	gitURLExpiresOn      time.Time
 	virtualNextPageToken string
 	virtualStashPath     string
+	ignorePaths          []string
 }
 
 var _ drivers.Handle = &Handle{}
+
+// a smaller subset of relevant parts of rill.yaml
+type rillYAML struct {
+	IgnorePaths []string `yaml:"ignore_paths"`
+}
 
 // Driver implements drivers.Handle.
 func (h *Handle) Driver() string {
@@ -253,6 +260,16 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		err = r.Run(func() error { return h.cloneOrPullInner(ctx) })
 		if err != nil {
 			return nil, err
+		}
+
+		// Read rill.yaml and fill in `ignore_paths`
+		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "/rill.yaml"))
+		if err == nil {
+			yml := &rillYAML{}
+			err = yaml.Unmarshal(rawYaml, yml)
+			if err == nil {
+				h.ignorePaths = yml.IgnorePaths
+			}
 		}
 
 		return nil, nil

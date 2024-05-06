@@ -89,17 +89,6 @@ test.describe("dashboard", () => {
     //   );
     // });
 
-    test.setTimeout(60000);
-
-    // disable animations
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          transition-duration: 0s !important;
-        }
-      `,
-    });
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "/models/AdBids_model.sql");
     await page.getByRole("button", { name: "Preview" }).click();
@@ -298,7 +287,7 @@ test.describe("dashboard", () => {
 
     const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -342,7 +331,7 @@ test.describe("dashboard", () => {
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -378,7 +367,7 @@ test.describe("dashboard", () => {
 
     const deleteOnlyMeasureDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -407,7 +396,7 @@ test.describe("dashboard", () => {
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    kind: metrics_view
+    type: metrics_view
     title: "AdBids_model_dashboard_rename"
     model: "AdBids_model"
     default_time_range: ""
@@ -432,7 +421,7 @@ test.describe("dashboard", () => {
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-kind: metrics_view
+type: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
 default_time_range: ""
@@ -548,7 +537,7 @@ dimensions:
 
     await expect(page.getByText("~0%")).toBeVisible();
 
-    await page.getByRole("button", { name: "Edit Metrics" }).click();
+    // await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // go back to the dashboard
 

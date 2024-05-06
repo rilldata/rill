@@ -20,7 +20,7 @@ const (
 	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
 	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
 	ResourceKindTheme          string = "rill.runtime.v1.Theme"
-	ResourceKindChart          string = "rill.runtime.v1.Chart"
+	ResourceKindComponent      string = "rill.runtime.v1.Component"
 	ResourceKindDashboard      string = "rill.runtime.v1.Dashboard"
 	ResourceKindAPI            string = "rill.runtime.v1.API"
 )
@@ -42,14 +42,14 @@ func ResourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: ResourceKindAlert, Name: name.Name}
 	case compilerv1.ResourceKindTheme:
 		return &runtimev1.ResourceName{Kind: ResourceKindTheme, Name: name.Name}
-	case compilerv1.ResourceKindChart:
-		return &runtimev1.ResourceName{Kind: ResourceKindChart, Name: name.Name}
+	case compilerv1.ResourceKindComponent:
+		return &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: name.Name}
 	case compilerv1.ResourceKindDashboard:
 		return &runtimev1.ResourceName{Kind: ResourceKindDashboard, Name: name.Name}
 	case compilerv1.ResourceKindAPI:
 		return &runtimev1.ResourceName{Kind: ResourceKindAPI, Name: name.Name}
 	default:
-		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
+		panic(fmt.Errorf("unknown resource type %q", name.Kind))
 	}
 }
 
@@ -70,13 +70,13 @@ func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindAlert, Name: name.Name}
 	case ResourceKindTheme:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindTheme, Name: name.Name}
-	case ResourceKindChart:
-		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindChart, Name: name.Name}
+	case ResourceKindComponent:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindComponent, Name: name.Name}
 	case ResourceKindDashboard:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindDashboard, Name: name.Name}
 	case ResourceKindAPI:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindAPI, Name: name.Name}
 	default:
-		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
+		panic(fmt.Errorf("unknown resource type %q", name.Kind))
 	}
 }

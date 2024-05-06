@@ -272,8 +272,6 @@
 
 <style lang="postcss">
   .tdd-header {
-    @apply grid justify-between grid-flow-col items-center mr-4;
-    @apply bg-slate-50 py-2 px-4 h-11;
-    @apply border border-slate-100 rounded-sm;
+    @apply grid justify-between grid-flow-col items-center mr-4 py-2 px-4 h-11;
   }
 </style>

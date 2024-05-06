@@ -41,6 +41,7 @@
 
 <MetricsEditorContainer error={yaml?.length ? mainError : undefined}>
   <YAMLEditor
+    key={filePath}
     bind:view
     content={yaml}
     extensions={[placeholderElements.extension, yamlSchema(metricsJsonSchema)]}

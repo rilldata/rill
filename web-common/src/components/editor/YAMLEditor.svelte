@@ -13,6 +13,7 @@
   export let extensions: Extension[] = [];
   export let view: EditorView | undefined = undefined;
   export let whenFocused = false;
+  export let key: string;
 
   let container: HTMLElement;
 
@@ -36,6 +37,14 @@
     });
   });
 
+  $: if (key) {
+    // When the key changes, unfocus the Editor so that the update is dispatched
+    view?.contentDOM.blur();
+  }
+
+  // reactive statements to dynamically update the editor when inputs change
+  $: updateEditorContents(content);
+
   function updateEditorContents(newContent: string) {
     if (view && !view.hasFocus) {
       let curContent = view.state.doc.toString();
@@ -50,9 +59,6 @@
       }
     }
   }
-
-  // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(content);
 </script>
 
 <div bind:this={container} class="contents" />

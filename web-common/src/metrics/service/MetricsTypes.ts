@@ -70,7 +70,7 @@ export const ResourceKindToScreenMap: Partial<
   [ResourceKind.Source]: MetricsEventScreenName.Source,
   [ResourceKind.Model]: MetricsEventScreenName.Model,
   [ResourceKind.MetricsView]: MetricsEventScreenName.Dashboard,
-  [ResourceKind.Chart]: MetricsEventScreenName.Chart,
+  [ResourceKind.Component]: MetricsEventScreenName.Chart,
   [ResourceKind.Dashboard]: MetricsEventScreenName.CustomDashboard,
 };
 

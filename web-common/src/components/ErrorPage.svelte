@@ -6,7 +6,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
-  export let statusCode: number;
+  export let statusCode: number | undefined = undefined;
   export let header: string;
   export let body: string;
 </script>

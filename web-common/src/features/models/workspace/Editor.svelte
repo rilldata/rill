@@ -340,11 +340,11 @@
 
 <style lang="postcss">
   .editor-container {
-    @apply size-full overflow-auto p-2 pb-0;
+    @apply size-full overflow-auto p-2 pb-0 flex flex-col;
   }
 
   footer {
-    @apply justify-between items-center flex flex-none absolute bottom-0 z-40;
+    @apply justify-between items-center flex flex-none;
     @apply h-10 p-2 w-full rounded-b-sm border-t bg-white;
   }
 

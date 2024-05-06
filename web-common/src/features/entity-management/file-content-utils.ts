@@ -36,14 +36,21 @@ function tryParseYaml(
 
   try {
     const yaml = parse(fileContents);
-    if (yaml.kind) {
+
+    // Get `type` (or `kind`, for backwards-compatibility) from yaml file
+    // We try `kind` first to avoid picking up old Sources' `type` field
+    if (yaml?.kind) {
       kind = ResourceShortNameToKind[yaml.kind as string];
+    } else if (yaml?.type) {
+      kind = ResourceShortNameToKind[yaml.type as string];
     }
-    if (yaml.name) {
+
+    // Get `name` from yaml file
+    if (yaml?.name) {
       name = yaml.name as string;
     }
   } catch (err) {
-    const kindMatches = /^kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+    const kindMatches = /^type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
     if (kindMatches?.[1]) {
       kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
     }
@@ -68,7 +75,7 @@ function tryParseSql(
   let kind = kindFromFolder;
   let name = nameFromFolder;
 
-  const kindMatches = /^--\s*@kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+  const kindMatches = /^--\s*@type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
   if (kindMatches?.[1]) {
     kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
   }

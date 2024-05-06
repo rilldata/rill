@@ -60,10 +60,8 @@
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: path,
       data: {
-        create: true,
-        createOnly: true,
+        path: path,
       },
     });
 

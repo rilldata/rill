@@ -434,7 +434,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 
 func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]byte, error) {
 	res := reportYAML{}
-	res.Kind = "report"
+	res.Type = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -477,7 +477,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	}
 
 	res := reportYAML{}
-	res.Kind = "report"
+	res.Type = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -566,7 +566,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 
 // reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
 type reportYAML struct {
-	Kind    string `yaml:"kind"`
+	Type    string `yaml:"type"`
 	Title   string `yaml:"title"`
 	Refresh struct {
 		Cron     string `yaml:"cron"`

@@ -4,10 +4,7 @@
   import type { SelectionRange } from "@codemirror/state";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
@@ -58,6 +55,7 @@
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import { get, type Writable } from "svelte/store";
   import { fade, slide } from "svelte/transition";
@@ -114,11 +112,15 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
+  $: fileQuery = createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        onError: () => (fileNotFound = true),
+      },
     },
-  });
+  );
 
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
@@ -141,9 +143,11 @@
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
-  $: isLocalFileConnector =
-    type === "source" && !!$isLocalFileConnectorQuery.data;
+  let isLocalFileConnectorQuery: CreateQueryResult<boolean>;
+  $: if (type === "source") {
+    isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  }
+  $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
 
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
@@ -170,8 +174,8 @@
 
     await $updateFile.mutateAsync({
       instanceId,
-      path: removeLeadingSlash(filePath),
       data: {
+        path: filePath,
         blob: latest,
       },
     });
@@ -196,6 +200,10 @@
       e.currentTarget,
       filePath,
       assetName,
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ],
     );
 
     if (newRoute) await goto(newRoute);
@@ -214,7 +222,6 @@
 
   async function handleCreateModelFromSource() {
     const [newModelPath, newModelName] = await createModelFromSource(
-      queryClient,
       assetName,
       tableName ?? "",
       "models",
@@ -324,6 +331,7 @@
         {#key assetName}
           {#if type === "source"}
             <SourceEditor
+              {filePath}
               {blob}
               {hasUnsavedChanges}
               allErrors={$allErrors}
@@ -349,10 +357,10 @@
         <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
-          {:else if tableName}
+          {:else if !$allErrors.length}
             <ConnectedPreviewTable
               {connector}
-              table={tableName}
+              table={tableName ?? ""}
               loading={resourceIsReconciling}
             />
           {/if}

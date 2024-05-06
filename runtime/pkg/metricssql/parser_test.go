@@ -17,7 +17,7 @@ func TestCompiler_Compile(t *testing.T) {
 	require.NoError(t, err)
 	defer release()
 
-	compiler := New(ctrl, instanceID, make(map[string]any))
+	compiler := New(ctrl, instanceID, make(map[string]any), 1)
 	passTests := map[string]string{
 		"select pub, dom from ad_bids_metrics":                                                                                                        "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\"",
 		"select pub, dom from ad_bids_metrics LIMIT 5":                                                                                                "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" LIMIT 5",
@@ -65,13 +65,13 @@ func TestCompiler_CompileError(t *testing.T) {
 	ctrl, err := runtime.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
 
-	compiler := New(ctrl, instanceID, make(map[string]any))
+	compiler := New(ctrl, instanceID, make(map[string]any), 1)
 
 	sqlToErrMsg := map[string]string{
 		"select max(pub), dom from ad_bids_metrics":                         "metrics sql: can only select plain dimension/measures",
 		"select pub, dom from ad_bids_metrics where toUpper(pub) = 'Yahoo'": "metrics sql: unsupported expression \"TOUPPER(`pub`)\"",
 	}
-	for inSQL, _ := range sqlToErrMsg {
+	for inSQL := range sqlToErrMsg {
 		_, _, _, err := compiler.Compile(context.Background(), inSQL)
 		require.Error(t, err)
 		// require.ErrorContains(t, err, errMsg)

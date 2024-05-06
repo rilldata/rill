@@ -21,6 +21,9 @@ const LINE_LIKE_CHARTS = [
 export interface ChartField {
   name: string;
   label: string;
+  // for custom tooltip field names
+  tooltipName?: string;
+  // for mapping nominal values to colors
   values?: (string | null)[];
 }
 
