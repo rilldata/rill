@@ -76,7 +76,12 @@ test.describe("File Explorer", () => {
       await page.waitForSelector('role=menuitem name="New folder"', {
         state: "visible",
       });
+      const responsePromise = page.waitForResponse(
+        "**/v1/instances/default/files/dir",
+      );
       await page.getByRole("menuitem", { name: "New folder" }).click();
+      const response = await responsePromise;
+      expect(response.status()).toBe(200);
       await expect(
         page.getByRole("directory", {
           name: "my-directory/untitled_folder",
