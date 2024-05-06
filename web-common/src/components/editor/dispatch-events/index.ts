@@ -21,7 +21,7 @@ export function bindEditorEventsToDispatcher(
        * The viewUpdate can be used to look at transactions at the parent component level.
        */
       if (whenFocused && !viewUpdate.view.hasFocus) return;
-      dispatch("update", {
+      dispatch("save", {
         content: viewUpdate.view.state.doc.toString(),
         viewUpdate,
       } as UpdateDetails);

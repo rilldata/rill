@@ -47,18 +47,18 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
-  import { editorTheme } from "../../../components/editor/theme";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { useAllSourceColumns } from "../../sources/selectors";
-  import { useAllModelColumns } from "../selectors";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createEventDispatcher, onMount } from "svelte";
+  import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
+  import { editorTheme } from "../../../components/editor/theme";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useAllSourceColumns } from "../../sources/selectors";
+  import { useAllModelColumns } from "../selectors";
 
   const dispatch = createEventDispatcher();
   const schema: { [table: string]: string[] } = {};
@@ -66,7 +66,6 @@
   export let blob: string;
   export let latest: string;
   export let selections: SelectionRange[] = [];
-  export let focusOnMount = false;
   export let autoSave = true;
   export let hasUnsavedChanges: boolean;
 
@@ -230,7 +229,6 @@
       }),
       parent: editorContainerComponent,
     });
-    if (focusOnMount) editor.focus();
   });
 
   // REACTIVE FUNCTIONS
