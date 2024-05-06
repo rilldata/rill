@@ -26,7 +26,11 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import {
+    DashboardTimeControls,
+    TimeGrain,
+    TimeRangePreset,
+  } from "@rilldata/web-common/lib/time/types";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -36,6 +40,10 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
+  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
+  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -202,6 +210,53 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
+
+  // All of the below is essentially unnecessary and will not be needed when the
+  // time grain selector is refactored to use the new time controls store.
+  let timeGrainOptions: TimeGrain[];
+  $: minTimeGrain = $timeControlsStore.minTimeGrain;
+
+  $: timeGrainOptions =
+    $timeControlsStore.timeStart && $timeControlsStore.timeEnd
+      ? getAllowedTimeGrains(
+          new Date($timeControlsStore.timeStart),
+          new Date($timeControlsStore.timeEnd),
+        )
+      : [];
+
+  function onSelectTimeGrain(timeGrain: V1TimeGrain) {
+    if (baseTimeRange) {
+      makeTimeSeriesTimeRangeAndUpdateAppState(
+        baseTimeRange,
+        timeGrain,
+        $dashboardStore?.selectedComparisonTimeRange,
+      );
+    }
+  }
+
+  $: baseTimeRange = $timeControlsStore.selectedTimeRange?.start &&
+    $timeControlsStore.selectedTimeRange?.end && {
+      name: $timeControlsStore.selectedTimeRange?.name,
+      start: $timeControlsStore.selectedTimeRange.start,
+      end: $timeControlsStore.selectedTimeRange.end,
+    };
+
+  function makeTimeSeriesTimeRangeAndUpdateAppState(
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls | undefined,
+  ) {
+    metricsExplorerStore.selectTimeRange(
+      metricViewName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+    );
+  }
 </script>
 
 <TimeSeriesChartContainer
@@ -228,6 +283,13 @@
         selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
+      {#if minTimeGrain}
+        <TimeGrainSelector
+          on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
+          {timeGrainOptions}
+          {minTimeGrain}
+        />
+      {/if}
     {/if}
   </div>
 
