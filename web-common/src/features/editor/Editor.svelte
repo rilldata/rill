@@ -11,9 +11,9 @@
   import { bindEditorEventsToDispatcher } from "../../components/editor/dispatch-events";
   import { base } from "../../components/editor/presets/base";
   import { debounce } from "../../lib/create-debouncer";
+  import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
 
   const dispatch = createEventDispatcher();
-  const FILE_SAVE_DEBOUNCE_TIME = 400;
 
   export let blob: string; // the initial content of the editor
   export let latest: string;
