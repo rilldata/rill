@@ -215,7 +215,7 @@
     <CalendarPicker {interval} zone={activeTimeZone} />
   {/if}
   <Elements.Nudge canPanLeft={$canPanLeft} canPanRight={$canPanRight} {onPan} />
-  <Elements.Zoom />
+  <!-- <Elements.Zoom /> -->
   {#if availableTimeZones.length}
     <Elements.Zone
       watermark={allTimeRange?.end ?? new Date()}

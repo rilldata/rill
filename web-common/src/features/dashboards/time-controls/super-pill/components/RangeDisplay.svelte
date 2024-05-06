@@ -16,7 +16,7 @@
   $: time = interval.toFormat("h a", { separator: "-" });
 </script>
 
-<div class="flex gap-x-1">
+<div class="flex gap-x-1 w-40" title="{date} {time}">
   <span class="line-clamp-1">{date}</span>
 
   {#if grain && showHour.includes(grain)}
