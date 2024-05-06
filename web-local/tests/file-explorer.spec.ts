@@ -72,7 +72,7 @@ test.describe("File Explorer", () => {
       // Add something to the folder
       await page.getByRole("directory", { name: "my-directory" }).hover();
       await page.getByLabel("my-directory actions menu").click();
-      await page.getByText("New folder").click();
+      await page.getByRole("menuitem", { name: "New folder" }).click();
       await expect(
         page.getByRole("directory", {
           name: "my-directory/untitled_folder",
