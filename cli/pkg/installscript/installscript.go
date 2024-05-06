@@ -32,7 +32,7 @@ func execScript(ctx context.Context, args ...string) error {
 
 	// Execute the script with bash
 	args = append([]string{script}, args...)
-	cmd := exec.CommandContext(ctx, "/bin/bash", args...)
+	cmd := exec.CommandContext(ctx, "/bin/sh", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
