@@ -10,8 +10,10 @@
   import { createEventDispatcher, onMount } from "svelte";
   import { bindEditorEventsToDispatcher } from "../../components/editor/dispatch-events";
   import { base } from "../../components/editor/presets/base";
+  import { debounce } from "../../lib/create-debouncer";
 
   const dispatch = createEventDispatcher();
+  const FILE_SAVE_DEBOUNCE_TIME = 400;
 
   export let blob: string; // the initial content of the editor
   export let latest: string;
@@ -59,7 +61,7 @@
             if (v.docChanged) {
               latest = v.state.doc.toString();
 
-              if (autoSave) saveContent();
+              if (autoSave) debounceSave();
             }
           }),
         ],
@@ -83,16 +85,18 @@
     }
   }
 
-  function saveContent() {
-    dispatch("save");
-  }
-
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      saveContent();
+      save();
     }
   }
+
+  function save() {
+    dispatch("save");
+  }
+
+  const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
   function revertContent() {
     dispatch("revert");
@@ -121,7 +125,7 @@
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave}
-        <Button disabled={!hasUnsavedChanges} on:click={saveContent}>
+        <Button disabled={!hasUnsavedChanges} on:click={save}>
           <Check size="14px" />
           Save
         </Button>

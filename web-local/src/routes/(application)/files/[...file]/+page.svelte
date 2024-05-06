@@ -14,7 +14,6 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -27,7 +26,6 @@
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
-  const FILE_SAVE_DEBOUNCE_TIME = 400;
 
   let interceptedUrl: string | null = null;
 
@@ -80,7 +78,6 @@
     if (e.to) interceptedUrl = e.to.url.href;
   });
 
-  const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
@@ -152,7 +149,7 @@
           extensions={getExtensionsForFile(filePath)}
           bind:latest
           bind:autoSave={$autoSave}
-          on:save={debounceSave}
+          on:save={save}
         />
       </WorkspaceEditorContainer>
     </div>
