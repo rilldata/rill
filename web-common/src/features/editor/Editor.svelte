@@ -15,7 +15,7 @@
 
   const dispatch = createEventDispatcher();
 
-  export let blob: string; // the initial content of the editor
+  export let blob: string;
   export let latest: string;
   export let extensions: Extension[] = [];
   export let autoSave: boolean;
