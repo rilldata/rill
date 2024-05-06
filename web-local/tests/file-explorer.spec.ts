@@ -73,12 +73,19 @@ test.describe("File Explorer", () => {
       await page.getByRole("directory", { name: "my-directory" }).hover();
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "New folder" }).hover();
-      const responsePromise = page.waitForResponse(
+      const createDirectoryResponsePromise = page.waitForResponse(
         "**/v1/instances/default/files/dir",
       );
+      const getFilesResponsePromise = page.waitForResponse(
+        "**/v1/instances/default/files",
+      );
       await page.getByRole("menuitem", { name: "New folder" }).click();
-      const response = await responsePromise;
-      expect(response.status()).toBe(200);
+      const createDirectoryResponse = await createDirectoryResponsePromise;
+      expect(createDirectoryResponse.status()).toBe(200);
+      const getFilesResponse = await getFilesResponsePromise;
+      expect(getFilesResponse.status()).toBe(200);
+      const resp = await getFilesResponse.json();
+      expect(resp.files.length).toBe(4);
       await expect(
         page.getByRole("directory", {
           name: "my-directory/untitled_folder",
