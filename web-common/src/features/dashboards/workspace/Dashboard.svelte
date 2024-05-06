@@ -16,7 +16,6 @@
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeControls from "../time-controls/TimeControls.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
@@ -60,8 +59,6 @@
       <div class="mb-3" />
     {:else}
       <div class="-ml-3 px-1 pt-2 space-y-2">
-        <TimeControls {metricViewName} />
-
         {#key metricViewName}
           <section class="flex justify-between gap-x-4">
             <Filters />

@@ -43,10 +43,6 @@
       },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
-
-    actions: {
-      comparison: {},
-    },
   } = ctx;
 
   $: localUserPreferences = initLocalUserPreferenceStore(metricViewName);
@@ -67,6 +63,19 @@
   //         end: $dashboardStore.selectedScrubRange.end,
   //       }
   //     : null;
+
+  $: interval = selectedTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+      )
+    : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
+
+  // $: dashboardStore = useDashboardStore(metricViewName);
+  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
+  $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
+  $: showComparisonTimeSeries = !comparisonDimension && showComparison;
 
   $: ({
     latestWindowTimeRanges,
@@ -174,19 +183,6 @@
     metricsExplorerStore.disableAllComparisons(metricViewName);
   }
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
-
-  // $: dashboardStore = useDashboardStore(metricViewName);
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
-  $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
-  $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
-  $: showComparisonTimeSeries = !comparisonDimension && showComparison;
-
   function onPan(direction: "left" | "right") {
     const panRange = $getNewPanRange(direction);
     if (!panRange) return;
@@ -242,7 +238,7 @@
       zone={activeTimeZone}
       applyRange={(interval) => {
         selectRange({
-          name: CUSTOM_TIME_RANGE_ALIAS,
+          name: TimeRangePreset.CUSTOM,
           start: interval.start
             .set({ hour: 0, minute: 0, second: 0 })
             .toJSDate(),

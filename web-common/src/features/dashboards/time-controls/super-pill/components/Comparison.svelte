@@ -1,9 +1,5 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
     NO_COMPARISON_LABEL,
@@ -13,55 +9,47 @@
     DashboardTimeControls,
     TimeComparisonOption,
   } from "@rilldata/web-common/lib/time/types";
-  import { createEventDispatcher } from "svelte";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { Interval } from "luxon";
 
-  export let currentInterval: Interval;
-  export let timeComparisonOptionsState: {
+  type Option = {
     name: TimeComparisonOption;
     key: number;
     start: Date;
     end: Date;
-  }[];
-  export let onSelectComparisonRange;
+  };
+
+  export let currentInterval: Interval;
+  export let timeComparisonOptionsState: Option[];
+  export let onSelectComparisonRange: (
+    name: string,
+    start: Date,
+    end: Date,
+  ) => void;
   export let disableAllComparisons: () => void;
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
 
-  // const {
-  //   selectors: {
-  //     timeRangeSelectors: { timeComparisonOptionsState },
-  //   },
-  // } = getStateManagers();
-
   let open = false;
 
-  $: comparisonOption = selectedComparison?.name;
+  $: comparisonOption =
+    (selectedComparison?.name as TimeComparisonOption | undefined) || null;
 
   $: label =
-    showComparison && comparisonOption
-      ? TIME_COMPARISON[comparisonOption]?.label
+    comparisonOption && TIME_COMPARISON[comparisonOption]?.label
+      ? TIME_COMPARISON[comparisonOption].label
       : NO_COMPARISON_LABEL;
 
   $: selectedLabel = showComparison ? comparisonOption : NO_COMPARISON_LABEL;
 
-  function onSelectCustomComparisonRange(startDate: string, endDate: string) {
-    // intermediateSelection = TimeComparisonOption.CUSTOM;
+  // function onSelectCustomComparisonRange(startDate: string, endDate: string) {
 
-    // dispatch("select-comparison", {
-    //   name: TimeComparisonOption.CUSTOM,
-    //   start: new Date(startDate),
-    //   end: new Date(endDate),
-    // });
-
-    onSelectComparisonRange(
-      TimeComparisonOption.CUSTOM,
-      new Date(startDate),
-      new Date(endDate),
-    );
-  }
+  //   onSelectComparisonRange(
+  //     TimeComparisonOption.CUSTOM,
+  //     new Date(startDate),
+  //     new Date(endDate),
+  //   );
+  // }
 
   function onCompareRangeSelect(comparisonOption: TimeComparisonOption) {
     if (
@@ -99,7 +87,7 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">
-    {#each timeComparisonOptionsState as option}
+    {#each timeComparisonOptionsState as option (option.name)}
       {@const preset = TIME_COMPARISON[option.name]}
       {@const selected = selectedLabel === option.name}
       <DropdownMenu.Item
@@ -116,9 +104,6 @@
         <DropdownMenu.Separator />
       {/if}
     {/each}
-    <!-- {#if $timeComparisonOptionsState.length >= 1}
-      <DropdownMenu.Separator />
-    {/if} -->
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 

@@ -1,29 +1,31 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { DateTime } from "luxon";
+  import type { DateTime, Interval } from "luxon";
   import { ChevronLeft } from "lucide-svelte";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
 
   const dispatch = createEventDispatcher();
 
-  export let startDay: DateTime;
+  export let startDay: DateTime<true>;
   export let startOfWeek = 0;
-  export let start: DateTime;
-  export let end: DateTime;
+  export let interval: Interval<true>;
   export let selectingStart: boolean;
-  export let zone: string;
   export let visibleMonths = 2;
   export let visibleIndex: number;
   export let potentialEnd: DateTime | undefined;
   export let potentialStart: DateTime | undefined;
 
-  $: daysInMonth = startDay.daysInMonth ?? 0;
-  $: firstDay = startDay.startOf("month").weekday;
-  $: year = startDay.year;
+  $: firstDay = startDay.startOf("month").weekday % 7;
 
-  $: days = Array.from({ length: firstDay }, (_) => -1).concat(
-    Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  );
+  $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
+
+  $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
+    if (i < firstDay) {
+      return startDay.minus({ day: firstDay - i });
+    } else {
+      return startDay.plus({ day: i - firstDay });
+    }
+  });
 
   $: weekdays = Array.from({ length: 7 }, (_, i) =>
     new Date(0, 0, i + startOfWeek).toLocaleString("default", {
@@ -41,7 +43,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2 w-full">
   <div class="flex justify-between px-2">
     <button
       class:hide={visibleIndex !== 0}
@@ -51,7 +53,9 @@
     >
       <ChevronLeft size="14px" />
     </button>
-    <div class="w-full text-center p-2 text-sm flex gap-x-1 justify-center">
+    <div
+      class="w-full text-center px-2 py-1 text-sm flex gap-x-1 justify-center"
+    >
       <b>{startDay.monthLong}</b>
       <p>{startDay.year}</p>
     </div>
@@ -65,104 +69,97 @@
     </button>
   </div>
 
-  <div class="flex">
-    {#each weekdays as day}
-      <div class="weekday">{day}</div>
+  <div
+    role="presentation"
+    class="grid grid-cols-7 gap-y-1 w-full"
+    class:selecting-start={selectingStart}
+    on:mouseleave={resetPotentialDates}
+  >
+    {#each weekdays as weekday (weekday)}
+      <div class="weekday">{weekday}</div>
     {/each}
-  </div>
-  <div class="w-fit">
-    <div class="grid grid-cols-7" class:selecting-start={selectingStart}>
-      {#each days as day}
-        {@const date = DateTime.fromObject({
-          year,
-          month: startDay.month,
-          day,
-        }).setZone(zone)}
-        {@const inRange = date >= start && date <= end}
-        {@const inPotentialRange =
-          (potentialEnd && date > start && date < potentialEnd) ||
-          (potentialStart && date > potentialStart && date < end)}
-
-        {#if day > 0}
-          <button
-            class="flex items-center justify-center py-0.5"
-            on:mouseleave={resetPotentialDates}
-            on:click={() => {
-              dispatch("select-day", date);
-              resetPotentialDates();
-            }}
-            on:mouseenter={() => {
-              if (selectingStart) {
-                potentialStart = date;
-              } else {
-                potentialEnd = date;
-              }
-            }}
-          >
-            <div
-              class="day"
-              class:in-range={inRange}
-              class:in-potential-range={inPotentialRange}
-              class:is-start={areSameDay(start, date)}
-              class:is-end={areSameDay(end, date)}
-            >
-              {day}
-            </div>
-          </button>
-        {:else}
-          <div class="day pointer-events-none"></div>
-        {/if}
-      {/each}
-    </div>
+    {#each days as date (date.toISO())}
+      {@const isEnd = areSameDay(interval.end, date)}
+      {@const inRange =
+        !isEnd && date >= interval.start && date <= interval.end}
+      {@const inPotentialRange =
+        (potentialEnd && date > interval.start && date < potentialEnd) ||
+        (potentialStart && date > potentialStart && date < interval.end)}
+      {@const outOfMonth = date.month !== startDay.month}
+      {@const weekend = date.weekday === 6 || date.weekday === 7}
+      <button
+        class="day font-medium"
+        on:click={() => {
+          dispatch("select-day", date);
+          resetPotentialDates();
+        }}
+        on:mouseenter={() => {
+          if (selectingStart) {
+            potentialStart = date;
+          } else {
+            potentialEnd = date;
+          }
+        }}
+        class:!font-normal={outOfMonth}
+        class:text-gray-500={weekend}
+        class:!text-gray-300={outOfMonth}
+        class:in-range={inRange}
+        class:in-potential-range={inPotentialRange}
+        class:is-start={areSameDay(interval.start, date)}
+        class:is-inclusive-end={areSameDay(
+          interval.end.minus({ day: 1 }),
+          date,
+        )}
+        class:is-end={isEnd}
+      >
+        {date.day}
+      </button>
+    {/each}
   </div>
 </div>
 
 <style lang="postcss">
   .day {
-    @apply w-9 h-9;
+    @apply w-full aspect-square;
     @apply p-0.5 bg-white;
-    @apply flex items-center justify-center;
-  }
-
-  .in-range,
-  .in-potential-range {
-    @apply bg-gray-100;
-  }
-
-  .day:not(.is-start):not(.is-end):hover {
-    @apply bg-gray-200 border-primary-500 border rounded-sm;
+    @apply flex items-center justify-center border border-white border-l-0 border-r-0;
   }
 
   :not(.selecting-start) .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-sm border rounded-l-none border-l-0;
+    @apply rounded-r-sm  border border-primary-200 bg-white border-dashed;
   }
 
   .selecting-start .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-sm border border-r-0 rounded-r-none;
+    @apply rounded-l-md;
+    @apply bg-primary-600 border-primary-600 border-l border-r-0 text-white;
   }
 
   .weekday {
-    @apply text-center w-9 text-slate-500;
-  }
-
-  .in-potential-range {
-    @apply border border-dashed border-primary-400 border-l-0 border-r-0;
-  }
-
-  .is-start,
-  .is-end {
-    @apply bg-primary-200;
-  }
-
-  .is-start {
-    @apply rounded-l-sm;
-  }
-
-  .is-end {
-    @apply rounded-r-sm;
+    @apply text-center w-full aspect-[2/1] text-slate-500;
   }
 
   .hide {
     @apply opacity-0 pointer-events-none;
+  }
+
+  .is-end {
+    @apply rounded-r-md border border-primary-200 bg-white border-dashed border-l-0;
+  }
+
+  .in-range {
+    @apply bg-primary-100 border-primary-200;
+  }
+
+  :not(.in-range).in-potential-range {
+    @apply bg-primary-50 border-dashed border-primary-200;
+  }
+
+  .is-start {
+    @apply rounded-l-md;
+    @apply bg-primary-600 border-primary-600 border-l border-r-0 text-white;
+  }
+
+  .is-inclusive-end {
+    @apply border-r;
   }
 </style>

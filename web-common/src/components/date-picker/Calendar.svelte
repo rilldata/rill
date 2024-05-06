@@ -1,17 +1,15 @@
 <script lang="ts">
-  import Month from "./Month.svelte";
   import type { DateTime } from "luxon";
+  import { Interval } from "luxon";
+  import Month from "./Month.svelte";
 
-  export let start: DateTime;
-  export let end: DateTime;
-  export let zone: string;
-  export let visibleMonths = 2;
-  export let selectingStart: boolean;
+  export let interval: Interval<true>;
+  export let visibleMonths = 1;
+  export let selectingStart = true;
+  export let firstVisibleMonth = interval.start;
 
   let potentialEnd: DateTime | undefined;
   let potentialStart: DateTime | undefined;
-
-  let firstVisibleMonth = start;
 
   $: months = Array.from({ length: visibleMonths }, (_, i) =>
     firstVisibleMonth.plus({ month: i }).set({ day: 1 }),
@@ -26,24 +24,29 @@
   }
 
   function handleSelectDay(e: CustomEvent<DateTime>) {
-    if (selectingStart) {
-      start = e.detail;
-      selectingStart = false;
+    const newInterval = interval.set({
+      [selectingStart ? "start" : "end"]: e.detail,
+    });
+
+    if (newInterval.isValid) {
+      interval = newInterval;
     } else {
-      end = e.detail;
-      selectingStart = true;
+      interval = Interval.fromDateTimes(
+        e.detail,
+        e.detail.plus({ day: 1 }),
+      ) as Interval<true>;
     }
+    selectingStart = !selectingStart;
   }
 </script>
 
-<div class="flex gap-x-3 p-1">
-  {#each months as month, i}
+<div class="flex gap-x-3 p-2 w-full">
+  {#each months as month, i (month)}
     <Month
-      {start}
-      {end}
-      {zone}
+      {interval}
       startDay={month}
       {selectingStart}
+      {visibleMonths}
       visibleIndex={i}
       bind:potentialStart
       bind:potentialEnd

@@ -1,15 +1,13 @@
 <script context="module" lang="ts">
   import { writable } from "svelte/store";
-  export const open = writable(false);
-</script>
-
-<script lang="ts">
   import { Interval } from "luxon";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
-  import Calendar2 from "@rilldata/web-common/components/date-picker/Calendar2.svelte";
+  import CalendarIcon from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+
+  export const open = writable(false);
 
   const formatsWithoutYear = [
     "M/d", // 7/4 or 07/04
@@ -27,7 +25,9 @@
   ];
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
+</script>
 
+<script lang="ts">
   export let interval: Interval<true>;
   export let zone: string;
   export let applyRange: (range: Interval<true>) => void;
@@ -95,11 +95,11 @@
       aria-label="Select a custom time range"
       class="flex-none flex items-center justify-center pb-[1.5px] hover:bg-gray-200"
     >
-      <Calendar size="16px" />
+      <CalendarIcon size="16px" />
     </button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-72">
-    <Calendar2 bind:interval bind:selectingStart bind:firstVisibleMonth />
+    <Calendar bind:interval bind:selectingStart bind:firstVisibleMonth />
     <DropdownMenu.Separator />
     <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
       <label for="start-date">

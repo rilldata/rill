@@ -5,7 +5,6 @@
     getAbbreviationForIANA,
     getLocalIANA,
   } from "@rilldata/web-common/lib/time/timezone";
-
   import { IANAZone } from "luxon";
 
   // watermark indicates the latest reference point in the dashboard

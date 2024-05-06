@@ -1,6 +1,4 @@
 <script lang="ts">
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import { ZoomOut, ZoomIn } from "lucide-svelte";
 </script>
 
