@@ -13,7 +13,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/cli/pkg/deviceauth"
+	"github.com/rilldata/rill/cli/pkg/auth"
 )
 
 const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
@@ -175,23 +175,8 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	}
 }
 
-// getAccessToken verifies the device code and returns an access token if the request is approved
-func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "expected a POST request", http.StatusBadRequest)
-		return
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
-		return
-	}
-	bodyStr := string(body)
-	values, err := url.ParseQuery(bodyStr)
-	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to parse query: %w", err))
-		return
-	}
+// getAccessTokenForDeviceCode verifies the device code and returns an access token if the request is approved
+func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *http.Request, values url.Values) {
 	deviceCode := values.Get("device_code")
 	if deviceCode == "" {
 		http.Error(w, "device_code is required", http.StatusBadRequest)
@@ -253,7 +238,7 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := deviceauth.OAuthTokenResponse{
+	resp := auth.OAuthTokenResponse{
 		AccessToken: authToken.Token().String(),
 		TokenType:   "Bearer",
 		ExpiresIn:   time.UnixMilli(0).Unix(), // never expires

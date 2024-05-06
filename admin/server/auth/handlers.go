@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -56,7 +57,8 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/logout", middleware.Check(checkLimit("/auth/logout"), http.HandlerFunc(a.authLogout)))
 	observability.MuxHandle(inner, "/auth/logout/callback", middleware.Check(checkLimit("/auth/logout/callback"), http.HandlerFunc(a.authLogoutCallback)))
 	observability.MuxHandle(inner, "/auth/oauth/device_authorization", middleware.Check(checkLimit("/auth/oauth/device_authorization"), http.HandlerFunc(a.handleDeviceCodeRequest)))
-	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
+	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation))))   // NOTE: Uses auth middleware
+	observability.MuxHandle(inner, "/auth/oauth/authorize", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/authorize"), http.HandlerFunc(a.handleAuthorizeRequest)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
@@ -354,4 +356,85 @@ func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Reques
 
 	// Redirect to UI (usually)
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+// / handleAuthorizeRequest handles the incoming OAuth2 Authorization request
+// and generates an authorization code while associating the code challenge.
+func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Request) {
+	claims := GetClaims(r.Context())
+	if claims == nil {
+		internalServerError(w, fmt.Errorf("did not find any claims, %w", errors.New("server error")))
+		return
+	}
+	if claims.OwnerType() == OwnerTypeAnon {
+		// not logged in, redirect to login
+		// TODO how to choose between login and signup?
+		// after login redirect back to same path so encode the current URL as a redirect parameter
+		encodedURL := url.QueryEscape(r.URL.String())
+		http.Redirect(w, r, "/auth/login?redirect="+encodedURL, http.StatusTemporaryRedirect)
+	}
+	if claims.OwnerType() != OwnerTypeUser {
+		http.Error(w, "only users can be authorized", http.StatusBadRequest)
+		return
+	}
+	userID := claims.OwnerID()
+
+	// Extract necessary details from the query parameters
+	clientID := r.URL.Query().Get("client_id")
+	redirectURI := r.URL.Query().Get("redirect_uri")
+	responseType := r.URL.Query().Get("response_type")
+
+	if clientID == "" || redirectURI == "" || responseType == "" {
+		http.Error(w, "Missing required parameters - client_id or redirect_uri or response_type", http.StatusBadRequest)
+		return
+	}
+
+	codeChallenge := r.URL.Query().Get("code_challenge")
+	codeChallengeMethod := r.URL.Query().Get("code_challenge_method")
+
+	if codeChallenge != "" {
+		if codeChallengeMethod == "" {
+			http.Error(w, "Missing code challenge method", http.StatusBadRequest)
+			return
+		}
+		if responseType != "code" {
+			http.Error(w, "Invalid response type", http.StatusBadRequest)
+			return
+		}
+		handlePKCE(w, r, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI)
+	} else {
+		http.Error(w, "only PKCE based authorization code flow is supported", http.StatusBadRequest)
+		return
+	}
+}
+
+// getAccessToken verifies the device code and returns an access token if the request is approved
+func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected a POST request", http.StatusBadRequest)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
+		return
+	}
+	bodyStr := string(body)
+	values, err := url.ParseQuery(bodyStr)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to parse query: %w", err))
+		return
+	}
+
+	grantType := values.Get("grant_type")
+	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType) {
+		http.Error(w, "invalid grant_type", http.StatusBadRequest)
+		return
+	}
+
+	if grantType == deviceCodeGrantType {
+		a.getAccessTokenForDeviceCode(w, r, values)
+	} else {
+		a.getAccessTokenForAuthorizationCode(w, r, values)
+	}
 }

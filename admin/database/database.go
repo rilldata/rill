@@ -515,6 +515,7 @@ const (
 	AuthClientIDRillWeb     = "12345678-0000-0000-0000-000000000001"
 	AuthClientIDRillCLI     = "12345678-0000-0000-0000-000000000002"
 	AuthClientIDRillSupport = "12345678-0000-0000-0000-000000000003"
+	AuthClientIDRillLocal   = "12345678-0000-0000-0000-000000000004"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
