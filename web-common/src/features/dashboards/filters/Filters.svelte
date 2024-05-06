@@ -5,7 +5,6 @@
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
-  import { fly } from "svelte/transition";
   import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
