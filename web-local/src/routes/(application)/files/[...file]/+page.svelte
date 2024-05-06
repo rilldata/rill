@@ -88,7 +88,7 @@
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
   $: autoSave = workspace.editor.autoSave;
-  $: hideAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
+  $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
 
   async function save() {
     if (!hasUnsavedChanges) return;
@@ -157,7 +157,7 @@
           {blob}
           {hasUnsavedChanges}
           extensions={getExtensionsForFile(filePath)}
-          {hideAutoSave}
+          {disableAutoSave}
           bind:latest
           bind:autoSave={$autoSave}
           on:save={save}

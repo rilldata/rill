@@ -1,6 +1,5 @@
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { derived, writable } from "svelte/store";
-import { FILES_WITHOUT_AUTOSAVE } from "../../features/editor/config";
 import {
   DEFAULT_INSPECTOR_WIDTH,
   DEFAULT_PREVIEW_TABLE_HEIGHT,
@@ -28,8 +27,6 @@ class WorkspaceLayoutStore {
   private autoSave = writable<boolean>(true);
 
   constructor(key: string) {
-    this.autoSave.set(this.getAutoSaveDefault(key));
-
     const history = localStorage.getItem(key);
 
     if (history) {
@@ -42,9 +39,7 @@ class WorkspaceLayoutStore {
         parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
       );
       this.tableVisible.set(parsed?.table?.visible ?? true);
-      this.autoSave.set(
-        parsed?.editor?.autoSave ?? this.getAutoSaveDefault(key),
-      );
+      this.autoSave.set(parsed?.editor?.autoSave ?? true);
     }
 
     const debouncer = debounce(
@@ -53,11 +48,6 @@ class WorkspaceLayoutStore {
     );
 
     this.subscribe((v) => debouncer(v));
-  }
-
-  private getAutoSaveDefault(key: string): boolean {
-    const fileName = key.split("/").pop();
-    return !FILES_WITHOUT_AUTOSAVE.includes(`/${fileName}`);
   }
 
   subscribe = derived(

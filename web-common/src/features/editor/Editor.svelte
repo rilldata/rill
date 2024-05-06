@@ -19,7 +19,7 @@
   export let latest: string;
   export let extensions: Extension[] = [];
   export let autoSave: boolean;
-  export let hideAutoSave: boolean;
+  export let disableAutoSave: boolean;
   export let hasUnsavedChanges: boolean;
 
   let editor: EditorView;
@@ -62,7 +62,7 @@
             if (v.docChanged) {
               latest = v.state.doc.toString();
 
-              if (autoSave) debounceSave();
+              if (!disableAutoSave && autoSave) debounceSave();
             }
           }),
         ],
@@ -125,7 +125,7 @@
 
   <footer>
     <div class="flex gap-x-3">
-      {#if !autoSave}
+      {#if !autoSave || disableAutoSave}
         <Button disabled={!hasUnsavedChanges} on:click={save}>
           <Check size="14px" />
           Save
@@ -143,7 +143,7 @@
     </div>
     <div
       class="flex gap-x-1 items-center h-full bg-white rounded-full"
-      class:hidden={hideAutoSave}
+      class:hidden={disableAutoSave}
     >
       <Switch bind:checked={autoSave} id="auto-save" small />
       <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
