@@ -103,7 +103,6 @@ func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		return "", err
 	}
-	println(tokenResponse.AccessToken)
 
 	// Return the access token
 	return tokenResponse.AccessToken, nil
