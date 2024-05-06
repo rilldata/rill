@@ -250,10 +250,10 @@
   }
 
   :global(.wrapper > button:hover) {
-    @apply bg-gray-100;
+    @apply bg-gray-50 cursor-pointer;
   }
 
   :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-100;
+    @apply bg-gray-50;
   }
 </style>

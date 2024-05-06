@@ -1,3 +1,8 @@
+<script context="module" lang="ts">
+  import { writable } from "svelte/store";
+  export const open = writable(false);
+</script>
+
 <script lang="ts">
   import { Interval } from "luxon";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
@@ -25,7 +30,6 @@
   export let interval: Interval<true>;
   export let zone: string;
 
-  let open = false;
   let selectingStart = true;
   let startInput: HTMLInputElement;
   let endInput: HTMLInputElement;
@@ -81,11 +85,12 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open>
+<DropdownMenu.Root bind:open={$open}>
   <DropdownMenu.Trigger aria-label="Select a time range" asChild let:builder>
     <button
       use:builder.action
       {...builder}
+      aria-label="Select a custom time range"
       class="flex-none flex items-center justify-center pb-[1.5px] hover:bg-gray-200"
     >
       <Calendar size="16px" />

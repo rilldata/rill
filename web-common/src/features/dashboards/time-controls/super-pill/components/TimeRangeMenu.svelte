@@ -1,6 +1,6 @@
 <script lang="ts">
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-
+  import { open as calendarOpen } from "./CalendarPicker.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import type {
     RangeBuckets,
@@ -8,11 +8,7 @@
     ISODurationString,
   } from "../../new-time-controls";
   import { CustomEventHandler } from "bits-ui";
-  import {
-    RILL_TO_LABEL,
-    ALL_TIME_RANGE_ALIAS,
-    getRangeLabel,
-  } from "../../new-time-controls";
+  import { RILL_TO_LABEL, ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -21,8 +17,6 @@
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
 
-  let open = false;
-
   function handleClick(e: CustomEventHandler<MouseEvent, HTMLDivElement>) {
     const range = e.detail.currentTarget.dataset.range;
     if (!range) {
@@ -30,6 +24,10 @@
     }
 
     onSelectRange(range);
+  }
+
+  function handleCustom() {
+    calendarOpen.set(true);
   }
 </script>
 
@@ -82,4 +80,10 @@
       </span>
     </DropdownMenu.Item>
   {/each}
+
+  <DropdownMenu.Separator />
+
+  <DropdownMenu.Item on:click={handleCustom}>
+    <span class:font-bold={selected === "Custom"}> Custom </span>
+  </DropdownMenu.Item>
 </DropdownMenu.Content>
