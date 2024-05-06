@@ -48,7 +48,7 @@ test.describe("File Explorer", () => {
     });
   });
 
-  test.describe("Folder CRUD Operations", () => {
+  test.describe.only("Folder CRUD Operations", () => {
     test("should create, rename, add sub-folder, and delete the folder", async ({
       page,
     }) => {

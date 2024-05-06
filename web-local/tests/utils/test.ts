@@ -50,6 +50,21 @@ export const test = base.extend({
       }
     });
 
+    page.on("console", console.log);
+    page.on("requestfailed", (request) => {
+      console.log(
+        "requestfailed",
+        request.url() + " " + request.failure()?.errorText,
+      );
+    });
+    page.on("requestfinished", async (request) => {
+      console.log(
+        "requestfinished",
+        request.url(),
+        (await request.response())?.status(),
+        (await request.response())?.statusText(),
+      );
+    });
     await page.goto(`http://localhost:${TEST_PORT}`);
 
     await use(page);
