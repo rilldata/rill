@@ -36,7 +36,8 @@ Alternatively, you can include the connection string directly in the source YAML
 An example of a source using this approach:
 
 ```yaml
-type: "postgres"
+type: "source"
+connector: "postgres"
 sql: "select * from my_table"
 database_url: "postgresql://postgres:postgres@localhost:5432/postgres"
 ```
