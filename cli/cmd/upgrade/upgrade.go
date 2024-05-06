@@ -1,8 +1,6 @@
 package upgrade
 
 import (
-	"fmt"
-
 	goversion "github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/installscript"
@@ -22,7 +20,7 @@ func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 				// Parse the version into the canonical form
 				v, err := goversion.NewVersion(version)
 				if err != nil {
-					return fmt.Errorf("invalid version: %s", version)
+					return err
 				}
 				version = "v" + v.String()
 

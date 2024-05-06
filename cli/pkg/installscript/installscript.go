@@ -44,6 +44,7 @@ func createScriptFile() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("install script not embedded (is this a dev build?): %w", err)
 	}
+	defer in.Close()
 
 	// Write the install script to a temporary file
 	out, err := os.CreateTemp("", "install*.sh")
