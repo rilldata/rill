@@ -284,8 +284,7 @@ SELECT * FROM {{ ref "m2" }}
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{
-					"sql":             strings.TrimSpace(files["custom/c2.sql"]),
-					"uses_templating": true,
+					"sql": strings.TrimSpace(files["custom/c2.sql"]),
 				})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),

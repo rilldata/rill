@@ -155,9 +155,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if err != nil {
 		// If not staging changes, we need to drop the current output (if any)
 		if !executorEnv.StageChanges && prevExecutor != nil {
-			err = prevExecutor.Delete(ctx, prevResult)
-			if err != nil {
-				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
+			subErr := prevExecutor.Delete(ctx, prevResult)
+			if subErr != nil {
+				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(subErr))
 			}
 
 			model.State.ExecutorConnector = ""
@@ -168,7 +168,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.RefreshedOn = nil
 			model.State.State = nil
 			model.State.StateSchema = nil
-			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
+			subErr = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if subErr != nil {
 				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
 			}
