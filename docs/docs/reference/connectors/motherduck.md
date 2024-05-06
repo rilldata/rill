@@ -28,11 +28,10 @@ If creating a new DuckDB source from the UI, you should pass in the appropriate 
 On the other hand, if you are creating the source YAML file directly, the definition should look something like:
 
 ```yaml
-
-type: "duckdb"
+type: "source"
+connector: "duckdb"
 sql: "SELECT * from <duckdb_table>"
 db: "<path_to_duckdb_db_file>"
-
 ```
 
 :::tip If deploying to Rill Cloud
