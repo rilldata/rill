@@ -35,7 +35,12 @@
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
-  $: ({ selectedTimeRange, allTimeRange, showComparison } = $timeControlsStore);
+  $: ({
+    selectedTimeRange,
+    allTimeRange,
+    showComparison,
+    selectedComparisonTimeRange,
+  } = $timeControlsStore);
 
   const metricsView = useMetricsView(StateManagers);
 
@@ -92,7 +97,12 @@
 
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
     {#if allTimeRange?.start && allTimeRange?.end}
-      <SuperPill {allTimeRange} {selectedTimeRange} {showComparison} />
+      <SuperPill
+        {allTimeRange}
+        {selectedTimeRange}
+        {showComparison}
+        {selectedComparisonTimeRange}
+      />
     {/if}
     {#each allDimensionFilters as { name, label, selectedValues } (name)}
       {@const dimension = dimensions.find(

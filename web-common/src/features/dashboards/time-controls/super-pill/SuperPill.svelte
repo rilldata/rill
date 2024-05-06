@@ -30,14 +30,22 @@
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let showComparison: boolean | undefined;
+  export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
   const metricsView = useMetricsView(ctx);
   const {
     metricsViewName,
     selectors: {
-      timeRangeSelectors: { timeRangeSelectorState },
+      timeRangeSelectors: {
+        timeRangeSelectorState,
+        timeComparisonOptionsState,
+      },
       charts: { canPanLeft, canPanRight, getNewPanRange },
+    },
+
+    actions: {
+      comparison: {},
     },
   } = ctx;
 
@@ -162,6 +170,10 @@
     );
   }
 
+  function disableAllComparisons() {
+    metricsExplorerStore.disableAllComparisons(metricViewName);
+  }
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
@@ -200,6 +212,18 @@
       comparisonTimeRange,
     );
   }
+
+  function onSelectComparisonRange(
+    name: TimeComparisonOption,
+    start: Date,
+    end: Date,
+  ) {
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      name,
+      start,
+      end,
+    });
+  }
 </script>
 
 <div class="wrapper">
@@ -237,13 +261,22 @@
       {onSelectTimeZone}
     />
   {/if}
-  <Elements.Comparison />
+  {#if $timeComparisonOptionsState}
+    <Elements.Comparison
+      timeComparisonOptionsState={$timeComparisonOptionsState}
+      selectedComparison={selectedComparisonTimeRange}
+      showComparison={showComparisonTimeSeries}
+      currentInterval={interval}
+      {onSelectComparisonRange}
+      {disableAllComparisons}
+    />
+  {/if}
 </div>
 
 <style lang="postcss">
   .wrapper {
     @apply flex w-fit;
-    @apply h-7 bg-white rounded-full;
+    @apply h-7 rounded-full;
     @apply border overflow-hidden;
   }
 
@@ -252,7 +285,7 @@
   }
 
   :global(.wrapper > button) {
-    @apply px-2 flex items-center justify-center text-center;
+    @apply px-2 flex items-center justify-center text-center bg-white;
   }
 
   :global(.wrapper > button:first-child) {
