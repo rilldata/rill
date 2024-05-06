@@ -122,7 +122,7 @@ type Handle interface {
 	AsFileStore() (FileStore, bool)
 
 	// AsModelExecutor returns a ModelExecutor for building and managing models.
-	// Since models may move data between connectors, a model executor is in some cases a "meta driver" that uses handles on other drivers.x
+	// Since models may move data between connectors, a model executor is in some cases a "meta driver" that uses handles on other drivers.
 	AsModelExecutor() (ModelExecutor, bool)
 
 	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.

@@ -76,6 +76,7 @@ func (c *connection) Run(ctx context.Context, opts *drivers.ModelExecuteOptions)
 		materialize = *outputProps.Materialize
 	}
 
+	asView := !materialize
 	tableName := outputProps.Table
 	stagingTableName := tableName
 	if opts.Env.StageChanges {
@@ -84,20 +85,19 @@ func (c *connection) Run(ctx context.Context, opts *drivers.ModelExecuteOptions)
 
 	// Drop the staging view/table if it exists.
 	// NOTE: This intentionally drops the end table if not staging changes.
-	stagingTable, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName)
-	if err == nil {
-		_ = olap.DropTable(ctx, stagingTableName, stagingTable.View)
+	if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
+		_ = olap.DropTable(ctx, stagingTableName, t.View)
 	}
 
-	err = olap.CreateTableAsSelect(ctx, stagingTableName, !materialize, inputProps.SQL)
+	err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL)
 	if err != nil {
-		_ = olap.DropTable(ctx, stagingTableName, !materialize)
+		_ = olap.DropTable(ctx, stagingTableName, asView)
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 
 	// Rename the staging table to the final table name
 	if stagingTableName != tableName {
-		err = olapForceRenameTable(ctx, olap, stagingTableName, !materialize, tableName)
+		err = olapForceRenameTable(ctx, olap, stagingTableName, asView, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to rename staged model: %w", err)
 		}
@@ -106,7 +106,7 @@ func (c *connection) Run(ctx context.Context, opts *drivers.ModelExecuteOptions)
 	// Build result props
 	resultProps := &ModelResultProperties{
 		Table:         tableName,
-		View:          !materialize,
+		View:          asView,
 		UsedModelName: usedModelName,
 	}
 	resultPropsMap := map[string]interface{}{}

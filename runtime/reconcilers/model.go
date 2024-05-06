@@ -239,11 +239,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	state["incremental"] = incremental // The incremental flag is hard-coded in the state by convention
 
 	// Prepare the new execution options
-	inputProps, err := r.resolveTemplatedProps(ctx, self, model.Spec.InputConnector, model.Spec.InputProperties.AsMap(), state)
+	inputProps, err := r.resolveTemplatedProps(ctx, self, state, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
-	outputProps, err := r.resolveTemplatedProps(ctx, self, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap(), state)
+	outputProps, err := r.resolveTemplatedProps(ctx, self, state, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -272,6 +272,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
+	if ctx.Err() != nil {
+		return runtime.ReconcileResult{Err: ctx.Err()}
+	}
 
 	// Build the output
 	execRes, execErr := executor.Run(ctx, opts)
@@ -581,7 +586,7 @@ func (r *ModelReconciler) newExecutorEnv(ctx context.Context) (*drivers.ModelExe
 
 // resolveTemplatedProps resolves template tags in strings nested in the provided props.
 // Passing a connector is optional. If a connector is provided, it will be used to inform how values are escaped.
-func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, connector string, props, state map[string]any) (map[string]any, error) {
+func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, state map[string]any, connector string, props map[string]any) (map[string]any, error) {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, err
@@ -622,8 +627,8 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 	return val.(map[string]any), nil
 }
 
-// analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference variables.
-// The keys of the returned map are the variable names, and the values are empty strings (optimization to enable re-using the map in upstream code).
+// analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
+// It returns a map of variable names referenced in the props mapped to their current value.
 func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
 	res := make(map[string]string)
 	err := analyzeTemplatedVariables(props, res)
@@ -679,6 +684,7 @@ func resolveTemplatedValue(td compilerv1.TemplateData, val any) (any, error) {
 
 // analyzeTemplatedVariables analyzes strings nested in the provided value for template tags that reference variables.
 // Variables are added as keys to the provided map, with empty strings as values.
+// The values are empty strings instead of booleans as an optimization to enable re-using the map in upstream code.
 func analyzeTemplatedVariables(val any, res map[string]string) error {
 	switch val := val.(type) {
 	case string:

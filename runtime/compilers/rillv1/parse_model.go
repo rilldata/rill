@@ -13,7 +13,7 @@ import (
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
 type ModelYAML struct {
-	commonYAML      `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
+	commonYAML      `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
 	Refresh         *ScheduleYAML                           `yaml:"refresh"`
 	Timeout         string                                  `yaml:"timeout"`
 	Incremental     bool                                    `yaml:"incremental"`
@@ -78,9 +78,6 @@ func (p *Parser) parseModel(node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 
 		inputProps["sql"] = sql
-		if node.SQLUsesTemplating {
-			inputProps["uses_templating"] = node.SQLUsesTemplating
-		}
 	}
 
 	// Validate input details
@@ -145,26 +142,6 @@ func (p *Parser) parseModel(node *Node) error {
 	return nil
 }
 
-// findLineNumber returns the line number of the pos in the given text.
-// Lines are counted starting from 1, and positions start from 0.
-func findLineNumber(text string, pos int) int {
-	if pos < 0 || pos >= len(text) {
-		return -1
-	}
-
-	lineNumber := 1
-	for i, char := range text {
-		if i == pos {
-			break
-		}
-		if char == '\n' {
-			lineNumber++
-		}
-	}
-
-	return lineNumber
-}
-
 // inferSQLRefs attempts to infer table references from the node's SQL.
 // The provided node must have a non-empty SQL field.
 func (p *Parser) inferSQLRefs(node *Node) ([]ResourceName, error) {
@@ -211,4 +188,24 @@ func (p *Parser) inferSQLRefs(node *Node) ([]ResourceName, error) {
 	}
 
 	return refs, nil
+}
+
+// findLineNumber returns the line number of the pos in the given text.
+// Lines are counted starting from 1, and positions start from 0.
+func findLineNumber(text string, pos int) int {
+	if pos < 0 || pos >= len(text) {
+		return -1
+	}
+
+	lineNumber := 1
+	for i, char := range text {
+		if i == pos {
+			break
+		}
+		if char == '\n' {
+			lineNumber++
+		}
+	}
+
+	return lineNumber
 }
