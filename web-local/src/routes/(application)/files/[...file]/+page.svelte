@@ -4,6 +4,7 @@
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
+  import { FILES_WITHOUT_AUTOSAVE } from "@rilldata/web-common/features/editor/config";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -87,6 +88,7 @@
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
   $: autoSave = workspace.editor.autoSave;
+  $: hideAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
 
   async function save() {
     if (!hasUnsavedChanges) return;
@@ -147,6 +149,7 @@
           {blob}
           {hasUnsavedChanges}
           extensions={getExtensionsForFile(filePath)}
+          {hideAutoSave}
           bind:latest
           bind:autoSave={$autoSave}
           on:save={save}

@@ -20,6 +20,7 @@
   export let extensions: Extension[] = [];
   export let autoSave = true;
   export let hasUnsavedChanges: boolean;
+  export let hideAutoSave: boolean;
 
   let editor: EditorView;
   let container: HTMLElement;
@@ -140,7 +141,10 @@
         </Button>
       {/if}
     </div>
-    <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
+    <div
+      class="flex gap-x-1 items-center h-full bg-white rounded-full"
+      class:hidden={hideAutoSave}
+    >
       <Switch bind:checked={autoSave} id="auto-save" small />
       <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
     </div>
