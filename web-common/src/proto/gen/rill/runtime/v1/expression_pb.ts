@@ -74,6 +74,11 @@ export enum Operation {
    * @generated from enum value: OPERATION_NLIKE = 12;
    */
   NLIKE = 12,
+
+  /**
+   * @generated from enum value: OPERATION_NOT = 13;
+   */
+  NOT = 13,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Operation)
 proto3.util.setEnumType(Operation, "rill.runtime.v1.Operation", [
@@ -90,6 +95,7 @@ proto3.util.setEnumType(Operation, "rill.runtime.v1.Operation", [
   { no: 10, name: "OPERATION_NIN" },
   { no: 11, name: "OPERATION_LIKE" },
   { no: 12, name: "OPERATION_NLIKE" },
+  { no: 13, name: "OPERATION_NOT" },
 ]);
 
 /**

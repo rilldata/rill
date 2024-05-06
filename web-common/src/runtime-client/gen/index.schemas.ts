@@ -946,6 +946,7 @@ export const V1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_NOT: "OPERATION_NOT",
 } as const;
 
 export interface V1OLAPListTablesResponse {

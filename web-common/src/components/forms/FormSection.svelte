@@ -4,8 +4,8 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
-  export let title: string;
-  export let description: string = "";
+  export let title = "";
+  export let description = "";
   export let padding = "p-3";
   export let showSectionToggle = false;
   export let enabled = true;
@@ -16,7 +16,11 @@
     <span
       class="flex flex-row items-center gap-1 text-base text-medium text-slate-900"
     >
-      <div>{title}</div>
+      {#if $$slots["title"]}
+        <slot name="title" />
+      {:else}
+        <div>{title}</div>
+      {/if}
       {#if $$slots["tooltip-content"]}
         <Tooltip>
           <InfoCircle />

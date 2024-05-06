@@ -26,6 +26,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.GreaterThan,
       comparison: MeasureFilterComparisonType.None,
+      not: false,
     },
     createBinaryExpression("imp", V1Operation.OPERATION_GT, 10),
   ],
@@ -37,6 +38,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.GreaterThanOrEquals,
       comparison: MeasureFilterComparisonType.None,
+      not: false,
     },
     createBinaryExpression("imp", V1Operation.OPERATION_GTE, 10),
   ],
@@ -48,6 +50,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.LessThan,
       comparison: MeasureFilterComparisonType.None,
+      not: false,
     },
     createBinaryExpression("imp", V1Operation.OPERATION_LT, 10),
   ],
@@ -59,6 +62,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.LessThanOrEquals,
       comparison: MeasureFilterComparisonType.None,
+      not: false,
     },
     createBinaryExpression("imp", V1Operation.OPERATION_LTE, 10),
   ],
@@ -70,6 +74,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.Between,
       comparison: MeasureFilterComparisonType.None,
+      not: false,
     },
     createAndExpression([
       createBinaryExpression("imp", V1Operation.OPERATION_GT, 10),
@@ -84,6 +89,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.NotBetween,
       comparison: MeasureFilterComparisonType.None,
+      not: false,
     },
     createOrExpression([
       createBinaryExpression("imp", V1Operation.OPERATION_LTE, 10),
@@ -98,6 +104,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.GreaterThan,
       comparison: MeasureFilterComparisonType.PercentageComparison,
+      not: false,
     },
     undefined,
   ],
@@ -109,6 +116,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.IncreasesBy,
       comparison: MeasureFilterComparisonType.AbsoluteComparison,
+      not: false,
     },
     createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_GT, 10),
   ],
@@ -120,6 +128,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.DecreasesBy,
       comparison: MeasureFilterComparisonType.PercentageComparison,
+      not: false,
     },
     createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_LT, -0.1),
   ],
@@ -131,6 +140,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.ChangesBy,
       comparison: MeasureFilterComparisonType.PercentageComparison,
+      not: false,
     },
     createOrExpression([
       createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_LT, -0.1),
@@ -146,6 +156,7 @@ const TestCases: [
       measure: "imp",
       operation: MeasureFilterOperation.ShareOfTotalsGreaterThan,
       comparison: MeasureFilterComparisonType.PercentageComparison,
+      not: false,
     },
     undefined,
   ],
@@ -159,11 +170,46 @@ describe("mapMeasureFilterToExpr", () => {
   });
 });
 
+describe("mapMeasureFilterToExpr with NOT", () => {
+  TestCases.forEach(([title, criteria, expr]) => {
+    if (!expr) return;
+    it(title, () => {
+      expect(
+        mapMeasureFilterToExpr({
+          ...criteria,
+          not: true,
+        }),
+      ).toEqual({
+        cond: {
+          op: V1Operation.OPERATION_NOT,
+          exprs: [expr],
+        },
+      });
+    });
+  });
+});
+
 describe("mapExprToMeasureFilter", () => {
   TestCases.forEach(([title, criteria, expr]) => {
     if (!expr) return;
     it(title, () => {
       expect(mapExprToMeasureFilter(expr)).toEqual(criteria);
+    });
+  });
+});
+
+describe("mapExprToMeasureFilter with NOT", () => {
+  TestCases.forEach(([title, criteria, expr]) => {
+    if (!expr) return;
+    it(title, () => {
+      expect(
+        mapExprToMeasureFilter({
+          cond: {
+            op: V1Operation.OPERATION_NOT,
+            exprs: [expr],
+          },
+        }),
+      ).toEqual({ ...criteria, not: true });
     });
   });
 });

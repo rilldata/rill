@@ -25,6 +25,7 @@ export type MeasureFilterEntry = {
   comparison: MeasureFilterComparisonType;
   value1: string;
   value2: string;
+  not: boolean;
 };
 
 const DeltaAbsoluteSuffix = "__delta_abs";
@@ -41,6 +42,7 @@ export function mapExprToMeasureFilter(
   let field = "";
   let operation = MeasureFilterOperation.GreaterThan;
   let comparison = MeasureFilterComparisonType.None;
+  let subEntry: MeasureFilterEntry | undefined;
 
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_OR:
@@ -63,6 +65,12 @@ export function mapExprToMeasureFilter(
           ? MeasureFilterOperation.Between
           : MeasureFilterOperation.NotBetween;
       break;
+
+    case V1Operation.OPERATION_NOT:
+      subEntry = mapExprToMeasureFilter(expr.cond.exprs?.[0]);
+      if (!subEntry) return undefined;
+      subEntry.not = true;
+      return subEntry;
 
     case V1Operation.OPERATION_GT:
     case V1Operation.OPERATION_GTE:
@@ -94,6 +102,7 @@ export function mapExprToMeasureFilter(
     value2: value2?.toString() ?? "",
     operation,
     comparison,
+    not: false,
   };
 }
 
@@ -112,6 +121,16 @@ export function mapMeasureFilterToExpr(
       ? DeltaRelativeSuffix
       : DeltaAbsoluteSuffix;
 
+  const wrapExpr = (expr: V1Expression) =>
+    measureFilter.not
+      ? {
+          cond: {
+            op: V1Operation.OPERATION_NOT,
+            exprs: [expr],
+          },
+        }
+      : expr;
+
   switch (measureFilter.operation) {
     case MeasureFilterOperation.GreaterThan:
     case MeasureFilterOperation.GreaterThanOrEquals:
@@ -119,56 +138,66 @@ export function mapMeasureFilterToExpr(
     case MeasureFilterOperation.LessThanOrEquals:
       if (measureFilter.comparison !== MeasureFilterComparisonType.None)
         return undefined;
-      return createBinaryExpression(
-        measureFilter.measure,
-        MeasureFilterToProtoOperation[measureFilter.operation],
-        value,
+      return wrapExpr(
+        createBinaryExpression(
+          measureFilter.measure,
+          MeasureFilterToProtoOperation[measureFilter.operation],
+          value,
+        ),
       );
 
     case MeasureFilterOperation.Between:
     case MeasureFilterOperation.NotBetween:
-      return createBetweenExpression(
-        measureFilter.measure,
-        value,
-        Number(measureFilter.value2 ?? "0"),
-        measureFilter.operation === MeasureFilterOperation.NotBetween,
+      return wrapExpr(
+        createBetweenExpression(
+          measureFilter.measure,
+          value,
+          Number(measureFilter.value2 ?? "0"),
+          measureFilter.operation === MeasureFilterOperation.NotBetween,
+        ),
       );
 
     case MeasureFilterOperation.IncreasesBy:
       // Δ<field> > <value>
       // or
       // Δ%<field> > <value>
-      return createBinaryExpression(
-        measureFilter.measure + comparisonSuffix,
-        V1Operation.OPERATION_GT,
-        value,
+      return wrapExpr(
+        createBinaryExpression(
+          measureFilter.measure + comparisonSuffix,
+          V1Operation.OPERATION_GT,
+          value,
+        ),
       );
 
     case MeasureFilterOperation.DecreasesBy:
       // Δ<field> < -<value>
       // or
       // Δ%<field> < -<value>
-      return createBinaryExpression(
-        measureFilter.measure + comparisonSuffix,
-        V1Operation.OPERATION_LT,
-        -Math.abs(value),
+      return wrapExpr(
+        createBinaryExpression(
+          measureFilter.measure + comparisonSuffix,
+          V1Operation.OPERATION_LT,
+          -Math.abs(value),
+        ),
       );
 
     case MeasureFilterOperation.ChangesBy:
       // Δ<field> < -<value> && Δ<field> > <value>
       // or
       // Δ%<field> < -<value> && Δ%<field> > <value>
-      return createOrExpression([
-        createBinaryExpression(
-          measureFilter.measure + comparisonSuffix,
-          V1Operation.OPERATION_LT,
-          -Math.abs(value),
-        ),
-        createBinaryExpression(
-          measureFilter.measure + comparisonSuffix,
-          V1Operation.OPERATION_GT,
-          value,
-        ),
-      ]);
+      return wrapExpr(
+        createOrExpression([
+          createBinaryExpression(
+            measureFilter.measure + comparisonSuffix,
+            V1Operation.OPERATION_LT,
+            -Math.abs(value),
+          ),
+          createBinaryExpression(
+            measureFilter.measure + comparisonSuffix,
+            V1Operation.OPERATION_GT,
+            value,
+          ),
+        ]),
+      );
   }
 }

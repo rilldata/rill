@@ -1,11 +1,15 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import CriteriaForm from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaForm.svelte";
   import { CriteriaGroupOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { Trash2Icon } from "lucide-svelte";
+  import { createForm } from "svelte-forms-lib";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
 
@@ -16,8 +20,9 @@
   function handleAddCriteria() {
     $form["criteria"] = $form["criteria"].concat({
       field: "",
-      operation: "",
+      operation: MeasureFilterOperation.GreaterThan,
       value: 0,
+      not: false,
     });
   }
 </script>
@@ -42,6 +47,9 @@
       <div class="flex flex-col gap-2">
         <div class="flex flex-row items-center">
           <div class="w-full text-lg">{index + 1}</div>
+          <div class="flex flex-row gap-2 pr-2 text-base items-center">
+            Not <Switch bind:checked={$form["criteria"][index].not} />
+          </div>
           <button class="mr-2" on:click={() => handleDeleteCriteria(index)}>
             <Trash2Icon size="16px" />
           </button>

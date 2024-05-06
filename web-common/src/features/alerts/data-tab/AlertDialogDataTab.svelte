@@ -74,12 +74,6 @@
     />
   </FormSection>
   <FormSection title="Data preview">
-    <DataPreview
-      measure={$form["measure"]}
-      metricsViewName={$form["metricsViewName"]}
-      splitByDimension={$form["splitByDimension"]}
-      timeRange={$form["timeRange"]}
-      whereFilter={$form["whereFilter"]}
-    />
+    <DataPreview formValues={$form} />
   </FormSection>
 </div>

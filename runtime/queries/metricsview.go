@@ -331,6 +331,16 @@ func (builder *ExpressionBuilder) buildConditionExpression(cond *runtimev1.Condi
 	case runtimev1.Operation_OPERATION_OR:
 		return builder.buildAndOrExpressions(cond, " OR ")
 
+	case runtimev1.Operation_OPERATION_NOT:
+		if len(cond.Exprs) != 1 {
+			return "", nil, fmt.Errorf("not expression should have exactly 1 sub expressions")
+		}
+		expr, args, err := builder.buildExpression(cond.Exprs[0])
+		if err != nil {
+			return "", nil, err
+		}
+		return fmt.Sprintf("NOT (%s)", expr), args, nil
+
 	default:
 		leftExpr, args, err := builder.buildExpression(cond.Exprs[0])
 		if err != nil {
