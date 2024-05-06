@@ -139,7 +139,11 @@
   <CustomDashboardPage data={{ fileArtifact }} />
 {:else if isOther}
   <WorkspaceContainer inspector={false}>
-    <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
+    <FileWorkspaceHeader
+      filePath={$page.params.file}
+      {hasUnsavedChanges}
+      slot="header"
+    />
     <div
       slot="body"
       class="editor-pane size-full overflow-hidden flex flex-col"
