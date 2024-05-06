@@ -1,10 +1,10 @@
 <script lang="ts">
+  import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
+  import { createEventDispatcher } from "svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
-  import { createEventDispatcher } from "svelte";
-  import type { EditorView } from "@codemirror/view";
-  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
@@ -46,7 +46,7 @@
     <YAMLEditor
       content={latest}
       bind:view
-      on:update={handleUpdate}
+      on:save={handleUpdate}
       key={filePath}
     />
   </div>
