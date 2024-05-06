@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
-  import { page } from "$app/stores";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
   import type { LayoutData } from "../$types";
 
@@ -22,9 +22,10 @@
 
   $: dashboardOptions = dashboards.reduce((map, dimension) => {
     const label = dimension.metricsView?.state?.validSpec?.title ?? "";
-    const id = dimension.meta?.name?.name ?? "";
+    const name = dimension.meta?.name?.name ?? "";
 
-    if (label && id) map.set(id, { label, section: "dashboard", depth: 0 });
+    if (label && name)
+      map.set(name.toLowerCase(), { label, section: "dashboard", depth: 0 });
 
     return map;
   }, new Map<string, PathOption>());
