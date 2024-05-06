@@ -13,6 +13,7 @@ cli.prepare:
 	mkdir -p runtime/pkg/examples/embed/dist
 	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
 	rm -rf runtime/pkg/examples/embed/dist/.git
+	cp scripts/install.sh cli/pkg/installscript/embed/install.sh
 
 .PHONY: coverage.go
 coverage.go:
