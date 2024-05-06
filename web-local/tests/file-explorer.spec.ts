@@ -73,9 +73,6 @@ test.describe("File Explorer", () => {
       await page.getByRole("directory", { name: "my-directory" }).hover();
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "New folder" }).hover();
-      await page.waitForSelector('role=menuitem name="New folder"', {
-        state: "visible",
-      });
       const responsePromise = page.waitForResponse(
         "**/v1/instances/default/files/dir",
       );
