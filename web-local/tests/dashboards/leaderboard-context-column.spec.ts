@@ -15,7 +15,7 @@ test.describe("leaderboard context column", () => {
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-  kind: metrics_view
+  type: metrics_view
   title: "AdBids_model_dashboard"
   model: "AdBids_model"
   default_time_range: ""

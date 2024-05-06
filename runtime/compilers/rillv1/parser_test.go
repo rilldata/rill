@@ -54,6 +54,65 @@ vars:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLFeatures(t *testing.T) {
+	tt := []struct {
+		yaml    string
+		want    map[string]bool
+		wantErr bool
+	}{
+		{
+			yaml: ` `,
+			want: nil,
+		},
+		{
+			yaml:    `features: 10`,
+			wantErr: true,
+		},
+		{
+			yaml: `features: []`,
+			want: map[string]bool{},
+		},
+		{
+			yaml: `features: {}`,
+			want: map[string]bool{},
+		},
+		{
+			yaml: `
+features:
+  foo: true
+  bar: false
+`,
+			want: map[string]bool{"foo": true, "bar": false},
+		},
+		{
+			yaml: `
+features:
+- foo
+- bar
+`,
+			want: map[string]bool{"foo": true, "bar": true},
+		},
+	}
+
+	for i, tc := range tt {
+		t.Run(fmt.Sprintf("case=%d", i), func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: tc.yaml,
+			})
+
+			res, err := ParseRillYAML(ctx, repo, "")
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.want, res.FeatureFlags)
+		})
+	}
+}
+
 func TestComplete(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml
@@ -107,14 +166,14 @@ available_time_ranges:
 `,
 		// migration c1
 		`custom/c1.yml`: `
-kind: migration
+type: migration
 version: 3
 sql: |
   CREATE TABLE a(a integer);
 `,
 		// model c2
 		`custom/c2.sql`: `
-{{ configure "kind" "model" }}
+{{ configure "type" "model" }}
 {{ configure "materialize" true }}
 SELECT * FROM {{ ref "m2" }}
 `,
@@ -590,7 +649,7 @@ func TestReparseMultiKindNameCollision(t *testing.T) {
 		`models/m1.sql`:        `SELECT 10`,
 		`models/nested/m1.sql`: `SELECT 20`,
 		`sources/m1.yaml`: `
-type: s3
+connector: s3
 path: hello
 `,
 	})
@@ -1019,7 +1078,7 @@ func TestReport(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		`reports/r1.yaml`: `
-kind: report
+type: report
 title: My Report
 
 refresh:
@@ -1043,7 +1102,7 @@ annotations:
   foo: bar
 `,
 		`reports/r2.yaml`: `
-kind: report
+type: report
 title: My Report
 
 refresh:
@@ -1132,7 +1191,7 @@ func TestAlert(t *testing.T) {
 		// model m1
 		`models/m1.sql`: `SELECT 1`,
 		`alerts/a1.yaml`: `
-kind: alert
+type: alert
 title: My Alert
 
 refs:
@@ -1254,7 +1313,7 @@ func TestTheme(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 
 colors:
   primary: red
@@ -1306,7 +1365,7 @@ func TestComponentsAndDashboard(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
-kind: component
+type: component
 data:
   api: MetricsViewAggregation
   args:
@@ -1314,7 +1373,7 @@ data:
 vega_lite: |%s
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
-kind: component
+type: component
 data:
   api: MetricsViewAggregation
   args:
@@ -1322,7 +1381,7 @@ data:
 vega_lite: |%s
 `, vegaLiteSpec),
 		`dashboards/d1.yaml`: `
-kind: dashboard
+type: dashboard
 columns: 4
 gap: 3
 items:
@@ -1400,12 +1459,12 @@ func TestAPI(t *testing.T) {
 		`models/m1.sql`: `SELECT 1`,
 		// api a1
 		`apis/a1.yaml`: `
-kind: api
+type: api
 sql: select * from m1
 `,
 		// api a2
 		`apis/a2.yaml`: `
-kind: api
+type: api
 metrics_sql: select * from m1
 `,
 	})
@@ -1438,6 +1497,85 @@ metrics_sql: select * from m1
 		},
 	}
 
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestKindBackwardsCompatibility(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// source s1
+		`sources/s1.yaml`: `
+type: s3
+`,
+		// api a1
+		`/apis/a1.yaml`: `
+kind: api
+refs:
+- kind: source
+  name: s1
+- type: source
+  name: s2
+sql: select 1
+`,
+		// migration m1
+		`/migrations/m1.sql`: `
+-- @kind: migration
+select 2
+`,
+		// migration m2
+		`/migrations/m2.sql`: `
+-- @type: migration
+select 3
+`,
+	}
+
+	resources := []*Resource{
+		// s1
+		{
+			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+			Paths: []string{"/sources/s1.yaml"},
+			SourceSpec: &runtimev1.SourceSpec{
+				SourceConnector: "s3",
+				SinkConnector:   "duckdb",
+				Properties:      must(structpb.NewStruct(map[string]any{})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		// a1
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
+			Paths: []string{"/apis/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "s1"}, {Kind: ResourceKindSource, Name: "s2"}},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select 1"})),
+			},
+		},
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindMigration, Name: "m1"},
+			Paths: []string{"/migrations/m1.sql"},
+			MigrationSpec: &runtimev1.MigrationSpec{
+				Connector: "duckdb",
+				Sql:       strings.TrimSpace(files["/migrations/m1.sql"]),
+			},
+		},
+		// m2
+		{
+			Name:  ResourceName{Kind: ResourceKindMigration, Name: "m2"},
+			Paths: []string{"/migrations/m2.sql"},
+			MigrationSpec: &runtimev1.MigrationSpec{
+				Connector: "duckdb",
+				Sql:       strings.TrimSpace(files["/migrations/m2.sql"]),
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)

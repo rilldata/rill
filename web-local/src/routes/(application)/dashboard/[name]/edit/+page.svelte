@@ -50,7 +50,6 @@
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
-    metricViewName = fileArtifact.getEntityName();
   } else {
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
     metricViewName = $page.params.name;
@@ -61,19 +60,26 @@
   }
   $: [, fileName] = splitFolderAndName(filePath);
 
+  $: name = fileArtifact?.name;
+  $: metricViewName = $name?.name ?? "";
+
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
   $: isModelingSupportedQuery = canModel(instanceId);
   $: isModelingSupported = $isModelingSupportedQuery.data;
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
-      // this will ensure that any changes done outside our app is pulled in.
-      refetchOnWindowFocus: true,
-      keepPreviousData: true,
+  $: fileQuery = createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        onError: () => (fileNotFound = true),
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
+        keepPreviousData: true,
+      },
     },
-  });
+  );
   let yaml = "";
   $: yaml = $fileQuery.data?.blob ?? yaml;
 

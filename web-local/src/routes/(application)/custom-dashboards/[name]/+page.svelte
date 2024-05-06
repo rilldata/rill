@@ -9,10 +9,7 @@
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import {
-    getFileAPIPathFromNameAndType,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
@@ -41,8 +38,8 @@
 
   const updateFile = createRuntimeServicePutFile({
     mutation: {
-      onMutate({ instanceId, path, data }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, path);
+      onMutate({ instanceId, data }) {
+        const key = getRuntimeServiceGetFileQueryKey(instanceId, data);
         queryClient.setQueryData(key, data);
       },
     },
@@ -71,7 +68,6 @@
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
-    customDashboardName = fileArtifact.getEntityName();
   } else {
     customDashboardName = $page.params.name;
     filePath = getFileAPIPathFromNameAndType(
@@ -80,14 +76,20 @@
     );
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
+  $: name = fileArtifact?.name;
+  $: customDashboardName = $name?.name ?? "";
 
   $: instanceId = $runtime.instanceId;
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: { keepPreviousData: true },
-  });
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    { path: filePath },
+    {
+      query: { keepPreviousData: true },
+    },
+  );
   $: [, fileName] = splitFolderAndName(filePath);
 
   $: yaml = $fileQuery.data?.blob ?? "";
@@ -129,8 +131,8 @@
     try {
       await $updateFile.mutateAsync({
         instanceId,
-        path: removeLeadingSlash(filePath),
         data: {
+          path: filePath,
           blob: content,
         },
       });
@@ -224,7 +226,7 @@
     {#if selectedView == "code" || selectedView == "split"}
       <div
         transition:slide={{ duration: 400, axis: "x" }}
-        class="relative h-full flex-shrink-0 w-full"
+        class="relative h-full flex-shrink-0 w-full border-r"
         class:!w-full={selectedView === "code"}
         style:width="{editorPercentage * 100}%"
       >
@@ -239,6 +241,7 @@
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <CustomDashboardEditor
+              {filePath}
               {errors}
               {yaml}
               on:update={updateChartFile}

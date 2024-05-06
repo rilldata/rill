@@ -24,7 +24,7 @@ func TestComplete(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `
@@ -122,7 +122,7 @@ measures:
 	// Add syntax error in source, check downstream resources error
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path
 `,
 	})
@@ -171,7 +171,7 @@ path
 	// Fix source, check downstream resources succeed
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -189,7 +189,7 @@ func TestSource(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -247,7 +247,7 @@ path: data/foo.csv
 	// Change the source so it errors
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -258,7 +258,7 @@ path: data/bar.csv
 	// Restore the source, verify it works again
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -326,7 +326,7 @@ func TestCacheInvalidation(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -358,7 +358,7 @@ func TestSourceRefreshSchedule(t *testing.T) {
 1,2,3,4,5
 1,2,3,4,5`,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 refresh:
   every: 1
@@ -395,7 +395,7 @@ func TestSourceAndModelNameCollission(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -406,8 +406,8 @@ path: data/foo.csv
 	// Create a source with same name within a different folder
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/other_folder/foo.yaml": `
-kind: source
-type: local_file
+type: source
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -425,7 +425,7 @@ path: data/foo.csv
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo_1.yaml": `
 name: foo
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -504,7 +504,7 @@ func TestModelCTE(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -552,7 +552,7 @@ func TestRename(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -612,7 +612,7 @@ func TestRenameToOther(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM foo limit 1`,
@@ -645,7 +645,7 @@ func TestInterdependence(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM foo`,
@@ -673,7 +673,7 @@ measures:
 	// Update the source to invalid file
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -744,7 +744,7 @@ func TestCyclesWithThreeModels(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM bar2`,
@@ -796,7 +796,7 @@ func TestMetricsView(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -977,7 +977,7 @@ func TestStageChanges(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -1003,7 +1003,7 @@ measures:
 	// Invalid source
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -1052,7 +1052,7 @@ func TestWatch(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -1099,7 +1099,7 @@ func TestDashboardTheme(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -1113,7 +1113,7 @@ measures:
 - expression: count(*)
 `,
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 colors:
   primary: red
   secondary: grey
@@ -1157,7 +1157,7 @@ colors:
 	// make the theme invalid
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 colors:
   primary: xxx
   secondary: xxx
@@ -1172,7 +1172,7 @@ colors:
 	// make the theme valid
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 colors:
   primary: red
   secondary: grey
@@ -1194,7 +1194,7 @@ func TestAlert(t *testing.T) {
 2024-01-01T00:00:00Z,Denmark
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,

@@ -93,6 +93,7 @@
     >
       {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
         <Chart
+          {chartView}
           vegaSpec={rendererProperties?.spec}
           chartName={componentName}
           {resolverProperties}

@@ -26,7 +26,8 @@ export async function createModelFromSource(
   const newModelPath = `${folder}/${newModelName}.sql`;
 
   // Create model
-  await runtimeServicePutFile(instanceId, newModelPath, {
+  await runtimeServicePutFile(instanceId, {
+    path: newModelPath,
     blob: `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 

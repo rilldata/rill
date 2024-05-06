@@ -36,7 +36,8 @@
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    await runtimeServicePutFile($runtime.instanceId, filePath, {
+    await runtimeServicePutFile($runtime.instanceId, {
+      path: filePath,
       blob: yaml,
       create: true,
       createOnly: true,

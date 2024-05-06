@@ -57,8 +57,8 @@ export async function fetchFileContent(
   filePath: string,
 ) {
   const resp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, filePath),
-    queryFn: () => runtimeServiceGetFile(instanceId, filePath),
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: filePath }),
+    queryFn: () => runtimeServiceGetFile(instanceId, { path: filePath }),
   });
   return resp.blob ?? "";
 }

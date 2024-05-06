@@ -16,7 +16,9 @@
 
   export let filePath: string;
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
+    path: filePath,
+  });
   $: yaml = $fileQuery.data?.blob || "";
 
   // get file.

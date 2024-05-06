@@ -88,6 +88,7 @@ Schema relaxation is enabled by default. Set `ingest.allow_schema_relaxation: fa
 
 For example:
 ```yaml
+type: source
 connector: "gcs"
 uri: "gs://my-bucket/y=2023/m=*/d=0[1-7]/H=01/*.parquet" 
 

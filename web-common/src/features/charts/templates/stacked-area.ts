@@ -1,11 +1,16 @@
 import { ChartField } from "./build-template";
-import { multiLayerBaseSpec } from "./utils";
+import {
+  multiLayerBaseSpec,
+  sanitizeValueForVega,
+  sanitizeValuesForSpec,
+} from "./utils";
 
 /** Temporary solution for the lack of vega lite type exports */
 interface TooltipValue {
   title?: string;
   field: string;
   format?: string;
+  formatType?: string;
   type: "quantitative" | "temporal" | "nominal" | "ordinal";
 }
 export function buildStackedArea(
@@ -19,6 +24,7 @@ export function buildStackedArea(
     {
       title: quantitativeField.label,
       field: quantitativeField.name,
+      formatType: "measureFormatter",
       type: "quantitative",
     },
     {
@@ -35,12 +41,11 @@ export function buildStackedArea(
   ];
 
   const multiValueTooltipChannel: TooltipValue[] | undefined =
-    nominalField?.values?.map((value) => {
-      return {
-        field: value === null ? "null" : value,
-        type: "quantitative",
-      };
-    });
+    nominalField?.values?.map((value) => ({
+      field: sanitizeValueForVega(value),
+      type: "quantitative",
+      formatType: "measureFormatter",
+    }));
 
   if (multiValueTooltipChannel?.length) {
     multiValueTooltipChannel.unshift({
@@ -62,9 +67,10 @@ export function buildStackedArea(
   };
 
   if (nominalField?.values?.length) {
+    const values = sanitizeValuesForSpec(nominalField.values);
     baseSpec.transform = [
       {
-        calculate: `indexof([${nominalField.values
+        calculate: `indexof([${values
           ?.map((v) => `'${v}'`)
           .reverse()
           .join(",")}], datum.${nominalField?.name})`,

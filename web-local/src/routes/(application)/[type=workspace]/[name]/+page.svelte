@@ -4,10 +4,7 @@
   import type { SelectionRange } from "@codemirror/state";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
@@ -115,11 +112,15 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
+  $: fileQuery = createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        onError: () => (fileNotFound = true),
+      },
     },
-  });
+  );
 
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
@@ -173,8 +174,8 @@
 
     await $updateFile.mutateAsync({
       instanceId,
-      path: removeLeadingSlash(filePath),
       data: {
+        path: filePath,
         blob: latest,
       },
     });
@@ -330,6 +331,7 @@
         {#key assetName}
           {#if type === "source"}
             <SourceEditor
+              {filePath}
               {blob}
               {hasUnsavedChanges}
               allErrors={$allErrors}
@@ -355,10 +357,10 @@
         <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
-          {:else if tableName}
+          {:else if !$allErrors.length}
             <ConnectedPreviewTable
               {connector}
-              table={tableName}
+              table={tableName ?? ""}
               loading={resourceIsReconciling}
             />
           {/if}

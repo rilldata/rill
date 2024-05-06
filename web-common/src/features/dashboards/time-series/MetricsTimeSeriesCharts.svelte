@@ -74,7 +74,9 @@
   $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
-  $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
+  $: showComparison = Boolean(
+    !comparisonDimension && $timeControlsStore.showComparison,
+  );
   $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
@@ -211,7 +213,11 @@
   <div class:mb-6={isAlternateChart} class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelector {metricViewName} chartType={tddChartType} />
+      <ChartTypeSelector
+        hasComparison={Boolean(showComparison || dimensionData.length)}
+        {metricViewName}
+        chartType={tddChartType}
+      />
     {:else}
       <SearchableFilterButton
         label="Measures"
@@ -301,6 +307,7 @@
               {dimensionData}
               xMin={startValue}
               xMax={endValue}
+              isTimeComparison={showComparison}
               on:chart-hover={(e) => {
                 const { dimension, ts } = e.detail;
                 updateChartInteractionStore(

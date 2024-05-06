@@ -29,18 +29,24 @@
     filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
   }
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: {
-      onError: (err) => {
-        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-          throw error(404, "Dashboard not found");
-        }
-
-        throw error(err.response?.status || 500, err.message);
-      },
-      refetchOnWindowFocus: false,
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    {
+      path: filePath,
     },
-  });
+    {
+      query: {
+        onError: (err) => {
+          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
+            throw error(404, "Dashboard not found");
+          }
+
+          throw error(err.response?.status || 500, err.message);
+        },
+        refetchOnWindowFocus: false,
+      },
+    },
+  );
 
   $: yaml = $fileQuery.data?.blob || "";
   $: editorWidth = editorPercentage * containerWidth;
@@ -54,7 +60,10 @@
   <WorkspaceContainer inspector={false} bind:width={containerWidth}>
     <ChartsHeader slot="header" {filePath} />
     <div slot="body" class="flex size-full">
-      <div style:width="{editorPercentage * 100}%" class="relative flex-none">
+      <div
+        style:width="{editorPercentage * 100}%"
+        class="relative flex-none border-r"
+      >
         <Resizer
           direction="EW"
           side="right"

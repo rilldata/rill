@@ -103,7 +103,7 @@ export function useCreateDashboardFromTableUIAction(
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         try {
-          await runtimeServiceGetFile(instanceId, newFilePath);
+          await runtimeServiceGetFile(instanceId, { path: newFilePath });
           // success, AI is done
           break;
         } catch (err) {
@@ -191,7 +191,9 @@ export async function createDashboardFromTableInMetricsEditor(
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       try {
-        const file = await runtimeServiceGetFile(instanceId, filePath);
+        const file = await runtimeServiceGetFile(instanceId, {
+          path: filePath,
+        });
         if (file.blob !== "") {
           // success, AI is done
           break;
