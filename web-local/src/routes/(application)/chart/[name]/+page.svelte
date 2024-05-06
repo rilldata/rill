@@ -15,10 +15,8 @@
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
   export let data: { fileArtifact?: FileArtifact } = {};
 
-  const DEFAULT_EDITOR_WIDTH = 400;
   let containerWidth: number;
-  let editorWidth = DEFAULT_EDITOR_WIDTH;
-
+  let editorPercentage = 0.55;
   let filePath: string;
   let chartName: string;
 
@@ -51,6 +49,7 @@
   );
 
   $: yaml = $fileQuery.data?.blob || "";
+  $: editorWidth = editorPercentage * containerWidth;
 </script>
 
 <svelte:head>
@@ -61,13 +60,17 @@
   <WorkspaceContainer inspector={false} bind:width={containerWidth}>
     <ChartsHeader slot="header" {filePath} />
     <div slot="body" class="flex size-full">
-      <div style:width="{editorWidth}px" class="relative flex-none border-r">
+      <div
+        style:width="{editorPercentage * 100}%"
+        class="relative flex-none border-r"
+      >
         <Resizer
           direction="EW"
           side="right"
-          bind:dimension={editorWidth}
+          dimension={editorWidth}
           min={300}
-          max={0.6 * containerWidth}
+          max={0.65 * containerWidth}
+          onUpdate={(width) => (editorPercentage = width / containerWidth)}
         />
         <ChartsEditor {filePath} />
       </div>
