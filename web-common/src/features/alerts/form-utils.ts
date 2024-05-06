@@ -8,10 +8,12 @@ import {
   createAndExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
+import {
   V1Expression,
   V1MetricsViewAggregationRequest,
+  V1MetricsViewComparisonMeasureType,
   V1Operation,
+  V1TimeGrain,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
@@ -55,6 +57,7 @@ export function getAlertQueryArgsFromFormValues(
   return {
     metricsView: formValues.metricsViewName,
     measures: [{ name: formValues.measure }],
+    comparisonMeasures: addComparison ? [formValues.measure] : [],
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
@@ -70,6 +73,13 @@ export function getAlertQueryArgsFromFormValues(
     timeRange: {
       isoDuration: formValues.timeRange.isoDuration,
     },
+    sort: [
+      {
+        name: formValues.measure,
+        sortType:
+          V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+      },
+    ],
     ...(addComparison
       ? {
           comparisonTimeRange: {
@@ -83,6 +93,20 @@ export function getAlertQueryArgsFromFormValues(
           },
         }
       : {}),
+    aliases: addComparison
+      ? [
+          {
+            name: formValues.measure,
+            type: V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+            alias: formValues.measure + "__delta_abs",
+          },
+          {
+            name: formValues.measure,
+            type: V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+            alias: formValues.measure + "__delta_rel",
+          },
+        ]
+      : [],
   };
 }
 

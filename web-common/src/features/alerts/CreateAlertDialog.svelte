@@ -172,6 +172,14 @@
   $: if ($hasSlackNotifier.data) {
     $form["enableSlackNotification"] = true;
   }
+
+  $: if (timeControls.timeEnd) {
+    $form["timeRange"].end = timeControls.timeEnd;
+  }
+  $: if (timeControls.comparisonTimeEnd && $form["comparisonTimeRange"]) {
+    $form["comparisonTimeRange"].end = timeControls.comparisonTimeEnd;
+  }
+  $: console.log(timeControls);
 </script>
 
 <Dialog

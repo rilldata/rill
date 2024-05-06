@@ -34,7 +34,7 @@ export function getAlertPreviewData(
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
         formValues.metricsViewName,
-        getAlertQueryArgsFromFormValues(formValues),
+        getAlertQueryBody(formValues),
         {
           query: getAlertPreviewQueryOptions(
             queryClient,
@@ -44,6 +44,17 @@ export function getAlertPreviewData(
         },
       ).subscribe(set),
   );
+}
+
+function getAlertQueryBody(formValues: AlertFormValues) {
+  const args = getAlertQueryArgsFromFormValues(formValues);
+  if (args.timeRange) {
+    args.timeRange.end = formValues.timeRange.end;
+  }
+  if ((args as any).comparisonTimeRange && formValues.comparisonTimeRange) {
+    (args as any).comparisonTimeRange.end = formValues.comparisonTimeRange.end;
+  }
+  return args;
 }
 
 function getAlertPreviewQueryOptions(
