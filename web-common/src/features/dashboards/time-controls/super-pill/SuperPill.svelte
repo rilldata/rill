@@ -115,10 +115,11 @@
       end: interval.end.toJSDate(),
     };
 
-    const defaultTimeGrain = getDefaultTimeGrain(
-      baseTimeRange.start,
-      baseTimeRange.end,
-    ).grain;
+    selectRange(baseTimeRange);
+  }
+
+  function selectRange(range: TimeRange) {
+    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
 
     // Get valid option for the new time range
     const validComparison =
@@ -126,7 +127,7 @@
       allTimeRange &&
       getValidComparisonOption(
         $metricsView.data,
-        baseTimeRange,
+        range,
         $dashboardStore.selectedComparisonTimeRange?.name as
           | TimeComparisonOption
           | undefined,
@@ -134,7 +135,7 @@
       );
 
     makeTimeSeriesTimeRangeAndUpdateAppState(
-      baseTimeRange,
+      range,
       defaultTimeGrain,
       $dashboardStore?.showTimeComparison
         ? ({
@@ -212,7 +213,19 @@
     grain={activeTimeGrain}
   />
   {#if interval.isValid}
-    <CalendarPicker {interval} zone={activeTimeZone} />
+    <CalendarPicker
+      {interval}
+      zone={activeTimeZone}
+      applyRange={(interval) => {
+        selectRange({
+          name: CUSTOM_TIME_RANGE_ALIAS,
+          start: interval.start
+            .set({ hour: 0, minute: 0, second: 0 })
+            .toJSDate(),
+          end: interval.end.set({ hour: 0, minute: 0, second: 0 }).toJSDate(),
+        });
+      }}
+    />
   {/if}
   <Elements.Nudge canPanLeft={$canPanLeft} canPanRight={$canPanRight} {onPan} />
   <!-- <Elements.Zoom /> -->

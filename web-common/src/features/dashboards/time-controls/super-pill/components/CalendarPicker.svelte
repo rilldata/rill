@@ -9,6 +9,7 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Calendar2 from "@rilldata/web-common/components/date-picker/Calendar2.svelte";
   import { DateTime } from "luxon";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const formatsWithoutYear = [
     "M/d", // 7/4 or 07/04
@@ -29,6 +30,7 @@
 
   export let interval: Interval<true>;
   export let zone: string;
+  export let applyRange: (range: Interval<true>) => void;
 
   let selectingStart = true;
   let startInput: HTMLInputElement;
@@ -152,6 +154,18 @@
         />
         <!-- <input type="text" value={interval?.end?.toFormat("hh:mm a")} /> -->
       </div>
+    </div>
+    <div class="flex justify-end w-full py-1 px-2">
+      <Button
+        fit
+        compact
+        on:click={() => {
+          applyRange(interval);
+          open.set(false);
+        }}
+      >
+        <span class="px-2 w-fit">Apply</span>
+      </Button>
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
