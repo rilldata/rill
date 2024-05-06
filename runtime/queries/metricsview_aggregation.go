@@ -1032,7 +1032,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		comparisonSelectCols = append(comparisonSelectCols, timeDimClause)
 		finalDims = append(finalDims, fmt.Sprintf("base.%[1]s as %[1]s", safeName(alias)))
 		// workaround for Druid time conversion with aggregates bug
-		finalComparisonTimeDims = append(finalComparisonTimeDims, fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(comparison.%[1]s))) as %[2]s", safeName(alias), safeName(alias+"__previous")))
+		if dialect == drivers.DialectDruid {
+			finalComparisonTimeDims = append(finalComparisonTimeDims, fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(comparison.%[1]s))) as %[2]s", safeName(alias), safeName(alias+"__previous")))
+		} else {
+			finalComparisonTimeDims = append(finalComparisonTimeDims, fmt.Sprintf("comparison.%[1]s as %[2]s", safeName(alias), safeName(alias+"__previous")))
+		}
 
 		selectArgs = append(selectArgs, exprArgs...)
 	}
