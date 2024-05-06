@@ -21,10 +21,11 @@ func (h *Handle) Root() string {
 }
 
 func (h *Handle) CommitHash(ctx context.Context) (string, error) {
-	err := h.cloneOrPull(ctx, true)
+	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return "", err
 	}
+	defer h.repoMu.RUnlock()
 
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
@@ -44,10 +45,11 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 }
 
 func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
-	err := h.cloneOrPull(ctx, true)
+	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return nil, err
 	}
+	defer h.repoMu.RUnlock()
 
 	fsRoot := os.DirFS(h.projPath)
 	glob = path.Clean(path.Join("./", glob))
@@ -65,6 +67,10 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 
 		// Track file (p is already relative to the FS root)
 		p = filepath.Join("/", p)
+		// Do not send files for ignored paths
+		if drivers.IsIgnored(p, h.ignorePaths) {
+			return nil
+		}
 		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),
@@ -80,10 +86,11 @@ func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) 
 }
 
 func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
-	err := h.cloneOrPull(ctx, true)
+	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return "", err
 	}
+	defer h.repoMu.RUnlock()
 
 	filePath = filepath.Join(h.projPath, filePath)
 
@@ -96,10 +103,11 @@ func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 }
 
 func (h *Handle) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
-	err := h.cloneOrPull(ctx, true)
+	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return nil, err
 	}
+	defer h.repoMu.RUnlock()
 
 	filePath = filepath.Join(h.projPath, filePath)
 
@@ -126,12 +134,12 @@ func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {
 	return fmt.Errorf("rename operation is unsupported")
 }
 
-func (h *Handle) Delete(ctx context.Context, filePath string) error {
+func (h *Handle) Delete(ctx context.Context, filePath string, force bool) error {
 	return fmt.Errorf("delete operation is unsupported")
 }
 
 func (h *Handle) Sync(ctx context.Context) error {
-	return h.cloneOrPull(ctx, false)
+	return h.cloneOrPull(ctx)
 }
 
 func (h *Handle) Watch(ctx context.Context, callback drivers.WatchCallback) error {

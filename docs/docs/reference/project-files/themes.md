@@ -22,6 +22,6 @@ You can copy this directly into your \<theme_name>.yaml file:
 ```yaml
 type: theme
 colors:
-  primary: crimson 
-  secondary: lime 
+  primary: plum 
+  secondary: violet 
 ```

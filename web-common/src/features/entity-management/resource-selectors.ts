@@ -1,5 +1,4 @@
 import {
-  createConnectorServiceOLAPGetTable,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   getRuntimeServiceListResourcesQueryKey,
@@ -9,7 +8,6 @@ import {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -19,7 +17,7 @@ export enum ResourceKind {
   Report = "rill.runtime.v1.Report",
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
-  Chart = "rill.runtime.v1.Chart",
+  Component = "rill.runtime.v1.Component",
   Dashboard = "rill.runtime.v1.Dashboard",
   API = "rill.runtime.v1.API",
 }
@@ -33,7 +31,7 @@ export const ResourceShortNameToKind: Record<string, ResourceKind> = {
   model: ResourceKind.Model,
   metricsview: ResourceKind.MetricsView,
   metrics_view: ResourceKind.MetricsView,
-  chart: ResourceKind.Chart,
+  component: ResourceKind.Component,
   dashboard: ResourceKind.Dashboard,
   report: ResourceKind.Report,
   alert: ResourceKind.Alert,
@@ -96,42 +94,6 @@ export function useFilteredResources<T = Array<V1Resource>>(
       },
     },
   );
-}
-
-export function useFilteredResourceNames(
-  instanceId: string,
-  kind: ResourceKind,
-) {
-  return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
-    data.resources.map((res) => res.meta.name.name),
-  );
-}
-
-export function createSchemaForTable(
-  instanceId: string,
-  resourceName: string,
-  resourceKind: ResourceKind,
-  queryClient?: QueryClient,
-) {
-  return derived(
-    useResource(instanceId, resourceName, resourceKind, undefined, queryClient),
-    (res, set) => {
-      const tableSpec = res.data?.source ?? res.data?.model;
-      return createConnectorServiceOLAPGetTable(
-        {
-          instanceId,
-          table: tableSpec?.state?.table,
-          connector: tableSpec?.state?.connector,
-        },
-        {
-          query: {
-            enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
-            queryClient,
-          },
-        },
-      ).subscribe(set);
-    },
-  ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 
 export function resourceIsLoading(resource?: V1Resource) {

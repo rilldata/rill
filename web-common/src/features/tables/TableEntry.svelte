@@ -63,9 +63,9 @@
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
-          id="more-actions-{name}"
+          id="more-actions-{fullyQualifiedTableName}"
           tooltipText="More actions"
-          label="{name} actions menu trigger"
+          label="{fullyQualifiedTableName} actions menu trigger"
           builders={[builder]}
           suppressTooltip={contextMenuOpen}
         >

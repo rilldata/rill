@@ -20,13 +20,6 @@ const (
 	maxFileSize = 1 << 17 // 128kb
 )
 
-// IgnoredPaths is a list of paths that are ignored by the parser.
-var IgnoredPaths = []string{
-	"/tmp",
-	"/.git",
-	"/node_modules",
-}
-
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
@@ -44,7 +37,7 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
-	ChartSpec       *runtimev1.ChartSpec
+	ComponentSpec   *runtimev1.ComponentSpec
 	DashboardSpec   *runtimev1.DashboardSpec
 	APISpec         *runtimev1.APISpec
 }
@@ -78,7 +71,7 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
-	ResourceKindChart
+	ResourceKindComponent
 	ResourceKindDashboard
 	ResourceKindAPI
 )
@@ -103,14 +96,14 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
-	case "chart":
-		return ResourceKindChart, nil
+	case "component":
+		return ResourceKindComponent, nil
 	case "dashboard":
 		return ResourceKindDashboard, nil
 	case "api":
 		return ResourceKindAPI, nil
 	default:
-		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
+		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
 }
 
@@ -132,14 +125,14 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
-	case ResourceKindChart:
-		return "Chart"
+	case ResourceKindComponent:
+		return "Component"
 	case ResourceKindDashboard:
 		return "Dashboard"
 	case ResourceKindAPI:
 		return "API"
 	default:
-		panic(fmt.Sprintf("unexpected resource kind: %d", k))
+		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
 }
 
@@ -202,6 +195,31 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 	return p.RillYAML, nil
 }
 
+// ParseDotEnv parses only the .env file present in project's root.
+func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string) (map[string]string, error) {
+	files, err := repo.ListRecursive(ctx, ".env", true)
+	if err != nil {
+		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
+	}
+
+	p := Parser{Repo: repo, InstanceID: instanceID}
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.DotEnv, nil
+}
+
 // Parse creates a new parser and parses the entire project.
 func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) (*Parser, error) {
 	p := &Parser{
@@ -245,19 +263,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	}
 
 	return p.reparseExceptRillYAML(ctx, paths)
-}
-
-// IsIgnored returns true if the path (and any files in nested directories) should be ignored.
-func (p *Parser) IsIgnored(path string) bool {
-	for _, dir := range IgnoredPaths {
-		if path == dir {
-			return true
-		}
-		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
-			return true
-		}
-	}
-	return false
 }
 
 // IsSkippable returns true if the path will be skipped by Reparse.
@@ -304,12 +309,6 @@ func (p *Parser) reload(ctx context.Context) error {
 	// Build paths slice
 	paths := make([]string, 0, len(files))
 	for _, file := range files {
-		// Filter out ignored files
-		// TODO: Incorporate the ignore list directly into the ListRecursive call.
-		if p.IsIgnored(file.Path) {
-			continue
-		}
-
 		paths = append(paths, file.Path)
 	}
 
@@ -369,10 +368,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 		seenPaths[path] = true
 
-		// Skip ignores files and files that aren't SQL or YAML or .env file
-		if p.IsIgnored(path) {
-			continue
-		}
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
@@ -745,6 +740,16 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	r.Refs = refs
 }
 
+// insertDryRun returns an error if calling insertResource with the given resource name would fail.
+func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
+	rn := ResourceName{Kind: kind, Name: name}
+	_, ok := p.Resources[rn.Normalized()]
+	if ok {
+		return externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
+	}
+	return nil
+}
+
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
 func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
@@ -752,7 +757,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		return nil, externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+		return nil, externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
 	}
 
 	// Dedupe refs (it's not guaranteed by the upstream logic).
@@ -793,14 +798,14 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
-	case ResourceKindChart:
-		r.ChartSpec = &runtimev1.ChartSpec{}
+	case ResourceKindComponent:
+		r.ComponentSpec = &runtimev1.ComponentSpec{}
 	case ResourceKindDashboard:
 		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
 
 	// Track it

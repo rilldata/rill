@@ -29,12 +29,13 @@ type Compiler struct {
 	controller     *runtime.Controller
 	instanceID     string
 	userAttributes map[string]any
+	priority       int
 }
 
 // New returns a compiler and created a tidb parser object.
 // The instantiated parser object and thus compiler is not goroutine safe and not lightweight.
 // It is better to keep it in a single goroutine, and reuse it if possible.
-func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any) *Compiler {
+func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any, priority int) *Compiler {
 	p := parser.New()
 	// Weirdly setting just ModeANSI which is a combination having ModeANSIQuotes doesn't ensure double quotes are used to identify SQL identifiers
 	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
@@ -43,6 +44,7 @@ func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]
 		controller:     ctrl,
 		instanceID:     instanceID,
 		userAttributes: userAttributes,
+		priority:       priority,
 	}
 }
 
@@ -70,6 +72,7 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 		controller:     c.controller,
 		instanceID:     c.instanceID,
 		userAttributes: c.userAttributes,
+		priority:       c.priority,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
 	if err != nil {
@@ -89,6 +92,7 @@ type transformer struct {
 	connector     string
 	dimsToExpr    map[string]string
 	measureToExpr map[string]string
+	priority      int
 }
 
 func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectStmt) (string, error) {
@@ -319,6 +323,8 @@ func (t *transformer) transformExprNode(ctx context.Context, node ast.ExprNode) 
 		return t.transformPatternLikeOrIlikeExpr(ctx, node)
 	case *ast.UnaryOperationExpr:
 		return t.transformUnaryOperationExpr(ctx, node)
+	case *ast.BetweenExpr:
+		return t.transformBetweenExpr(ctx, node)
 	case ast.ValueExpr:
 		return t.transformValueExpr(ctx, node)
 	case *ast.FuncCallExpr:
@@ -374,6 +380,14 @@ func (t *transformer) transformBinaryOperationExpr(ctx context.Context, node *as
 
 func (t *transformer) transformFuncCallExpr(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
 	fncName := node.FnName
+	switch fncName.L {
+	case "time_range_start":
+		return t.transformTimeRangeStart(ctx, node)
+	case "time_range_end":
+		return t.transformTimeRangeEnd(ctx, node)
+	}
+
+	// generic functions that do not require translation
 	if _, ok := supportedFuncs[fncName.L]; !ok {
 		return exprResult{}, fmt.Errorf("metrics sql: unsupported function %v", fncName.O)
 	}
@@ -527,6 +541,46 @@ func (t *transformer) transformUnaryOperationExpr(ctx context.Context, node *ast
 	}
 
 	return exprResult{expr: fmt.Sprintf("%s%s", opToString(node.Op), expr.expr), columns: expr.columns, types: expr.types}, nil
+}
+
+func (t *transformer) transformBetweenExpr(ctx context.Context, n *ast.BetweenExpr) (exprResult, error) {
+	expr, err := t.transformExprNode(ctx, n.Expr)
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	var sb strings.Builder
+	sb.WriteString(expr.expr)
+	if n.Not {
+		sb.WriteString(" NOT BETWEEN ")
+	} else {
+		sb.WriteString(" BETWEEN ")
+	}
+
+	left, err := t.transformExprNode(ctx, n.Left)
+	if err != nil {
+		return exprResult{}, err
+	}
+	sb.WriteString(left.expr)
+
+	sb.WriteString(" AND ")
+
+	right, err := t.transformExprNode(ctx, n.Right)
+	if err != nil {
+		return exprResult{}, err
+	}
+	sb.WriteString(right.expr)
+
+	var cols []string
+	cols = append(cols, expr.columns...)
+	cols = append(cols, left.columns...)
+	cols = append(cols, right.columns...)
+
+	var types []string
+	types = append(types, expr.types...)
+	types = append(types, left.types...)
+	types = append(types, right.types...)
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
 }
 
 func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) (exprResult, error) {

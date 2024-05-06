@@ -1,12 +1,14 @@
 <script lang="ts" context="module">
   import { onMount } from "svelte";
-  import { writable } from "svelte/store";
   import type ResizeHandle from "./ResizeHandle.svelte";
   import type { ComponentType } from "svelte";
-
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-
-  const zIndex = writable(0);
+  import Chart from "./Chart.svelte";
+  import Markdown from "./Markdown.svelte";
+  import {
+    ResourceKind,
+    useResource,
+  } from "../entity-management/resource-selectors";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -15,6 +17,7 @@
 </script>
 
 <script lang="ts">
+  export let i: number;
   export let builders: Builder[] = [];
   export let left: number;
   export let top: number;
@@ -26,16 +29,25 @@
   export let interacting = false;
   export let width: number;
   export let height: number;
-  export let i: number;
   export let localZIndex = 0;
   export let chartView = false;
+  export let componentName: string;
+  export let instanceId: string;
+
+  $: resourceQuery = useResource(
+    instanceId,
+    componentName,
+    ResourceKind.Component,
+  );
+
+  $: ({ data: componentResource } = $resourceQuery);
+
+  $: ({ renderer, rendererProperties, resolverProperties } =
+    componentResource?.component?.spec ?? {});
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
   onMount(async () => {
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
-
     if (!embed) {
       ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
     }
@@ -60,10 +72,11 @@
 >
   <div class="size-full relative">
     {#if ResizeHandleComponent && !embed}
-      {#each allSides as side}
-        <ResizeHandleComponent
-          {scale}
+      {#each allSides as side (side)}
+        <svelte:component
+          this={ResizeHandleComponent}
           {i}
+          {scale}
           {side}
           position={[left, top]}
           dimensions={[width, height]}
@@ -78,7 +91,16 @@
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
-      <slot />
+      {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
+        <Chart
+          {chartView}
+          vegaSpec={rendererProperties?.spec}
+          chartName={componentName}
+          {resolverProperties}
+        />
+      {:else if renderer === "markdown" && rendererProperties?.content}
+        <Markdown markdown={rendererProperties.content} fontSize={20} />
+      {/if}
     </div>
   </div>
 </div>

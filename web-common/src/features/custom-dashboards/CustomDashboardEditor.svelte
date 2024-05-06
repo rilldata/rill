@@ -10,6 +10,7 @@
 
   export let yaml: string;
   export let errors: V1ParseError[] = [];
+  export let filePath: string;
 
   const QUERY_DEBOUNCE_TIME = 300;
 
@@ -27,6 +28,7 @@
     bind:this={editor}
     bind:view
     content={yaml}
+    key={filePath}
     whenFocused
     on:update={(e) => debounceUpdateChartContent(e.detail.content)}
   />

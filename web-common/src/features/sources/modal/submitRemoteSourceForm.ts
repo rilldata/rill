@@ -19,7 +19,7 @@ import {
 } from "../../entity-management/entity-mappers";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
+import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
@@ -44,11 +44,11 @@ export async function submitRemoteSourceForm(
   );
 
   // If project is uninitialized, initialize an empty project
-  const isProjectInitialized = await isProjectInitializedV2(
+  const projectInitialized = await isProjectInitialized(
     queryClient,
     instanceId,
   );
-  if (!isProjectInitialized) {
+  if (!projectInitialized) {
     await runtimeServiceUnpackEmpty(instanceId, {
       title: EMPTY_PROJECT_TITLE,
     });
@@ -73,16 +73,13 @@ export async function submitRemoteSourceForm(
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
   // Attempt to create & import the source
-  await runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
-    {
-      blob: yaml,
-      create: true,
-      createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    },
-  );
-  checkSourceImported(
+  await runtimeServicePutFile(instanceId, {
+    path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+    blob: yaml,
+    create: true,
+    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+  });
+  await checkSourceImported(
     queryClient,
     getFilePathFromNameAndType(values.sourceName, EntityType.Table),
   );

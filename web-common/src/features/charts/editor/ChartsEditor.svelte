@@ -3,7 +3,6 @@
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
-  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -22,7 +21,9 @@
   let view: EditorView;
   let editor: YAMLEditor;
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
+    path: filePath,
+  });
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   // get the yaml blob from the file.
@@ -39,8 +40,8 @@
     try {
       await $updateFile.mutateAsync({
         instanceId: $runtime.instanceId,
-        path: removeLeadingSlash(filePath),
         data: {
+          path: filePath,
           blob: content,
         },
       });
@@ -57,6 +58,7 @@
     bind:view
     content={yaml}
     extensions={[customYAMLwithJSONandSQL]}
+    key={filePath}
     on:update={(e) => debounceUpdateChartContent(e.detail.content)}
   />
 </ChartsEditorContainer>

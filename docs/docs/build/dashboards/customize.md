@@ -69,13 +69,13 @@ A list of measures that should be visible by default. Operates the same as the `
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard.
 
-First, create the YAML file as below. In this example, the charts and hover in Rill will change to Crimson while spinners will change to Lime.
+First, create the YAML file as below. In this example, the charts and hover in Rill will change to Plum while spinners will change to Violet.
 
 ```yaml
 type: theme
 colors:
-  primary: crimson 
-  secondary: lime 
+  primary: plum
+  secondary: violet 
 ```
 
 Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):

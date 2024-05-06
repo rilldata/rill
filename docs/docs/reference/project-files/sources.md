@@ -105,14 +105,24 @@ Files that are *nested at any level* under your native `sources` directory will 
  — Postgres connection string that should be used. Refer to Postgres [documentation](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for more details _(optional)_.
   - If not specified in the source YAML, the `connector.postgres.database_url` connection string will need to be set when [deploying the project to Rill Cloud](/build/credentials/#setting-credentials-for-a-rill-cloud-project).
 
-**`duckdb`** – Specifies the raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally. See the DuckDB [documentation](https://duckdb.org/docs/data/overview) for a full list of available parameters _(optional)_. 
+**`duckdb`** – Specifies the raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally _(optional)_. 
 
-Example usage:
+See the DuckDB [docs](https://duckdb.org/docs/data/overview) for a full list of available parameters. 
+
+_Example #1: Define all column data mappings_
 ```yaml
 duckdb:
   header: True
   delim: "'|'"
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
+```
+
+_Example #2: Define a column type_
+```yaml
+duckdb:
+  header: True
+  delim: "'|'"
+  columns: "types={'UniqueCarrier': 'VARCHAR'}"
 ```
 
 **`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.

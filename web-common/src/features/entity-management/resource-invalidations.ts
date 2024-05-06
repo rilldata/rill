@@ -1,6 +1,9 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
+import {
+  V1ResourceEvent,
+  V1WatchResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
 import {
   V1ReconcileStatus,
   V1Resource,
@@ -26,7 +29,7 @@ export const MainResourceKinds: {
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
-  [ResourceKind.Chart]: true,
+  [ResourceKind.Component]: true,
   [ResourceKind.Dashboard]: true,
 };
 const UsedResourceKinds: {
@@ -42,8 +45,12 @@ export function invalidateResourceResponse(
   res: V1WatchResourcesResponse,
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
-  if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind])
+  if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind]) {
+    if (res.event === V1ResourceEvent.RESOURCE_EVENT_DELETE && res.name) {
+      fileArtifacts.resourceDeleted(res.name);
+    }
     return;
+  }
 
   const instanceId = get(runtime).instanceId;
   if (
@@ -104,24 +111,32 @@ async function invalidateResource(
   )
     return;
 
-  if (fileArtifacts.wasRenaming(resource)) {
+  if (
+    (resource.meta.name?.kind === ResourceKind.Source ||
+      resource.meta.name?.kind === ResourceKind.Model) &&
+    (fileArtifacts.wasRenaming(resource) ||
+      fileArtifacts.tableStatusChanged(resource))
+  ) {
     void queryClient.invalidateQueries(
-      getConnectorServiceOLAPListTablesQueryKey(),
+      getConnectorServiceOLAPListTablesQueryKey({
+        instanceId: get(runtime).instanceId,
+        connector:
+          resource.source?.spec?.sinkConnector ??
+          resource.model?.spec?.connector ??
+          "",
+      }),
     );
   }
   fileArtifacts.updateArtifacts(resource);
   const failed = !!resource.meta.reconcileError;
 
   const name = resource.meta?.name?.name ?? "";
+  let table: string | undefined;
   switch (resource.meta.name?.kind) {
     case ResourceKind.Source:
-      if (resource.source?.state?.table)
-        // make sure table is populated
-        return invalidateProfilingQueries(queryClient, name, failed);
-      break;
-
     case ResourceKind.Model:
-      if (resource.model?.state?.table)
+      table = resource.source?.state?.table ?? resource.model?.state?.table;
+      if (table && resource.meta.name?.name === table)
         // make sure table is populated
         return invalidateProfilingQueries(queryClient, name, failed);
       break;
@@ -129,7 +144,7 @@ async function invalidateResource(
     case ResourceKind.MetricsView:
       return invalidateMetricsViewData(queryClient, name, failed);
 
-    case ResourceKind.Chart:
+    case ResourceKind.Component:
       return invalidateChartData(queryClient, name, failed);
 
     case ResourceKind.Dashboard:
@@ -149,7 +164,7 @@ function invalidateRemovedResource(
       "name.kind": resource.meta?.name?.kind,
     }),
   );
-  fileArtifacts.deleteResource(resource);
+  fileArtifacts.softDeleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
   // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource?.meta?.name?.kind) {
@@ -204,7 +219,7 @@ export function refreshResource(
 }
 
 export async function invalidateAllResources() {
-  return queryClient.resetQueries({
+  return queryClient.refetchQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
   });

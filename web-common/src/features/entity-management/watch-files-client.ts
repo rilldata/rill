@@ -28,7 +28,7 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
     switch (res.event) {
       case "FILE_EVENT_WRITE":
         void queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+          getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
         );
         void fileArtifacts.fileUpdated(res.path);
         if (res.path === "/rill.yaml") {
@@ -41,7 +41,7 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
 
       case "FILE_EVENT_DELETE":
         void queryClient.resetQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, res.path),
+          getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
         );
         fileArtifacts.fileDeleted(res.path);
         break;

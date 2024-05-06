@@ -1,9 +1,8 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import {
-  duplicateNameChecker,
-  incrementedNameGetter,
-} from "@rilldata/web-common/features/sources/modal/duplicateNameUtils";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   PossibleFileExtensions,
   PossibleZipExtensions,
@@ -26,7 +25,6 @@ import {
  */
 export async function* uploadTableFiles(
   files: Array<File>,
-  [models, sources]: [Array<string>, Array<string>],
   instanceId: string,
   goToIfSuccessful = true,
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
@@ -34,13 +32,20 @@ export async function* uploadTableFiles(
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
   let lastTableName: string | undefined = undefined;
+  const allNames = [
+    ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+    ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+  ];
 
   for (const validFile of validFiles) {
     // check if the file is already present. get the file and
     const resolvedTableName = await checkForDuplicate(
       validFile,
-      (name) => duplicateNameChecker(name, models, sources),
-      (name) => incrementedNameGetter(name, models, sources),
+      (name) => {
+        const lowerName = name.toLowerCase();
+        return allNames.some((allName) => allName.toLowerCase() === lowerName);
+      },
+      (name) => getName(name, allNames),
     );
     // if there was a duplicate and cancel was clicked then we do not upload
     if (!resolvedTableName) continue;
@@ -70,8 +75,8 @@ function filterValidFileExtensions(files: Array<File>): {
   validFiles: Array<File>;
   invalidFiles: Array<File>;
 } {
-  const validFiles = [];
-  const invalidFiles = [];
+  const validFiles: File[] = [];
+  const invalidFiles: File[] = [];
 
   files.forEach((file: File) => {
     if (fileHasValidExtension(file.name)) {
@@ -94,7 +99,7 @@ async function checkForDuplicate(
   file: File,
   duplicateValidator: (name: string) => boolean,
   incrementedNameGetter: (name: string) => string,
-): Promise<string> {
+): Promise<string | undefined> {
   const currentTableName = getTableNameFromFile(file.name);
 
   try {
@@ -102,7 +107,7 @@ async function checkForDuplicate(
     if (isDuplicate) {
       const userResponse = await getResponseFromModal(currentTableName);
       if (userResponse == DuplicateActions.Cancel) {
-        return;
+        return undefined;
       } else if (userResponse == DuplicateActions.KeepBoth) {
         return incrementedNameGetter(currentTableName);
       } else if (userResponse == DuplicateActions.Overwrite) {
@@ -121,7 +126,7 @@ async function checkForDuplicate(
 export async function uploadFile(
   instanceId: string,
   file: File,
-): Promise<string> {
+): Promise<string | undefined> {
   const formData = new FormData();
   formData.append("file", file);
 

@@ -15814,6 +15814,771 @@ var _ interface {
 	ErrorName() string
 } = ListWhitelistedDomainsResponseValidationError{}
 
+// Validate checks the field values on CreateProjectWhitelistedDomainRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *CreateProjectWhitelistedDomainRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateProjectWhitelistedDomainRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// CreateProjectWhitelistedDomainRequestMultiError, or nil if none found.
+func (m *CreateProjectWhitelistedDomainRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateProjectWhitelistedDomainRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := CreateProjectWhitelistedDomainRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := CreateProjectWhitelistedDomainRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDomain()) < 1 {
+		err := CreateProjectWhitelistedDomainRequestValidationError{
+			field:  "Domain",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := CreateProjectWhitelistedDomainRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CreateProjectWhitelistedDomainRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateProjectWhitelistedDomainRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// CreateProjectWhitelistedDomainRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CreateProjectWhitelistedDomainRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateProjectWhitelistedDomainRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateProjectWhitelistedDomainRequestMultiError) AllErrors() []error { return m }
+
+// CreateProjectWhitelistedDomainRequestValidationError is the validation error
+// returned by CreateProjectWhitelistedDomainRequest.Validate if the
+// designated constraints aren't met.
+type CreateProjectWhitelistedDomainRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateProjectWhitelistedDomainRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateProjectWhitelistedDomainRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateProjectWhitelistedDomainRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateProjectWhitelistedDomainRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateProjectWhitelistedDomainRequestValidationError) ErrorName() string {
+	return "CreateProjectWhitelistedDomainRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateProjectWhitelistedDomainRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateProjectWhitelistedDomainRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateProjectWhitelistedDomainRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateProjectWhitelistedDomainRequestValidationError{}
+
+// Validate checks the field values on CreateProjectWhitelistedDomainResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *CreateProjectWhitelistedDomainResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// CreateProjectWhitelistedDomainResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// CreateProjectWhitelistedDomainResponseMultiError, or nil if none found.
+func (m *CreateProjectWhitelistedDomainResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateProjectWhitelistedDomainResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return CreateProjectWhitelistedDomainResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateProjectWhitelistedDomainResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// CreateProjectWhitelistedDomainResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CreateProjectWhitelistedDomainResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateProjectWhitelistedDomainResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateProjectWhitelistedDomainResponseMultiError) AllErrors() []error { return m }
+
+// CreateProjectWhitelistedDomainResponseValidationError is the validation
+// error returned by CreateProjectWhitelistedDomainResponse.Validate if the
+// designated constraints aren't met.
+type CreateProjectWhitelistedDomainResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateProjectWhitelistedDomainResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateProjectWhitelistedDomainResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateProjectWhitelistedDomainResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateProjectWhitelistedDomainResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateProjectWhitelistedDomainResponseValidationError) ErrorName() string {
+	return "CreateProjectWhitelistedDomainResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateProjectWhitelistedDomainResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateProjectWhitelistedDomainResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateProjectWhitelistedDomainResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateProjectWhitelistedDomainResponseValidationError{}
+
+// Validate checks the field values on RemoveProjectWhitelistedDomainRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *RemoveProjectWhitelistedDomainRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveProjectWhitelistedDomainRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// RemoveProjectWhitelistedDomainRequestMultiError, or nil if none found.
+func (m *RemoveProjectWhitelistedDomainRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveProjectWhitelistedDomainRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveProjectWhitelistedDomainRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := RemoveProjectWhitelistedDomainRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDomain()) < 1 {
+		err := RemoveProjectWhitelistedDomainRequestValidationError{
+			field:  "Domain",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RemoveProjectWhitelistedDomainRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveProjectWhitelistedDomainRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// RemoveProjectWhitelistedDomainRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RemoveProjectWhitelistedDomainRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveProjectWhitelistedDomainRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveProjectWhitelistedDomainRequestMultiError) AllErrors() []error { return m }
+
+// RemoveProjectWhitelistedDomainRequestValidationError is the validation error
+// returned by RemoveProjectWhitelistedDomainRequest.Validate if the
+// designated constraints aren't met.
+type RemoveProjectWhitelistedDomainRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveProjectWhitelistedDomainRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveProjectWhitelistedDomainRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveProjectWhitelistedDomainRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveProjectWhitelistedDomainRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveProjectWhitelistedDomainRequestValidationError) ErrorName() string {
+	return "RemoveProjectWhitelistedDomainRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveProjectWhitelistedDomainRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveProjectWhitelistedDomainRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveProjectWhitelistedDomainRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveProjectWhitelistedDomainRequestValidationError{}
+
+// Validate checks the field values on RemoveProjectWhitelistedDomainResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *RemoveProjectWhitelistedDomainResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// RemoveProjectWhitelistedDomainResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// RemoveProjectWhitelistedDomainResponseMultiError, or nil if none found.
+func (m *RemoveProjectWhitelistedDomainResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveProjectWhitelistedDomainResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveProjectWhitelistedDomainResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveProjectWhitelistedDomainResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// RemoveProjectWhitelistedDomainResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RemoveProjectWhitelistedDomainResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveProjectWhitelistedDomainResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveProjectWhitelistedDomainResponseMultiError) AllErrors() []error { return m }
+
+// RemoveProjectWhitelistedDomainResponseValidationError is the validation
+// error returned by RemoveProjectWhitelistedDomainResponse.Validate if the
+// designated constraints aren't met.
+type RemoveProjectWhitelistedDomainResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveProjectWhitelistedDomainResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveProjectWhitelistedDomainResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveProjectWhitelistedDomainResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveProjectWhitelistedDomainResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveProjectWhitelistedDomainResponseValidationError) ErrorName() string {
+	return "RemoveProjectWhitelistedDomainResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveProjectWhitelistedDomainResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveProjectWhitelistedDomainResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveProjectWhitelistedDomainResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveProjectWhitelistedDomainResponseValidationError{}
+
+// Validate checks the field values on ListProjectWhitelistedDomainsRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ListProjectWhitelistedDomainsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectWhitelistedDomainsRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ListProjectWhitelistedDomainsRequestMultiError, or nil if none found.
+func (m *ListProjectWhitelistedDomainsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectWhitelistedDomainsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListProjectWhitelistedDomainsRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := ListProjectWhitelistedDomainsRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ListProjectWhitelistedDomainsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectWhitelistedDomainsRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// ListProjectWhitelistedDomainsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListProjectWhitelistedDomainsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectWhitelistedDomainsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectWhitelistedDomainsRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectWhitelistedDomainsRequestValidationError is the validation error
+// returned by ListProjectWhitelistedDomainsRequest.Validate if the designated
+// constraints aren't met.
+type ListProjectWhitelistedDomainsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectWhitelistedDomainsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectWhitelistedDomainsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectWhitelistedDomainsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectWhitelistedDomainsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectWhitelistedDomainsRequestValidationError) ErrorName() string {
+	return "ListProjectWhitelistedDomainsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectWhitelistedDomainsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectWhitelistedDomainsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectWhitelistedDomainsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectWhitelistedDomainsRequestValidationError{}
+
+// Validate checks the field values on ListProjectWhitelistedDomainsResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ListProjectWhitelistedDomainsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectWhitelistedDomainsResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ListProjectWhitelistedDomainsResponseMultiError, or nil if none found.
+func (m *ListProjectWhitelistedDomainsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectWhitelistedDomainsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetDomains() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectWhitelistedDomainsResponseValidationError{
+						field:  fmt.Sprintf("Domains[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectWhitelistedDomainsResponseValidationError{
+						field:  fmt.Sprintf("Domains[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectWhitelistedDomainsResponseValidationError{
+					field:  fmt.Sprintf("Domains[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListProjectWhitelistedDomainsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectWhitelistedDomainsResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// ListProjectWhitelistedDomainsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListProjectWhitelistedDomainsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectWhitelistedDomainsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectWhitelistedDomainsResponseMultiError) AllErrors() []error { return m }
+
+// ListProjectWhitelistedDomainsResponseValidationError is the validation error
+// returned by ListProjectWhitelistedDomainsResponse.Validate if the
+// designated constraints aren't met.
+type ListProjectWhitelistedDomainsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectWhitelistedDomainsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectWhitelistedDomainsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectWhitelistedDomainsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectWhitelistedDomainsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectWhitelistedDomainsResponseValidationError) ErrorName() string {
+	return "ListProjectWhitelistedDomainsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectWhitelistedDomainsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectWhitelistedDomainsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectWhitelistedDomainsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectWhitelistedDomainsResponseValidationError{}
+
 // Validate checks the field values on GetRepoMetaRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
