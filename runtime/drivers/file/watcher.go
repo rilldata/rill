@@ -181,7 +181,7 @@ func (w *watcher) runInner() error {
 				continue
 			}
 
-			if e.Has(fsnotify.Create) {
+			if we.Type == runtimev1.FileEvent_FILE_EVENT_WRITE {
 				info, err := os.Stat(e.Name)
 				we.Dir = err == nil && info.IsDir()
 			}

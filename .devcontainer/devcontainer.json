@@ -1,0 +1,17 @@
+{
+	"name": "Go",
+	"image": "mcr.microsoft.com/devcontainers/go:1-1.22-bullseye",
+
+	"forwardPorts": [9009, 49009],
+
+	"portsAttributes": {
+		"9009": {
+			"label": "HTTP Port",
+			"onAutoForward": "notify"
+		},
+    "49009": {
+			"label": "GRPC Port",
+			"onAutoForward": "notify"
+    }
+	}
+}
