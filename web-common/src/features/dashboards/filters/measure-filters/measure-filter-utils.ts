@@ -56,7 +56,7 @@ export function prepareMeasureFilterResolutions(
           having: dtf.filter,
           timeStart: timeControls.timeStart,
           timeEnd: timeControls.timeEnd,
-          limit: "50",
+          limit: "250",
           offset: "0",
           sort,
         },
