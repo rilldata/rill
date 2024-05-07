@@ -120,6 +120,20 @@ func (w *watcher) flush() {
 		return
 	}
 
+	for p, event := range w.buffer {
+		if event.IsCreate {
+			info, err := os.Stat(event.FullPath)
+			event.Dir = err == nil && info.IsDir()
+			if event.Dir {
+				err = w.addDir(event.FullPath, true, false)
+				if err != nil {
+					return
+				}
+			}
+			w.buffer[p] = event
+		}
+	}
+
 	events := maps.Values(w.buffer)
 
 	w.mu.Lock()
@@ -178,6 +192,7 @@ func (w *watcher) runInner() error {
 			} else {
 				continue
 			}
+			we.IsCreate = e.Has(fsnotify.Create)
 
 			path, err := filepath.Rel(w.root, e.Name)
 			if err != nil {
@@ -187,31 +202,32 @@ func (w *watcher) runInner() error {
 
 			path = filepath.Join("/", path)
 			we.Path = path
+			we.FullPath = e.Name
 
 			// Do not send files for ignored paths
 			if drivers.IsIgnored(path, w.ignorePaths) {
 				continue
 			}
 
-			if e.Has(fsnotify.Create) {
-				info, err := os.Stat(e.Name)
-				we.Dir = err == nil && info.IsDir()
-			}
+			//if e.Has(fsnotify.Create) {
+			//	info, err := os.Stat(e.Name)
+			//	we.Dir = err == nil && info.IsDir()
+			//}
 
 			existing, ok := w.buffer[path]
-			if ok && existing.Dir {
-				// copy over `Dir` within the batch for a path
-				we.Dir = existing.Dir
+			if ok && existing.IsCreate {
+				// copy over `IsCreate` within the batch for a path
+				we.IsCreate = existing.IsCreate
 			}
 			w.buffer[path] = we
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
-			if we.Dir && e.Has(fsnotify.Create) {
-				err = w.addDir(e.Name, true, false)
-				if err != nil {
-					return err
-				}
-			}
+			//if we.Dir && e.Has(fsnotify.Create) {
+			//	err = w.addDir(e.Name, true, false)
+			//	if err != nil {
+			//		return err
+			//	}
+			//}
 
 			// Reset the timer so we only flush when no events have been observed for batchInterval.
 			// (But to avoid the buffer growing infinitely in edge cases, we enforce a max buffer size.)
@@ -235,7 +251,6 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 		}
 		return err
 	}
-	fmt.Println("addDir", path)
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -245,6 +260,7 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 		}
 		return err
 	}
+	fmt.Println("addDir", path)
 
 	for _, e := range entries {
 		fullPath := filepath.Join(path, e.Name())

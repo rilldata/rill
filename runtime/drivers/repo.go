@@ -31,9 +31,11 @@ type RepoStore interface {
 type WatchCallback func(event []WatchEvent)
 
 type WatchEvent struct {
-	Type runtimev1.FileEvent
-	Path string
-	Dir  bool
+	Type     runtimev1.FileEvent
+	Path     string
+	FullPath string
+	Dir      bool
+	IsCreate bool
 }
 
 type RepoObjectStat struct {
