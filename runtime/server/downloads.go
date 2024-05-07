@@ -136,7 +136,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsViewName:     r.MetricsView,
 			Dimensions:          r.Dimensions,
 			Measures:            r.Measures,
-			Sort:                r.Sort,
+			Sort0:               r.Sort0,
 			TimeRange:           tr,
 			ComparisonTimeRange: r.ComparisonTimeRange,
 			Where:               r.Where,

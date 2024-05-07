@@ -29,7 +29,7 @@ func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, erro
 			MetricsViewName:    req.MetricsView,
 			Dimensions:         req.Dimensions,
 			Measures:           req.Measures,
-			Sort:               req.Sort,
+			Sort0:              req.Sort0,
 			TimeRange:          tr,
 			Where:              req.Where,
 			Having:             req.Having,
