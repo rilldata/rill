@@ -129,7 +129,6 @@ func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Make DIR", dirPath)
 
 	return nil
 }
