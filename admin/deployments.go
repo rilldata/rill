@@ -255,7 +255,10 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
+	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Sensitive:  true,
+	})
 	if err != nil {
 		return err
 	}

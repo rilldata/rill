@@ -49,7 +49,7 @@ func ResourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 	case compilerv1.ResourceKindAPI:
 		return &runtimev1.ResourceName{Kind: ResourceKindAPI, Name: name.Name}
 	default:
-		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
+		panic(fmt.Errorf("unknown resource type %q", name.Kind))
 	}
 }
 
@@ -77,6 +77,6 @@ func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 	case ResourceKindAPI:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindAPI, Name: name.Name}
 	default:
-		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
+		panic(fmt.Errorf("unknown resource type %q", name.Kind))
 	}
 }

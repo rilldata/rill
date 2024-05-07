@@ -52,7 +52,7 @@ Afterwards, if the project has already been deployed to Rill Cloud, you can `ril
 Another option to set this connector variable within your project is to use the `rill env set` command, i.e.:
 
 ```shell
-rill env set connector.slack.bot_token=<BOT_USER_OAUTH_TOKEN>
+rill env set connector.slack.bot_token <BOT_USER_OAUTH_TOKEN>
 ```
 
 Afterwards, if the project has already been deployed to Rill Cloud, you can `rill env push` to update your cloud deployment accordingly.

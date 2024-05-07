@@ -537,7 +537,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
 		}
 	default:
-		panic(fmt.Errorf("unknown resource kind %q", def.Name.Kind))
+		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
 	}
 
 	// Make refs for the resource meta

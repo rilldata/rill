@@ -13,7 +13,8 @@ rill upgrade [flags]
 ### Flags
 
 ```
-      --nightly   Install the latest nightly build
+      --nightly          Install the latest nightly build
+      --version string   Install a specific version of Rill
 ```
 
 ### Global flags

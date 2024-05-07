@@ -8,7 +8,8 @@ import (
 )
 
 func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectName string
+	var projectPath, projectName string
+
 	showCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show credentials and other variables",
@@ -16,6 +17,14 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			client, err := ch.Client()
 			if err != nil {
 				return err
+			}
+
+			// Find the cloud project name
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				if err != nil {
+					return err
+				}
 			}
 
 			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
@@ -37,8 +46,8 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	showCmd.Flags().StringVar(&projectName, "project", "", "")
-	_ = showCmd.MarkFlagRequired("project")
+	showCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	showCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 
 	return showCmd
 }

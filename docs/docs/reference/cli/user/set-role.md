@@ -16,7 +16,7 @@ rill user set-role [flags]
       --email string     Email of the user
       --org string       Organization
       --project string   Project
-      --role string      Role of the user [admin, viewer]
+      --role string      Role of the user (options: admin, viewer)
 ```
 
 ### Global flags

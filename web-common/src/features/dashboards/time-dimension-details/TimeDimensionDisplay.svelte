@@ -10,6 +10,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
   import TDDHeader from "./TDDHeader.svelte";
@@ -121,6 +122,7 @@
       time: time,
     });
   }
+  const debounceHighlightCell = debounce(highlightCell, 50);
 
   function toggleFilter(e) {
     toggleDimensionValueSelection(dimensionName, e.detail);
@@ -238,7 +240,7 @@
           e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
         );
       }}
-      on:highlight={highlightCell}
+      on:highlight={debounceHighlightCell}
     />
   {/if}
 
