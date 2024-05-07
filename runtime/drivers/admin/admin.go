@@ -195,7 +195,12 @@ func (h *Handle) AsFileStore() (drivers.FileStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (h *Handle) AsModelExecutor() (drivers.ModelExecutor, bool) {
+func (h *Handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 

@@ -369,7 +369,15 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor() (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c && opts.OutputHandle == c {
+		return &selfToSelfExecutor{c, opts}, true
+	}
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return c, true
 }
 

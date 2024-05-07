@@ -121,9 +121,16 @@ type Handle interface {
 	// NOTE: The file store can probably be merged with the ObjectStore interface.
 	AsFileStore() (FileStore, bool)
 
-	// AsModelExecutor returns a ModelExecutor for building and managing models.
-	// Since models may move data between connectors, a model executor is in some cases a "meta driver" that uses handles on other drivers.
-	AsModelExecutor() (ModelExecutor, bool)
+	// AsModelExecutor returns a ModelExecutor capable of building a model.
+	// Since models may move data between connectors, the model executor can be seem as a "meta driver" that uses handles on other connectors.
+	// The provided options provides both an input connector and an output connector. One or both of these will be the receiver itself.
+	// It should return false if the handle is not capable of executing a model between the provided input and output connectors.
+	AsModelExecutor(instanceID string, opts *ModelExecutorOptions) (ModelExecutor, bool)
+
+	// AsModelManager returns a ModelManager for managing model results produced by a ModelExecutor.
+	// This is different from the ModelExecutor since sometimes, the model's input connector executes and writes the model result to the output connector.
+	// But managing the result lifecycle is easier to do directly using the output connector.
+	AsModelManager(instanceID string) (ModelManager, bool)
 
 	// AsTransporter returns a Transporter for moving data between two other handles. One of the input handles may be the Handle itself.
 	// Examples: duckdb.AsTransporter(gcs, duckdb), beam.AsTransporter(gcs, s3).

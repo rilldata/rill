@@ -76,23 +76,23 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: errors.New("not a model")}
 	}
 
-	// If the model's state indicates that the last execution produced valid output, create an executor for the previous output
-	var prevExecutor drivers.ModelExecutor
-	var prevResult *drivers.ModelExecuteResult
-	if model.State.ExecutorConnector != "" {
-		conn, release, err := r.C.AcquireConn(ctx, model.State.ExecutorConnector)
+	// If the model's state indicates that the last execution produced valid output, create a manager for the previous result
+	var prevManager drivers.ModelManager
+	var prevResult *drivers.ModelResult
+	if model.State.ResultConnector != "" {
+		conn, release, err := r.C.AcquireConn(ctx, model.State.ResultConnector)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
 		defer release()
 
-		executor, ok := conn.AsModelExecutor()
+		m, ok := conn.AsModelManager(r.C.InstanceID)
 		if !ok {
-			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q no longer supports model execution", model.State.ExecutorConnector)}
+			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q does not support model management", model.State.ResultConnector)}
 		}
-		prevExecutor = executor
+		prevManager = m
 
-		prevResult = &drivers.ModelExecuteResult{
+		prevResult = &drivers.ModelResult{
 			Connector:  model.State.ResultConnector,
 			Properties: model.State.ResultProperties.AsMap(),
 			Table:      model.State.ResultTable,
@@ -100,15 +100,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Fetch contextual config
-	executorEnv, err := r.newExecutorEnv(ctx)
+	modelEnv, err := r.newModelEnv(ctx)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
-		if prevExecutor != nil {
-			err = prevExecutor.Delete(ctx, prevResult)
+		if prevManager != nil {
+			err = prevManager.Delete(ctx, prevResult)
 			return runtime.ReconcileResult{Err: err}
 		}
 		return runtime.ReconcileResult{}
@@ -116,13 +116,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
-		if prevExecutor != nil {
-			renameRes, err := prevExecutor.Rename(ctx, &drivers.ModelRenameOptions{
-				NewName:        self.Meta.Name.Name,
-				PreviousName:   self.Meta.RenamedFrom.Name,
-				PreviousResult: prevResult,
-				Env:            executorEnv,
-			})
+		if prevManager != nil {
+			renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
 			if err == nil {
 				err = r.updateStateWithResult(ctx, self, renameRes)
 			}
@@ -143,8 +138,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
 		// If not staging changes, we need to drop the previous output (if any) before returning
-		if !executorEnv.StageChanges && prevExecutor != nil {
-			err2 := prevExecutor.Delete(ctx, prevResult)
+		if !modelEnv.StageChanges && prevManager != nil {
+			err2 := prevManager.Delete(ctx, prevResult)
 			if err2 != nil {
 				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
 			}
@@ -175,15 +170,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Check if the output still exists (might have been corrupted/lost somehow)
 	var exists bool
-	if prevExecutor != nil {
-		exists, err = prevExecutor.Exists(ctx, prevResult)
+	if prevManager != nil {
+		exists, err = prevManager.Exists(ctx, prevResult)
 		if err != nil {
 			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err))
 		}
 	}
 
 	// Decide if we should trigger a reset
-	triggerReset := model.State.ResultConnector == "" // If its nil, ExecutorConnector/ResultProperties/ResultTable will also be nil
+	triggerReset := model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
 	triggerReset = triggerReset || model.State.RefreshedOn == nil
 	triggerReset = triggerReset || model.State.SpecHash != hash
 	triggerReset = triggerReset || !exists
@@ -200,24 +195,24 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
-	if prevExecutor != nil && model.State.ResultConnector != model.Spec.OutputConnector {
-		err = prevExecutor.Delete(ctx, prevResult)
+	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
+		err = prevManager.Delete(ctx, prevResult)
 		if err != nil {
 			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
 		}
 	}
 
 	// Prepare the state to pass to the executor
-	incremental := false
+	incrementalRun := false
 	state := map[string]any{}
 	if !triggerReset && model.Spec.Incremental && prevResult != nil {
 		// This is an incremental run!
-		incremental = true
+		incrementalRun = true
 		if model.State.State != nil {
 			state = model.State.State.AsMap()
 		}
 	}
-	state["incremental"] = incremental // The incremental flag is hard-coded in the state by convention
+	state["incremental"] = incrementalRun // The incremental flag is hard-coded in the state by convention
 
 	// Prepare the new execution options
 	inputProps, err := r.resolveTemplatedProps(ctx, self, state, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
@@ -228,15 +223,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
-	opts := &drivers.ModelExecuteOptions{
+	opts := &drivers.ModelExecutorOptions{
+		Env:              modelEnv,
 		ModelName:        self.Meta.Name.Name,
-		Env:              executorEnv,
-		PreviousResult:   prevResult,
-		Incremental:      incremental,
 		InputConnector:   model.Spec.InputConnector,
 		InputProperties:  inputProps,
 		OutputConnector:  model.Spec.OutputConnector,
 		OutputProperties: outputProps,
+		IncrementalRun:   incrementalRun,
+		PreviousResult:   prevResult,
 	}
 
 	// Open executor for the new output
@@ -260,7 +255,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Build the output
-	execRes, execErr := executor.Run(ctx, opts)
+	execRes, execErr := executor.Execute(ctx)
 	if execErr != nil {
 		execErr = fmt.Errorf("failed to build output: %w", execErr)
 	}
@@ -287,7 +282,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the build failed, clear the state only if we're not staging changes
 	if execErr != nil {
-		if !executorEnv.StageChanges {
+		if !modelEnv.StageChanges {
 			err := r.updateStateClear(ctx, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
@@ -434,7 +429,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 
 // updateStateWithResult updates the model resource's state with the result of a model execution.
 // It only updates the result-related fields. If changing other fields, such as RefreshedOn and SpecHash, they must be assigned before calling this function.
-func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelExecuteResult) error {
+func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
 	mdl := self.GetModel()
 
 	props, err := structpb.NewStruct(res.Properties)
@@ -527,54 +522,56 @@ func (r *ModelReconciler) resolveState(ctx context.Context, mdl *runtimev1.Model
 }
 
 // acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
-func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.ModelExecuteOptions) (string, drivers.ModelExecutor, func(), error) {
-	ic, release, err := r.C.AcquireConn(ctx, opts.InputConnector)
+// It handles acquiring and setting opts.InputHandle and opts.OutputHandle.
+func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, drivers.ModelExecutor, func(), error) {
+	ic, ir, err := r.C.AcquireConn(ctx, opts.InputConnector)
 	if err != nil {
 		return "", nil, nil, err
 	}
-
-	if e, ok := ic.AsModelExecutor(); ok {
-		ok, err := e.Supports(ctx, opts)
-		if err != nil {
-			release()
-			return "", nil, nil, err
-		}
-
-		if ok {
-			return opts.InputConnector, e, release, nil
-		}
-	}
-
-	release()
 
 	if opts.InputConnector == opts.OutputConnector {
-		return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+		opts.InputHandle = ic
+		opts.OutputHandle = ic
+
+		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
+		if !ok {
+			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+		}
+
+		return opts.InputConnector, e, ir, nil
 	}
 
-	oc, release, err := r.C.AcquireConn(ctx, opts.OutputConnector)
+	oc, or, err := r.C.AcquireConn(ctx, opts.OutputConnector)
 	if err != nil {
+		ir()
 		return "", nil, nil, err
 	}
 
-	if e, ok := oc.AsModelExecutor(); ok {
-		ok, err := e.Supports(ctx, opts)
-		if err != nil {
-			release()
-			return "", nil, nil, err
-		}
+	opts.InputHandle = ic
+	opts.OutputHandle = ic
 
-		if ok {
-			return opts.OutputConnector, e, release, nil
+	executorName := opts.InputConnector
+	e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
+	if !ok {
+		executorName = opts.OutputConnector
+		e, ok = oc.AsModelExecutor(r.C.InstanceID, opts)
+		if !ok {
+			ir()
+			or()
+			return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
 		}
 	}
 
-	release()
+	release := func() {
+		ir()
+		or()
+	}
 
-	return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
+	return executorName, e, release, nil
 }
 
-// newExecutorEnv makes ModelExecutorEnv configured using the current instance.
-func (r *ModelReconciler) newExecutorEnv(ctx context.Context) (*drivers.ModelExecutorEnv, error) {
+// newModelEnv makes a ModelEnv configured using the current instance.
+func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
 	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access instance config: %w", err)
@@ -586,7 +583,7 @@ func (r *ModelReconciler) newExecutorEnv(ctx context.Context) (*drivers.ModelExe
 	}
 	defer release()
 
-	return &drivers.ModelExecutorEnv{
+	return &drivers.ModelEnv{
 		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
 		RepoRoot:           repo.Root(),
 		StageChanges:       cfg.StageChanges,
