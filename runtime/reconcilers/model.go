@@ -123,22 +123,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				PreviousResult: prevResult,
 				Env:            executorEnv,
 			})
+			if err == nil {
+				err = r.updateStateWithResult(ctx, self, renameRes)
+			}
 			if err != nil {
 				r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
-			} else {
-				resultProps, err := structpb.NewStruct(renameRes.Properties)
-				if err != nil {
-					r.C.Logger.Warn("failed to build result properties after rename", zap.String("model", n.Name), zap.Error(err))
-				} else {
-					model.State.ResultConnector = renameRes.Connector
-					model.State.ResultProperties = resultProps
-					model.State.ResultTable = renameRes.Table
-					model.State.RefreshedOn = timestamppb.Now()
-					err = r.C.UpdateState(ctx, self.Meta.Name, self)
-					if err != nil {
-						return runtime.ReconcileResult{Err: err}
-					}
-				}
 			}
 
 			// Note: Not exiting early. We may need to retrigger the model in some cases. We also need to set the correct retrigger time.
@@ -153,24 +142,16 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		// If not staging changes, we need to drop the current output (if any)
+		// If not staging changes, we need to drop the previous output (if any) before returning
 		if !executorEnv.StageChanges && prevExecutor != nil {
-			subErr := prevExecutor.Delete(ctx, prevResult)
-			if subErr != nil {
-				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(subErr))
+			err2 := prevExecutor.Delete(ctx, prevResult)
+			if err2 != nil {
+				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
 			}
 
-			model.State.ExecutorConnector = ""
-			model.State.ResultConnector = ""
-			model.State.ResultProperties = nil
-			model.State.ResultTable = ""
-			model.State.SpecHash = ""
-			model.State.RefreshedOn = nil
-			model.State.State = nil
-			model.State.StateSchema = nil
-			subErr = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if subErr != nil {
-				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
+			err2 = r.updateStateClear(ctx, self)
+			if err2 != nil {
+				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2))
 			}
 		}
 
@@ -287,74 +268,30 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// After the model has executed successfully, we re-evaluate the model state (not to be confused with the resource state)
 	var newState *structpb.Struct
 	var newStateSchema *runtimev1.StructType
-	if execErr == nil && model.Spec.StateResolver != "" {
-		res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-			InstanceID:         r.C.InstanceID,
-			Resolver:           model.Spec.StateResolver,
-			ResolverProperties: model.Spec.StateResolverProperties.AsMap(),
-		})
-		if err != nil {
-			execErr = err
-		} else {
-			var tmp []map[string]any
-			err := json.Unmarshal(res.Data, &tmp)
-			if err != nil {
-				execErr = fmt.Errorf("state resolver produced invalid JSON: %w", err)
-			} else if len(tmp) > 1 {
-				execErr = fmt.Errorf("state resolver produced more than one row")
-			} else if len(tmp) == 1 {
-				tmp, err := structpb.NewStruct(tmp[0])
-				if err != nil {
-					execErr = fmt.Errorf("state resolver produced invalid output: %w", err)
-				} else {
-					newState = tmp
-					newStateSchema = res.Schema
-				}
-			}
-			// Not returning any rows will clear the state
-		}
+	if execErr == nil {
+		newState, newStateSchema, execErr = r.resolveState(ctx, model)
 	}
 
-	// If the build succeeded, update the model's state
-	var update bool
+	// If the build succeeded, update the model's state accodingly
 	if execErr == nil {
-		// Update state
-		resultProps, err := structpb.NewStruct(execRes.Properties)
+		model.State.ExecutorConnector = executorConnector
+		model.State.SpecHash = hash
+		model.State.RefreshedOn = timestamppb.Now()
+		model.State.State = newState
+		model.State.StateSchema = newStateSchema
+		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
-			execErr = fmt.Errorf("executor returned non-serializable output properties: %w", err)
-		} else {
-			model.State.ExecutorConnector = executorConnector
-			model.State.ResultConnector = execRes.Connector
-			model.State.ResultProperties = resultProps
-			model.State.ResultTable = execRes.Table
-			model.State.SpecHash = hash
-			model.State.RefreshedOn = timestamppb.Now()
-			model.State.State = newState
-			model.State.StateSchema = newStateSchema
-			update = true
+			return runtime.ReconcileResult{Err: err}
 		}
 	}
 
 	// If the build failed, clear the state only if we're not staging changes
 	if execErr != nil {
 		if !executorEnv.StageChanges {
-			model.State.ExecutorConnector = ""
-			model.State.ResultConnector = ""
-			model.State.ResultProperties = nil
-			model.State.ResultTable = ""
-			model.State.SpecHash = ""
-			model.State.RefreshedOn = nil
-			model.State.State = nil
-			model.State.StateSchema = nil
-			update = true
-		}
-	}
-
-	// Update state
-	if update {
-		err = r.C.UpdateState(ctx, self.Meta.Name, self)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+			err := r.updateStateClear(ctx, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
+			}
 		}
 	}
 
@@ -365,7 +302,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Reset spec.Trigger
 	if model.Spec.Trigger {
-		err := r.setTriggerFalse(ctx, n)
+		err := r.updateTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
 		}
@@ -495,9 +432,42 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// setTriggerFalse sets the model's spec.Trigger to false.
+// updateStateWithResult updates the model resource's state with the result of a model execution.
+// It only updates the result-related fields. If changing other fields, such as RefreshedOn and SpecHash, they must be assigned before calling this function.
+func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelExecuteResult) error {
+	mdl := self.GetModel()
+
+	props, err := structpb.NewStruct(res.Properties)
+	if err != nil {
+		return fmt.Errorf("failed to serialize result properties: %w", err)
+	}
+
+	mdl.State.ResultConnector = res.Connector
+	mdl.State.ResultProperties = props
+	mdl.State.ResultTable = res.Table
+
+	return r.C.UpdateState(ctx, self.Meta.Name, self)
+}
+
+// updateStateClear clears the model resource's state.
+func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.Resource) error {
+	mdl := self.GetModel()
+
+	mdl.State.ExecutorConnector = ""
+	mdl.State.ResultConnector = ""
+	mdl.State.ResultProperties = nil
+	mdl.State.ResultTable = ""
+	mdl.State.SpecHash = ""
+	mdl.State.RefreshedOn = nil
+	mdl.State.State = nil
+	mdl.State.StateSchema = nil
+
+	return r.C.UpdateState(ctx, self.Meta.Name, self)
+}
+
+// updateTriggerFalse sets the model's spec.Trigger to false.
 // Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
-func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
+func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
@@ -513,6 +483,47 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 
 	model.Spec.Trigger = false
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
+// resolveState resolves the state of a model using its configured state resolver.
+// Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
+// but models also have a "state" resolver that enables incremental/stateful computation by persisting data from the previous execution.
+// It returns nil results if a state resolver is not configured or does not return any data.
+func (r *ModelReconciler) resolveState(ctx context.Context, mdl *runtimev1.ModelV2) (*structpb.Struct, *runtimev1.StructType, error) {
+	if mdl.Spec.StateResolver == "" {
+		return nil, nil, nil
+	}
+
+	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           mdl.Spec.StateResolver,
+		ResolverProperties: mdl.Spec.StateResolverProperties.AsMap(),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var tmp []map[string]any
+	err = json.Unmarshal(res.Data, &tmp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("state resolver produced invalid JSON: %w", err)
+	}
+
+	if len(tmp) == 0 {
+		// Not returning any rows will clear the state
+		return nil, nil, nil
+	}
+
+	if len(tmp) > 1 {
+		return nil, nil, fmt.Errorf("state resolver produced more than one row")
+	}
+
+	state, err := structpb.NewStruct(tmp[0])
+	if err != nil {
+		return nil, nil, fmt.Errorf("state resolver produced invalid output: %w", err)
+	}
+
+	return state, res.Schema, nil
 }
 
 // acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
