@@ -300,7 +300,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		}
 		if restartController {
 			return nil
-		}		
+		}
 	}
 
 	// Reconcile resources.
