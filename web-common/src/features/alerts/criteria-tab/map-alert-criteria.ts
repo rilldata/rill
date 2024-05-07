@@ -7,7 +7,8 @@ import {
 import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { type V1Expression } from "@rilldata/web-common/runtime-client";
 
-// TODO: once we have a design for comparison measure filter in dashboard we should merge the definiton and get rid of this mapping
+// These are here to maintain differences between filter pill and alert criteria.
+// For now, it has no difference, but soon we will have comparison that is only supported in alert criteria.
 
 export function mapAlertCriteriaToExpression(
   criteria: AlertCriteria,

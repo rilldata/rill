@@ -48,6 +48,15 @@ export function createOrExpression(exprs: V1Expression[]): V1Expression {
   };
 }
 
+export function createNotExpression(expr: V1Expression): V1Expression {
+  return {
+    cond: {
+      op: V1Operation.OPERATION_NOT,
+      exprs: [expr],
+    },
+  };
+}
+
 export function createBinaryExpression(
   ident: string,
   op: V1Operation,

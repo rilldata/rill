@@ -43,12 +43,14 @@ export function extractAlertFormValues(
     timeRange.end = allTimeRange.timeRangeSummary?.max;
   }
 
+  const isNot = queryArgs.having?.cond?.op === V1Operation.OPERATION_NOT;
+  const having = isNot ? queryArgs.having?.cond?.exprs?.[0] : queryArgs.having;
+
   return {
     measure: measures[0]?.name ?? "",
     splitByDimension: dimensions[0]?.name ?? "",
 
-    criteria:
-      queryArgs.having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
+    criteria: having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
     criteriaOperation: queryArgs.having?.cond?.op ?? V1Operation.OPERATION_AND,
     criteriaIsNot: false,
 

@@ -2,6 +2,7 @@ import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/aler
 import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import {
   createAndExpression,
+  createNotExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -42,6 +43,11 @@ export type AlertFormValues = {
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
 ): V1MetricsViewAggregationRequest {
+  const criteriaExpr = createAndExpression(
+    formValues.criteria
+      .map(mapAlertCriteriaToExpression)
+      .filter((e) => !!e) as V1Expression[],
+  );
   return {
     metricsView: formValues.metricsViewName,
     measures: [{ name: formValues.measure }],
@@ -51,11 +57,9 @@ export function getAlertQueryArgsFromFormValues(
     where: sanitiseExpression(formValues.whereFilter, undefined),
     having: sanitiseExpression(
       undefined,
-      createAndExpression(
-        formValues.criteria
-          .map(mapAlertCriteriaToExpression)
-          .filter((e) => !!e) as V1Expression[],
-      ),
+      formValues.criteriaIsNot
+        ? createNotExpression(criteriaExpr)
+        : criteriaExpr,
     ),
     timeRange: {
       isoDuration: formValues.timeRange.isoDuration,

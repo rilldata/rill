@@ -7,6 +7,7 @@ import {
 import {
   createBetweenExpression,
   createBinaryExpression,
+  createNotExpression,
   createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Expression, V1Operation } from "@rilldata/web-common/runtime-client";
@@ -122,14 +123,7 @@ export function mapMeasureFilterToExpr(
       : DeltaAbsoluteSuffix;
 
   const wrapExpr = (expr: V1Expression) =>
-    measureFilter.not
-      ? {
-          cond: {
-            op: V1Operation.OPERATION_NOT,
-            exprs: [expr],
-          },
-        }
-      : expr;
+    measureFilter.not ? createNotExpression(expr) : expr;
 
   switch (measureFilter.operation) {
     case MeasureFilterOperation.GreaterThan:

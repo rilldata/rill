@@ -43,6 +43,9 @@
         shortLabel = `!(${filter.value1},${filter.value2})`;
         break;
     }
+    if (filter.not) {
+      shortLabel = `!(${shortLabel})`;
+    }
   }
 </script>
 

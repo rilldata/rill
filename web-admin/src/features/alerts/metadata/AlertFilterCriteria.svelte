@@ -4,7 +4,10 @@
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getMeasureFilterForDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import {
+    type V1Expression,
+    V1Operation,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -12,18 +15,21 @@
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
 
-  $: filtersLength = filters?.cond?.exprs?.length ?? 0;
+  $: isNot = filters.cond?.op === V1Operation.OPERATION_NOT;
+  $: actualFilters = isNot ? filters?.cond?.exprs?.[0] : filters;
+  $: filtersLength = actualFilters?.cond?.exprs?.length ?? 0;
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
   $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
   $: measureIdMap = getMapFromArray(measures, (measure) => measure.name);
-  $: measureFilters = getMeasureFilterForDimension(measureIdMap, filters);
+  $: measureFilters = getMeasureFilterForDimension(measureIdMap, actualFilters);
 </script>
 
 <div class="flex flex-col gap-y-3">
   <MetadataLabel>Criteria</MetadataLabel>
-  <div class="flex flex-wrap gap-2">
+  <div class="flex flex-wrap gap-2 items-center">
     {#if filtersLength}
+      {#if isNot}<div>NOT</div>{/if}
       {#each measureFilters as { name, label, dimensionName, expr } (name)}
         <div animate:flip={{ duration: 200 }}>
           <MeasureFilterReadOnlyChip {label} {dimensionName} {expr} />
