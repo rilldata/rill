@@ -1,24 +1,20 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project describe
+title: rill env push
 ---
-## rill project describe
+## rill env push
 
-Retrieve detailed state for a resource
-
-### Synopsis
-
-Retrieve detailed state for a specific resource (source, model, dashboard, ...)
+Push local .env contents to cloud
 
 ```
-rill project describe [<project-name>] <type> <name> [flags]
+rill env push [flags]
 ```
 
 ### Flags
 
 ```
       --path string      Project directory (default ".")
-      --project string   Project name
+      --project string   Cloud project name (will attempt to infer from Git remote if not provided)
 ```
 
 ### Global flags
@@ -28,10 +24,9 @@ rill project describe [<project-name>] <type> <name> [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name
 ```
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill env](env.md)	 - Manage variables for a project
 

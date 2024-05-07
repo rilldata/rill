@@ -1,20 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill env set
+title: rill uninstall
 ---
-## rill env set
+## rill uninstall
 
-Set variable
-
-```
-rill env set <key> <value> [flags]
-```
-
-### Flags
+Uninstall the Rill binary
 
 ```
-      --path string      Project directory (default ".")
-      --project string   Cloud project name (will attempt to infer from Git remote if not provided)
+rill uninstall [flags]
 ```
 
 ### Global flags
@@ -28,5 +21,5 @@ rill env set <key> <value> [flags]
 
 ### SEE ALSO
 
-* [rill env](env.md)	 - Manage variables for a project
+* [rill](cli.md)	 - Rill CLI
 
