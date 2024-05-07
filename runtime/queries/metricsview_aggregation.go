@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
@@ -18,6 +19,7 @@ import (
 	duckdbolap "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewAggregation struct {
@@ -102,6 +104,15 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", mv)
 	}
 
+	if !isTimeRangeNil(q.TimeRange) {
+		start, end, err := ResolveTimeRange(q.TimeRange, mv)
+		if err != nil {
+			return err
+		}
+		q.TimeRange.Start = timestamppb.New(start.In(time.UTC))
+		q.TimeRange.End = timestamppb.New(end.In(time.UTC))
+	}
+
 	// backwards compatibility
 	if q.Filter != nil {
 		if q.Where != nil {
@@ -111,6 +122,16 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	if q.ComparisonTimeRange != nil {
+		if isTimeRangeNil(q.ComparisonTimeRange) {
+			return fmt.Errorf("Undefined time range boundaries")
+		}
+		start, end, err := ResolveTimeRange(q.ComparisonTimeRange, mv)
+		if err != nil {
+			return err
+		}
+		q.ComparisonTimeRange.Start = timestamppb.New(start.In(time.UTC))
+		q.ComparisonTimeRange.End = timestamppb.New(end.In(time.UTC))
+
 		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
 	}
 
