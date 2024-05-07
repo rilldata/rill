@@ -13,7 +13,6 @@ This component needs to do the following:
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
-  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     Divider,
     Menu,
@@ -31,9 +30,8 @@ This component needs to do the following:
   import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
-  import SelectorButton from "./SelectorButton.svelte";
 
-  export let metricViewName;
+  export let metricViewName: string;
   export let chipStyle = false;
 
   const TIME = "Time";
