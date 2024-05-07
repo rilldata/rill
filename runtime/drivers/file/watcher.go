@@ -199,7 +199,7 @@ func (w *watcher) runInner() error {
 			w.buffer[path] = we
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
-			if we.Dir && e.Has(fsnotify.Create) {
+			if we.Dir && we.Type == runtimev1.FileEvent_FILE_EVENT_WRITE {
 				err = w.addDir(e.Name, true, false)
 				if err != nil {
 					return err
