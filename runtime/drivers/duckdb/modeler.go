@@ -98,30 +98,6 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	return olap.DropTable(ctx, table.Name, table.View)
 }
 
-func (c *connection) acquireHandles(ctx context.Context, opts *drivers.ModelExecutorOptions) (drivers.Handle, drivers.Handle, func(), error) {
-	input, releaseInput, err := opts.Env.AcquireConnector(ctx, opts.InputConnector)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	if opts.InputConnector == opts.OutputConnector {
-		return input, input, releaseInput, nil
-	}
-
-	output, releaseOutput, err := opts.Env.AcquireConnector(ctx, opts.OutputConnector)
-	if err != nil {
-		releaseInput()
-		return nil, nil, nil, err
-	}
-
-	release := func() {
-		releaseInput()
-		releaseOutput()
-	}
-
-	return input, output, release, nil
-}
-
 // stagingTableName returns a stable temporary table name for a destination table.
 // By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
 func stagingTableNameFor(table string) string {
