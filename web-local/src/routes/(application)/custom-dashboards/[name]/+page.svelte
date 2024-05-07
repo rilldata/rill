@@ -163,14 +163,21 @@
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
-    const sequence = parsedDocument.get("items");
-    sequence.add({
+    const newChart = {
       component: e.detail.chartName,
       height: 4,
       width: 4,
       x: 0,
       y: 0,
-    });
+    };
+
+    const items = parsedDocument.get("items");
+
+    if (!items) {
+      parsedDocument.set("items", [newChart]);
+    } else {
+      items.add(newChart);
+    }
 
     yaml = parsedDocument.toString();
 
