@@ -25,8 +25,10 @@ test.describe("File Explorer", () => {
       await expect(page.getByRole("link", { name: "README.md" })).toBeVisible();
 
       // Edit the file
+      await page.getByLabel("Auto-save").click(); // Turn off auto-save
       await page.getByRole("textbox").nth(1).click();
       await page.keyboard.type("Here's a README.md file for the e2e test!");
+      await page.getByRole("button", { name: "Save" }).click();
       // Wait half a second for the changes to be saved
       await page.waitForTimeout(500);
       // Navigate away from the file and back to it to verify the changes
