@@ -21,7 +21,7 @@
     $form["criteria"] = $form["criteria"].concat({
       field: "",
       operation: MeasureFilterOperation.GreaterThan,
-      value: 0,
+      value: "0",
       not: false,
     });
   }

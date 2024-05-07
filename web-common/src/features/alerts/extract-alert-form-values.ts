@@ -52,7 +52,7 @@ export function extractAlertFormValues(
 
     criteria: having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
     criteriaOperation: queryArgs.having?.cond?.op ?? V1Operation.OPERATION_AND,
-    criteriaIsNot: false,
+    criteriaIsNot: isNot,
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,

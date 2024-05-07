@@ -40,6 +40,6 @@ export function mapExpressionToAlertCriteria(
     field: measureFilter?.measure ?? "",
     operation: measureFilter.operation,
     value: measureFilter.value1,
-    not: false,
+    not: measureFilter.not,
   };
 }

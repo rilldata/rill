@@ -17,6 +17,7 @@ export const ToProtoOperationMap: Record<V1Operation, Operation> = {
   [V1Operation.OPERATION_GTE]: Operation.GTE,
   [V1Operation.OPERATION_OR]: Operation.OR,
   [V1Operation.OPERATION_AND]: Operation.AND,
+  [V1Operation.OPERATION_NOT]: Operation.NOT,
   [V1Operation.OPERATION_IN]: Operation.IN,
   [V1Operation.OPERATION_NIN]: Operation.NIN,
   [V1Operation.OPERATION_LIKE]: Operation.LIKE,

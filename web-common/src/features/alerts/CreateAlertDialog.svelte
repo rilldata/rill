@@ -67,7 +67,7 @@
           field: $dashboardStore.leaderboardMeasureName ?? "",
           operation: V1Operation.OPERATION_GTE,
           value: "0",
-          isNot: false,
+          not: false,
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
