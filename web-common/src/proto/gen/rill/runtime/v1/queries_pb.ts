@@ -822,6 +822,11 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   sort: MetricsViewComparisonSort[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationSort sort0 = 20;
+   */
+  sort0: MetricsViewAggregationSort[] = [];
+
+  /**
    * Optional
    *
    * @generated from field: repeated string comparison_measures = 19;
@@ -932,6 +937,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 3, name: "dimensions", kind: "message", T: MetricsViewAggregationDimension, repeated: true },
     { no: 4, name: "measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
     { no: 5, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
+    { no: 20, name: "sort0", kind: "message", T: MetricsViewAggregationSort, repeated: true },
     { no: 19, name: "comparison_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "time_range", kind: "message", T: TimeRange },
     { no: 16, name: "comparison_time_range", kind: "message", T: TimeRange },
@@ -1103,6 +1109,43 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
    */
   filter?: Expression;
 
+  /**
+   * Optional
+   *
+   * @generated from oneof rill.runtime.v1.MetricsViewAggregationMeasure.compute
+   */
+  compute: {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeCount count = 5;
+     */
+    value: MetricsViewAggregationMeasureComputeCount;
+    case: "count";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeCountDistinct count_distinct = 6;
+     */
+    value: MetricsViewAggregationMeasureComputeCountDistinct;
+    case: "countDistinct";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonValue comparison_value = 7;
+     */
+    value: MetricsViewAggregationMeasureComputeComparisonValue;
+    case: "comparisonValue";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonDelta comparison_delta = 8;
+     */
+    value: MetricsViewAggregationMeasureComputeComparisonDelta;
+    case: "comparisonDelta";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonRatio comparison_ratio = 9;
+     */
+    value: MetricsViewAggregationMeasureComputeComparisonRatio;
+    case: "comparisonRatio";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1115,6 +1158,11 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 2, name: "builtin_measure", kind: "enum", T: proto3.getEnumType(BuiltinMeasure) },
     { no: 3, name: "builtin_measure_args", kind: "message", T: Value, repeated: true },
     { no: 4, name: "filter", kind: "message", T: Expression },
+    { no: 5, name: "count", kind: "message", T: MetricsViewAggregationMeasureComputeCount, oneof: "compute" },
+    { no: 6, name: "count_distinct", kind: "message", T: MetricsViewAggregationMeasureComputeCountDistinct, oneof: "compute" },
+    { no: 7, name: "comparison_value", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonValue, oneof: "compute" },
+    { no: 8, name: "comparison_delta", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonDelta, oneof: "compute" },
+    { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1131,6 +1179,185 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
 
   static equals(a: MetricsViewAggregationMeasure | PlainMessage<MetricsViewAggregationMeasure> | undefined, b: MetricsViewAggregationMeasure | PlainMessage<MetricsViewAggregationMeasure> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasure, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeCount
+ */
+export class MetricsViewAggregationMeasureComputeCount extends Message<MetricsViewAggregationMeasureComputeCount> {
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeCount>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeCount";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeCount {
+    return new MetricsViewAggregationMeasureComputeCount().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeCount {
+    return new MetricsViewAggregationMeasureComputeCount().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeCount {
+    return new MetricsViewAggregationMeasureComputeCount().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeCount | PlainMessage<MetricsViewAggregationMeasureComputeCount> | undefined, b: MetricsViewAggregationMeasureComputeCount | PlainMessage<MetricsViewAggregationMeasureComputeCount> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeCount, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeCountDistinct
+ */
+export class MetricsViewAggregationMeasureComputeCountDistinct extends Message<MetricsViewAggregationMeasureComputeCountDistinct> {
+  /**
+   * @generated from field: string dimension = 1;
+   */
+  dimension = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeCountDistinct>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeCountDistinct";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeCountDistinct {
+    return new MetricsViewAggregationMeasureComputeCountDistinct().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeCountDistinct {
+    return new MetricsViewAggregationMeasureComputeCountDistinct().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeCountDistinct {
+    return new MetricsViewAggregationMeasureComputeCountDistinct().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeCountDistinct | PlainMessage<MetricsViewAggregationMeasureComputeCountDistinct> | undefined, b: MetricsViewAggregationMeasureComputeCountDistinct | PlainMessage<MetricsViewAggregationMeasureComputeCountDistinct> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeCountDistinct, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonValue
+ */
+export class MetricsViewAggregationMeasureComputeComparisonValue extends Message<MetricsViewAggregationMeasureComputeComparisonValue> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeComparisonValue>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonValue";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeComparisonValue {
+    return new MetricsViewAggregationMeasureComputeComparisonValue().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonValue {
+    return new MetricsViewAggregationMeasureComputeComparisonValue().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonValue {
+    return new MetricsViewAggregationMeasureComputeComparisonValue().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeComparisonValue | PlainMessage<MetricsViewAggregationMeasureComputeComparisonValue> | undefined, b: MetricsViewAggregationMeasureComputeComparisonValue | PlainMessage<MetricsViewAggregationMeasureComputeComparisonValue> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonValue, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonDelta
+ */
+export class MetricsViewAggregationMeasureComputeComparisonDelta extends Message<MetricsViewAggregationMeasureComputeComparisonDelta> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeComparisonDelta>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonDelta";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeComparisonDelta {
+    return new MetricsViewAggregationMeasureComputeComparisonDelta().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonDelta {
+    return new MetricsViewAggregationMeasureComputeComparisonDelta().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonDelta {
+    return new MetricsViewAggregationMeasureComputeComparisonDelta().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeComparisonDelta | PlainMessage<MetricsViewAggregationMeasureComputeComparisonDelta> | undefined, b: MetricsViewAggregationMeasureComputeComparisonDelta | PlainMessage<MetricsViewAggregationMeasureComputeComparisonDelta> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonDelta, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonRatio
+ */
+export class MetricsViewAggregationMeasureComputeComparisonRatio extends Message<MetricsViewAggregationMeasureComputeComparisonRatio> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeComparisonRatio>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonRatio";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeComparisonRatio {
+    return new MetricsViewAggregationMeasureComputeComparisonRatio().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonRatio {
+    return new MetricsViewAggregationMeasureComputeComparisonRatio().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonRatio {
+    return new MetricsViewAggregationMeasureComputeComparisonRatio().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeComparisonRatio | PlainMessage<MetricsViewAggregationMeasureComputeComparisonRatio> | undefined, b: MetricsViewAggregationMeasureComputeComparisonRatio | PlainMessage<MetricsViewAggregationMeasureComputeComparisonRatio> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonRatio, a, b);
   }
 }
 

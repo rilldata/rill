@@ -1170,6 +1170,11 @@ paths:
                   type: object
                   $ref: '#/definitions/v1MetricsViewComparisonSort'
                 title: Optional. Defaults to unsorted
+              sort0:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationSort'
               comparisonMeasures:
                 type: array
                 items:
@@ -3922,6 +3927,38 @@ definitions:
         title: Required if BUILTIN_MEASURE_COUNT_DISTINCT
       filter:
         $ref: '#/definitions/v1Expression'
+      count:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeCount'
+      countDistinct:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeCountDistinct'
+      comparisonValue:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonValue'
+      comparisonDelta:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
+      comparisonRatio:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+  v1MetricsViewAggregationMeasureComputeComparisonDelta:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonRatio:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonValue:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeCount:
+    type: object
+  v1MetricsViewAggregationMeasureComputeCountDistinct:
+    type: object
+    properties:
+      dimension:
+        type: string
   v1MetricsViewAggregationRequest:
     type: object
     properties:
@@ -3948,6 +3985,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonSort'
         title: Optional. Defaults to unsorted
+      sort0:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationSort'
       comparisonMeasures:
         type: array
         items:
@@ -4013,6 +4055,15 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+  v1MetricsViewAggregationSort:
+    type: object
+    properties:
+      name:
+        type: string
+        title: Required. Dimension or measure name
+      desc:
+        type: boolean
+        title: Optional
   v1MetricsViewColumn:
     type: object
     properties:

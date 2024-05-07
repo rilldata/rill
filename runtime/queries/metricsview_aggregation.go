@@ -23,10 +23,11 @@ import (
 )
 
 type MetricsViewAggregation struct {
-	MetricsViewName     string                                         `json:"metrics_view,omitempty"`
-	Dimensions          []*runtimev1.MetricsViewAggregationDimension   `json:"dimensions,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
+	MetricsViewName     string                                       `json:"metrics_view,omitempty"`
+	Dimensions          []*runtimev1.MetricsViewAggregationDimension `json:"dimensions,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort       `json:"sort,omitempty"`
+	Sort0               []*runtimev1.MetricsViewAggregationSort
 	TimeRange           *runtimev1.TimeRange                           `json:"time_range,omitempty"`
 	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
 	Where               *runtimev1.Expression                          `json:"where,omitempty"`
@@ -133,6 +134,13 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		q.ComparisonTimeRange.End = timestamppb.New(end.In(time.UTC))
 
 		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
+	}
+
+	for _, m := range q.Measures {
+		switch m.GetCompute().(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta: // todo all 3
+			return fmt.Errorf("comaparison measures without comparison time range")
+		}
 	}
 
 	if olap.Dialect() == drivers.DialectDuckDB {
@@ -524,7 +532,7 @@ func (q *MetricsViewAggregation) createPivotSQL(temporaryTableName string, mv *r
 		}
 	}
 
-	sortingCriteria := make([]string, 0, len(q.Sort))
+	sortingCriteria := make([]string, 0, len(q.Sort)) // todo replace Sort to Sort0
 	for _, s := range q.Sort {
 		sortCriterion := safeName(s.Name)
 		if q.Exporting {
@@ -971,6 +979,18 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
+	dimByName := make(map[string]*runtimev1.MetricsViewAggregationDimension, len(mv.Dimensions))
+	measuresByFinalName := make(map[string]*runtimev1.MetricsViewAggregationMeasure, len(q.Measures))
+	for _, d := range q.Dimensions {
+		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || d.Alias == "" {
+			dimByName[d.Name] = d
+		} else {
+			dimByName[d.Alias] = d
+		}
+	}
+	for _, m := range q.Measures {
+		measuresByFinalName[m.Name] = m
+	}
 
 	cols := q.cols()
 	selectCols := make([]string, 0, cols+1)
@@ -982,7 +1002,10 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	unnestClauses := make([]string, 0)
 	var selectArgs []any
 
-	q.calculateMeasuresMeta()
+	err := q.calculateMeasuresMeta()
+	if err != nil {
+		return "", nil, err
+	}
 
 	// Required for t_offset, ie
 	// SELECT t_offset, d1, d2, t1, t2, m1, m2
@@ -1070,28 +1093,33 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		}
 	}
 
-	measureClausesByName := make(map[string]string, q.cols())
+	// measureClausesByName := make(map[string]string, q.cols())
+	// measureByAlias := make(map[string]string, len(q.Measures))
+
+	// collect subquery expressions
 	for _, m := range q.Measures {
-		switch m.BuiltinMeasure {
-		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
-			expr, err := metricsViewMeasureExpression(mv, m.Name)
-			if err != nil {
-				return "", nil, err
-			}
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
-			if q.measuresMeta[m.Name].expand {
-				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
-			}
-		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+		switch m.Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue, *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta, *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			// nothing
+
+			// return "", nil, fmt.Errorf("compute type not specified for measure '%s'", m.Name)
+			// measureByAlias[m.Name] =
+			// name := Name(m)
+			// expr, err := metricsViewMeasureExpression(mv, m.Name)
+			// if err != nil {
+			// 	return "", nil, err
+			// }
+			// selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			// if q.measuresMeta[m.Name].expand {
+			// 	comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			// }
+		case *runtimev1.MetricsViewAggregationMeasure_Count:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
 			if q.measuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
 			}
-		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
-			if len(m.BuiltinMeasureArgs) != 1 {
-				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
-			}
-			arg := m.BuiltinMeasureArgs[0].GetStringValue()
+		case *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
+			arg := m.GetCountDistinct().GetDimension()
 			if arg == "" {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
@@ -1100,58 +1128,93 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
 			}
 		default:
-			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
+			expr, err := metricsViewMeasureExpression(mv, m.Name)
+			if err != nil {
+				return "", nil, err
+			}
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			}
 		}
-		measureClausesByName[m.Name] = selectCols[len(selectCols)-1]
+		// measureClausesByName[m.Name] = selectCols[len(selectCols)-1]
 	}
 
+	// collect final expressions
 	var finalSelectCols []string
 	var labelCols []string
 	for _, m := range q.Measures {
 		var columnsTuple string
 		var labelTuple string
-		if dialect != drivers.DialectDruid {
-			if q.measuresMeta[m.Name].expand {
+		var subqueryName, finalName string
+		prefix := ""
+		if dialect == drivers.DialectDruid {
+			prefix = "ANY_VALUE"
+		}
+
+		switch m.Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			subqueryName = m.GetComparisonRatio().Measure
+			finalName = m.Name
+			if dialect == drivers.DialectDruid {
 				columnsTuple = fmt.Sprintf(
-					"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
-					safeName(m.Name),
-					safeName(m.Name+"__previous"),
-					safeName(m.Name+"__delta_abs"),
-					safeName(m.Name+"__delta_rel"),
-				)
-				labelTuple = fmt.Sprintf(
-					"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
-					safeName(m.Name),
-					safeName(labelMap[m.Name]+" (prev)"),
-					safeName(labelMap[m.Name]+" (Δ)"),
-					safeName(labelMap[m.Name]+" (Δ%)"),
-					safeName(labelMap[m.Name]),
+					"ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[2]s",
+					safeName(subqueryName),
+					safeName(finalName),
 				)
 			} else {
-				columnsTuple = fmt.Sprintf("base.%[1]s AS %[1]s", safeName(m.Name))
-				labelTuple = fmt.Sprintf("base.%[1]s AS %[2]s", safeName(m.Name), safeName(labelMap[m.Name]))
-			}
-		} else {
-			if q.measuresMeta[m.Name].expand {
 				columnsTuple = fmt.Sprintf(
-					"ANY_VALUE(base.%[1]s) AS %[1]s, ANY_VALUE(comparison.%[1]s) AS %[2]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[3]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[4]s",
-					safeName(m.Name),
-					safeName(m.Name+"__previous"),
-					safeName(m.Name+"__delta_abs"),
-					safeName(m.Name+"__delta_rel"),
+					"(base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[2]s",
+					safeName(subqueryName),
+					safeName(finalName),
 				)
-				labelTuple = fmt.Sprintf(
-					"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
-					safeName(m.Name),
-					safeName(labelMap[m.Name]),
-					safeName(labelMap[m.Name]+" (prev)"),
-					safeName(labelMap[m.Name]+" (Δ)"),
-					safeName(labelMap[m.Name]+" (Δ%)"),
-				)
-			} else {
-				columnsTuple = fmt.Sprintf("ANY_VALUE(base.%[1]s) AS %[1]s", safeName(m.Name))
-				labelTuple = fmt.Sprintf("ANY_VALUE(base.%[1]s) AS %[2]s", safeName(m.Name), safeName(labelMap[m.Name]))
 			}
+			labelTuple = columnsTuple
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+			subqueryName = m.GetComparisonDelta().Measure
+			finalName = m.Name
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(base.%[1]s - comparison.%[1]s) AS %[2]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = columnsTuple
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+			subqueryName = m.GetComparisonValue().Measure
+			finalName = m.Name
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(comparison.%[1]s) AS %[2]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = columnsTuple
+		case *runtimev1.MetricsViewAggregationMeasure_Count, *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
+			subqueryName = m.Name
+			finalName = m.Name
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(base.%[1]s) AS %[1]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = columnsTuple
+		default: // not a virtual (generated) column
+			subqueryName = m.Name
+			finalName = m.Name
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(base.%[1]s) AS %[1]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = fmt.Sprintf( // non-virtial columns have a label
+				"%[3]s(base.%[1]s) AS %[1]s",
+				safeName(subqueryName),
+				safeName(labelMap[subqueryName]),
+				prefix,
+			)
 		}
 		finalSelectCols = append(
 			finalSelectCols,
@@ -1225,58 +1288,85 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	var baseOrderClauses []string
 	var comparisonOrderClauses []string
 
-	for _, s := range q.Sort {
-		if s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED {
-			outerClause := fmt.Sprintf("%d", colMap[s.Name])
-			subQueryClause := fmt.Sprintf("%d", colMap[s.Name]+1)
-			var ending string
-			if s.Desc {
-				ending += " DESC"
-			}
-			if dialect == drivers.DialectDuckDB {
-				ending += " NULLS LAST"
-			}
-			outerClause += ending
-			subQueryClause += ending
-			orderClauses = append(orderClauses, outerClause)
-			baseOrderClauses = append(baseOrderClauses, subQueryClause)
-			comparisonOrderClauses = append(comparisonOrderClauses, subQueryClause)
-			continue
-		}
-		measureMeta, ok := q.measuresMeta[s.Name]
-		if !ok {
-			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.Name)
+	for _, s := range q.Sort0 {
+		var outerClause, subQueryClause string
+		if dimByName[s.Name] != nil { // dimension
+			outerClause = fmt.Sprintf("%d", colMap[s.Name])
+			subQueryClause = fmt.Sprintf("%d", colMap[s.Name]+1)
+		} else if measuresByFinalName[s.Name] != nil { // measure
+			m := measuresByFinalName[s.Name]
+			outerClause = s.Name
+			subQueryClause = ColumnName(m)
+		} else {
+			return "", nil, fmt.Errorf("no dimension or measure '%s' found for sorting", s.Name)
 		}
 
-		var pos int
-		switch s.SortType {
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
-			pos = measureMeta.outerIndex
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-			pos = 1 + measureMeta.outerIndex
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-			pos = 2 + measureMeta.outerIndex
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-			pos = 3 + measureMeta.outerIndex
-		default:
-			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
-		}
-		orderClause := fmt.Sprint(pos)
-		baseOrderClause := fmt.Sprint(measureMeta.baseSubqueryIndex + 1)
-		comparisonOrderClause := fmt.Sprint(measureMeta.comparisonSubqueryIndex + 1)
-		ending := ""
+		var ending string
 		if s.Desc {
 			ending += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
 			ending += " NULLS LAST"
 		}
-		orderClause += ending
-		baseOrderClause += ending
-		orderClauses = append(orderClauses, orderClause)
-		baseOrderClauses = append(baseOrderClauses, baseOrderClause)
-		comparisonOrderClauses = append(comparisonOrderClauses, comparisonOrderClause)
+		outerClause += ending
+		subQueryClause += ending
+		orderClauses = append(orderClauses, outerClause)
+		baseOrderClauses = append(baseOrderClauses, subQueryClause)
+		comparisonOrderClauses = append(comparisonOrderClauses, subQueryClause)
 	}
+
+	// for _, s := range q.Sort {
+	// if s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED {
+	// 	outerClause := fmt.Sprintf("%d", colMap[s.Name])
+	// 	subQueryClause := fmt.Sprintf("%d", colMap[s.Name]+1)
+	// 	var ending string
+	// 	if s.Desc {
+	// 		ending += " DESC"
+	// 	}
+	// 	if dialect == drivers.DialectDuckDB {
+	// 		ending += " NULLS LAST"
+	// 	}
+	// 	outerClause += ending
+	// 	subQueryClause += ending
+	// 	orderClauses = append(orderClauses, outerClause)
+	// 	baseOrderClauses = append(baseOrderClauses, subQueryClause)
+	// 	comparisonOrderClauses = append(comparisonOrderClauses, subQueryClause)
+	// 	continue
+	// }
+	// measureMeta, ok := q.measuresMeta[s.Name]
+	// if !ok {
+	// 	return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.Name)
+	// }
+
+	// var pos int
+	// switch s.SortType {
+	// case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
+	// 	pos = measureMeta.outerIndex
+	// case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+	// 	pos = 1 + measureMeta.outerIndex
+	// case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
+	// 	pos = 2 + measureMeta.outerIndex
+	// case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+	// 	pos = 3 + measureMeta.outerIndex
+	// default:
+	// 	return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
+	// }
+	// orderClause := fmt.Sprint(pos)
+	// baseOrderClause := fmt.Sprint(measureMeta.baseSubqueryIndex + 1)
+	// comparisonOrderClause := fmt.Sprint(measureMeta.comparisonSubqueryIndex + 1)
+	// ending := ""
+	// if s.Desc {
+	// 	ending += " DESC"
+	// }
+	// if dialect == drivers.DialectDuckDB {
+	// 	ending += " NULLS LAST"
+	// }
+	// orderClause += ending
+	// baseOrderClause += ending
+	// orderClauses = append(orderClauses, orderClause)
+	// baseOrderClauses = append(baseOrderClauses, baseOrderClause)
+	// comparisonOrderClauses = append(comparisonOrderClauses, comparisonOrderClause)
+	// }
 
 	orderByClause := ""
 	baseSubQueryOrderByClause := ""
@@ -1297,26 +1387,40 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	comparisonLimitClause := ""
 
 	joinType := "FULL"
+	comparisonSort := false
+	deltaComparison := false
+	for _, s := range q.Sort0 {
+		m := measuresByFinalName[s.Name]
+		if measuresByFinalName[s.Name] != nil {
+			switch m.Compute.(type) {
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+				comparisonSort = true
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta, *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+				deltaComparison = true
+				comparisonSort = true
+			}
+		}
+	}
 	if !q.Exact {
-		deltaComparison := q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
-			q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+		// deltaComparison := q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
+		// 	q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
 
 		limit := 0
 		if q.Limit != nil {
 			limit = int(*q.Limit)
 		}
-		approximationLimit := int(limit)
+		approximationLimit := limit
 		if limit != 0 && limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
 
-		if len(q.Sort) == 0 || q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison || q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED {
+		if len(q.Sort0) == 0 || !comparisonSort {
 			joinType = "LEFT OUTER"
 			baseLimitClause = baseSubQueryOrderByClause
 			if approximationLimit > 0 {
 				baseLimitClause += fmt.Sprintf(" LIMIT %d OFFSET %d", approximationLimit, q.Offset)
 			}
-		} else if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
+		} else {
 			joinType = "RIGHT OUTER"
 			comparisonLimitClause = comparisonSubQueryOrderByClause
 			if approximationLimit > 0 {
@@ -1430,15 +1534,15 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		)
 	} else {
 		// an additional request for Druid to prevent full scan
-		nonTimeGroupCols := make([]string, 0, len(q.Dimensions))
-		ix := 0
-		for _, d := range q.Dimensions {
-			if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-				ix++
-				nonTimeGroupCols = append(nonTimeGroupCols, fmt.Sprintf("%d", ix))
-			}
-		}
-		if q.Sort[0].SortType != runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
+		// nonTimeGroupCols := make([]string, 0, len(q.Dimensions))
+		// ix := 0
+		// for _, d := range q.Dimensions {
+		// 	if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		// 		ix++
+		// 		nonTimeGroupCols = append(nonTimeGroupCols, fmt.Sprintf("%d", ix))
+		// 	}
+		// }
+		if !comparisonSort {
 			// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
 			innerGroupCols := make([]string, 0, len(q.Dimensions))
 			for i, _ := range q.Dimensions {
@@ -1705,15 +1809,30 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		}
 	}
 
+	fmt.Println(sql, args)
 	return sql, args, nil
+}
+
+func ColumnName(m *runtimev1.MetricsViewAggregationMeasure) string {
+	switch v := m.Compute.(type) {
+	case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+		return v.ComparisonValue.Measure
+	case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+		return v.ComparisonDelta.Measure
+	case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+		return v.ComparisonRatio.Measure
+	default:
+		return m.Name
+	}
+	// return ""
 }
 
 func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 	compare := !isTimeRangeNil(q.ComparisonTimeRange)
 
-	if !compare && len(q.ComparisonMeasures) > 0 {
-		return fmt.Errorf("comparison measures are provided but comparison time range is not")
-	}
+	// if !compare && len(q.ComparisonMeasures) > 0 {
+	// 	return fmt.Errorf("comparison measures are provided but comparison time range is not")
+	// }
 
 	if len(q.ComparisonMeasures) == 0 && compare {
 		// backwards compatibility
@@ -1743,19 +1862,31 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 	baseSubqueryIndex := len(q.Dimensions) + 1
 	outer := len(q.Dimensions) + 1
 	comparisonSubqueryIndex := len(q.Dimensions) + 1
+	expands := make(map[string]bool, len(q.Measures))
+	for _, m := range q.Measures {
+		name := ColumnName(m)
+		if ColumnName(m) != "" {
+			expands[name] = true
+		}
+		// switch v := m.Compute.(type) {
+		// case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+		// 	expands[v.ComparisonValue.Measure] = true
+		// case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+		// 	expands[v.ComparisonDelta.Measure] = true
+		// case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+		// 	expands[v.ComparisonRatio.Measure] = true
+		// }
+	}
 	for _, m := range q.Measures {
 		expand := false
-		for _, cm := range q.ComparisonMeasures {
-			if m.Name == cm {
-				expand = true
-				break
-			}
+		if expands[ColumnName(m)] {
+			expand = true
 		}
 		q.measuresMeta[m.Name] = metricsViewMeasureMeta{
-			baseSubqueryIndex:       baseSubqueryIndex,
-			outerIndex:              outer,
-			comparisonSubqueryIndex: comparisonSubqueryIndex,
-			expand:                  expand,
+			// baseSubqueryIndex:       baseSubqueryIndex,
+			// outerIndex:              outer,
+			// comparisonSubqueryIndex: comparisonSubqueryIndex,
+			expand: expand,
 		}
 		if expand {
 			outer += 4
@@ -1767,16 +1898,16 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 	}
 
 	// check all comparison measures are present in the measures list
-	for _, cm := range q.ComparisonMeasures {
-		if _, ok := q.measuresMeta[cm]; !ok {
-			return fmt.Errorf("comparison measure '%s' is not present in the measures list", cm)
-		}
-	}
+	// for _, cm := range q.ComparisonMeasures {
+	// 	if _, ok := q.measuresMeta[cm]; !ok {
+	// 		return fmt.Errorf("comparison measure '%s' is not present in the measures list", cm)
+	// 	}
+	// }
 
-	err := validateSort(q.Sort, q.measuresMeta, compare)
-	if err != nil {
-		return err
-	}
+	// err := validateSort(q.Sort, q.measuresMeta, compare)
+	// if err != nil {
+	// return err
+	// }
 
 	return nil
 }

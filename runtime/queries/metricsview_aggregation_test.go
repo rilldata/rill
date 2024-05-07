@@ -2058,14 +2058,21 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 			{
 				Name: "m1",
 			},
+			{
+				Name: "measure_0__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "measure_0",
+					},
+				},
+			},
 		},
-		ComparisonMeasures: []string{"measure_0", "m1"},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
 		Having: expressionpb.Gt("measure_1", 0.0),
-		Sort: []*runtimev1.MetricsViewComparisonSort{
+		Sort0: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "timestamp",
 			},
@@ -2079,10 +2086,10 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 				Name: "timestamp_year",
 			},
 			{
-				Name:     "measure_1",
-				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Name: "measure_1",
 			},
 		},
+
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
@@ -2097,36 +2104,8 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,dom,timestamp,timestamp_year,measure_0,measure_1,m1,measure_0__p,timestamp__previous,timestamp_year__previous", columnNames(fields))
 	i := 0
-	require.Equal(t, "pub", fields[i].Name)
-	i++
-	require.Equal(t, "dom", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_year", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0__previous", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0__delta_rel", fields[i].Name)
-	i++
-	require.Equal(t, "measure_1", fields[i].Name)
-	i++
-	require.Equal(t, "m1", fields[i].Name)
-	i++
-	require.Equal(t, "m1__previous", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_rel", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp__previous", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_year__previous", fields[i].Name)
 
 	for _, sf := range q.Result.Schema.Fields {
 		fmt.Printf("%v ", sf.Name)
@@ -2144,11 +2123,11 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	require.Equal(t, 8, len(rows))
 
 	i = 0
-	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
 	i++
-	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
 	i++
-	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
 }
 
 func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
@@ -2225,7 +2204,7 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 // 3. Run the test.
 //
 // metrics-in cluster requires proper authentication credentials in the DSN.
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2245,16 +2224,40 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *t
 			{
 				Name: "m1",
 			},
+			{
+				Name: "m1__previous",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+			{
+				Name: "m1__delta_abs",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonDelta{
+					ComparisonDelta: &runtimev1.MetricsViewAggregationMeasureComputeComparisonDelta{
+						Measure: "m1",
+					},
+				},
+			},
+			{
+				Name: "m1__delta_rel",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonRatio{
+					ComparisonRatio: &runtimev1.MetricsViewAggregationMeasureComputeComparisonRatio{
+						Measure: "m1",
+					},
+				},
+			},
 		},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
-		ComparisonMeasures: []string{"m1"},
+		// ComparisonMeasures: []string{"m1"},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name:     "m1",
-				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Name: "m1",
+				// SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 			{
 				Name: "pub",
@@ -2279,20 +2282,21 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *t
 	}
 	fmt.Printf("\n")
 
+	require.Equal(t, "pub,timestamp_day,m1,m1__previous,m1__delta_abs,m1__delta_rel,timestamp_day__previous", columnNames(fields))
 	i := 0
-	require.Equal(t, "pub", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_day", fields[i].Name)
-	i++
-	require.Equal(t, "m1", fields[i].Name)
-	i++
-	require.Equal(t, "m1__previous", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_rel", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_day__previous", fields[i].Name)
+	// require.Equal(t, "pub", fields[i].Name)
+	// i++
+	// require.Equal(t, "timestamp_day", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1__previous", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1__delta_abs", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1__delta_rel", fields[i].Name)
+	// i++
+	// require.Equal(t, "timestamp_day__previous", fields[i].Name)
 
 	for i, row := range q.Result.Data {
 		for _, sf := range q.Result.Schema.Fields {
@@ -2310,7 +2314,7 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *t
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,3.23,3.13,0.11,0.03,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2326,20 +2330,45 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_orde
 				Alias:     "timestamp_day",
 			},
 		},
+		// todo validate measures - insure the original measure is included
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
 				Name: "m1",
+			},
+			{
+				Name: "m1__previous",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+			{
+				Name: "m1__delta_abs",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonDelta{
+					ComparisonDelta: &runtimev1.MetricsViewAggregationMeasureComputeComparisonDelta{
+						Measure: "m1",
+					},
+				},
+			},
+			{
+				Name: "m1__delta_rel",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonRatio{
+					ComparisonRatio: &runtimev1.MetricsViewAggregationMeasureComputeComparisonRatio{
+						Measure: "m1",
+					},
+				},
 			},
 		},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
-		ComparisonMeasures: []string{"m1"},
-		Sort: []*runtimev1.MetricsViewComparisonSort{
+		// ComparisonMeasures: []string{"m1"},
+		Sort0: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name:     "m1",
-				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+				Name: "m1__previous",
+				// SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 			},
 			{
 				Name: "pub",
@@ -2364,20 +2393,21 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_orde
 	}
 	fmt.Printf("\n")
 
+	require.Equal(t, "pub,timestamp_day,m1,m1__previous,m1__delta_abs,m1__delta_rel,timestamp_day__previous", columnNames(fields))
 	i := 0
-	require.Equal(t, "pub", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_day", fields[i].Name)
-	i++
-	require.Equal(t, "m1", fields[i].Name)
-	i++
-	require.Equal(t, "m1__previous", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_rel", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_day__previous", fields[i].Name)
+	// require.Equal(t, "pub", fields[i].Name)
+	// i++
+	// require.Equal(t, "timestamp_day", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1__previous", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1__delta_abs", fields[i].Name)
+	// i++
+	// require.Equal(t, "m1__delta_rel", fields[i].Name)
+	// i++
+	// require.Equal(t, "timestamp_day__previous", fields[i].Name)
 
 	for i, row := range q.Result.Data {
 		for _, sf := range q.Result.Schema.Fields {
@@ -2429,14 +2459,22 @@ func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 			{
 				Name: "m1",
 			},
+			{
+				Name: "measure_0__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "measure_0",
+					},
+				},
+			},
 		},
-		ComparisonMeasures: []string{"measure_0", "m1"},
+		// ComparisonMeasures: []string{"measure_0", "m1"},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
 		Having: expressionpb.Gt("measure_1", 0.0),
-		Sort: []*runtimev1.MetricsViewComparisonSort{
+		Sort0: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "__time",
 			},
@@ -2450,8 +2488,7 @@ func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 				Name: "timestamp_year",
 			},
 			{
-				Name:     "measure_1",
-				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Name: "measure_1",
 			},
 		},
 		TimeRange: &runtimev1.TimeRange{
@@ -2468,36 +2505,7 @@ func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
-	i := 0
-	require.Equal(t, "pub", fields[i].Name)
-	i++
-	require.Equal(t, "dom", fields[i].Name)
-	i++
-	require.Equal(t, "__time", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_year", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0__previous", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "measure_0__delta_rel", fields[i].Name)
-	i++
-	require.Equal(t, "measure_1", fields[i].Name)
-	i++
-	require.Equal(t, "m1", fields[i].Name)
-	i++
-	require.Equal(t, "m1__previous", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "m1__delta_rel", fields[i].Name)
-	i++
-	require.Equal(t, "__time__previous", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_year__previous", fields[i].Name)
+	require.Equal(t, "pub,dom,__time,timestamp_year,measure_0,measure_1,m1,measure_0__p,__time__previous,timestamp_year__previous", columnNames(fields))
 
 	for _, sf := range q.Result.Schema.Fields {
 		fmt.Printf("%v ", sf.Name)
@@ -2514,8 +2522,8 @@ func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	rows := q.Result.Data
 	require.Equal(t, 8, len(rows))
 
-	i = 0
-	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "measure_0", "measure_0__previous", "measure_1", "m1", "__time__previous", "timestamp_year__previous"))
+	i := 0
+	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "__time__previous", "timestamp_year__previous"))
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
@@ -2532,6 +2540,14 @@ func fieldsToString2digits(row *structpb.Struct, args ...string) string {
 		}
 	}
 	return strings.Join(s, ",")
+}
+
+func columnNames(fields []*runtimev1.StructType_Field) string {
+	var cols []string
+	for _, f := range fields {
+		cols = append(cols, f.Name)
+	}
+	return strings.Join(cols, ",")
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {

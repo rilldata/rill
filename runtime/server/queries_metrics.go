@@ -50,6 +50,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Dimensions:          req.Dimensions,
 		Measures:            req.Measures,
 		Sort:                req.Sort,
+		Sort0:               req.Sort0,
 		TimeRange:           tr,
 		ComparisonTimeRange: req.ComparisonTimeRange,
 		Where:               req.Where,

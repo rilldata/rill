@@ -256,6 +256,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  sort0?: V1MetricsViewAggregationSort[];
   comparisonMeasures?: string[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
@@ -528,6 +529,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -555,12 +562,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -756,13 +757,6 @@ export interface V1Resource {
   api?: V1API;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -784,6 +778,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1199,6 +1200,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1224,13 +1232,6 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
-
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1263,25 +1264,16 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewAggregationSort {
+  name?: string;
+  desc?: boolean;
+}
+
 export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationMeasure {
-  name?: string;
-  builtinMeasure?: V1BuiltinMeasure;
-  builtinMeasureArgs?: unknown[];
-  filter?: V1Expression;
-}
-
-export interface V1MetricsViewAggregationDimension {
-  name?: string;
-  timeGrain?: V1TimeGrain;
-  timeZone?: string;
-  alias?: string;
 }
 
 export interface V1MetricsViewAggregationRequest {
@@ -1290,6 +1282,7 @@ export interface V1MetricsViewAggregationRequest {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  sort0?: V1MetricsViewAggregationSort[];
   comparisonMeasures?: string[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
@@ -1304,6 +1297,45 @@ export interface V1MetricsViewAggregationRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   exact?: boolean;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
+  dimension?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeCount {
+  [key: string]: any;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonValue {
+  measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
+  measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
+  measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasure {
+  name?: string;
+  builtinMeasure?: V1BuiltinMeasure;
+  builtinMeasureArgs?: unknown[];
+  filter?: V1Expression;
+  count?: V1MetricsViewAggregationMeasureComputeCount;
+  countDistinct?: V1MetricsViewAggregationMeasureComputeCountDistinct;
+  comparisonValue?: V1MetricsViewAggregationMeasureComputeComparisonValue;
+  comparisonDelta?: V1MetricsViewAggregationMeasureComputeComparisonDelta;
+  comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
+}
+
+export interface V1MetricsViewAggregationDimension {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  alias?: string;
 }
 
 export interface V1MapType {
