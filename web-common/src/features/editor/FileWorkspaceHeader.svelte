@@ -8,6 +8,7 @@
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
 
   export let filePath: string;
+  export let hasUnsavedChanges: boolean;
 
   let fileName: string;
   let folder: string;
@@ -39,6 +40,7 @@
 <WorkspaceHeader
   editable={!isProtectedFile}
   on:change={onChangeCallback}
+  {hasUnsavedChanges}
   showInspectorToggle={false}
   titleInput={fileName}
 />

@@ -22,7 +22,8 @@ rill start --var connector.salesforce.username="user@example.com" --var connecto
 
 Alternatively, you can also include the credentials directly in the underlying source YAML by adding the `username` and `password` parameters. For example, your source YAML may contain the following properties (also can be configured through the UI during source creation):
 ```yaml
-type: "salesforce"
+type: "source"
+connector: "salesforce"
 endpoint: "login.salesforce.com"
 username: "user@example.com"
 password: "MyPasswordMyToken"

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { parse } from "yaml";
   import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
   import {
@@ -8,7 +9,6 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import ErrorPane from "./ErrorPane.svelte";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let filePath: string;
 
@@ -70,7 +70,7 @@
         bind:view
         {content}
         key={filePath}
-        on:update={debouncedUpdate}
+        on:save={debouncedUpdate}
         whenFocused
       />
     </div>

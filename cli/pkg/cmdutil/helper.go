@@ -261,7 +261,7 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL str
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("no project with githubURL %q exist in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with github URL %q exists in org %q", githubURL, org)
 	}
 
 	return names, nil

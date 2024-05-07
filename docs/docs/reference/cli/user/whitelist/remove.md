@@ -4,7 +4,7 @@ title: rill user whitelist remove
 ---
 ## rill user whitelist remove
 
-Remove whitelisted email domain for the org
+Remove whitelisted email domain for the org or project
 
 ```
 rill user whitelist remove <email-domain> [flags]
@@ -13,7 +13,8 @@ rill user whitelist remove <email-domain> [flags]
 ### Flags
 
 ```
-      --org string   Organization
+      --org string       Organization
+      --project string   Project
 ```
 
 ### Global flags

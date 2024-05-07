@@ -46,6 +46,6 @@
     content={yaml}
     extensions={[placeholderElements.extension, yamlSchema(metricsJsonSchema)]}
     whenFocused
-    on:update={updateMetrics}
+    on:save={updateMetrics}
   />
 </MetricsEditorContainer>
