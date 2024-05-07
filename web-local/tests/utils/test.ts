@@ -50,6 +50,7 @@ export const test = base.extend({
       }
     });
 
+    page.on("console", console.log);
     await page.goto(`http://localhost:${TEST_PORT}`);
 
     await use(page);

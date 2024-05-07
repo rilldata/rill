@@ -21,6 +21,7 @@ export function createWatchFilesClient() {
 function handleWatchFileResponse(res: V1WatchFilesResponse) {
   if (!res?.path || res.path.includes(".db")) return;
 
+  console.log(res.event, res.path, res.isDir);
   const instanceId = get(runtime).instanceId;
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`

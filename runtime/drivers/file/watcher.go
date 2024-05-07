@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -158,6 +159,17 @@ func (w *watcher) runInner() error {
 				return nil
 			}
 
+			if !strings.Contains(e.Name, "tmp") {
+				fmt.Println(
+					e.Name,
+					e.Has(fsnotify.Remove),
+					e.Has(fsnotify.Rename),
+					e.Has(fsnotify.Create),
+					e.Has(fsnotify.Write),
+					e.Has(fsnotify.Chmod),
+				)
+			}
+
 			we := drivers.WatchEvent{}
 			if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
@@ -218,14 +230,17 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	if err != nil {
 		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
 		if !errIfNotExist && isNotExists(err) {
+			fmt.Println("addDir ENOENT", path)
 			return nil
 		}
 		return err
 	}
+	fmt.Println("addDir", path)
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		if !errIfNotExist && isNotExists(err) {
+			fmt.Println("addDir ReadDir ENOENT", path)
 			return nil
 		}
 		return err
