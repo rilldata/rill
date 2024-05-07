@@ -24,8 +24,13 @@
 </script>
 
 <DropdownMenu.Root bind:open>
-  <DropdownMenu.Trigger aria-label="Select a time range" asChild let:builder>
-    <button {...builder} use:builder.action class="flex gap-x-1">
+  <DropdownMenu.Trigger asChild let:builder>
+    <button
+      {...builder}
+      use:builder.action
+      class="flex gap-x-1"
+      aria-label="Select time range"
+    >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
       {#if interval.isValid}
         <RangeDisplay {interval} {grain} />

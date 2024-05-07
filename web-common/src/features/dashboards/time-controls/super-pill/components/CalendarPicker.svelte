@@ -13,6 +13,7 @@
     "M/d", // 7/4 or 07/04
     "MMM d", // Jul 4 or July 04
     "MMMM d", // July 4 or July 04
+    "M-d", // 7-4 or 07-04
   ];
 
   const formatsWithYear = [
@@ -22,6 +23,8 @@
     "MMM d, yyyy", // July 4, 2021 or July 04, 2021
     "MMM d yyyy", // July 4, 2021 or July 04, 2021
     "MMMM d yyyy", // July 4 2021 or July 04 2021
+    "yyyy-M-d", // July 4, 2021 or July 04, 2021
+    "M-d-yyyy", // July 4, 2021 or July 04, 2021
   ];
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
@@ -88,7 +91,7 @@
 </script>
 
 <DropdownMenu.Root bind:open={$open}>
-  <DropdownMenu.Trigger aria-label="Select a time range" asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder>
     <button
       use:builder.action
       {...builder}
@@ -108,6 +111,7 @@
       <div class="flex gap-x-1">
         <input
           id="start-date"
+          aria-label="Start date"
           type="text"
           bind:this={startInput}
           class:active={selectingStart}
@@ -134,6 +138,7 @@
       <div class="flex gap-x-1 w-full">
         <input
           id="end-date"
+          aria-label="End date"
           type="text"
           bind:this={endInput}
           on:blur={validateInput}

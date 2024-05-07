@@ -1,10 +1,7 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import {
-    NO_COMPARISON_LABEL,
-    TIME_COMPARISON,
-  } from "@rilldata/web-common/lib/time/config";
+  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
     DashboardTimeControls,
     TimeComparisonOption,
@@ -38,9 +35,9 @@
   $: label =
     comparisonOption && TIME_COMPARISON[comparisonOption]?.label
       ? TIME_COMPARISON[comparisonOption].label
-      : NO_COMPARISON_LABEL;
+      : "previous period";
 
-  $: selectedLabel = showComparison ? comparisonOption : NO_COMPARISON_LABEL;
+  $: selectedLabel = showComparison ? comparisonOption : "previous period";
 
   // function onSelectCustomComparisonRange(startDate: string, endDate: string) {
 

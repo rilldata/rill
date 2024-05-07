@@ -152,7 +152,6 @@ dimensions:
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
 
-    // await page.pause();
     await expect(
       page.getByRole("button", { name: "null 26642.549999999974 -14%" }),
     ).toBeVisible();

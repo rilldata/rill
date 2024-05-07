@@ -163,9 +163,6 @@ test.describe("leaderboard context column", () => {
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
     });
-    await interactWithComparisonMenu(page, "Comparing by Time", (l) =>
-      l.getByRole("menuitem", { name: "No Comparison" }).click(),
-    );
 
     // Check that time comparison context column is hidden
     await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();

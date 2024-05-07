@@ -44,6 +44,7 @@
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import ComparisonSelector from "../time-controls/ComparisonSelector.svelte";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -265,7 +266,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class:mb-6={isAlternateChart} class="flex pl-1">
+  <div class:mb-6={isAlternateChart} class="flex pl-1 items-center gap-x-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector
@@ -290,6 +291,7 @@
           {minTimeGrain}
         />
       {/if}
+      <ComparisonSelector {metricViewName} />
     {/if}
   </div>
 

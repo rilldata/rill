@@ -36,7 +36,12 @@
 
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild let:builder>
-    <button use:builder.action {...builder} class="flex items-center gap-x-1">
+    <button
+      use:builder.action
+      {...builder}
+      class="flex items-center gap-x-1"
+      aria-label="Timezone selector"
+    >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
       <span class="flex-none">
         <CaretDownIcon />

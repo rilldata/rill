@@ -38,7 +38,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     const timeRangeMenu = page.getByRole("button", {
-      name: "Select a time range",
+      name: "Select time range",
     });
     const contextColumnMenu = page.getByRole("button", {
       name: "Select a context column",
@@ -47,7 +47,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     async function openTimeRangeMenu() {
       await timeRangeMenu.click();
       await page
-        .getByRole("menu", { name: "Select a time range" })
+        .getByRole("menu", { name: "Select time range" })
         .waitFor({ state: "visible" });
     }
 
@@ -77,7 +77,9 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // add time comparison and select Pct change
-    await page.getByRole("button", { name: "No comparison" }).click();
+    await page
+      .getByRole("button", { name: "No comparison", exact: true })
+      .click();
     await page.getByRole("menuitem", { name: "Time" }).click();
     await page.keyboard.press("Escape");
 
@@ -179,6 +181,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .filter({ hasText: /^-14$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     );
+
     // sort by absolute change TWICE to sort by absolute change ascending
     await page.locator(".w-full > button:nth-child(2)").click();
     await assertAAboveB(
@@ -194,8 +197,11 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" }),
     );
 
+    // await page.waitForTimeout(60000);
+
     // sort by pct change ONCE to sort by pct change descending
-    await page.locator("button:nth-child(3)").first().click();
+    // await page.locator(".w-full > button:nth-child(3)").first().click();
+    await page.getByRole("button", { name: "%" }).first().click();
     await assertAAboveB(
       page
         .locator("div")
@@ -208,7 +214,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct change TWICE to sort by pct change ascending
-    await page.locator("button:nth-child(3)").first().click();
+    await page.getByRole("button", { name: "%" }).first().click();
     await assertAAboveB(
       page
         .locator("div")
@@ -221,7 +227,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct of total ONCE to sort by pct of total descending
-    await page.locator("button:nth-child(4)").first().click();
+    await page.getByRole("button", { name: "%" }).nth(1).click();
     await assertAAboveB(
       page
         .locator("div")
@@ -233,7 +239,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" }),
     );
     // sort by pct of total TWICE to sort by pct of total ascending
-    await page.locator("button:nth-child(4)").first().click();
+    await page.getByRole("button", { name: "%" }).nth(1).click();
     await assertAAboveB(
       page
         .locator("div")

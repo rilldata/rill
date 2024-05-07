@@ -46,7 +46,6 @@
         use:builder.action
         {...builder}
         aria-label="Select a time grain"
-        class:bg-gray-200={open}
         class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
       >
         <div>

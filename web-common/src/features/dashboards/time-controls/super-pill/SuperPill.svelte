@@ -26,6 +26,7 @@
   import { DateTime, Interval } from "luxon";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import CalendarPicker from "./components/CalendarPicker.svelte";
+  import { onMount } from "svelte";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -73,6 +74,7 @@
 
   // $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
+
   $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparisonTimeSeries = !comparisonDimension && showComparison;
@@ -134,6 +136,23 @@
 
     selectRange(baseTimeRange);
   }
+
+  // This is pulled directly from the old time controls and needs to be refactored
+  onMount(() => {
+    /**
+     * Remove the timezone selector if no timezone key is present
+     * or the available timezone list is empty. Set the default
+     * timezone to UTC in such cases.
+     *
+     */
+    if (
+      !availableTimeZones.length &&
+      $dashboardStore?.selectedTimezone !== "UTC"
+    ) {
+      metricsExplorerStore.setTimeZone(metricViewName, "UTC");
+      localUserPreferences.set({ timeZone: "UTC" });
+    }
+  });
 
   function selectRange(range: TimeRange) {
     const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;

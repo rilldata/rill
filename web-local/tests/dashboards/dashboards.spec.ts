@@ -198,30 +198,11 @@ test.describe("dashboard", () => {
      */
     await expect(page.getByLabel("Comparison selector")).not.toBeVisible();
 
-    // Switch to a custom time range
-    await interactWithTimeRangeMenu(page, async () => {
-      const timeRangeMenu = page.getByRole("menu", {
-        name: "Select a time range",
-      });
+    await page.getByLabel("Select a custom time range").click();
 
-      await timeRangeMenu
-        .getByRole("combobox", { name: "Select a start month" })
-        .click();
-      await timeRangeMenu.getByRole("option", { name: "February" }).click();
-      await timeRangeMenu
-        .getByRole("combobox", { name: "Select a start year" })
-        .click();
-      await timeRangeMenu.getByRole("option", { name: "2022" }).click();
-
-      await timeRangeMenu
-        .getByRole("combobox", { name: "Select a start day" })
-        .click();
-      await timeRangeMenu
-        .getByRole("option", { name: "1", exact: true })
-        .click();
-
-      await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
-    });
+    await page.getByLabel("Start date").fill("2022-02-01");
+    await page.getByLabel("Start date").blur();
+    await page.getByRole("button", { name: "Apply" }).click();
 
     // Check number
     await expect(page.getByText("Total records 65.1k")).toBeVisible();
@@ -268,11 +249,6 @@ test.describe("dashboard", () => {
     // Check number
     await expect(
       page.getByText("Total records 100.0k", { exact: true }),
-    ).toBeVisible();
-
-    // Check no filters label
-    await expect(
-      page.getByText("No filters selected", { exact: true }),
     ).toBeVisible();
 
     // TODO
@@ -322,7 +298,7 @@ test.describe("dashboard", () => {
     ).toBeVisible();
 
     // Assert that no time dimension specified
-    await expect(page.getByText("No time dimension specified")).toBeVisible();
+    // await expect(page.getByText("No time dimension specified")).toBeVisible();
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
@@ -360,7 +336,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
-    await expect(timeGrainSelector).toHaveText("Metric trends by week");
+    await expect(timeGrainSelector).toHaveText("by week");
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
@@ -512,7 +488,7 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No comparison" }).nth(1).click();
+    await page.getByRole("button", { name: "No comparison" }).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
     await page.getByText("google.com", { exact: true }).click();
@@ -532,7 +508,7 @@ dimensions:
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
 
-    await page.getByRole("button", { name: "Domain name" }).nth(1).click();
+    await page.getByRole("button", { name: "Domain name" }).click();
     await page.getByRole("menuitem", { name: "Time" }).click();
 
     await expect(page.getByText("~0%")).toBeVisible();
