@@ -181,15 +181,20 @@ func (w *watcher) runInner() error {
 				continue
 			}
 
-			if we.Type == runtimev1.FileEvent_FILE_EVENT_WRITE {
+			if e.Has(fsnotify.Create) {
 				info, err := os.Stat(e.Name)
 				we.Dir = err == nil && info.IsDir()
 			}
 
+			existing, ok := w.buffer[path]
+			if ok && existing.Dir {
+				// copy over `Dir` within the batch for a path
+				we.Dir = existing.Dir
+			}
 			w.buffer[path] = we
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
-			if we.Dir && we.Type == runtimev1.FileEvent_FILE_EVENT_WRITE {
+			if we.Dir && e.Has(fsnotify.Create) {
 				err = w.addDir(e.Name, true, false)
 				if err != nil {
 					return err
