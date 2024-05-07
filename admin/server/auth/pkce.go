@@ -8,11 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/rilldata/rill/admin/database"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/oauth"
 )
 
