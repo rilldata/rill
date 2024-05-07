@@ -15,7 +15,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/cli/pkg/auth"
+	"github.com/rilldata/rill/admin/pkg/oauth"
 )
 
 // Most parts of this file are copied from https://github.com/planetscale/cli/blob/main/internal/auth/authenticator.go
@@ -121,7 +121,7 @@ func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL stri
 }
 
 // GetAccessTokenForDevice uses the device verification response to fetch an access token.
-func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *DeviceVerification) (*auth.OAuthTokenResponse, error) {
+func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *DeviceVerification) (*oauth.TokenResponse, error) {
 	for {
 		// This loop begins right after we open the user's browser to send an
 		// authentication code. We don't request a token immediately because the
@@ -150,7 +150,7 @@ func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *De
 	}
 }
 
-func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clientID string) (*auth.OAuthTokenResponse, error) {
+func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clientID string) (*oauth.TokenResponse, error) {
 	req, err := d.newFormRequest(ctx, "auth/oauth/token", url.Values{
 		"grant_type":  []string{"urn:ietf:params:oauth:grant-type:device_code"},
 		"device_code": []string{deviceCode},
@@ -176,7 +176,7 @@ func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clie
 		return nil, nil
 	}
 
-	tokenRes := &auth.OAuthTokenResponse{}
+	tokenRes := &oauth.TokenResponse{}
 	err = json.NewDecoder(res.Body).Decode(tokenRes)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding token response: %w", err)
@@ -204,8 +204,8 @@ func (d *DeviceAuthenticator) newFormRequest(ctx context.Context, path string, p
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", auth.FormMediaType)
-	req.Header.Set("Accept", auth.JSONMediaType)
+	req.Header.Set("Content-Type", oauth.FormMediaType)
+	req.Header.Set("Accept", oauth.JSONMediaType)
 	return req, nil
 }
 

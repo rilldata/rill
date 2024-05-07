@@ -153,6 +153,11 @@ type DB interface {
 	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
 	DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error
 
+	FindAuthorizationCode(ctx context.Context, code string) (*AuthorizationCode, error)
+	InsertAuthorizationCode(ctx context.Context, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiration time.Time) (*AuthorizationCode, error)
+	DeleteAuthorizationCode(ctx context.Context, code string) error
+	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
+
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
@@ -515,7 +520,7 @@ const (
 	AuthClientIDRillWeb     = "12345678-0000-0000-0000-000000000001"
 	AuthClientIDRillCLI     = "12345678-0000-0000-0000-000000000002"
 	AuthClientIDRillSupport = "12345678-0000-0000-0000-000000000003"
-	AuthClientIDRillLocal   = "12345678-0000-0000-0000-000000000004"
+	AuthClientIDWebLocal    = "12345678-0000-0000-0000-000000000004"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
@@ -539,6 +544,19 @@ type DeviceAuthCode struct {
 	UserID        *string             `db:"user_id"`
 	CreatedOn     time.Time           `db:"created_on"`
 	UpdatedOn     time.Time           `db:"updated_on"`
+}
+
+type AuthorizationCode struct {
+	ID                  string    `db:"id"`
+	Code                string    `db:"code"`
+	UserID              string    `db:"user_id"`
+	ClientID            string    `db:"client_id"`
+	RedirectURI         string    `db:"redirect_uri"`
+	CodeChallenge       string    `db:"code_challenge"`
+	CodeChallengeMethod string    `db:"code_challenge_method"`
+	Expiration          time.Time `db:"expires_on"`
+	CreatedOn           time.Time `db:"created_on"`
+	UpdatedOn           time.Time `db:"updated_on"`
 }
 
 // Constants for known role names (created in migrations).

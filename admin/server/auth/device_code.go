@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/admin/pkg/oauth"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,7 +14,6 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/cli/pkg/auth"
 )
 
 const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
@@ -238,10 +238,10 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 		return
 	}
 
-	resp := auth.OAuthTokenResponse{
+	resp := oauth.TokenResponse{
 		AccessToken: authToken.Token().String(),
 		TokenType:   "Bearer",
-		ExpiresIn:   time.UnixMilli(0).Unix(), // never expires
+		ExpiresIn:   0, // never expires
 		UserID:      *authCode.UserID,
 	}
 	respBytes, err := json.Marshal(resp)

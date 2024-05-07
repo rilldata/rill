@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/rilldata/rill/cli/pkg/auth"
+	"github.com/rilldata/rill/admin/pkg/oauth"
 )
 
 const (
@@ -26,9 +26,10 @@ type Authenticator struct {
 	redirectURL  string
 	codeVerifier string
 	clientID     string
+	OriginURL    string
 }
 
-func NewAuthenticator(baseAuthURL, redirectURL, clientID, state string) (*Authenticator, error) {
+func NewAuthenticator(baseAuthURL, redirectURL, clientID, origin string) (*Authenticator, error) {
 	if strings.Contains(baseAuthURL, "http://localhost:9090") {
 		baseAuthURL = "http://localhost:8080"
 	}
@@ -45,6 +46,7 @@ func NewAuthenticator(baseAuthURL, redirectURL, clientID, state string) (*Authen
 		redirectURL:  redirectURL,
 		codeVerifier: codeVerifier,
 		clientID:     clientID,
+		OriginURL:    origin,
 	}, nil
 }
 
@@ -97,8 +99,7 @@ func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	// TODO move OAuthTokenResponse to a common place
-	tokenResponse := &auth.OAuthTokenResponse{}
+	tokenResponse := &oauth.TokenResponse{}
 	// Decode the response into the tokenResponse struct
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		return "", err
@@ -126,8 +127,8 @@ func tokenRequest(baseAuthURL, code, clientID, redirectURI, codeVerifier string)
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", auth.FormMediaType)
-	req.Header.Set("Accept", auth.JSONMediaType)
+	req.Header.Set("Content-Type", oauth.FormMediaType)
+	req.Header.Set("Accept", oauth.JSONMediaType)
 	return req, nil
 }
 

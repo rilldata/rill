@@ -358,8 +358,7 @@ func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
-// / handleAuthorizeRequest handles the incoming OAuth2 Authorization request
-// and generates an authorization code while associating the code challenge.
+// handleAuthorizeRequest handles the incoming OAuth2 Authorization request, if he user is not logged redirect to login, currently only PKCE based authorization code flow is supported
 func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Request) {
 	claims := GetClaims(r.Context())
 	if claims == nil {
@@ -401,14 +400,14 @@ func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Re
 			http.Error(w, "Invalid response type", http.StatusBadRequest)
 			return
 		}
-		handlePKCE(w, r, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI)
+		a.handlePKCE(w, r, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI)
 	} else {
 		http.Error(w, "only PKCE based authorization code flow is supported", http.StatusBadRequest)
 		return
 	}
 }
 
-// getAccessToken verifies the device code and returns an access token if the request is approved
+// getAccessToken depending on the grant_type either verifies the device code and returns an access token if the request is approved or exchanges the authorization code for an access token
 func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "expected a POST request", http.StatusBadRequest)

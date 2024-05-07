@@ -79,6 +79,7 @@ type App struct {
 	activity              *activity.Client
 	adminURL              string
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
+	ch                    *cmdutil.Helper
 }
 
 type AppOptions struct {
@@ -95,6 +96,7 @@ type AppOptions struct {
 	Activity    *activity.Client
 	AdminURL    string
 	AdminToken  string
+	CMDHelper   *cmdutil.Helper
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -307,6 +309,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		activity:              opts.Activity,
 		adminURL:              opts.AdminURL,
 		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
+		ch:                    opts.CMDHelper,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -604,9 +607,15 @@ func (a *App) initiateAuthFlow(httpPort int, secure bool) http.Handler {
 			http.Error(w, fmt.Sprintf("failed to generate state: %s", err), http.StatusInternalServerError)
 			return
 		}
-		state := base64.StdEncoding.EncodeToString(b)
+		state := base64.URLEncoding.EncodeToString(b)
 
-		authenticator, err := pkce.NewAuthenticator(a.adminURL, redirectURL, database.AuthClientIDRillLocal, state)
+		// check the request for origin query param, we will use this to redirect back to the origin after auth
+		origin := r.URL.Query().Get("origin")
+		if origin == "" {
+			origin = "/"
+		}
+
+		authenticator, err := pkce.NewAuthenticator(a.adminURL, redirectURL, database.AuthClientIDWebLocal, origin)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to generate pkce authenticator: %s", err), http.StatusInternalServerError)
 			return
@@ -657,7 +666,8 @@ func (a *App) handleAuthCallback() http.Handler {
 			http.Error(w, "failed to save access token", http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, "/", http.StatusFound)
+		a.ch.AdminTokenDefault = token
+		http.Redirect(w, r, authenticator.OriginURL, http.StatusFound)
 	})
 }
 

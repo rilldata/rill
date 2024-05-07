@@ -6,31 +6,19 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/rilldata/rill/admin/database"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/rilldata/rill/cli/pkg/auth"
+	"github.com/rilldata/rill/admin/pkg/oauth"
 )
 
 const authorizationCodeGrantType = "authorization_code"
 
-// in-memory storage for authorization codes
-// TODO use persistent storage to handle admin server restarts, but since codes expire in a minute, is it really necessary, user can just re-initiate login ?
-var authCodeDB = make(map[string]AuthorizationCode)
-
-// AuthorizationCode represents the stored information for an authorization code
-type AuthorizationCode struct {
-	ClientID            string
-	RedirectURI         string
-	UserID              string
-	Expiration          time.Time
-	CodeChallenge       string
-	CodeChallengeMethod string
-}
-
-func handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
+func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
 	// Generate a unique authorization code
 	code, err := generateRandomString(16) // 16 bytes, resulting in a 32-character hex string
 	if err != nil {
@@ -38,18 +26,15 @@ func handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeCh
 		return
 	}
 
-	// Set the expiration date for the authorization code (e.g., a minute from now)
-	// Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/
+	// Set the expiration time for the authorization code to a minute from now. Note from https://www.oauth.com/oauth2-servers/authorization/the-authorization-response/ -
 	// The authorization code must expire shortly after it is issued. The OAuth 2.0 spec recommends a maximum lifetime of 10 minutes, but in practice, most services set the expiration much shorter, around 30-60 seconds.
 	expiration := time.Now().Add(1 * time.Minute)
 
-	authCodeDB[code] = AuthorizationCode{
-		ClientID:            clientID,
-		RedirectURI:         redirectURI,
-		UserID:              userID,
-		Expiration:          expiration,
-		CodeChallenge:       codeChallenge,
-		CodeChallengeMethod: codeChallengeMethod,
+	// Store the authorization code in the database
+	_, err = a.admin.DB.InsertAuthorizationCode(r.Context(), code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, expiration)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to store authorization code, %w", err))
+		return
 	}
 
 	// Build the redirection URI with the authorization code as per OAuth2 spec
@@ -89,10 +74,14 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
-	// Validate the authorization code
-	authCode, ok := authCodeDB[code]
-	if !ok {
-		http.Error(w, "invalid authorization code, please re-initiate login", http.StatusBadRequest)
+	// get the authorization code from the database
+	authCode, err := a.admin.DB.FindAuthorizationCode(r.Context(), code)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, "no such authorization code found", http.StatusBadRequest)
+		} else {
+			internalServerError(w, fmt.Errorf("failed to get authorization code, %w", err))
+		}
 		return
 	}
 
@@ -103,7 +92,11 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	}
 
 	// remove the authorization code from the database to prevent reuse
-	delete(authCodeDB, code)
+	err = a.admin.DB.DeleteAuthorizationCode(r.Context(), code)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to delete authorization code, %w", err))
+		return
+	}
 
 	// Check if the client ID matches the stored client ID
 	if authCode.ClientID != clientID {
@@ -132,14 +125,18 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	// Issue an access token
 	authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil)
 	if err != nil {
+		if errors.Is(err, r.Context().Err()) {
+			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+			return
+		}
 		internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 		return
 	}
 
-	resp := auth.OAuthTokenResponse{
+	resp := oauth.TokenResponse{
 		AccessToken: authToken.Token().String(),
 		TokenType:   "Bearer",
-		ExpiresIn:   time.UnixMilli(0).Unix(), // never expires
+		ExpiresIn:   0, // never expires
 		UserID:      userID,
 	}
 	respBytes, err := json.Marshal(resp)
