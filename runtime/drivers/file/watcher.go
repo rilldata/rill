@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -156,6 +157,15 @@ func (w *watcher) runInner() error {
 		case e, ok := <-w.watcher.Events:
 			if !ok {
 				return nil
+			}
+
+			if !strings.Contains(e.Name, "tmp") {
+				fmt.Println(
+					"Watcher",
+					e.Name,
+					e.Has(fsnotify.Remove), e.Has(fsnotify.Rename),
+					e.Has(fsnotify.Create), e.Has(fsnotify.Write), e.Has(fsnotify.Chmod),
+				)
 			}
 
 			we := drivers.WatchEvent{}
