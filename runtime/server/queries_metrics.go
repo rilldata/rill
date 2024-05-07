@@ -49,7 +49,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		MetricsViewName:     req.MetricsView,
 		Dimensions:          req.Dimensions,
 		Measures:            req.Measures,
-		Sort0:               req.Sort0,
+		Sort:                req.Sort,
 		TimeRange:           tr,
 		ComparisonTimeRange: req.ComparisonTimeRange,
 		Where:               req.Where,
@@ -61,7 +61,6 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
 		Exact:               req.Exact,
 		Aliases:             req.Aliases,
-		ComparisonMeasures:  req.ComparisonMeasures,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

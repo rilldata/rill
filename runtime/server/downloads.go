@@ -136,7 +136,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsViewName:     r.MetricsView,
 			Dimensions:          r.Dimensions,
 			Measures:            r.Measures,
-			Sort0:               r.Sort0,
+			Sort:                r.Sort,
 			TimeRange:           tr,
 			ComparisonTimeRange: r.ComparisonTimeRange,
 			Where:               r.Where,
@@ -148,7 +148,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			SecurityAttributes:  attrs,
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
-			ComparisonMeasures:  r.ComparisonMeasures,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest

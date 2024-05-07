@@ -1168,18 +1168,8 @@ paths:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1MetricsViewComparisonSort'
-                title: Optional. Defaults to unsorted
-              sort0:
-                type: array
-                items:
-                  type: object
                   $ref: '#/definitions/v1MetricsViewAggregationSort'
-              comparisonMeasures:
-                type: array
-                items:
-                  type: string
-                title: Optional
+                title: Optional. Defaults to unsorted
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Optional. Defaults to unbounded
@@ -3983,18 +3973,8 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewComparisonSort'
-        title: Optional. Defaults to unsorted
-      sort0:
-        type: array
-        items:
-          type: object
           $ref: '#/definitions/v1MetricsViewAggregationSort'
-      comparisonMeasures:
-        type: array
-        items:
-          type: string
-        title: Optional
+        title: Optional. Defaults to unsorted
       timeRange:
         $ref: '#/definitions/v1TimeRange'
         title: Optional. Defaults to unbounded

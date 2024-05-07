@@ -80,7 +80,7 @@ func TestMetricsViewsAggregation(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -146,7 +146,7 @@ func TestMetricsViewsAggregation_export_day(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -189,7 +189,7 @@ func TestMetricsViewsAggregation_export_hour(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -231,7 +231,7 @@ func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -267,7 +267,7 @@ func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -302,7 +302,7 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -359,7 +359,7 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns_limit_exceed
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -400,7 +400,7 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -448,7 +448,7 @@ func TestMetricsViewsAggregation_pivot_export_labels(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "space_label",
 			},
@@ -501,7 +501,7 @@ func TestMetricsViewsAggregation_pivot_export_nolabel(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "nolabel_pub",
 			},
@@ -554,7 +554,7 @@ func TestMetricsViewsAggregation_pivot_export_nolabel_measure(t *testing.T) {
 				Name: "m1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "nolabel_pub",
 			},
@@ -610,7 +610,7 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 				Name: "measure_0",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -676,7 +676,7 @@ func TestMetricsViewsAggregation_pivot_2_measures_with_labels(t *testing.T) {
 				Name: "measure_0",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -736,7 +736,7 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 				Name: "measure_0",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -812,7 +812,7 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "dom",
 			},
@@ -869,7 +869,7 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "dom",
 			},
@@ -958,7 +958,7 @@ func Ignore_TestMetricsViewsAggregation_Druid(t *testing.T) {
 				Name: "bp",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},
@@ -1029,7 +1029,7 @@ func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
 				Name: "bp",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},
@@ -1117,7 +1117,7 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},
@@ -1219,7 +1219,7 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "dom",
 				Desc: true,
@@ -1277,7 +1277,7 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1331,7 +1331,7 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1413,7 +1413,7 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 				Desc: true,
@@ -1492,7 +1492,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1587,7 +1587,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1640,7 +1640,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1691,7 +1691,7 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1743,7 +1743,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 				},
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1846,7 +1846,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -1956,7 +1956,7 @@ func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -2072,7 +2072,7 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 			expressionpb.Eq("pub", "Google"),
 		),
 		Having: expressionpb.Gt("measure_1", 0.0),
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "timestamp",
 			},
@@ -2150,14 +2150,21 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 			{
 				Name: "measure_0",
 			},
+			{
+				Name: "measure_0__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "measure_0",
+					},
+				},
+			},
 		},
-		ComparisonMeasures: []string{"measure_0"},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
 		Having: expressionpb.Gt("measure_0", 0.0),
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -2180,21 +2187,8 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 		fmt.Printf("%v ", sf.Name)
 	}
 	fmt.Printf("\n")
-
 	fields := q.Result.Schema.Fields
-	i := 0
-	require.Equal(t, "pub", fields[i].Name)
-	i++
-	require.Equal(t, "timestamp_year__previous", fields[i].Name)
-	i++
-	require.Equal(t, "2022-01-01 00:00:00_measure_0", fields[i].Name)
-	i++
-	require.Equal(t, "2022-01-01 00:00:00_measure_0__previous", fields[i].Name)
-	i++
-	require.Equal(t, "2022-01-01 00:00:00_measure_0__delta_abs", fields[i].Name)
-	i++
-	require.Equal(t, "2022-01-01 00:00:00_measure_0__delta_rel", fields[i].Name)
-	i++
+	require.Equal(t, "pub,timestamp_year__previous,2022-01-01 00:00:00_measure_0,2022-01-01 00:00:00_measure_0__p", columnNames(fields))
 }
 
 // Can be used for local or metrics cluster.
@@ -2204,7 +2198,7 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 // 3. Run the test.
 //
 // metrics-in cluster requires proper authentication credentials in the DSN.
-func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
+func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2253,11 +2247,9 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
-		// ComparisonMeasures: []string{"m1"},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "m1",
-				// SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 			{
 				Name: "pub",
@@ -2284,20 +2276,6 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.
 
 	require.Equal(t, "pub,timestamp_day,m1,m1__previous,m1__delta_abs,m1__delta_rel,timestamp_day__previous", columnNames(fields))
 	i := 0
-	// require.Equal(t, "pub", fields[i].Name)
-	// i++
-	// require.Equal(t, "timestamp_day", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1__previous", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1__delta_abs", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1__delta_rel", fields[i].Name)
-	// i++
-	// require.Equal(t, "timestamp_day__previous", fields[i].Name)
-
 	for i, row := range q.Result.Data {
 		for _, sf := range q.Result.Schema.Fields {
 			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
@@ -2314,7 +2292,7 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,3.23,3.13,0.11,0.03,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
+func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2330,7 +2308,6 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *te
 				Alias:     "timestamp_day",
 			},
 		},
-		// todo validate measures - insure the original measure is included
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
 				Name: "m1",
@@ -2364,11 +2341,9 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *te
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
-		// ComparisonMeasures: []string{"m1"},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "m1__previous",
-				// SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 			},
 			{
 				Name: "pub",
@@ -2395,19 +2370,6 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *te
 
 	require.Equal(t, "pub,timestamp_day,m1,m1__previous,m1__delta_abs,m1__delta_rel,timestamp_day__previous", columnNames(fields))
 	i := 0
-	// require.Equal(t, "pub", fields[i].Name)
-	// i++
-	// require.Equal(t, "timestamp_day", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1__previous", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1__delta_abs", fields[i].Name)
-	// i++
-	// require.Equal(t, "m1__delta_rel", fields[i].Name)
-	// i++
-	// require.Equal(t, "timestamp_day__previous", fields[i].Name)
 
 	for i, row := range q.Result.Data {
 		for _, sf := range q.Result.Schema.Fields {
@@ -2425,7 +2387,7 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *te
 	require.Equal(t, "Google,2022-01-01T00:00:00Z,3.17,3.18,-0.02,-0.00,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
+func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2468,13 +2430,12 @@ func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 				},
 			},
 		},
-		// ComparisonMeasures: []string{"measure_0", "m1"},
 		Where: expressionpb.OrAll(
 			expressionpb.Eq("pub", "Yahoo"),
 			expressionpb.Eq("pub", "Google"),
 		),
 		Having: expressionpb.Gt("measure_1", 0.0),
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "__time",
 			},

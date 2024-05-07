@@ -34,7 +34,7 @@ func BenchmarkMetricsViewsAggregation(b *testing.B) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -79,7 +79,7 @@ func BenchmarkMetricsViewsAggregation_pivot_2_measures(t *testing.B) {
 				Name: "measure_0",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -117,7 +117,7 @@ func BenchmarkMetricsViewsAggregation_pivot(b *testing.B) {
 				Name: "measure_1",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
@@ -157,7 +157,7 @@ func BenchmarkMetricsViewsAggregation_spending(b *testing.B) {
 				Name: "total_records",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "recipient_parent_name",
 			},
@@ -199,7 +199,7 @@ func BenchmarkMetricsViewsAggregation_spending_100(b *testing.B) {
 				Name: "total_records",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "recipient_parent_name",
 			},
@@ -241,7 +241,7 @@ func BenchmarkMetricsViewsAggregation_spending_pivot(b *testing.B) {
 				Name: "total_records",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "recipient_parent_name",
 			},
@@ -282,7 +282,7 @@ func BenchmarkMetricsViewsAggregation_spending_pivot_100(b *testing.B) {
 				Name: "total_records",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "recipient_parent_name",
 			},
@@ -329,7 +329,7 @@ func BenchmarkMetricsViewsAggregation_Druid(t *testing.B) {
 				Name: "bp",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},
@@ -381,7 +381,7 @@ func BenchmarkMetricsViewsAggregation_Druid_2_measures(t *testing.B) {
 				Name: "rate",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},
@@ -430,7 +430,7 @@ func BenchmarkMetricsViewsAggregation_Druid_pivot(t *testing.B) {
 				Name: "bp",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},
@@ -483,7 +483,7 @@ func BenchmarkMetricsViewsAggregation_Druid_pivot_2_measures(t *testing.B) {
 				Name: "rate",
 			},
 		},
-		Sort0: []*runtimev1.MetricsViewAggregationSort{
+		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "publisher",
 			},

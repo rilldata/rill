@@ -323,11 +323,7 @@ message MetricsViewAggregationRequest {
   // Required
   repeated MetricsViewAggregationMeasure measures = 4;
   // Optional. Defaults to unsorted
-  repeated MetricsViewComparisonSort sort = 5;
-  repeated MetricsViewAggregationSort sort0 = 20;
-
-  // Optional
-  repeated string comparison_measures = 19;
+  repeated MetricsViewAggregationSort sort = 5;
   // Optional. Defaults to unbounded
   TimeRange time_range = 12;
   // Optional, if omitted than the request prepares an aggregation without a comparison
