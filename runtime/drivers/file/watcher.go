@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -121,17 +120,21 @@ func (w *watcher) flush() {
 	}
 
 	for p, event := range w.buffer {
-		if event.IsCreate {
-			info, err := os.Stat(event.FullPath)
-			event.Dir = err == nil && info.IsDir()
-			if event.Dir {
-				err = w.addDir(event.FullPath, true, false)
-				if err != nil {
-					return
-				}
-			}
-			w.buffer[p] = event
+		if !event.IsCreate {
+			continue
 		}
+		// check for directory for CREATE events
+		info, err := os.Stat(event.FullPath)
+		event.Dir = err == nil && info.IsDir()
+		if event.Dir {
+			// add directory to tracking paths
+			err = w.addDir(event.FullPath, true, false)
+			if err != nil {
+				delete(w.buffer, p)
+				continue
+			}
+		}
+		w.buffer[p] = event
 	}
 
 	events := maps.Values(w.buffer)
@@ -173,17 +176,6 @@ func (w *watcher) runInner() error {
 				return nil
 			}
 
-			if !strings.Contains(e.Name, "tmp") {
-				fmt.Println(
-					e.Name,
-					e.Has(fsnotify.Remove),
-					e.Has(fsnotify.Rename),
-					e.Has(fsnotify.Create),
-					e.Has(fsnotify.Write),
-					e.Has(fsnotify.Chmod),
-				)
-			}
-
 			we := drivers.WatchEvent{}
 			if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
@@ -209,25 +201,12 @@ func (w *watcher) runInner() error {
 				continue
 			}
 
-			//if e.Has(fsnotify.Create) {
-			//	info, err := os.Stat(e.Name)
-			//	we.Dir = err == nil && info.IsDir()
-			//}
-
 			existing, ok := w.buffer[path]
 			if ok && existing.IsCreate {
 				// copy over `IsCreate` within the batch for a path
 				we.IsCreate = existing.IsCreate
 			}
 			w.buffer[path] = we
-
-			// Calling addDir after appending to w.buffer, to sequence events correctly
-			//if we.Dir && e.Has(fsnotify.Create) {
-			//	err = w.addDir(e.Name, true, false)
-			//	if err != nil {
-			//		return err
-			//	}
-			//}
 
 			// Reset the timer so we only flush when no events have been observed for batchInterval.
 			// (But to avoid the buffer growing infinitely in edge cases, we enforce a max buffer size.)
@@ -246,7 +225,6 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	if err != nil {
 		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
 		if !errIfNotExist && isNotExists(err) {
-			fmt.Println("addDir ENOENT", path)
 			return nil
 		}
 		return err
@@ -255,12 +233,10 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		if !errIfNotExist && isNotExists(err) {
-			fmt.Println("addDir ReadDir ENOENT", path)
 			return nil
 		}
 		return err
 	}
-	fmt.Println("addDir", path)
 
 	for _, e := range entries {
 		fullPath := filepath.Join(path, e.Name())
