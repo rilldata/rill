@@ -2,12 +2,15 @@ package rillv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
 )
 
 var _reservedConnectorNames = map[string]bool{"admin": true, "repo": true, "metastore": true}
+
+var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {

@@ -28,11 +28,10 @@ If creating a new DuckDB source from the UI, you should pass in the appropriate 
 On the other hand, if you are creating the source YAML file directly, the definition should look something like:
 
 ```yaml
-
-type: "duckdb"
+type: "source"
+connector: "duckdb"
 sql: "SELECT * from <duckdb_table>"
 db: "<path_to_duckdb_db_file>"
-
 ```
 
 :::tip If deploying to Rill Cloud
@@ -95,6 +94,6 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 :::tip Did you know?
 
-If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
+If you've configured credentials locally already (in your `<RILL_HOME>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
 
 :::
