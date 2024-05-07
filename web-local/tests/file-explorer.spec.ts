@@ -26,10 +26,7 @@ test.describe("File Explorer", () => {
 
       // Edit the file
       await page.getByRole("textbox").nth(1).click();
-      await page
-        .getByRole("textbox")
-        .nth(1)
-        .fill("Here's a README.md file for the e2e test!");
+      await page.keyboard.type("Here's a README.md file for the e2e test!");
       // Wait half a second for the changes to be saved
       await page.waitForTimeout(500);
       // Navigate away from the file and back to it to verify the changes
