@@ -32,12 +32,8 @@ type WatchCallback func(event []WatchEvent)
 
 type WatchEvent struct {
 	Type runtimev1.FileEvent
-	// Path relative to the repo root
 	Path string
-	// FullPath used during flush
-	FullPath string
-	Dir      bool
-	IsCreate bool
+	Dir  bool
 }
 
 type RepoObjectStat struct {
